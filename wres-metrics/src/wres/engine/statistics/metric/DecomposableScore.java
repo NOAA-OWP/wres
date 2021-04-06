@@ -3,7 +3,7 @@ package wres.engine.statistics.metric;
 import java.util.Objects;
 
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 
 /**
@@ -12,7 +12,7 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter;
  * @author james.brown@hydrosolved.com
  */
 
-public abstract class DecomposableScore<S extends SampleData<?>> extends OrdinaryScore<S, DoubleScoreStatisticOuter>
+public abstract class DecomposableScore<S extends Pool<?>> extends OrdinaryScore<S, DoubleScoreStatisticOuter>
 {
 
     /**

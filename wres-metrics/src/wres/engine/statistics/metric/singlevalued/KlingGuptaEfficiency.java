@@ -8,8 +8,8 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.DecomposableScore;
@@ -37,7 +37,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * 
  * @author james.brown@hydrosolved.com
  */
-public class KlingGuptaEfficiency extends DecomposableScore<SampleData<Pair<Double, Double>>>
+public class KlingGuptaEfficiency extends DecomposableScore<Pool<Pair<Double, Double>>>
 {
 
     /**
@@ -123,11 +123,11 @@ public class KlingGuptaEfficiency extends DecomposableScore<SampleData<Pair<Doub
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( final SampleData<Pair<Double, Double>> s )
+    public DoubleScoreStatisticOuter apply( final Pool<Pair<Double, Double>> s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
+            throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
         //TODO: implement any required decompositions, based on the instance parameters and return the decomposition

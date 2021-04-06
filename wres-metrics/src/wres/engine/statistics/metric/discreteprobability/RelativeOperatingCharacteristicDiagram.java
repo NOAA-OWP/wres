@@ -13,8 +13,8 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
 import wres.datamodel.MissingValues;
 import wres.datamodel.Slicer;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.engine.statistics.metric.Diagram;
@@ -38,7 +38,7 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
  */
 
 public class RelativeOperatingCharacteristicDiagram
-        extends Diagram<SampleData<Pair<Probability, Probability>>, DiagramStatisticOuter>
+        extends Diagram<Pool<Pair<Probability, Probability>>, DiagramStatisticOuter>
 {
     /**
      * Probability of detection.
@@ -90,7 +90,7 @@ public class RelativeOperatingCharacteristicDiagram
      * Components of the ROC.
      */
 
-    private final MetricCollection<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> roc;
+    private final MetricCollection<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> roc;
 
     /**
      * Number of points in the empirical ROC diagram.
@@ -111,11 +111,11 @@ public class RelativeOperatingCharacteristicDiagram
     }
 
     @Override
-    public DiagramStatisticOuter apply( final SampleData<Pair<Probability, Probability>> s )
+    public DiagramStatisticOuter apply( final Pool<Pair<Probability, Probability>> s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
+            throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
         //Determine the empirical ROC. 
@@ -145,7 +145,7 @@ public class RelativeOperatingCharacteristicDiagram
                                        in.getRight().getProbability() > prob );
 
                 // Transformed pairs
-                SampleData<Pair<Boolean, Boolean>> transformed = Slicer.transform( s, transformer );
+                Pool<Pair<Boolean, Boolean>> transformed = Slicer.transform( s, transformer );
                 List<DoubleScoreStatisticOuter> out = this.roc.apply( transformed );
 
                 //Store

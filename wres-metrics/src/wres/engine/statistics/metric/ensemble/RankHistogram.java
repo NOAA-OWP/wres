@@ -17,8 +17,8 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MissingValues;
 import wres.datamodel.Slicer;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.engine.statistics.metric.Diagram;
 import wres.statistics.generated.DiagramMetric;
@@ -41,7 +41,7 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
  * @author james.brown@hydrosolved.com
  */
 
-public class RankHistogram extends Diagram<SampleData<Pair<Double, Ensemble>>, DiagramStatisticOuter>
+public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, DiagramStatisticOuter>
 {
 
     /**
@@ -115,11 +115,11 @@ public class RankHistogram extends Diagram<SampleData<Pair<Double, Ensemble>>, D
     }
 
     @Override
-    public DiagramStatisticOuter apply( SampleData<Pair<Double, Ensemble>> s )
+    public DiagramStatisticOuter apply( Pool<Pair<Double, Ensemble>> s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
+            throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
         double[] ranks = new double[] { MissingValues.DOUBLE };

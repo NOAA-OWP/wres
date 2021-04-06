@@ -12,7 +12,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import net.jcip.annotations.Immutable;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.statistics.generated.DurationDiagramStatistic;
 
 /**
@@ -35,7 +35,7 @@ public class DurationDiagramStatisticOuter implements Statistic<DurationDiagramS
      * The metadata associated with the statistic.
      */
 
-    private final SampleMetadata metadata;
+    private final PoolMetadata metadata;
     
     /**
      * The metric name.
@@ -53,13 +53,13 @@ public class DurationDiagramStatisticOuter implements Statistic<DurationDiagramS
      */
 
     public static DurationDiagramStatisticOuter of( DurationDiagramStatistic statistic,
-                                                    SampleMetadata metadata )
+                                                    PoolMetadata metadata )
     {
         return new DurationDiagramStatisticOuter( statistic, metadata );
     }
 
     @Override
-    public SampleMetadata getMetadata()
+    public PoolMetadata getMetadata()
     {
         return metadata;
     }
@@ -140,7 +140,7 @@ public class DurationDiagramStatisticOuter implements Statistic<DurationDiagramS
      * @throws StatisticException if any of the inputs are invalid
      */
 
-    private DurationDiagramStatisticOuter( DurationDiagramStatistic statistic, SampleMetadata metadata )
+    private DurationDiagramStatisticOuter( DurationDiagramStatistic statistic, PoolMetadata metadata )
     {
         //Validate
         if ( Objects.isNull( statistic ) )

@@ -17,11 +17,11 @@ import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Pool;
 
 /**
- * An immutable store of metadata associated with {@link SampleData}.
+ * An immutable store of metadata associated with {@link Pool}.
  * 
  * @author james.brown@hydrosolved.com
  */
-public class SampleMetadata implements Comparable<SampleMetadata>
+public class PoolMetadata implements Comparable<PoolMetadata>
 {
 
     /**
@@ -45,19 +45,19 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      * @throws NullPointerException if either input is null.
      */
 
-    public static SampleMetadata of( Evaluation evaluation, Pool pool )
+    public static PoolMetadata of( Evaluation evaluation, Pool pool )
     {
-        return new SampleMetadata( evaluation, pool );
+        return new PoolMetadata( evaluation, pool );
     }
 
     /**
-     * Build a {@link SampleMetadata} object with a default {@link MeasurementUnit} of 
+     * Build a {@link PoolMetadata} object with a default {@link MeasurementUnit} of 
      * {@link MeasurementUnit#DIMENSIONLESS} and a default pool, {@link Pool#getDefaultInstance()}.
      * 
-     * @return a {@link SampleMetadata} object
+     * @return a {@link PoolMetadata} object
      */
 
-    public static SampleMetadata of()
+    public static PoolMetadata of()
     {
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
@@ -65,18 +65,18 @@ public class SampleMetadata implements Comparable<SampleMetadata>
 
         Pool pool = Pool.getDefaultInstance();
 
-        return new SampleMetadata( evaluation, pool );
+        return new PoolMetadata( evaluation, pool );
     }
 
     /**
-     * Build a {@link SampleMetadata} object with a default {@link MeasurementUnit} of 
+     * Build a {@link PoolMetadata} object with a default {@link MeasurementUnit} of 
      * {@link MeasurementUnit#DIMENSIONLESS} and the status of the pool as a regular pool or baseline pool.
      * 
      * @param isBaselinePool is true if the pool is a baseline pool, otherwise false
-     * @return a {@link SampleMetadata} object
+     * @return a {@link PoolMetadata} object
      */
 
-    public static SampleMetadata of( boolean isBaselinePool )
+    public static PoolMetadata of( boolean isBaselinePool )
     {
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
@@ -86,19 +86,19 @@ public class SampleMetadata implements Comparable<SampleMetadata>
                         .setIsBaselinePool( isBaselinePool )
                         .build();
 
-        return new SampleMetadata( evaluation, pool );
+        return new PoolMetadata( evaluation, pool );
     }
 
     /**
-     * Builds a {@link SampleMetadata} from a prescribed input source and an override {@link OneOrTwoThresholds}.
+     * Builds a {@link PoolMetadata} from a prescribed input source and an override {@link OneOrTwoThresholds}.
      * 
      * @param input the source metadata
      * @param thresholds the thresholds
-     * @return a {@link SampleMetadata} object
+     * @return a {@link PoolMetadata} object
      * @throws NullPointerException if any required input is null
      */
 
-    public static SampleMetadata of( SampleMetadata input, OneOrTwoThresholds thresholds )
+    public static PoolMetadata of( PoolMetadata input, OneOrTwoThresholds thresholds )
     {
         Objects.requireNonNull( input );
 
@@ -115,19 +115,19 @@ public class SampleMetadata implements Comparable<SampleMetadata>
             }
         }
 
-        return new SampleMetadata( evaluation, pool.build() );
+        return new PoolMetadata( evaluation, pool.build() );
     }
 
     /**
-     * Builds a {@link SampleMetadata} from a prescribed input source and an override {@link TimeWindowOuter}.
+     * Builds a {@link PoolMetadata} from a prescribed input source and an override {@link TimeWindowOuter}.
      * 
      * @param input the source metadata
      * @param timeWindow the new time window
-     * @return a {@link SampleMetadata} object
+     * @return a {@link PoolMetadata} object
      * @throws NullPointerException if any required input is null
      */
 
-    public static SampleMetadata of( SampleMetadata input, TimeWindowOuter timeWindow )
+    public static PoolMetadata of( PoolMetadata input, TimeWindowOuter timeWindow )
     {
         Objects.requireNonNull( input );
 
@@ -140,19 +140,19 @@ public class SampleMetadata implements Comparable<SampleMetadata>
             pool.setTimeWindow( timeWindow.getTimeWindow() );
         }
 
-        return new SampleMetadata( evaluation, pool.build() );
+        return new PoolMetadata( evaluation, pool.build() );
     }
 
     /**
-     * Builds a {@link SampleMetadata} from a prescribed input source and an override {@link TimeScaleOuter}.
+     * Builds a {@link PoolMetadata} from a prescribed input source and an override {@link TimeScaleOuter}.
      * 
      * @param input the source metadata
      * @param timeScale the new time scale
-     * @return a {@link SampleMetadata} object
+     * @return a {@link PoolMetadata} object
      * @throws NullPointerException if the input is null
      */
 
-    public static SampleMetadata of( SampleMetadata input, TimeScaleOuter timeScale )
+    public static PoolMetadata of( PoolMetadata input, TimeScaleOuter timeScale )
     {
         Objects.requireNonNull( input );
 
@@ -165,21 +165,21 @@ public class SampleMetadata implements Comparable<SampleMetadata>
             pool.setTimeScale( timeScale.getTimeScale() );
         }
 
-        return new SampleMetadata( evaluation, pool.build() );
+        return new PoolMetadata( evaluation, pool.build() );
     }
 
     /**
-     * Builds a {@link SampleMetadata} from a prescribed input source and an override {@link TimeWindowOuter} and 
+     * Builds a {@link PoolMetadata} from a prescribed input source and an override {@link TimeWindowOuter} and 
      * {@link TimeScaleOuter}.
      * 
      * @param input the source metadata
      * @param timeWindow the new time window
      * @param timeScale the new time scale
-     * @return a {@link SampleMetadata} object
+     * @return a {@link PoolMetadata} object
      * @throws NullPointerException if the input is null
      */
 
-    public static SampleMetadata of( SampleMetadata input,
+    public static PoolMetadata of( PoolMetadata input,
                                      TimeWindowOuter timeWindow,
                                      TimeScaleOuter timeScale )
     {
@@ -199,21 +199,21 @@ public class SampleMetadata implements Comparable<SampleMetadata>
             pool.setTimeWindow( timeWindow.getTimeWindow() );
         }
 
-        return new SampleMetadata( evaluation, pool.build() );
+        return new PoolMetadata( evaluation, pool.build() );
     }
 
     /**
-     * Builds a {@link SampleMetadata} from a prescribed input source and an override {@link TimeWindowOuter} and 
+     * Builds a {@link PoolMetadata} from a prescribed input source and an override {@link TimeWindowOuter} and 
      * {@link OneOrTwoThresholds}.
      * 
      * @param input the source metadata
      * @param timeWindow the new time window
      * @param thresholds the thresholds
-     * @return a {@link SampleMetadata} object
+     * @return a {@link PoolMetadata} object
      * @throws NullPointerException if the input is null
      */
 
-    public static SampleMetadata of( SampleMetadata input,
+    public static PoolMetadata of( PoolMetadata input,
                                      TimeWindowOuter timeWindow,
                                      OneOrTwoThresholds thresholds )
     {
@@ -237,12 +237,12 @@ public class SampleMetadata implements Comparable<SampleMetadata>
             pool.setTimeWindow( timeWindow.getTimeWindow() );
         }
 
-        return new SampleMetadata( evaluation, pool.build() );
+        return new PoolMetadata( evaluation, pool.build() );
     }
 
     /**
      * Finds the union of the input, based on the {@link TimeWindowOuter}. All components of the input must be equal, 
-     * except the {@link SampleMetadata#getTimeWindow()} and {@link SampleMetadata#getThresholds()}, otherwise an 
+     * except the {@link PoolMetadata#getTimeWindow()} and {@link PoolMetadata#getThresholds()}, otherwise an 
      * exception is thrown. See also {@link TimeWindowOuter#unionOf(Set)}. No threshold information is represented in the 
      * union.
      * 
@@ -250,11 +250,11 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      * @return the union of the input
      * @throws IllegalArgumentException if the input is empty
      * @throws NullPointerException if the input is null
-     * @throws SampleMetadataException if the input contains metadata whose differences extend beyond the time windows and
+     * @throws PoolMetadataException if the input contains metadata whose differences extend beyond the time windows and
      *            thresholds
      */
 
-    public static SampleMetadata unionOf( List<SampleMetadata> input )
+    public static PoolMetadata unionOf( List<PoolMetadata> input )
     {
         String nullString = "Cannot find the union of null metadata.";
 
@@ -267,16 +267,16 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         Set<TimeWindowOuter> unionWindow = new HashSet<>();
 
         // Test entry
-        SampleMetadata test = input.get( 0 );
+        PoolMetadata test = input.get( 0 );
 
         // Validate for equivalence with the first entry and add window to list
-        for ( SampleMetadata next : input )
+        for ( PoolMetadata next : input )
         {
             Objects.requireNonNull( next, nullString );
 
             if ( !next.equalsWithoutTimeWindowOrThresholds( test ) )
             {
-                throw new SampleMetadataException( "Only the time window and thresholds can differ when finding the "
+                throw new PoolMetadataException( "Only the time window and thresholds can differ when finding the "
                                                    + "union of metadata." );
             }
             if ( next.hasTimeWindow() )
@@ -286,17 +286,17 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         }
 
         // Remove any threshold information from the result
-        test = SampleMetadata.of( test, (OneOrTwoThresholds) null );
+        test = PoolMetadata.of( test, (OneOrTwoThresholds) null );
 
         if ( !unionWindow.isEmpty() )
         {
-            test = SampleMetadata.of( test, TimeWindowOuter.unionOf( unionWindow ) );
+            test = PoolMetadata.of( test, TimeWindowOuter.unionOf( unionWindow ) );
         }
         return test;
     }
 
     @Override
-    public int compareTo( SampleMetadata input )
+    public int compareTo( PoolMetadata input )
     {
         Objects.requireNonNull( input, "Specify non-null metadata for comparison." );
 
@@ -314,11 +314,11 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     @Override
     public boolean equals( final Object o )
     {
-        if ( ! ( o instanceof SampleMetadata ) )
+        if ( ! ( o instanceof PoolMetadata ) )
         {
             return false;
         }
-        SampleMetadata p = (SampleMetadata) o;
+        PoolMetadata p = (PoolMetadata) o;
         return Objects.equals( this.getEvaluation(), p.getEvaluation() )
                && Objects.equals( this.getPool(), p.getPool() );
     }
@@ -396,13 +396,13 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     }
 
     /**
-     * Returns <code>true</code> if the input is equal to the current {@link SampleMetadata} without considering the 
+     * Returns <code>true</code> if the input is equal to the current {@link PoolMetadata} without considering the 
      * {@link #getTimeWindow()} or {@link #getThresholds()}.
      * 
      * @param input the input metadata
      * @return true if the input is equal to the current metadata, without considering the time window or thresholds
      */
-    public boolean equalsWithoutTimeWindowOrThresholds( final SampleMetadata input )
+    public boolean equalsWithoutTimeWindowOrThresholds( final PoolMetadata input )
     {
         if ( Objects.isNull( input ) )
         {
@@ -536,7 +536,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      * @throws NullPointerException if either input is null or the measurement unit is not set
      */
 
-    private SampleMetadata( Evaluation evaluation, Pool pool )
+    private PoolMetadata( Evaluation evaluation, Pool pool )
     {
         Objects.requireNonNull( evaluation );
         Objects.requireNonNull( pool );

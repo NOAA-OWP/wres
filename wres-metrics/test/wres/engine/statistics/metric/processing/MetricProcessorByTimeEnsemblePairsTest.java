@@ -38,7 +38,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
@@ -886,7 +886,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                           null,
                                           false );
 
-        SampleMetadata expectedSampleMeta = SampleMetadata.of( evaluation, pool );
+        PoolMetadata expectedSampleMeta = PoolMetadata.of( evaluation, pool );
 
         //Obtain the results
         List<DoubleScoreStatisticOuter> results =
@@ -919,7 +919,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                                                  Operator.GREATER,
                                                                                                  ThresholdDataType.LEFT ) );
 
-        SampleMetadata expectedMetaFirst = SampleMetadata.of( expectedSampleMeta, first );
+        PoolMetadata expectedMetaFirst = PoolMetadata.of( expectedSampleMeta, first );
 
         DoubleScoreStatisticOuter expectedFirst =
                 DoubleScoreStatisticOuter.of( firstTable, expectedMetaFirst );
@@ -955,7 +955,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                                                   Operator.GREATER,
                                                                                                   ThresholdDataType.LEFT ) );
 
-        SampleMetadata expectedMetaSecond = SampleMetadata.of( expectedSampleMeta, second );
+        PoolMetadata expectedMetaSecond = PoolMetadata.of( expectedSampleMeta, second );
 
         DoubleScoreStatisticOuter expectedSecond =
                 DoubleScoreStatisticOuter.of( secondTable, expectedMetaSecond );
@@ -991,7 +991,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                                                  Operator.GREATER,
                                                                                                  ThresholdDataType.LEFT ) );
 
-        SampleMetadata expectedMetaThird = SampleMetadata.of( expectedSampleMeta, third );
+        PoolMetadata expectedMetaThird = PoolMetadata.of( expectedSampleMeta, third );
 
         DoubleScoreStatisticOuter expectedThird =
                 DoubleScoreStatisticOuter.of( thirdTable, expectedMetaThird );
@@ -1027,7 +1027,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                                                   Operator.GREATER,
                                                                                                   ThresholdDataType.LEFT ) );
 
-        SampleMetadata expectedMetaFourth = SampleMetadata.of( expectedSampleMeta, fourth );
+        PoolMetadata expectedMetaFourth = PoolMetadata.of( expectedSampleMeta, fourth );
 
         DoubleScoreStatisticOuter expectedFourth =
                 DoubleScoreStatisticOuter.of( fourthTable, expectedMetaFourth );
@@ -1062,7 +1062,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                                                  Operator.GREATER,
                                                                                                  ThresholdDataType.LEFT ) );
 
-        SampleMetadata expectedMetaFifth = SampleMetadata.of( expectedSampleMeta, fifth );
+        PoolMetadata expectedMetaFifth = PoolMetadata.of( expectedSampleMeta, fifth );
 
         DoubleScoreStatisticOuter expectedFifth =
                 DoubleScoreStatisticOuter.of( fifthTable, expectedMetaFifth );
@@ -1098,7 +1098,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                                                  Operator.GREATER,
                                                                                                  ThresholdDataType.LEFT ) );
 
-        SampleMetadata expectedMetaSixth = SampleMetadata.of( expectedSampleMeta, sixth );
+        PoolMetadata expectedMetaSixth = PoolMetadata.of( expectedSampleMeta, sixth );
 
         DoubleScoreStatisticOuter expectedSixth =
                 DoubleScoreStatisticOuter.of( sixthTable, expectedMetaSixth );

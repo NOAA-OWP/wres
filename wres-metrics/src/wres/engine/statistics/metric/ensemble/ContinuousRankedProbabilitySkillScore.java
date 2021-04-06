@@ -8,8 +8,8 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -87,15 +87,15 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( SampleData<Pair<Double, Ensemble>> s )
+    public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Ensemble>> s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
+            throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
         if ( !s.hasBaseline() )
         {
-            throw new SampleDataException( "Specify a non-null baseline for the '" + this + "'." );
+            throw new PoolException( "Specify a non-null baseline for the '" + this + "'." );
         }
         //CRPSS, currently without decomposition
         //TODO: implement the decomposition

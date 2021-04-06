@@ -18,10 +18,10 @@ import org.junit.Test;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataBasic;
-import wres.datamodel.pools.SampleDataException;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.BasicPool;
+import wres.datamodel.pools.PoolException;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Probability;
 import wres.datamodel.Slicer;
@@ -54,7 +54,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     }
 
     /**
-     * Compares the output from {@link RelativeOperatingCharacteristicScore#apply(SampleData)} against 
+     * Compares the output from {@link RelativeOperatingCharacteristicScore#apply(Pool)} against 
      * expected output for a dataset with ties from Mason and Graham (2002).
      */
 
@@ -79,11 +79,11 @@ public final class RelativeOperatingCharacteristicScoreTest
         values.add( Pair.of( Probability.ONE, Probability.of( 1.0 ) ) );
         values.add( Pair.of( Probability.ONE, Probability.of( 1.0 ) ) );
 
-        SampleData<Pair<Probability, Probability>> input =
-                SampleDataBasic.of( values, SampleMetadata.of() );
+        Pool<Pair<Probability, Probability>> input =
+                BasicPool.of( values, PoolMetadata.of() );
 
         //Metadata for the output
-        SampleMetadata m1 = SampleMetadata.of();
+        PoolMetadata m1 = PoolMetadata.of();
 
         //Check the results       
         DoubleScoreStatisticOuter actual = this.rocScore.apply( input );
@@ -128,11 +128,11 @@ public final class RelativeOperatingCharacteristicScoreTest
         values.add( Pair.of( Probability.ZERO, Probability.of( 0.0 ) ) );
         values.add( Pair.of( Probability.ONE, Probability.of( 0.984 ) ) );
         values.add( Pair.of( Probability.ONE, Probability.of( 0.952 ) ) );
-        SampleMetadata meta = SampleMetadata.of();
-        SampleData<Pair<Probability, Probability>> input = SampleDataBasic.of( values, meta );
+        PoolMetadata meta = PoolMetadata.of();
+        Pool<Pair<Probability, Probability>> input = BasicPool.of( values, meta );
 
         //Metadata for the output
-        SampleMetadata m1 = SampleMetadata.of();
+        PoolMetadata m1 = PoolMetadata.of();
 
         //Check the results       
         DoubleScoreStatisticOuter actual = this.rocScore.apply( input );
@@ -155,7 +155,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         assertEquals( expected, actual );
 
         //Check against a baseline
-        SampleData<Pair<Probability, Probability>> inputBase = SampleDataBasic.of( values, meta, values, meta, null );
+        Pool<Pair<Probability, Probability>> inputBase = BasicPool.of( values, meta, values, meta, null );
         DoubleScoreStatisticOuter actualBase = this.rocScore.apply( inputBase );
 
         DoubleScoreStatisticComponent componentBase = DoubleScoreStatisticComponent.newBuilder()
@@ -198,12 +198,12 @@ public final class RelativeOperatingCharacteristicScoreTest
         values.add( Pair.of( Probability.ZERO, Probability.of( 0.0 ) ) );
         values.add( Pair.of( Probability.ZERO, Probability.of( 0.984 ) ) );
         values.add( Pair.of( Probability.ZERO, Probability.of( 0.952 ) ) );
-        SampleMetadata meta = SampleMetadata.of();
+        PoolMetadata meta = PoolMetadata.of();
 
-        SampleData<Pair<Probability, Probability>> input = SampleDataBasic.of( values, meta );
+        Pool<Pair<Probability, Probability>> input = BasicPool.of( values, meta );
 
         //Metadata for the output
-        SampleMetadata m1 = SampleMetadata.of();
+        PoolMetadata m1 = PoolMetadata.of();
 
         //Check the results       
         DoubleScoreStatisticOuter actual = this.rocScore.apply( input );
@@ -232,8 +232,8 @@ public final class RelativeOperatingCharacteristicScoreTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SampleData<Pair<Probability, Probability>> input =
-                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
+        Pool<Pair<Probability, Probability>> input =
+                BasicPool.of( Arrays.asList(), PoolMetadata.of() );
 
         DoubleScoreStatisticOuter actual = this.rocScore.apply( input );
 
@@ -311,7 +311,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     @Test
     public void testMetadataContainsBaselineIdentifier() throws IOException
     {
-        SampleData<Pair<Double, Ensemble>> pairs = MetricTestDataFactory.getEnsemblePairsOne();
+        Pool<Pair<Double, Ensemble>> pairs = MetricTestDataFactory.getEnsemblePairsOne();
 
         ThresholdOuter threshold = ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
                                                       Operator.GREATER,
@@ -320,7 +320,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         Function<Pair<Double, Ensemble>, Pair<Probability, Probability>> mapper =
                 pair -> Slicer.toDiscreteProbabilityPair( pair, threshold );
 
-        SampleData<Pair<Probability, Probability>> transPairs = Slicer.transform( pairs, mapper );
+        Pool<Pair<Probability, Probability>> transPairs = Slicer.transform( pairs, mapper );
 
         assertEquals( "ESP",
                       this.rocScore.apply( transPairs )
@@ -337,8 +337,8 @@ public final class RelativeOperatingCharacteristicScoreTest
     @Test
     public void testExceptionOnNullInput()
     {
-        SampleDataException actual = assertThrows( SampleDataException.class,
-                                                   () -> this.rocScore.apply( (SampleData<Pair<Probability, Probability>>) null ) );
+        PoolException actual = assertThrows( PoolException.class,
+                                                   () -> this.rocScore.apply( (Pool<Pair<Probability, Probability>>) null ) );
 
         assertEquals( "Specify non-null input to the '" + this.rocScore.getName() + "'.", actual.getMessage() );
     }

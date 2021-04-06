@@ -24,13 +24,13 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.statistics.Statistic;
 import wres.engine.statistics.metric.categorical.ContingencyTable;
 
 /**
  * <p>
- * An immutable collection of {@link Metric} that consume a common class of {@link SampleData} and return a common
+ * An immutable collection of {@link Metric} that consume a common class of {@link Pool} and return a common
  * class of {@link Statistic}. Multiple instances of the same metric are allowed (e.g. with different parameter
  * values).
  * </p>
@@ -55,7 +55,7 @@ import wres.engine.statistics.metric.categorical.ContingencyTable;
  * @param <U> the output type
  */
 
-public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U extends Statistic<?>>
+public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U extends Statistic<?>>
         implements BiFunction<S, Set<MetricConstants>, List<U>>
 {
 
@@ -147,7 +147,7 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
      * @param <U> the output type
      */
 
-    protected static class MetricCollectionBuilder<S extends SampleData<?>, T extends Statistic<?>, U extends Statistic<?>>
+    protected static class MetricCollectionBuilder<S extends Pool<?>, T extends Statistic<?>, U extends Statistic<?>>
     {
 
         /**
@@ -178,7 +178,7 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
          * @return a builder
          */
 
-        protected static <P extends SampleData<?>, Q extends Statistic<?>, R extends Statistic<?>>
+        protected static <P extends Pool<?>, Q extends Statistic<?>, R extends Statistic<?>>
                 MetricCollectionBuilder<P, Q, R> of()
         {
             return new MetricCollectionBuilder<>();

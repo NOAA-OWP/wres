@@ -28,7 +28,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.StatisticType;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -216,7 +216,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
                     Slicer.filter( output, data -> data.getMetadata().getTimeWindow().equals( nextWindow ) );
 
             MetricConstants metricName = next.get( 0 ).getMetricName();
-            SampleMetadata meta = next.get( 0 ).getMetadata();
+            PoolMetadata meta = next.get( 0 ).getMetadata();
 
             StringJoiner headerRow =
                     CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( meta,
@@ -267,7 +267,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
         if ( !output.isEmpty() )
         {
             MetricConstants metricName = output.get( 0 ).getMetricName();
-            SampleMetadata meta = output.get( 0 ).getMetadata();
+            PoolMetadata meta = output.get( 0 ).getMetadata();
 
             StringJoiner headerRow =
                     CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( meta,
@@ -315,7 +315,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
         SortedSet<TimeWindowOuter> timeWindows =
                 Slicer.discover( output, meta -> meta.getMetadata().getTimeWindow() );
 
-        SampleMetadata metadata = CommaSeparatedStatisticsWriter.getSampleMetadataFromListOfStatistics( output );
+        PoolMetadata metadata = CommaSeparatedStatisticsWriter.getSampleMetadataFromListOfStatistics( output );
 
         // Loop across the thresholds
         for ( OneOrTwoThresholds t : thresholds )
@@ -347,7 +347,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
 
                     data.addAll( nextBox.getQuantilesList() );
                     CommaSeparatedStatisticsWriter.addRowToInput( returnMe,
-                                                                  SampleMetadata.of( metadata, timeWindow ),
+                                                                  PoolMetadata.of( metadata, timeWindow ),
                                                                   data,
                                                                   formatter,
                                                                   false,

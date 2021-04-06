@@ -9,8 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.MissingValues;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -30,7 +30,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * 
  * @author james.brown@hydrosolved.com
  */
-public abstract class DoubleErrorScore<S extends SampleData<Pair<Double, Double>>>
+public abstract class DoubleErrorScore<S extends Pool<Pair<Double, Double>>>
         extends OrdinaryScore<S, DoubleScoreStatisticOuter>
 {
     
@@ -65,7 +65,7 @@ public abstract class DoubleErrorScore<S extends SampleData<Pair<Double, Double>
     {
         if ( Objects.isNull( s ) )
         {
-            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
+            throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
         //Compute the atomic errors in a stream

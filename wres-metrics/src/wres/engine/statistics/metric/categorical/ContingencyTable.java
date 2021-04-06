@@ -6,8 +6,8 @@ import java.util.function.Consumer;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
@@ -28,8 +28,8 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.Co
  * @author james.brown@hydrosolved.com
  */
 
-public class ContingencyTable implements Metric<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter>,
-        Collectable<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+public class ContingencyTable implements Metric<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter>,
+        Collectable<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
 {
     /**
      * Basic description of the metric.
@@ -102,11 +102,11 @@ public class ContingencyTable implements Metric<SampleData<Pair<Boolean, Boolean
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( final SampleData<Pair<Boolean, Boolean>> s )
+    public DoubleScoreStatisticOuter apply( final Pool<Pair<Boolean, Boolean>> s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
+            throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
         final int outcomes = 2;
         final double[][] returnMe = new double[outcomes][outcomes];
@@ -189,7 +189,7 @@ public class ContingencyTable implements Metric<SampleData<Pair<Boolean, Boolean
     }
 
     @Override
-    public DoubleScoreStatisticOuter getInputForAggregation( SampleData<Pair<Boolean, Boolean>> input )
+    public DoubleScoreStatisticOuter getInputForAggregation( Pool<Pair<Boolean, Boolean>> input )
     {
         return this.apply( input );
     }

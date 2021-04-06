@@ -29,7 +29,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.statistics.ScoreStatistic.ScoreComponent;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -230,7 +230,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
                     append = secondThresholds.iterator().next().toStringSafe();
                 }
 
-                SampleMetadata meta = nextOutput.get( 0 ).getMetadata();
+                PoolMetadata meta = nextOutput.get( 0 ).getMetadata();
                 Path outputPath = DataFactory.getPathFromSampleMetadata( outputDirectory,
                                                                          meta,
                                                                          append,
@@ -320,7 +320,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
         SortedSet<TimeWindowOuter> timeWindows =
                 Slicer.discover( component, meta -> meta.getMetadata().getTimeWindow() );
 
-        SampleMetadata metadata = CommaSeparatedStatisticsWriter.getSampleMetadataFromListOfStatistics( component );
+        PoolMetadata metadata = CommaSeparatedStatisticsWriter.getSampleMetadataFromListOfStatistics( component );
 
         // Loop across the thresholds
         for ( OneOrTwoThresholds t : thresholds )
@@ -355,7 +355,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
                 else
                 {
                     CommaSeparatedStatisticsWriter.addRowToInput( rows,
-                                                                  SampleMetadata.of( metadata, timeWindow ),
+                                                                  PoolMetadata.of( metadata, timeWindow ),
                                                                   Arrays.asList( (Object) null ),
                                                                   null,
                                                                   true,

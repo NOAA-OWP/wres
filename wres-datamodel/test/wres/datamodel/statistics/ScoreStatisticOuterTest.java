@@ -10,7 +10,7 @@ import org.junit.Test;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -39,7 +39,7 @@ public final class ScoreStatisticOuterTest
      * Default metadata for testing.
      */
     
-    private SampleMetadata metadata;
+    private PoolMetadata metadata;
 
     @Before
     public void runBeforeEachTest()
@@ -58,7 +58,7 @@ public final class ScoreStatisticOuterTest
                                           null,
                                           null,
                                           false );
-        this.metadata = SampleMetadata.of( evaluation, pool );
+        this.metadata = PoolMetadata.of( evaluation, pool );
 
         this.one =
                 DoubleScoreStatistic.newBuilder()
@@ -93,9 +93,9 @@ public final class ScoreStatisticOuterTest
                                           null,
                                           false );
 
-        SampleMetadata m1 = SampleMetadata.of( evaluation, pool );
+        PoolMetadata m1 = PoolMetadata.of( evaluation, pool );
 
-        SampleMetadata m2 = SampleMetadata.of( evaluation, pool );
+        PoolMetadata m2 = PoolMetadata.of( evaluation, pool );
 
         FeatureKey l3 = FeatureKey.of( "B" );
 
@@ -105,7 +105,7 @@ public final class ScoreStatisticOuterTest
                                              null,
                                              false );
 
-        SampleMetadata m3 = SampleMetadata.of( evaluation, poolTwo );
+        PoolMetadata m3 = PoolMetadata.of( evaluation, poolTwo );
 
         ScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter> s =
                 DoubleScoreStatisticOuter.of( this.one, m1 );

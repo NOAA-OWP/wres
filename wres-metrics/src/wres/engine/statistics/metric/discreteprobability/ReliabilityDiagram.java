@@ -12,8 +12,8 @@ import org.apache.commons.math3.util.Precision;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.MissingValues;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.engine.statistics.metric.Diagram;
@@ -40,7 +40,7 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
  * @author james.brown@hydrosolved.com
  */
 
-public class ReliabilityDiagram extends Diagram<SampleData<Pair<Probability, Probability>>, DiagramStatisticOuter>
+public class ReliabilityDiagram extends Diagram<Pool<Pair<Probability, Probability>>, DiagramStatisticOuter>
 {
 
     /**
@@ -116,11 +116,11 @@ public class ReliabilityDiagram extends Diagram<SampleData<Pair<Probability, Pro
     }
 
     @Override
-    public DiagramStatisticOuter apply( final SampleData<Pair<Probability, Probability>> s )
+    public DiagramStatisticOuter apply( final Pool<Pair<Probability, Probability>> s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
+            throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
         // Determine the probabilities and sample sizes 
         double constant = 1.0 / bins;

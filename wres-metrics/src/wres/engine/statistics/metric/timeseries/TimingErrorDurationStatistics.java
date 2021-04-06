@@ -14,7 +14,7 @@ import java.util.function.ToDoubleFunction;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.engine.statistics.metric.FunctionFactory;
@@ -77,7 +77,7 @@ public class TimingErrorDurationStatistics
     {
         if ( Objects.isNull( pairs ) )
         {
-            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
+            throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
         // Map of outputs

@@ -33,7 +33,7 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -125,7 +125,7 @@ public final class EnsemblePairsWriterTest
                                           null,
                                           false );
 
-        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
         TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( basisTime );
         TimeSeries<Pair<Double, Ensemble>> timeSeriesOne =
                 TimeSeries.of( metadata, setOfPairs );
@@ -156,7 +156,7 @@ public final class EnsemblePairsWriterTest
                                              null,
                                              false );
 
-        SampleMetadata metaTwo = SampleMetadata.of( evaluationTwo, poolTwo );
+        PoolMetadata metaTwo = PoolMetadata.of( evaluationTwo, poolTwo );
 
         TimeSeriesMetadata metadataTwo = getBoilerplateMetadataWithT0( basisTimeTwo );
         TimeSeries<Pair<Double, Ensemble>> timeSeriesTwo =
@@ -190,7 +190,7 @@ public final class EnsemblePairsWriterTest
                                                null,
                                                false );
 
-        SampleMetadata metaThree = SampleMetadata.of( evaluationThree, poolThree );
+        PoolMetadata metaThree = PoolMetadata.of( evaluationThree, poolThree );
         TimeSeriesMetadata metadataThree = getBoilerplateMetadataWithT0( basisTimeThree );
         TimeSeries<Pair<Double, Ensemble>> timeSeriesThree =
                 TimeSeries.of( metadataThree, setOfPairsThree );
@@ -242,7 +242,7 @@ public final class EnsemblePairsWriterTest
                                               null,
                                               false );
 
-            SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+            PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
             TimeSeries<Pair<Double, Ensemble>> timeSeriesOne = TimeSeries.of( getBoilerplateMetadata(),
                                                                               Collections.emptySortedSet() );
@@ -311,7 +311,7 @@ public final class EnsemblePairsWriterTest
                                               null,
                                               false );
 
-            SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+            PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
             TimeSeries<Pair<Double, Ensemble>> timeSeriesOne = TimeSeries.of( getBoilerplateMetadata(),
                                                                               Collections.emptySortedSet() );

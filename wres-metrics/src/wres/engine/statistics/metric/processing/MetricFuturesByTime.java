@@ -49,7 +49,7 @@ class MetricFuturesByTime
      * {@link DiagramStatisticOuter} results.
      */
 
-    private final List<Future<List<DiagramStatisticOuter>>> multiVector = new ArrayList<>();
+    private final List<Future<List<DiagramStatisticOuter>>> diagrams = new ArrayList<>();
 
     /**
      * {@link BoxplotStatisticOuter} results per pair.
@@ -83,7 +83,7 @@ class MetricFuturesByTime
         //Add outputs for current futures
         doubleScore.forEach( builder::addDoubleScoreStatistics );
         durationScore.forEach( builder::addDurationScoreStatistics );
-        multiVector.forEach( builder::addDiagramStatistics );
+        diagrams.forEach( builder::addDiagramStatistics );
         boxplotPerPair.forEach( builder::addBoxPlotStatisticsPerPair );
         boxplotPerPool.forEach( builder::addBoxPlotStatisticsPerPool );
         paired.forEach( builder::addInstantDurationPairStatistics );
@@ -110,7 +110,7 @@ class MetricFuturesByTime
             returnMe.add( StatisticType.DURATION_SCORE );
         }
 
-        if ( !this.multiVector.isEmpty() )
+        if ( !this.diagrams.isEmpty() )
         {
             returnMe.add( StatisticType.DIAGRAM );
         }
@@ -348,7 +348,7 @@ class MetricFuturesByTime
                     }
                     else if ( nextGroup == StatisticType.DIAGRAM )
                     {
-                        this.diagram.addAll( futures.multiVector );
+                        this.diagram.addAll( futures.diagrams );
                     }
                     else if ( nextGroup == StatisticType.BOXPLOT_PER_PAIR )
                     {
@@ -378,7 +378,7 @@ class MetricFuturesByTime
     {
         doubleScore.addAll( builder.doubleScore );
         durationScore.addAll( builder.durationScore );
-        multiVector.addAll( builder.diagram );
+        diagrams.addAll( builder.diagram );
         boxplotPerPair.addAll( builder.boxplotPerPair );
         boxplotPerPool.addAll( builder.boxplotPerPool );
         paired.addAll( builder.durationDiagram );

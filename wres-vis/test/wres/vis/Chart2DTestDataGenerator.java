@@ -18,7 +18,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
@@ -134,7 +134,7 @@ public abstract class Chart2DTestDataGenerator
                                                                                     .setName( MetricName.MEAN_ERROR ) )
                                                        .build();
         DoubleScoreStatisticOuter value =
-                DoubleScoreStatisticOuter.of( one, SampleMetadata.of() );
+                DoubleScoreStatisticOuter.of( one, PoolMetadata.of() );
 
         //Append result
         rawData.add( value );
@@ -160,7 +160,7 @@ public abstract class Chart2DTestDataGenerator
                                                                                     .setName( MetricName.MEAN_ERROR ) )
                                                        .build();
         DoubleScoreStatisticOuter value =
-                DoubleScoreStatisticOuter.of( one, SampleMetadata.of() );
+                DoubleScoreStatisticOuter.of( one, PoolMetadata.of() );
 
         //Append result
         rawData.add( value );
@@ -186,7 +186,7 @@ public abstract class Chart2DTestDataGenerator
                                 .setMetric( DiagramMetric.newBuilder().setName( MetricName.RELIABILITY_DIAGRAM ) )
                                 .build();
         DiagramStatisticOuter value =
-                DiagramStatisticOuter.of( statistic, SampleMetadata.of() );
+                DiagramStatisticOuter.of( statistic, PoolMetadata.of() );
 
         //Append result
         rawData.add( value );
@@ -214,7 +214,7 @@ public abstract class Chart2DTestDataGenerator
                                                                                .setName( MetricName.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM ) )
                                                       .build();
         DiagramStatisticOuter value =
-                DiagramStatisticOuter.of( rocDiagram, SampleMetadata.of() );
+                DiagramStatisticOuter.of( rocDiagram, PoolMetadata.of() );
 
         //Append result
         rawData.add( value );
@@ -242,7 +242,7 @@ public abstract class Chart2DTestDataGenerator
                                                                               .setName( MetricName.RANK_HISTOGRAM ) )
                                                      .build();
         DiagramStatisticOuter value =
-                DiagramStatisticOuter.of( histogram, SampleMetadata.of() );
+                DiagramStatisticOuter.of( histogram, PoolMetadata.of() );
 
         //Append result
         rawData.add( value );
@@ -270,7 +270,7 @@ public abstract class Chart2DTestDataGenerator
                                                                               .setName( MetricName.QUANTILE_QUANTILE_DIAGRAM ) )
                                                      .build();
         DiagramStatisticOuter value =
-                DiagramStatisticOuter.of( qqDiagram, SampleMetadata.of() );
+                DiagramStatisticOuter.of( qqDiagram, PoolMetadata.of() );
 
         //Append result
         rawData.add( value );
@@ -297,7 +297,7 @@ public abstract class Chart2DTestDataGenerator
                                                    .setMetric( BoxplotMetric.newBuilder()
                                                                             .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE ) )
                                                    .build();
-        SampleMetadata meta = SampleMetadata.of();
+        PoolMetadata meta = PoolMetadata.of();
 
         BoxplotStatisticOuter out = BoxplotStatisticOuter.of( boxplot, meta );
 
@@ -326,7 +326,7 @@ public abstract class Chart2DTestDataGenerator
                                                    .setMetric( BoxplotMetric.newBuilder()
                                                                             .setName( MetricName.BOX_PLOT_OF_ERRORS ) )
                                                    .build();
-        SampleMetadata metadata = SampleMetadata.of();
+        PoolMetadata metadata = PoolMetadata.of();
 
         BoxplotStatisticOuter out = BoxplotStatisticOuter.of( boxplot, metadata );
 
@@ -368,7 +368,7 @@ public abstract class Chart2DTestDataGenerator
                                           threshold,
                                           false );
 
-        SampleMetadata source = SampleMetadata.of( evaluation, pool );
+        PoolMetadata source = PoolMetadata.of( evaluation, pool );
 
         // Rolling window parameters
         Instant start = Instant.parse( "2015-12-01T00:00:00Z" );
@@ -402,7 +402,7 @@ public abstract class Chart2DTestDataGenerator
                                         .build();
 
             DoubleScoreStatisticOuter sixHourOutput =
-                    DoubleScoreStatisticOuter.of( sixHour, SampleMetadata.of( source, sixHourWindow ) );
+                    DoubleScoreStatisticOuter.of( sixHour, PoolMetadata.of( source, sixHourWindow ) );
             rawData.add( sixHourOutput );
             //Add the 12h data
             TimeWindowOuter twelveHourWindow = TimeWindowOuter.of( begin,
@@ -420,7 +420,7 @@ public abstract class Chart2DTestDataGenerator
                                         .build();
 
             DoubleScoreStatisticOuter twelveHourOutput =
-                    DoubleScoreStatisticOuter.of( twelveHour, SampleMetadata.of( source, twelveHourWindow ) );
+                    DoubleScoreStatisticOuter.of( twelveHour, PoolMetadata.of( source, twelveHourWindow ) );
             rawData.add( twelveHourOutput );
             //Add the 18h data
             TimeWindowOuter eighteenHourWindow = TimeWindowOuter.of( begin,
@@ -438,7 +438,7 @@ public abstract class Chart2DTestDataGenerator
                                         .build();
 
             DoubleScoreStatisticOuter eighteenHourOutput =
-                    DoubleScoreStatisticOuter.of( eighteenHour, SampleMetadata.of( source, eighteenHourWindow ) );
+                    DoubleScoreStatisticOuter.of( eighteenHour, PoolMetadata.of( source, eighteenHourWindow ) );
             rawData.add( eighteenHourOutput );
             //Add the 24h data
             TimeWindowOuter twentyFourHourWindow = TimeWindowOuter.of( begin,
@@ -456,7 +456,7 @@ public abstract class Chart2DTestDataGenerator
                                         .build();
 
             DoubleScoreStatisticOuter twentyFourHourOutput =
-                    DoubleScoreStatisticOuter.of( twentyFourHour, SampleMetadata.of( source, twentyFourHourWindow ) );
+                    DoubleScoreStatisticOuter.of( twentyFourHour, PoolMetadata.of( source, twentyFourHourWindow ) );
             rawData.add( twentyFourHourOutput );
         }
 
@@ -491,7 +491,7 @@ public abstract class Chart2DTestDataGenerator
                                           threshold,
                                           false );
 
-        SampleMetadata source = SampleMetadata.of( evaluation, pool );
+        PoolMetadata source = PoolMetadata.of( evaluation, pool );
 
         double[] scores = new double[] {
                                          -0.39228763627058233,
@@ -539,7 +539,7 @@ public abstract class Chart2DTestDataGenerator
                                                                                                                            .setName( ComponentName.MAIN ) ) )
                                         .build();
 
-            rawData.add( DoubleScoreStatisticOuter.of( one, SampleMetadata.of( source, timeWindow ) ) );
+            rawData.add( DoubleScoreStatisticOuter.of( one, PoolMetadata.of( source, timeWindow ) ) );
         }
 
         return Collections.unmodifiableList( rawData );
@@ -712,7 +712,7 @@ public abstract class Chart2DTestDataGenerator
                                           threshold,
                                           false );
 
-        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
         return Arrays.asList( DurationDiagramStatisticOuter.of( expectedSource, meta ) );
     }
@@ -757,7 +757,7 @@ public abstract class Chart2DTestDataGenerator
                                           threshold,
                                           false );
 
-        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
         DurationScoreMetric metric = DurationScoreMetric.newBuilder()
                                                         .setName( MetricName.TIME_TO_PEAK_ERROR )

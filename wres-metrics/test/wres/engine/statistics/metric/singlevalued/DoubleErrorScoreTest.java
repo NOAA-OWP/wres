@@ -11,8 +11,8 @@ import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.FunctionFactory;
@@ -30,7 +30,7 @@ public final class DoubleErrorScoreTest
      * Default instance of a {@link MeanError}.
      */
 
-    private DoubleErrorScore<SampleData<Pair<Double, Double>>> score;
+    private DoubleErrorScore<Pool<Pair<Double, Double>>> score;
 
     @Before
     public void setupBeforeEachTest()
@@ -71,7 +71,7 @@ public final class DoubleErrorScoreTest
     @Test
     public void testExceptionOnNullErrorFunction()
     {
-        class ExceptionCheck extends DoubleErrorScore<SampleData<Pair<Double, Double>>>
+        class ExceptionCheck extends DoubleErrorScore<Pool<Pair<Double, Double>>>
         {
             private ExceptionCheck()
             {
@@ -107,7 +107,7 @@ public final class DoubleErrorScoreTest
     @Test
     public void testExceptionOnNullAccumulationFunction()
     {
-        class ExceptionCheck extends DoubleErrorScore<SampleData<Pair<Double, Double>>>
+        class ExceptionCheck extends DoubleErrorScore<Pool<Pair<Double, Double>>>
         {
             private ExceptionCheck()
             {
@@ -144,7 +144,7 @@ public final class DoubleErrorScoreTest
     @Test
     public void testExceptionOnNullErrorFunctionAndNonNullAccumulatorFunction()
     {
-        class ExceptionCheck extends DoubleErrorScore<SampleData<Pair<Double, Double>>>
+        class ExceptionCheck extends DoubleErrorScore<Pool<Pair<Double, Double>>>
         {
             private ExceptionCheck()
             {
@@ -180,7 +180,7 @@ public final class DoubleErrorScoreTest
     @Test
     public void testExceptionOnNullInput()
     {
-        SampleDataException actual = assertThrows( SampleDataException.class,
+        PoolException actual = assertThrows( PoolException.class,
                                                    () -> this.score.apply( null ) );
 
         assertEquals( "Specify non-null input to the '" + this.score.getName() + "'.", actual.getMessage() );

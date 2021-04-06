@@ -39,12 +39,12 @@ import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Pool;
 
 /**
- * Tests the {@link SampleMetadata}.
+ * Tests the {@link PoolMetadata}.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class SampleMetadataTest
+public class PoolMetadataTest
 {
 
     private static final String HEFS = "HEFS";
@@ -57,7 +57,7 @@ public class SampleMetadataTest
     private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
 
     /**
-     * Tests the {@link SampleMetadata#unionOf(java.util.List)} against a benchmark.
+     * Tests the {@link PoolMetadata#unionOf(java.util.List)} against a benchmark.
      */
     @Test
     public void unionOf()
@@ -77,7 +77,7 @@ public class SampleMetadataTest
                                              null,
                                              false );
 
-        SampleMetadata m1 = SampleMetadata.of( evaluation, poolOne );
+        PoolMetadata m1 = PoolMetadata.of( evaluation, poolOne );
 
         FeatureKey l2 = FeatureKey.of( DRRC2 );
 
@@ -88,7 +88,7 @@ public class SampleMetadataTest
                                              null,
                                              false );
 
-        SampleMetadata m2 = SampleMetadata.of( evaluation, poolTwo );
+        PoolMetadata m2 = PoolMetadata.of( evaluation, poolTwo );
 
         FeatureKey l3 = FeatureKey.of( DRRC2 );
 
@@ -99,7 +99,7 @@ public class SampleMetadataTest
                                                null,
                                                false );
 
-        SampleMetadata m3 = SampleMetadata.of( evaluation, poolThree );
+        PoolMetadata m3 = PoolMetadata.of( evaluation, poolThree );
 
         FeatureKey benchmarkLocation = FeatureKey.of( DRRC2 );
 
@@ -113,54 +113,54 @@ public class SampleMetadataTest
                                               false );
 
 
-        SampleMetadata benchmark = SampleMetadata.of( evaluation, poolFour );
+        PoolMetadata benchmark = PoolMetadata.of( evaluation, poolFour );
 
         assertEquals( "Unexpected difference between union of metadata and benchmark.",
                       benchmark,
-                      SampleMetadata.unionOf( Arrays.asList( m1, m2, m3 ) ) );
+                      PoolMetadata.unionOf( Arrays.asList( m1, m2, m3 ) ) );
     }
 
     /**
-     * Tests that the {@link SampleMetadata#unionOf(java.util.List)} throws an expected exception when the input is
+     * Tests that the {@link PoolMetadata#unionOf(java.util.List)} throws an expected exception when the input is
      * null.
      */
     @Test
     public void testUnionOfThrowsExceptionWithNullInput()
     {
         NullPointerException actual = assertThrows( NullPointerException.class,
-                                                    () -> SampleMetadata.unionOf( null ) );
+                                                    () -> PoolMetadata.unionOf( null ) );
 
         assertEquals( "Cannot find the union of null metadata.", actual.getMessage() );
     }
 
     /**
-     * Tests that the {@link SampleMetadata#unionOf(java.util.List)} throws an expected exception when the input is
+     * Tests that the {@link PoolMetadata#unionOf(java.util.List)} throws an expected exception when the input is
      * empty.
      */
     @Test
     public void testUnionOfThrowsExceptionWithEmptyInput()
     {
         IllegalArgumentException actual = assertThrows( IllegalArgumentException.class,
-                                                        () -> SampleMetadata.unionOf( Collections.emptyList() ) );
+                                                        () -> PoolMetadata.unionOf( Collections.emptyList() ) );
 
         assertEquals( "Cannot find the union of empty input.", actual.getMessage() );
     }
 
     /**
-     * Tests that the {@link SampleMetadata#unionOf(java.util.List)} throws an expected exception when the input is
+     * Tests that the {@link PoolMetadata#unionOf(java.util.List)} throws an expected exception when the input is
      * contains a null.
      */
     @Test
     public void testUnionOfThrowsExceptionWithOneNullInput()
     {
         NullPointerException actual = assertThrows( NullPointerException.class,
-                                                    () -> SampleMetadata.unionOf( Arrays.asList( (SampleMetadata) null ) ) );
+                                                    () -> PoolMetadata.unionOf( Arrays.asList( (PoolMetadata) null ) ) );
 
         assertEquals( "Cannot find the union of null metadata.", actual.getMessage() );
     }
 
     /**
-     * Tests that the {@link SampleMetadata#unionOf(java.util.List)} throws an expected exception when the inputs are
+     * Tests that the {@link PoolMetadata#unionOf(java.util.List)} throws an expected exception when the inputs are
      * unequal on attributes that are expected to be equal.
      */
     @Test
@@ -178,7 +178,7 @@ public class SampleMetadataTest
 
         Pool poolOne = MessageFactory.parse( drrc3, null, null, null, false );
 
-        SampleMetadata failOne = SampleMetadata.of( evaluation, poolOne );
+        PoolMetadata failOne = PoolMetadata.of( evaluation, poolOne );
 
         FeatureTuple a = new FeatureTuple( FeatureKey.of( "A" ),
                                            FeatureKey.of( "A" ),
@@ -186,10 +186,10 @@ public class SampleMetadataTest
 
         Pool poolTwo = MessageFactory.parse( a, null, null, null, false );
 
-        SampleMetadata failTwo = SampleMetadata.of( evaluation, poolTwo );
+        PoolMetadata failTwo = PoolMetadata.of( evaluation, poolTwo );
 
-        SampleMetadataException actual = assertThrows( SampleMetadataException.class,
-                                                       () -> SampleMetadata.unionOf( Arrays.asList( failOne,
+        PoolMetadataException actual = assertThrows( PoolMetadataException.class,
+                                                       () -> PoolMetadata.unionOf( Arrays.asList( failOne,
                                                                                                     failTwo ) ) );
 
         assertEquals( "Only the time window and thresholds can differ when finding the union of metadata.",
@@ -197,15 +197,15 @@ public class SampleMetadataTest
     }
 
     /**
-     * Tests construction of the {@link SampleMetadata} using the various construction options.
+     * Tests construction of the {@link PoolMetadata} using the various construction options.
      */
 
     @Test
     public void testBuildProducesNonNullInstances()
     {
-        assertNotNull( SampleMetadata.of() );
+        assertNotNull( PoolMetadata.of() );
 
-        assertNotNull( SampleMetadata.of( Evaluation.newBuilder()
+        assertNotNull( PoolMetadata.of( Evaluation.newBuilder()
                                                     .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
                                                     .build(),
                                           Pool.getDefaultInstance() ) );
@@ -218,20 +218,20 @@ public class SampleMetadataTest
 
         Pool poolOne = MessageFactory.parse( new FeatureTuple( a, a, a ), null, null, null, false );
 
-        assertNotNull( SampleMetadata.of( evaluation, poolOne ) );
+        assertNotNull( PoolMetadata.of( evaluation, poolOne ) );
 
         OneOrTwoThresholds thresholds = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                                                   Operator.EQUAL,
                                                                                   ThresholdDataType.LEFT ) );
 
-        assertNotNull( SampleMetadata.of( SampleMetadata.of(), thresholds ) );
+        assertNotNull( PoolMetadata.of( PoolMetadata.of(), thresholds ) );
 
         TimeWindowOuter timeWindow =
                 TimeWindowOuter.of( Instant.parse( THIRD_TIME ), Instant.parse( THIRD_TIME ) );
 
-        assertNotNull( SampleMetadata.of( SampleMetadata.of(), timeWindow ) );
+        assertNotNull( PoolMetadata.of( PoolMetadata.of(), timeWindow ) );
 
-        assertNotNull( SampleMetadata.of( SampleMetadata.of(), timeWindow, thresholds ) );
+        assertNotNull( PoolMetadata.of( PoolMetadata.of(), timeWindow, thresholds ) );
 
         Pool pool = MessageFactory.parse( new FeatureTuple( a, a, a ),
                                           timeWindow,
@@ -240,17 +240,17 @@ public class SampleMetadataTest
                                           thresholds,
                                           false );
 
-        assertNotNull( SampleMetadata.of( evaluation, pool ) );
+        assertNotNull( PoolMetadata.of( evaluation, pool ) );
     }
 
     /**
-     * Test {@link SampleMetadata#equals(Object)}.
+     * Test {@link PoolMetadata#equals(Object)}.
      */
 
     @Test
     public void testEquals()
     {
-        assertEquals( SampleMetadata.of(), SampleMetadata.of() );
+        assertEquals( PoolMetadata.of(), PoolMetadata.of() );
         FeatureKey l1 = FeatureKey.of( DRRC2 );
 
         Evaluation evaluation = Evaluation.newBuilder()
@@ -261,7 +261,7 @@ public class SampleMetadataTest
 
         Pool pool = MessageFactory.parse( new FeatureTuple( l1, l1, l1 ), null, null, null, false );
 
-        SampleMetadata m1 = SampleMetadata.of( evaluation, pool );
+        PoolMetadata m1 = PoolMetadata.of( evaluation, pool );
 
         // Reflexive
         assertEquals( m1, m1 );
@@ -275,7 +275,7 @@ public class SampleMetadataTest
 
         Pool poolTwo = MessageFactory.parse( new FeatureTuple( l2, l2, l2 ), null, null, null, false );
 
-        SampleMetadata m2 = SampleMetadata.of( evaluationTwo, poolTwo );
+        PoolMetadata m2 = PoolMetadata.of( evaluationTwo, poolTwo );
 
         // Symmetric
         assertEquals( m1, m2 );
@@ -290,7 +290,7 @@ public class SampleMetadataTest
 
         Pool poolThree = MessageFactory.parse( new FeatureTuple( l3, l3, l3 ), null, null, null, false );
 
-        SampleMetadata m3 = SampleMetadata.of( evaluationThree, poolThree );
+        PoolMetadata m3 = PoolMetadata.of( evaluationThree, poolThree );
 
         FeatureKey l4 = FeatureKey.of( DRRC2 );
 
@@ -302,7 +302,7 @@ public class SampleMetadataTest
 
         Pool poolFour = MessageFactory.parse( new FeatureTuple( l4, l4, l4 ), null, null, null, false );
 
-        SampleMetadata m4 = SampleMetadata.of( evaluationFour, poolFour );
+        PoolMetadata m4 = PoolMetadata.of( evaluationFour, poolFour );
         assertEquals( m3, m4 );
         assertNotEquals( m1, m3 );
 
@@ -317,16 +317,16 @@ public class SampleMetadataTest
 
         Pool poolFive = MessageFactory.parse( new FeatureTuple( l4t, l4t, l4t ), null, null, null, false );
 
-        SampleMetadata m4t = SampleMetadata.of( evaluationFive, poolFive );
+        PoolMetadata m4t = PoolMetadata.of( evaluationFive, poolFive );
         assertEquals( m4, m4t );
         assertEquals( m3, m4t );
 
         // Unequal
         FeatureKey l5 = FeatureKey.of( DRRC3 );
         Pool poolSix = MessageFactory.parse( new FeatureTuple( l5, l5, l5 ), null, null, null, false );
-        SampleMetadata m5 = SampleMetadata.of( evaluationFive, poolSix );
+        PoolMetadata m5 = PoolMetadata.of( evaluationFive, poolSix );
         assertNotEquals( m4, m5 );
-        SampleMetadata m5NoDim = SampleMetadata.of( Evaluation.newBuilder()
+        PoolMetadata m5NoDim = PoolMetadata.of( Evaluation.newBuilder()
                                                               .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
                                                               .build(),
                                                     poolSix );
@@ -348,7 +348,7 @@ public class SampleMetadataTest
                                                null,
                                                false );
 
-        SampleMetadata m6 = SampleMetadata.of( evaluationFive, poolSeven );
+        PoolMetadata m6 = PoolMetadata.of( evaluationFive, poolSeven );
 
         FeatureKey l7 = FeatureKey.of( DRRC3 );
 
@@ -361,7 +361,7 @@ public class SampleMetadataTest
                                                null,
                                                false );
 
-        SampleMetadata m7 = SampleMetadata.of( evaluationFive, poolEight );
+        PoolMetadata m7 = PoolMetadata.of( evaluationFive, poolEight );
 
         assertEquals( m6, m7 );
         assertEquals( m7, m6 );
@@ -379,7 +379,7 @@ public class SampleMetadataTest
                                               null,
                                               false );
 
-        SampleMetadata m8 = SampleMetadata.of( evaluationFive, poolNine );
+        PoolMetadata m8 = PoolMetadata.of( evaluationFive, poolNine );
 
         assertNotEquals( m6, m8 );
 
@@ -395,11 +395,11 @@ public class SampleMetadataTest
                                              thresholds,
                                              false );
 
-        SampleMetadata m9 = SampleMetadata.of( evaluationFive, poolTen );
+        PoolMetadata m9 = PoolMetadata.of( evaluationFive, poolTen );
 
         assertNotEquals( m8, m9 );
 
-        SampleMetadata m10 = SampleMetadata.of( evaluationFive, poolTen );
+        PoolMetadata m10 = PoolMetadata.of( evaluationFive, poolTen );
 
         assertEquals( m9, m10 );
 
@@ -494,7 +494,7 @@ public class SampleMetadataTest
                                                 thresholds1,
                                                 false );
 
-        SampleMetadata m11 = SampleMetadata.of( evaluationSix, poolEleven );
+        PoolMetadata m11 = PoolMetadata.of( evaluationSix, poolEleven );
 
         TimeWindowOuter timeWindow1 = thirdWindow;
         OneOrTwoThresholds thresholds2 = thresholds;
@@ -511,7 +511,7 @@ public class SampleMetadataTest
                                                 thresholds2,
                                                 false );
 
-        SampleMetadata m12 = SampleMetadata.of( evaluationSeven, poolTwelve );
+        PoolMetadata m12 = PoolMetadata.of( evaluationSeven, poolTwelve );
 
         assertEquals( m11, m12 );
 
@@ -523,9 +523,9 @@ public class SampleMetadataTest
                                                   false );
 
 
-        SampleMetadata m13 = SampleMetadata.of( evaluationSeven, poolThirteen );
+        PoolMetadata m13 = PoolMetadata.of( evaluationSeven, poolThirteen );
 
-        SampleMetadata m14 = SampleMetadata.of( evaluationSeven, poolThirteen );
+        PoolMetadata m14 = PoolMetadata.of( evaluationSeven, poolThirteen );
 
         Pool poolFourteen = MessageFactory.parse( new FeatureTuple( l8, l8, l8 ),
                                                   timeWindow1,
@@ -534,7 +534,7 @@ public class SampleMetadataTest
                                                   false );
 
 
-        SampleMetadata m15 = SampleMetadata.of( evaluationSeven, poolFourteen );
+        PoolMetadata m15 = PoolMetadata.of( evaluationSeven, poolFourteen );
 
         assertEquals( m13, m14 );
 
@@ -548,14 +548,14 @@ public class SampleMetadataTest
     }
 
     /**
-     * Test {@link SampleMetadata#equalsWithoutTimeWindowOrThresholds(SampleMetadata)}.
+     * Test {@link PoolMetadata#equalsWithoutTimeWindowOrThresholds(PoolMetadata)}.
      */
 
     @Test
     public void testEqualsWithoutTimeWindowOrThresholds()
     {
         // False if the input is null
-        assertFalse( SampleMetadata.of().equalsWithoutTimeWindowOrThresholds( null ) );
+        assertFalse( PoolMetadata.of().equalsWithoutTimeWindowOrThresholds( null ) );
 
         // Different evaluations
         Evaluation evaluationOne = Evaluation.newBuilder()
@@ -569,21 +569,21 @@ public class SampleMetadataTest
                                              .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
                                              .build();
 
-        SampleMetadata one = SampleMetadata.of( evaluationOne, Pool.getDefaultInstance() );
-        SampleMetadata two = SampleMetadata.of( evaluationTwo, Pool.getDefaultInstance() );
+        PoolMetadata one = PoolMetadata.of( evaluationOne, Pool.getDefaultInstance() );
+        PoolMetadata two = PoolMetadata.of( evaluationTwo, Pool.getDefaultInstance() );
 
         assertFalse( one.equalsWithoutTimeWindowOrThresholds( two ) );
     }
 
     /**
-     * Test {@link SampleMetadata#hashCode()}.
+     * Test {@link PoolMetadata#hashCode()}.
      */
 
     @Test
     public void testHashcode()
     {
         // Equal
-        assertEquals( SampleMetadata.of().hashCode(), SampleMetadata.of().hashCode() );
+        assertEquals( PoolMetadata.of().hashCode(), PoolMetadata.of().hashCode() );
         FeatureKey l1 = FeatureKey.of( DRRC2 );
 
         Evaluation evaluation = Evaluation.newBuilder()
@@ -594,7 +594,7 @@ public class SampleMetadataTest
 
         Pool pool = MessageFactory.parse( new FeatureTuple( l1, l1, l1 ), null, null, null, false );
 
-        SampleMetadata m1 = SampleMetadata.of( evaluation, pool );
+        PoolMetadata m1 = PoolMetadata.of( evaluation, pool );
         assertEquals( m1.hashCode(), m1.hashCode() );
         FeatureKey l2 = FeatureKey.of( DRRC2 );
 
@@ -606,30 +606,30 @@ public class SampleMetadataTest
 
         Pool poolTwo = MessageFactory.parse( new FeatureTuple( l2, l2, l2 ), null, null, null, false );
 
-        SampleMetadata m2 = SampleMetadata.of( evaluationTwo, poolTwo );
+        PoolMetadata m2 = PoolMetadata.of( evaluationTwo, poolTwo );
         assertEquals( m1.hashCode(), m2.hashCode() );
         FeatureKey l3 = FeatureKey.of( DRRC2 );
 
         Evaluation evaluationThree = Evaluation.newBuilder()
                                                .setRightVariableName( SQIN )
                                                .setRightDataName( HEFS )
-                                               .setMeasurementUnit( SampleMetadataTest.TEST_DIMENSION )
+                                               .setMeasurementUnit( PoolMetadataTest.TEST_DIMENSION )
                                                .build();
 
         Pool poolThree = MessageFactory.parse( new FeatureTuple( l3, l3, l3 ), null, null, null, false );
 
-        SampleMetadata m3 = SampleMetadata.of( evaluationThree, poolThree );
+        PoolMetadata m3 = PoolMetadata.of( evaluationThree, poolThree );
         FeatureKey l4 = FeatureKey.of( DRRC2 );
 
         Pool poolFour = MessageFactory.parse( new FeatureTuple( l4, l4, l4 ), null, null, null, false );
 
-        SampleMetadata m4 = SampleMetadata.of( evaluationThree, poolFour );
+        PoolMetadata m4 = PoolMetadata.of( evaluationThree, poolFour );
         assertEquals( m3.hashCode(), m4.hashCode() );
         FeatureKey l4t = FeatureKey.of( DRRC2 );
 
         Pool poolFive = MessageFactory.parse( new FeatureTuple( l4t, l4t, l4t ), null, null, null, false );
 
-        SampleMetadata m4t = SampleMetadata.of( evaluationThree, poolFive );
+        PoolMetadata m4t = PoolMetadata.of( evaluationThree, poolFive );
         assertEquals( m4.hashCode(), m4t.hashCode() );
         assertEquals( m3.hashCode(), m4t.hashCode() );
 
@@ -650,7 +650,7 @@ public class SampleMetadataTest
                                              null,
                                              false );
 
-        SampleMetadata m6 = SampleMetadata.of( evaluationThree, poolSix );
+        PoolMetadata m6 = PoolMetadata.of( evaluationThree, poolSix );
 
         FeatureKey l7 = FeatureKey.of( DRRC3 );
 
@@ -663,7 +663,7 @@ public class SampleMetadataTest
                                                null,
                                                false );
 
-        SampleMetadata m7 = SampleMetadata.of( evaluationThree, poolSeven );
+        PoolMetadata m7 = PoolMetadata.of( evaluationThree, poolSeven );
 
         assertEquals( m6.hashCode(), m7.hashCode() );
         assertEquals( m7.hashCode(), m6.hashCode() );
@@ -686,9 +686,9 @@ public class SampleMetadataTest
                                                thresholds,
                                                false );
 
-        SampleMetadata m9 = SampleMetadata.of( evaluationThree, poolEight );
+        PoolMetadata m9 = PoolMetadata.of( evaluationThree, poolEight );
 
-        SampleMetadata m10 = SampleMetadata.of( evaluationThree, poolEight );
+        PoolMetadata m10 = PoolMetadata.of( evaluationThree, poolEight );
 
         assertEquals( m9.hashCode(), m10.hashCode() );
 
@@ -783,7 +783,7 @@ public class SampleMetadataTest
                                               thresholds1,
                                               false );
 
-        SampleMetadata m11 = SampleMetadata.of( evaluationFour, poolNine );
+        PoolMetadata m11 = PoolMetadata.of( evaluationFour, poolNine );
 
         ProjectConfigPlus mockConfigTwoPlus = Mockito.mock( ProjectConfigPlus.class );
         Mockito.when( mockConfigTwoPlus.getProjectConfig() )
@@ -797,7 +797,7 @@ public class SampleMetadataTest
                                              thresholds,
                                              false );
 
-        SampleMetadata m12 = SampleMetadata.of( evaluationFive, poolTen );
+        PoolMetadata m12 = PoolMetadata.of( evaluationFive, poolTen );
 
         assertEquals( m11.hashCode(), m12.hashCode() );
     }

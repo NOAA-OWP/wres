@@ -1,7 +1,7 @@
 package wres.engine.statistics.metric;
 
 
-import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.statistics.ScoreStatistic;
 
 /**
@@ -10,7 +10,7 @@ import wres.datamodel.statistics.ScoreStatistic;
  * @author james.brown@hydrosolved.com
  */
 
-public abstract class OrdinaryScore<S extends SampleData<?>, T extends ScoreStatistic<?,?>> implements Score<S, T>
+public abstract class OrdinaryScore<S extends Pool<?>, T extends ScoreStatistic<?,?>> implements Score<S, T>
 {
 
     @Override

@@ -1,6 +1,6 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.statistics.Statistic;
 
 /**
@@ -9,7 +9,7 @@ import wres.datamodel.statistics.Statistic;
  * @author james.brown@hydrosolved.com
  */
 
-public abstract class Diagram<S extends SampleData<?>, T extends Statistic<?>> implements Metric<S, T>
+public abstract class Diagram<S extends Pool<?>, T extends Statistic<?>> implements Metric<S, T>
 {
     
     @Override

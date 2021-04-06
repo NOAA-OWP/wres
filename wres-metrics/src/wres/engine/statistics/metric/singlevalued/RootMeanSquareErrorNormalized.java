@@ -9,8 +9,8 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MissingValues;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.statistics.generated.DoubleScoreMetric;
@@ -26,7 +26,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * 
  * @author james.brown@hydrosolved.com
  */
-public class RootMeanSquareErrorNormalized extends DoubleErrorScore<SampleData<Pair<Double, Double>>>
+public class RootMeanSquareErrorNormalized extends DoubleErrorScore<Pool<Pair<Double, Double>>>
 {
 
     /**
@@ -76,11 +76,11 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<SampleData<P
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( final SampleData<Pair<Double, Double>> t )
+    public DoubleScoreStatisticOuter apply( final Pool<Pair<Double, Double>> t )
     {
         if ( Objects.isNull( t ) )
         {
-            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
+            throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
         double returnMe = MissingValues.DOUBLE;

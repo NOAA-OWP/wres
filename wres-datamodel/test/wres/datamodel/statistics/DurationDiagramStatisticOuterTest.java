@@ -13,7 +13,7 @@ import com.google.protobuf.Timestamp;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.statistics.generated.DurationDiagramMetric;
 import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.Evaluation;
@@ -39,7 +39,7 @@ public final class DurationDiagramStatisticOuterTest
      * Metadata for testing.
      */
 
-    private SampleMetadata metadata;
+    private PoolMetadata metadata;
 
     @Before
     public void runBeforeEachTest()
@@ -76,7 +76,7 @@ public final class DurationDiagramStatisticOuterTest
                                           null,
                                           false );
 
-        this.metadata = SampleMetadata.of( evaluation, pool );
+        this.metadata = PoolMetadata.of( evaluation, pool );
     }
 
     /**
@@ -102,7 +102,7 @@ public final class DurationDiagramStatisticOuterTest
                                           null,
                                           false );
 
-        SampleMetadata m2 = SampleMetadata.of( evaluation, pool );
+        PoolMetadata m2 = PoolMetadata.of( evaluation, pool );
         FeatureKey l3 = FeatureKey.of( "B" );
 
         Pool poolTwo = MessageFactory.parse( new FeatureTuple( l3, l3, l3 ),
@@ -111,7 +111,7 @@ public final class DurationDiagramStatisticOuterTest
                                              null,
                                              false );
 
-        SampleMetadata m3 = SampleMetadata.of( evaluation, poolTwo );
+        PoolMetadata m3 = PoolMetadata.of( evaluation, poolTwo );
 
         DurationDiagramStatisticOuter one = DurationDiagramStatisticOuter.of( this.defaultInstance, m2 );
 
@@ -167,7 +167,8 @@ public final class DurationDiagramStatisticOuterTest
     }
 
     /**
-     * Constructs a {@link DurationDiagramStatisticOuter} and checks the {@link DurationDiagramStatisticOuter#toString()} representation.
+     * Constructs a {@link DurationDiagramStatisticOuter} and checks the 
+     * {@link DurationDiagramStatisticOuter#toString()} representation.
      */
 
     @Test
@@ -177,7 +178,7 @@ public final class DurationDiagramStatisticOuterTest
         String expectedContainsMetric = "metric=TIME_TO_PEAK_ERROR";
         String expectedContainsStatistic = "statistic=";
         String expectedContainsInstantAndDuration = "1970-01-02T10:17:36.000000789Z,PT13S";
-        String expectedContainsMetadata = "metadata=SampleMetadata[";
+        String expectedContainsMetadata = "metadata=PoolMetadata[";
         String expectedContainsMeasurementUnit = "measurementUnit=CMS";
 
         String m1ToString = DurationDiagramStatisticOuter.of( this.defaultInstance, this.metadata ).toString();
@@ -190,20 +191,22 @@ public final class DurationDiagramStatisticOuterTest
     }
 
     /**
-     * Constructs a {@link DurationDiagramStatisticOuter} and checks the {@link DurationDiagramStatisticOuter#getMetadata()}.
+     * Constructs a {@link DurationDiagramStatisticOuter} and checks the 
+     * {@link DurationDiagramStatisticOuter#getMetadata()}.
      */
 
     @Test
     public void testGetMetadata()
     {
-        assertEquals( SampleMetadata.of(),
+        assertEquals( PoolMetadata.of(),
                       DurationDiagramStatisticOuter.of( this.defaultInstance,
-                                                        SampleMetadata.of() )
+                                                        PoolMetadata.of() )
                                                    .getMetadata() );
     }
 
     /**
-     * Constructs a {@link DurationDiagramStatisticOuter} and checks the {@link DurationDiagramStatisticOuter#hashCode()}.
+     * Constructs a {@link DurationDiagramStatisticOuter} and checks the 
+     * {@link DurationDiagramStatisticOuter#hashCode()}.
      */
 
     @Test
@@ -223,7 +226,7 @@ public final class DurationDiagramStatisticOuterTest
                                           null,
                                           false );
 
-        SampleMetadata m2 = SampleMetadata.of( evaluation, pool );
+        PoolMetadata m2 = PoolMetadata.of( evaluation, pool );
 
         DurationDiagramStatisticOuter anInstance = DurationDiagramStatisticOuter.of( this.defaultInstance, m2 );
 

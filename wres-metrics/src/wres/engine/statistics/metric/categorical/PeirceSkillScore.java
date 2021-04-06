@@ -7,8 +7,8 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
@@ -74,7 +74,7 @@ public class PeirceSkillScore extends ContingencyTableScore
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( final SampleData<Pair<Boolean, Boolean>> s )
+    public DoubleScoreStatisticOuter apply( final Pool<Pair<Boolean, Boolean>> s )
     {
         return aggregate( this.getInputForAggregation( s ) );
     }
@@ -84,7 +84,7 @@ public class PeirceSkillScore extends ContingencyTableScore
     {
         if ( Objects.isNull( output ) )
         {
-            throw new SampleDataException( "Specify non-null input to the '" + this.toString() + "'." );
+            throw new PoolException( "Specify non-null input to the '" + this.toString() + "'." );
         }
 
         if ( output.getComponents().size() == 4 )

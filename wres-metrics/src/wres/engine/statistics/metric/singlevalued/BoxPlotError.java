@@ -10,8 +10,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.Slicer;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
 import wres.engine.statistics.metric.Diagram;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.statistics.generated.BoxplotMetric;
@@ -27,7 +27,7 @@ import wres.statistics.generated.MetricName;
  * @author james.brown@hydrosolved.com
  */
 
-public class BoxPlotError extends Diagram<SampleData<Pair<Double, Double>>, BoxplotStatisticOuter>
+public class BoxPlotError extends Diagram<Pool<Pair<Double, Double>>, BoxplotStatisticOuter>
 {
 
     /**
@@ -72,11 +72,11 @@ public class BoxPlotError extends Diagram<SampleData<Pair<Double, Double>>, Boxp
     }
 
     @Override
-    public BoxplotStatisticOuter apply( SampleData<Pair<Double, Double>> s )
+    public BoxplotStatisticOuter apply( Pool<Pair<Double, Double>> s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
+            throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
         BoxplotStatistic.Builder builder = BoxplotStatistic.newBuilder()

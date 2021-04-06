@@ -4,7 +4,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.statistics.generated.Pool;
 import wres.util.TimeHelper;
@@ -24,7 +24,7 @@ public class CommaSeparatedUtilities
     static final String HEADER_DELIMITER = " ";
 
     /**
-     * Returns a default header from the {@link SampleMetadata} to which additional information may be appended.
+     * Returns a default header from the {@link PoolMetadata} to which additional information may be appended.
      *
      * @param sampleMetadata the sample metadata
      * @param durationUnits the duration units for lead times
@@ -32,7 +32,7 @@ public class CommaSeparatedUtilities
      * @throws NullPointerException if either input is null
      */
 
-    public static StringJoiner getTimeWindowHeaderFromSampleMetadata( SampleMetadata sampleMetadata,
+    public static StringJoiner getTimeWindowHeaderFromSampleMetadata( PoolMetadata sampleMetadata,
                                                                       ChronoUnit durationUnits )
     {
         Objects.requireNonNull( sampleMetadata, "Cannot determine the default CSV header from null metadata." );
@@ -97,14 +97,14 @@ public class CommaSeparatedUtilities
     }
 
     /**
-     * Returns the name of a geographic feature from an instance of {@link SampleMetadata}.
+     * Returns the name of a geographic feature from an instance of {@link PoolMetadata}.
      * 
      * @param metadata the metadata
      * @return name the feature name
      * @throws NullPointerException if the input is null
      */
 
-    public static String getFeatureNameFromMetadata( SampleMetadata metadata )
+    public static String getFeatureNameFromMetadata( PoolMetadata metadata )
     {
         Objects.requireNonNull( metadata );
 

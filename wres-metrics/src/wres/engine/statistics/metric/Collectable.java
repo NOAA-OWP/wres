@@ -1,8 +1,8 @@
 package wres.engine.statistics.metric;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.Statistic;
 
 /**
@@ -18,7 +18,7 @@ import wres.datamodel.statistics.Statistic;
  * @param <U> the final output type
  * @author james.brown@hydrosolved.com
  */
-public interface Collectable<S extends SampleData<?>, T extends Statistic<?>, U extends Statistic<?>>
+public interface Collectable<S extends Pool<?>, T extends Statistic<?>, U extends Statistic<?>>
         extends Metric<S, U>
 {
 
@@ -28,7 +28,7 @@ public interface Collectable<S extends SampleData<?>, T extends Statistic<?>, U 
      * @param output the intermediate input from which the metric result will be computed
      * @return the metric result
      * @throws MetricCalculationException if the metric calculation fails
-     * @throws SampleDataException if the prescribed input is unexpected
+     * @throws PoolException if the prescribed input is unexpected
      */
 
     U aggregate( T output );
@@ -40,7 +40,7 @@ public interface Collectable<S extends SampleData<?>, T extends Statistic<?>, U 
      * 
      * @param input the metric input
      * @return the intermediate output that forms the input to metrics within this collection
-     * @throws SampleDataException if the metric input is unexpected
+     * @throws PoolException if the metric input is unexpected
      * @throws MetricCalculationException if the metric could not be computed
      */
 

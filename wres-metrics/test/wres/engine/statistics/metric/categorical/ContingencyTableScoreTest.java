@@ -15,9 +15,9 @@ import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -49,7 +49,7 @@ public final class ContingencyTableScoreTest
      * Metadata used for testing.
      */
 
-    private SampleMetadata meta;
+    private PoolMetadata meta;
 
     /**
      * Contingency table.
@@ -67,7 +67,7 @@ public final class ContingencyTableScoreTest
     public void setupBeforeEachTest()
     {
         this.cs = ThreatScore.of();
-        this.meta = SampleMetadata.of();
+        this.meta = PoolMetadata.of();
 
         this.table =
                 DoubleScoreStatistic.newBuilder()
@@ -97,7 +97,7 @@ public final class ContingencyTableScoreTest
     /**
      * Checks that a {@link ContingencyTableScore#hasRealUnits()} returns <code>false</code> and that input with the 
      * correct shape is accepted.
-     * @throws SampleDataException if the input is not accepted
+     * @throws PoolException if the input is not accepted
      */
 
     @Test
@@ -108,7 +108,7 @@ public final class ContingencyTableScoreTest
 
     /**
      * Checks that a {@link ContingencyTableScore} accepts input with the correct shape.
-     * @throws SampleDataException if the input is not accepted
+     * @throws PoolException if the input is not accepted
      */
 
     @Test
@@ -121,7 +121,7 @@ public final class ContingencyTableScoreTest
 
     /**
      * Checks that input with the correct shape is accepted for a table of arbitrary size.
-     * @throws SampleDataException if the input is not accepted
+     * @throws PoolException if the input is not accepted
      */
 
     @Test
@@ -143,17 +143,17 @@ public final class ContingencyTableScoreTest
     }
 
     /**
-     * Compares the output from {@link ContingencyTableScore#getInputForAggregation(SampleData)} 
+     * Compares the output from {@link ContingencyTableScore#getInputForAggregation(Pool)} 
      * against a benchmark.
      */
 
     @Test
     public void testGetCollectionInput()
     {
-        SampleData<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
+        Pool<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Metadata for the output
-        SampleMetadata m1 = Boilerplate.getSampleMetadata();
+        PoolMetadata m1 = Boilerplate.getSampleMetadata();
 
         DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( this.table, m1 );
 
@@ -189,9 +189,9 @@ public final class ContingencyTableScoreTest
     @Test
     public void testGetMetadataReturnsExpectedOutput()
     {
-        SampleData<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
+        Pool<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
 
-        SampleMetadata expected = Boilerplate.getSampleMetadata();
+        PoolMetadata expected = Boilerplate.getSampleMetadata();
 
         assertEquals( expected, this.cs.getInputForAggregation( input ).getMetadata() );
     }
@@ -203,9 +203,9 @@ public final class ContingencyTableScoreTest
     @Test
     public void testExceptionOnNullInput()
     {
-        SampleDataException exception =
-                assertThrows( SampleDataException.class,
-                              () -> cs.apply( (SampleData<Pair<Boolean, Boolean>>) null ) );
+        PoolException exception =
+                assertThrows( PoolException.class,
+                              () -> cs.apply( (Pool<Pair<Boolean, Boolean>>) null ) );
 
         assertEquals( SPECIFY_NON_NULL_INPUT_TO_THE_THREAT_SCORE, exception.getMessage() );
     }
@@ -217,8 +217,8 @@ public final class ContingencyTableScoreTest
     @Test
     public void testExceptionOnNullInputInternal()
     {
-        SampleDataException exception =
-                assertThrows( SampleDataException.class,
+        PoolException exception =
+                assertThrows( PoolException.class,
                               () -> cs.is2x2ContingencyTable( (DoubleScoreStatisticOuter) null, cs ) );
 
         assertEquals( SPECIFY_NON_NULL_INPUT_TO_THE_THREAT_SCORE, exception.getMessage() );
@@ -232,8 +232,8 @@ public final class ContingencyTableScoreTest
     @Test
     public void testExceptionOnNullInputInternalForLargeTable()
     {
-        SampleDataException exception =
-                assertThrows( SampleDataException.class,
+        PoolException exception =
+                assertThrows( PoolException.class,
                               () -> cs.isContingencyTable( (DoubleScoreStatisticOuter) null, cs ) );
 
         assertEquals( SPECIFY_NON_NULL_INPUT_TO_THE_THREAT_SCORE, exception.getMessage() );
@@ -246,8 +246,8 @@ public final class ContingencyTableScoreTest
     @Test
     public void testExceptionOnInputThatIsTooSmall()
     {
-        SampleDataException exception =
-                assertThrows( SampleDataException.class,
+        PoolException exception =
+                assertThrows( PoolException.class,
                               () -> cs.is2x2ContingencyTable( DoubleScoreStatisticOuter.of( this.invalidTable,
                                                                                             this.meta ),
                                                               this.cs ) );
@@ -272,8 +272,8 @@ public final class ContingencyTableScoreTest
     @Test
     public void testExceptionOnNullMetric()
     {
-        SampleDataException exception =
-                assertThrows( SampleDataException.class,
+        PoolException exception =
+                assertThrows( PoolException.class,
                               () -> this.cs.is2x2ContingencyTable( DoubleScoreStatisticOuter.of( this.invalidTable,
                                                                                                  this.meta ),
                                                                    null ) );
@@ -291,8 +291,8 @@ public final class ContingencyTableScoreTest
         Map<MetricConstants, Double> table = new HashMap<>();
         table.put( MetricConstants.TRUE_POSITIVES, 82.0 );
 
-        SampleDataException exception =
-                assertThrows( SampleDataException.class,
+        PoolException exception =
+                assertThrows( PoolException.class,
                               () -> this.cs.isContingencyTable( DoubleScoreStatisticOuter.of( this.invalidTable,
                                                                                               this.meta ),
                                                                 null ) );

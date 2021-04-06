@@ -14,7 +14,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.MetricConstants.StatisticType;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -72,10 +72,10 @@ public final class MetricFuturesByTimeTest
     private List<DurationScoreStatisticOuter> durationScore;
 
     /**
-     * Default multivector output.
+     * Default diagram output.
      */
 
-    private List<DiagramStatisticOuter> multivector;
+    private List<DiagramStatisticOuter> diagrams;
 
     /**
      * Default paired output.
@@ -106,11 +106,11 @@ public final class MetricFuturesByTimeTest
                                                                                      .setMetric( BoxplotMetric.newBuilder()
                                                                                                               .setName( MetricName.BOX_PLOT_OF_ERRORS ) )
                                                                                      .build(),
-                                                                     SampleMetadata.of() ) );
+                                                                     PoolMetadata.of() ) );
 
         builder.addBoxPlotOutputPerPair( CompletableFuture.completedFuture( boxplot ) );
 
-        SampleMetadata doubleScoreMeta = SampleMetadata.of();
+        PoolMetadata doubleScoreMeta = PoolMetadata.of();
 
         this.doubleScore =
                 Collections.singletonList( DoubleScoreStatisticOuter.of( DoubleScoreStatistic.newBuilder()
@@ -121,7 +121,7 @@ public final class MetricFuturesByTimeTest
 
         builder.addDoubleScoreOutput( CompletableFuture.completedFuture( this.doubleScore ) );
 
-        SampleMetadata dScoreMetadata = SampleMetadata.of();
+        PoolMetadata dScoreMetadata = PoolMetadata.of();
 
         // Add a duration score future
         this.durationScore =
@@ -131,17 +131,17 @@ public final class MetricFuturesByTimeTest
                                                                                                  .build(),
                                                                            dScoreMetadata ) );
 
-        builder.addDurationScoreOutput( CompletableFuture.completedFuture( durationScore ) );
+        builder.addDurationScoreOutput( CompletableFuture.completedFuture( this.durationScore ) );
 
         // Add multi-vector output
-        this.multivector =
+        this.diagrams =
                 Collections.singletonList( DiagramStatisticOuter.of( DiagramStatistic.newBuilder()
                                                                                      .setMetric( DiagramMetric.newBuilder()
                                                                                                               .setName( MetricName.COEFFICIENT_OF_DETERMINATION ) )
                                                                                      .build(),
-                                                                     SampleMetadata.of() ) );
+                                                                     PoolMetadata.of() ) );
 
-        builder.addDiagramOutput( CompletableFuture.completedFuture( multivector ) );
+        builder.addDiagramOutput( CompletableFuture.completedFuture( this.diagrams ) );
 
         // Add paired output
         this.paired =
@@ -149,7 +149,7 @@ public final class MetricFuturesByTimeTest
                                                                                                      .setMetric( DurationDiagramMetric.newBuilder()
                                                                                                                                       .setName( MetricName.COEFFICIENT_OF_DETERMINATION ) )
                                                                                                      .build(),
-                                                                             SampleMetadata.of() ) );
+                                                                             PoolMetadata.of() ) );
 
         builder.addDurationDiagramOutput( CompletableFuture.completedFuture( this.paired ) );
 
@@ -217,13 +217,13 @@ public final class MetricFuturesByTimeTest
         builder.addBoxPlotOutputPerPair( CompletableFuture.completedFuture( this.boxplot ) );
         builder.addDoubleScoreOutput( CompletableFuture.completedFuture( this.doubleScore ) );
         builder.addDurationScoreOutput( CompletableFuture.completedFuture( this.durationScore ) );
-        builder.addDiagramOutput( CompletableFuture.completedFuture( this.multivector ) );
+        builder.addDiagramOutput( CompletableFuture.completedFuture( this.diagrams ) );
         builder.addDurationDiagramOutput( CompletableFuture.completedFuture( this.paired ) );
         // Add again
         builder.addBoxPlotOutputPerPair( CompletableFuture.completedFuture( this.boxplot ) );
         builder.addDoubleScoreOutput( CompletableFuture.completedFuture( this.doubleScore ) );
         builder.addDurationScoreOutput( CompletableFuture.completedFuture( this.durationScore ) );
-        builder.addDiagramOutput( CompletableFuture.completedFuture( this.multivector ) );
+        builder.addDiagramOutput( CompletableFuture.completedFuture( this.diagrams ) );
         builder.addDurationDiagramOutput( CompletableFuture.completedFuture( this.paired ) );
 
         // Check all expected output is present
@@ -247,7 +247,7 @@ public final class MetricFuturesByTimeTest
         builder.addBoxPlotOutputPerPair( CompletableFuture.completedFuture( this.boxplot ) );
         builder.addDoubleScoreOutput( CompletableFuture.completedFuture( this.doubleScore ) );
         builder.addDurationScoreOutput( CompletableFuture.completedFuture( this.durationScore ) );
-        builder.addDiagramOutput( CompletableFuture.completedFuture( this.multivector ) );
+        builder.addDiagramOutput( CompletableFuture.completedFuture( this.diagrams ) );
         builder.addDurationDiagramOutput( CompletableFuture.completedFuture( this.paired ) );
         builder.addFutures( this.futures );
 

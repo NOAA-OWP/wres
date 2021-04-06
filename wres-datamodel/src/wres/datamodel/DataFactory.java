@@ -38,7 +38,7 @@ import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.statistics.StatisticsForProject.Builder;
@@ -405,7 +405,7 @@ public final class DataFactory
         DurationDiagramStatistic.Builder builder = DurationDiagramStatistic.newBuilder();
         builder.setMetric( collection.iterator().next().getData().getMetric() );
         Set<TimeWindowOuter> combinedWindows = new HashSet<>();
-        SampleMetadata sourceMeta = null;
+        PoolMetadata sourceMeta = null;
 
         for ( DurationDiagramStatisticOuter next : collection )
         {
@@ -431,7 +431,7 @@ public final class DataFactory
 
         DurationDiagramStatistic statistic = builder.build();
 
-        return DurationDiagramStatisticOuter.of( statistic, SampleMetadata.of( sourceMeta, unionWindow ) );
+        return DurationDiagramStatisticOuter.of( statistic, PoolMetadata.of( sourceMeta, unionWindow ) );
     }
 
     /**
@@ -538,7 +538,7 @@ public final class DataFactory
     }
 
     /**
-     * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link SampleMetadata}
+     * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link PoolMetadata}
      * associated with the results and a {@link TimeWindowOuter}.
      *
      * @param outputDirectory the directory into which to write
@@ -553,7 +553,7 @@ public final class DataFactory
      */
 
     public static Path getPathFromSampleMetadata( Path outputDirectory,
-                                                  SampleMetadata meta,
+                                                  PoolMetadata meta,
                                                   TimeWindowOuter timeWindow,
                                                   ChronoUnit leadUnits,
                                                   MetricConstants metricName,
@@ -594,7 +594,7 @@ public final class DataFactory
      */
 
     public static Path getPathFromSampleMetadata( Path outputDirectory,
-                                                  SampleMetadata meta,
+                                                  PoolMetadata meta,
                                                   String append,
                                                   MetricConstants metricName,
                                                   MetricConstants metricComponentName )
@@ -675,7 +675,7 @@ public final class DataFactory
     }
 
     /**
-     * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link SampleMetadata}
+     * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link PoolMetadata}
      * associated with the results and a {@link OneOrTwoThresholds}.
      *
      * @param outputDirectory the directory into which to write
@@ -689,7 +689,7 @@ public final class DataFactory
      */
 
     public static Path getPathFromSampleMetadata( Path outputDirectory,
-                                                  SampleMetadata meta,
+                                                  PoolMetadata meta,
                                                   OneOrTwoThresholds threshold,
                                                   MetricConstants metricName,
                                                   MetricConstants metricComponentName )
@@ -707,7 +707,7 @@ public final class DataFactory
     }
 
     /**
-     * Returns a path to write from a combination of the {@link DestinationConfig} and the {@link SampleMetadata}.
+     * Returns a path to write from a combination of the {@link DestinationConfig} and the {@link PoolMetadata}.
      *
      * @param outputDirectory the directory into which to write
      * @param meta the metadata
@@ -719,7 +719,7 @@ public final class DataFactory
      */
 
     public static Path getPathFromSampleMetadata( Path outputDirectory,
-                                                  SampleMetadata meta,
+                                                  PoolMetadata meta,
                                                   MetricConstants metricName,
                                                   MetricConstants metricComponentName )
             throws IOException

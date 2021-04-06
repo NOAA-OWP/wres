@@ -17,10 +17,10 @@ import org.junit.Test;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataBasic;
-import wres.datamodel.pools.SampleDataException;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.BasicPool;
+import wres.datamodel.pools.PoolException;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -48,7 +48,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
     }
 
     /**
-     * Compares the output from {@link ContinuousRankedProbabilitySkillScore#apply(SampleData)} against expected 
+     * Compares the output from {@link ContinuousRankedProbabilitySkillScore#apply(Pool)} against expected 
      * output for a dataset with a supplied baseline.
      */
 
@@ -71,10 +71,10 @@ public final class ContinousRankedProbabilitySkillScoreTest
         basePairs.add( Pair.of( 12.1, Ensemble.of( 9, 18, 5, 6, 12 ) ) );
         basePairs.add( Pair.of( 43.0, Ensemble.of( 23, 12, 12, 39, 10 ) ) );
 
-        SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( pairs,
-                                                                       SampleMetadata.of(),
+        Pool<Pair<Double, Ensemble>> input = BasicPool.of( pairs,
+                                                                       PoolMetadata.of(),
                                                                        basePairs,
-                                                                       SampleMetadata.of(),
+                                                                       PoolMetadata.of(),
                                                                        null );
 
         //Check the results       
@@ -94,7 +94,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
     }
 
     /**
-     * Validates the output from {@link ContinuousRankedProbabilitySkillScore#apply(SampleData)} when supplied 
+     * Validates the output from {@link ContinuousRankedProbabilitySkillScore#apply(Pool)} when supplied 
      * with no data.
      */
 
@@ -102,11 +102,11 @@ public final class ContinousRankedProbabilitySkillScoreTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SampleData<Pair<Double, Ensemble>> input =
-                SampleDataBasic.of( Arrays.asList(),
-                                    SampleMetadata.of(),
+        Pool<Pair<Double, Ensemble>> input =
+                BasicPool.of( Arrays.asList(),
+                                    PoolMetadata.of(),
                                     Arrays.asList(),
-                                    SampleMetadata.of(),
+                                    PoolMetadata.of(),
                                     null );
 
         DoubleScoreStatisticOuter actual = this.crpss.apply( input );
@@ -185,7 +185,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
     @Test
     public void testMetadataContainsBaselineIdentifier() throws IOException
     {
-        SampleData<Pair<Double, Ensemble>> pairs = MetricTestDataFactory.getEnsemblePairsOne();
+        Pool<Pair<Double, Ensemble>> pairs = MetricTestDataFactory.getEnsemblePairsOne();
 
         assertTrue( this.crpss.apply( pairs )
                               .getMetadata()
@@ -195,15 +195,15 @@ public final class ContinousRankedProbabilitySkillScoreTest
     }
 
     /**
-     * Tests for an expected exception on calling {@link ContinuousRankedProbabilitySkillScore#apply(SampleData)} 
+     * Tests for an expected exception on calling {@link ContinuousRankedProbabilitySkillScore#apply(Pool)} 
      * with null input.
      */
 
     @Test
     public void testExceptionOnNullInput()
     {
-        SampleDataException actual = assertThrows( SampleDataException.class,
-                                                   () -> this.crpss.apply( (SampleData<Pair<Double, Ensemble>>) null ) );
+        PoolException actual = assertThrows( PoolException.class,
+                                                   () -> this.crpss.apply( (Pool<Pair<Double, Ensemble>>) null ) );
 
         assertEquals( "Specify non-null input to the '" + this.crpss.getName() + "'.", actual.getMessage() );
     }
@@ -232,9 +232,9 @@ public final class ContinousRankedProbabilitySkillScoreTest
     {
         List<Pair<Double, Ensemble>> pairs = new ArrayList<>();
         pairs.add( Pair.of( 25.7, Ensemble.of( 23, 43, 45, 23, 54 ) ) );
-        SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
+        Pool<Pair<Double, Ensemble>> input = BasicPool.of( pairs, PoolMetadata.of() );
 
-        SampleDataException actual = assertThrows( SampleDataException.class,
+        PoolException actual = assertThrows( PoolException.class,
                                                    () -> this.crpss.apply( input ) );
 
         assertEquals( "Specify a non-null baseline for the 'CONTINUOUS RANKED PROBABILITY SKILL SCORE'.",

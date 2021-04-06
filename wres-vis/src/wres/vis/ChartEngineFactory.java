@@ -43,8 +43,8 @@ import wres.config.generated.OutputTypeSelection;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.StatisticType;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -852,7 +852,7 @@ public abstract class ChartEngineFactory
     {
         
         // Find the metadata for the first element, which is sufficient here
-        SampleMetadata metadata = input.get( 0 ).getMetadata();   
+        PoolMetadata metadata = input.get( 0 ).getMetadata();   
         String metricUnits = input.get( 0 ).getData().getMetric().getUnits();
 
         // Component name
@@ -963,7 +963,7 @@ public abstract class ChartEngineFactory
                                                                            null,
                                                                            durationUnits );
 
-        SampleMetadata metadata = input.get( 0 ).getMetadata();
+        PoolMetadata metadata = input.get( 0 ).getMetadata();
 
         //Setup plot specific arguments.
         arguments.addDurationMetricArguments();
@@ -1028,7 +1028,7 @@ public abstract class ChartEngineFactory
                                                                            null,
                                                                            durationUnits );
 
-        SampleMetadata metadata = input.get( 0 ).getMetadata(); 
+        PoolMetadata metadata = input.get( 0 ).getMetadata(); 
         
         //Setup plot specific arguments.
         arguments.addDurationMetricArguments();
@@ -1070,7 +1070,7 @@ public abstract class ChartEngineFactory
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      * @throws WRESVisXMLReadingException when reading or parsing the template fails.
      */
-    public static ChartEngine buildSingleValuedPairsChartEngine( final SampleData<Pair<Double, Double>> input,
+    public static ChartEngine buildSingleValuedPairsChartEngine( final Pool<Pair<Double, Double>> input,
                                                                  final String userSpecifiedTemplateResourceName,
                                                                  final String overrideParametersStr,
                                                                  final ChronoUnit durationUnits )

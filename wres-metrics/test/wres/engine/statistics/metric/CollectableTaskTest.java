@@ -14,9 +14,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.categorical.ContingencyTable;
 import wres.engine.statistics.metric.categorical.ThreatScore;
@@ -36,13 +36,13 @@ public final class CollectableTaskTest
     private static final double DOUBLE_COMPARE_THRESHOLD = 0.00001;
 
     private ExecutorService pairPool;
-    private Collectable<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> m;
+    private Collectable<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> m;
 
     /** 
      * Metadata for the output 
      */
 
-    private SampleMetadata m1;
+    private PoolMetadata m1;
 
     @Before
     public void setupBeforeEachTest()
@@ -52,7 +52,7 @@ public final class CollectableTaskTest
         //Add some appropriate metrics to the collection
         this.m = ThreatScore.of();
 
-        this.m1 = SampleMetadata.of();
+        this.m1 = PoolMetadata.of();
     }
 
     @Test
@@ -84,7 +84,7 @@ public final class CollectableTaskTest
                     return DoubleScoreStatisticOuter.of( table, this.m1 );
                 } );
 
-        CollectableTask<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> task =
+        CollectableTask<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> task =
                 new CollectableTask<>( this.m, futureInput );
 
         //Compute the pairs
@@ -106,12 +106,12 @@ public final class CollectableTaskTest
 
         this.pairPool.submit( futureInputNull );
 
-        final CollectableTask<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> task2 =
+        final CollectableTask<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> task2 =
                 new CollectableTask<>( this.m,
                                        futureInputNull );
 
         //Should throw an exception
-        assertThrows( SampleDataException.class, () -> task2.call() );
+        assertThrows( PoolException.class, () -> task2.call() );
     }
 
     @After

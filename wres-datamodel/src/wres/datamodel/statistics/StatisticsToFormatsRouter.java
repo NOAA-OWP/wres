@@ -20,7 +20,7 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.Evaluation;
@@ -509,7 +509,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
             List<DiagramStatistic> diagrams = someStats.getDiagramsList();
             Function<DiagramStatistic, DiagramStatisticOuter> innerMapper =
                     nextDiagram -> DiagramStatisticOuter.of( nextDiagram,
-                                                             SampleMetadata.of( this.getEvaluationDescription(),
+                                                             PoolMetadata.of( this.getEvaluationDescription(),
                                                                                 poolSupplier.apply( someStats ) ) );
             return diagrams.stream()
                            .map( innerMapper )
@@ -533,7 +533,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
             List<BoxplotStatistic> boxes = supplier.apply( someStats );
             Function<BoxplotStatistic, BoxplotStatisticOuter> innerMapper =
                     nextBoxplot -> BoxplotStatisticOuter.of( nextBoxplot,
-                                                             SampleMetadata.of( this.getEvaluationDescription(),
+                                                             PoolMetadata.of( this.getEvaluationDescription(),
                                                                                 poolSupplier.apply( someStats ) ) );
             return boxes.stream()
                         .map( innerMapper )
@@ -555,7 +555,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
             List<DoubleScoreStatistic> scores = someStats.getScoresList();
             Function<DoubleScoreStatistic, DoubleScoreStatisticOuter> innerMapper =
                     nextScore -> DoubleScoreStatisticOuter.of( nextScore,
-                                                               SampleMetadata.of( this.getEvaluationDescription(),
+                                                               PoolMetadata.of( this.getEvaluationDescription(),
                                                                                   poolSupplier.apply( someStats ) ) );
             return scores.stream()
                          .map( innerMapper )
@@ -577,7 +577,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
             List<DurationScoreStatistic> scores = someStats.getDurationScoresList();
             Function<DurationScoreStatistic, DurationScoreStatisticOuter> innerMapper =
                     nextScore -> DurationScoreStatisticOuter.of( nextScore,
-                                                                 SampleMetadata.of( this.getEvaluationDescription(),
+                                                                 PoolMetadata.of( this.getEvaluationDescription(),
                                                                                     poolSupplier.apply( someStats ) ) );
             return scores.stream()
                          .map( innerMapper )
@@ -599,7 +599,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
             List<DurationDiagramStatistic> diagrams = someStats.getDurationDiagramsList();
             Function<DurationDiagramStatistic, DurationDiagramStatisticOuter> innerMapper =
                     nextDiagram -> DurationDiagramStatisticOuter.of( nextDiagram,
-                                                                     SampleMetadata.of( this.getEvaluationDescription(),
+                                                                     PoolMetadata.of( this.getEvaluationDescription(),
                                                                                         poolSupplier.apply( someStats ) ) );
             return diagrams.stream()
                            .map( innerMapper )

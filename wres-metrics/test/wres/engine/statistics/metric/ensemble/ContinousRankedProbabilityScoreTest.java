@@ -16,10 +16,10 @@ import org.junit.Test;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataBasic;
-import wres.datamodel.pools.SampleDataException;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.BasicPool;
+import wres.datamodel.pools.PoolException;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -46,7 +46,7 @@ public final class ContinousRankedProbabilityScoreTest
     }
 
     /**
-     * Compares the output from {@link ContinuousRankedProbabilityScore#apply(SampleData)} against expected output
+     * Compares the output from {@link ContinuousRankedProbabilityScore#apply(Pool)} against expected output
      * where the input contains no missing data.
      */
 
@@ -61,10 +61,10 @@ public final class ContinousRankedProbabilityScoreTest
         pairs.add( Pair.of( 47.0, Ensemble.of( 12, 54, 23, 54, 78 ) ) );
         pairs.add( Pair.of( 12.1, Ensemble.of( 9, 8, 5, 6, 12 ) ) );
         pairs.add( Pair.of( 43.0, Ensemble.of( 23, 12, 12, 34, 10 ) ) );
-        SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
+        Pool<Pair<Double, Ensemble>> input = BasicPool.of( pairs, PoolMetadata.of() );
 
         //Metadata for the output
-        SampleMetadata m1 = SampleMetadata.of();
+        PoolMetadata m1 = PoolMetadata.of();
 
         //Check the results       
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
@@ -85,7 +85,7 @@ public final class ContinousRankedProbabilityScoreTest
     }
 
     /**
-     * Compares the output from {@link ContinuousRankedProbabilityScore#apply(SampleData)} against expected output
+     * Compares the output from {@link ContinuousRankedProbabilityScore#apply(Pool)} against expected output
      * where the input contains missing data.
      */
 
@@ -101,7 +101,7 @@ public final class ContinousRankedProbabilityScoreTest
         pairs.add( Pair.of( 47.0, Ensemble.of( 12, 54, 23, 54 ) ) );
         pairs.add( Pair.of( 12.0, Ensemble.of( 9, 8, 5 ) ) );
         pairs.add( Pair.of( 43.0, Ensemble.of( 23, 12, 12 ) ) );
-        SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
+        Pool<Pair<Double, Ensemble>> input = BasicPool.of( pairs, PoolMetadata.of() );
 
         //Check the results       
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
@@ -121,7 +121,7 @@ public final class ContinousRankedProbabilityScoreTest
     }
 
     /**
-     * Compares the output from {@link ContinuousRankedProbabilityScore#apply(SampleData)} against expected output
+     * Compares the output from {@link ContinuousRankedProbabilityScore#apply(Pool)} against expected output
      * where the observation falls below the lowest member.
      */
 
@@ -131,7 +131,7 @@ public final class ContinousRankedProbabilityScoreTest
         //Generate some data
         List<Pair<Double, Ensemble>> pairs = new ArrayList<>();
         pairs.add( Pair.of( 8.0, Ensemble.of( 23, 54, 23, 12, 32 ) ) );
-        SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
+        Pool<Pair<Double, Ensemble>> input = BasicPool.of( pairs, PoolMetadata.of() );
 
         //Check the results       
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
@@ -150,7 +150,7 @@ public final class ContinousRankedProbabilityScoreTest
     }
 
     /**
-     * Compares the output from {@link ContinuousRankedProbabilityScore#apply(SampleData)} against expected output
+     * Compares the output from {@link ContinuousRankedProbabilityScore#apply(Pool)} against expected output
      * for a scenario where the observed value overlaps one ensemble member. This exposes a mistake in the Hersbach 
      * (2000) paper where rows 1 and 3 of table/eqn. 26 should be inclusive bounds.
      */
@@ -162,7 +162,7 @@ public final class ContinousRankedProbabilityScoreTest
         //Generate some data
         List<Pair<Double, Ensemble>> pairs = new ArrayList<>();
         pairs.add( Pair.of( 32.0, Ensemble.of( 23, 54, 23, 12, 32 ) ) );
-        SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
+        Pool<Pair<Double, Ensemble>> input = BasicPool.of( pairs, PoolMetadata.of() );
 
         //Check the results       
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
@@ -182,7 +182,7 @@ public final class ContinousRankedProbabilityScoreTest
 
 
     /**
-     * Validates the output from {@link ContinuousRankedProbabilityScore#apply(SampleData)} when supplied with no 
+     * Validates the output from {@link ContinuousRankedProbabilityScore#apply(Pool)} when supplied with no 
      * data.
      */
 
@@ -190,8 +190,8 @@ public final class ContinousRankedProbabilityScoreTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SampleData<Pair<Double, Ensemble>> input =
-                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
+        Pool<Pair<Double, Ensemble>> input =
+                BasicPool.of( Arrays.asList(), PoolMetadata.of() );
 
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
 
@@ -261,15 +261,15 @@ public final class ContinousRankedProbabilityScoreTest
     }
 
     /**
-     * Tests for an expected exception on calling {@link ContinuousRankedProbabilityScore#apply(SampleData)} with 
+     * Tests for an expected exception on calling {@link ContinuousRankedProbabilityScore#apply(Pool)} with 
      * null input.
      */
 
     @Test
     public void testExceptionOnNullInput()
     {
-        SampleDataException actual = assertThrows( SampleDataException.class,
-                                                   () -> this.crps.apply( (SampleData<Pair<Double, Ensemble>>) null ) );
+        PoolException actual = assertThrows( PoolException.class,
+                                                   () -> this.crps.apply( (Pool<Pair<Double, Ensemble>>) null ) );
 
         assertEquals( "Specify non-null input to the '" + this.crps.getName() + "'.", actual.getMessage() );
     }

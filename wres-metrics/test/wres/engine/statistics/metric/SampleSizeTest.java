@@ -9,9 +9,9 @@ import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
@@ -35,10 +35,10 @@ public final class SampleSizeTest
         //Obtain the factories
 
         //Generate some data
-        SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
+        Pool<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Build the metric
-        SampleSize<SampleData<Pair<Double, Double>>> ss = SampleSize.of();
+        SampleSize<Pool<Pair<Double, Double>>> ss = SampleSize.of();
 
         //Check the results
         DoubleScoreStatisticOuter actual = ss.apply( input );
@@ -53,7 +53,7 @@ public final class SampleSizeTest
                                                          .addStatistics( component )
                                                          .build();
 
-        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, SampleMetadata.of() );
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, PoolMetadata.of() );
 
         assertEquals( expected, actual );
 
@@ -73,9 +73,9 @@ public final class SampleSizeTest
     public void testExceptions()
     {
         //Build the metric
-        SampleSize<SampleData<Pair<Double, Double>>> ss = SampleSize.of();
+        SampleSize<Pool<Pair<Double, Double>>> ss = SampleSize.of();
 
-        SampleDataException expected = assertThrows( SampleDataException.class, () -> ss.apply( null ) );
+        PoolException expected = assertThrows( PoolException.class, () -> ss.apply( null ) );
 
         assertEquals( "Specify non-null input to the 'SAMPLE SIZE'.", expected.getMessage() );
     }

@@ -11,19 +11,19 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.Pool;
 import wres.io.writing.commaseparated.pairs.EnsemblePairsWriter;
 import wres.io.writing.commaseparated.pairs.SingleValuedPairsWriter;
 
 /**
  * A temporary class intended to host pairs writers. Currently, wres-io creates 
- * some friction by exposing the wildcard type of {@link SampleData}, rather than 
+ * some friction by exposing the wildcard type of {@link Pool}, rather than 
  * a non-wildcard type. This class resolves that friction by providing access to 
  * parameterized types of writing on request.
  * 
  * TODO: remove this class in favor of the direct application of a parameterized 
  * {@link SingleValuedPairsWriter} or {@link EnsemblePairsWriter} once the wres-io 
- * uses non-wildcard types of {@link SampleData}.
+ * uses non-wildcard types of {@link Pool}.
  * 
  * @author james.brown@hydrosolved.com
  */

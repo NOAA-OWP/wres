@@ -11,7 +11,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import net.jcip.annotations.Immutable;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DurationScoreStatisticOuter.DurationScoreComponentOuter;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
@@ -43,7 +43,7 @@ public class DurationScoreStatisticOuter
      * @return an instance of the output
      */
 
-    public static DurationScoreStatisticOuter of( DurationScoreStatistic statistic, SampleMetadata metadata )
+    public static DurationScoreStatisticOuter of( DurationScoreStatistic statistic, PoolMetadata metadata )
     {
         return new DurationScoreStatisticOuter( statistic, metadata );
     }
@@ -70,7 +70,7 @@ public class DurationScoreStatisticOuter
          */
 
         private DurationScoreComponentOuter( DurationScoreStatisticComponent component,
-                                             SampleMetadata metadata )
+                                             PoolMetadata metadata )
         {
             super( component, metadata, next -> MessageFactory.parse( next.getValue() ).toString() );
 
@@ -87,7 +87,7 @@ public class DurationScoreStatisticOuter
          */
 
         public static DurationScoreComponentOuter of( DurationScoreStatisticComponent component,
-                                                      SampleMetadata metadata )
+                                                      PoolMetadata metadata )
         {
             return new DurationScoreComponentOuter( component, metadata );
         }
@@ -125,7 +125,7 @@ public class DurationScoreStatisticOuter
      * @param score the score
      */
 
-    private DurationScoreStatisticOuter( DurationScoreStatistic score, SampleMetadata metadata )
+    private DurationScoreStatisticOuter( DurationScoreStatistic score, PoolMetadata metadata )
     {
         super( score, DurationScoreStatisticOuter.createInternalMapping( score, metadata ), metadata );
 
@@ -142,7 +142,7 @@ public class DurationScoreStatisticOuter
 
     private static Map<MetricConstants, DurationScoreComponentOuter>
             createInternalMapping( DurationScoreStatistic score,
-                                   SampleMetadata metadata )
+                                   PoolMetadata metadata )
     {
         Map<MetricConstants, DurationScoreComponentOuter> returnMe = new EnumMap<>( MetricConstants.class );
 

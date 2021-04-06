@@ -12,8 +12,8 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.engine.statistics.metric.Diagram;
 import wres.engine.statistics.metric.MetricCalculationException;
@@ -32,7 +32,7 @@ import wres.statistics.generated.BoxplotStatistic.Box;
  * @author james.brown@hydrosolved.com
  */
 
-abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>>, BoxplotStatisticOuter>
+abstract class EnsembleBoxPlot extends Diagram<Pool<Pair<Double, Ensemble>>, BoxplotStatisticOuter>
 {
 
     /**
@@ -66,11 +66,11 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
     abstract BoxplotMetric getMetric();
 
     @Override
-    public BoxplotStatisticOuter apply( final SampleData<Pair<Double, Ensemble>> s )
+    public BoxplotStatisticOuter apply( final Pool<Pair<Double, Ensemble>> s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
+            throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
         List<Box> boxes = new ArrayList<>();

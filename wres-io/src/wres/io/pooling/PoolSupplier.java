@@ -29,7 +29,7 @@ import net.jcip.annotations.ThreadSafe;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.pairs.CrossPairs;
 import wres.datamodel.pools.pairs.PairingException;
 import wres.datamodel.pools.pairs.PoolOfPairs;
@@ -172,13 +172,13 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * Metadata for the mains pairs.
      */
 
-    private final SampleMetadata metadata;
+    private final PoolMetadata metadata;
 
     /**
      * Metadata for the baseline pairs.
      */
 
-    private final SampleMetadata baselineMetadata;
+    private final PoolMetadata baselineMetadata;
 
     /**
      * The inputs declaration, which is used to help compute the desired time scale, if required.
@@ -293,7 +293,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                 this.getDesiredTimeScale( leftData, rightData, baselineData, this.inputs );
 
         // Set the metadata, adjusted to include the desired time scale
-        SampleMetadata sampleMetadata = SampleMetadata.of( this.metadata, desiredTimeScaleToUse );
+        PoolMetadata sampleMetadata = PoolMetadata.of( this.metadata, desiredTimeScaleToUse );
         builder.setMetadata( sampleMetadata );
 
         // The left data is most likely to contain a large set of observations, such as climatology
@@ -320,7 +320,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         // Create the baseline pairs
         if ( this.hasBaseline() )
         {
-            SampleMetadata baselineSampleMetadata = SampleMetadata.of( this.baselineMetadata,
+            PoolMetadata baselineSampleMetadata = PoolMetadata.of( this.baselineMetadata,
                                                                        desiredTimeScaleToUse );
 
             builder.setMetadataForBaseline( baselineSampleMetadata );
@@ -455,13 +455,13 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * Metadata for the mains pairs.
          */
 
-        private SampleMetadata metadata;
+        private PoolMetadata metadata;
 
         /**
          * Metadata for the baseline pairs.
          */
 
-        private SampleMetadata baselineMetadata;
+        private PoolMetadata baselineMetadata;
 
         /**
          * Inputs declaration for the pool.
@@ -616,7 +616,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param metadata the metadata to set
          * @return the builder
          */
-        PoolOfPairsSupplierBuilder<L, R> setMetadata( SampleMetadata metadata )
+        PoolOfPairsSupplierBuilder<L, R> setMetadata( PoolMetadata metadata )
         {
             this.metadata = metadata;
 
@@ -627,7 +627,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param baselineMetadata the baselineMetadata to set
          * @return the builder
          */
-        PoolOfPairsSupplierBuilder<L, R> setBaselineMetadata( SampleMetadata baselineMetadata )
+        PoolOfPairsSupplierBuilder<L, R> setBaselineMetadata( PoolMetadata baselineMetadata )
         {
             this.baselineMetadata = baselineMetadata;
 
@@ -755,7 +755,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         // Log the number of time-series available for pairing and the number of paried time-series created
         if ( LOGGER.isDebugEnabled() )
         {
-            SampleMetadata metaToReport = this.metadata;
+            PoolMetadata metaToReport = this.metadata;
 
             String clarify = "";
 

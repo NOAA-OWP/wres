@@ -31,7 +31,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
@@ -168,7 +168,7 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
             rows.add( RowCompareByLeft.of( HEADER_INDEX, headerRow ) );
 
             // Write the output
-            SampleMetadata meta = nextOutput.get( 0 ).getMetadata();
+            PoolMetadata meta = nextOutput.get( 0 ).getMetadata();
             MetricConstants metricName = nextOutput.get( 0 ).getMetricName();
 
             Path outputPath = DataFactory.getPathFromSampleMetadata( outputDirectory,
@@ -212,7 +212,7 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
         SortedSet<OneOrTwoThresholds> thresholds =
                 Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
 
-        SampleMetadata metadata = CommaSeparatedStatisticsWriter.getSampleMetadataFromListOfStatistics( output );
+        PoolMetadata metadata = CommaSeparatedStatisticsWriter.getSampleMetadataFromListOfStatistics( output );
 
         // Add the rows
         // Loop across the thresholds
@@ -235,7 +235,7 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
                 for ( Pair<Instant, Duration> nextPair : next.getPairs() )
                 {
                     CommaSeparatedStatisticsWriter.addRowToInput( returnMe,
-                                                                  SampleMetadata.of( metadata,
+                                                                  PoolMetadata.of( metadata,
                                                                                      next.getMetadata()
                                                                                          .getTimeWindow() ),
                                                                   Arrays.asList( nextPair.getLeft(),

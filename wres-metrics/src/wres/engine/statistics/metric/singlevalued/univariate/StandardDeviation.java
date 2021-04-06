@@ -8,8 +8,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.FunctionFactory;
@@ -24,7 +24,7 @@ import wres.statistics.generated.MetricName;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class StandardDeviation extends DecomposableScore<SampleData<Pair<Double, Double>>>
+public class StandardDeviation extends DecomposableScore<Pool<Pair<Double, Double>>>
 {
 
     /**
@@ -45,11 +45,11 @@ public class StandardDeviation extends DecomposableScore<SampleData<Pair<Double,
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( SampleData<Pair<Double, Double>> pairs )
+    public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Double>> pairs )
     {
         if ( Objects.isNull( pairs ) )
         {
-            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
+            throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
         DoubleScoreStatistic score = this.getScore()

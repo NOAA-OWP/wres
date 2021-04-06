@@ -3,7 +3,7 @@ package wres.engine.statistics.metric.singlevalued;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.Pool;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.MetricName;
@@ -16,7 +16,7 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.Co
  * 
  * @author james.brown@hydrosolved.com
  */
-public class MeanAbsoluteError extends DoubleErrorScore<SampleData<Pair<Double, Double>>>
+public class MeanAbsoluteError extends DoubleErrorScore<Pool<Pair<Double, Double>>>
 {
 
     /**

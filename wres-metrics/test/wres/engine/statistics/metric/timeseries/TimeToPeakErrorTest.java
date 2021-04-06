@@ -13,7 +13,7 @@ import org.junit.Test;
 import com.google.protobuf.Timestamp;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -96,7 +96,7 @@ public final class TimeToPeakErrorTest
     @Test
     public void testApplyThrowsExceptionOnNullInput()
     {
-        assertThrows( SampleDataException.class, () -> this.ttp.apply( null ) );
+        assertThrows( PoolException.class, () -> this.ttp.apply( null ) );
     }
 
 }

@@ -10,7 +10,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 
 import net.jcip.annotations.Immutable;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.statistics.BasicScoreStatistic.BasicScoreComponent;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -41,7 +41,7 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
      * @return an instance of the output
      */
 
-    public static DoubleScoreStatisticOuter of( DoubleScoreStatistic statistic, SampleMetadata metadata )
+    public static DoubleScoreStatisticOuter of( DoubleScoreStatistic statistic, PoolMetadata metadata )
     {
         return new DoubleScoreStatisticOuter( statistic, metadata );
     }
@@ -68,7 +68,7 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
          */
 
         private DoubleScoreComponentOuter( DoubleScoreStatisticComponent component,
-                                           SampleMetadata metadata )
+                                           PoolMetadata metadata )
         {
             super( component, metadata, next -> Double.toString( next.getValue() ) );
 
@@ -85,7 +85,7 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
          */
 
         public static DoubleScoreComponentOuter of( DoubleScoreStatisticComponent component,
-                                                    SampleMetadata metadata )
+                                                    PoolMetadata metadata )
         {
             return new DoubleScoreComponentOuter( component, metadata );
         }
@@ -124,7 +124,7 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
      * @param score the score
      */
 
-    private DoubleScoreStatisticOuter( DoubleScoreStatistic score, SampleMetadata metadata )
+    private DoubleScoreStatisticOuter( DoubleScoreStatistic score, PoolMetadata metadata )
     {
         super( score, DoubleScoreStatisticOuter.createInternalMapping( score, metadata ), metadata );
 
@@ -144,7 +144,7 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
      */
 
     private static Map<MetricConstants, DoubleScoreComponentOuter> createInternalMapping( DoubleScoreStatistic score,
-                                                                                          SampleMetadata metadata )
+                                                                                          PoolMetadata metadata )
     {
         Map<MetricConstants, DoubleScoreComponentOuter> returnMe = new EnumMap<>( MetricConstants.class );
 

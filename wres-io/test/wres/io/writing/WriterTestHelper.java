@@ -19,7 +19,7 @@ import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
@@ -169,7 +169,7 @@ public class WriterTestHelper
                                           threshold,
                                           false );
 
-        SampleMetadata fakeMetadataOne = SampleMetadata.of( evaluation, pool );
+        PoolMetadata fakeMetadataOne = PoolMetadata.of( evaluation, pool );
 
         BoxplotMetric metric = BoxplotMetric.newBuilder()
                                             .setName( MetricName.BOX_PLOT_OF_ERRORS )
@@ -205,7 +205,7 @@ public class WriterTestHelper
                                              threshold,
                                              false );
 
-        SampleMetadata fakeMetadataTwo = SampleMetadata.of( evaluation, poolTwo );
+        PoolMetadata fakeMetadataTwo = PoolMetadata.of( evaluation, poolTwo );
 
         Box anotherBox = Box.newBuilder()
                             .addAllQuantiles( List.of( 11.0, 33.0, 55.0, 77.0, 99.0 ) )
@@ -260,7 +260,7 @@ public class WriterTestHelper
                                           threshold,
                                           false );
 
-        SampleMetadata fakeMetadata = SampleMetadata.of( evaluation, pool );
+        PoolMetadata fakeMetadata = PoolMetadata.of( evaluation, pool );
 
         BoxplotMetric metric = BoxplotMetric.newBuilder()
                                             .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE )
@@ -338,7 +338,7 @@ public class WriterTestHelper
                                           threshold,
                                           false );
 
-        SampleMetadata fakeMetadata = SampleMetadata.of( evaluation, pool );
+        PoolMetadata fakeMetadata = PoolMetadata.of( evaluation, pool );
 
         DiagramMetricComponent forecastComponent =
                 DiagramMetricComponent.newBuilder()
@@ -431,7 +431,7 @@ public class WriterTestHelper
                                           threshold,
                                           false );
 
-        SampleMetadata fakeMetadata = SampleMetadata.of( evaluation, pool );
+        PoolMetadata fakeMetadata = PoolMetadata.of( evaluation, pool );
 
         Instant firstInstant = Instant.parse( "1985-01-01T00:00:00Z" );
         Instant secondInstant = Instant.parse( "1985-01-02T00:00:00Z" );
@@ -519,7 +519,7 @@ public class WriterTestHelper
                                           threshold,
                                           false );
 
-        SampleMetadata fakeMetadata = SampleMetadata.of( evaluation, pool );
+        PoolMetadata fakeMetadata = PoolMetadata.of( evaluation, pool );
 
         DoubleScoreStatistic one =
                 DoubleScoreStatistic.newBuilder()
@@ -606,7 +606,7 @@ public class WriterTestHelper
                                           threshold,
                                           false );
 
-        SampleMetadata fakeMetadata = SampleMetadata.of( evaluation, pool );
+        PoolMetadata fakeMetadata = PoolMetadata.of( evaluation, pool );
 
         DurationScoreMetric metric = DurationScoreMetric.newBuilder()
                                                         .setName( MetricName.TIME_TO_PEAK_ERROR_STATISTIC )
@@ -676,7 +676,7 @@ public class WriterTestHelper
                                           thresholdOne,
                                           false );
 
-        SampleMetadata fakeMetadataA = SampleMetadata.of( evaluation, pool );
+        PoolMetadata fakeMetadataA = PoolMetadata.of( evaluation, pool );
 
         DoubleScoreStatistic one =
                 DoubleScoreStatistic.newBuilder()
@@ -703,7 +703,7 @@ public class WriterTestHelper
                                              thresholdTwo,
                                              false );
 
-        SampleMetadata fakeMetadataB = SampleMetadata.of( evaluation, poolTwo );
+        PoolMetadata fakeMetadataB = PoolMetadata.of( evaluation, poolTwo );
 
         DoubleScoreStatisticOuter fakeOutputB = DoubleScoreStatisticOuter.of( one, fakeMetadataB );
 
@@ -718,7 +718,7 @@ public class WriterTestHelper
                                                thresholdOne,
                                                false );
 
-        SampleMetadata fakeMetadataC = SampleMetadata.of( evaluation, poolThree );
+        PoolMetadata fakeMetadataC = PoolMetadata.of( evaluation, poolThree );
 
         DoubleScoreStatisticOuter fakeOutputC = DoubleScoreStatisticOuter.of( one, fakeMetadataC );
 

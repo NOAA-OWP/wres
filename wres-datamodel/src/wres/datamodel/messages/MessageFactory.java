@@ -37,7 +37,7 @@ import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.StatisticType;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -733,7 +733,7 @@ public class MessageFactory
 
         Statistics.Builder statistics = Statistics.newBuilder();
 
-        SampleMetadata metadata = SampleMetadata.of();
+        PoolMetadata metadata = PoolMetadata.of();
 
         boolean added = false;
 
@@ -902,7 +902,7 @@ public class MessageFactory
      * @throws IllegalArgumentException if the pool does not contain precisely one geometry
      */
 
-    private static PoolBoundaries getPoolBoundaries( SampleMetadata metadata )
+    private static PoolBoundaries getPoolBoundaries( PoolMetadata metadata )
     {
         Objects.requireNonNull( metadata );
 
@@ -990,7 +990,7 @@ public class MessageFactory
 
         for ( DoubleScoreStatisticOuter next : statistics )
         {
-            SampleMetadata metadata = next.getMetadata();
+            PoolMetadata metadata = next.getMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
 
             StatisticsForProject.Builder another = mappedStatistics.get( poolBoundaries );
@@ -1022,7 +1022,7 @@ public class MessageFactory
 
         for ( wres.datamodel.statistics.DurationScoreStatisticOuter next : statistics )
         {
-            SampleMetadata metadata = next.getMetadata();
+            PoolMetadata metadata = next.getMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
 
             StatisticsForProject.Builder another = mappedStatistics.get( poolBoundaries );
@@ -1056,7 +1056,7 @@ public class MessageFactory
 
         for ( wres.datamodel.statistics.BoxplotStatisticOuter next : statistics )
         {
-            SampleMetadata metadata = next.getMetadata();
+            PoolMetadata metadata = next.getMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
 
             StatisticsForProject.Builder another = mappedStatistics.get( poolBoundaries );
@@ -1095,7 +1095,7 @@ public class MessageFactory
 
         for ( wres.datamodel.statistics.DiagramStatisticOuter next : statistics )
         {
-            SampleMetadata metadata = next.getMetadata();
+            PoolMetadata metadata = next.getMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
 
             StatisticsForProject.Builder another = mappedStatistics.get( poolBoundaries );
@@ -1127,7 +1127,7 @@ public class MessageFactory
 
         for ( DurationDiagramStatisticOuter next : statistics )
         {
-            SampleMetadata metadata = next.getMetadata();
+            PoolMetadata metadata = next.getMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
 
             StatisticsForProject.Builder another = mappedStatistics.get( poolBoundaries );

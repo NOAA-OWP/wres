@@ -27,8 +27,8 @@ import org.slf4j.Logger;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
 import wres.datamodel.Slicer;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.Statistic;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
@@ -73,10 +73,10 @@ public class MetricCollectionTest
     public void testOfSingleValuedScalar() throws MetricParameterException
     {
         //Generate some data
-        final SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
+        final Pool<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Finalize
-        final MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> collection =
+        final MetricCollection<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> collection =
                 MetricFactory.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
                                                              MetricConstants.MEAN_ERROR,
                                                              MetricConstants.MEAN_ABSOLUTE_ERROR,
@@ -124,12 +124,12 @@ public class MetricCollectionTest
     public void testOfDichotomousScalar() throws MetricParameterException
     {
         //Generate some data
-        final SampleData<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
+        final Pool<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Create a collection of dichotomous metrics that produce a scalar output. Since all scores implement 
         //Collectable, they make efficient use of common intermediate data. In this case, all scores require the 2x2
         //Contingency Table, which is computed only once
-        final MetricCollectionBuilder<SampleData<Pair<Boolean, Boolean>>, Statistic<?>, DoubleScoreStatisticOuter> m =
+        final MetricCollectionBuilder<Pool<Pair<Boolean, Boolean>>, Statistic<?>, DoubleScoreStatisticOuter> m =
                 MetricCollectionBuilder.of();
 
         m.setExecutorService( ForkJoinPool.commonPool() );
@@ -142,7 +142,7 @@ public class MetricCollectionTest
         m.addMetric( EquitableThreatScore.of() ); //Should be 0.43768152544513195
 
         //Finalize
-        final MetricCollection<SampleData<Pair<Boolean, Boolean>>, Statistic<?>, DoubleScoreStatisticOuter> collection =
+        final MetricCollection<Pool<Pair<Boolean, Boolean>>, Statistic<?>, DoubleScoreStatisticOuter> collection =
                 m.build();
 
         //Compute them
@@ -202,10 +202,10 @@ public class MetricCollectionTest
     public void testOfDiscreteProbabilityVector() throws MetricParameterException
     {
         //Generate some data
-        final SampleData<Pair<Probability, Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsTwo();
+        final Pool<Pair<Probability, Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsTwo();
 
         //Create a collection metrics that consume probabilistic pairs and generate vector outputs
-        final MetricCollectionBuilder<SampleData<Pair<Probability, Probability>>, Statistic<?>, DoubleScoreStatisticOuter> n =
+        final MetricCollectionBuilder<Pool<Pair<Probability, Probability>>, Statistic<?>, DoubleScoreStatisticOuter> n =
                 MetricCollectionBuilder.of();
 
         n.setExecutorService( ForkJoinPool.commonPool() );
@@ -215,7 +215,7 @@ public class MetricCollectionTest
         n.addMetric( BrierSkillScore.of() ); //Should be 0.11363636363636376
 
         //Finalize
-        final MetricCollection<SampleData<Pair<Probability, Probability>>, Statistic<?>, DoubleScoreStatisticOuter> collection =
+        final MetricCollection<Pool<Pair<Probability, Probability>>, Statistic<?>, DoubleScoreStatisticOuter> collection =
                 n.build();
 
         //Compute them
@@ -252,10 +252,10 @@ public class MetricCollectionTest
     public void testOfSingleValuedVector() throws MetricParameterException
     {
         //Generate some data
-        final SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsTwo();
+        final Pool<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Create a collection of metrics that consume single-valued pairs and produce vector outputs
-        final MetricCollectionBuilder<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> n =
+        final MetricCollectionBuilder<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> n =
                 MetricCollectionBuilder.of();
 
         n.setExecutorService( ForkJoinPool.commonPool() );
@@ -265,7 +265,7 @@ public class MetricCollectionTest
         n.addMetric( MeanSquareErrorSkillScore.of() ); //Should be 0.8007025335093799
 
         //Finalize
-        final MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> collection =
+        final MetricCollection<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> collection =
                 n.build();
 
         //Compute them
@@ -295,7 +295,7 @@ public class MetricCollectionTest
 
     /**
      * Expects a {@link MetricCalculationException} when calling 
-     * {@link MetricCollection#apply(wres.datamodel.pools.SampleData)} with null input.
+     * {@link MetricCollection#apply(wres.datamodel.pools.Pool)} with null input.
      * 
      * @throws MetricCalculationException if the execution fails
      * @throws MetricParameterException if the metric construction fails
@@ -306,7 +306,7 @@ public class MetricCollectionTest
     {
 
         //Create a collection of metrics that consume single-valued pairs and produce a scalar output
-        final MetricCollectionBuilder<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> n =
+        final MetricCollectionBuilder<Pool<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> n =
                 MetricCollectionBuilder.of();
 
         //Add some appropriate metrics to the collection
@@ -316,7 +316,7 @@ public class MetricCollectionTest
         n.setExecutorService( metricPool );
 
         //Finalize
-        final MetricCollection<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> collection =
+        final MetricCollection<Pool<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> collection =
                 n.build();
 
         //Null input
@@ -328,7 +328,7 @@ public class MetricCollectionTest
 
     /**
      * Expects a {@link MetricCalculationException} when calling 
-     * {@link MetricCollection#apply(wres.datamodel.pools.SampleData, Set)} with a null set of metrics to ignore.
+     * {@link MetricCollection#apply(wres.datamodel.pools.Pool, Set)} with a null set of metrics to ignore.
      * 
      * @throws MetricCalculationException if the execution fails
      * @throws MetricParameterException if the metric construction fails
@@ -339,12 +339,12 @@ public class MetricCollectionTest
     {
 
         //Create a collection of metrics that consume single-valued pairs and produce a scalar output
-        final MetricCollectionBuilder<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> n =
+        final MetricCollectionBuilder<Pool<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> n =
                 MetricCollectionBuilder.of();
 
-        final SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
+        final Pool<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        final MetricCollection<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> collection =
+        final MetricCollection<Pool<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> collection =
                 n.addMetric( MeanError.of() ).setExecutorService( metricPool ).build();
 
         //Null input
@@ -356,7 +356,7 @@ public class MetricCollectionTest
 
     /**
      * Expects an empty response when calling
-     * {@link MetricCollection#apply(wres.datamodel.pools.SampleData, Set)} with a set of metrics to ignore that 
+     * {@link MetricCollection#apply(wres.datamodel.pools.Pool, Set)} with a set of metrics to ignore that 
      * includes all metrics in the collection.
      * 
      * @throws MetricCalculationException if the execution fails
@@ -368,12 +368,12 @@ public class MetricCollectionTest
     {
 
         //Create a collection of metrics that consume single-valued pairs and produce a scalar output
-        MetricCollectionBuilder<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> n =
+        MetricCollectionBuilder<Pool<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> n =
                 MetricCollectionBuilder.of();
 
-        SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
+        Pool<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        MetricCollection<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> collection =
+        MetricCollection<Pool<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> collection =
                 n.addMetric( MeanError.of() ).setExecutorService( this.metricPool ).build();
 
         assertEquals( collection.apply( input, Collections.singleton( MetricConstants.MEAN_ERROR ) ), List.of() );
@@ -390,7 +390,7 @@ public class MetricCollectionTest
     public void testBuildWithNoExecutorService() throws MetricParameterException
     {
         //No output factory            
-        final MetricCollectionBuilder<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> m =
+        final MetricCollectionBuilder<Pool<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> m =
                 MetricCollectionBuilder.of();
 
         MetricParameterException expected =
@@ -432,7 +432,7 @@ public class MetricCollectionTest
     public void testLogStartOfCalculation() throws MetricParameterException, IllegalAccessException,
             InvocationTargetException, NoSuchMethodException
     {
-        MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> collection =
+        MetricCollection<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> collection =
                 MetricFactory.ofSingleValuedScoreCollection( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
         Method logStart = collection.getClass().getDeclaredMethod( "logStartOfCalculation", Logger.class );
         logStart.setAccessible( true );
@@ -466,7 +466,7 @@ public class MetricCollectionTest
     public void testLogEndOfCalculation() throws MetricParameterException, IllegalAccessException,
             InvocationTargetException, NoSuchMethodException
     {
-        MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> collection =
+        MetricCollection<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> collection =
                 MetricFactory.ofSingleValuedScoreCollection( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
         Method logEnd = collection.getClass()
                                   .getDeclaredMethod( "logEndOfCalculation", Logger.class, List.class );
@@ -489,7 +489,7 @@ public class MetricCollectionTest
     }
 
     /**
-     * Tests that {@link MetricCollection#apply(SampleData, Set)} throws an expected exception when cancelled.
+     * Tests that {@link MetricCollection#apply(Pool, Set)} throws an expected exception when cancelled.
      * 
      * @throws MetricCalculationException if the execution fails
      * @throws MetricParameterException if the metric construction fails
@@ -510,9 +510,9 @@ public class MetricCollectionTest
                               () -> MetricCollectionBuilder.of().setExecutorService( metricPool ).build() );
         assertEquals( expected.getCause().getClass(), MetricCalculationException.class );
 
-        MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> collection =
+        MetricCollection<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> collection =
                 MetricFactory.ofSingleValuedScoreCollection( MetricConstants.MEAN_ERROR );
-        Method method = collection.getClass().getDeclaredMethod( "apply", SampleData.class, Set.class );
+        Method method = collection.getClass().getDeclaredMethod( "apply", Pool.class, Set.class );
         method.setAccessible( true );
 
         Set<?> ignore = Mockito.mock( Set.class );
@@ -533,13 +533,13 @@ public class MetricCollectionTest
     {
 
         //Generate some data
-        SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
+        Pool<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         MeanError meanError = Mockito.mock( MeanError.class );
         Mockito.when( meanError.getMetricName() ).thenReturn( MetricConstants.MEAN_ERROR );
         Mockito.when( meanError.apply( input ) ).thenThrow( IllegalArgumentException.class );
 
-        MetricCollectionBuilder<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> failed =
+        MetricCollectionBuilder<Pool<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> failed =
                 MetricCollectionBuilder.of();
 
         MetricCalculationException expected = assertThrows( MetricCalculationException.class,
@@ -561,11 +561,11 @@ public class MetricCollectionTest
     public void testOfSingleValuedScalarCollectable() throws MetricParameterException
     {
         //Generate some data
-        final SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
+        final Pool<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Create a collection of metrics that consume single-valued pairs and produce a scalar output
         //Add some appropriate metrics to the collection
-        final MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> n =
+        final MetricCollection<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> n =
                 MetricFactory.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
                                                              MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
                                                              MetricConstants.COEFFICIENT_OF_DETERMINATION,
@@ -629,7 +629,7 @@ public class MetricCollectionTest
     /**
      * Construct a collection of metrics that consume single-valued pairs and produce scalar outputs. Computes and 
      * benchmarks the output when specifying a non-empty set of metrics to ignore for
-     * {@link MetricCollection#apply(wres.datamodel.pools.SampleData, Set)}.
+     * {@link MetricCollection#apply(wres.datamodel.pools.Pool, Set)}.
      * @throws MetricParameterException if the metric construction fails 
      */
 
@@ -637,10 +637,10 @@ public class MetricCollectionTest
     public void testOfSingleValuedScalarWithIgnore() throws MetricParameterException
     {
         //Generate some data
-        final SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
+        final Pool<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Add some appropriate metrics to the collection
-        final MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> collection =
+        final MetricCollection<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> collection =
                 MetricFactory.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
                                                              MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
                                                              MetricConstants.MEAN_SQUARE_ERROR,
@@ -649,7 +649,7 @@ public class MetricCollectionTest
         Set<MetricConstants> ignore = new HashSet<>( Arrays.asList( MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                                     MetricConstants.MEAN_SQUARE_ERROR ) );
         List<DoubleScoreStatisticOuter> actual = collection.apply( input, ignore );
-        SampleMetadata outM = SampleMetadata.of();
+        PoolMetadata outM = PoolMetadata.of();
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setMetric( CorrelationPearsons.MAIN )

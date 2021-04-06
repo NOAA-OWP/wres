@@ -20,7 +20,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.FeatureKey;
@@ -225,7 +225,7 @@ public class PoolSupplierTest
      * Metadata for common pools.
      */
 
-    private SampleMetadata metadata;
+    private PoolMetadata metadata;
 
     /**
      * An upscaler.
@@ -430,7 +430,7 @@ public class PoolSupplierTest
                                           null,
                                           false );
 
-        this.metadata = SampleMetadata.of( evaluation, pool );
+        this.metadata = PoolMetadata.of( evaluation, pool );
 
         // Upscaler
         this.upscaler = TimeSeriesOfDoubleUpscaler.of();
@@ -460,7 +460,7 @@ public class PoolSupplierTest
                                                             Duration.ofHours( 0 ),
                                                             Duration.ofHours( 23 ) );
 
-        SampleMetadata poolOneMetadata = SampleMetadata.of( this.metadata,
+        PoolMetadata poolOneMetadata = PoolMetadata.of( this.metadata,
                                                             poolOneWindow,
                                                             this.desiredTimeScale );
 
@@ -539,7 +539,7 @@ public class PoolSupplierTest
                                                             Duration.ofHours( 0 ),
                                                             Duration.ofHours( 23 ) );
 
-        SampleMetadata poolOneMetadata = SampleMetadata.of( this.metadata,
+        PoolMetadata poolOneMetadata = PoolMetadata.of( this.metadata,
                                                             poolOneWindow,
                                                             this.desiredTimeScale );
 
@@ -548,7 +548,7 @@ public class PoolSupplierTest
                                            .setIsBaselinePool( true )
                                            .build();
 
-        SampleMetadata poolOneMetadataBaseline = SampleMetadata.of( poolOneMetadata.getEvaluation(), baselinePool );
+        PoolMetadata poolOneMetadataBaseline = PoolMetadata.of( poolOneMetadata.getEvaluation(), baselinePool );
 
         Supplier<PoolOfPairs<Double, Double>> poolOneSupplier =
                 new PoolOfPairsSupplierBuilder<Double, Double>().setLeft( obsSupplier )
@@ -632,7 +632,7 @@ public class PoolSupplierTest
                                                                Duration.ofHours( 0 ),
                                                                Duration.ofHours( 23 ) );
 
-        SampleMetadata poolElevenMetadata = SampleMetadata.of( this.metadata,
+        PoolMetadata poolElevenMetadata = PoolMetadata.of( this.metadata,
                                                                poolElevenWindow,
                                                                this.desiredTimeScale );
 
@@ -733,7 +733,7 @@ public class PoolSupplierTest
                                                                  Duration.ofHours( 17 ),
                                                                  Duration.ofHours( 40 ) );
 
-        SampleMetadata poolEighteenMetadata = SampleMetadata.of( this.metadata,
+        PoolMetadata poolEighteenMetadata = PoolMetadata.of( this.metadata,
                                                                  poolEighteenWindow,
                                                                  this.desiredTimeScale );
 

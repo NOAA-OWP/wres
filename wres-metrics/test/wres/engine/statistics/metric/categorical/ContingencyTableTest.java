@@ -9,9 +9,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.Metric;
@@ -47,10 +47,10 @@ public final class ContingencyTableTest
     public void testApply()
     {
         //Generate some data
-        SampleData<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
+        Pool<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Metadata for the output
-        SampleMetadata meta = Boilerplate.getSampleMetadata();
+        PoolMetadata meta = Boilerplate.getSampleMetadata();
 
         DoubleScoreStatistic result =
                 DoubleScoreStatistic.newBuilder()
@@ -94,9 +94,9 @@ public final class ContingencyTableTest
     @Test
     public void testExceptionOnNullInput()
     {
-        SampleDataException exception =
-                assertThrows( SampleDataException.class,
-                              () -> this.table.apply( (SampleData<Pair<Boolean, Boolean>>) null ) );
+        PoolException exception =
+                assertThrows( PoolException.class,
+                              () -> this.table.apply( (Pool<Pair<Boolean, Boolean>>) null ) );
 
         String expectedMessage = "Specify non-null input to the 'CONTINGENCY TABLE'.";
 

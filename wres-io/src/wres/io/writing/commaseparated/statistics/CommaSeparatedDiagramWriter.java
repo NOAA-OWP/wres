@@ -29,7 +29,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.statistics.DiagramStatisticOuter;
@@ -228,7 +228,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                     Slicer.filter( output, data -> data.getMetadata().getTimeWindow().equals( timeWindow ) );
 
             MetricConstants metricName = next.get( 0 ).getMetricName();
-            SampleMetadata meta = next.get( 0 ).getMetadata();
+            PoolMetadata meta = next.get( 0 ).getMetadata();
 
             List<RowCompareByLeft> rows = getRowsForOneDiagram( next, formatter, durationUnits );
 
@@ -288,7 +288,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                     Slicer.filter( output, data -> data.getMetadata().getThresholds().equals( threshold ) );
 
             MetricConstants metricName = next.get( 0 ).getMetricName();
-            SampleMetadata meta = next.get( 0 ).getMetadata();
+            PoolMetadata meta = next.get( 0 ).getMetadata();
 
             List<RowCompareByLeft> rows =
                     CommaSeparatedDiagramWriter.getRowsForOneDiagram( next, formatter, durationUnits );
@@ -337,7 +337,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         SortedSet<TimeWindowOuter> timeWindows =
                 Slicer.discover( output, meta -> meta.getMetadata().getTimeWindow() );
 
-        SampleMetadata metadata = CommaSeparatedStatisticsWriter.getSampleMetadataFromListOfStatistics( output );
+        PoolMetadata metadata = CommaSeparatedStatisticsWriter.getSampleMetadataFromListOfStatistics( output );
 
         // Loop across time windows
         for ( TimeWindowOuter timeWindow : timeWindows )
@@ -361,7 +361,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
             for ( List<Double> next : merge.values() )
             {
                 CommaSeparatedStatisticsWriter.addRowToInput( returnMe,
-                                                              SampleMetadata.of( metadata, timeWindow ),
+                                                              PoolMetadata.of( metadata, timeWindow ),
                                                               next,
                                                               formatter,
                                                               false,
