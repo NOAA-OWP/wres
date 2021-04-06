@@ -17,6 +17,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,8 +27,8 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -40,7 +41,6 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.io.config.ConfigHelper;
-import wres.io.pooling.PoolSupplier.PoolOfPairsSupplierBuilder;
 import wres.io.project.Project;
 import wres.io.retrieval.CachingRetriever;
 import wres.io.retrieval.DataAccessException;
@@ -52,7 +52,7 @@ import wres.io.retrieval.RetrieverFactory;
  * @author james.brown@hydrosolved.com
  */
 
-public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<L, R>>>>
+public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L, R>>>>>
 {
 
     /**
@@ -150,10 +150,10 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
      * The pool suppliers.
      */
 
-    private final List<Supplier<PoolOfPairs<L, R>>> pools;
+    private final List<Supplier<Pool<Pair<L, R>>>> pools;
 
     @Override
-    public List<Supplier<PoolOfPairs<L, R>>> get()
+    public List<Supplier<Pool<Pair<L, R>>>> get()
     {
         return this.pools;
     }
@@ -479,7 +479,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
      * @throws PoolCreationException if the pools cannot be created for any other reason
      */
 
-    private List<Supplier<PoolOfPairs<L, R>>> createPools()
+    private List<Supplier<Pool<Pair<L, R>>>> createPools()
     {
         LOGGER.debug( "Creating pool suppliers for '{}'.", this.getBasicMetadata() );
 
@@ -488,7 +488,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
         Inputs inputsConfig = projectConfig.getInputs();
 
         // Create the common builder
-        PoolOfPairsSupplierBuilder<L, R> builder = new PoolOfPairsSupplierBuilder<>();
+        PoolSupplier.Builder<L, R> builder = new PoolSupplier.Builder<>();
         builder.setLeftUpscaler( this.getLeftUpscaler() )
                .setRightUpscaler( this.getRightUpscaler() )
                .setPairer( this.getPairer() )
@@ -821,7 +821,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
      */
 
     private TimeScaleOuter setAndGetDesiredTimeScale( PairConfig pairConfig,
-                                                      PoolOfPairsSupplierBuilder<L, R> builder )
+                                                      PoolSupplier.Builder<L, R> builder )
     {
 
         TimeScaleOuter desiredTimeScale = null;

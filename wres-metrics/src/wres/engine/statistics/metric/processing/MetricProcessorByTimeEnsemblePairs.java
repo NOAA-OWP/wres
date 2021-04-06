@@ -29,8 +29,7 @@ import wres.datamodel.Slicer;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.BasicPool.SampleDataBasicBuilder;
-import wres.datamodel.pools.pairs.PoolOfPairs;
+import wres.datamodel.pools.BasicPool.Builder;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
@@ -58,7 +57,7 @@ import wres.engine.statistics.metric.processing.MetricFuturesByTime.MetricFuture
  * @author james.brown@hydrosolved.com
  */
 
-public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<PoolOfPairs<Double, Ensemble>>
+public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Pool<Pair<Double, Ensemble>>>
 {
     /**
      * Logger instance.
@@ -113,7 +112,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
     private final Function<Pair<Double, Ensemble>, Pair<Double, Double>> toSingleValues;
 
     @Override
-    public StatisticsForProject apply( PoolOfPairs<Double, Ensemble> input )
+    public StatisticsForProject apply( Pool<Pair<Double, Ensemble>> input )
     {
         Objects.requireNonNull( input, "Expected non-null input to the metric processor." );
 
@@ -479,7 +478,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
             }
 
 
-            SampleDataBasicBuilder<Pair<Double, Ensemble>> builder = new SampleDataBasicBuilder<>();
+            Builder<Pair<Double, Ensemble>> builder = new Builder<>();
             pairs = builder.addData( pairs )
                            .setMetadata( PoolMetadata.of( pairs.getMetadata(),
                                                             oneOrTwo ) )
@@ -616,7 +615,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                 baselineMeta = PoolMetadata.of( transformed.getBaselineData().getMetadata(), oneOrTwo );
             }
 
-            SampleDataBasicBuilder<Pair<Probability, Probability>> builder = new SampleDataBasicBuilder<>();
+            Builder<Pair<Probability, Probability>> builder = new Builder<>();
             transformed = builder.addData( transformed )
                                  .setMetadata( PoolMetadata.of( transformed.getMetadata(), oneOrTwo ) )
                                  .setMetadataForBaseline( baselineMeta )
@@ -776,7 +775,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                     baselineMeta = PoolMetadata.of( dichotomous.getBaselineData().getMetadata(), compound );
                 }
 
-                SampleDataBasicBuilder<Pair<Boolean, Boolean>> builder = new SampleDataBasicBuilder<>();
+                Builder<Pair<Boolean, Boolean>> builder = new Builder<>();
                 dichotomous = builder.addData( dichotomous )
                                      .setMetadata( PoolMetadata.of( dichotomous.getMetadata(), compound ) )
                                      .setMetadataForBaseline( baselineMeta )

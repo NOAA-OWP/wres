@@ -3,7 +3,9 @@ package wres.engine.statistics.metric.timeseries;
 import java.util.Objects;
 import java.util.Random;
 
-import wres.datamodel.pools.pairs.PoolOfPairs;
+import org.apache.commons.lang3.tuple.Pair;
+
+import wres.datamodel.pools.Pool;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.engine.statistics.metric.Metric;
 
@@ -12,7 +14,7 @@ import wres.engine.statistics.metric.Metric;
  * 
  * @author james.brown@hydrosolved.com
  */
-public abstract class TimingError implements Metric<PoolOfPairs<Double,Double>, DurationDiagramStatisticOuter>
+public abstract class TimingError implements Metric<Pool<Pair<Double,Double>>, DurationDiagramStatisticOuter>
 {
 
     /**

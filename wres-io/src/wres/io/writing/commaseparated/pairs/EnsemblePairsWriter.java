@@ -12,10 +12,10 @@ import java.util.function.Function;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.Ensemble;
-import wres.datamodel.pools.pairs.PoolOfPairs;
+import wres.datamodel.pools.Pool;
 
 /**
- * Class for writing a {@link PoolOfPairs} that contains ensemble forecasts.
+ * Class for writing a {@link Pool} that contains ensemble forecasts.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -53,7 +53,7 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
     }
 
     @Override
-    StringJoiner getHeaderFromPairs( PoolOfPairs<Double, Ensemble> pairs )
+    StringJoiner getHeaderFromPairs( Pool<Pair<Double, Ensemble>> pairs )
     {
         StringJoiner joiner = super.getHeaderFromPairs( pairs );
 
@@ -101,7 +101,7 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
      * @return the largest number of ensemble members
      */
 
-    private int getEnsembleMemberCount( PoolOfPairs<Double, Ensemble> pairs )
+    private int getEnsembleMemberCount( Pool<Pair<Double, Ensemble>> pairs )
     {
         OptionalInt members = pairs.getRawData()
                                    .stream()

@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -26,7 +27,7 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.pools.pairs.PoolOfPairs;
+import wres.datamodel.pools.Pool;
 import wres.io.data.caching.Features;
 import wres.io.project.Project;
 import wres.io.retrieval.UnitMapper;
@@ -140,7 +141,7 @@ public class PoolsGeneratorTest
                .thenReturn( evaluationDescription );
 
         // Create the actual output
-        List<Supplier<PoolOfPairs<Double, Double>>> actual =
+        List<Supplier<Pool<Pair<Double, Double>>>> actual =
                 PoolFactory.getSingleValuedPools( mockEvaluation,
                                                   this.wresDatabase,
                                                   this.featuresCache,
@@ -241,7 +242,7 @@ public class PoolsGeneratorTest
                .thenReturn( evaluationDescription );
 
         // Create the actual output
-        List<Supplier<PoolOfPairs<Double, Ensemble>>> actual =
+        List<Supplier<Pool<Pair<Double, Ensemble>>>> actual =
                 PoolFactory.getEnsemblePools( mockEvaluation,
                                               this.wresDatabase,
                                               this.featuresCache,

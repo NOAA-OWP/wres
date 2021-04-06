@@ -8,9 +8,11 @@ import java.util.Objects;
 import java.util.StringJoiner;
 
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.time.TimeSeries;
 
 /**
- * A minimal implementation of a {@link Pool}.
+ * A minimal implementation of a {@link Pool} that does not provide a time-series view of the values, i.e. the 
+ * {@link Pool#get()} throws an {@link UnsupportedOperationException}.
  * 
  * @param <T> the data type
  * @author james.brown@hydrosolved.com
@@ -87,7 +89,7 @@ public class BasicPool<T> implements Pool<T>
             return null;
         }
 
-        SampleDataBasicBuilder<T> builder = new SampleDataBasicBuilder<>();
+        Builder<T> builder = new Builder<>();
 
         return builder.addData( this.baselineSampleData )
                       .setClimatology( this.climatology )
@@ -117,6 +119,12 @@ public class BasicPool<T> implements Pool<T>
         return join.toString();
     }
 
+    @Override
+    public List<TimeSeries<T>> get()
+    {
+        throw new UnsupportedOperationException( "A BasicPool does not provide a time-series view of the data." );
+    }
+
     /**
      * Construct an instance.
      * 
@@ -129,7 +137,7 @@ public class BasicPool<T> implements Pool<T>
 
     public static <T> BasicPool<T> of( List<T> sampleData, PoolMetadata meta )
     {
-        SampleDataBasicBuilder<T> builder = new SampleDataBasicBuilder<>();
+        Builder<T> builder = new Builder<>();
 
         return builder.addData( sampleData )
                       .setMetadata( meta )
@@ -191,12 +199,12 @@ public class BasicPool<T> implements Pool<T>
      */
 
     public static <T> BasicPool<T> of( List<T> sampleData,
-                                             PoolMetadata sampleMeta,
-                                             List<T> baselineData,
-                                             PoolMetadata baselineMeta,
-                                             VectorOfDoubles climatology )
+                                       PoolMetadata sampleMeta,
+                                       List<T> baselineData,
+                                       PoolMetadata baselineMeta,
+                                       VectorOfDoubles climatology )
     {
-        SampleDataBasicBuilder<T> builder = new SampleDataBasicBuilder<>();
+        Builder<T> builder = new Builder<>();
 
         return builder.addData( sampleData )
                       .setMetadata( sampleMeta )
@@ -210,7 +218,7 @@ public class BasicPool<T> implements Pool<T>
      * A builder to build the metric input.
      */
 
-    public static class SampleDataBasicBuilder<T>
+    public static class Builder<T>
     {
 
         /**
@@ -248,7 +256,7 @@ public class BasicPool<T> implements Pool<T>
          * @return the builder
          */
 
-        public SampleDataBasicBuilder<T> setMetadata( PoolMetadata mainMeta )
+        public Builder<T> setMetadata( PoolMetadata mainMeta )
         {
             this.mainMeta = mainMeta;
             return this;
@@ -261,7 +269,7 @@ public class BasicPool<T> implements Pool<T>
          * @return the builder
          */
 
-        public SampleDataBasicBuilder<T> setMetadataForBaseline( PoolMetadata baselineMeta )
+        public Builder<T> setMetadataForBaseline( PoolMetadata baselineMeta )
         {
             this.baselineMeta = baselineMeta;
 
@@ -275,7 +283,7 @@ public class BasicPool<T> implements Pool<T>
          * @return the builder
          */
 
-        public SampleDataBasicBuilder<T> setClimatology( VectorOfDoubles climatology )
+        public Builder<T> setClimatology( VectorOfDoubles climatology )
         {
             this.climatology = climatology;
 
@@ -290,7 +298,7 @@ public class BasicPool<T> implements Pool<T>
          * @throws NullPointerException if the input is null
          */
 
-        public SampleDataBasicBuilder<T> addData( T sample )
+        public Builder<T> addData( T sample )
         {
             this.sampleData.add( sample );
 
@@ -306,7 +314,7 @@ public class BasicPool<T> implements Pool<T>
          * @throws NullPointerException if the input is null
          */
 
-        public SampleDataBasicBuilder<T> addDataForBaseline( T baselineSample )
+        public Builder<T> addDataForBaseline( T baselineSample )
         {
             this.baselineSampleData.add( baselineSample );
 
@@ -320,7 +328,7 @@ public class BasicPool<T> implements Pool<T>
          * @return the builder
          */
 
-        public SampleDataBasicBuilder<T> addData( List<T> sampleData )
+        public Builder<T> addData( List<T> sampleData )
         {
             Objects.requireNonNull( sampleData );
 
@@ -337,7 +345,7 @@ public class BasicPool<T> implements Pool<T>
         * @return the builder
         */
 
-        public SampleDataBasicBuilder<T> addDataForBaseline( List<T> baselineSampleData )
+        public Builder<T> addDataForBaseline( List<T> baselineSampleData )
         {
             Objects.requireNonNull( baselineSampleData );
 
@@ -345,7 +353,7 @@ public class BasicPool<T> implements Pool<T>
 
             return this;
         }
-        
+
         /**
          * Adds a dataset to the builder.
          * 
@@ -354,7 +362,7 @@ public class BasicPool<T> implements Pool<T>
          * @throws NullPointerException if the input is null
          */
 
-        public SampleDataBasicBuilder<T> addData( Pool<T> data )
+        public Builder<T> addData( Pool<T> data )
         {
             Objects.requireNonNull( data );
 
@@ -370,7 +378,7 @@ public class BasicPool<T> implements Pool<T>
             }
 
             return this;
-        }        
+        }
 
         /**
          * Builds the metric input.
@@ -392,7 +400,7 @@ public class BasicPool<T> implements Pool<T>
      * @throws PoolException if the pairs are invalid
      */
 
-    BasicPool( SampleDataBasicBuilder<T> b )
+    BasicPool( Builder<T> b )
     {
         //Ensure safe types
         this.sampleData = Collections.unmodifiableList( b.sampleData );
@@ -455,11 +463,11 @@ public class BasicPool<T> implements Pool<T>
         if ( Objects.isNull( baselineSampleData ) != Objects.isNull( baselineMeta ) )
         {
             throw new PoolException( "Specify a non-null baseline input and associated metadata or leave both "
-                                           + "null. The null status of the data and metadata, respectively, is: ["
-                                           + Objects.isNull( baselineSampleData )
-                                           + ","
-                                           + Objects.isNull( baselineMeta )
-                                           + "]" );
+                                     + "null. The null status of the data and metadata, respectively, is: ["
+                                     + Objects.isNull( baselineSampleData )
+                                     + ","
+                                     + Objects.isNull( baselineMeta )
+                                     + "]" );
         }
 
         if ( Objects.nonNull( baselineSampleData ) && baselineSampleData.contains( (T) null ) )
@@ -482,15 +490,14 @@ public class BasicPool<T> implements Pool<T>
             if ( this.getClimatology().size() == 0 )
             {
                 throw new PoolException( "Cannot build the paired data with an empty climatology: add one or "
-                                               + "more values." );
+                                         + "more values." );
             }
 
             if ( !Arrays.stream( this.getClimatology().getDoubles() ).anyMatch( Double::isFinite ) )
             {
                 throw new PoolException( "Must have at least one non-missing value in the climatological "
-                                               + "input" );
+                                         + "input" );
             }
         }
     }
-
 }

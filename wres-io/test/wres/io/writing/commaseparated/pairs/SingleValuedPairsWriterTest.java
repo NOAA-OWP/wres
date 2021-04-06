@@ -32,7 +32,6 @@ import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
@@ -56,19 +55,19 @@ public final class SingleValuedPairsWriterTest
      * First set of pairs to use for writing.
      */
 
-    private static PoolOfPairs<Double, Double> pairs = null;
+    private static wres.datamodel.pools.Pool<Pair<Double, Double>> pairs = null;
 
     /**
      * Second set of pairs to use for writing.
      */
 
-    private static PoolOfPairs<Double, Double> pairsTwo = null;
+    private static wres.datamodel.pools.Pool<Pair<Double, Double>> pairsTwo = null;
 
     /**
      * Third set of pairs to use for writing.
      */
 
-    private static PoolOfPairs<Double, Double> pairsThree = null;
+    private static wres.datamodel.pools.Pool<Pair<Double, Double>> pairsThree = null;
 
     private static final String VARIABLE_NAME = "ARMS";
     private static final FeatureKey FEATURE = FeatureKey.of( "FRUIT" );
@@ -241,7 +240,7 @@ public final class SingleValuedPairsWriterTest
 
             PoolMetadata metadata = PoolMetadata.of( evaluation, pool );
 
-            PoolOfPairs<Double, Double> emptyPairs =
+            wres.datamodel.pools.Pool<Pair<Double, Double>> emptyPairs =
                     tsBuilder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
                                                             Collections.emptySortedSet() ) )
                              .setMetadata( metadata )
@@ -316,9 +315,9 @@ public final class SingleValuedPairsWriterTest
             Builder<Double, Double> tsBuilder = new Builder<>();
             tsBuilder.addPoolOfPairs( pairs );
             tsBuilder.setMetadata( PoolMetadata.of( pairs.getMetadata(),
-                                                      TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                          Instant.parse( "1990-01-01T00:00:00Z" ),
-                                                                          Duration.ZERO ) ) );
+                                                    TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                        Instant.parse( "1990-01-01T00:00:00Z" ),
+                                                                        Duration.ZERO ) ) );
 
 
             // Write the pairs

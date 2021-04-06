@@ -11,7 +11,7 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.pools.BasicPool.SampleDataBasicBuilder;
+import wres.datamodel.pools.BasicPool.Builder;
 import wres.statistics.generated.Evaluation;
 
 /**
@@ -31,7 +31,7 @@ public final class BasicPoolTest
     @Before
     public void runBeforeEachTest()
     {
-        SampleDataBasicBuilder<String> builder = new SampleDataBasicBuilder<>();
+        Builder<String> builder = new Builder<>();
 
         this.sampleTest = builder.addData( List.of( "a", "b", "c" ) )
                                  .setMetadata( PoolMetadata.of() )
@@ -56,7 +56,7 @@ public final class BasicPoolTest
     @Test
     public void testGetBaselineData()
     {
-        SampleDataBasicBuilder<String> builder = new SampleDataBasicBuilder<>();
+        Builder<String> builder = new Builder<>();
 
         Pool<String> expected = builder.addData( List.of( "d", "e", "f" ) )
                                        .setMetadata( PoolMetadata.of() )
@@ -92,7 +92,7 @@ public final class BasicPoolTest
 
         // Symmetric
         Pool<String> another =
-                new SampleDataBasicBuilder<String>().addData( List.of( "a", "b", "c" ) )
+                new Builder<String>().addData( List.of( "a", "b", "c" ) )
                                                     .setMetadata( PoolMetadata.of() )
                                                     .addDataForBaseline( List.of( "d", "e", "f" ) )
                                                     .setMetadataForBaseline( PoolMetadata.of() )
@@ -103,7 +103,7 @@ public final class BasicPoolTest
 
         // Transitive
         Pool<String> yetAnother =
-                new SampleDataBasicBuilder<String>().addData( List.of( "a", "b", "c" ) )
+                new Builder<String>().addData( List.of( "a", "b", "c" ) )
                                                     .setMetadata( PoolMetadata.of() )
                                                     .addDataForBaseline( List.of( "d", "e", "f" ) )
                                                     .setMetadataForBaseline( PoolMetadata.of() )
@@ -125,7 +125,7 @@ public final class BasicPoolTest
 
         // Check unequal cases
         Pool<String> unequalOnData =
-                new SampleDataBasicBuilder<String>().addData( List.of( "z", "b", "c" ) )
+                new Builder<String>().addData( List.of( "z", "b", "c" ) )
                                                     .setMetadata( PoolMetadata.of() )
                                                     .addDataForBaseline( List.of( "d", "e", "f" ) )
                                                     .setMetadataForBaseline( PoolMetadata.of() )
@@ -135,7 +135,7 @@ public final class BasicPoolTest
         assertNotEquals( unequalOnData, this.sampleTest );
 
         Pool<String> unequalOnMetadata =
-                new SampleDataBasicBuilder<String>().addData( List.of( "a", "b", "c" ) )
+                new Builder<String>().addData( List.of( "a", "b", "c" ) )
                                                     .setMetadata( PoolMetadata.of( Evaluation.newBuilder()
                                                                                                .setMeasurementUnit( "CFS" )
                                                                                                .build(),
@@ -148,7 +148,7 @@ public final class BasicPoolTest
         assertNotEquals( unequalOnMetadata, this.sampleTest );
 
         Pool<String> unequalOnBaseline =
-                new SampleDataBasicBuilder<String>().addData( List.of( "a", "b", "c" ) )
+                new Builder<String>().addData( List.of( "a", "b", "c" ) )
                                                     .setMetadata( PoolMetadata.of() )
                                                     .addDataForBaseline( List.of( "d", "e", "q" ) )
                                                     .setMetadataForBaseline( PoolMetadata.of() )
@@ -158,7 +158,7 @@ public final class BasicPoolTest
         assertNotEquals( unequalOnBaseline, this.sampleTest );
 
         Pool<String> unequalOnBaselineMeta =
-                new SampleDataBasicBuilder<String>().addData( List.of( "a", "b", "c" ) )
+                new Builder<String>().addData( List.of( "a", "b", "c" ) )
                                                     .setMetadata( PoolMetadata.of() )
                                                     .addDataForBaseline( List.of( "d", "e", "f" ) )
                                                     .setMetadataForBaseline( PoolMetadata.of( Evaluation.newBuilder()
@@ -171,7 +171,7 @@ public final class BasicPoolTest
         assertNotEquals( unequalOnBaselineMeta, this.sampleTest );
 
         Pool<String> unequalOnClimatology =
-                new SampleDataBasicBuilder<String>().addData( List.of( "a", "b", "c" ) )
+                new Builder<String>().addData( List.of( "a", "b", "c" ) )
                                                     .setMetadata( PoolMetadata.of() )
                                                     .addDataForBaseline( List.of( "d", "e", "f" ) )
                                                     .setMetadataForBaseline( PoolMetadata.of() )
@@ -188,7 +188,7 @@ public final class BasicPoolTest
         assertEquals( this.sampleTest.hashCode(), this.sampleTest.hashCode() );
 
         // Consistent when invoked multiple times
-        SampleDataBasicBuilder<String> builder = new SampleDataBasicBuilder<>();
+        Builder<String> builder = new Builder<>();
 
         Pool<String> another = builder.addData( List.of( "a", "b", "c" ) )
                                       .setMetadata( PoolMetadata.of() )
@@ -207,7 +207,7 @@ public final class BasicPoolTest
     @Test
     public void testExceptionOnConstructionWithNullEntry()
     {
-        SampleDataBasicBuilder<String> builder = new SampleDataBasicBuilder<>();
+        Builder<String> builder = new Builder<>();
 
         builder.addData( Arrays.asList( (String) null ) ).setMetadata( PoolMetadata.of() );
 
@@ -219,7 +219,7 @@ public final class BasicPoolTest
     {
         VectorOfDoubles climatology = VectorOfDoubles.of( Double.NaN );
 
-        SampleDataBasicBuilder<String> builder = new SampleDataBasicBuilder<>();
+        Builder<String> builder = new Builder<>();
 
         builder.addData( List.of( "OK" ) )
                .setClimatology( climatology )

@@ -38,8 +38,8 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -56,7 +56,6 @@ import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.categorical.ContingencyTable;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.Evaluation;
-import wres.statistics.generated.Pool;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -113,7 +112,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     {
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithoutThresholds.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
+        MetricProcessor<Pool<Pair<Double, Ensemble>>> processor =
                 MetricFactory.ofMetricProcessorForEnsemblePairs( config,
                                                                  null );
         StatisticsForProject results =
@@ -168,7 +167,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         String configPath = TEST_SOURCE;
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
+        MetricProcessor<Pool<Pair<Double, Ensemble>>> processor =
                 MetricFactory.ofMetricProcessorForEnsemblePairs( config,
                                                                  StatisticType.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
@@ -345,7 +344,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null,
                                    null );
 
-        MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
+        MetricProcessor<Pool<Pair<Double, Ensemble>>> processor =
                 MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig,
                                                                  Collections.singleton( StatisticType.DOUBLE_SCORE ) );
 
@@ -379,7 +378,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithProbabilityThresholds.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
+        MetricProcessor<Pool<Pair<Double, Ensemble>>> processor =
                 MetricFactory.ofMetricProcessorForEnsemblePairs( config,
                                                                  Collections.singleton( StatisticType.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
@@ -523,7 +522,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     @Test
     public void testExceptionOnNullInput() throws MetricParameterException
     {
-        MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
+        MetricProcessor<Pool<Pair<Double, Ensemble>>> processor =
                 MetricFactory.ofMetricProcessorForEnsemblePairs( new ProjectConfig( null,
                                                                                     null,
                                                                                     null,
@@ -585,7 +584,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null,
                                    null );
 
-        MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
+        MetricProcessor<Pool<Pair<Double, Ensemble>>> processor =
                 MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig,
                                                                  Collections.singleton( StatisticType.DOUBLE_SCORE ) );
 
@@ -695,7 +694,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testAllValid.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
+        MetricProcessor<Pool<Pair<Double, Ensemble>>> processor =
                 MetricFactory.ofMetricProcessorForEnsemblePairs( config,
                                                                  StatisticType.set() );
         //Check for the expected number of metrics
@@ -713,7 +712,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         String configPath = TEST_SOURCE;
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
+        MetricProcessor<Pool<Pair<Double, Ensemble>>> processor =
                 MetricFactory.ofMetricProcessorForEnsemblePairs( config,
                                                                  StatisticType.set() );
 
@@ -862,7 +861,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testContingencyTable.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
+        MetricProcessor<Pool<Pair<Double, Ensemble>>> processor =
                 MetricFactory.ofMetricProcessorForEnsemblePairs( config, StatisticType.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
 
@@ -880,11 +879,11 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( featureTuple,
-                                          expectedWindow,
-                                          null,
-                                          null,
-                                          false );
+        wres.statistics.generated.Pool pool = MessageFactory.parse( featureTuple,
+                                                                    expectedWindow,
+                                                                    null,
+                                                                    null,
+                                                                    false );
 
         PoolMetadata expectedSampleMeta = PoolMetadata.of( evaluation, pool );
 
@@ -1118,7 +1117,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         String configPath = TEST_SOURCE;
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
+        MetricProcessor<Pool<Pair<Double, Ensemble>>> processor =
                 MetricFactory.ofMetricProcessorForEnsemblePairs( config, StatisticType.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsFour() );
 
@@ -1163,7 +1162,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null,
                                    null );
 
-        MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
+        MetricProcessor<Pool<Pair<Double, Ensemble>>> processor =
                 MetricFactory.ofMetricProcessorForEnsemblePairs( mock, StatisticType.set() );
 
         Set<MetricConstants> actualSingleValuedScores =
@@ -1220,7 +1219,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null,
                                    null );
 
-        MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
+        MetricProcessor<Pool<Pair<Double, Ensemble>>> processor =
                 MetricFactory.ofMetricProcessorForEnsemblePairs( mock, StatisticType.set() );
 
         Set<MetricConstants> actualSingleValuedScores =

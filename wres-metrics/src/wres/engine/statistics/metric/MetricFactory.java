@@ -108,7 +108,7 @@ public final class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public static MetricProcessor<PoolOfPairs<Double, Double>>
+    public static MetricProcessor<Pool<Pair<Double, Double>>>
             ofMetricProcessorForSingleValuedPairs( final ProjectConfig config,
                                                    final Set<StatisticType> mergeSet )
                     throws MetricParameterException
@@ -135,7 +135,7 @@ public final class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public static MetricProcessor<PoolOfPairs<Double, Ensemble>>
+    public static MetricProcessor<Pool<Pair<Double, Ensemble>>>
             ofMetricProcessorForEnsemblePairs( final ProjectConfig config,
                                                final Set<StatisticType> mergeSet )
                     throws MetricParameterException
@@ -163,7 +163,7 @@ public final class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public static MetricProcessor<PoolOfPairs<Double, Double>>
+    public static MetricProcessor<Pool<Pair<Double, Double>>>
             ofMetricProcessorForSingleValuedPairs( final ProjectConfig config,
                                                    final ThresholdsByMetric thresholds,
                                                    final Set<StatisticType> mergeSet )
@@ -192,7 +192,7 @@ public final class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public static MetricProcessor<PoolOfPairs<Double, Ensemble>>
+    public static MetricProcessor<Pool<Pair<Double, Ensemble>>>
             ofMetricProcessorForEnsemblePairs( final ProjectConfig config,
                                                final ThresholdsByMetric thresholds,
                                                final Set<StatisticType> mergeSet )
@@ -222,7 +222,7 @@ public final class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public static MetricProcessor<PoolOfPairs<Double, Double>>
+    public static MetricProcessor<Pool<Pair<Double, Double>>>
             ofMetricProcessorForSingleValuedPairs( final ProjectConfig config,
                                                    final ThresholdsByMetric thresholds,
                                                    final ExecutorService thresholdExecutor,
@@ -254,7 +254,7 @@ public final class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public static MetricProcessor<PoolOfPairs<Double, Ensemble>>
+    public static MetricProcessor<Pool<Pair<Double, Ensemble>>>
             ofMetricProcessorForEnsemblePairs( final ProjectConfig config,
                                                final ThresholdsByMetric thresholds,
                                                final ExecutorService thresholdExecutor,
@@ -288,7 +288,7 @@ public final class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public static MetricProcessor<PoolOfPairs<Double, Double>>
+    public static MetricProcessor<Pool<Pair<Double, Double>>>
             ofMetricProcessorForSingleValuedPairs( final ProjectConfig config,
                                                    final ThresholdsByMetric thresholds,
                                                    final ExecutorService thresholdExecutor,
@@ -321,7 +321,7 @@ public final class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public static MetricProcessorByTime<PoolOfPairs<Double, Ensemble>>
+    public static MetricProcessorByTime<Pool<Pair<Double, Ensemble>>>
             ofMetricProcessorForEnsemblePairs( final ProjectConfig config,
                                                final ThresholdsByMetric thresholds,
                                                final ExecutorService thresholdExecutor,
@@ -487,7 +487,7 @@ public final class MetricFactory
     }
 
     /**
-     * <p>Returns a {@link MetricCollection} of metrics that consume a {@link PoolOfPairs} with single-valued 
+     * <p>Returns a {@link MetricCollection} of metrics that consume a {@link Pool} with single-valued 
      * pairs and produce {@link DurationDiagramStatisticOuter}.</p>
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
@@ -499,7 +499,7 @@ public final class MetricFactory
      */
 
     public static
-            MetricCollection<PoolOfPairs<Double, Double>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter>
+            MetricCollection<Pool<Pair<Double, Double>>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter>
             ofSingleValuedTimeSeriesCollection( MetricConstants... metric )
                     throws MetricParameterException
     {
@@ -756,7 +756,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link PoolOfPairs} with single-valued pairs 
+     * Returns a {@link MetricCollection} of metrics that consume {@link Pool} with single-valued pairs 
      * and produce {@link DurationDiagramStatisticOuter}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
@@ -767,12 +767,12 @@ public final class MetricFactory
      */
 
     public static
-            MetricCollection<PoolOfPairs<Double, Double>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter>
+            MetricCollection<Pool<Pair<Double, Double>>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter>
             ofSingleValuedTimeSeriesCollection( ExecutorService executor,
                                                 MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<PoolOfPairs<Double, Double>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter> builder =
+        final MetricCollectionBuilder<Pool<Pair<Double, Double>>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter> builder =
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
@@ -1063,7 +1063,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes a {@link PoolOfPairs} with single-valued pairs and produces 
+     * Returns a {@link Metric} that consumes a {@link Pool} with single-valued pairs and produces 
      * {@link DurationDiagramStatisticOuter}.
      * 
      * @param metric the metric identifier
@@ -1071,7 +1071,7 @@ public final class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public static Metric<PoolOfPairs<Double, Double>, DurationDiagramStatisticOuter>
+    public static Metric<Pool<Pair<Double, Double>>, DurationDiagramStatisticOuter>
             ofSingleValuedTimeSeries( MetricConstants metric )
     {
         // Use a random number generator with a fixed seed if required

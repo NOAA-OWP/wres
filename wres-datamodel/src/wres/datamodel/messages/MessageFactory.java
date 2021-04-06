@@ -277,13 +277,13 @@ public class MessageFactory
     }
 
     /**
-     * Returns a {@link Pairs} from a {@link PoolOfPairs}.
+     * Returns a {@link Pairs} from a {@link Pool}.
      * 
      * @param pairs The pairs
      * @return a pairs message
      */
 
-    public static Pairs parseTimeSeriesOfEnsemblePairs( PoolOfPairs<Double, Ensemble> pairs )
+    public static Pairs parseTimeSeriesOfEnsemblePairs( wres.datamodel.pools.Pool<Pair<Double, Ensemble>> pairs )
     {
         Objects.requireNonNull( pairs );
 
@@ -692,7 +692,7 @@ public class MessageFactory
      */
 
     static Statistics parseOnePool( StatisticsForProject project,
-                                    PoolOfPairs<Double, Ensemble> pairs,
+                                    wres.datamodel.pools.Pool<Pair<Double, Ensemble>> pairs,
                                     Set<StatisticType> ignore )
             throws InterruptedException
     {
@@ -823,7 +823,7 @@ public class MessageFactory
         {
             statistics.setPool( metadata.getPool() );
         }
-        
+
         return statistics.build();
     }
 
@@ -909,13 +909,13 @@ public class MessageFactory
         wres.datamodel.time.TimeWindowOuter window = metadata.getTimeWindow();
         wres.datamodel.thresholds.OneOrTwoThresholds thresholds = metadata.getThresholds();
 
-        if( metadata.getPool().getGeometryTuplesCount() != 1 )
+        if ( metadata.getPool().getGeometryTuplesCount() != 1 )
         {
             throw new IllegalArgumentException( "Expected one geometry tuple per pool but discovered "
-                    + metadata.getPool().getGeometryTuplesCount()
-                    + ", which is not supported." );
+                                                + metadata.getPool().getGeometryTuplesCount()
+                                                + ", which is not supported." );
         }
-        
+
         GeometryTuple geometryTuple = metadata.getPool()
                                               .getGeometryTuples( 0 );
 

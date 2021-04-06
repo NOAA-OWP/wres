@@ -11,6 +11,7 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,8 +31,8 @@ import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -55,7 +56,6 @@ import wres.io.retrieval.RetrieverFactory;
 import wres.io.retrieval.SingleValuedRetrieverFactory;
 import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.Database;
-import wres.statistics.generated.Pool;
 
 /**
  * A factory class for generating the pools of pairs associated with an evaluation.
@@ -100,12 +100,12 @@ public class PoolFactory
      *            data
      */
 
-    public static List<Supplier<PoolOfPairs<Double, Double>>> getSingleValuedPools( Evaluation evaluation,
-                                                                                    Database database,
-                                                                                    Features featuresCache,
-                                                                                    Project project,
-                                                                                    FeatureTuple feature,
-                                                                                    UnitMapper unitMapper )
+    public static List<Supplier<Pool<Pair<Double, Double>>>> getSingleValuedPools( Evaluation evaluation,
+                                                                                   Database database,
+                                                                                   Features featuresCache,
+                                                                                   Project project,
+                                                                                   FeatureTuple feature,
+                                                                                   UnitMapper unitMapper )
     {
         Objects.requireNonNull( evaluation, "Cannot create pools from a null evaluation." );
         Objects.requireNonNull( project, "Cannot create pools from a null project." );
@@ -158,9 +158,9 @@ public class PoolFactory
 
         // Create the basic metadata for the pools
         PoolMetadata mainMetadata = PoolFactory.createMetadata( evaluation,
-                                                                  feature,
-                                                                  desiredTimeScale,
-                                                                  LeftOrRightOrBaseline.RIGHT );
+                                                                feature,
+                                                                desiredTimeScale,
+                                                                LeftOrRightOrBaseline.RIGHT );
 
         // Create the basic metadata for the baseline pools, if any
         // Also, create a baseline generator function (e.g., persistence), if required
@@ -230,12 +230,12 @@ public class PoolFactory
      *            data
      */
 
-    public static List<Supplier<PoolOfPairs<Double, Ensemble>>> getEnsemblePools( Evaluation evaluation,
-                                                                                  Database database,
-                                                                                  Features featuresCache,
-                                                                                  Project project,
-                                                                                  FeatureTuple feature,
-                                                                                  UnitMapper unitMapper )
+    public static List<Supplier<Pool<Pair<Double, Ensemble>>>> getEnsemblePools( Evaluation evaluation,
+                                                                                 Database database,
+                                                                                 Features featuresCache,
+                                                                                 Project project,
+                                                                                 FeatureTuple feature,
+                                                                                 UnitMapper unitMapper )
     {
         Objects.requireNonNull( evaluation, "Cannot create pools from a null evaluation." );
         Objects.requireNonNull( project, "Cannot create pools from a null project." );
@@ -290,9 +290,9 @@ public class PoolFactory
 
         // Create the basic metadata for the pools
         PoolMetadata mainMetadata = PoolFactory.createMetadata( evaluation,
-                                                                  feature,
-                                                                  desiredTimeScale,
-                                                                  LeftOrRightOrBaseline.RIGHT );
+                                                                feature,
+                                                                desiredTimeScale,
+                                                                LeftOrRightOrBaseline.RIGHT );
 
         // Create the basic metadata for the baseline pools, if any
         PoolMetadata baselineMetadata = null;
@@ -372,15 +372,15 @@ public class PoolFactory
      */
 
     private static PoolMetadata createMetadata( Evaluation evaluation,
-                                                  FeatureTuple featureTuple,
-                                                  TimeScaleOuter desiredTimeScale,
-                                                  LeftOrRightOrBaseline leftOrRightOrBaseline )
+                                                FeatureTuple featureTuple,
+                                                TimeScaleOuter desiredTimeScale,
+                                                LeftOrRightOrBaseline leftOrRightOrBaseline )
     {
-        Pool pool = MessageFactory.parse( featureTuple,
-                                          TimeWindowOuter.of(), // Default to start with
-                                          desiredTimeScale,
-                                          null,
-                                          leftOrRightOrBaseline == LeftOrRightOrBaseline.BASELINE );
+        wres.statistics.generated.Pool pool = MessageFactory.parse( featureTuple,
+                                                                    TimeWindowOuter.of(), // Default to start with
+                                                                    desiredTimeScale,
+                                                                    null,
+                                                                    leftOrRightOrBaseline == LeftOrRightOrBaseline.BASELINE );
 
         return PoolMetadata.of( evaluation.getEvaluationDescription(), pool );
     }

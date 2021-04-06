@@ -18,6 +18,7 @@ import java.util.stream.StreamSupport;
 import org.junit.Test;
 
 import wres.datamodel.FeatureKey;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -94,7 +95,7 @@ public final class PoolOfPairsTest
 
         b.addTimeSeriesForBaseline( timeSeries ).setMetadataForBaseline( baseMeta );
 
-        PoolOfPairs<Double, Double> actualBaseline = b.build().getBaselineData();
+        Pool<Pair<Double, Double>> actualBaseline = b.build().getBaselineData();
 
         assertNotNull( actualBaseline );
     }
@@ -143,7 +144,7 @@ public final class PoolOfPairsTest
          .setMetadata( meta )
          .setMetadataForBaseline( baseMeta );
 
-        PoolOfPairs<Double, Double> tsAppend = c.build();
+        Pool<Pair<Double, Double>> tsAppend = c.build();
 
         //Check dataset dimensions
         SortedSet<Duration> durations = new TreeSet<>();
@@ -181,7 +182,7 @@ public final class PoolOfPairsTest
         Builder<Double, Double> d = new Builder<>();
         TimeSeries<Pair<Double, Double>> firstSeries = TimeSeries.of( metadata,
                                                                       first );
-        PoolOfPairs<Double, Double> ts =
+        Pool<Pair<Double, Double>> ts =
                 d.addTimeSeries( firstSeries )
                  .setMetadata( meta )
                  .build();
@@ -306,7 +307,7 @@ public final class PoolOfPairsTest
                               Pair.of( 12.0, 12.0 ) ) );
         PoolMetadata meta = PoolMetadata.of();
         //Add the time-series, with only one for baseline
-        PoolOfPairs<Double, Double> ts =
+        Pool<Pair<Double, Double>> ts =
                 b.addTimeSeries( TimeSeries.of( firstMetadata,
                                                 first ) )
                  .addTimeSeries( TimeSeries.of( secondMetadata,
@@ -371,7 +372,7 @@ public final class PoolOfPairsTest
         TimeSeriesMetadata metadata = getBoilerplateMetadata();
 
         //Add the time-series, with only one for baseline
-        PoolOfPairs<Double, Double> ts =
+        Pool<Pair<Double, Double>> ts =
                 b.addTimeSeries( TimeSeries.of( metadata, data ) )
                  .setMetadata( meta )
                  .build();
@@ -419,10 +420,10 @@ public final class PoolOfPairsTest
 
         PoolMetadata meta = PoolMetadata.of();
         TimeSeriesMetadata metadata = getBoilerplateMetadata();
-        PoolOfPairs<Double, Double> one = b.addTimeSeries( TimeSeries.of( metadata,
-                                                                          data ) )
-                                           .setMetadata( meta )
-                                           .build();
+        Pool<Pair<Double, Double>> one = b.addTimeSeries( TimeSeries.of( metadata,
+                                                                         data ) )
+                                          .setMetadata( meta )
+                                          .build();
 
 
         assertEquals( one, one );

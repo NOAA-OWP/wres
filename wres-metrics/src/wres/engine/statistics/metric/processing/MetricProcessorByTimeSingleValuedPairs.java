@@ -29,9 +29,8 @@ import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.BasicPool.SampleDataBasicBuilder;
+import wres.datamodel.pools.BasicPool;
 import wres.datamodel.pools.pairs.PoolOfPairs;
-import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
@@ -59,7 +58,7 @@ import wres.engine.statistics.metric.timeseries.TimingErrorDurationStatistics;
  * @author james.brown@hydrosolved.com
  */
 
-public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTime<PoolOfPairs<Double, Double>>
+public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTime<Pool<Pair<Double, Double>>>
 {
 
     /**
@@ -69,11 +68,11 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     private static final Logger LOGGER = LoggerFactory.getLogger( MetricProcessorByTimeSingleValuedPairs.class );
 
     /**
-     * A {@link MetricCollection} of {@link Metric} that consume a {@link PoolOfPairs} with single-valued pairs 
+     * A {@link MetricCollection} of {@link Metric} that consume a {@link Pool} with single-valued pairs 
      * and produce {@link DurationDiagramStatisticOuter}.
      */
 
-    private final MetricCollection<PoolOfPairs<Double, Double>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter> timeSeries;
+    private final MetricCollection<Pool<Pair<Double, Double>>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter> timeSeries;
 
     /**
      * An instance of {@link TimingErrorDurationStatistics} for each timing error metric that requires 
@@ -83,7 +82,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     private final Map<MetricConstants, TimingErrorDurationStatistics> timingErrorDurationStatistics;
 
     @Override
-    public StatisticsForProject apply( PoolOfPairs<Double, Double> input )
+    public StatisticsForProject apply( Pool<Pair<Double, Double>> input )
     {
         Objects.requireNonNull( input, "Expected non-null input to the metric processor." );
 
@@ -91,7 +90,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                 "Expected a non-null time window in the input metadata." );
 
         //Remove missing values, except for ordered input, such as time-series
-        PoolOfPairs<Double, Double> inputNoMissing = input;
+        Pool<Pair<Double, Double>> inputNoMissing = input;
 
         if ( !this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES ) )
         {
@@ -388,7 +387,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                 baselineMeta = PoolMetadata.of( transformed.getBaselineData().getMetadata(), oneOrTwo );
             }
 
-            SampleDataBasicBuilder<Pair<Boolean, Boolean>> builder = new SampleDataBasicBuilder<>();
+            BasicPool.Builder<Pair<Boolean, Boolean>> builder = new BasicPool.Builder<>();
 
             transformed = builder.addData( transformed )
                                  .setMetadata( PoolMetadata.of( input.getMetadata(), oneOrTwo ) )
@@ -404,7 +403,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     }
 
     /**
-     * Processes a set of metric futures that consume {@link PoolOfPairs} with single-valued pairs. 
+     * Processes a set of metric futures that consume {@link Pool} with single-valued pairs. 
      * 
      * @param input the input pairs
      * @param futures the metric futures
@@ -412,7 +411,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processTimeSeriesPairs( PoolOfPairs<Double, Double> input,
+    private void processTimeSeriesPairs( Pool<Pair<Double, Double>> input,
                                          MetricFuturesByTimeBuilder futures,
                                          StatisticType outGroup )
     {
@@ -435,7 +434,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             ThresholdOuter useMe = this.addQuantilesToThreshold( threshold, sorted );
             OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( useMe );
 
-            PoolOfPairs<Double, Double> pairs;
+            Pool<Pair<Double, Double>> pairs;
 
             // Filter the data if required
             if ( useMe.isFinite() )
@@ -457,14 +456,14 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                 baselineMeta = PoolMetadata.of( pairs.getBaselineData().getMetadata(), oneOrTwo );
             }
 
-            Builder<Double, Double> builder = new Builder<>();
+            PoolOfPairs.Builder<Double, Double> builder = new PoolOfPairs.Builder<>();
             pairs = builder.addPoolOfPairs( pairs )
                            .setMetadata( PoolMetadata.of( pairs.getMetadata(), oneOrTwo ) )
                            .setMetadataForBaseline( baselineMeta )
                            .build();
 
             // Build the future result
-            final PoolOfPairs<Double, Double> finalPairs = pairs;
+            final Pool<Pair<Double, Double>> finalPairs = pairs;
             Future<List<DurationDiagramStatisticOuter>> output =
                     CompletableFuture.supplyAsync( () -> this.timeSeries.apply( finalPairs, ignoreTheseMetrics ),
                                                    this.thresholdExecutor );

@@ -7,14 +7,15 @@ import static org.junit.Assert.assertTrue;
 import java.time.Instant;
 import java.util.Random;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
 
 import com.google.protobuf.Timestamp;
 
 import wres.datamodel.MetricConstants;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
-import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.singlevalued.SumOfSquareError;
@@ -46,7 +47,7 @@ public final class TimeToPeakErrorTest
     public void testTimeToPeakError()
     {
         // Generate some data
-        PoolOfPairs<Double, Double> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
+        Pool<Pair<Double, Double>> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
         DurationDiagramStatisticOuter actual = this.ttp.apply( input );
 

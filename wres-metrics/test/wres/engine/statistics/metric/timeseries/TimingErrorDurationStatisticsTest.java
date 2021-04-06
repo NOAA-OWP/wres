@@ -8,12 +8,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
-import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -36,7 +37,7 @@ public final class TimingErrorDurationStatisticsTest
     public void testApplyOneStatisticPerInstance() throws MetricParameterException
     {
         // Generate some data
-        PoolOfPairs<Double, Double> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
+        Pool<Pair<Double, Double>> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
         // Build a metric
         TimeToPeakError peakError = TimeToPeakError.of();
@@ -109,7 +110,7 @@ public final class TimingErrorDurationStatisticsTest
     public void testApplyMultipleStatisticInOneInstance() throws MetricParameterException
     {
         // Generate some data
-        PoolOfPairs<Double, Double> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
+        Pool<Pair<Double, Double>> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
         // Build a metric
         TimeToPeakError peakError = TimeToPeakError.of();
@@ -201,7 +202,7 @@ public final class TimingErrorDurationStatisticsTest
     public void testApplyWithNoData() throws MetricParameterException
     {
         // Generate some data
-        PoolOfPairs<Double, Double> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFour();
+        Pool<Pair<Double, Double>> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFour();
 
         // Build a metric
         TimeToPeakError peakError = TimeToPeakError.of();

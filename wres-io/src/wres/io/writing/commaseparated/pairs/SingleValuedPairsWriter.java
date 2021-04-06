@@ -9,10 +9,10 @@ import java.util.function.Function;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.pools.pairs.PoolOfPairs;
+import wres.datamodel.pools.Pool;
 
 /**
- * Class for writing a {@link PoolOfPairs} that contains single-valued pairs.
+ * Class for writing a {@link Pool} that contains single-valued pairs.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -53,7 +53,7 @@ public class SingleValuedPairsWriter extends PairsWriter<Double, Double>
     }
 
     @Override
-    StringJoiner getHeaderFromPairs( PoolOfPairs<Double, Double> pairs )
+    StringJoiner getHeaderFromPairs( Pool<Pair<Double, Double>> pairs )
     {
         StringJoiner joiner = super.getHeaderFromPairs( pairs );
 

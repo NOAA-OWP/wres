@@ -17,7 +17,6 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.BasicPool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -47,7 +46,7 @@ public final class MeanSquareErrorSkillScoreTest
     public void testApplyWithBaseline()
     {
         //Generate some data
-        PoolOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsTwo();
+        Pool<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Check the results
         DoubleScoreStatisticOuter actual = this.msess.apply( input );
@@ -91,7 +90,7 @@ public final class MeanSquareErrorSkillScoreTest
     public void testApplyWithoutBaselineTwo()
     {
         //Generate some data
-        PoolOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsOne();
+        Pool<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Check the results
         DoubleScoreStatisticOuter actual = this.msess.apply( input );

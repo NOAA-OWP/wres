@@ -162,7 +162,7 @@ public class MessageFactoryTest
      * Pairs to serialize.
      */
 
-    private PoolOfPairs<Double, Ensemble> ensemblePairs = null;
+    private wres.datamodel.pools.Pool<Pair<Double, Ensemble>> ensemblePairs = null;
 
     /**
      * Output directory.
@@ -534,7 +534,7 @@ public class MessageFactoryTest
         assertEquals( Format.CSV, MessageFactory.parse( DestinationType.NUMERIC ) );
         assertEquals( Format.CSV, MessageFactory.parse( DestinationType.CSV ) );
     }
-    
+
     /**
      * Returns a {@link List} containing several {@link DoubleScoreStatisticOuter} for one pool.
      * 
@@ -800,7 +800,7 @@ public class MessageFactoryTest
                         BoxplotStatisticOuter.of( boxplotTwo, metadata ) );
     }
 
-    private PoolOfPairs<Double, Ensemble> getPoolOfEnsemblePairs()
+    private wres.datamodel.pools.Pool<Pair<Double, Ensemble>> getPoolOfEnsemblePairs()
     {
         Builder<Double, Ensemble> b = new Builder<>();
         SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();

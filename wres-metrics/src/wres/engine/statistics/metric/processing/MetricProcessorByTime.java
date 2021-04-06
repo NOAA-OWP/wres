@@ -18,7 +18,7 @@ import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.BasicPool.SampleDataBasicBuilder;
+import wres.datamodel.pools.BasicPool.Builder;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.Statistic;
@@ -277,13 +277,13 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
                 baselineMeta = PoolMetadata.of( input.getBaselineData().getMetadata(), oneOrTwo );
             }
 
-            SampleDataBasicBuilder<Pair<Double, Double>> builder = new SampleDataBasicBuilder<>();
+            Builder<Pair<Double, Double>> builder = new Builder<>();
 
             Pool<Pair<Double, Double>> pairs = builder.addData( input )
-                                                            .setMetadata( PoolMetadata.of( input.getMetadata(),
-                                                                                             oneOrTwo ) )
-                                                            .setMetadataForBaseline( baselineMeta )
-                                                            .build();
+                                                      .setMetadata( PoolMetadata.of( input.getMetadata(),
+                                                                                     oneOrTwo ) )
+                                                      .setMetadataForBaseline( baselineMeta )
+                                                      .build();
 
             // Filter the data if required
             if ( useMe.isFinite() )
@@ -326,8 +326,8 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
 
             case DIAGRAM:
                 futures.addDiagramOutput( this.processSingleValuedPairs( input,
-                                                                             this.singleValuedDiagrams,
-                                                                             ignoreTheseMetrics ) );
+                                                                         this.singleValuedDiagrams,
+                                                                         ignoreTheseMetrics ) );
                 break;
             case BOXPLOT_PER_POOL:
                 futures.addBoxPlotOutputPerPool( this.processSingleValuedPairs( input,

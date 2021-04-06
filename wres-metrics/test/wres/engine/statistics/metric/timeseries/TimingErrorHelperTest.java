@@ -11,7 +11,7 @@ import java.util.Random;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
-import wres.datamodel.pools.pairs.PoolOfPairs;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -28,7 +28,7 @@ public final class TimingErrorHelperTest
     {
 
         // Generate some data
-        PoolOfPairs<Double,Double> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
+        Pool<Pair<Double, Double>> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
         Iterator<TimeSeries<Pair<Double,Double>>> iterator = input.get().iterator();
         TimeSeries<Pair<Double,Double>> first = iterator.next();
@@ -56,7 +56,7 @@ public final class TimingErrorHelperTest
     public void testGetTimeToPeakWithTies()
     {
         // Generate some data
-        PoolOfPairs<Double,Double> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFive();
+        Pool<Pair<Double, Double>> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFive();
         Iterator<TimeSeries<Pair<Double,Double>>> iterator = input.get().iterator();
         TimeSeries<Pair<Double,Double>> first = iterator.next();
 
