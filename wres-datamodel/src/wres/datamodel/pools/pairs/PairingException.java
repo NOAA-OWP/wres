@@ -1,4 +1,4 @@
-package wres.datamodel.sampledata.pairs;
+package wres.datamodel.pools.pairs;
 
 import wres.datamodel.DataException;
 

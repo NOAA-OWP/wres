@@ -26,7 +26,7 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.sampledata.pairs.PoolOfPairs;
+import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.io.data.caching.Features;
 import wres.io.project.Project;
 import wres.io.retrieval.UnitMapper;

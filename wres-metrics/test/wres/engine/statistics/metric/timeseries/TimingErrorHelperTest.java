@@ -11,7 +11,7 @@ import java.util.Random;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
-import wres.datamodel.sampledata.pairs.PoolOfPairs;
+import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 

@@ -1,7 +1,7 @@
 package wres.engine.statistics.metric;
 
 
-import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.pools.SampleData;
 import wres.datamodel.statistics.ScoreStatistic;
 
 /**

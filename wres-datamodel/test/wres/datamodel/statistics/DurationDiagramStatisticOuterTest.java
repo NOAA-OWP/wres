@@ -13,7 +13,7 @@ import com.google.protobuf.Timestamp;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.pools.SampleMetadata;
 import wres.statistics.generated.DurationDiagramMetric;
 import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.Evaluation;

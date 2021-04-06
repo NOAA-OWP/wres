@@ -9,8 +9,8 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.SampleDataException;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.engine.statistics.metric.Diagram;
 import wres.statistics.generated.DiagramMetric;

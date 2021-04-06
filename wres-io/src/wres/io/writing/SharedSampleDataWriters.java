@@ -11,7 +11,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.pools.SampleData;
 import wres.io.writing.commaseparated.pairs.EnsemblePairsWriter;
 import wres.io.writing.commaseparated.pairs.SingleValuedPairsWriter;
 

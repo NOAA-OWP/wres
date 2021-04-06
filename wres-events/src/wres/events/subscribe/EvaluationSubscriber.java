@@ -361,8 +361,7 @@ public class EvaluationSubscriber implements Closeable
     }
 
     /**
-     * Maintenance task that removes closed evaluations from the cache that succeeded and retains failed evaluations
-     * up to a cache size limit.
+     * Maintenance task that removes closed evaluations from the cache that succeeded and retains failed evaluations.
      */
 
     public void sweep()

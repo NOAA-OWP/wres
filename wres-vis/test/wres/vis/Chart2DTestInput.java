@@ -17,9 +17,9 @@ import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.sampledata.SampleDataBasic;
-import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.SampleDataBasic;
+import wres.datamodel.pools.SampleMetadata;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Pool;
 

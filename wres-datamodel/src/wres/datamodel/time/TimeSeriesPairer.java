@@ -1,7 +1,8 @@
 package wres.datamodel.time;
 
 import org.apache.commons.lang3.tuple.Pair;
-import wres.datamodel.sampledata.pairs.PairingException;
+
+import wres.datamodel.pools.pairs.PairingException;
 
 /**
  * Supports pairing of a left and right {@link TimeSeries} by valid time. 

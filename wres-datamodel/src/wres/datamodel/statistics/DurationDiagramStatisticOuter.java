@@ -12,7 +12,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import net.jcip.annotations.Immutable;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.pools.SampleMetadata;
 import wres.statistics.generated.DurationDiagramStatistic;
 
 /**

@@ -9,7 +9,7 @@ import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdOuter;

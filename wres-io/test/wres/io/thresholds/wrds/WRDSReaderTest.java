@@ -6,7 +6,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import wres.config.generated.*;
-import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdOuter;

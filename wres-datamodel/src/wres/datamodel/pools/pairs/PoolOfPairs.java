@@ -1,4 +1,4 @@
-package wres.datamodel.sampledata.pairs;
+package wres.datamodel.pools.pairs;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,9 +10,9 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.SampleMetadata;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 

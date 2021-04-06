@@ -16,8 +16,8 @@ import org.slf4j.LoggerFactory;
 import com.google.protobuf.Timestamp;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.PoolOfPairs;
+import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;

@@ -11,9 +11,9 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 
 import net.jcip.annotations.Immutable;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.pools.SampleMetadata;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.sampledata.SampleMetadata;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 

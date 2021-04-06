@@ -12,7 +12,7 @@ import org.junit.Test;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.pools.SampleMetadata;
 import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.Evaluation;

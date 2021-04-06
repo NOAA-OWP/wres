@@ -24,10 +24,10 @@ import java.util.stream.Collectors;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
+import wres.datamodel.pools.pairs.PoolOfPairs;
+import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.sampledata.pairs.PoolOfPairs.Builder;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
 import org.apache.commons.lang3.tuple.Pair;

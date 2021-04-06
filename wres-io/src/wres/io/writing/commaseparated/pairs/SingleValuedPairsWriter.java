@@ -9,7 +9,7 @@ import java.util.function.Function;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.sampledata.pairs.PoolOfPairs;
+import wres.datamodel.pools.pairs.PoolOfPairs;
 
 /**
  * Class for writing a {@link PoolOfPairs} that contains single-valued pairs.

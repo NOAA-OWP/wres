@@ -8,7 +8,7 @@ import wres.config.generated.ThresholdFormat;
 import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;

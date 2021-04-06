@@ -9,7 +9,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MissingValues;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.pools.SampleData;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreMetric;

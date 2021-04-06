@@ -11,7 +11,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import net.jcip.annotations.Immutable;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.pools.SampleMetadata;
 import wres.datamodel.statistics.DurationScoreStatisticOuter.DurationScoreComponentOuter;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;

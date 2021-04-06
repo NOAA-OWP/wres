@@ -1,8 +1,8 @@
 package wres.datamodel.statistics;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.SampleMetadata;
 
 /**
  * <p>A {@link Statistic} is used to describe {@link SampleData} or to infer something about the population from which

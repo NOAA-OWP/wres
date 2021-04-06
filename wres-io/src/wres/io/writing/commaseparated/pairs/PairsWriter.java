@@ -26,7 +26,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.sampledata.pairs.PoolOfPairs;
+import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;

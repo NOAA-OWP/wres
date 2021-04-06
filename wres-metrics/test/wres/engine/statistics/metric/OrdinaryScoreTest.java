@@ -5,7 +5,7 @@ import static org.junit.Assert.assertTrue;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
-import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.pools.SampleData;
 
 /**
  * Tests the {@link OrdinaryScore}.

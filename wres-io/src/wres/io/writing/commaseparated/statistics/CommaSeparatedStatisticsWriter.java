@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MissingValues;
-import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.pools.SampleMetadata;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;

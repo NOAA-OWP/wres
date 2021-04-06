@@ -14,7 +14,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.datamodel.FeatureKey;
-import wres.datamodel.sampledata.pairs.PairingException;
+import wres.datamodel.pools.pairs.PairingException;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
