@@ -1,7 +1,7 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.SampleDataException;
 import wres.datamodel.statistics.Statistic;
 
 /**

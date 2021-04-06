@@ -7,8 +7,8 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;

@@ -40,7 +40,7 @@ import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.StatisticType;
-import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;

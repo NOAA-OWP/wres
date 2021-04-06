@@ -5,7 +5,7 @@ import org.jfree.data.xy.AbstractXYDataset;
 
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
-import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.pools.SampleData;
 
 /**
  * An {@link AbstractXYDataset} for single-valued pairs.

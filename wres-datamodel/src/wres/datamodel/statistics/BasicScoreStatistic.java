@@ -11,7 +11,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.pools.SampleMetadata;
 import wres.datamodel.statistics.ScoreStatistic.ScoreComponent;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 

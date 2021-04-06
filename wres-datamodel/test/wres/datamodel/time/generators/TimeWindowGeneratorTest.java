@@ -17,7 +17,6 @@ import wres.config.generated.IntBoundsType;
 import wres.config.generated.PairConfig;
 import wres.config.generated.PoolingWindowConfig;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.datamodel.time.generators.TimeWindowGenerator;
 
 /**
  * <p>Tests the {@link TimeWindowGenerator}.

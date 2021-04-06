@@ -3,8 +3,8 @@ package wres.engine.statistics.metric;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.sampledata.MeasurementUnit;
-import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.pools.MeasurementUnit;
+import wres.datamodel.pools.SampleMetadata;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Pool;
 

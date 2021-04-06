@@ -5,8 +5,8 @@ import java.util.List;
 
 import org.junit.Test;
 
-import wres.datamodel.sampledata.MeasurementUnit;
-import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.pools.MeasurementUnit;
+import wres.datamodel.pools.SampleMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.BoxplotMetric;

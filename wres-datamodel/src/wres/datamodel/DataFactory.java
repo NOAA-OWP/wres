@@ -38,7 +38,7 @@ import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
-import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.pools.SampleMetadata;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.statistics.StatisticsForProject.Builder;

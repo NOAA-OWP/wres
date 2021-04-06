@@ -1,4 +1,4 @@
-package wres.datamodel.sampledata;
+package wres.datamodel.pools;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -11,7 +11,7 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.sampledata.SampleDataBasic.SampleDataBasicBuilder;
+import wres.datamodel.pools.SampleDataBasic.SampleDataBasicBuilder;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Pool;
 

@@ -13,10 +13,10 @@ import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.sampledata.SampleDataBasic;
-import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.SampleDataBasic;
+import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.Collectable;

@@ -14,8 +14,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.MetricConstants.StatisticType;
+import wres.datamodel.pools.SampleMetadata;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;

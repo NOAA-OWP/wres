@@ -17,12 +17,12 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.sampledata.SampleDataBasic;
-import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.sampledata.pairs.PoolOfPairs.Builder;
+import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.SampleDataBasic;
+import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.pairs.PoolOfPairs;
+import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;

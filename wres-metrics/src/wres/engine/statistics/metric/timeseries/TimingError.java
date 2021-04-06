@@ -3,7 +3,7 @@ package wres.engine.statistics.metric.timeseries;
 import java.util.Objects;
 import java.util.Random;
 
-import wres.datamodel.sampledata.pairs.PoolOfPairs;
+import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.engine.statistics.metric.Metric;
 

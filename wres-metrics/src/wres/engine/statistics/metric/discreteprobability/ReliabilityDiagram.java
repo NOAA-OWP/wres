@@ -12,9 +12,9 @@ import org.apache.commons.math3.util.Precision;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
+import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.SampleDataException;
 import wres.datamodel.MissingValues;
-import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.engine.statistics.metric.Diagram;
 import wres.statistics.generated.DiagramMetric;

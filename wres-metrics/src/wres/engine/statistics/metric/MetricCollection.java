@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.pools.SampleData;
 import wres.datamodel.statistics.Statistic;
 import wres.engine.statistics.metric.categorical.ContingencyTable;
 

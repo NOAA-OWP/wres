@@ -6,8 +6,8 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;

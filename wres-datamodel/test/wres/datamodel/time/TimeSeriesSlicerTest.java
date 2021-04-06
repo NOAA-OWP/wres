@@ -27,9 +27,9 @@ import wres.datamodel.FeatureKey;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.Ensemble.Labels;
-import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.sampledata.pairs.PoolOfPairs.Builder;
+import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.pairs.PoolOfPairs;
+import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 

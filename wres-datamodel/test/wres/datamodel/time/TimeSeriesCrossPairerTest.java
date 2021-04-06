@@ -13,8 +13,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.FeatureKey;
-import wres.datamodel.sampledata.pairs.CrossPairs;
-import wres.datamodel.sampledata.pairs.PairingException;
+import wres.datamodel.pools.pairs.CrossPairs;
+import wres.datamodel.pools.pairs.PairingException;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.TimeSeriesCrossPairer.MatchMode;

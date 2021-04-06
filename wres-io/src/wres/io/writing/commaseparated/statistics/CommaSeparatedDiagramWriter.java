@@ -29,7 +29,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.pools.SampleMetadata;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.statistics.DiagramStatisticOuter;

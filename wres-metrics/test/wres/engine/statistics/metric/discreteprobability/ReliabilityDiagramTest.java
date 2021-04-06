@@ -14,10 +14,10 @@ import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
-import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.sampledata.SampleDataBasic;
-import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.SampleDataBasic;
+import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.SampleMetadata;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.MetricTestDataFactory;

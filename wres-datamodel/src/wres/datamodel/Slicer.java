@@ -27,9 +27,9 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.Ensemble.Labels;
-import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.sampledata.SampleDataBasic.SampleDataBasicBuilder;
-import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.SampleDataBasic.SampleDataBasicBuilder;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.statistics.ScoreStatistic.ScoreComponent;
 import wres.datamodel.statistics.Statistic;

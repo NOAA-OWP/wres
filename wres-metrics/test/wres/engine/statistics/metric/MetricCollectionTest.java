@@ -27,8 +27,8 @@ import org.slf4j.Logger;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
 import wres.datamodel.Slicer;
-import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.Statistic;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
@@ -295,7 +295,7 @@ public class MetricCollectionTest
 
     /**
      * Expects a {@link MetricCalculationException} when calling 
-     * {@link MetricCollection#apply(wres.datamodel.sampledata.SampleData)} with null input.
+     * {@link MetricCollection#apply(wres.datamodel.pools.SampleData)} with null input.
      * 
      * @throws MetricCalculationException if the execution fails
      * @throws MetricParameterException if the metric construction fails
@@ -328,7 +328,7 @@ public class MetricCollectionTest
 
     /**
      * Expects a {@link MetricCalculationException} when calling 
-     * {@link MetricCollection#apply(wres.datamodel.sampledata.SampleData, Set)} with a null set of metrics to ignore.
+     * {@link MetricCollection#apply(wres.datamodel.pools.SampleData, Set)} with a null set of metrics to ignore.
      * 
      * @throws MetricCalculationException if the execution fails
      * @throws MetricParameterException if the metric construction fails
@@ -356,7 +356,7 @@ public class MetricCollectionTest
 
     /**
      * Expects an empty response when calling
-     * {@link MetricCollection#apply(wres.datamodel.sampledata.SampleData, Set)} with a set of metrics to ignore that 
+     * {@link MetricCollection#apply(wres.datamodel.pools.SampleData, Set)} with a set of metrics to ignore that 
      * includes all metrics in the collection.
      * 
      * @throws MetricCalculationException if the execution fails
@@ -629,7 +629,7 @@ public class MetricCollectionTest
     /**
      * Construct a collection of metrics that consume single-valued pairs and produce scalar outputs. Computes and 
      * benchmarks the output when specifying a non-empty set of metrics to ignore for
-     * {@link MetricCollection#apply(wres.datamodel.sampledata.SampleData, Set)}.
+     * {@link MetricCollection#apply(wres.datamodel.pools.SampleData, Set)}.
      * @throws MetricParameterException if the metric construction fails 
      */
 

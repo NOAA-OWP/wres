@@ -32,7 +32,7 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.Slicer;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.pools.SampleData;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;

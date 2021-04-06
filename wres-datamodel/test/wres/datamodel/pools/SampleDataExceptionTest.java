@@ -1,4 +1,4 @@
-package wres.datamodel.sampledata;
+package wres.datamodel.pools;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

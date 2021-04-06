@@ -10,7 +10,7 @@ import org.junit.Test;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.pools.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;

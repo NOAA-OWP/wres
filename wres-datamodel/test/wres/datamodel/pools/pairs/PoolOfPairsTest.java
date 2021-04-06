@@ -1,4 +1,4 @@
-package wres.datamodel.sampledata.pairs;
+package wres.datamodel.pools.pairs;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -18,9 +18,8 @@ import java.util.stream.StreamSupport;
 import org.junit.Test;
 
 import wres.datamodel.FeatureKey;
-import wres.datamodel.sampledata.MeasurementUnit;
-import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.PoolOfPairs.Builder;
+import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
@@ -29,8 +28,6 @@ import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.statistics.generated.Evaluation;
-import wres.statistics.generated.Pool;
 
 import org.apache.commons.lang3.tuple.Pair;
 

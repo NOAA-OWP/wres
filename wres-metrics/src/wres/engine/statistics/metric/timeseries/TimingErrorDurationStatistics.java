@@ -14,7 +14,7 @@ import java.util.function.ToDoubleFunction;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.pools.SampleDataException;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.engine.statistics.metric.FunctionFactory;

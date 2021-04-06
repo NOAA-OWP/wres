@@ -12,8 +12,8 @@ import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.PoolOfPairs;
+import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;

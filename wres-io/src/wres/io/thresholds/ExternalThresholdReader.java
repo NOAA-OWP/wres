@@ -5,7 +5,7 @@ import wres.config.generated.*;
 import wres.datamodel.DataFactory;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.config.ConfigHelper;

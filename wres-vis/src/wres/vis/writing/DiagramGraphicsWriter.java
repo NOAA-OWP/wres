@@ -20,7 +20,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.pools.SampleMetadata;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;

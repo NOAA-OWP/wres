@@ -11,9 +11,9 @@ import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.PoolOfPairs;
+import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricTestDataFactory;

@@ -18,8 +18,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.sampledata.pairs.CrossPairs;
-import wres.datamodel.sampledata.pairs.PairingException;
+import wres.datamodel.pools.pairs.CrossPairs;
+import wres.datamodel.pools.pairs.PairingException;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
 /**

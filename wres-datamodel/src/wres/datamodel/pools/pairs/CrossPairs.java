@@ -1,4 +1,4 @@
-package wres.datamodel.sampledata.pairs;
+package wres.datamodel.pools.pairs;
 
 import java.util.Collections;
 import java.util.List;

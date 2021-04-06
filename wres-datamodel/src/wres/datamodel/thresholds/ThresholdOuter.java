@@ -6,7 +6,7 @@ import java.util.function.DoublePredicate;
 import com.google.protobuf.DoubleValue;
 
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;

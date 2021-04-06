@@ -10,7 +10,7 @@ import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.sampledata.SampleMetadata;
+import wres.datamodel.pools.SampleMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;

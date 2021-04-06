@@ -9,10 +9,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.MetricConstants.MetricGroup;
+import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.SampleDataException;
 import wres.datamodel.MissingValues;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.DoubleErrorFunction;
 import wres.engine.statistics.metric.FunctionFactory;
