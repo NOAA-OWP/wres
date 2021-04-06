@@ -5,7 +5,7 @@ import java.util.Objects;
 import wres.datamodel.statistics.Statistic;
 
 /**
- * A class that stores the measurement unit associated with a {@link SampleData} or a {@link Statistic}. Examples 
+ * A class that stores the measurement unit associated with a {@link Pool} or a {@link Statistic}. Examples 
  * of measurement units include "millimeter", and "cubic feet per second".
  * 
  * TODO: replace this simplistic abstraction with a more sophisticated representation, probably based on javax.measure,

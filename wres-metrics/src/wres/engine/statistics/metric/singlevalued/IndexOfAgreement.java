@@ -7,8 +7,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MissingValues;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.statistics.generated.DoubleScoreMetric;
@@ -27,7 +27,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * 
  * @author james.brown@hydrosolved.com
  */
-public class IndexOfAgreement extends DoubleErrorScore<SampleData<Pair<Double, Double>>>
+public class IndexOfAgreement extends DoubleErrorScore<Pool<Pair<Double, Double>>>
 {
 
     /**
@@ -83,11 +83,11 @@ public class IndexOfAgreement extends DoubleErrorScore<SampleData<Pair<Double, D
     final double exponent;
 
     @Override
-    public DoubleScoreStatisticOuter apply( final SampleData<Pair<Double, Double>> s )
+    public DoubleScoreStatisticOuter apply( final Pool<Pair<Double, Double>> s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
+            throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
         double returnMe = MissingValues.DOUBLE;

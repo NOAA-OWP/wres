@@ -11,23 +11,22 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.pools.SampleDataBasic.SampleDataBasicBuilder;
+import wres.datamodel.pools.BasicPool.SampleDataBasicBuilder;
 import wres.statistics.generated.Evaluation;
-import wres.statistics.generated.Pool;
 
 /**
- * Tests the {@link SampleDataBasic}.
+ * Tests the {@link BasicPool}.
  * 
  * @author james.brown@hydrosolved.com
  */
-public final class SampleDataBasicTest
+public final class BasicPoolTest
 {
 
     /**
      * An instance for testing.
      */
 
-    private SampleDataBasic<String> sampleTest;
+    private BasicPool<String> sampleTest;
 
     @Before
     public void runBeforeEachTest()
@@ -35,9 +34,9 @@ public final class SampleDataBasicTest
         SampleDataBasicBuilder<String> builder = new SampleDataBasicBuilder<>();
 
         this.sampleTest = builder.addData( List.of( "a", "b", "c" ) )
-                                 .setMetadata( SampleMetadata.of() )
+                                 .setMetadata( PoolMetadata.of() )
                                  .addDataForBaseline( List.of( "d", "e", "f" ) )
-                                 .setMetadataForBaseline( SampleMetadata.of() )
+                                 .setMetadataForBaseline( PoolMetadata.of() )
                                  .setClimatology( VectorOfDoubles.of( 1, 2, 3 ) )
                                  .build();
     }
@@ -59,10 +58,10 @@ public final class SampleDataBasicTest
     {
         SampleDataBasicBuilder<String> builder = new SampleDataBasicBuilder<>();
 
-        SampleData<String> expected = builder.addData( List.of( "d", "e", "f" ) )
-                                             .setMetadata( SampleMetadata.of() )
-                                             .setClimatology( VectorOfDoubles.of( 1, 2, 3 ) )
-                                             .build();
+        Pool<String> expected = builder.addData( List.of( "d", "e", "f" ) )
+                                       .setMetadata( PoolMetadata.of() )
+                                       .setClimatology( VectorOfDoubles.of( 1, 2, 3 ) )
+                                       .build();
 
         assertEquals( expected, this.sampleTest.getBaselineData() );
     }
@@ -82,7 +81,7 @@ public final class SampleDataBasicTest
     @Test
     public void testGetMetadata()
     {
-        assertEquals( SampleMetadata.of(), this.sampleTest.getMetadata() );
+        assertEquals( PoolMetadata.of(), this.sampleTest.getMetadata() );
     }
 
     @Test
@@ -92,22 +91,22 @@ public final class SampleDataBasicTest
         assertTrue( this.sampleTest.equals( this.sampleTest ) );
 
         // Symmetric
-        SampleData<String> another =
+        Pool<String> another =
                 new SampleDataBasicBuilder<String>().addData( List.of( "a", "b", "c" ) )
-                                                    .setMetadata( SampleMetadata.of() )
+                                                    .setMetadata( PoolMetadata.of() )
                                                     .addDataForBaseline( List.of( "d", "e", "f" ) )
-                                                    .setMetadataForBaseline( SampleMetadata.of() )
+                                                    .setMetadataForBaseline( PoolMetadata.of() )
                                                     .setClimatology( VectorOfDoubles.of( 1, 2, 3 ) )
                                                     .build();
 
         assertTrue( another.equals( this.sampleTest ) && this.sampleTest.equals( another ) );
 
         // Transitive
-        SampleData<String> yetAnother =
+        Pool<String> yetAnother =
                 new SampleDataBasicBuilder<String>().addData( List.of( "a", "b", "c" ) )
-                                                    .setMetadata( SampleMetadata.of() )
+                                                    .setMetadata( PoolMetadata.of() )
                                                     .addDataForBaseline( List.of( "d", "e", "f" ) )
-                                                    .setMetadataForBaseline( SampleMetadata.of() )
+                                                    .setMetadataForBaseline( PoolMetadata.of() )
                                                     .setClimatology( VectorOfDoubles.of( 1, 2, 3 ) )
                                                     .build();
 
@@ -125,57 +124,57 @@ public final class SampleDataBasicTest
         assertNotEquals( another, null );
 
         // Check unequal cases
-        SampleData<String> unequalOnData =
+        Pool<String> unequalOnData =
                 new SampleDataBasicBuilder<String>().addData( List.of( "z", "b", "c" ) )
-                                                    .setMetadata( SampleMetadata.of() )
+                                                    .setMetadata( PoolMetadata.of() )
                                                     .addDataForBaseline( List.of( "d", "e", "f" ) )
-                                                    .setMetadataForBaseline( SampleMetadata.of() )
+                                                    .setMetadataForBaseline( PoolMetadata.of() )
                                                     .setClimatology( VectorOfDoubles.of( 1, 2, 3 ) )
                                                     .build();
 
         assertNotEquals( unequalOnData, this.sampleTest );
 
-        SampleData<String> unequalOnMetadata =
+        Pool<String> unequalOnMetadata =
                 new SampleDataBasicBuilder<String>().addData( List.of( "a", "b", "c" ) )
-                                                    .setMetadata( SampleMetadata.of( Evaluation.newBuilder()
+                                                    .setMetadata( PoolMetadata.of( Evaluation.newBuilder()
                                                                                                .setMeasurementUnit( "CFS" )
                                                                                                .build(),
-                                                                                     Pool.getDefaultInstance() ) )
+                                                                                     wres.statistics.generated.Pool.getDefaultInstance() ) )
                                                     .addDataForBaseline( List.of( "d", "e", "f" ) )
-                                                    .setMetadataForBaseline( SampleMetadata.of() )
+                                                    .setMetadataForBaseline( PoolMetadata.of() )
                                                     .setClimatology( VectorOfDoubles.of( 1, 2, 3 ) )
                                                     .build();
 
         assertNotEquals( unequalOnMetadata, this.sampleTest );
 
-        SampleData<String> unequalOnBaseline =
+        Pool<String> unequalOnBaseline =
                 new SampleDataBasicBuilder<String>().addData( List.of( "a", "b", "c" ) )
-                                                    .setMetadata( SampleMetadata.of() )
+                                                    .setMetadata( PoolMetadata.of() )
                                                     .addDataForBaseline( List.of( "d", "e", "q" ) )
-                                                    .setMetadataForBaseline( SampleMetadata.of() )
+                                                    .setMetadataForBaseline( PoolMetadata.of() )
                                                     .setClimatology( VectorOfDoubles.of( 1, 2, 3 ) )
                                                     .build();
 
         assertNotEquals( unequalOnBaseline, this.sampleTest );
 
-        SampleData<String> unequalOnBaselineMeta =
+        Pool<String> unequalOnBaselineMeta =
                 new SampleDataBasicBuilder<String>().addData( List.of( "a", "b", "c" ) )
-                                                    .setMetadata( SampleMetadata.of() )
+                                                    .setMetadata( PoolMetadata.of() )
                                                     .addDataForBaseline( List.of( "d", "e", "f" ) )
-                                                    .setMetadataForBaseline( SampleMetadata.of( Evaluation.newBuilder()
+                                                    .setMetadataForBaseline( PoolMetadata.of( Evaluation.newBuilder()
                                                                                                           .setMeasurementUnit( "CFS" )
                                                                                                           .build(),
-                                                                                                Pool.getDefaultInstance() ) )
+                                                                                                wres.statistics.generated.Pool.getDefaultInstance() ) )
                                                     .setClimatology( VectorOfDoubles.of( 1, 2, 3 ) )
                                                     .build();
 
         assertNotEquals( unequalOnBaselineMeta, this.sampleTest );
 
-        SampleData<String> unequalOnClimatology =
+        Pool<String> unequalOnClimatology =
                 new SampleDataBasicBuilder<String>().addData( List.of( "a", "b", "c" ) )
-                                                    .setMetadata( SampleMetadata.of() )
+                                                    .setMetadata( PoolMetadata.of() )
                                                     .addDataForBaseline( List.of( "d", "e", "f" ) )
-                                                    .setMetadataForBaseline( SampleMetadata.of() )
+                                                    .setMetadataForBaseline( PoolMetadata.of() )
                                                     .setClimatology( VectorOfDoubles.of( 1, 2, 4 ) )
                                                     .build();
 
@@ -191,12 +190,12 @@ public final class SampleDataBasicTest
         // Consistent when invoked multiple times
         SampleDataBasicBuilder<String> builder = new SampleDataBasicBuilder<>();
 
-        SampleData<String> another = builder.addData( List.of( "a", "b", "c" ) )
-                                            .setMetadata( SampleMetadata.of() )
-                                            .addDataForBaseline( List.of( "d", "e", "f" ) )
-                                            .setMetadataForBaseline( SampleMetadata.of() )
-                                            .setClimatology( VectorOfDoubles.of( 1, 2, 3 ) )
-                                            .build();
+        Pool<String> another = builder.addData( List.of( "a", "b", "c" ) )
+                                      .setMetadata( PoolMetadata.of() )
+                                      .addDataForBaseline( List.of( "d", "e", "f" ) )
+                                      .setMetadataForBaseline( PoolMetadata.of() )
+                                      .setClimatology( VectorOfDoubles.of( 1, 2, 3 ) )
+                                      .build();
 
         for ( int i = 0; i < 100; i++ )
         {
@@ -210,9 +209,9 @@ public final class SampleDataBasicTest
     {
         SampleDataBasicBuilder<String> builder = new SampleDataBasicBuilder<>();
 
-        builder.addData( Arrays.asList( (String) null ) ).setMetadata( SampleMetadata.of() );
+        builder.addData( Arrays.asList( (String) null ) ).setMetadata( PoolMetadata.of() );
 
-        assertThrows( SampleDataException.class, () -> builder.build() );
+        assertThrows( PoolException.class, () -> builder.build() );
     }
 
     @Test
@@ -224,9 +223,9 @@ public final class SampleDataBasicTest
 
         builder.addData( List.of( "OK" ) )
                .setClimatology( climatology )
-               .setMetadata( SampleMetadata.of() );
+               .setMetadata( PoolMetadata.of() );
 
-        assertThrows( SampleDataException.class, () -> builder.build() );
+        assertThrows( PoolException.class, () -> builder.build() );
     }
 
 

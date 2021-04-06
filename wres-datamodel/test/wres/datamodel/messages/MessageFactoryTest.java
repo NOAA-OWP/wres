@@ -35,7 +35,7 @@ import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -569,7 +569,7 @@ public class MessageFactoryTest
                                           threshold,
                                           false );
 
-        SampleMetadata metadata = SampleMetadata.of( evaluation, pool );
+        PoolMetadata metadata = PoolMetadata.of( evaluation, pool );
 
         List<DoubleScoreStatisticOuter> fakeOutputs = new ArrayList<>();
 
@@ -644,7 +644,7 @@ public class MessageFactoryTest
                                           threshold,
                                           false );
 
-        SampleMetadata metadata = SampleMetadata.of( evaluation, pool );
+        PoolMetadata metadata = PoolMetadata.of( evaluation, pool );
 
         DiagramMetricComponent forecastComponent =
                 DiagramMetricComponent.newBuilder()
@@ -729,7 +729,7 @@ public class MessageFactoryTest
                                           threshold,
                                           false );
 
-        SampleMetadata metadata = SampleMetadata.of( evaluation, pool );
+        PoolMetadata metadata = PoolMetadata.of( evaluation, pool );
 
         List<Double> probabilities = List.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
 
@@ -809,7 +809,7 @@ public class MessageFactoryTest
         values.add( Event.of( SECOND_TIME, Pair.of( 1.0, Ensemble.of( 7.0, 8.0, 9.0 ) ) ) );
         values.add( Event.of( THIRD_TIME, Pair.of( 2.0, Ensemble.of( 10.0, 11.0, 12.0 ) ) ) );
         values.add( Event.of( FOURTH_TIME, Pair.of( 3.0, Ensemble.of( 13.0, 14.0, 15.0 ) ) ) );
-        SampleMetadata meta = SampleMetadata.of();
+        PoolMetadata meta = PoolMetadata.of();
         TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( basisTime, THIRD_TIME );
         TimeSeries<Pair<Double, Ensemble>> timeSeries = TimeSeries.of( metadata,
                                                                        values );
@@ -861,7 +861,7 @@ public class MessageFactoryTest
                                           threshold,
                                           false );
 
-        SampleMetadata fakeMetadata = SampleMetadata.of( evaluation, pool );
+        PoolMetadata fakeMetadata = PoolMetadata.of( evaluation, pool );
 
         DurationScoreMetric metric = DurationScoreMetric.newBuilder()
                                                         .setName( MetricName.TIME_TO_PEAK_ERROR )
@@ -922,7 +922,7 @@ public class MessageFactoryTest
                                           threshold,
                                           false );
 
-        SampleMetadata fakeMetadata = SampleMetadata.of( evaluation, pool );
+        PoolMetadata fakeMetadata = PoolMetadata.of( evaluation, pool );
 
         DurationDiagramMetric metric = DurationDiagramMetric.newBuilder()
                                                             .setName( MetricName.TIME_TO_PEAK_ERROR )

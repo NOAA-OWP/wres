@@ -30,7 +30,7 @@ import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
@@ -157,14 +157,14 @@ public class PoolFactory
         TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleUpscaler.of();
 
         // Create the basic metadata for the pools
-        SampleMetadata mainMetadata = PoolFactory.createMetadata( evaluation,
+        PoolMetadata mainMetadata = PoolFactory.createMetadata( evaluation,
                                                                   feature,
                                                                   desiredTimeScale,
                                                                   LeftOrRightOrBaseline.RIGHT );
 
         // Create the basic metadata for the baseline pools, if any
         // Also, create a baseline generator function (e.g., persistence), if required
-        SampleMetadata baselineMetadata = null;
+        PoolMetadata baselineMetadata = null;
         UnaryOperator<TimeSeries<Double>> baselineGenerator = null;
         if ( project.hasBaseline() )
         {
@@ -289,13 +289,13 @@ public class PoolFactory
         TimeSeriesUpscaler<Ensemble> rightUpscaler = TimeSeriesOfEnsembleUpscaler.of();
 
         // Create the basic metadata for the pools
-        SampleMetadata mainMetadata = PoolFactory.createMetadata( evaluation,
+        PoolMetadata mainMetadata = PoolFactory.createMetadata( evaluation,
                                                                   feature,
                                                                   desiredTimeScale,
                                                                   LeftOrRightOrBaseline.RIGHT );
 
         // Create the basic metadata for the baseline pools, if any
-        SampleMetadata baselineMetadata = null;
+        PoolMetadata baselineMetadata = null;
         if ( project.hasBaseline() )
         {
             LOGGER.debug( "While genenerating pools for project '{}' and feature '{}', discovered a baseline data "
@@ -371,7 +371,7 @@ public class PoolFactory
      * @return the metadata
      */
 
-    private static SampleMetadata createMetadata( Evaluation evaluation,
+    private static PoolMetadata createMetadata( Evaluation evaluation,
                                                   FeatureTuple featureTuple,
                                                   TimeScaleOuter desiredTimeScale,
                                                   LeftOrRightOrBaseline leftOrRightOrBaseline )
@@ -382,7 +382,7 @@ public class PoolFactory
                                           null,
                                           leftOrRightOrBaseline == LeftOrRightOrBaseline.BASELINE );
 
-        return SampleMetadata.of( evaluation.getEvaluationDescription(), pool );
+        return PoolMetadata.of( evaluation.getEvaluationDescription(), pool );
     }
 
     /**
@@ -545,7 +545,7 @@ public class PoolFactory
                                                                              Supplier<Stream<TimeSeries<L>>> source,
                                                                              Function<L, R> mapper,
                                                                              TimeSeriesUpscaler<R> upscaler,
-                                                                             SampleMetadata baselineMeta,
+                                                                             PoolMetadata baselineMeta,
                                                                              Predicate<R> admissibleValue )
     {
         Objects.requireNonNull( baselineConfig );

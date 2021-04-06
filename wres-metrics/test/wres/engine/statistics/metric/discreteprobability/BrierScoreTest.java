@@ -13,10 +13,10 @@ import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataBasic;
-import wres.datamodel.pools.SampleDataException;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.BasicPool;
+import wres.datamodel.pools.PoolException;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.Probability;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.Boilerplate;
@@ -45,17 +45,17 @@ public final class BrierScoreTest
     }
 
     /**
-     * Compares the output from {@link BrierScore#apply(SampleData)} against expected output.
+     * Compares the output from {@link BrierScore#apply(Pool)} against expected output.
      */
 
     @Test
     public void testApply()
     {
         // Generate some data
-        SampleData<Pair<Probability, Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsOne();
+        Pool<Pair<Probability, Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsOne();
 
         // Metadata for the output
-        SampleMetadata m1 = Boilerplate.getSampleMetadata();
+        PoolMetadata m1 = Boilerplate.getSampleMetadata();
         // Check the results       
         DoubleScoreStatisticOuter actual = this.brierScore.apply( input );
 
@@ -75,15 +75,15 @@ public final class BrierScoreTest
     }
 
     /**
-     * Validates the output from {@link BrierScore#apply(SampleData)} when supplied with no data.
+     * Validates the output from {@link BrierScore#apply(Pool)} when supplied with no data.
      */
 
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SampleData<Pair<Probability, Probability>> input =
-                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
+        Pool<Pair<Probability, Probability>> input =
+                BasicPool.of( Arrays.asList(), PoolMetadata.of() );
 
         DoubleScoreStatisticOuter actual = brierScore.apply( input );
 
@@ -158,8 +158,8 @@ public final class BrierScoreTest
     @Test
     public void testExceptionOnNullInput()
     {
-        SampleDataException actual = assertThrows( SampleDataException.class,
-                                                   () -> this.brierScore.apply( (SampleData<Pair<Probability, Probability>>) null ) );
+        PoolException actual = assertThrows( PoolException.class,
+                                                   () -> this.brierScore.apply( (Pool<Pair<Probability, Probability>>) null ) );
 
         assertEquals( "Specify non-null input to the '" + this.brierScore.getName() + "'.", actual.getMessage() );
     }

@@ -185,46 +185,46 @@ public final class MetricFactoryTest
     }
 
     /**
-     * Tests {@link MetricFactory#ofSingleValuedMultiVector(MetricConstants)}. 
+     * Tests {@link MetricFactory#ofSingleValuedDiagram(MetricConstants)}. 
      */
     @Test
-    public void testOfSingleValuedMultiVector()
+    public void testOfSingleValuedDiagram()
     {
-        assertTrue( MetricFactory.ofSingleValuedMultiVector( MetricConstants.QUANTILE_QUANTILE_DIAGRAM ) instanceof QuantileQuantileDiagram );
+        assertTrue( MetricFactory.ofSingleValuedDiagram( MetricConstants.QUANTILE_QUANTILE_DIAGRAM ) instanceof QuantileQuantileDiagram );
 
         // Unrecognized metric
         IllegalArgumentException expected = assertThrows( IllegalArgumentException.class,
-                                                          () -> MetricFactory.ofSingleValuedMultiVector( MetricConstants.MAIN ) );
+                                                          () -> MetricFactory.ofSingleValuedDiagram( MetricConstants.MAIN ) );
         assertEquals( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN, expected.getMessage() );
     }
 
     /**
-     * Tests {@link MetricFactory#ofSingleValuedMultiVector(MetricConstants)}. 
+     * Tests {@link MetricFactory#ofSingleValuedDiagram(MetricConstants)}. 
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void testOfDiscreteProbabilityMultiVector() throws MetricParameterException
+    public void testOfDiscreteProbabilityDiagram() throws MetricParameterException
     {
-        assertTrue( MetricFactory.ofDiscreteProbabilityMultiVector( MetricConstants.RELIABILITY_DIAGRAM ) instanceof ReliabilityDiagram );
-        assertTrue( MetricFactory.ofDiscreteProbabilityMultiVector( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM ) instanceof RelativeOperatingCharacteristicDiagram );
+        assertTrue( MetricFactory.ofDiscreteProbabilityDiagram( MetricConstants.RELIABILITY_DIAGRAM ) instanceof ReliabilityDiagram );
+        assertTrue( MetricFactory.ofDiscreteProbabilityDiagram( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM ) instanceof RelativeOperatingCharacteristicDiagram );
 
         // Unrecognized metric
         IllegalArgumentException expected = assertThrows( IllegalArgumentException.class,
-                                                          () -> MetricFactory.ofDiscreteProbabilityMultiVector( MetricConstants.MAIN ) );
+                                                          () -> MetricFactory.ofDiscreteProbabilityDiagram( MetricConstants.MAIN ) );
         assertEquals( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN, expected.getMessage() );
     }
 
     /**
-     * Tests {@link MetricFactory#ofEnsembleMultiVector(MetricConstants)}. 
+     * Tests {@link MetricFactory#ofEnsembleDiagram(MetricConstants)}. 
      */
     @Test
-    public void testOfEnsembleMultiVector()
+    public void testOfEnsembleDiagram()
     {
-        assertTrue( MetricFactory.ofEnsembleMultiVector( MetricConstants.RANK_HISTOGRAM ) instanceof RankHistogram );
+        assertTrue( MetricFactory.ofEnsembleDiagram( MetricConstants.RANK_HISTOGRAM ) instanceof RankHistogram );
 
         // Unrecognized metric
         IllegalArgumentException expected = assertThrows( IllegalArgumentException.class,
-                                                          () -> MetricFactory.ofEnsembleMultiVector( MetricConstants.MAIN ) );
+                                                          () -> MetricFactory.ofEnsembleDiagram( MetricConstants.MAIN ) );
         assertEquals( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN, expected.getMessage() );
     }
 
@@ -290,24 +290,24 @@ public final class MetricFactoryTest
     }
 
     /**
-     * Tests {@link MetricFactory#ofSingleValuedMultiVectorCollection(MetricConstants...)}. 
+     * Tests {@link MetricFactory#ofSingleValuedDiagramCollection(MetricConstants...)}. 
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void testOfSingleValuedMultiVectorCollection() throws MetricParameterException
+    public void testOfSingleValuedDiagramCollection() throws MetricParameterException
     {
-        assertTrue( Objects.nonNull( MetricFactory.ofSingleValuedMultiVectorCollection( MetricConstants.QUANTILE_QUANTILE_DIAGRAM ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofSingleValuedDiagramCollection( MetricConstants.QUANTILE_QUANTILE_DIAGRAM ) ) );
     }
 
     /**
-     * Tests {@link MetricFactory#ofDiscreteProbabilityMultiVectorCollection(MetricConstants...)}. 
+     * Tests {@link MetricFactory#ofDiscreteProbabilityDiagramCollection(MetricConstants...)}. 
      * @throws MetricParameterException if the metric collection could not be constructed
      */
     @Test
-    public void testOfDiscreteProbabilityMultiVectorCollection() throws MetricParameterException
+    public void testOfDiscreteProbabilityDiagramCollection() throws MetricParameterException
     {
-        assertTrue( Objects.nonNull( MetricFactory.ofDiscreteProbabilityMultiVectorCollection( MetricConstants.RELIABILITY_DIAGRAM ) ) );
-        assertTrue( Objects.nonNull( MetricFactory.ofDiscreteProbabilityMultiVectorCollection( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofDiscreteProbabilityDiagramCollection( MetricConstants.RELIABILITY_DIAGRAM ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofDiscreteProbabilityDiagramCollection( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM ) ) );
     }
 
     /**
@@ -323,13 +323,13 @@ public final class MetricFactoryTest
     }
 
     /**
-     * Tests {@link MetricFactory#ofEnsembleMultiVectorCollection(MetricConstants...)}. 
+     * Tests {@link MetricFactory#ofEnsembleDiagramCollection(MetricConstants...)}. 
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void testOfEnsembleMultiVectorCollection() throws MetricParameterException
+    public void testOfEnsembleDiagramCollection() throws MetricParameterException
     {
-        assertTrue( Objects.nonNull( MetricFactory.ofEnsembleMultiVectorCollection( MetricConstants.RANK_HISTOGRAM ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofEnsembleDiagramCollection( MetricConstants.RANK_HISTOGRAM ) ) );
     }
 
     /**

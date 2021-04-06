@@ -27,9 +27,9 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleMetadata;
-import wres.datamodel.pools.SampleDataBasic.SampleDataBasicBuilder;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolMetadata;
+import wres.datamodel.pools.BasicPool.SampleDataBasicBuilder;
 import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.Slicer;
@@ -332,7 +332,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processDichotomousPairs( SampleData<Pair<Double, Double>> input,
+    private void processDichotomousPairs( Pool<Pair<Double, Double>> input,
                                           MetricFuturesByTimeBuilder futures )
     {
         if ( hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ) )
@@ -351,7 +351,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processDichotomousPairsByThreshold( SampleData<Pair<Double, Double>> input,
+    private void processDichotomousPairsByThreshold( Pool<Pair<Double, Double>> input,
                                                      MetricFuturesByTimeBuilder futures,
                                                      StatisticType outGroup )
     {
@@ -379,19 +379,19 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                     pair -> Pair.of( useMe.test( pair.getLeft() ),
                                      useMe.test( pair.getRight() ) );
             //Transform the pairs
-            SampleData<Pair<Boolean, Boolean>> transformed = Slicer.transform( input, mapper );
+            Pool<Pair<Boolean, Boolean>> transformed = Slicer.transform( input, mapper );
 
             // Add the threshold to the metadata, in order to fully qualify the pairs
-            SampleMetadata baselineMeta = null;
+            PoolMetadata baselineMeta = null;
             if ( input.hasBaseline() )
             {
-                baselineMeta = SampleMetadata.of( transformed.getBaselineData().getMetadata(), oneOrTwo );
+                baselineMeta = PoolMetadata.of( transformed.getBaselineData().getMetadata(), oneOrTwo );
             }
 
             SampleDataBasicBuilder<Pair<Boolean, Boolean>> builder = new SampleDataBasicBuilder<>();
 
             transformed = builder.addData( transformed )
-                                 .setMetadata( SampleMetadata.of( input.getMetadata(), oneOrTwo ) )
+                                 .setMetadata( PoolMetadata.of( input.getMetadata(), oneOrTwo ) )
                                  .setMetadataForBaseline( baselineMeta )
                                  .build();
 
@@ -451,15 +451,15 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             }
 
             // Add the threshold to the metadata, in order to fully qualify the pairs
-            SampleMetadata baselineMeta = null;
+            PoolMetadata baselineMeta = null;
             if ( input.hasBaseline() )
             {
-                baselineMeta = SampleMetadata.of( pairs.getBaselineData().getMetadata(), oneOrTwo );
+                baselineMeta = PoolMetadata.of( pairs.getBaselineData().getMetadata(), oneOrTwo );
             }
 
             Builder<Double, Double> builder = new Builder<>();
             pairs = builder.addPoolOfPairs( pairs )
-                           .setMetadata( SampleMetadata.of( pairs.getMetadata(), oneOrTwo ) )
+                           .setMetadata( PoolMetadata.of( pairs.getMetadata(), oneOrTwo ) )
                            .setMetadataForBaseline( baselineMeta )
                            .build();
 

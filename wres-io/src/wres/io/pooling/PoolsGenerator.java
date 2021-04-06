@@ -26,7 +26,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
@@ -71,13 +71,13 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
      * The basic metadata for the sequence of pools.
      */
 
-    private final SampleMetadata basicMetadata;
+    private final PoolMetadata basicMetadata;
 
     /**
      * The basic metadata for the sequence of pools with respect to the baseline.
      */
 
-    private final SampleMetadata basicMetadataForBaseline;
+    private final PoolMetadata basicMetadataForBaseline;
 
     /**
      * A factory to create project-relevant retrievers.
@@ -175,13 +175,13 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
          * The basic metadata for the sequence of pools.
          */
 
-        private SampleMetadata basicMetadata;
+        private PoolMetadata basicMetadata;
 
         /**
          * The basic metadata for the sequence of pools with respect to the baseline.
          */
 
-        private SampleMetadata basicMetadataForBaseline;
+        private PoolMetadata basicMetadataForBaseline;
 
         /**
          * A factory to create project-relevant retrievers.
@@ -266,7 +266,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
          * @param basicMetadata the basic metadata for the primary pairs
          * @return the builder
          */
-        Builder<L, R> setBasicMetadata( SampleMetadata basicMetadata )
+        Builder<L, R> setBasicMetadata( PoolMetadata basicMetadata )
         {
             this.basicMetadata = basicMetadata;
 
@@ -277,7 +277,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
          * @param basicMetadataForBaseline the basic metadata for the baseline pairs
          * @return the builder
          */
-        Builder<L, R> setBasicMetadataForBaseline( SampleMetadata basicMetadataForBaseline )
+        Builder<L, R> setBasicMetadataForBaseline( PoolMetadata basicMetadataForBaseline )
         {
             this.basicMetadataForBaseline = basicMetadataForBaseline;
             return this;
@@ -549,7 +549,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
                 builder.setRight( rightSupplier );
 
                 // Set the metadata
-                SampleMetadata poolMeta = SampleMetadata.of( this.getBasicMetadata(), nextWindow );
+                PoolMetadata poolMeta = PoolMetadata.of( this.getBasicMetadata(), nextWindow );
                 builder.setMetadata( poolMeta );
 
                 // Add left data, using the climatology supplier first if one exists
@@ -567,7 +567,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
                 {
 
                     // Set the metadata
-                    SampleMetadata poolBaseMeta = SampleMetadata.of( this.getBasicMetadataForBaseline(), nextWindow );
+                    PoolMetadata poolBaseMeta = PoolMetadata.of( this.getBasicMetadataForBaseline(), nextWindow );
                     builder.setBaselineMetadata( poolBaseMeta );
 
                     // Generated baseline?
@@ -764,7 +764,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
      * @return the basic metadata
      */
 
-    private SampleMetadata getBasicMetadata()
+    private PoolMetadata getBasicMetadata()
     {
         return this.basicMetadata;
     }
@@ -775,7 +775,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
      * @return the basic metadata for a baseline
      */
 
-    private SampleMetadata getBasicMetadataForBaseline()
+    private PoolMetadata getBasicMetadataForBaseline()
     {
         return this.basicMetadataForBaseline;
     }

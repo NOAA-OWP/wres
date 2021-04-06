@@ -17,7 +17,7 @@ import wres.datamodel.VectorOfDoubles;
  * 
  * @author james.brown@hydrosolved.com
  */
-public interface SampleData<S>
+public interface Pool<S>
 {
 
     /**
@@ -51,15 +51,15 @@ public interface SampleData<S>
      * @return the metadata associated with the sample
      */
 
-    SampleMetadata getMetadata();
+    PoolMetadata getMetadata();
 
     /**
-     * Returns the baseline data as a {@link SampleData} or null if no baseline is defined.
+     * Returns the baseline data as a {@link Pool} or null if no baseline is defined.
      * 
      * @return the baseline
      */
 
-    SampleData<S> getBaselineData();
+    Pool<S> getBaselineData();
 
     /**
      * Returns a climatological dataset if {@link #hasClimatology()} returns true, otherwise null.

@@ -27,7 +27,7 @@ import wres.datamodel.FeatureKey;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.Ensemble.Labels;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -216,8 +216,8 @@ public final class TimeSeriesSlicerTest
         third.add( Event.of( T1985_01_03T01_00_00Z, Pair.of( 1.0, 1.0 ) ) );
         third.add( Event.of( T1985_01_03T02_00_00Z, Pair.of( 2.0, 2.0 ) ) );
         third.add( Event.of( T1985_01_03T03_00_00Z, Pair.of( 3.0, 3.0 ) ) );
-        SampleMetadata meta = SampleMetadata.of();
-        SampleMetadata baseMeta = SampleMetadata.of( true );
+        PoolMetadata meta = PoolMetadata.of();
+        PoolMetadata baseMeta = PoolMetadata.of( true );
         //Add the time-series, with only one for baseline
         PoolOfPairs<Double, Double> ts = b.addTimeSeries( TimeSeries.of( firstMetadata, first ) )
                                           .addTimeSeries( TimeSeries.of( secondMetadata, second ) )
@@ -646,7 +646,7 @@ public final class TimeSeriesSlicerTest
         third.add( Event.of( T1985_01_03T01_00_00Z, Pair.of( 7.0, 16.0 ) ) );
         third.add( Event.of( T1985_01_03T02_00_00Z, Pair.of( 8.0, 17.0 ) ) );
         third.add( Event.of( T1985_01_03T03_00_00Z, Pair.of( 9.0, 18.0 ) ) );
-        SampleMetadata meta = SampleMetadata.of();
+        PoolMetadata meta = PoolMetadata.of();
 
         //Add the time-series
         PoolOfPairs<Double, Double> firstSeries = b.addTimeSeries( TimeSeries.of( firstMetadata,
@@ -708,7 +708,7 @@ public final class TimeSeriesSlicerTest
         assertTrue( fourthResult.getClimatology().equals( climatologyExpected ) );
 
         // Also filter baseline data
-        SampleMetadata baseMeta = SampleMetadata.of( true );
+        PoolMetadata baseMeta = PoolMetadata.of( true );
         b.addTimeSeriesForBaseline( TimeSeries.of( firstMetadata, first ) )
          .addTimeSeriesForBaseline( TimeSeries.of( secondMetadata, second ) )
          .setMetadataForBaseline( baseMeta );

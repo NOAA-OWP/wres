@@ -13,10 +13,10 @@ import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataBasic;
-import wres.datamodel.pools.SampleDataException;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.BasicPool;
+import wres.datamodel.pools.PoolException;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -45,7 +45,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
     }
 
     /**
-     * Compares the output from {@link RelativeOperatingCharacteristicDiagram#apply(SampleData)} against 
+     * Compares the output from {@link RelativeOperatingCharacteristicDiagram#apply(Pool)} against 
      * expected output.
      */
 
@@ -53,10 +53,10 @@ public final class RelativeOperatingCharacteristicDiagramTest
     public void testApply()
     {
         //Generate some data
-        SampleData<Pair<Probability, Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsThree();
+        Pool<Pair<Probability, Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsThree();
 
         //Metadata for the output
-        SampleMetadata m1 = Boilerplate.getSampleMetadata();
+        PoolMetadata m1 = Boilerplate.getSampleMetadata();
 
         //Check the results       
         DiagramStatisticOuter actual = this.roc.apply( input );
@@ -108,7 +108,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
     }
 
     /**
-     * Validates the output from {@link RelativeOperatingCharacteristicDiagram#apply(SampleData)} when 
+     * Validates the output from {@link RelativeOperatingCharacteristicDiagram#apply(Pool)} when 
      * supplied with no data.
      */
 
@@ -116,8 +116,8 @@ public final class RelativeOperatingCharacteristicDiagramTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SampleData<Pair<Probability, Probability>> input =
-                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
+        Pool<Pair<Probability, Probability>> input =
+                BasicPool.of( Arrays.asList(), PoolMetadata.of() );
 
         DiagramStatisticOuter actual = this.roc.apply( input );
 
@@ -173,8 +173,8 @@ public final class RelativeOperatingCharacteristicDiagramTest
     @Test
     public void testExceptionOnNullInput()
     {
-        SampleDataException actual = assertThrows( SampleDataException.class,
-                                                   () -> this.roc.apply( (SampleData<Pair<Probability, Probability>>) null ) );
+        PoolException actual = assertThrows( PoolException.class,
+                                                   () -> this.roc.apply( (Pool<Pair<Probability, Probability>>) null ) );
 
         assertEquals( "Specify non-null input to the '" + this.roc.getName() + "'.", actual.getMessage() );
     }

@@ -3,12 +3,12 @@ package wres.datamodel.pools;
 import wres.datamodel.DataException;
 
 /**
- * A runtime exception associated with incorrect {@link SampleData}.
+ * A runtime exception associated with incorrect {@link Pool}.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class SampleDataException extends DataException
+public class PoolException extends DataException
 {
 
     /**
@@ -17,33 +17,33 @@ public class SampleDataException extends DataException
     private static final long serialVersionUID = -382138122319205095L;
 
     /**
-     * Constructs an {@link SampleDataException} with no message.
+     * Constructs an {@link PoolException} with no message.
      */
 
-    public SampleDataException()
+    public PoolException()
     {
         super();
     }
 
     /**
-     * Constructs a {@link SampleDataException} with the specified message.
+     * Constructs a {@link PoolException} with the specified message.
      * 
      * @param message the message.
      */
 
-    public SampleDataException(final String message)
+    public PoolException(final String message)
     {
         super(message);
     }
 
     /**
-     * Constructs a {@link SampleDataException} with the specified message.
+     * Constructs a {@link PoolException} with the specified message.
      * 
      * @param message the message.
      * @param cause the cause of the exception
      */
 
-    public SampleDataException(final String message, final Throwable cause)
+    public PoolException(final String message, final Throwable cause)
     {
         super(message, cause);
     }

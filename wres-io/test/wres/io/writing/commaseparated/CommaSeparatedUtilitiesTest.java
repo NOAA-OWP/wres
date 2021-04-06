@@ -14,7 +14,7 @@ import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.TimeWindowOuter;
@@ -58,7 +58,7 @@ public class CommaSeparatedUtilitiesTest
                                           null,
                                           false );
 
-        SampleMetadata metadata = SampleMetadata.of( CommaSeparatedUtilitiesTest.EVALUATION, pool );
+        PoolMetadata metadata = PoolMetadata.of( CommaSeparatedUtilitiesTest.EVALUATION, pool );
 
         String expected = "EARLIEST ISSUE TIME,"
                           + "LATEST ISSUE TIME,"
@@ -84,7 +84,7 @@ public class CommaSeparatedUtilitiesTest
                                           null,
                                           false );
 
-        SampleMetadata metadata = SampleMetadata.of( CommaSeparatedUtilitiesTest.EVALUATION, pool );
+        PoolMetadata metadata = PoolMetadata.of( CommaSeparatedUtilitiesTest.EVALUATION, pool );
 
         String expected = "EARLIEST ISSUE TIME,"
                           + "LATEST ISSUE TIME,"
@@ -108,7 +108,7 @@ public class CommaSeparatedUtilitiesTest
                                           null,
                                           false );
 
-        SampleMetadata metadata = SampleMetadata.of( CommaSeparatedUtilitiesTest.EVALUATION, pool );
+        PoolMetadata metadata = PoolMetadata.of( CommaSeparatedUtilitiesTest.EVALUATION, pool );
 
         String actual =
                 CommaSeparatedUtilities.getFeatureNameFromMetadata( metadata );
@@ -126,7 +126,7 @@ public class CommaSeparatedUtilitiesTest
                                           null,
                                           false );
 
-        SampleMetadata metadata = SampleMetadata.of( CommaSeparatedUtilitiesTest.EVALUATION, pool );
+        PoolMetadata metadata = PoolMetadata.of( CommaSeparatedUtilitiesTest.EVALUATION, pool );
 
         String actual =
                 CommaSeparatedUtilities.getFeatureNameFromMetadata( metadata );

@@ -14,7 +14,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.singlevalued.MeanError;
 import wres.statistics.generated.DoubleScoreMetric;
@@ -55,16 +55,16 @@ public final class MetricTaskTest
             throws InterruptedException, ExecutionException
     {
         // Generate some data
-        final SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
+        final Pool<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Add some appropriate metrics to the collection
-        final Metric<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter> m = MeanError.of();
+        final Metric<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter> m = MeanError.of();
 
         // Wrap an input in a future
-        final FutureTask<SampleData<Pair<Double, Double>>> futureInput =
+        final FutureTask<Pool<Pair<Double, Double>>> futureInput =
                 new FutureTask<>( () -> input );
 
-        final MetricTask<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter> task =
+        final MetricTask<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter> task =
                 new MetricTask<>( m, futureInput );
 
         // Compute the pairs
@@ -106,16 +106,16 @@ public final class MetricTaskTest
     {
 
         // Add some appropriate metrics to the collection
-        final Metric<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter> m = MeanError.of();
+        final Metric<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter> m = MeanError.of();
 
-        final FutureTask<SampleData<Pair<Double, Double>>> futureInputNull =
+        final FutureTask<Pool<Pair<Double, Double>>> futureInputNull =
                 new FutureTask<>( () -> null );
 
         // Compute the pairs
         pairPool.submit( futureInputNull );
 
         // Exceptional case
-        MetricTask<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter> task2 =
+        MetricTask<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter> task2 =
                 new MetricTask<>( m, futureInputNull );
 
         // Unrecognized metric

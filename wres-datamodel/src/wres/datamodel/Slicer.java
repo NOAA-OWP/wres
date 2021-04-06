@@ -27,9 +27,9 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.Ensemble.Labels;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleMetadata;
-import wres.datamodel.pools.SampleDataBasic.SampleDataBasicBuilder;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolMetadata;
+import wres.datamodel.pools.BasicPool.SampleDataBasicBuilder;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.statistics.ScoreStatistic.ScoreComponent;
 import wres.datamodel.statistics.Statistic;
@@ -315,7 +315,7 @@ public final class Slicer
      * @throws NullPointerException if the input is null
      */
 
-    public static <T> double[] getLeftSide( SampleData<Pair<Double, T>> input )
+    public static <T> double[] getLeftSide( Pool<Pair<Double, T>> input )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
@@ -331,7 +331,7 @@ public final class Slicer
      * @throws NullPointerException if the input is null
      */
 
-    public static <T> double[] getRightSide( SampleData<Pair<T, Double>> input )
+    public static <T> double[] getRightSide( Pool<Pair<T, Double>> input )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
@@ -350,7 +350,7 @@ public final class Slicer
      * @throws NullPointerException if either the input or condition is null
      */
 
-    public static <T> SampleData<T> filter( SampleData<T> input,
+    public static <T> Pool<T> filter( Pool<T> input,
                                             Predicate<T> condition,
                                             DoublePredicate applyToClimatology )
     {
@@ -382,7 +382,7 @@ public final class Slicer
         //Filter baseline as required
         if ( input.hasBaseline() )
         {
-            SampleData<T> baseline = input.getBaselineData();
+            Pool<T> baseline = input.getBaselineData();
             List<T> basePairs = baseline.getRawData();
             List<T> basePairsSubset =
                     basePairs.stream().filter( condition ).collect( Collectors.toList() );
@@ -394,7 +394,7 @@ public final class Slicer
     }
 
     /**
-     * <p>Returns a subset of metric outputs whose {@link SampleMetadata} matches the supplied predicate. For 
+     * <p>Returns a subset of metric outputs whose {@link PoolMetadata} matches the supplied predicate. For 
      * example, to filter by a particular {@link TimeWindowOuter} and {@link OneOrTwoThresholds} associated with the 
      * output metadata:</p>
      * 
@@ -635,7 +635,7 @@ public final class Slicer
      * @throws NullPointerException if either input is null
      */
 
-    public static <S, T> SampleData<T> transform( SampleData<S> input, Function<S, T> transformer )
+    public static <S, T> Pool<T> transform( Pool<S> input, Function<S, T> transformer )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
@@ -659,7 +659,7 @@ public final class Slicer
         // Add the baseline series if available
         if ( input.hasBaseline() )
         {
-            SampleData<S> baseline = input.getBaselineData();
+            Pool<S> baseline = input.getBaselineData();
 
             for ( S next : baseline.getRawData() )
             {

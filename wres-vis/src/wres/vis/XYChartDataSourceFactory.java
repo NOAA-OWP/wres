@@ -32,7 +32,7 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.Slicer;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
@@ -172,7 +172,7 @@ abstract class XYChartDataSourceFactory
      * @return A data source to be used to draw the plot.
      */
     static DefaultXYChartDataSource ofSingleValuedPairs( int orderIndex,
-                                                         final SampleData<Pair<Double, Double>> input )
+                                                         final Pool<Pair<Double, Double>> input )
     {
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {

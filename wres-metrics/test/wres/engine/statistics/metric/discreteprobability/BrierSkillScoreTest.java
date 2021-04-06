@@ -14,10 +14,10 @@ import org.junit.Test;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataBasic;
-import wres.datamodel.pools.SampleDataException;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.BasicPool;
+import wres.datamodel.pools.PoolException;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -45,7 +45,7 @@ public final class BrierSkillScoreTest
     }
 
     /**
-     * Compares the output from {@link BrierSkillScore#apply(SampleData)} against expected output for a 
+     * Compares the output from {@link BrierSkillScore#apply(Pool)} against expected output for a 
      * dataset with a supplied baseline.
      */
 
@@ -53,10 +53,10 @@ public final class BrierSkillScoreTest
     public void testApplyWithSuppliedBaseline()
     {
         // Generate some data
-        SampleData<Pair<Probability, Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsTwo();
+        Pool<Pair<Probability, Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsTwo();
 
         // Metadata for the output
-        SampleMetadata m1 = Boilerplate.getSampleMetadata();
+        PoolMetadata m1 = Boilerplate.getSampleMetadata();
 
         // Check the results       
         DoubleScoreStatisticOuter actual = this.brierSkillScore.apply( input );
@@ -77,7 +77,7 @@ public final class BrierSkillScoreTest
     }
 
     /**
-     * Compares the output from {@link BrierSkillScore#apply(SampleData)} against expected output for a 
+     * Compares the output from {@link BrierSkillScore#apply(Pool)} against expected output for a 
      * dataset with a climatological baseline.
      */
 
@@ -85,10 +85,10 @@ public final class BrierSkillScoreTest
     public void testApplyWithClimatologicalBaseline()
     {
         // Generate some data
-        SampleData<Pair<Probability, Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsOne();
+        Pool<Pair<Probability, Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsOne();
 
         // Metadata for the output
-        SampleMetadata m1 = Boilerplate.getSampleMetadata();
+        PoolMetadata m1 = Boilerplate.getSampleMetadata();
 
         // Check the results
         DoubleScoreStatisticOuter actual = this.brierSkillScore.apply( input );
@@ -110,15 +110,15 @@ public final class BrierSkillScoreTest
 
 
     /**
-     * Validates the output from {@link BrierSkillScore#apply(SampleData)} when supplied with no data.
+     * Validates the output from {@link BrierSkillScore#apply(Pool)} when supplied with no data.
      */
 
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SampleData<Pair<Probability, Probability>> input =
-                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
+        Pool<Pair<Probability, Probability>> input =
+                BasicPool.of( Arrays.asList(), PoolMetadata.of() );
 
         DoubleScoreStatisticOuter actual = brierSkillScore.apply( input );
 
@@ -193,8 +193,8 @@ public final class BrierSkillScoreTest
     @Test
     public void testExceptionOnNullInput()
     {
-        SampleDataException actual = assertThrows( SampleDataException.class,
-                                                   () -> this.brierSkillScore.apply( (SampleData<Pair<Probability, Probability>>) null ) );
+        PoolException actual = assertThrows( PoolException.class,
+                                                   () -> this.brierSkillScore.apply( (Pool<Pair<Probability, Probability>>) null ) );
 
         assertEquals( "Specify non-null input to the '" + this.brierSkillScore.getName() + "'.", actual.getMessage() );
     }

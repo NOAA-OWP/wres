@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MissingValues;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
@@ -223,7 +223,7 @@ abstract class CommaSeparatedStatisticsWriter
      */
 
     static <T> void addRowToInput( List<RowCompareByLeft> rows,
-                                   SampleMetadata sampleMetadata,
+                                   PoolMetadata sampleMetadata,
                                    List<T> values,
                                    Format formatter,
                                    boolean append,
@@ -298,7 +298,7 @@ abstract class CommaSeparatedStatisticsWriter
     }
 
     /**
-     * Returns the first instance of {@link SampleMetadata} discovered in the input or <code>null</code>.
+     * Returns the first instance of {@link PoolMetadata} discovered in the input or <code>null</code>.
      * 
      * @param <T> the type of statistic
      * @param statistic the list of statistics
@@ -306,11 +306,11 @@ abstract class CommaSeparatedStatisticsWriter
      * @throws NullPointerException if the input is null
      */
 
-    static <T extends Statistic<?>> SampleMetadata getSampleMetadataFromListOfStatistics( List<T> statistic )
+    static <T extends Statistic<?>> PoolMetadata getSampleMetadataFromListOfStatistics( List<T> statistic )
     {
         Objects.requireNonNull( statistic );
 
-        SampleMetadata returnMe = null;
+        PoolMetadata returnMe = null;
 
         if ( !statistic.isEmpty() )
         {

@@ -14,10 +14,10 @@ import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataBasic;
-import wres.datamodel.pools.SampleDataException;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.BasicPool;
+import wres.datamodel.pools.PoolException;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -83,7 +83,7 @@ public final class MedianErrorTest
         //Generate some data
         List<Pair<Double, Double>> pairs = Arrays.asList( Pair.of( 1.0, 3.0 ),
                                                           Pair.of( 5.0, 9.0 ) );
-        SampleData<Pair<Double, Double>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
+        Pool<Pair<Double, Double>> input = BasicPool.of( pairs, PoolMetadata.of() );
 
         //Check the results
         DoubleScoreStatisticOuter actual = this.medianError.apply( input );
@@ -117,7 +117,7 @@ public final class MedianErrorTest
                                                           Pair.of( 12345.6789, 0.0 ),
                                                           Pair.of( 99999.0, 0.0 ) );
 
-        SampleData<Pair<Double, Double>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
+        Pool<Pair<Double, Double>> input = BasicPool.of( pairs, PoolMetadata.of() );
 
         //Check the results
         DoubleScoreStatisticOuter actual = this.medianError.apply( input );
@@ -147,8 +147,8 @@ public final class MedianErrorTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SampleDataBasic<Pair<Double, Double>> input =
-                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
+        BasicPool<Pair<Double, Double>> input =
+                BasicPool.of( Arrays.asList(), PoolMetadata.of() );
 
         DoubleScoreStatisticOuter actual = this.medianError.apply( input );
 
@@ -182,7 +182,7 @@ public final class MedianErrorTest
     @Test
     public void testExceptionOnNullInput()
     {
-        SampleDataException actual = assertThrows( SampleDataException.class,
+        PoolException actual = assertThrows( PoolException.class,
                                                    () -> this.medianError.apply( null ) );
 
         assertEquals( "Specify non-null input to the '" + this.medianError.getName() + "'.", actual.getMessage() );

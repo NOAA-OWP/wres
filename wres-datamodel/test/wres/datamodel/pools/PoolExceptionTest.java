@@ -6,33 +6,33 @@ import static org.junit.Assert.assertNotNull;
 import org.junit.Test;
 
 /**
- * Tests the {@link SampleDataException}.
+ * Tests the {@link PoolException}.
  * 
  * @author james.brown@hydrosolved.com
  */
-public final class SampleDataExceptionTest
+public final class PoolExceptionTest
 {
 
     private static final String TEST_EXCEPTION_MESSAGE = "Test exception.";
 
     /**
-     * Constructs and tests a {@link SampleDataException}.
+     * Constructs and tests a {@link PoolException}.
      */
 
     @Test
     public void testException()
     {       
-        SampleDataException e = new SampleDataException();
+        PoolException e = new PoolException();
         
-        assertNotNull( new SampleDataException() );
+        assertNotNull( new PoolException() );
         
-        SampleDataException f = new SampleDataException( TEST_EXCEPTION_MESSAGE );
+        PoolException f = new PoolException( TEST_EXCEPTION_MESSAGE );
         
         assertNotNull( f );
         
         assertEquals( TEST_EXCEPTION_MESSAGE, f.getMessage() );
         
-        SampleDataException g = new SampleDataException( f.getMessage(), e );        
+        PoolException g = new PoolException( f.getMessage(), e );        
         
         assertNotNull( g );
         

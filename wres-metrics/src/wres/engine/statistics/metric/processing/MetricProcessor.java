@@ -18,7 +18,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
-import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
@@ -55,22 +55,22 @@ import wres.engine.statistics.metric.config.MetricConfigHelper;
  * hence {@link MetricCollection}. Using metric-specific thresholds will require additional logic to disaggregate a
  * {@link MetricCollection} into {@link Metric} for which common thresholds are defined.</li>
  * <li>If the {@link ThresholdOuter#hasProbabilities()}, the corresponding quantiles are derived from the 
- * observations associated with the {@link SampleData} at runtime, i.e. upon calling
+ * observations associated with the {@link Pool} at runtime, i.e. upon calling
  * {@link #apply(Object)}</li>
  * </ol>
  * <p>
  * Upon construction, the {@link ProjectConfig} is validated to ensure that appropriate {@link Metric} are configured
- * for the type of {@link SampleData} consumed. These metrics are stored in a series of {@link MetricCollection} that
- * consume a given {@link SampleData} and produce a given {@link Statistic}. If the type of {@link SampleData}
- * consumed by any given {@link MetricCollection} differs from the {@link SampleData} for which the
+ * for the type of {@link Pool} consumed. These metrics are stored in a series of {@link MetricCollection} that
+ * consume a given {@link Pool} and produce a given {@link Statistic}. If the type of {@link Pool}
+ * consumed by any given {@link MetricCollection} differs from the {@link Pool} for which the
  * {@link MetricProcessor} is primed, a transformation must be applied. For example, {@link Metric} that consume
  * single-valued pairs may be computed for ensemble pairs if an appropriate transformation is configured.
- * Subclasses must define and apply any transformation required. If inappropriate {@link SampleData} are provided to
+ * Subclasses must define and apply any transformation required. If inappropriate {@link Pool} are provided to
  * {@link #apply(Object)} for the {@link MetricCollection} configured, an unchecked {@link MetricCalculationException}
  * will be thrown. If metrics are configured incorrectly, a checked {@link MetricConfigException} will be thrown.
  * </p>
  * <p>
- * Upon calling {@link #apply(Object)} with a concrete {@link SampleData}, the configured {@link Metric} are computed
+ * Upon calling {@link #apply(Object)} with a concrete {@link Pool}, the configured {@link Metric} are computed
  * asynchronously for each {@link ThresholdOuter}.
  * </p>
  * <p>
@@ -84,7 +84,7 @@ import wres.engine.statistics.metric.config.MetricConfigHelper;
  * @author james.brown@hydrosolved.com
  */
 
-public abstract class MetricProcessor<S extends SampleData<?>>
+public abstract class MetricProcessor<S extends Pool<?>>
         implements Function<S, StatisticsForProject>
 {
     /**
@@ -115,27 +115,27 @@ public abstract class MetricProcessor<S extends SampleData<?>>
      * A {@link MetricCollection} of {@link Metric} that consume single-valued pairs and produce {@link ScoreStatistic}.
      */
 
-    final MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> singleValuedScore;
+    final MetricCollection<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> singleValuedScore;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume single-valued pairs and produce 
      * {@link DiagramStatisticOuter}.
      */
 
-    final MetricCollection<SampleData<Pair<Double, Double>>, DiagramStatisticOuter, DiagramStatisticOuter> singleValuedMultiVector;
+    final MetricCollection<Pool<Pair<Double, Double>>, DiagramStatisticOuter, DiagramStatisticOuter> singleValuedDiagrams;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume single-valued pairs and produce
      * {@link BoxplotStatisticOuter}.
      */
 
-    final MetricCollection<SampleData<Pair<Double, Double>>, BoxplotStatisticOuter, BoxplotStatisticOuter> singleValuedBoxPlot;
+    final MetricCollection<Pool<Pair<Double, Double>>, BoxplotStatisticOuter, BoxplotStatisticOuter> singleValuedBoxPlot;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume dichotomous pairs and produce {@link ScoreStatistic}.
      */
 
-    final MetricCollection<SampleData<Pair<Boolean,Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> dichotomousScalar;
+    final MetricCollection<Pool<Pair<Boolean,Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> dichotomousScalar;
 
     /**
      * The set of metrics associated with the verification project.
@@ -363,16 +363,16 @@ public abstract class MetricProcessor<S extends SampleData<?>>
         // Diagrams
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DIAGRAM ) )
         {
-            this.singleValuedMultiVector =
-                    MetricFactory.ofSingleValuedMultiVectorCollection( metricExecutor,
+            this.singleValuedDiagrams =
+                    MetricFactory.ofSingleValuedDiagramCollection( metricExecutor,
                                                                        this.getMetrics( SampleDataGroup.SINGLE_VALUED,
                                                                                         StatisticType.DIAGRAM ) );
 
-            LOGGER.debug( "Created the single-valued diagrams for processing. {}", this.singleValuedMultiVector );
+            LOGGER.debug( "Created the single-valued diagrams for processing. {}", this.singleValuedDiagrams );
         }
         else
         {
-            this.singleValuedMultiVector = null;
+            this.singleValuedDiagrams = null;
         }
 
         //Dichotomous scores
@@ -507,11 +507,11 @@ public abstract class MetricProcessor<S extends SampleData<?>>
     }
 
     /**
-     * <p>Helper that inspects the {@link SampleData#getClimatology()} and returns a sorted set of values when the 
+     * <p>Helper that inspects the {@link Pool#getClimatology()} and returns a sorted set of values when the 
      * following two conditions are both met, otherwise <code>null</code>:
      * 
      * <ol>
-     * <li>The {@link SampleData#hasClimatology()} returns <code>true</code>; and</li>
+     * <li>The {@link Pool#hasClimatology()} returns <code>true</code>; and</li>
      * <li>One or more of the input thresholds is a probability threshold according to 
      * {@link ThresholdOuter#hasProbabilities()}.</li>
      * </ol>
@@ -521,7 +521,7 @@ public abstract class MetricProcessor<S extends SampleData<?>>
      * @return a sorted array of values or null
      */
 
-    double[] getSortedClimatology( SampleData<?> input, Set<ThresholdOuter> thresholds )
+    double[] getSortedClimatology( Pool<?> input, Set<ThresholdOuter> thresholds )
     {
         double[] sorted = null;
         if ( this.hasProbabilityThreshold( thresholds ) && input.hasClimatology() )

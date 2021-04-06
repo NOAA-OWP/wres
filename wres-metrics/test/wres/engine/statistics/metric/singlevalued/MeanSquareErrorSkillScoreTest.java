@@ -13,10 +13,10 @@ import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataBasic;
-import wres.datamodel.pools.SampleDataException;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.BasicPool;
+import wres.datamodel.pools.PoolException;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -69,7 +69,7 @@ public final class MeanSquareErrorSkillScoreTest
     public void testApplyWithoutBaseline() throws IOException
     {
         //Generate some data
-        SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsFive();
+        Pool<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsFive();
 
         //Check the results
         DoubleScoreStatisticOuter actual = this.msess.apply( input );
@@ -113,8 +113,8 @@ public final class MeanSquareErrorSkillScoreTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SampleDataBasic<Pair<Double, Double>> input =
-                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
+        BasicPool<Pair<Double, Double>> input =
+                BasicPool.of( Arrays.asList(), PoolMetadata.of() );
 
         DoubleScoreStatisticOuter actual = this.msess.apply( input );
 
@@ -154,7 +154,7 @@ public final class MeanSquareErrorSkillScoreTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        SampleDataException expected = assertThrows( SampleDataException.class, () -> this.msess.apply( null ) );
+        PoolException expected = assertThrows( PoolException.class, () -> this.msess.apply( null ) );
 
         assertEquals( "Specify non-null input to the 'MEAN SQUARE ERROR SKILL SCORE'.", expected.getMessage() );
     }

@@ -22,9 +22,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.datamodel.Ensemble.Labels;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataBasic;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.BasicPool;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.statistics.Statistic;
@@ -60,8 +60,8 @@ public final class SlicerTest
         values.add( Pair.of( 1.0, 1.0 / 5.0 ) );
         double[] expected = new double[] { 0, 0, 1, 1, 0, 1 };
 
-        assertTrue( Arrays.equals( Slicer.getLeftSide( SampleDataBasic.of( values,
-                                                                           SampleMetadata.of() ) ),
+        assertTrue( Arrays.equals( Slicer.getLeftSide( BasicPool.of( values,
+                                                                           PoolMetadata.of() ) ),
                                    expected ) );
     }
 
@@ -77,8 +77,8 @@ public final class SlicerTest
         values.add( Pair.of( 1.0, 1.0 / 5.0 ) );
 
         double[] expected = new double[] { 3.0 / 5.0, 1.0 / 5.0, 2.0 / 5.0, 3.0 / 5.0, 0.0 / 5.0, 1.0 / 5.0 };
-        assertTrue( Arrays.equals( Slicer.getRightSide( SampleDataBasic.of( values,
-                                                                            SampleMetadata.of() ) ),
+        assertTrue( Arrays.equals( Slicer.getRightSide( BasicPool.of( values,
+                                                                            PoolMetadata.of() ) ),
                                    expected ) );
     }
 
@@ -96,15 +96,15 @@ public final class SlicerTest
         ThresholdOuter threshold = ThresholdOuter.of( OneOrTwoDoubles.of( 0.0 ),
                                                       Operator.GREATER,
                                                       ThresholdDataType.LEFT );
-        SampleMetadata meta = SampleMetadata.of();
-        SampleData<Pair<Double, Double>> pairs = SampleDataBasic.of( values, meta, values, meta, null );
-        SampleData<Pair<Double, Double>> sliced =
+        PoolMetadata meta = PoolMetadata.of();
+        Pool<Pair<Double, Double>> pairs = BasicPool.of( values, meta, values, meta, null );
+        Pool<Pair<Double, Double>> sliced =
                 Slicer.filter( pairs, Slicer.left( threshold::test ), threshold::test );
         //Test with baseline
         assertTrue( Arrays.equals( Slicer.getLeftSide( sliced.getBaselineData() ), expected ) );
         //Test without baseline
-        SampleData<Pair<Double, Double>> pairsNoBase = SampleDataBasic.of( values, meta );
-        SampleData<Pair<Double, Double>> slicedNoBase =
+        Pool<Pair<Double, Double>> pairsNoBase = BasicPool.of( values, meta );
+        Pool<Pair<Double, Double>> slicedNoBase =
                 Slicer.filter( pairsNoBase, Slicer.left( threshold::test ), threshold::test );
         assertTrue( Arrays.equals( Slicer.getLeftSide( slicedNoBase ), expected ) );
     }
@@ -123,17 +123,17 @@ public final class SlicerTest
         ThresholdOuter threshold = ThresholdOuter.of( OneOrTwoDoubles.of( 0.0 ),
                                                       Operator.GREATER,
                                                       ThresholdDataType.LEFT );
-        SampleMetadata meta = SampleMetadata.of();
-        SampleData<Pair<Double, Ensemble>> pairs = SampleDataBasic.of( values, meta, values, meta, null );
-        SampleData<Pair<Double, Ensemble>> sliced =
+        PoolMetadata meta = PoolMetadata.of();
+        Pool<Pair<Double, Ensemble>> pairs = BasicPool.of( values, meta, values, meta, null );
+        Pool<Pair<Double, Ensemble>> sliced =
                 Slicer.filter( pairs, Slicer.leftVector( threshold::test ), threshold::test );
 
         //Test with baseline
         assertTrue( Arrays.equals( Slicer.getLeftSide( sliced.getBaselineData() ), expected ) );
 
         //Test without baseline
-        SampleData<Pair<Double, Ensemble>> pairsNoBase = SampleDataBasic.of( values, meta );
-        SampleData<Pair<Double, Ensemble>> slicedNoBase =
+        Pool<Pair<Double, Ensemble>> pairsNoBase = BasicPool.of( values, meta );
+        Pool<Pair<Double, Ensemble>> slicedNoBase =
                 Slicer.filter( pairsNoBase, Slicer.leftVector( threshold::test ), threshold::test );
 
         assertTrue( Arrays.equals( Slicer.getLeftSide( slicedNoBase ), expected ) );
@@ -149,15 +149,15 @@ public final class SlicerTest
         values.add( Pair.of( 1.0, Ensemble.of( 16, 17, 18, 19, 20 ) ) );
         values.add( Pair.of( 0.0, Ensemble.of( 21, 22, 23, 24, 25 ) ) );
         values.add( Pair.of( 1.0, Ensemble.of( 26, 27, 28, 29, 30 ) ) );
-        SampleMetadata meta = SampleMetadata.of();
-        SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( values, meta, values, meta, null );
+        PoolMetadata meta = PoolMetadata.of();
+        Pool<Pair<Double, Ensemble>> input = BasicPool.of( values, meta, values, meta, null );
         Function<Pair<Double, Ensemble>, Pair<Double, Double>> mapper =
                 in -> Pair.of( in.getLeft(),
                                Arrays.stream( in.getRight().getMembers() ).average().getAsDouble() );
         double[] expected = new double[] { 3.0, 8.0, 13.0, 18.0, 23.0, 28.0 };
         //Test without baseline
         double[] actualNoBase =
-                Slicer.getRightSide( Slicer.transform( SampleDataBasic.of( values, meta ), mapper ) );
+                Slicer.getRightSide( Slicer.transform( BasicPool.of( values, meta ), mapper ) );
         assertTrue( Arrays.equals( actualNoBase, expected ) );
         //Test baseline
         double[] actualBase = Slicer.getRightSide( Slicer.transform( input, mapper ).getBaselineData() );
@@ -174,7 +174,7 @@ public final class SlicerTest
         values.add( Pair.of( 1.0, 3.0 / 5.0 ) );
         values.add( Pair.of( 0.0, 0.0 / 5.0 ) );
         values.add( Pair.of( 1.0, 1.0 / 5.0 ) );
-        SampleMetadata meta = SampleMetadata.of();
+        PoolMetadata meta = PoolMetadata.of();
         Function<Pair<Double, Double>, Pair<Boolean, Boolean>> mapper =
                 in -> Pair.of( in.getLeft() > 0, in.getRight() > 0 );
         final List<Pair<Boolean, Boolean>> expectedValues = new ArrayList<>();
@@ -185,21 +185,21 @@ public final class SlicerTest
         expectedValues.add( Pair.of( false, false ) );
         expectedValues.add( Pair.of( true, true ) );
 
-        SampleData<Pair<Boolean, Boolean>> expectedNoBase = SampleDataBasic.of( expectedValues, meta );
-        SampleData<Pair<Boolean, Boolean>> expectedBase = SampleDataBasic.of( expectedValues,
+        Pool<Pair<Boolean, Boolean>> expectedNoBase = BasicPool.of( expectedValues, meta );
+        Pool<Pair<Boolean, Boolean>> expectedBase = BasicPool.of( expectedValues,
                                                                               meta,
                                                                               expectedValues,
                                                                               meta,
                                                                               null );
 
         //Test without baseline
-        SampleData<Pair<Boolean, Boolean>> actualNoBase =
-                Slicer.transform( SampleDataBasic.of( values, meta ), mapper );
+        Pool<Pair<Boolean, Boolean>> actualNoBase =
+                Slicer.transform( BasicPool.of( values, meta ), mapper );
         assertTrue( actualNoBase.getRawData().equals( expectedNoBase.getRawData() ) );
 
         //Test baseline
-        SampleData<Pair<Boolean, Boolean>> actualBase =
-                Slicer.transform( SampleDataBasic.of( values, meta, values, meta, null ),
+        Pool<Pair<Boolean, Boolean>> actualBase =
+                Slicer.transform( BasicPool.of( values, meta, values, meta, null ),
                                   mapper );
         assertTrue( actualBase.getBaselineData().getRawData().equals( expectedBase.getBaselineData().getRawData() ) );
     }
@@ -214,7 +214,7 @@ public final class SlicerTest
         values.add( Pair.of( 4.0, Ensemble.of( 4, 4, 4, 4, 4 ) ) );
         values.add( Pair.of( 0.0, Ensemble.of( 1, 2, 3, 4, 5 ) ) );
         values.add( Pair.of( 5.0, Ensemble.of( 1, 1, 6, 6, 50 ) ) );
-        SampleMetadata meta = SampleMetadata.of();
+        PoolMetadata meta = PoolMetadata.of();
         ThresholdOuter threshold = ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
                                                       Operator.GREATER,
                                                       ThresholdDataType.LEFT );
@@ -228,19 +228,19 @@ public final class SlicerTest
         expectedPairs.add( Pair.of( Probability.ONE, Probability.of( 3.0 / 5.0 ) ) );
 
         //Test without baseline
-        SampleData<Pair<Double, Ensemble>> pairs = SampleDataBasic.of( values, meta );
+        Pool<Pair<Double, Ensemble>> pairs = BasicPool.of( values, meta );
 
         Function<Pair<Double, Ensemble>, Pair<Probability, Probability>> mapper =
                 pair -> Slicer.toDiscreteProbabilityPair( pair, threshold );
 
-        SampleData<Pair<Probability, Probability>> sliced =
+        Pool<Pair<Probability, Probability>> sliced =
                 Slicer.transform( pairs, mapper );
 
         assertTrue( sliced.getRawData().equals( expectedPairs ) );
 
         //Test baseline
-        SampleData<Pair<Probability, Probability>> slicedWithBaseline =
-                Slicer.transform( SampleDataBasic.of( values, meta, values, meta, null ), mapper );
+        Pool<Pair<Probability, Probability>> slicedWithBaseline =
+                Slicer.transform( BasicPool.of( values, meta, values, meta, null ), mapper );
         assertTrue( slicedWithBaseline.getRawData().equals( expectedPairs ) );
         assertTrue( slicedWithBaseline.getBaselineData().getRawData().equals( expectedPairs ) );
     }
@@ -337,7 +337,7 @@ public final class SlicerTest
         //Obtain input and slice
         List<DoubleScoreStatisticOuter> toSlice = new ArrayList<>();
 
-        SampleMetadata meta = SampleMetadata.of();
+        PoolMetadata meta = PoolMetadata.of();
 
 
         DoubleScoreStatisticComponent reliability = DoubleScoreStatisticComponent.newBuilder()
@@ -417,9 +417,9 @@ public final class SlicerTest
         VectorOfDoubles climatology = VectorOfDoubles.of( 1, 2, 3, 4, 5, Double.NaN );
         VectorOfDoubles climatologyExpected = VectorOfDoubles.of( 1, 2, 3, 4, 5 );
 
-        SampleMetadata meta = SampleMetadata.of();
-        SampleData<Pair<Double, Double>> pairs = SampleDataBasic.of( values, meta, values, meta, climatology );
-        SampleData<Pair<Double, Double>> sliced =
+        PoolMetadata meta = PoolMetadata.of();
+        Pool<Pair<Double, Double>> pairs = BasicPool.of( values, meta, values, meta, climatology );
+        Pool<Pair<Double, Double>> sliced =
                 Slicer.filter( pairs, Slicer.leftAndRight( Double::isFinite ), Double::isFinite );
 
         //Test with baseline
@@ -432,8 +432,8 @@ public final class SlicerTest
                                     climatologyExpected.getDoubles() ) );
         assertTrue( !sliced.getRawData().equals( values ) );
         //Test without baseline or climatology
-        SampleData<Pair<Double, Double>> pairsNoBase = SampleDataBasic.of( values, meta );
-        SampleData<Pair<Double, Double>> slicedNoBase =
+        Pool<Pair<Double, Double>> pairsNoBase = BasicPool.of( values, meta );
+        Pool<Pair<Double, Double>> slicedNoBase =
                 Slicer.filter( pairsNoBase, Slicer.leftAndRight( Double::isFinite ), null );
 
         assertTrue( slicedNoBase.getRawData().equals( expectedValues ) );
@@ -458,9 +458,9 @@ public final class SlicerTest
 
         VectorOfDoubles climatology = VectorOfDoubles.of( 1, 2, 3, 4, 5 );
 
-        SampleMetadata meta = SampleMetadata.of();
-        SampleData<Pair<Double, Ensemble>> pairs = SampleDataBasic.of( values, meta, values, meta, climatology );
-        SampleData<Pair<Double, Ensemble>> sliced =
+        PoolMetadata meta = PoolMetadata.of();
+        Pool<Pair<Double, Ensemble>> pairs = BasicPool.of( values, meta, values, meta, climatology );
+        Pool<Pair<Double, Ensemble>> sliced =
                 Slicer.transform( pairs, Slicer.leftAndEachOfRight( Double::isFinite ) );
 
         //Test with baseline
@@ -469,8 +469,8 @@ public final class SlicerTest
         assertTrue( !sliced.getRawData().equals( values ) );
 
         //Test without baseline or climatology
-        SampleData<Pair<Double, Ensemble>> pairsNoBase = SampleDataBasic.of( values, meta );
-        SampleData<Pair<Double, Ensemble>> slicedNoBase =
+        Pool<Pair<Double, Ensemble>> pairsNoBase = BasicPool.of( values, meta );
+        Pool<Pair<Double, Ensemble>> slicedNoBase =
                 Slicer.transform( pairsNoBase, Slicer.leftAndEachOfRight( Double::isFinite ) );
 
         assertTrue( slicedNoBase.getRawData().equals( expectedValues ) );
@@ -480,7 +480,7 @@ public final class SlicerTest
     public void testFilterListOfMetricOutputs()
     {
         // Populate a list of outputs
-        SampleMetadata metadata = SampleMetadata.of();
+        PoolMetadata metadata = PoolMetadata.of();
 
         TimeWindowOuter windowOne =
                 TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
@@ -534,15 +534,15 @@ public final class SlicerTest
 
         List<DoubleScoreStatisticOuter> listOfOutputs =
                 Arrays.asList( DoubleScoreStatisticOuter.of( one,
-                                                             SampleMetadata.of( metadata,
+                                                             PoolMetadata.of( metadata,
                                                                                 windowOne,
                                                                                 thresholdOne ) ),
                                DoubleScoreStatisticOuter.of( two,
-                                                             SampleMetadata.of( metadata,
+                                                             PoolMetadata.of( metadata,
                                                                                 windowTwo,
                                                                                 thresholdTwo ) ),
                                DoubleScoreStatisticOuter.of( three,
-                                                             SampleMetadata.of( metadata,
+                                                             PoolMetadata.of( metadata,
                                                                                 windowThree,
                                                                                 thresholdThree ) ) );
 
@@ -559,11 +559,11 @@ public final class SlicerTest
 
         List<DoubleScoreStatisticOuter> expectedOutput =
                 Arrays.asList( DoubleScoreStatisticOuter.of( one,
-                                                             SampleMetadata.of( metadata,
+                                                             PoolMetadata.of( metadata,
                                                                                 windowOne,
                                                                                 thresholdOne ) ),
                                DoubleScoreStatisticOuter.of( three,
-                                                             SampleMetadata.of( metadata,
+                                                             PoolMetadata.of( metadata,
                                                                                 windowThree,
                                                                                 thresholdThree ) ) );
 
@@ -574,7 +574,7 @@ public final class SlicerTest
     public void testDiscoverListOfMetricOutputs()
     {
         // Populate a list of outputs
-        SampleMetadata metadata = SampleMetadata.of();
+        PoolMetadata metadata = PoolMetadata.of();
 
         TimeWindowOuter windowOne =
                 TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
@@ -628,15 +628,15 @@ public final class SlicerTest
 
         List<DoubleScoreStatisticOuter> listOfOutputs =
                 Arrays.asList( DoubleScoreStatisticOuter.of( one,
-                                                             SampleMetadata.of( metadata,
+                                                             PoolMetadata.of( metadata,
                                                                                 windowOne,
                                                                                 thresholdOne ) ),
                                DoubleScoreStatisticOuter.of( two,
-                                                             SampleMetadata.of( metadata,
+                                                             PoolMetadata.of( metadata,
                                                                                 windowTwo,
                                                                                 thresholdTwo ) ),
                                DoubleScoreStatisticOuter.of( three,
-                                                             SampleMetadata.of( metadata,
+                                                             PoolMetadata.of( metadata,
                                                                                 windowThree,
                                                                                 thresholdThree ) ) );
 
@@ -700,7 +700,7 @@ public final class SlicerTest
     public void testSortStatisticsByTimeWindowAndThreshold()
     {
         // Populate a list of outputs
-        SampleMetadata metadata = SampleMetadata.of();
+        PoolMetadata metadata = PoolMetadata.of();
 
         TimeWindowOuter windowOne =
                 TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
@@ -754,15 +754,15 @@ public final class SlicerTest
 
         List<DoubleScoreStatisticOuter> unorderedStatistics =
                 List.of( DoubleScoreStatisticOuter.of( three,
-                                                       SampleMetadata.of( metadata,
+                                                       PoolMetadata.of( metadata,
                                                                           windowThree,
                                                                           thresholdThree ) ),
                          DoubleScoreStatisticOuter.of( one,
-                                                       SampleMetadata.of( metadata,
+                                                       PoolMetadata.of( metadata,
                                                                           windowOne,
                                                                           thresholdOne ) ),
                          DoubleScoreStatisticOuter.of( two,
-                                                       SampleMetadata.of( metadata,
+                                                       PoolMetadata.of( metadata,
                                                                           windowTwo,
                                                                           thresholdTwo ) ) );
 

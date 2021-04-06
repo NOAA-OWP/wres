@@ -16,9 +16,9 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleMetadata;
-import wres.datamodel.pools.SampleDataBasic.SampleDataBasicBuilder;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolMetadata;
+import wres.datamodel.pools.BasicPool.SampleDataBasicBuilder;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.Statistic;
@@ -40,7 +40,7 @@ import wres.engine.statistics.metric.MetricParameterException;
  * @author james.brown@hydrosolved.com
  */
 
-public abstract class MetricProcessorByTime<S extends SampleData<?>>
+public abstract class MetricProcessorByTime<S extends Pool<?>>
         extends MetricProcessor<S>
 {
 
@@ -111,7 +111,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    void processSingleValuedPairs( SampleData<Pair<Double, Double>> singleValued,
+    void processSingleValuedPairs( Pool<Pair<Double, Double>> singleValued,
                                    MetricFuturesByTime.MetricFuturesByTimeBuilder futures )
     {
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ) )
@@ -140,7 +140,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
      * @param ignoreTheseMetrics a set of metrics within the prescribed group that should be ignored
      */
 
-    void processDichotomousPairs( SampleData<Pair<Boolean, Boolean>> input,
+    void processDichotomousPairs( Pool<Pair<Boolean, Boolean>> input,
                                   MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                   StatisticType outGroup,
                                   Set<MetricConstants> ignoreTheseMetrics )
@@ -247,7 +247,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processSingleValuedPairsByThreshold( SampleData<Pair<Double, Double>> input,
+    private void processSingleValuedPairsByThreshold( Pool<Pair<Double, Double>> input,
                                                       MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                       StatisticType outGroup )
     {
@@ -271,16 +271,16 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
             OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( useMe );
 
             // Add the threshold to the metadata, in order to fully qualify the pairs
-            SampleMetadata baselineMeta = null;
+            PoolMetadata baselineMeta = null;
             if ( input.hasBaseline() )
             {
-                baselineMeta = SampleMetadata.of( input.getBaselineData().getMetadata(), oneOrTwo );
+                baselineMeta = PoolMetadata.of( input.getBaselineData().getMetadata(), oneOrTwo );
             }
 
             SampleDataBasicBuilder<Pair<Double, Double>> builder = new SampleDataBasicBuilder<>();
 
-            SampleData<Pair<Double, Double>> pairs = builder.addData( input )
-                                                            .setMetadata( SampleMetadata.of( input.getMetadata(),
+            Pool<Pair<Double, Double>> pairs = builder.addData( input )
+                                                            .setMetadata( PoolMetadata.of( input.getMetadata(),
                                                                                              oneOrTwo ) )
                                                             .setMetadataForBaseline( baselineMeta )
                                                             .build();
@@ -311,7 +311,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
      * @param ignoreTheseMetrics a set of metrics within the prescribed group that should be ignored
      */
 
-    private void processSingleValuedPairs( SampleData<Pair<Double, Double>> input,
+    private void processSingleValuedPairs( Pool<Pair<Double, Double>> input,
                                            MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                            StatisticType outGroup,
                                            Set<MetricConstants> ignoreTheseMetrics )
@@ -326,7 +326,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
 
             case DIAGRAM:
                 futures.addDiagramOutput( this.processSingleValuedPairs( input,
-                                                                             this.singleValuedMultiVector,
+                                                                             this.singleValuedDiagrams,
                                                                              ignoreTheseMetrics ) );
                 break;
             case BOXPLOT_PER_POOL:
@@ -352,8 +352,8 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
      */
 
     private <T extends Statistic<?>> Future<List<T>>
-            processSingleValuedPairs( SampleData<Pair<Double, Double>> pairs,
-                                      MetricCollection<SampleData<Pair<Double, Double>>, T, T> collection,
+            processSingleValuedPairs( Pool<Pair<Double, Double>> pairs,
+                                      MetricCollection<Pool<Pair<Double, Double>>, T, T> collection,
                                       Set<MetricConstants> ignoreTheseMetrics )
     {
         return CompletableFuture.supplyAsync( () -> collection.apply( pairs, ignoreTheseMetrics ),
@@ -373,8 +373,8 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
      */
 
     private <T extends Statistic<?>> Future<List<T>>
-            processDichotomousPairs( SampleData<Pair<Boolean, Boolean>> pairs,
-                                     MetricCollection<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, T> collection,
+            processDichotomousPairs( Pool<Pair<Boolean, Boolean>> pairs,
+                                     MetricCollection<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, T> collection,
                                      Set<MetricConstants> ignoreTheseMetrics )
     {
         return CompletableFuture.supplyAsync( () -> collection.apply( pairs, ignoreTheseMetrics ),

@@ -5,8 +5,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.Statistic;
 
 /**
@@ -16,7 +16,7 @@ import wres.datamodel.statistics.Statistic;
  * @author james.brown@hydrosolved.com
  */
 
-class CollectableTask<S extends SampleData<?>, T extends Statistic<?>, U extends Statistic<?>>
+class CollectableTask<S extends Pool<?>, T extends Statistic<?>, U extends Statistic<?>>
 implements Callable<U>
 {
 
@@ -53,7 +53,7 @@ implements Callable<U>
         final T in = input.get();
         if(Objects.isNull(in))
         {
-            throw new SampleDataException("Specify non-null input to the '"+this+"'.");
+            throw new PoolException("Specify non-null input to the '"+this+"'.");
         }
         return metric.aggregate(in);
     }

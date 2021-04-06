@@ -4,7 +4,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.statistics.generated.DoubleScoreMetric;
@@ -65,7 +65,7 @@ public class EquitableThreatScore extends ContingencyTableScore
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( final SampleData<Pair<Boolean, Boolean>> s )
+    public DoubleScoreStatisticOuter apply( final Pool<Pair<Boolean, Boolean>> s )
     {
         return aggregate( this.getInputForAggregation( s ) );
     }

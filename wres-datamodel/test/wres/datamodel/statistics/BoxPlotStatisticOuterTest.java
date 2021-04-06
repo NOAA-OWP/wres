@@ -14,7 +14,7 @@ import org.junit.Test;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.Evaluation;
@@ -42,7 +42,7 @@ public final class BoxPlotStatisticOuterTest
      * Basic metadata.
      */
 
-    private SampleMetadata metadata = null;
+    private PoolMetadata metadata = null;
 
     @Before
     public void runBeforeEachClass()
@@ -83,7 +83,7 @@ public final class BoxPlotStatisticOuterTest
                                           null,
                                           false );
 
-        this.metadata = SampleMetadata.of( evaluation, pool );
+        this.metadata = PoolMetadata.of( evaluation, pool );
     }
 
     /**
@@ -109,7 +109,7 @@ public final class BoxPlotStatisticOuterTest
                                           null,
                                           false );
 
-        SampleMetadata m1 = SampleMetadata.of( evaluation, pool );
+        PoolMetadata m1 = PoolMetadata.of( evaluation, pool );
         FeatureKey l2 = FeatureKey.of( "A" );
 
         Pool poolTwo = MessageFactory.parse( new FeatureTuple( l2, l2, l2 ),
@@ -119,7 +119,7 @@ public final class BoxPlotStatisticOuterTest
                                              false );
 
 
-        SampleMetadata m2 = SampleMetadata.of( evaluation, poolTwo );
+        PoolMetadata m2 = PoolMetadata.of( evaluation, poolTwo );
         FeatureKey l3 = FeatureKey.of( "B" );
 
         Pool poolThree = MessageFactory.parse( new FeatureTuple( l3, l3, l3 ),
@@ -128,7 +128,7 @@ public final class BoxPlotStatisticOuterTest
                                                null,
                                                false );
 
-        SampleMetadata m3 = SampleMetadata.of( evaluation, poolThree );
+        PoolMetadata m3 = PoolMetadata.of( evaluation, poolThree );
 
         BoxplotMetric metric = BoxplotMetric.newBuilder()
                                             .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE )
@@ -290,7 +290,7 @@ public final class BoxPlotStatisticOuterTest
                                           null,
                                           false );
 
-        SampleMetadata m1 = SampleMetadata.of( evaluation, pool );
+        PoolMetadata m1 = PoolMetadata.of( evaluation, pool );
 
         BoxplotMetric metric = BoxplotMetric.newBuilder()
                                             .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE )
@@ -334,8 +334,8 @@ public final class BoxPlotStatisticOuterTest
     @Test
     public void testGetMetadata()
     {
-        BoxplotStatisticOuter outer = BoxplotStatisticOuter.of( this.basic, SampleMetadata.of() );
-        SampleMetadata expected = SampleMetadata.of();
+        BoxplotStatisticOuter outer = BoxplotStatisticOuter.of( this.basic, PoolMetadata.of() );
+        PoolMetadata expected = PoolMetadata.of();
 
         assertEquals( expected, outer.getMetadata() );
     }

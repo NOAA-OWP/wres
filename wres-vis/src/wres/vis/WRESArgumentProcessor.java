@@ -19,7 +19,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.Statistic;
@@ -73,7 +73,7 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param durationUnits the time units for durations
      * @throws NullPointerException if either input is null
      */
-    WRESArgumentProcessor( final SampleMetadata meta, String metricUnits, final ChronoUnit durationUnits )
+    WRESArgumentProcessor( final PoolMetadata meta, String metricUnits, final ChronoUnit durationUnits )
     {
         super();
 
@@ -121,7 +121,7 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
             metricUnits = displayPlotInput.getData().getMetric().getUnits();
         }
 
-        SampleMetadata meta = displayPlotInput.getMetadata();
+        PoolMetadata meta = displayPlotInput.getMetadata();
         MetricConstants metricName = displayPlotInput.getMetricName();
         extractStandardArgumentsFromMetadata( meta, metricUnits, metricName, null );
 
@@ -196,7 +196,7 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
         this.durationUnits = durationUnits;
 
-        SampleMetadata meta = displayedPlotInput.get( 0 ).getMetadata();
+        PoolMetadata meta = displayedPlotInput.get( 0 ).getMetadata();
         extractStandardArgumentsFromMetadata( meta, metricUnits, metricName, metricComponentName );
 
         // Assemble a collection of smaller time windows where necessary
@@ -239,7 +239,7 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param metricName the metric name
      * @param metricComponentName the optional metric component name
      */
-    private void extractStandardArgumentsFromMetadata( SampleMetadata meta,
+    private void extractStandardArgumentsFromMetadata( PoolMetadata meta,
                                                        String metricUnits,
                                                        MetricConstants metricName,
                                                        MetricConstants metricComponentName )
@@ -277,7 +277,7 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param metric the metric context
      * @param component the optional metric component name
      */
-    private void recordIdentifierArguments( SampleMetadata meta, MetricConstants metric, MetricConstants component )
+    private void recordIdentifierArguments( PoolMetadata meta, MetricConstants metric, MetricConstants component )
     {
 
         List<GeometryTuple> tuples = meta.getPool().getGeometryTuplesList();
@@ -321,7 +321,7 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @return the scenario name
      */
 
-    private String getScenarioName( SampleMetadata metadata, MetricConstants metric, MetricConstants component )
+    private String getScenarioName( PoolMetadata metadata, MetricConstants metric, MetricConstants component )
     {
         String scenarioName = "";
 
@@ -408,7 +408,7 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
     public <T extends Statistic<?>> void addLeadThresholdArguments( List<T> displayedPlotInput,
                                                                     TimeWindowOuter plotTimeWindow )
     {
-        SampleMetadata meta = displayedPlotInput.get( 0 ).getMetadata();
+        PoolMetadata meta = displayedPlotInput.get( 0 ).getMetadata();
 
         String legendTitle = "Threshold";
         String legendUnitsText = "";
@@ -478,7 +478,7 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
      */
     public <T extends Statistic<?>> void addPoolingWindowArguments( List<T> displayedPlotInput )
     {
-        SampleMetadata meta = displayedPlotInput.get( 0 ).getMetadata();
+        PoolMetadata meta = displayedPlotInput.get( 0 ).getMetadata();
 
         String durationUnitsString = "[" + this.getDurationUnits().name().toUpperCase() + "]";
 
@@ -512,7 +512,7 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
      */
     public <T extends Statistic<?>> void addTimeToPeakArguments( List<T> displayedPlotInput )
     {
-        SampleMetadata meta = displayedPlotInput.get( 0 ).getMetadata();
+        PoolMetadata meta = displayedPlotInput.get( 0 ).getMetadata();
         addArgument( LEGEND_TITLE, "Threshold " );
         addArgument( LEGEND_UNITS_TEXT, "[" + meta.getMeasurementUnit() + "]" );
     }
@@ -522,7 +522,7 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param meta the output metadata
      * @param metric the metric
      */
-    public void addBaselineArguments( SampleMetadata meta, MetricConstants metric )
+    public void addBaselineArguments( PoolMetadata meta, MetricConstants metric )
     {
         Objects.requireNonNull( meta );
 
@@ -564,7 +564,7 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param meta the statistics metadata
      */
 
-    private void addTimeScaleArguments( SampleMetadata meta )
+    private void addTimeScaleArguments( PoolMetadata meta )
     {
         Objects.requireNonNull( "Specify non-null metadata from which to obtain the time scale." );
 

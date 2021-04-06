@@ -4,7 +4,7 @@ import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Pool;
 
@@ -21,7 +21,7 @@ public class Boilerplate
         return FEATURE_TUPLE;
     }
 
-    public static SampleMetadata getSampleMetadata()
+    public static PoolMetadata getSampleMetadata()
     {
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "SQIN" )
@@ -35,6 +35,6 @@ public class Boilerplate
                                           null,
                                           false );
 
-        return SampleMetadata.of( evaluation, pool );
+        return PoolMetadata.of( evaluation, pool );
     }
 }

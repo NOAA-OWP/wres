@@ -6,7 +6,7 @@ import java.util.List;
 import org.junit.Test;
 
 import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.BoxplotMetric;
@@ -28,8 +28,8 @@ public class XYChartDataSourceFactoryTest
      * Metadata to assist in testing.
      */
 
-    private final SampleMetadata meta =
-            SampleMetadata.of( SampleMetadata.of( Evaluation.newBuilder()
+    private final PoolMetadata meta =
+            PoolMetadata.of( PoolMetadata.of( Evaluation.newBuilder()
                                                             .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
                                                             .build(),
                                                   Pool.getDefaultInstance() ),

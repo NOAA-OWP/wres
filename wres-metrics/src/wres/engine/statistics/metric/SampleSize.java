@@ -7,8 +7,8 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -22,7 +22,7 @@ import wres.statistics.generated.MetricName;
  * 
  * @author james.brown@hydrosolved.com
  */
-class SampleSize<S extends SampleData<?>> extends OrdinaryScore<S, DoubleScoreStatisticOuter>
+class SampleSize<S extends Pool<?>> extends OrdinaryScore<S, DoubleScoreStatisticOuter>
 {
 
     /**
@@ -66,7 +66,7 @@ class SampleSize<S extends SampleData<?>> extends OrdinaryScore<S, DoubleScoreSt
      * @return an instance
      */
 
-    public static <S extends SampleData<?>> SampleSize<S> of()
+    public static <S extends Pool<?>> SampleSize<S> of()
     {
         return new SampleSize<>();
     }
@@ -76,7 +76,7 @@ class SampleSize<S extends SampleData<?>> extends OrdinaryScore<S, DoubleScoreSt
     {
         if ( Objects.isNull( s ) )
         {
-            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
+            throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
         LOGGER.trace( "Found {} pairs in the input to the {} for '{}'.",

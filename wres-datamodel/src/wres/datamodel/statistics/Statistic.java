@@ -1,11 +1,11 @@
 package wres.datamodel.statistics;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolMetadata;
 
 /**
- * <p>A {@link Statistic} is used to describe {@link SampleData} or to infer something about the population from which
+ * <p>A {@link Statistic} is used to describe {@link Pool} or to infer something about the population from which
  * it originates.</p>
  * 
  * @param <U> the type of statistic data
@@ -28,7 +28,7 @@ public interface Statistic<U>
      * @return the sample metadata associated with the statistic
      */
 
-    SampleMetadata getMetadata();
+    PoolMetadata getMetadata();
         
     /**
      * Returns the name of the metric that produced the statistic.

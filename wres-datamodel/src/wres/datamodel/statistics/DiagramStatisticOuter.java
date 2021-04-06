@@ -11,7 +11,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 
 import net.jcip.annotations.Immutable;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.VectorOfDoubles;
 import wres.statistics.generated.DiagramStatistic;
@@ -41,7 +41,7 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
      * The metadata associated with the statistic.
      */
 
-    private final SampleMetadata metadata;
+    private final PoolMetadata metadata;
     
     /**
      * The metric name.
@@ -59,7 +59,7 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
      */
 
     public static DiagramStatisticOuter of( DiagramStatistic diagram,
-                                            SampleMetadata meta )
+                                            PoolMetadata meta )
     {
         return new DiagramStatisticOuter( diagram, meta );
     }
@@ -121,7 +121,7 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
     }
 
     @Override
-    public SampleMetadata getMetadata()
+    public PoolMetadata getMetadata()
     {
         return this.metadata;
     }
@@ -172,7 +172,7 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
      * @throws StatisticException if any of the inputs are invalid
      */
 
-    private DiagramStatisticOuter( DiagramStatistic diagram, SampleMetadata meta )
+    private DiagramStatisticOuter( DiagramStatistic diagram, PoolMetadata meta )
     {
         if ( Objects.isNull( diagram ) )
         {

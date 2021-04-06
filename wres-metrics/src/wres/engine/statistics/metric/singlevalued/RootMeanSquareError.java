@@ -5,8 +5,8 @@ import java.util.Objects;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.FunctionFactory;
@@ -24,8 +24,8 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * 
  * @author james.brown@hydrosolved.com
  */
-public class RootMeanSquareError extends DoubleErrorScore<SampleData<Pair<Double, Double>>>
-        implements Collectable<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+public class RootMeanSquareError extends DoubleErrorScore<Pool<Pair<Double, Double>>>
+        implements Collectable<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
 {
 
     /**
@@ -74,7 +74,7 @@ public class RootMeanSquareError extends DoubleErrorScore<SampleData<Pair<Double
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( final SampleData<Pair<Double, Double>> t )
+    public DoubleScoreStatisticOuter apply( final Pool<Pair<Double, Double>> t )
     {
         return this.aggregate( this.getInputForAggregation( t ) );
     }
@@ -123,11 +123,11 @@ public class RootMeanSquareError extends DoubleErrorScore<SampleData<Pair<Double
     }
 
     @Override
-    public DoubleScoreStatisticOuter getInputForAggregation( SampleData<Pair<Double, Double>> input )
+    public DoubleScoreStatisticOuter getInputForAggregation( Pool<Pair<Double, Double>> input )
     {
         if ( Objects.isNull( input ) )
         {
-            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
+            throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
         return sse.apply( input );

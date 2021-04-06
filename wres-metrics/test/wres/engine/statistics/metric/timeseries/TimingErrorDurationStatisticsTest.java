@@ -12,7 +12,7 @@ import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -276,7 +276,7 @@ public final class TimingErrorDurationStatisticsTest
     @Test
     public void testApplyThrowsExceptionOnNullInput()
     {
-        assertThrows( SampleDataException.class,
+        assertThrows( PoolException.class,
                       () -> TimingErrorDurationStatistics.of( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                                               Collections.singleton( MetricConstants.MEAN ) )
                                                          .apply( null ) );

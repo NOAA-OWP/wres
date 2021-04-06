@@ -16,10 +16,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataBasic;
-import wres.datamodel.pools.SampleDataException;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.BasicPool;
+import wres.datamodel.pools.PoolException;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
@@ -255,12 +255,12 @@ public final class BoxPlotPercentageErrorTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SampleDataBasic<Pair<Double, Double>> input =
-                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
+        BasicPool<Pair<Double, Double>> input =
+                BasicPool.of( Arrays.asList(), PoolMetadata.of() );
 
         BoxplotStatisticOuter actual = this.boxPlotPercentageError.apply( input );
 
-        SampleMetadata meta = SampleMetadata.of();
+        PoolMetadata meta = PoolMetadata.of();
 
         List<Double> probabilities = List.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
         List<Double> quantiles = List.of( Double.NaN,
@@ -305,14 +305,14 @@ public final class BoxPlotPercentageErrorTest
     }
 
     /**
-     * Tests for an expected exception on calling {@link BoxPlotPercentageError#apply(SampleData)} with null input.
+     * Tests for an expected exception on calling {@link BoxPlotPercentageError#apply(Pool)} with null input.
      */
 
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        SampleDataException expected =
-                assertThrows( SampleDataException.class, () -> this.boxPlotPercentageError.apply( null ) );
+        PoolException expected =
+                assertThrows( PoolException.class, () -> this.boxPlotPercentageError.apply( null ) );
 
         assertEquals( "Specify non-null input to the 'BOX PLOT OF PERCENTAGE ERRORS'.", expected.getMessage() );
     }

@@ -17,11 +17,10 @@ import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataBasic;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.BasicPool;
+import wres.datamodel.pools.PoolMetadata;
 import wres.statistics.generated.Evaluation;
-import wres.statistics.generated.Pool;
 
 public class Chart2DTestInput extends TestCase
 {
@@ -48,15 +47,15 @@ public class Chart2DTestInput extends TestCase
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( FEATURE_TUPLE,
-                                          null,
-                                          null,
-                                          null,
-                                          false );
+        wres.statistics.generated.Pool pool = MessageFactory.parse( FEATURE_TUPLE,
+                                                                    null,
+                                                                    null,
+                                                                    null,
+                                                                    false );
 
-        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
-        final SampleData<Pair<Double, Double>> pairs = SampleDataBasic.of( values, meta );
+        final Pool<Pair<Double, Double>> pairs = BasicPool.of( values, meta );
 
         //Construct the source from the pairs assigning it a data source order index of 0.
         //The order index indicates the order in which the different sources are rendered.

@@ -13,8 +13,8 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
 import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.OrdinaryScore;
@@ -49,8 +49,8 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  */
 
 public class RelativeOperatingCharacteristicScore
-        extends OrdinaryScore<SampleData<Pair<Probability, Probability>>, DoubleScoreStatisticOuter>
-        implements ProbabilityScore<SampleData<Pair<Probability, Probability>>, DoubleScoreStatisticOuter>
+        extends OrdinaryScore<Pool<Pair<Probability, Probability>>, DoubleScoreStatisticOuter>
+        implements ProbabilityScore<Pool<Pair<Probability, Probability>>, DoubleScoreStatisticOuter>
 {
 
     /**
@@ -94,11 +94,11 @@ public class RelativeOperatingCharacteristicScore
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( final SampleData<Pair<Probability, Probability>> s )
+    public DoubleScoreStatisticOuter apply( final Pool<Pair<Probability, Probability>> s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
+            throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
         //Obtain the AUC for the main prediction and, if available, the baseline.
         double rocScore;
@@ -171,7 +171,7 @@ public class RelativeOperatingCharacteristicScore
      * @return the AUC
      */
 
-    private double getAUCMasonGraham( SampleData<Pair<Probability, Probability>> pairs )
+    private double getAUCMasonGraham( Pool<Pair<Probability, Probability>> pairs )
     {
         //Obtain the predicted probabilities when the event occurred and did not occur
         //Begin by collecting against occurrence/non-occurrence

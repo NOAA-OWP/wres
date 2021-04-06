@@ -1,7 +1,7 @@
 package wres.engine.statistics.metric;
 
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.statistics.ScoreStatistic;
 
 /**
@@ -13,7 +13,7 @@ import wres.datamodel.statistics.ScoreStatistic;
  * @author james.brown@hydrosolved.com
  */
 
-public interface Score<S extends SampleData<?>, T extends ScoreStatistic<?, ?>> extends Metric<S, T>
+public interface Score<S extends Pool<?>, T extends ScoreStatistic<?, ?>> extends Metric<S, T>
 {
 
     /**

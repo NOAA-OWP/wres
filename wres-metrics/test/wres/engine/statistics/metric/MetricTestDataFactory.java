@@ -26,9 +26,8 @@ import wres.datamodel.Probability;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataBasic;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.BasicPool;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -204,7 +203,7 @@ public final class MetricTestDataFactory
         Builder<Double, Double> builder = new Builder<>();
         builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
                                               events ) )
-               .setMetadata( SampleMetadata.of() );
+               .setMetadata( PoolMetadata.of() );
 
         return builder.build();
     }
@@ -258,11 +257,11 @@ public final class MetricTestDataFactory
                                           null,
                                           false );
 
-        SampleMetadata main = SampleMetadata.of( evaluation, pool );
+        PoolMetadata main = PoolMetadata.of( evaluation, pool );
 
         Pool poolTwo = Pool.newBuilder().setIsBaselinePool( true ).build();
 
-        SampleMetadata base = SampleMetadata.of( evaluation, poolTwo );
+        PoolMetadata base = PoolMetadata.of( evaluation, poolTwo );
 
         Builder<Double, Double> builder = new Builder<>();
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
@@ -310,7 +309,7 @@ public final class MetricTestDataFactory
                                           null,
                                           false );
 
-        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
         Builder<Double, Double> builder = new Builder<>();
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
@@ -361,7 +360,7 @@ public final class MetricTestDataFactory
                                           null,
                                           false );
 
-        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
         Builder<Double, Double> builder = new Builder<>();
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
@@ -388,7 +387,7 @@ public final class MetricTestDataFactory
      * @throws IOException if the read fails
      */
 
-    public static SampleData<Pair<Double, Double>> getSingleValuedPairsFive() throws IOException
+    public static wres.datamodel.pools.Pool<Pair<Double, Double>> getSingleValuedPairsFive() throws IOException
     {
         //Construct some pairs
         final List<Pair<Double, Double>> values = new ArrayList<>();
@@ -424,9 +423,9 @@ public final class MetricTestDataFactory
                                           null,
                                           false );
 
-        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
-        return SampleDataBasic.of( values, meta );
+        return BasicPool.of( values, meta );
     }
 
     /**
@@ -460,7 +459,7 @@ public final class MetricTestDataFactory
                                           null,
                                           false );
 
-        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
         Builder<Double, Double> builder = new Builder<>();
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
@@ -484,7 +483,7 @@ public final class MetricTestDataFactory
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        SampleMetadata main = SampleMetadata.of( evaluation, Pool.getDefaultInstance() );
+        PoolMetadata main = PoolMetadata.of( evaluation, Pool.getDefaultInstance() );
         Pool pool = Pool.newBuilder()
                         .setIsBaselinePool( true )
                         .build();
@@ -495,7 +494,7 @@ public final class MetricTestDataFactory
                                              .setMeasurementUnit( "CMS" )
                                              .build();
 
-        SampleMetadata base = SampleMetadata.of( evaluationTwo, pool );
+        PoolMetadata base = PoolMetadata.of( evaluationTwo, pool );
 
         Builder<Double, Double> builder = new Builder<>();
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
@@ -537,7 +536,7 @@ public final class MetricTestDataFactory
         Builder<Double, Double> builder = new Builder<>();
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
                                                      events ) )
-                      .setMetadata( SampleMetadata.of() )
+                      .setMetadata( PoolMetadata.of() )
                       .build();
     }
 
@@ -679,7 +678,7 @@ public final class MetricTestDataFactory
                                           null,
                                           false );
 
-        SampleMetadata metaData = SampleMetadata.of( evaluation, pool );
+        PoolMetadata metaData = PoolMetadata.of( evaluation, pool );
 
         tsBuilder.setMetadata( metaData );
 
@@ -744,7 +743,7 @@ public final class MetricTestDataFactory
                                           null,
                                           false );
 
-        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
         Pool poolTwo = MessageFactory.parse( featureTuple,
                                              window,
@@ -752,7 +751,7 @@ public final class MetricTestDataFactory
                                              null,
                                              true );
 
-        SampleMetadata baseMeta = SampleMetadata.of( evaluation, poolTwo );
+        PoolMetadata baseMeta = PoolMetadata.of( evaluation, poolTwo );
 
         VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
 
@@ -829,7 +828,7 @@ public final class MetricTestDataFactory
                                           null,
                                           false );
 
-        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
         Pool poolTwo = MessageFactory.parse( featureTuple,
                                              window,
@@ -837,7 +836,7 @@ public final class MetricTestDataFactory
                                              null,
                                              true );
 
-        SampleMetadata baseMeta = SampleMetadata.of( evaluation, poolTwo );
+        PoolMetadata baseMeta = PoolMetadata.of( evaluation, poolTwo );
 
         VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
 
@@ -907,7 +906,7 @@ public final class MetricTestDataFactory
                                           null,
                                           false );
 
-        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
         VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
 
@@ -950,7 +949,7 @@ public final class MetricTestDataFactory
                                           null,
                                           false );
 
-        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
         Builder<Double, Ensemble> builder = new Builder<>();
 
@@ -986,7 +985,7 @@ public final class MetricTestDataFactory
                                           null,
                                           false );
 
-        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
         Pool basePool = MessageFactory.parse( featureTuple,
                                               window,
@@ -994,7 +993,7 @@ public final class MetricTestDataFactory
                                               null,
                                               true );
 
-        SampleMetadata base = SampleMetadata.of( evaluation, basePool );
+        PoolMetadata base = PoolMetadata.of( evaluation, basePool );
 
         Builder<Double, Ensemble> builder = new Builder<>();
 
@@ -1014,7 +1013,7 @@ public final class MetricTestDataFactory
      * @return a set of dichotomous pairs
      */
 
-    public static SampleData<Pair<Boolean, Boolean>> getDichotomousPairsOne()
+    public static wres.datamodel.pools.Pool<Pair<Boolean, Boolean>> getDichotomousPairsOne()
     {
         //Construct the dichotomous pairs using the example from http://www.cawcr.gov.au/projects/verification/#Contingency_table
         //83 hits, 38 false alarms, 23 misses and 222 correct negatives, i.e. N=365
@@ -1039,8 +1038,8 @@ public final class MetricTestDataFactory
             values.add( Pair.of( false, false ) );
         }
 
-        final SampleMetadata meta = Boilerplate.getSampleMetadata();
-        return SampleDataBasic.of( values, meta ); //Construct the pairs
+        final PoolMetadata meta = Boilerplate.getSampleMetadata();
+        return BasicPool.of( values, meta ); //Construct the pairs
     }
 
     /**
@@ -1050,7 +1049,7 @@ public final class MetricTestDataFactory
      * @return a set of dichotomous pairs
      */
 
-    public static SampleData<Pair<boolean[], boolean[]>> getMulticategoryPairsOne()
+    public static wres.datamodel.pools.Pool<Pair<boolean[], boolean[]>> getMulticategoryPairsOne()
     {
         //Construct the multicategory pairs
         final List<Pair<boolean[], boolean[]>> values = new ArrayList<>();
@@ -1117,9 +1116,9 @@ public final class MetricTestDataFactory
 
         Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( DRRC2 ), null, null, null, false );
 
-        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
-        return SampleDataBasic.of( values, meta ); //Construct the pairs
+        return BasicPool.of( values, meta ); //Construct the pairs
     }
 
     /**
@@ -1128,7 +1127,7 @@ public final class MetricTestDataFactory
      * @return discrete probability pairs
      */
 
-    public static SampleData<Pair<Probability, Probability>> getDiscreteProbabilityPairsOne()
+    public static wres.datamodel.pools.Pool<Pair<Probability, Probability>> getDiscreteProbabilityPairsOne()
     {
         //Construct some probabilistic pairs, and use the same pairs as a reference for skill (i.e. skill = 0.0)
         final List<Pair<Probability, Probability>> values = new ArrayList<>();
@@ -1139,8 +1138,8 @@ public final class MetricTestDataFactory
         values.add( Pair.of( Probability.ZERO, Probability.of( 0.0 / 5.0 ) ) );
         values.add( Pair.of( Probability.ONE, Probability.of( 1.0 / 5.0 ) ) );
 
-        final SampleMetadata meta = Boilerplate.getSampleMetadata();
-        return SampleDataBasic.of( values, meta );
+        final PoolMetadata meta = Boilerplate.getSampleMetadata();
+        return BasicPool.of( values, meta );
     }
 
     /**
@@ -1149,7 +1148,7 @@ public final class MetricTestDataFactory
      * @return discrete probability pairs
      */
 
-    public static SampleData<Pair<Probability, Probability>> getDiscreteProbabilityPairsTwo()
+    public static wres.datamodel.pools.Pool<Pair<Probability, Probability>> getDiscreteProbabilityPairsTwo()
     {
         //Construct some probabilistic pairs, and use some different pairs as a reference
         final List<Pair<Probability, Probability>> values = new ArrayList<>();
@@ -1166,9 +1165,9 @@ public final class MetricTestDataFactory
         baseline.add( Pair.of( Probability.ONE, Probability.of( 3.0 / 5.0 ) ) );
         baseline.add( Pair.of( Probability.ZERO, Probability.of( 4.0 / 5.0 ) ) );
         baseline.add( Pair.of( Probability.ONE, Probability.of( 1.0 / 5.0 ) ) );
-        final SampleMetadata main = Boilerplate.getSampleMetadata();
-        final SampleMetadata base = Boilerplate.getSampleMetadata();
-        return SampleDataBasic.of( values, main, baseline, base, null );
+        final PoolMetadata main = Boilerplate.getSampleMetadata();
+        final PoolMetadata base = Boilerplate.getSampleMetadata();
+        return BasicPool.of( values, main, baseline, base, null );
     }
 
     /**
@@ -1183,7 +1182,7 @@ public final class MetricTestDataFactory
      * @return a set of discrete probability pairs
      */
 
-    public static SampleData<Pair<Probability, Probability>> getDiscreteProbabilityPairsThree()
+    public static wres.datamodel.pools.Pool<Pair<Probability, Probability>> getDiscreteProbabilityPairsThree()
     {
         //Construct some probabilistic pairs, and use some different pairs as a reference
         final List<Pair<Probability, Probability>> values = new ArrayList<>();
@@ -1536,8 +1535,8 @@ public final class MetricTestDataFactory
         values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
         values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
 
-        final SampleMetadata main = Boilerplate.getSampleMetadata();
-        return SampleDataBasic.of( values, main );
+        final PoolMetadata main = Boilerplate.getSampleMetadata();
+        return BasicPool.of( values, main );
     }
 
     /**
@@ -1546,7 +1545,7 @@ public final class MetricTestDataFactory
      * @return discrete probability pairs with observed non-occurrences
      */
 
-    public static SampleData<Pair<Probability, Probability>> getDiscreteProbabilityPairsFour()
+    public static wres.datamodel.pools.Pool<Pair<Probability, Probability>> getDiscreteProbabilityPairsFour()
     {
         final List<Pair<Probability, Probability>> values = new ArrayList<>();
         values.add( Pair.of( Probability.ZERO, Probability.of( 3.0 / 5.0 ) ) );
@@ -1556,8 +1555,8 @@ public final class MetricTestDataFactory
         values.add( Pair.of( Probability.ZERO, Probability.of( 0.0 / 5.0 ) ) );
         values.add( Pair.of( Probability.ZERO, Probability.of( 1.0 / 5.0 ) ) );
 
-        final SampleMetadata meta = Boilerplate.getSampleMetadata();
-        return SampleDataBasic.of( values, meta );
+        final PoolMetadata meta = Boilerplate.getSampleMetadata();
+        return BasicPool.of( values, meta );
     }
 
     /**
@@ -1609,7 +1608,7 @@ public final class MetricTestDataFactory
                                           null,
                                           false );
 
-        SampleMetadata metaData = SampleMetadata.of( evaluation, pool );
+        PoolMetadata metaData = PoolMetadata.of( evaluation, pool );
 
         // Build the time-series
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( firstId ),
@@ -1658,7 +1657,7 @@ public final class MetricTestDataFactory
                                           null,
                                           false );
 
-        SampleMetadata metaData = SampleMetadata.of( evaluation, pool );
+        PoolMetadata metaData = PoolMetadata.of( evaluation, pool );
 
         // Build the time-series
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( firstId ),
@@ -1708,7 +1707,7 @@ public final class MetricTestDataFactory
                                           null,
                                           false );
 
-        SampleMetadata metaData = SampleMetadata.of( evaluation, pool );
+        PoolMetadata metaData = PoolMetadata.of( evaluation, pool );
 
         // Build the time-series
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( secondId ),
@@ -1747,7 +1746,7 @@ public final class MetricTestDataFactory
                                           null,
                                           false );
 
-        SampleMetadata metaData = SampleMetadata.of( evaluation, pool );
+        PoolMetadata metaData = PoolMetadata.of( evaluation, pool );
 
         // Build the time-series
         return builder.setMetadata( metaData ).build();
@@ -1797,7 +1796,7 @@ public final class MetricTestDataFactory
                                           null,
                                           false );
 
-        SampleMetadata metaData = SampleMetadata.of( evaluation, pool );
+        PoolMetadata metaData = PoolMetadata.of( evaluation, pool );
 
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( secondId ),
                                                      secondValues ) )

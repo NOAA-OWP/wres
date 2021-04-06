@@ -20,7 +20,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
@@ -115,7 +115,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
         try
         {
             MetricConstants metricName = output.get( 0 ).getMetricName();
-            SampleMetadata metadata = output.get( 0 ).getMetadata();
+            PoolMetadata metadata = output.get( 0 ).getMetadata();
 
             // Collection of graphics parameters, one for each set of charts to write across N formats.
             Collection<Outputs> outputsMap =

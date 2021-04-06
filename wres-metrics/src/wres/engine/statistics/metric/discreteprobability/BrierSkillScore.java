@@ -8,8 +8,8 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
 import wres.datamodel.Slicer;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore;
 import wres.statistics.generated.DoubleScoreMetric;
@@ -78,15 +78,15 @@ public class BrierSkillScore extends BrierScore
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( SampleData<Pair<Probability, Probability>> s )
+    public DoubleScoreStatisticOuter apply( Pool<Pair<Probability, Probability>> s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
+            throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
         // Transform probabilities to double values
-        SampleData<Pair<Double, Double>> transformed =
+        Pool<Pair<Double, Double>> transformed =
                 Slicer.transform( s,
                                   pair -> Pair.of( pair.getLeft().getProbability(),
                                                    pair.getRight().getProbability() ) );

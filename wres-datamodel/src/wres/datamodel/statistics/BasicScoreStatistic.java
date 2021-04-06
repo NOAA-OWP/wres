@@ -11,7 +11,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.ScoreStatistic.ScoreComponent;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
@@ -52,10 +52,10 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
      * The metadata associated with the statistic.
      */
 
-    private final SampleMetadata metadata;
+    private final PoolMetadata metadata;
 
     @Override
-    public SampleMetadata getMetadata()
+    public PoolMetadata getMetadata()
     {
         return this.metadata;
     }
@@ -139,7 +139,7 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
          * The metadata.
          */
 
-        private final SampleMetadata metadata;
+        private final PoolMetadata metadata;
         
         /**
          * Mapper to a pretty string.
@@ -156,7 +156,7 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
          */
 
         BasicScoreComponent( S component,
-                             SampleMetadata metadata,
+                             PoolMetadata metadata,
                              Function<S,String> mapper )
         {
             Objects.requireNonNull( component );
@@ -175,7 +175,7 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
         }
 
         @Override
-        public SampleMetadata getMetadata()
+        public PoolMetadata getMetadata()
         {
             return this.metadata;
         }
@@ -236,7 +236,7 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
      * @param metadata the metadata
      */
 
-    BasicScoreStatistic( S score, Map<MetricConstants, T> internal, SampleMetadata metadata )
+    BasicScoreStatistic( S score, Map<MetricConstants, T> internal, PoolMetadata metadata )
     {
         Objects.requireNonNull( metadata, NULL_METADATA_MESSAGE );
         Objects.requireNonNull( score, NULL_OUTPUT_MESSAGE );

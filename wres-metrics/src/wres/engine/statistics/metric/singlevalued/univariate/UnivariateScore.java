@@ -9,7 +9,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MissingValues;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.Pool;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreMetric;
@@ -22,7 +22,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * @author james.brown@hydrosolved.com
  */
 
-class UnivariateScore implements Function<SampleData<Pair<Double, Double>>, DoubleScoreStatistic>
+class UnivariateScore implements Function<Pool<Pair<Double, Double>>, DoubleScoreStatistic>
 {
 
     /**
@@ -62,7 +62,7 @@ class UnivariateScore implements Function<SampleData<Pair<Double, Double>>, Doub
     private final DoubleScoreMetricComponent baseline;
 
     @Override
-    public DoubleScoreStatistic apply( SampleData<Pair<Double, Double>> pairs )
+    public DoubleScoreStatistic apply( Pool<Pair<Double, Double>> pairs )
     {
         Objects.requireNonNull( pairs );
 
@@ -121,7 +121,7 @@ class UnivariateScore implements Function<SampleData<Pair<Double, Double>>, Doub
         // Baseline pairs available?
         if ( pairs.hasBaseline() )
         {
-            SampleData<Pair<Double, Double>> baselinePairs = pairs.getBaselineData();
+            Pool<Pair<Double, Double>> baselinePairs = pairs.getBaselineData();
             List<Pair<Double, Double>> rawBaselinePairs = baselinePairs.getRawData();
 
             double baseline = MissingValues.DOUBLE;

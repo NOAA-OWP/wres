@@ -10,9 +10,9 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
@@ -23,7 +23,7 @@ import org.apache.commons.lang3.tuple.Pair;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<TimeSeries<Pair<L, R>>>>
+public class PoolOfPairs<L, R> implements Pool<Pair<L, R>>, Supplier<List<TimeSeries<Pair<L, R>>>>
 {
 
     /**
@@ -48,13 +48,13 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
      * Metadata associated with the verification pairs.
      */
 
-    private final SampleMetadata mainMeta;
+    private final PoolMetadata mainMeta;
 
     /**
      * Metadata associated with the baseline verification pairs (may be null).
      */
 
-    private final SampleMetadata baselineMeta;
+    private final PoolMetadata baselineMeta;
 
     /**
      * Climatological data.
@@ -134,7 +134,7 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
     }
 
     @Override
-    public SampleMetadata getMetadata()
+    public PoolMetadata getMetadata()
     {
         return this.mainMeta;
     }
@@ -214,13 +214,13 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
          * Metadata associated with the verification pairs.
          */
 
-        private SampleMetadata mainMeta;
+        private PoolMetadata mainMeta;
 
         /**
          * Metadata associated with the baseline verification pairs (may be null).
          */
 
-        private SampleMetadata baselineMeta;
+        private PoolMetadata baselineMeta;
 
         /**
          * Climatological data.
@@ -295,7 +295,7 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
          * @return the builder
          */
 
-        public Builder<L, R> setMetadata( SampleMetadata mainMeta )
+        public Builder<L, R> setMetadata( PoolMetadata mainMeta )
         {
             this.mainMeta = mainMeta;
 
@@ -309,7 +309,7 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
          * @return the builder
          */
 
-        public Builder<L, R> setMetadataForBaseline( SampleMetadata baselineMeta )
+        public Builder<L, R> setMetadataForBaseline( PoolMetadata baselineMeta )
         {
             this.baselineMeta = baselineMeta;
 
@@ -347,7 +347,7 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
      * Construct the pairs with a builder.
      * 
      * @param b the builder
-     * @throws SampleDataException if the pairs are invalid
+     * @throws PoolException if the pairs are invalid
      */
 
     PoolOfPairs( final Builder<L, R> b )
@@ -379,7 +379,7 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
     /**
      * Validates the main pairs and associated metadata after the constructor has copied it.
      * 
-     * @throws SampleDataException if the input is invalid
+     * @throws PoolException if the input is invalid
      */
 
     private void validateMainInput()
@@ -387,17 +387,17 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
 
         if ( Objects.isNull( this.mainMeta ) )
         {
-            throw new SampleDataException( "Specify non-null metadata for the time-series input." );
+            throw new PoolException( "Specify non-null metadata for the time-series input." );
         }
 
         if ( Objects.isNull( this.main ) )
         {
-            throw new SampleDataException( "Specify a non-null dataset for the time-series input." );
+            throw new PoolException( "Specify a non-null dataset for the time-series input." );
         }
 
         if ( this.main.contains( null ) )
         {
-            throw new SampleDataException( "One or more of the time-series is null." );
+            throw new PoolException( "One or more of the time-series is null." );
         }
 
     }
@@ -405,14 +405,14 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
     /**
      * Validates the baseline pairs and associated metadata after the constructor has copied it.
      * 
-     * @throws SampleDataException if the baseline input is invalid
+     * @throws PoolException if the baseline input is invalid
      */
 
     private void validateBaselineInput()
     {
         if ( Objects.isNull( this.baseline ) != Objects.isNull( this.baselineMeta ) )
         {
-            throw new SampleDataException( "Specify a non-null baseline input and associated metadata or leave both "
+            throw new PoolException( "Specify a non-null baseline input and associated metadata or leave both "
                                            + "null. The null status of the data and metadata, respectively, is: ["
                                            + Objects.isNull( this.baseline )
                                            + ","
@@ -422,12 +422,12 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
 
         if ( Objects.nonNull( this.baseline ) && this.baseline.contains( null ) )
         {
-            throw new SampleDataException( "One or more of the baseline time-series is null." );
+            throw new PoolException( "One or more of the baseline time-series is null." );
         }
 
         if ( Objects.nonNull( this.baseline ) && !this.baselineMeta.getPool().getIsBaselinePool() )
         {
-            throw new SampleDataException( "The metadata associated with the baseline pool does not designate this "
+            throw new PoolException( "The metadata associated with the baseline pool does not designate this "
                                            + "pool as a baseline. Correct the metadata." );
         }
     }
@@ -435,7 +435,7 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
     /**
      * Validates the climatological input after the constructor has copied it.
      * 
-     * @throws SampleDataException if the climatological input is invalid
+     * @throws PoolException if the climatological input is invalid
      */
 
     private void validateClimatologicalInput()
@@ -445,13 +445,13 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
         {
             if ( this.getClimatology().size() == 0 )
             {
-                throw new SampleDataException( "Cannot build the paired data with an empty climatology: add one or "
+                throw new PoolException( "Cannot build the paired data with an empty climatology: add one or "
                                                + "more values." );
             }
 
             if ( !Arrays.stream( this.getClimatology().getDoubles() ).anyMatch( Double::isFinite ) )
             {
-                throw new SampleDataException( "Must have at least one non-missing value in the climatological "
+                throw new PoolException( "Must have at least one non-missing value in the climatological "
                                                + "input" );
             }
         }

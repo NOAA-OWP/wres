@@ -5,7 +5,7 @@ import org.jfree.data.xy.AbstractXYDataset;
 
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
-import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.Pool;
 
 /**
  * An {@link AbstractXYDataset} for single-valued pairs.
@@ -16,17 +16,17 @@ import wres.datamodel.pools.SampleData;
 //Specifically, we need to think about what the legend entry should look like (see below for a first attempt)
 //as well as how to handle multiple sereis being plotted (i.e., how to store the data.).
 class SingleValuedPairsXYDataset
-        extends WRESAbstractXYDataset<SampleData<Pair<Double, Double>>, SampleData<Pair<Double, Double>>> //implements DomainInfo, XisSymbolic, RangeInfo
+        extends WRESAbstractXYDataset<Pool<Pair<Double, Double>>, Pool<Pair<Double, Double>>> //implements DomainInfo, XisSymbolic, RangeInfo
 {
     private static final long serialVersionUID = 4183134607345060330L;
 
-    SingleValuedPairsXYDataset( final SampleData<Pair<Double, Double>> input )
+    SingleValuedPairsXYDataset( final Pool<Pair<Double, Double>> input )
     {
         super( input );
     }
 
     @Override
-    protected void preparePlotData( final SampleData<Pair<Double, Double>> rawData )
+    protected void preparePlotData( final Pool<Pair<Double, Double>> rawData )
     {
         setPlotData( rawData );
     }

@@ -7,8 +7,8 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
@@ -20,8 +20,8 @@ import wres.engine.statistics.metric.OrdinaryScore;
  * @author james.brown@hydrosolved.com
  */
 
-abstract class ContingencyTableScore extends OrdinaryScore<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter>
-        implements Collectable<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+abstract class ContingencyTableScore extends OrdinaryScore<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter>
+        implements Collectable<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
 {
 
     /**
@@ -43,11 +43,11 @@ abstract class ContingencyTableScore extends OrdinaryScore<SampleData<Pair<Boole
     }
 
     @Override
-    public DoubleScoreStatisticOuter getInputForAggregation( final SampleData<Pair<Boolean, Boolean>> s )
+    public DoubleScoreStatisticOuter getInputForAggregation( final Pool<Pair<Boolean, Boolean>> s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new SampleDataException( nullString );
+            throw new PoolException( nullString );
         }
         return table.apply( s );
     }
@@ -76,18 +76,18 @@ abstract class ContingencyTableScore extends OrdinaryScore<SampleData<Pair<Boole
      * 
      * @param output the output to check
      * @param metric the metric to use when throwing an informative exception
-     * @throws SampleDataException if the output is not a valid input for an intermediate calculation
+     * @throws PoolException if the output is not a valid input for an intermediate calculation
      */
 
     void isContingencyTable( final DoubleScoreStatisticOuter output, final Metric<?, ?> metric )
     {
         if ( Objects.isNull( output ) )
         {
-            throw new SampleDataException( nullString );
+            throw new PoolException( nullString );
         }
         if ( Objects.isNull( metric ) )
         {
-            throw new SampleDataException( nullString );
+            throw new PoolException( nullString );
         }
         int count = output.getComponents().size();
 
@@ -98,7 +98,7 @@ abstract class ContingencyTableScore extends OrdinaryScore<SampleData<Pair<Boole
 
         if ( !square )
         {
-            throw new SampleDataException( "Expected an intermediate result with a square number of elements when "
+            throw new PoolException( "Expected an intermediate result with a square number of elements when "
                                            + "computing the '"
                                            + metric
                                            + "': ["
@@ -113,18 +113,18 @@ abstract class ContingencyTableScore extends OrdinaryScore<SampleData<Pair<Boole
      * 
      * @param output the output to check
      * @param metric the metric to use when throwing an informative exception
-     * @throws SampleDataException if the output is not a valid input for an intermediate calculation
+     * @throws PoolException if the output is not a valid input for an intermediate calculation
      */
 
     void is2x2ContingencyTable( final DoubleScoreStatisticOuter output, final Metric<?, ?> metric )
     {
         if ( Objects.isNull( output ) )
         {
-            throw new SampleDataException( nullString );
+            throw new PoolException( nullString );
         }
         if ( Objects.isNull( metric ) )
         {
-            throw new SampleDataException( nullString );
+            throw new PoolException( nullString );
         }
 
         Set<MetricConstants> expected = Set.of( MetricConstants.TRUE_POSITIVES,
@@ -134,7 +134,7 @@ abstract class ContingencyTableScore extends OrdinaryScore<SampleData<Pair<Boole
 
         if ( !expected.equals( output.getComponents() ) )
         {
-            throw new SampleDataException( "Expected an intermediate result with elements "
+            throw new PoolException( "Expected an intermediate result with elements "
                                            + expected
                                            + " but found elements "
                                            + output.getComponents()

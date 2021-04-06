@@ -15,10 +15,10 @@ import org.junit.Test;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataBasic;
-import wres.datamodel.pools.SampleDataException;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.BasicPool;
+import wres.datamodel.pools.PoolException;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -60,7 +60,7 @@ public final class BoxPlotErrorByForecastTest
         List<Pair<Double, Ensemble>> values = new ArrayList<>();
         values.add( Pair.of( 0.0, Ensemble.of( 0.0, 20.0, 30.0, 50.0, 100.0 ) ) );
 
-        SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( values, SampleMetadata.of() );
+        Pool<Pair<Double, Ensemble>> input = BasicPool.of( values, PoolMetadata.of() );
 
         BoxplotStatisticOuter actual = this.bpe.apply( input );
 
@@ -99,7 +99,7 @@ public final class BoxPlotErrorByForecastTest
         List<Pair<Double, Ensemble>> values = new ArrayList<>();
         values.add( Pair.of( 0.0, Ensemble.of( 0.0, 20.0, 30.0, 50.0, 100.0 ) ) );
 
-        SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( values, SampleMetadata.of() );
+        Pool<Pair<Double, Ensemble>> input = BasicPool.of( values, PoolMetadata.of() );
 
         //Build the metric
         BoxPlotErrorByForecast bpef = BoxPlotErrorByForecast.of( MetricDimension.ENSEMBLE_MEDIAN,
@@ -138,8 +138,8 @@ public final class BoxPlotErrorByForecastTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SampleData<Pair<Double, Ensemble>> input =
-                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
+        Pool<Pair<Double, Ensemble>> input =
+                BasicPool.of( Arrays.asList(), PoolMetadata.of() );
 
         BoxplotStatisticOuter actual = this.bpe.apply( input );
 
@@ -189,7 +189,7 @@ public final class BoxPlotErrorByForecastTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        SampleDataException expected = assertThrows( SampleDataException.class, () -> this.bpe.apply( null ) );
+        PoolException expected = assertThrows( PoolException.class, () -> this.bpe.apply( null ) );
 
         assertEquals( "Specify non-null input to the 'BOX PLOT OF ERRORS BY FORECAST VALUE'.", expected.getMessage() );
     }

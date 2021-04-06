@@ -31,7 +31,7 @@ import org.junit.Test;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -121,7 +121,7 @@ public final class SingleValuedPairsWriterTest
                                           null,
                                           false );
 
-        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
         TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( basisTime );
         TimeSeries<Pair<Double, Double>> timeSeriesOne =
                 TimeSeries.of( metadata, setOfPairs );
@@ -154,7 +154,7 @@ public final class SingleValuedPairsWriterTest
                                              null,
                                              false );
 
-        SampleMetadata metaTwo = SampleMetadata.of( evaluationTwo, poolTwo );
+        PoolMetadata metaTwo = PoolMetadata.of( evaluationTwo, poolTwo );
         TimeSeriesMetadata metadataTwo = getBoilerplateMetadataWithT0( basisTimeTwo );
         TimeSeries<Pair<Double, Double>> timeSeriesTwo =
                 TimeSeries.of( metadataTwo, setOfPairsTwo );
@@ -187,7 +187,7 @@ public final class SingleValuedPairsWriterTest
                                                null,
                                                false );
 
-        SampleMetadata metaThree = SampleMetadata.of( evaluationThree, poolThree );
+        PoolMetadata metaThree = PoolMetadata.of( evaluationThree, poolThree );
 
         TimeSeriesMetadata metadataThree = getBoilerplateMetadataWithT0( basisTimeThree );
         TimeSeries<Pair<Double, Double>> timeSeriesThree =
@@ -239,7 +239,7 @@ public final class SingleValuedPairsWriterTest
                                               null,
                                               false );
 
-            SampleMetadata metadata = SampleMetadata.of( evaluation, pool );
+            PoolMetadata metadata = PoolMetadata.of( evaluation, pool );
 
             PoolOfPairs<Double, Double> emptyPairs =
                     tsBuilder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
@@ -297,7 +297,7 @@ public final class SingleValuedPairsWriterTest
     }
 
     /**
-     * Builds a {@link SingleValuedPairsWriter} whose {@link SampleMetadata} includes a {@link TimeWindowOuter},
+     * Builds a {@link SingleValuedPairsWriter} whose {@link PoolMetadata} includes a {@link TimeWindowOuter},
      * writes some pairs, and checks that the written output matches the expected output.
      * @throws IOException if the writing or removal of the paired file fails
      */
@@ -315,7 +315,7 @@ public final class SingleValuedPairsWriterTest
             // Create the pairs with a time window
             Builder<Double, Double> tsBuilder = new Builder<>();
             tsBuilder.addPoolOfPairs( pairs );
-            tsBuilder.setMetadata( SampleMetadata.of( pairs.getMetadata(),
+            tsBuilder.setMetadata( PoolMetadata.of( pairs.getMetadata(),
                                                       TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                           Instant.parse( "1990-01-01T00:00:00Z" ),
                                                                           Duration.ZERO ) ) );

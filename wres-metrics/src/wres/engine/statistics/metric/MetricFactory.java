@@ -15,7 +15,7 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
-import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.Probability;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
@@ -349,7 +349,7 @@ public final class MetricFactory
      */
 
     public static
-            MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+            MetricCollection<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
             ofSingleValuedScoreCollection( MetricConstants... metric )
                     throws MetricParameterException
     {
@@ -366,10 +366,10 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public static MetricCollection<SampleData<Pair<Double, Double>>, DiagramStatisticOuter, DiagramStatisticOuter>
-            ofSingleValuedMultiVectorCollection( MetricConstants... metric ) throws MetricParameterException
+    public static MetricCollection<Pool<Pair<Double, Double>>, DiagramStatisticOuter, DiagramStatisticOuter>
+            ofSingleValuedDiagramCollection( MetricConstants... metric ) throws MetricParameterException
     {
-        return MetricFactory.ofSingleValuedMultiVectorCollection( ForkJoinPool.commonPool(), metric );
+        return MetricFactory.ofSingleValuedDiagramCollection( ForkJoinPool.commonPool(), metric );
     }
 
     /**
@@ -385,7 +385,7 @@ public final class MetricFactory
      */
 
     public static
-            MetricCollection<SampleData<Pair<Probability, Probability>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+            MetricCollection<Pool<Pair<Probability, Probability>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
             ofDiscreteProbabilityScoreCollection( MetricConstants... metric ) throws MetricParameterException
     {
         return MetricFactory.ofDiscreteProbabilityScoreCollection( ForkJoinPool.commonPool(), metric );
@@ -404,7 +404,7 @@ public final class MetricFactory
      */
 
     public static
-            MetricCollection<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+            MetricCollection<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
             ofDichotomousScoreCollection( MetricConstants... metric )
                     throws MetricParameterException
     {
@@ -424,10 +424,10 @@ public final class MetricFactory
      */
 
     public static
-            MetricCollection<SampleData<Pair<Probability, Probability>>, DiagramStatisticOuter, DiagramStatisticOuter>
-            ofDiscreteProbabilityMultiVectorCollection( MetricConstants... metric ) throws MetricParameterException
+            MetricCollection<Pool<Pair<Probability, Probability>>, DiagramStatisticOuter, DiagramStatisticOuter>
+            ofDiscreteProbabilityDiagramCollection( MetricConstants... metric ) throws MetricParameterException
     {
-        return MetricFactory.ofDiscreteProbabilityMultiVectorCollection( ForkJoinPool.commonPool(), metric );
+        return MetricFactory.ofDiscreteProbabilityDiagramCollection( ForkJoinPool.commonPool(), metric );
     }
 
     /**
@@ -443,7 +443,7 @@ public final class MetricFactory
      */
 
     public static
-            MetricCollection<SampleData<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+            MetricCollection<Pool<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
             ofEnsembleScoreCollection( MetricConstants... metric )
                     throws MetricParameterException
     {
@@ -462,10 +462,10 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public static MetricCollection<SampleData<Pair<Double, Ensemble>>, DiagramStatisticOuter, DiagramStatisticOuter>
-            ofEnsembleMultiVectorCollection( MetricConstants... metric ) throws MetricParameterException
+    public static MetricCollection<Pool<Pair<Double, Ensemble>>, DiagramStatisticOuter, DiagramStatisticOuter>
+            ofEnsembleDiagramCollection( MetricConstants... metric ) throws MetricParameterException
     {
-        return MetricFactory.ofEnsembleMultiVectorCollection( ForkJoinPool.commonPool(), metric );
+        return MetricFactory.ofEnsembleDiagramCollection( ForkJoinPool.commonPool(), metric );
     }
 
     /**
@@ -480,7 +480,7 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public static MetricCollection<SampleData<Pair<Double, Ensemble>>, BoxplotStatisticOuter, BoxplotStatisticOuter>
+    public static MetricCollection<Pool<Pair<Double, Ensemble>>, BoxplotStatisticOuter, BoxplotStatisticOuter>
             ofEnsembleBoxPlotCollection( MetricConstants... metric ) throws MetricParameterException
     {
         return MetricFactory.ofEnsembleBoxPlotCollection( ForkJoinPool.commonPool(), metric );
@@ -518,12 +518,12 @@ public final class MetricFactory
      */
 
     public static
-            MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+            MetricCollection<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
             ofSingleValuedScoreCollection( ExecutorService executor,
                                            MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
+        final MetricCollectionBuilder<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
                 MetricCollectionBuilder.of();
 
         // Add the metrics
@@ -554,16 +554,16 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized 
      */
 
-    public static MetricCollection<SampleData<Pair<Double, Double>>, DiagramStatisticOuter, DiagramStatisticOuter>
-            ofSingleValuedMultiVectorCollection( ExecutorService executor,
-                                                 MetricConstants... metric )
+    public static MetricCollection<Pool<Pair<Double, Double>>, DiagramStatisticOuter, DiagramStatisticOuter>
+            ofSingleValuedDiagramCollection( ExecutorService executor,
+                                             MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<SampleData<Pair<Double, Double>>, DiagramStatisticOuter, DiagramStatisticOuter> builder =
+        final MetricCollectionBuilder<Pool<Pair<Double, Double>>, DiagramStatisticOuter, DiagramStatisticOuter> builder =
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            builder.addMetric( MetricFactory.ofSingleValuedMultiVector( next ) );
+            builder.addMetric( MetricFactory.ofSingleValuedDiagram( next ) );
         }
         builder.setExecutorService( executor );
         return builder.build();
@@ -580,12 +580,12 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized 
      */
 
-    public static MetricCollection<SampleData<Pair<Double, Double>>, BoxplotStatisticOuter, BoxplotStatisticOuter>
+    public static MetricCollection<Pool<Pair<Double, Double>>, BoxplotStatisticOuter, BoxplotStatisticOuter>
             ofSingleValuedBoxPlotCollection( ExecutorService executor,
                                              MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<SampleData<Pair<Double, Double>>, BoxplotStatisticOuter, BoxplotStatisticOuter> builder =
+        final MetricCollectionBuilder<Pool<Pair<Double, Double>>, BoxplotStatisticOuter, BoxplotStatisticOuter> builder =
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
@@ -607,12 +607,12 @@ public final class MetricFactory
      */
 
     public static
-            MetricCollection<SampleData<Pair<Probability, Probability>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+            MetricCollection<Pool<Pair<Probability, Probability>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
             ofDiscreteProbabilityScoreCollection( ExecutorService executor,
                                                   MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<SampleData<Pair<Probability, Probability>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
+        final MetricCollectionBuilder<Pool<Pair<Probability, Probability>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
@@ -634,12 +634,12 @@ public final class MetricFactory
      */
 
     public static
-            MetricCollection<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+            MetricCollection<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
             ofDichotomousScoreCollection( ExecutorService executor,
                                           MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
+        final MetricCollectionBuilder<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
@@ -662,16 +662,16 @@ public final class MetricFactory
      */
 
     public static
-            MetricCollection<SampleData<Pair<Probability, Probability>>, DiagramStatisticOuter, DiagramStatisticOuter>
-            ofDiscreteProbabilityMultiVectorCollection( ExecutorService executor,
-                                                        MetricConstants... metric )
+            MetricCollection<Pool<Pair<Probability, Probability>>, DiagramStatisticOuter, DiagramStatisticOuter>
+            ofDiscreteProbabilityDiagramCollection( ExecutorService executor,
+                                                    MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<SampleData<Pair<Probability, Probability>>, DiagramStatisticOuter, DiagramStatisticOuter> builder =
+        final MetricCollectionBuilder<Pool<Pair<Probability, Probability>>, DiagramStatisticOuter, DiagramStatisticOuter> builder =
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            builder.addMetric( MetricFactory.ofDiscreteProbabilityMultiVector( next ) );
+            builder.addMetric( MetricFactory.ofDiscreteProbabilityDiagram( next ) );
         }
         builder.setExecutorService( executor );
         return builder.build();
@@ -689,12 +689,12 @@ public final class MetricFactory
      */
 
     public static
-            MetricCollection<SampleData<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+            MetricCollection<Pool<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
             ofEnsembleScoreCollection( ExecutorService executor,
                                        MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<SampleData<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
+        final MetricCollectionBuilder<Pool<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
@@ -714,16 +714,16 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public static MetricCollection<SampleData<Pair<Double, Ensemble>>, DiagramStatisticOuter, DiagramStatisticOuter>
-            ofEnsembleMultiVectorCollection( ExecutorService executor,
-                                             MetricConstants... metric )
+    public static MetricCollection<Pool<Pair<Double, Ensemble>>, DiagramStatisticOuter, DiagramStatisticOuter>
+            ofEnsembleDiagramCollection( ExecutorService executor,
+                                         MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<SampleData<Pair<Double, Ensemble>>, DiagramStatisticOuter, DiagramStatisticOuter> builder =
+        final MetricCollectionBuilder<Pool<Pair<Double, Ensemble>>, DiagramStatisticOuter, DiagramStatisticOuter> builder =
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            builder.addMetric( MetricFactory.ofEnsembleMultiVector( next ) );
+            builder.addMetric( MetricFactory.ofEnsembleDiagram( next ) );
         }
         builder.setExecutorService( executor );
         return builder.build();
@@ -740,12 +740,12 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public static MetricCollection<SampleData<Pair<Double, Ensemble>>, BoxplotStatisticOuter, BoxplotStatisticOuter>
+    public static MetricCollection<Pool<Pair<Double, Ensemble>>, BoxplotStatisticOuter, BoxplotStatisticOuter>
             ofEnsembleBoxPlotCollection( ExecutorService executor,
                                          MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<SampleData<Pair<Double, Ensemble>>, BoxplotStatisticOuter, BoxplotStatisticOuter> builder =
+        final MetricCollectionBuilder<Pool<Pair<Double, Ensemble>>, BoxplotStatisticOuter, BoxplotStatisticOuter> builder =
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
@@ -790,7 +790,7 @@ public final class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public static Metric<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter>
+    public static Metric<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter>
             ofSingleValuedScore( MetricConstants metric )
     {
         switch ( metric )
@@ -848,7 +848,7 @@ public final class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public static Collectable<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+    public static Collectable<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
             ofSingleValuedScoreCollectable( MetricConstants metric )
     {
         switch ( metric )
@@ -880,8 +880,8 @@ public final class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public static Metric<SampleData<Pair<Double, Double>>, DiagramStatisticOuter>
-            ofSingleValuedMultiVector( MetricConstants metric )
+    public static Metric<Pool<Pair<Double, Double>>, DiagramStatisticOuter>
+            ofSingleValuedDiagram( MetricConstants metric )
     {
         if ( MetricConstants.QUANTILE_QUANTILE_DIAGRAM.equals( metric ) )
         {
@@ -901,7 +901,7 @@ public final class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public static Metric<SampleData<Pair<Double, Double>>, BoxplotStatisticOuter>
+    public static Metric<Pool<Pair<Double, Double>>, BoxplotStatisticOuter>
             ofSingleValuedBoxPlot( MetricConstants metric )
     {
         switch ( metric )
@@ -923,7 +923,7 @@ public final class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public static Metric<SampleData<Pair<Probability, Probability>>, DoubleScoreStatisticOuter>
+    public static Metric<Pool<Pair<Probability, Probability>>, DoubleScoreStatisticOuter>
             ofDiscreteProbabilityScore( MetricConstants metric )
     {
         switch ( metric )
@@ -947,7 +947,7 @@ public final class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public static Collectable<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+    public static Collectable<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
             ofDichotomousScore( MetricConstants metric )
     {
         switch ( metric )
@@ -980,8 +980,8 @@ public final class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public static Metric<SampleData<Pair<Probability, Probability>>, DiagramStatisticOuter>
-            ofDiscreteProbabilityMultiVector( MetricConstants metric ) throws MetricParameterException
+    public static Metric<Pool<Pair<Probability, Probability>>, DiagramStatisticOuter>
+            ofDiscreteProbabilityDiagram( MetricConstants metric ) throws MetricParameterException
     {
         switch ( metric )
         {
@@ -1002,7 +1002,7 @@ public final class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public static Metric<SampleData<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter>
+    public static Metric<Pool<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter>
             ofEnsembleScore( MetricConstants metric )
     {
         switch ( metric )
@@ -1026,7 +1026,7 @@ public final class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public static Metric<SampleData<Pair<Double, Ensemble>>, BoxplotStatisticOuter>
+    public static Metric<Pool<Pair<Double, Ensemble>>, BoxplotStatisticOuter>
             ofEnsembleBoxPlot( MetricConstants metric )
     {
         switch ( metric )
@@ -1048,13 +1048,13 @@ public final class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public static Metric<SampleData<Pair<Double, Ensemble>>, DiagramStatisticOuter>
-            ofEnsembleMultiVector( MetricConstants metric )
+    public static Metric<Pool<Pair<Double, Ensemble>>, DiagramStatisticOuter>
+            ofEnsembleDiagram( MetricConstants metric )
     {
         if ( MetricConstants.RANK_HISTOGRAM.equals( metric ) )
         {
             Random random = MetricFactory.getRandomNumberGenerator();
-            return RankHistogram.of();
+            return RankHistogram.of( random );
         }
         else
         {

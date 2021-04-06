@@ -19,7 +19,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.statistics.generated.Outputs;
 import wres.vis.ChartEngineFactory;
@@ -113,7 +113,7 @@ public class DurationScoreGraphicsWriter extends GraphicsWriter
         try
         {
             MetricConstants metricName = output.get( 0 ).getMetricName();
-            SampleMetadata metadata = output.get( 0 ).getMetadata();
+            PoolMetadata metadata = output.get( 0 ).getMetadata();
 
             // Collection of graphics parameters, one for each set of charts to write across N formats.
             Collection<Outputs> outputsMap =

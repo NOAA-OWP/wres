@@ -7,8 +7,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -29,8 +29,8 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * 
  * @author james.brown@hydrosolved.com
  */
-public class MeanSquareErrorSkillScore extends DecomposableScore<SampleData<Pair<Double, Double>>>
-        implements Collectable<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+public class MeanSquareErrorSkillScore extends DecomposableScore<Pool<Pair<Double, Double>>>
+        implements Collectable<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
 {
 
     /**
@@ -80,11 +80,11 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<SampleData<Pair
     private final SumOfSquareError sse;
 
     @Override
-    public DoubleScoreStatisticOuter apply( final SampleData<Pair<Double, Double>> s )
+    public DoubleScoreStatisticOuter apply( final Pool<Pair<Double, Double>> s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
+            throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
         if ( this.getScoreOutputGroup() != MetricGroup.NONE )
@@ -157,14 +157,14 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<SampleData<Pair
     {
         if ( Objects.isNull( output ) )
         {
-            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
+            throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
         return output;
     }
 
     @Override
-    public DoubleScoreStatisticOuter getInputForAggregation( SampleData<Pair<Double, Double>> input )
+    public DoubleScoreStatisticOuter getInputForAggregation( Pool<Pair<Double, Double>> input )
     {
         return this.apply( input );
     }

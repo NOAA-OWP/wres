@@ -25,7 +25,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.statistics.generated.Outputs;
@@ -127,7 +127,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
         try
         {
             MetricConstants metricName = output.get( 0 ).getMetricName();
-            SampleMetadata metadata = output.get( 0 ).getMetadata();
+            PoolMetadata metadata = output.get( 0 ).getMetadata();
 
             // Collection of graphics parameters, one for each set of charts to write across N formats.
             Collection<Outputs> outputsMap =
@@ -211,7 +211,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
      */
 
     private static Set<Path> writeNextGroupOfDestinations( Path outputDirectory,
-                                                           SampleMetadata metadata,
+                                                           PoolMetadata metadata,
                                                            ConcurrentMap<MetricConstants, ChartEngine> engines,
                                                            MetricConstants metricName,
                                                            String append,

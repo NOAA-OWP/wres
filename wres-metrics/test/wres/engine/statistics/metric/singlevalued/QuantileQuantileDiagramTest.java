@@ -13,9 +13,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.pools.SampleDataBasic;
-import wres.datamodel.pools.SampleDataException;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.BasicPool;
+import wres.datamodel.pools.PoolException;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
@@ -52,7 +52,7 @@ public final class QuantileQuantileDiagramTest
             values.add( Pair.of( left, right ) );
         }
 
-        SampleDataBasic<Pair<Double, Double>> input = SampleDataBasic.of( values, SampleMetadata.of() );
+        BasicPool<Pair<Double, Double>> input = BasicPool.of( values, PoolMetadata.of() );
 
         //Check the results        
         DiagramStatisticOuter actual = this.qqd.apply( input );
@@ -94,8 +94,8 @@ public final class QuantileQuantileDiagramTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SampleDataBasic<Pair<Double, Double>> input =
-                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
+        BasicPool<Pair<Double, Double>> input =
+                BasicPool.of( Arrays.asList(), PoolMetadata.of() );
 
         DiagramStatisticOuter actual = this.qqd.apply( input );
 
@@ -137,7 +137,7 @@ public final class QuantileQuantileDiagramTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        SampleDataException expected = assertThrows( SampleDataException.class, () -> this.qqd.apply( null ) );
+        PoolException expected = assertThrows( PoolException.class, () -> this.qqd.apply( null ) );
 
         assertEquals( "Specify non-null input to the 'QUANTILE QUANTILE DIAGRAM'.", expected.getMessage() );
     }

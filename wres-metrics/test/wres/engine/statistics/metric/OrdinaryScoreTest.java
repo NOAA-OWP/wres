@@ -5,7 +5,7 @@ import static org.junit.Assert.assertTrue;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
-import wres.datamodel.pools.SampleData;
+import wres.datamodel.pools.Pool;
 
 /**
  * Tests the {@link OrdinaryScore}.
@@ -24,7 +24,7 @@ public final class OrdinaryScoreTest
     @Test
     public void testToString()
     {
-        SampleSize<SampleData<Pair<Double, Double>>> ss = SampleSize.of();
+        SampleSize<Pool<Pair<Double, Double>>> ss = SampleSize.of();
 
         assertTrue( "SAMPLE SIZE".equals( ss.toString() ) );
     }

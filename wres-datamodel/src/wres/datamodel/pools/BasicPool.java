@@ -10,12 +10,12 @@ import java.util.StringJoiner;
 import wres.datamodel.VectorOfDoubles;
 
 /**
- * A minimal implementation of a {@link SampleData}.
+ * A minimal implementation of a {@link Pool}.
  * 
  * @param <T> the data type
  * @author james.brown@hydrosolved.com
  */
-public class SampleDataBasic<T> implements SampleData<T>
+public class BasicPool<T> implements Pool<T>
 {
 
     /**
@@ -28,7 +28,7 @@ public class SampleDataBasic<T> implements SampleData<T>
      * Metadata associated with the verification pairs.
      */
 
-    private final SampleMetadata mainMeta;
+    private final PoolMetadata mainMeta;
 
     /**
      * The verification pairs for a baseline in an immutable list (may be null).
@@ -40,7 +40,7 @@ public class SampleDataBasic<T> implements SampleData<T>
      * Metadata associated with the baseline verification pairs (may be null).
      */
 
-    private final SampleMetadata baselineMeta;
+    private final PoolMetadata baselineMeta;
 
     /**
      * Climatological dataset. May be null.
@@ -67,7 +67,7 @@ public class SampleDataBasic<T> implements SampleData<T>
     }
 
     @Override
-    public SampleMetadata getMetadata()
+    public PoolMetadata getMetadata()
     {
         return mainMeta;
     }
@@ -79,7 +79,7 @@ public class SampleDataBasic<T> implements SampleData<T>
     }
 
     @Override
-    public SampleData<T> getBaselineData()
+    public Pool<T> getBaselineData()
     {
         // TODO: return an empty baseline in all cases.
         if ( !this.hasBaseline() )
@@ -124,10 +124,10 @@ public class SampleDataBasic<T> implements SampleData<T>
      * @param sampleData the data
      * @param meta the metadata
      * @return the sample data
-     * @throws SampleDataException if the inputs are invalid
+     * @throws PoolException if the inputs are invalid
      */
 
-    public static <T> SampleDataBasic<T> of( List<T> sampleData, SampleMetadata meta )
+    public static <T> BasicPool<T> of( List<T> sampleData, PoolMetadata meta )
     {
         SampleDataBasicBuilder<T> builder = new SampleDataBasicBuilder<>();
 
@@ -139,12 +139,12 @@ public class SampleDataBasic<T> implements SampleData<T>
     @Override
     public boolean equals( Object o )
     {
-        if ( ! ( o instanceof SampleDataBasic ) )
+        if ( ! ( o instanceof BasicPool ) )
         {
             return false;
         }
 
-        SampleDataBasic<?> input = (SampleDataBasic<?>) o;
+        BasicPool<?> input = (BasicPool<?>) o;
 
         boolean returnMe =
                 input.getRawData().equals( this.getRawData() ) && input.getMetadata().equals( this.getMetadata() );
@@ -187,13 +187,13 @@ public class SampleDataBasic<T> implements SampleData<T>
      * @param baselineMeta the baseline metadata
      * @param climatology the climatological data
      * @return the sample data
-     * @throws SampleDataException if the inputs are invalid
+     * @throws PoolException if the inputs are invalid
      */
 
-    public static <T> SampleDataBasic<T> of( List<T> sampleData,
-                                             SampleMetadata sampleMeta,
+    public static <T> BasicPool<T> of( List<T> sampleData,
+                                             PoolMetadata sampleMeta,
                                              List<T> baselineData,
-                                             SampleMetadata baselineMeta,
+                                             PoolMetadata baselineMeta,
                                              VectorOfDoubles climatology )
     {
         SampleDataBasicBuilder<T> builder = new SampleDataBasicBuilder<>();
@@ -233,13 +233,13 @@ public class SampleDataBasic<T> implements SampleData<T>
          * Metadata for input.
          */
 
-        SampleMetadata mainMeta;
+        PoolMetadata mainMeta;
 
         /**
          * Metadata for baseline.
          */
 
-        SampleMetadata baselineMeta;
+        PoolMetadata baselineMeta;
 
         /**
          * Sets the metadata associated with the input.
@@ -248,7 +248,7 @@ public class SampleDataBasic<T> implements SampleData<T>
          * @return the builder
          */
 
-        public SampleDataBasicBuilder<T> setMetadata( SampleMetadata mainMeta )
+        public SampleDataBasicBuilder<T> setMetadata( PoolMetadata mainMeta )
         {
             this.mainMeta = mainMeta;
             return this;
@@ -261,7 +261,7 @@ public class SampleDataBasic<T> implements SampleData<T>
          * @return the builder
          */
 
-        public SampleDataBasicBuilder<T> setMetadataForBaseline( SampleMetadata baselineMeta )
+        public SampleDataBasicBuilder<T> setMetadataForBaseline( PoolMetadata baselineMeta )
         {
             this.baselineMeta = baselineMeta;
 
@@ -354,7 +354,7 @@ public class SampleDataBasic<T> implements SampleData<T>
          * @throws NullPointerException if the input is null
          */
 
-        public SampleDataBasicBuilder<T> addData( SampleData<T> data )
+        public SampleDataBasicBuilder<T> addData( Pool<T> data )
         {
             Objects.requireNonNull( data );
 
@@ -364,7 +364,7 @@ public class SampleDataBasic<T> implements SampleData<T>
 
             if ( data.hasBaseline() )
             {
-                SampleData<T> base = data.getBaselineData();
+                Pool<T> base = data.getBaselineData();
                 this.baselineSampleData.addAll( base.getRawData() );
                 this.baselineMeta = base.getMetadata();
             }
@@ -378,9 +378,9 @@ public class SampleDataBasic<T> implements SampleData<T>
          * @return the metric input
          */
 
-        public SampleDataBasic<T> build()
+        public BasicPool<T> build()
         {
-            return new SampleDataBasic<>( this );
+            return new BasicPool<>( this );
         }
 
     }
@@ -389,10 +389,10 @@ public class SampleDataBasic<T> implements SampleData<T>
      * Construct with a builder.
      * 
      * @param b the builder
-     * @throws SampleDataException if the pairs are invalid
+     * @throws PoolException if the pairs are invalid
      */
 
-    SampleDataBasic( SampleDataBasicBuilder<T> b )
+    BasicPool( SampleDataBasicBuilder<T> b )
     {
         //Ensure safe types
         this.sampleData = Collections.unmodifiableList( b.sampleData );
@@ -421,7 +421,7 @@ public class SampleDataBasic<T> implements SampleData<T>
     /**
      * Validates the main pairs and associated metadata after the constructor has copied it.
      * 
-     * @throws SampleDataException if the input is invalid
+     * @throws PoolException if the input is invalid
      */
 
     private void validateMainInput()
@@ -429,17 +429,17 @@ public class SampleDataBasic<T> implements SampleData<T>
 
         if ( Objects.isNull( mainMeta ) )
         {
-            throw new SampleDataException( "Specify non-null metadata for the metric input." );
+            throw new PoolException( "Specify non-null metadata for the metric input." );
         }
 
         if ( Objects.isNull( sampleData ) )
         {
-            throw new SampleDataException( "Specify a non-null dataset for the metric input." );
+            throw new PoolException( "Specify a non-null dataset for the metric input." );
         }
 
         if ( sampleData.contains( (T) null ) )
         {
-            throw new SampleDataException( "One or more of the pairs is null." );
+            throw new PoolException( "One or more of the pairs is null." );
         }
 
     }
@@ -447,14 +447,14 @@ public class SampleDataBasic<T> implements SampleData<T>
     /**
      * Validates the baseline pairs and associated metadata after the constructor has copied it.
      * 
-     * @throws SampleDataException if the baseline input is invalid
+     * @throws PoolException if the baseline input is invalid
      */
 
     private void validateBaselineInput()
     {
         if ( Objects.isNull( baselineSampleData ) != Objects.isNull( baselineMeta ) )
         {
-            throw new SampleDataException( "Specify a non-null baseline input and associated metadata or leave both "
+            throw new PoolException( "Specify a non-null baseline input and associated metadata or leave both "
                                            + "null. The null status of the data and metadata, respectively, is: ["
                                            + Objects.isNull( baselineSampleData )
                                            + ","
@@ -464,14 +464,14 @@ public class SampleDataBasic<T> implements SampleData<T>
 
         if ( Objects.nonNull( baselineSampleData ) && baselineSampleData.contains( (T) null ) )
         {
-            throw new SampleDataException( "One or more of the baseline pairs is null." );
+            throw new PoolException( "One or more of the baseline pairs is null." );
         }
     }
 
     /**
      * Validates the climatological input after the constructor has copied it.
      * 
-     * @throws SampleDataException if the climatological input is invalid
+     * @throws PoolException if the climatological input is invalid
      */
 
     private void validateClimatologicalInput()
@@ -481,13 +481,13 @@ public class SampleDataBasic<T> implements SampleData<T>
         {
             if ( this.getClimatology().size() == 0 )
             {
-                throw new SampleDataException( "Cannot build the paired data with an empty climatology: add one or "
+                throw new PoolException( "Cannot build the paired data with an empty climatology: add one or "
                                                + "more values." );
             }
 
             if ( !Arrays.stream( this.getClimatology().getDoubles() ).anyMatch( Double::isFinite ) )
             {
-                throw new SampleDataException( "Must have at least one non-missing value in the climatological "
+                throw new PoolException( "Must have at least one non-missing value in the climatological "
                                                + "input" );
             }
         }

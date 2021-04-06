@@ -39,7 +39,7 @@ import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.OneOrTwoDoubles;
@@ -208,7 +208,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                               null,
                                               false );
 
-            SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+            PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
             PoolOfPairs<Double, Double> next =
                     new Builder<Double, Double>().addPoolOfPairs( pairs )
@@ -252,7 +252,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           expectedThreshold,
                                           false );
 
-        SampleMetadata expectedMeta = SampleMetadata.of( evaluation, pool );
+        PoolMetadata expectedMeta = PoolMetadata.of( evaluation, pool );
 
         DoubleScoreStatistic table =
                 DoubleScoreStatistic.newBuilder()
@@ -364,7 +364,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           thresholds,
                                           false );
 
-        SampleMetadata m1 = SampleMetadata.of( evaluation, pool );
+        PoolMetadata m1 = PoolMetadata.of( evaluation, pool );
 
         Pool poolTwo = MessageFactory.parse( MetricTestDataFactory.getLocation( "A" ),
                                              secondWindow,
@@ -372,7 +372,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                              thresholds,
                                              false );
 
-        SampleMetadata m2 = SampleMetadata.of( evaluation, poolTwo );
+        PoolMetadata m2 = PoolMetadata.of( evaluation, poolTwo );
 
         PairOfInstantAndDuration one = PairOfInstantAndDuration.newBuilder()
                                                                .setTime( Timestamp.newBuilder()
@@ -479,7 +479,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           null,
                                           false );
 
-        SampleMetadata source = SampleMetadata.of( evaluation, pool );
+        PoolMetadata source = PoolMetadata.of( evaluation, pool );
 
         List<DurationDiagramStatisticOuter> expected = new ArrayList<>();
 
@@ -512,24 +512,24 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                           .build();
 
         expected.add( DurationDiagramStatisticOuter.of( expectedFirst,
-                                                        SampleMetadata.of( source,
+                                                        PoolMetadata.of( source,
                                                                            firstWindow,
                                                                            firstThreshold ) ) );
 
         expected.add( DurationDiagramStatisticOuter.of( DurationDiagramStatistic.newBuilder()
                                                                                 .setMetric( TimeToPeakError.METRIC )
                                                                                 .build(),
-                                                        SampleMetadata.of( source,
+                                                        PoolMetadata.of( source,
                                                                            firstWindow,
                                                                            secondThreshold ) ) );
 
         expected.add( DurationDiagramStatisticOuter.of( expectedSecond,
-                                                        SampleMetadata.of( source,
+                                                        PoolMetadata.of( source,
                                                                            secondWindow,
                                                                            firstThreshold ) ) );
 
         expected.add( DurationDiagramStatisticOuter.of( expectedSecond,
-                                                        SampleMetadata.of( source,
+                                                        PoolMetadata.of( source,
                                                                            secondWindow,
                                                                            secondThreshold ) ) );
 
@@ -592,7 +592,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           thresholds,
                                           false );
 
-        SampleMetadata scoreMeta = SampleMetadata.of( evaluation, pool );
+        PoolMetadata scoreMeta = PoolMetadata.of( evaluation, pool );
 
         com.google.protobuf.Duration expectedMean = MessageFactory.parse( Duration.ofHours( 3 ) );
         com.google.protobuf.Duration expectedMedian = MessageFactory.parse( Duration.ofHours( 3 ) );
@@ -747,7 +747,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                               null,
                                               false );
 
-            SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+            PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
             PoolOfPairs<Double, Double> next =
                     new Builder<Double, Double>().addPoolOfPairs( pairs ).setMetadata( meta ).build();
@@ -788,7 +788,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           expectedThreshold,
                                           false );
 
-        SampleMetadata expectedMeta = SampleMetadata.of( evaluation, pool );
+        PoolMetadata expectedMeta = PoolMetadata.of( evaluation, pool );
 
         DoubleScoreStatistic table =
                 DoubleScoreStatistic.newBuilder()
@@ -854,7 +854,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                               null,
                                               false );
 
-            SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+            PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
             PoolOfPairs<Double, Double> next =
                     new Builder<Double, Double>().addPoolOfPairs( pairs ).setMetadata( meta ).build();
@@ -896,7 +896,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           expectedThreshold,
                                           false );
 
-        SampleMetadata expectedMeta = SampleMetadata.of( evaluation, pool );
+        PoolMetadata expectedMeta = PoolMetadata.of( evaluation, pool );
 
         DoubleScoreStatistic table =
                 DoubleScoreStatistic.newBuilder()
@@ -973,7 +973,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           thresholds,
                                           false );
 
-        SampleMetadata scoreMeta = SampleMetadata.of( evaluation, pool );
+        PoolMetadata scoreMeta = PoolMetadata.of( evaluation, pool );
 
         DurationScoreMetric metric = DurationScoreMetric.newBuilder()
                                                         .setName( MetricName.TIME_TO_PEAK_ERROR_STATISTIC )
@@ -1018,7 +1018,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           null,
                                           false );
 
-        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
         PoolOfPairs<Double, Double> next =
                 new Builder<Double, Double>().addPoolOfPairs( pairs ).setMetadata( meta ).build();

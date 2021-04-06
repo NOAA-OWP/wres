@@ -10,7 +10,7 @@ import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -74,7 +74,7 @@ public final class DataModelTestDataFactory
                                           null,
                                           false );
 
-        final SampleMetadata source = SampleMetadata.of( evaluation, pool );
+        final PoolMetadata source = PoolMetadata.of( evaluation, pool );
 
         int[] leadTimes = new int[] { 1, 2, 3, 4, 5 };
 
@@ -106,7 +106,7 @@ public final class DataModelTestDataFactory
                                         .build();
 
             DoubleScoreStatisticOuter firstValue =
-                    DoubleScoreStatisticOuter.of( one, SampleMetadata.of( source, timeWindow, first ) );
+                    DoubleScoreStatisticOuter.of( one, PoolMetadata.of( source, timeWindow, first ) );
 
             statistics.add( firstValue );
 
@@ -132,7 +132,7 @@ public final class DataModelTestDataFactory
                                         .build();
 
             DoubleScoreStatisticOuter secondValue =
-                    DoubleScoreStatisticOuter.of( two, SampleMetadata.of( source, timeWindow, second ) );
+                    DoubleScoreStatisticOuter.of( two, PoolMetadata.of( source, timeWindow, second ) );
 
             statistics.add( secondValue );
 
@@ -159,7 +159,7 @@ public final class DataModelTestDataFactory
 
 
             DoubleScoreStatisticOuter thirdValue =
-                    DoubleScoreStatisticOuter.of( three, SampleMetadata.of( source, timeWindow, third ) );
+                    DoubleScoreStatisticOuter.of( three, PoolMetadata.of( source, timeWindow, third ) );
 
             statistics.add( thirdValue );
 

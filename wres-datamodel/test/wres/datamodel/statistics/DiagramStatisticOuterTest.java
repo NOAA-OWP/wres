@@ -12,7 +12,7 @@ import org.junit.Test;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.Evaluation;
@@ -30,7 +30,7 @@ import wres.statistics.generated.Pool;
 public final class DiagramStatisticOuterTest
 {
 
-    private SampleMetadata metadata;
+    private PoolMetadata metadata;
 
     @Before
     public void runBeforeEachTest()
@@ -49,7 +49,7 @@ public final class DiagramStatisticOuterTest
                                           null,
                                           false );
 
-        this.metadata = SampleMetadata.of( evaluation, pool );
+        this.metadata = PoolMetadata.of( evaluation, pool );
     }
 
     /**
@@ -73,7 +73,7 @@ public final class DiagramStatisticOuterTest
                                           null,
                                           false );
 
-        SampleMetadata m2 = SampleMetadata.of( evaluation, pool );
+        PoolMetadata m2 = PoolMetadata.of( evaluation, pool );
         FeatureKey l3 = FeatureKey.of( "B" );
 
         Pool poolTwo = MessageFactory.parse( new FeatureTuple( l3, l3, l3 ),
@@ -82,7 +82,7 @@ public final class DiagramStatisticOuterTest
                                              null,
                                              false );
 
-        SampleMetadata m3 = SampleMetadata.of( evaluation, poolTwo );
+        PoolMetadata m3 = PoolMetadata.of( evaluation, poolTwo );
 
         DiagramMetricComponent podComponent =
                 DiagramMetricComponent.newBuilder()
@@ -189,7 +189,7 @@ public final class DiagramStatisticOuterTest
                                           null,
                                           false );
 
-        SampleMetadata m2 = SampleMetadata.of( evaluation, pool );
+        PoolMetadata m2 = PoolMetadata.of( evaluation, pool );
 
         DiagramMetricComponent podComponent =
                 DiagramMetricComponent.newBuilder()

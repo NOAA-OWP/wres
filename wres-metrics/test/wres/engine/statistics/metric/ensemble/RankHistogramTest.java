@@ -16,10 +16,10 @@ import org.junit.Test;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataBasic;
-import wres.datamodel.pools.SampleDataException;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.BasicPool;
+import wres.datamodel.pools.PoolException;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.statistics.generated.DiagramStatistic;
@@ -53,7 +53,7 @@ public final class RankHistogramTest
     }
 
     /**
-     * Compares the output from {@link RankHistogram#apply(SampleData)} against expected output for pairs without
+     * Compares the output from {@link RankHistogram#apply(Pool)} against expected output for pairs without
      * ties.
      */
 
@@ -72,7 +72,7 @@ public final class RankHistogramTest
             values.add( Pair.of( left, Ensemble.of( right ) ) );
         }
 
-        SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( values, SampleMetadata.of() );
+        Pool<Pair<Double, Ensemble>> input = BasicPool.of( values, PoolMetadata.of() );
 
         //Check the results       
         DiagramStatisticOuter actual = this.rh.apply( input );
@@ -120,7 +120,7 @@ public final class RankHistogramTest
     }
 
     /**
-     * Compares the output from {@link RankHistogram#apply(SampleData)} against expected output for pairs with
+     * Compares the output from {@link RankHistogram#apply(Pool)} against expected output for pairs with
      * ties.
      */
 
@@ -130,7 +130,7 @@ public final class RankHistogramTest
         //Generate some data using an RNG for a uniform U[0,1] distribution with a fixed seed
         List<Pair<Double, Ensemble>> values = new ArrayList<>();
         values.add( Pair.of( 2.0, Ensemble.of( 1, 2, 2, 2, 4, 5, 6, 7, 8 ) ) );
-        SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( values, SampleMetadata.of() );
+        Pool<Pair<Double, Ensemble>> input = BasicPool.of( values, PoolMetadata.of() );
 
         //Check the results       
         DiagramStatisticOuter actual = this.rh.apply( input );
@@ -180,7 +180,7 @@ public final class RankHistogramTest
 
 
     /**
-     * Validates the output from {@link RankHistogram#apply(SampleData)} when 
+     * Validates the output from {@link RankHistogram#apply(Pool)} when 
      * supplied with no data.
      */
 
@@ -188,8 +188,8 @@ public final class RankHistogramTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SampleData<Pair<Double, Ensemble>> input =
-                SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
+        Pool<Pair<Double, Ensemble>> input =
+                BasicPool.of( Arrays.asList(), PoolMetadata.of() );
 
         DiagramStatisticOuter actual = this.rh.apply( input );
 
@@ -229,14 +229,14 @@ public final class RankHistogramTest
 
     /**
      * Tests for an expected exception on calling 
-     * {@link RankHistogram#apply(SampleData)} with null input.
+     * {@link RankHistogram#apply(Pool)} with null input.
      */
 
     @Test
     public void testExceptionOnNullInput()
     {
-        SampleDataException actual = assertThrows( SampleDataException.class,
-                                                   () -> this.rh.apply( (SampleData<Pair<Double, Ensemble>>) null ) );
+        PoolException actual = assertThrows( PoolException.class,
+                                                   () -> this.rh.apply( (Pool<Pair<Double, Ensemble>>) null ) );
 
         assertEquals( "Specify non-null input to the '" + this.rh.getName() + "'.", actual.getMessage() );
     }

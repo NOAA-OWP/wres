@@ -7,7 +7,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 
 import net.jcip.annotations.Immutable;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.statistics.generated.BoxplotStatistic;
 
 /**
@@ -24,7 +24,7 @@ public class BoxplotStatisticOuter implements Statistic<BoxplotStatistic>
      * The statistics metadata.
      */
 
-    private final SampleMetadata metadata;
+    private final PoolMetadata metadata;
 
     /**
      * The statistics.
@@ -49,13 +49,13 @@ public class BoxplotStatisticOuter implements Statistic<BoxplotStatistic>
      */
 
     public static BoxplotStatisticOuter of( BoxplotStatistic statistic,
-                                            SampleMetadata metadata )
+                                            PoolMetadata metadata )
     {
         return new BoxplotStatisticOuter( statistic, metadata );
     }
 
     @Override
-    public SampleMetadata getMetadata()
+    public PoolMetadata getMetadata()
     {
         return this.metadata;
     }
@@ -129,7 +129,7 @@ public class BoxplotStatisticOuter implements Statistic<BoxplotStatistic>
      */
 
     private BoxplotStatisticOuter( BoxplotStatistic statistic,
-                                   SampleMetadata metadata )
+                                   PoolMetadata metadata )
     {
         Objects.requireNonNull( metadata );
         Objects.requireNonNull( statistic );

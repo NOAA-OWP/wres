@@ -9,8 +9,8 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.pools.SampleData;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.engine.statistics.metric.Diagram;
 import wres.statistics.generated.DiagramMetric;
@@ -28,7 +28,7 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
  * @author james.brown@hydrosolved.com
  */
 
-public class QuantileQuantileDiagram extends Diagram<SampleData<Pair<Double, Double>>, DiagramStatisticOuter>
+public class QuantileQuantileDiagram extends Diagram<Pool<Pair<Double, Double>>, DiagramStatisticOuter>
 {
 
     /**
@@ -106,11 +106,11 @@ public class QuantileQuantileDiagram extends Diagram<SampleData<Pair<Double, Dou
     }
 
     @Override
-    public DiagramStatisticOuter apply( SampleData<Pair<Double, Double>> s )
+    public DiagramStatisticOuter apply( Pool<Pair<Double, Double>> s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
+            throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
         //Determine the number of order statistics to compute

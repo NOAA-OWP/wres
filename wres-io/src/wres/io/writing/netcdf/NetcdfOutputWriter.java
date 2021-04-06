@@ -54,7 +54,7 @@ import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.MetricConstants.StatisticType;
-import wres.datamodel.pools.SampleMetadata;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.MissingValues;
 import wres.datamodel.OneOrTwoDoubles;
@@ -1155,7 +1155,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         private String getVariableName( MetricConstants metricName,
                                         DoubleScoreComponentOuter score )
         {
-            SampleMetadata sampleMetadata = score.getMetadata();
+            PoolMetadata sampleMetadata = score.getMetadata();
 
             // Find the metric name
             MetricConstants metricComponentName =
@@ -1253,7 +1253,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         private String getVariableNameOrNull( OneOrTwoThresholds thresholdFromScore,
                                               OneOrTwoThresholds thresholdFromArchive,
                                               String thresholdFromArchiveName,
-                                              SampleMetadata sampleMetadata,
+                                              PoolMetadata sampleMetadata,
                                               String metricNameString,
                                               String append,
                                               boolean secondThresholdIsEqual )

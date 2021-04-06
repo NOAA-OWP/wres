@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import com.google.protobuf.Timestamp;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.pools.SampleDataException;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.time.ReferenceTimeType;
@@ -84,7 +84,7 @@ public class TimeToPeakError extends TimingError
     {
         if ( Objects.isNull( s ) )
         {
-            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
+            throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
         // Iterate through the time-series by basis time, and find the peaks in left and right
