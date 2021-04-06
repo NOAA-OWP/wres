@@ -13,7 +13,6 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
-import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -43,7 +42,7 @@ public final class DoubleErrorScoreTest
     {
 
         //Generate some data with a baseline
-        final PoolOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsTwo();
+        final Pool<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Check the results
         final DoubleScoreStatisticOuter actual = score.apply( input );

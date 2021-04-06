@@ -21,7 +21,6 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.BasicPool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.time.Event;
@@ -90,7 +89,7 @@ public final class BoxPlotErrorTest
     public void testApplyAgainstSingleValuedPairsNine()
     {
         //Generate some data
-        PoolOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsNine();
+        Pool<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsNine();
 
         List<BoxplotStatistic> actualRaw = new ArrayList<>();
 

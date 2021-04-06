@@ -34,7 +34,6 @@ import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
@@ -80,19 +79,19 @@ public final class EnsemblePairsWriterTest
      * First set of pairs to use for writing.
      */
 
-    private static PoolOfPairs<Double, Ensemble> pairs = null;
+    private static wres.datamodel.pools.Pool<Pair<Double, Ensemble>> pairs = null;
 
     /**
      * Second set of pairs to use for writing.
      */
 
-    private static PoolOfPairs<Double, Ensemble> pairsTwo = null;
+    private static wres.datamodel.pools.Pool<Pair<Double, Ensemble>> pairsTwo = null;
 
     /**
      * Third set of pairs to use for writing.
      */
 
-    private static PoolOfPairs<Double, Ensemble> pairsThree = null;
+    private static wres.datamodel.pools.Pool<Pair<Double, Ensemble>> pairsThree = null;
 
     private Path tempDir = null;
 
@@ -247,7 +246,7 @@ public final class EnsemblePairsWriterTest
             TimeSeries<Pair<Double, Ensemble>> timeSeriesOne = TimeSeries.of( getBoilerplateMetadata(),
                                                                               Collections.emptySortedSet() );
 
-            PoolOfPairs<Double, Ensemble> emptyPairs =
+            wres.datamodel.pools.Pool<Pair<Double, Ensemble>> emptyPairs =
                     tsBuilder.addTimeSeries( timeSeriesOne ).setMetadata( meta ).build();
 
             // Write the pairs
@@ -316,9 +315,9 @@ public final class EnsemblePairsWriterTest
             TimeSeries<Pair<Double, Ensemble>> timeSeriesOne = TimeSeries.of( getBoilerplateMetadata(),
                                                                               Collections.emptySortedSet() );
 
-            PoolOfPairs<Double, Ensemble> emptyPairs = tsBuilder.addTimeSeries( timeSeriesOne )
-                                                                .setMetadata( meta )
-                                                                .build();
+            wres.datamodel.pools.Pool<Pair<Double, Ensemble>> emptyPairs = tsBuilder.addTimeSeries( timeSeriesOne )
+                                                                                    .setMetadata( meta )
+                                                                                    .build();
 
             // Write the pairs
             writer.accept( emptyPairs );

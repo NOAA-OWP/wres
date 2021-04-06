@@ -29,11 +29,11 @@ import net.jcip.annotations.ThreadSafe;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.pairs.CrossPairs;
 import wres.datamodel.pools.pairs.PairingException;
 import wres.datamodel.pools.pairs.PoolOfPairs;
-import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.scale.RescalingException;
 import wres.datamodel.scale.ScaleValidationEvent;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -57,8 +57,8 @@ import wres.config.generated.LeftOrRightOrBaseline;
 
 /**
  * <p>Supplies a {@link PoolOfPairs}, which is used to compute one or more verification statistics. The overall 
- * responsibility of the {@link PoolSupplier} is to supply a {@link PoolOfPairs} on request. This is fulfilled 
- * by completing several smaller activities in sequence, namely:</p> 
+ * responsibility of the {@link PoolSupplier} is to supply a {@link Pool} on request. This is fulfilled by completing 
+ * several smaller activities in sequence, namely:</p> 
  * 
  * <ol>
  * <li>Consuming the (possibly pool-shaped) left/right/baseline data for pairing, which is supplied by retrievers;</li>
@@ -78,7 +78,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
  */
 
 @ThreadSafe
-public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
+public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
 {
 
     /**
@@ -229,7 +229,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     private final Duration frequency;
 
     /**
-     * Returns a {@link PoolOfPairs} for metric calculation.
+     * Returns a {@link Pool} for metric calculation.
      * 
      * @return a pool of pairs
      * @throws DataAccessException if the pool data could not be retrieved
@@ -239,13 +239,13 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      */
 
     @Override
-    public PoolOfPairs<L, R> get()
+    public Pool<Pair<L, R>> get()
     {
         return this.createPool();
     }
 
     /**
-     * Creates a {@link PoolOfPairs}.
+     * Creates a {@link Pool}.
      * 
      * @throws DataAccessException if the pool data could not be retrieved
      * @throws RescalingException if the pool data could not be rescaled
@@ -254,9 +254,9 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * @return the pool
      */
 
-    private PoolOfPairs<L, R> createPool()
+    private Pool<Pair<L, R>> createPool()
     {
-        Builder<L, R> builder = new Builder<>();
+        PoolOfPairs.Builder<L, R> builder = new PoolOfPairs.Builder<>();
 
         // Left data provided or is climatology the left data?
         Stream<TimeSeries<L>> cStream;
@@ -321,7 +321,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         if ( this.hasBaseline() )
         {
             PoolMetadata baselineSampleMetadata = PoolMetadata.of( this.baselineMetadata,
-                                                                       desiredTimeScaleToUse );
+                                                                   desiredTimeScaleToUse );
 
             builder.setMetadataForBaseline( baselineSampleMetadata );
 
@@ -388,7 +388,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * @param <R> the right type of paired value and, where required, the baseline type
      */
 
-    static class PoolOfPairsSupplierBuilder<L, R>
+    static class Builder<L, R>
     {
 
         /**
@@ -504,8 +504,8 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param climatologyMapper the mapper from the climatological type to a double type
          * @return the builder
          */
-        PoolOfPairsSupplierBuilder<L, R> setClimatology( Supplier<Stream<TimeSeries<L>>> climatology,
-                                                         ToDoubleFunction<L> climatologyMapper )
+        Builder<L, R> setClimatology( Supplier<Stream<TimeSeries<L>>> climatology,
+                                      ToDoubleFunction<L> climatologyMapper )
         {
             this.climatology = climatology;
             this.climatologyMapper = climatologyMapper;
@@ -517,7 +517,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param left the left to set
          * @return the builder
          */
-        PoolOfPairsSupplierBuilder<L, R> setLeft( Supplier<Stream<TimeSeries<L>>> left )
+        Builder<L, R> setLeft( Supplier<Stream<TimeSeries<L>>> left )
         {
             this.left = left;
 
@@ -528,7 +528,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param right the right to set
          * @return the builder
          */
-        PoolOfPairsSupplierBuilder<L, R> setRight( Supplier<Stream<TimeSeries<R>>> right )
+        Builder<L, R> setRight( Supplier<Stream<TimeSeries<R>>> right )
         {
             this.right = right;
 
@@ -539,7 +539,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param baseline the baseline to set
          * @return the builder
          */
-        PoolOfPairsSupplierBuilder<L, R> setBaseline( Supplier<Stream<TimeSeries<R>>> baseline )
+        Builder<L, R> setBaseline( Supplier<Stream<TimeSeries<R>>> baseline )
         {
             this.baseline = baseline;
 
@@ -550,7 +550,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param baselineGenerator a baseline generator to set
          * @return the builder
          */
-        PoolOfPairsSupplierBuilder<L, R> setBaselineGenerator( UnaryOperator<TimeSeries<R>> baselineGenerator )
+        Builder<L, R> setBaselineGenerator( UnaryOperator<TimeSeries<R>> baselineGenerator )
         {
             this.baselineGenerator = baselineGenerator;
 
@@ -561,7 +561,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param pairer the pairer to set
          * @return the builder
          */
-        PoolOfPairsSupplierBuilder<L, R> setPairer( TimeSeriesPairer<L, R> pairer )
+        Builder<L, R> setPairer( TimeSeriesPairer<L, R> pairer )
         {
             this.pairer = pairer;
 
@@ -572,7 +572,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param crossPairer the cross-pairer to set
          * @return the builder
          */
-        PoolOfPairsSupplierBuilder<L, R> setCrossPairer( TimeSeriesCrossPairer<L, R> crossPairer )
+        Builder<L, R> setCrossPairer( TimeSeriesCrossPairer<L, R> crossPairer )
         {
             this.crossPairer = crossPairer;
 
@@ -583,7 +583,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param leftUpscaler the leftUpscaler to set
          * @return the builder
          */
-        PoolOfPairsSupplierBuilder<L, R> setLeftUpscaler( TimeSeriesUpscaler<L> leftUpscaler )
+        Builder<L, R> setLeftUpscaler( TimeSeriesUpscaler<L> leftUpscaler )
         {
             this.leftUpscaler = leftUpscaler;
 
@@ -594,7 +594,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param rightUpscaler the rightUpscaler to set
          * @return the builder
          */
-        PoolOfPairsSupplierBuilder<L, R> setRightUpscaler( TimeSeriesUpscaler<R> rightUpscaler )
+        Builder<L, R> setRightUpscaler( TimeSeriesUpscaler<R> rightUpscaler )
         {
             this.rightUpscaler = rightUpscaler;
 
@@ -605,7 +605,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param desiredTimeScale the desiredTimeScale to set
          * @return the builder
          */
-        PoolOfPairsSupplierBuilder<L, R> setDesiredTimeScale( TimeScaleOuter desiredTimeScale )
+        Builder<L, R> setDesiredTimeScale( TimeScaleOuter desiredTimeScale )
         {
             this.desiredTimeScale = desiredTimeScale;
 
@@ -616,7 +616,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param metadata the metadata to set
          * @return the builder
          */
-        PoolOfPairsSupplierBuilder<L, R> setMetadata( PoolMetadata metadata )
+        Builder<L, R> setMetadata( PoolMetadata metadata )
         {
             this.metadata = metadata;
 
@@ -627,7 +627,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param baselineMetadata the baselineMetadata to set
          * @return the builder
          */
-        PoolOfPairsSupplierBuilder<L, R> setBaselineMetadata( PoolMetadata baselineMetadata )
+        Builder<L, R> setBaselineMetadata( PoolMetadata baselineMetadata )
         {
             this.baselineMetadata = baselineMetadata;
 
@@ -638,7 +638,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param inputs the inputs declaration to set
          * @return the builder
          */
-        PoolOfPairsSupplierBuilder<L, R> setInputsDeclaration( Inputs inputs )
+        Builder<L, R> setInputsDeclaration( Inputs inputs )
         {
             this.inputs = inputs;
 
@@ -649,7 +649,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param leftTransformer the transformer for left-style data
          * @return the builder
          */
-        PoolOfPairsSupplierBuilder<L, R> setLeftTransformer( UnaryOperator<L> leftTransformer )
+        Builder<L, R> setLeftTransformer( UnaryOperator<L> leftTransformer )
         {
             this.leftTransformer = leftTransformer;
 
@@ -660,7 +660,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param rightTransformer the transformer for right-style data
          * @return the builder
          */
-        PoolOfPairsSupplierBuilder<L, R> setRightTransformer( UnaryOperator<Event<R>> rightTransformer )
+        Builder<L, R> setRightTransformer( UnaryOperator<Event<R>> rightTransformer )
         {
             this.rightTransformer = rightTransformer;
 
@@ -671,7 +671,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param baselineTransformer the transformer for baseline-style data
          * @return the builder
          */
-        PoolOfPairsSupplierBuilder<L, R> setBaselineTransformer( UnaryOperator<Event<R>> baselineTransformer )
+        Builder<L, R> setBaselineTransformer( UnaryOperator<Event<R>> baselineTransformer )
         {
             this.baselineTransformer = baselineTransformer;
 
@@ -682,7 +682,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param frequency the frequency at which pairs should be produced.
          * @return the builder
          */
-        PoolOfPairsSupplierBuilder<L, R> setFrequencyOfPairs( Duration frequency )
+        Builder<L, R> setFrequencyOfPairs( Duration frequency )
         {
             this.frequency = frequency;
 
@@ -1700,7 +1700,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * @throws IllegalArgumentException if some input is inconsistent
      */
 
-    private PoolSupplier( PoolOfPairsSupplierBuilder<L, R> builder )
+    private PoolSupplier( Builder<L, R> builder )
     {
         // Set
         this.climatology = builder.climatology;

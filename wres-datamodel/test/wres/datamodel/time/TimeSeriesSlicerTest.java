@@ -27,8 +27,8 @@ import wres.datamodel.FeatureKey;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.Ensemble.Labels;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
@@ -219,13 +219,13 @@ public final class TimeSeriesSlicerTest
         PoolMetadata meta = PoolMetadata.of();
         PoolMetadata baseMeta = PoolMetadata.of( true );
         //Add the time-series, with only one for baseline
-        PoolOfPairs<Double, Double> ts = b.addTimeSeries( TimeSeries.of( firstMetadata, first ) )
-                                          .addTimeSeries( TimeSeries.of( secondMetadata, second ) )
-                                          .addTimeSeries( TimeSeries.of( thirdMetadata, third ) )
-                                          .addTimeSeriesForBaseline( TimeSeries.of( firstMetadata, first ) )
-                                          .setMetadata( meta )
-                                          .setMetadataForBaseline( baseMeta )
-                                          .build();
+        Pool<Pair<Double, Double>> ts = b.addTimeSeries( TimeSeries.of( firstMetadata, first ) )
+                                         .addTimeSeries( TimeSeries.of( secondMetadata, second ) )
+                                         .addTimeSeries( TimeSeries.of( thirdMetadata, third ) )
+                                         .addTimeSeriesForBaseline( TimeSeries.of( firstMetadata, first ) )
+                                         .setMetadata( meta )
+                                         .setMetadataForBaseline( baseMeta )
+                                         .build();
 
         //Iterate and test
         double nextValue = 1.0;
@@ -257,7 +257,7 @@ public final class TimeSeriesSlicerTest
 
         Builder<Double, Double> bu = new Builder<>();
 
-        PoolOfPairs<Double, Double> durationCheck =
+        Pool<Pair<Double, Double>> durationCheck =
                 bu.addTimeSeries( TimeSeries.of( firstMetadata,
                                                  fourth ) )
                   .setMetadata( meta )
@@ -649,17 +649,17 @@ public final class TimeSeriesSlicerTest
         PoolMetadata meta = PoolMetadata.of();
 
         //Add the time-series
-        PoolOfPairs<Double, Double> firstSeries = b.addTimeSeries( TimeSeries.of( firstMetadata,
-                                                                                  first ) )
-                                                   .addTimeSeries( TimeSeries.of( secondMetadata,
-                                                                                  second ) )
-                                                   .addTimeSeries( TimeSeries.of( thirdMetadata,
-                                                                                  third ) )
-                                                   .setMetadata( meta )
-                                                   .build();
+        Pool<Pair<Double, Double>> firstSeries = b.addTimeSeries( TimeSeries.of( firstMetadata,
+                                                                                 first ) )
+                                                  .addTimeSeries( TimeSeries.of( secondMetadata,
+                                                                                 second ) )
+                                                  .addTimeSeries( TimeSeries.of( thirdMetadata,
+                                                                                 third ) )
+                                                  .setMetadata( meta )
+                                                  .build();
 
         // Filter all values where the left side is greater than 0
-        PoolOfPairs<Double, Double> firstResult =
+        Pool<Pair<Double, Double>> firstResult =
                 TimeSeriesSlicer.filter( firstSeries,
                                          Slicer.left( value -> value > 0 ),
                                          null );
@@ -667,7 +667,7 @@ public final class TimeSeriesSlicerTest
         assertTrue( firstResult.getRawData().equals( firstSeries.getRawData() ) );
 
         // Filter all values where the left side is greater than 3
-        PoolOfPairs<Double, Double> secondResult =
+        Pool<Pair<Double, Double>> secondResult =
                 TimeSeriesSlicer.filter( firstSeries,
                                          Slicer.left( value -> value > 3 ),
                                          clim -> clim > 0 );
@@ -687,7 +687,7 @@ public final class TimeSeriesSlicerTest
         b.setClimatology( climatology );
 
         // Filter all values where the left and right sides are both greater than or equal to 7
-        PoolOfPairs<Double, Double> thirdResult =
+        Pool<Pair<Double, Double>> thirdResult =
                 TimeSeriesSlicer.filter( firstSeries,
                                          Slicer.leftAndRight( value -> value >= 7 ),
                                          null );
@@ -700,7 +700,7 @@ public final class TimeSeriesSlicerTest
         assertTrue( thirdData.equals( thirdBenchmark ) );
 
         // Filter on climatology simultaneously
-        PoolOfPairs<Double, Double> fourthResult =
+        Pool<Pair<Double, Double>> fourthResult =
                 TimeSeriesSlicer.filter( b.build(),
                                          Slicer.leftAndRight( value -> value > 7 ),
                                          Double::isFinite );
@@ -714,7 +714,7 @@ public final class TimeSeriesSlicerTest
          .setMetadataForBaseline( baseMeta );
 
         // Filter all values where both sides are greater than or equal to 4
-        PoolOfPairs<Double, Double> fifthResult =
+        Pool<Pair<Double, Double>> fifthResult =
                 TimeSeriesSlicer.filter( b.build(),
                                          Slicer.left( value -> value >= 4 ),
                                          clim -> clim > 0 );

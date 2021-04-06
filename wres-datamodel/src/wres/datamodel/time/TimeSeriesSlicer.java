@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
-import wres.datamodel.pools.pairs.PoolOfPairs;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
@@ -707,8 +707,8 @@ public final class TimeSeriesSlicer
      * @throws NullPointerException if either input is null
      */
 
-    public static <L, R, P, Q> PoolOfPairs<P, Q> transform( PoolOfPairs<L, R> input,
-                                                            Function<Pair<L, R>, Pair<P, Q>> transformer )
+    public static <L, R, P, Q> Pool<Pair<P, Q>> transform( Pool<Pair<L, R>> input,
+                                                           Function<Pair<L, R>, Pair<P, Q>> transformer )
     {
         Objects.requireNonNull( input );
 
@@ -728,7 +728,7 @@ public final class TimeSeriesSlicer
         // Add the baseline series if available
         if ( input.hasBaseline() )
         {
-            PoolOfPairs<L, R> baseline = input.getBaselineData();
+            Pool<Pair<L, R>> baseline = input.getBaselineData();
 
             for ( TimeSeries<Pair<L, R>> nextBase : baseline.get() )
             {
@@ -795,9 +795,9 @@ public final class TimeSeriesSlicer
      * @throws NullPointerException if either the input or condition is null
      */
 
-    public static <L, R> PoolOfPairs<L, R> filter( PoolOfPairs<L, R> input,
-                                                   Predicate<Pair<L, R>> condition,
-                                                   DoublePredicate applyToClimatology )
+    public static <L, R> Pool<Pair<L, R>> filter( Pool<Pair<L, R>> input,
+                                                  Predicate<Pair<L, R>> condition,
+                                                  DoublePredicate applyToClimatology )
     {
         Objects.requireNonNull( input );
 
@@ -829,7 +829,7 @@ public final class TimeSeriesSlicer
         //Filter baseline as required
         if ( input.hasBaseline() )
         {
-            PoolOfPairs<L, R> baseline = input.getBaselineData();
+            Pool<Pair<L, R>> baseline = input.getBaselineData();
 
             for ( TimeSeries<Pair<L, R>> nextBase : baseline.get() )
             {
@@ -856,9 +856,9 @@ public final class TimeSeriesSlicer
      * @throws NullPointerException if either the input or condition is null
      */
 
-    public static <L, R> PoolOfPairs<L, R> filterPerSeries( PoolOfPairs<L, R> input,
-                                                            Predicate<TimeSeries<Pair<L, R>>> condition,
-                                                            DoublePredicate applyToClimatology )
+    public static <L, R> Pool<Pair<L, R>> filterPerSeries( Pool<Pair<L, R>> input,
+                                                           Predicate<TimeSeries<Pair<L, R>>> condition,
+                                                           DoublePredicate applyToClimatology )
     {
         Objects.requireNonNull( input );
 
@@ -893,7 +893,7 @@ public final class TimeSeriesSlicer
         //Filter baseline as required
         if ( input.hasBaseline() )
         {
-            PoolOfPairs<L, R> baseline = input.getBaselineData();
+            Pool<Pair<L, R>> baseline = input.getBaselineData();
 
             for ( TimeSeries<Pair<L, R>> nextBase : baseline.get() )
             {

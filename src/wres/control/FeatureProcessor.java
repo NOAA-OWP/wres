@@ -14,6 +14,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +26,7 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.statistics.StatisticsForProject.Builder;
@@ -166,7 +168,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             // Pairs that contain ensemble forecasts
             if ( type == DatasourceType.ENSEMBLE_FORECASTS )
             {
-                List<Supplier<PoolOfPairs<Double, Ensemble>>> pools =
+                List<Supplier<Pool<Pair<Double, Ensemble>>>> pools =
                         PoolFactory.getEnsemblePools( this.evaluation,
                                                       this.project.getDatabase(),
                                                       this.project.getFeaturesCache(),
@@ -186,7 +188,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                     basePairsWriter = this.sharedWriters.getBaselineSampleDataWriters().getEnsembleWriter();
                 }
 
-                MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
+                MetricProcessor<Pool<Pair<Double, Ensemble>>> processor =
                         MetricFactory.ofMetricProcessorForEnsemblePairs( projectConfig,
                                                                          thresholds,
                                                                          this.executors.getThresholdExecutor(),
@@ -202,7 +204,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             // All other types
             else
             {
-                List<Supplier<PoolOfPairs<Double, Double>>> pools =
+                List<Supplier<Pool<Pair<Double, Double>>>> pools =
                         PoolFactory.getSingleValuedPools( this.evaluation,
                                                           this.project.getDatabase(),
                                                           this.project.getFeaturesCache(),
@@ -222,7 +224,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                     basePairsWriter = this.sharedWriters.getBaselineSampleDataWriters().getSingleValuedWriter();
                 }
 
-                MetricProcessor<PoolOfPairs<Double, Double>> processor =
+                MetricProcessor<Pool<Pair<Double, Double>>> processor =
                         MetricFactory.ofMetricProcessorForSingleValuedPairs( projectConfig,
                                                                              thresholds,
                                                                              this.executors.getThresholdExecutor(),
@@ -258,8 +260,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
     private <L, R> FeatureProcessingResult processFeature( Evaluation evaluation,
                                                            ProjectConfig projectConfig,
-                                                           MetricProcessor<PoolOfPairs<L, R>> processor,
-                                                           List<Supplier<PoolOfPairs<L, R>>> pools,
+                                                           MetricProcessor<Pool<Pair<L, R>>> processor,
+                                                           List<Supplier<Pool<Pair<L, R>>>> pools,
                                                            PairsWriter<L, R> pairsWriter,
                                                            PairsWriter<L, R> basePairsWriter )
     {
@@ -276,7 +278,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
         try
         {
-            for ( Supplier<PoolOfPairs<L, R>> poolSupplier : pools )
+            for ( Supplier<Pool<Pair<L, R>>> poolSupplier : pools )
             {
                 // Behold, the feature processing pipeline
                 final CompletableFuture<Void> pipeline =
@@ -446,9 +448,9 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @return a task that writes pairs
      */
 
-    private <L, R> UnaryOperator<PoolOfPairs<L, R>> getPairWritingTask( boolean useBaseline,
-                                                                        PairsWriter<L, R> sharedWriters,
-                                                                        ProjectConfig projectConfig )
+    private <L, R> UnaryOperator<Pool<Pair<L, R>>> getPairWritingTask( boolean useBaseline,
+                                                                       PairsWriter<L, R> sharedWriters,
+                                                                       ProjectConfig projectConfig )
     {
         return pairs -> {
 
@@ -471,7 +473,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
     }
 
     /**
-     * Returns a function that consumes a {@link PoolOfPairs} and produces {@link StatisticsForProject}.
+     * Returns a function that consumes a {@link Pool} and produces {@link StatisticsForProject}.
      * 
      * @param <L> the left data type
      * @param <R> the right data type
@@ -480,8 +482,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @return a function that consumes a pool and produces statistics
      */
 
-    private <L, R> Function<PoolOfPairs<L, R>, StatisticsForProject>
-            getStatisticsProcessingTask( MetricProcessor<PoolOfPairs<L, R>> processor,
+    private <L, R> Function<Pool<Pair<L, R>>, StatisticsForProject>
+            getStatisticsProcessingTask( MetricProcessor<Pool<Pair<L, R>>> processor,
                                          ProjectConfig projectConfig )
     {
         return pool -> {

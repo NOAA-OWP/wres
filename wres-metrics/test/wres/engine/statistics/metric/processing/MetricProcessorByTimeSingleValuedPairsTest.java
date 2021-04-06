@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
 import org.junit.Test;
 
@@ -39,8 +40,8 @@ import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.MeasurementUnit;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
@@ -70,7 +71,6 @@ import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponen
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
 import wres.statistics.generated.MetricName;
-import wres.statistics.generated.Pool;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
@@ -124,13 +124,13 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithoutThresholds.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<PoolOfPairs<Double, Double>> processor =
+        MetricProcessor<Pool<Pair<Double, Double>>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
                                                                      ThresholdsGenerator.getThresholdsFromConfig( config ),
                                                                      Executors.newSingleThreadExecutor(),
                                                                      Executors.newSingleThreadExecutor(),
                                                                      null );
-        PoolOfPairs<Double, Double> pairs = MetricTestDataFactory.getSingleValuedPairsFour();
+        Pool<Pair<Double, Double>> pairs = MetricTestDataFactory.getSingleValuedPairsFour();
         StatisticsForProject results = processor.apply( pairs );
         List<DoubleScoreStatisticOuter> bias =
                 Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.BIAS_FRACTION );
@@ -183,9 +183,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         String configPath = TEST_SOURCE;
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<PoolOfPairs<Double, Double>> processor =
+        MetricProcessor<Pool<Pair<Double, Double>>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config, StatisticType.set() );
-        PoolOfPairs<Double, Double> pairs = MetricTestDataFactory.getSingleValuedPairsFour();
+        Pool<Pair<Double, Double>> pairs = MetricTestDataFactory.getSingleValuedPairsFour();
 
         // Generate results for 10 nominal lead times
         for ( int i = 1; i < 11; i++ )
@@ -202,15 +202,15 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                               .setMeasurementUnit( "CMS" )
                                               .build();
 
-            Pool pool = MessageFactory.parse( featureTuple,
-                                              window,
-                                              null,
-                                              null,
-                                              false );
+            wres.statistics.generated.Pool pool = MessageFactory.parse( featureTuple,
+                                                                        window,
+                                                                        null,
+                                                                        null,
+                                                                        false );
 
             PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
-            PoolOfPairs<Double, Double> next =
+            Pool<Pair<Double, Double>> next =
                     new Builder<Double, Double>().addPoolOfPairs( pairs )
                                                  .setMetadata( meta )
                                                  .build();
@@ -246,11 +246,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( DRRC2 ),
-                                          expectedWindow,
-                                          null,
-                                          expectedThreshold,
-                                          false );
+        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( DRRC2 ),
+                                                                    expectedWindow,
+                                                                    null,
+                                                                    expectedThreshold,
+                                                                    false );
 
         PoolMetadata expectedMeta = PoolMetadata.of( evaluation, pool );
 
@@ -291,7 +291,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     {
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testAllValid.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<PoolOfPairs<Double, Double>> processor =
+        MetricProcessor<Pool<Pair<Double, Double>>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
                                                                      StatisticType.set() );
 
@@ -320,13 +320,13 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                    null,
                                    null );
 
-        MetricProcessor<PoolOfPairs<Double, Double>> processor =
+        MetricProcessor<Pool<Pair<Double, Double>>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( mockedConfig,
                                                                      StatisticType.set() );
 
         //Break into two time-series to test sequential calls
-        PoolOfPairs<Double, Double> first = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsTwo();
-        PoolOfPairs<Double, Double> second = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsThree();
+        Pool<Pair<Double, Double>> first = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsTwo();
+        Pool<Pair<Double, Double>> second = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsThree();
 
         //Compute the metrics
         processor.apply( first );
@@ -358,19 +358,19 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( "A" ),
-                                          firstWindow,
-                                          null,
-                                          thresholds,
-                                          false );
+        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( "A" ),
+                                                                    firstWindow,
+                                                                    null,
+                                                                    thresholds,
+                                                                    false );
 
         PoolMetadata m1 = PoolMetadata.of( evaluation, pool );
 
-        Pool poolTwo = MessageFactory.parse( MetricTestDataFactory.getLocation( "A" ),
-                                             secondWindow,
-                                             null,
-                                             thresholds,
-                                             false );
+        wres.statistics.generated.Pool poolTwo = MessageFactory.parse( MetricTestDataFactory.getLocation( "A" ),
+                                                                       secondWindow,
+                                                                       null,
+                                                                       thresholds,
+                                                                       false );
 
         PoolMetadata m2 = PoolMetadata.of( evaluation, poolTwo );
 
@@ -432,13 +432,13 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                    null,
                                    null );
 
-        MetricProcessor<PoolOfPairs<Double, Double>> processor =
+        MetricProcessor<Pool<Pair<Double, Double>>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( mockedConfig,
                                                                      StatisticType.set() );
 
         //Break into two time-series to test sequential calls
-        PoolOfPairs<Double, Double> first = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsTwo();
-        PoolOfPairs<Double, Double> second = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsThree();
+        Pool<Pair<Double, Double>> first = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsTwo();
+        Pool<Pair<Double, Double>> second = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsThree();
 
         //Compute the metrics
         processor.apply( first );
@@ -473,11 +473,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( "A" ),
-                                          null,
-                                          null,
-                                          null,
-                                          false );
+        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( "A" ),
+                                                                    null,
+                                                                    null,
+                                                                    null,
+                                                                    false );
 
         PoolMetadata source = PoolMetadata.of( evaluation, pool );
 
@@ -513,25 +513,25 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         expected.add( DurationDiagramStatisticOuter.of( expectedFirst,
                                                         PoolMetadata.of( source,
-                                                                           firstWindow,
-                                                                           firstThreshold ) ) );
+                                                                         firstWindow,
+                                                                         firstThreshold ) ) );
 
         expected.add( DurationDiagramStatisticOuter.of( DurationDiagramStatistic.newBuilder()
                                                                                 .setMetric( TimeToPeakError.METRIC )
                                                                                 .build(),
                                                         PoolMetadata.of( source,
-                                                                           firstWindow,
-                                                                           secondThreshold ) ) );
+                                                                         firstWindow,
+                                                                         secondThreshold ) ) );
 
         expected.add( DurationDiagramStatisticOuter.of( expectedSecond,
                                                         PoolMetadata.of( source,
-                                                                           secondWindow,
-                                                                           firstThreshold ) ) );
+                                                                         secondWindow,
+                                                                         firstThreshold ) ) );
 
         expected.add( DurationDiagramStatisticOuter.of( expectedSecond,
                                                         PoolMetadata.of( source,
-                                                                           secondWindow,
-                                                                           secondThreshold ) ) );
+                                                                         secondWindow,
+                                                                         secondThreshold ) ) );
 
         assertEquals( expected, actual );
     }
@@ -543,14 +543,14 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyTimeSeriesSummaryStats.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<PoolOfPairs<Double, Double>> processor =
+        MetricProcessor<Pool<Pair<Double, Double>>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
                                                                      StatisticType.set() );
 
         //Break into two time-series to test sequential calls
-        PoolOfPairs<Double, Double> first = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsTwo();
+        Pool<Pair<Double, Double>> first = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsTwo();
 
-        PoolOfPairs<Double, Double> second = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsThree();
+        Pool<Pair<Double, Double>> second = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsThree();
 
         //Compute the metrics
         processor.apply( first );
@@ -586,11 +586,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( "A" ),
-                                          timeWindow,
-                                          null,
-                                          thresholds,
-                                          false );
+        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( "A" ),
+                                                                    timeWindow,
+                                                                    null,
+                                                                    thresholds,
+                                                                    false );
 
         PoolMetadata scoreMeta = PoolMetadata.of( evaluation, pool );
 
@@ -719,12 +719,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         // Ensure that the entire set of thresholds is assembled to be passed to the processor
         thresholdsByMetric =
                 ThresholdsGenerator.getThresholdsFromConfig( config ).unionWithThisStore( thresholdsByMetric );
-        MetricProcessor<PoolOfPairs<Double, Double>> processor =
+        MetricProcessor<Pool<Pair<Double, Double>>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
                                                                      thresholdsByMetric,
                                                                      StatisticType.set() );
 
-        PoolOfPairs<Double, Double> pairs = MetricTestDataFactory.getSingleValuedPairsFour();
+        Pool<Pair<Double, Double>> pairs = MetricTestDataFactory.getSingleValuedPairsFour();
 
         // Generate results for 20 nominal lead times
         for ( int i = 1; i < 11; i++ )
@@ -741,15 +741,15 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                               .setRightDataName( "HEFS" )
                                               .build();
 
-            Pool pool = MessageFactory.parse( featureTuple,
-                                              window,
-                                              null,
-                                              null,
-                                              false );
+            wres.statistics.generated.Pool pool = MessageFactory.parse( featureTuple,
+                                                                        window,
+                                                                        null,
+                                                                        null,
+                                                                        false );
 
             PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
-            PoolOfPairs<Double, Double> next =
+            Pool<Pair<Double, Double>> next =
                     new Builder<Double, Double>().addPoolOfPairs( pairs ).setMetadata( meta ).build();
 
             processor.apply( next );
@@ -782,11 +782,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( DRRC2 ),
-                                          expectedWindow,
-                                          null,
-                                          expectedThreshold,
-                                          false );
+        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( DRRC2 ),
+                                                                    expectedWindow,
+                                                                    null,
+                                                                    expectedThreshold,
+                                                                    false );
 
         PoolMetadata expectedMeta = PoolMetadata.of( evaluation, pool );
 
@@ -829,9 +829,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         String configPath = TEST_SOURCE;
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<PoolOfPairs<Double, Double>> processor =
+        MetricProcessor<Pool<Pair<Double, Double>>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config, StatisticType.set() );
-        PoolOfPairs<Double, Double> pairs = MetricTestDataFactory.getSingleValuedPairsSeven();
+        Pool<Pair<Double, Double>> pairs = MetricTestDataFactory.getSingleValuedPairsSeven();
 
         // Generate results for 10 nominal lead times
         for ( int i = 1; i < 11; i++ )
@@ -848,15 +848,15 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                               .setMeasurementUnit( "CMS" )
                                               .build();
 
-            Pool pool = MessageFactory.parse( featureTuple,
-                                              window,
-                                              null,
-                                              null,
-                                              false );
+            wres.statistics.generated.Pool pool = MessageFactory.parse( featureTuple,
+                                                                        window,
+                                                                        null,
+                                                                        null,
+                                                                        false );
 
             PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
-            PoolOfPairs<Double, Double> next =
+            Pool<Pair<Double, Double>> next =
                     new Builder<Double, Double>().addPoolOfPairs( pairs ).setMetadata( meta ).build();
 
             processor.apply( next );
@@ -890,11 +890,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( DRRC2 ),
-                                          expectedWindow,
-                                          null,
-                                          expectedThreshold,
-                                          false );
+        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( DRRC2 ),
+                                                                    expectedWindow,
+                                                                    null,
+                                                                    expectedThreshold,
+                                                                    false );
 
         PoolMetadata expectedMeta = PoolMetadata.of( evaluation, pool );
 
@@ -938,11 +938,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
 
-        MetricProcessor<PoolOfPairs<Double, Double>> processor =
+        MetricProcessor<Pool<Pair<Double, Double>>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
                                                                      StatisticType.set() );
 
-        PoolOfPairs<Double, Double> pairs =
+        Pool<Pair<Double, Double>> pairs =
                 MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFour();
 
         //Compute the metrics
@@ -967,11 +967,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( "A" ),
-                                          timeWindow,
-                                          null,
-                                          thresholds,
-                                          false );
+        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( "A" ),
+                                                                    timeWindow,
+                                                                    null,
+                                                                    thresholds,
+                                                                    false );
 
         PoolMetadata scoreMeta = PoolMetadata.of( evaluation, pool );
 
@@ -995,9 +995,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         String configPath = TEST_SOURCE;
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<PoolOfPairs<Double, Double>> processor =
+        MetricProcessor<Pool<Pair<Double, Double>>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config, StatisticType.set() );
-        PoolOfPairs<Double, Double> pairs = MetricTestDataFactory.getSingleValuedPairsEight();
+        Pool<Pair<Double, Double>> pairs = MetricTestDataFactory.getSingleValuedPairsEight();
 
         // Generate results
         TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
@@ -1012,15 +1012,15 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( featureTuple,
-                                          window,
-                                          null,
-                                          null,
-                                          false );
+        wres.statistics.generated.Pool pool = MessageFactory.parse( featureTuple,
+                                                                    window,
+                                                                    null,
+                                                                    null,
+                                                                    false );
 
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
-        PoolOfPairs<Double, Double> next =
+        Pool<Pair<Double, Double>> next =
                 new Builder<Double, Double>().addPoolOfPairs( pairs ).setMetadata( meta ).build();
 
         processor.apply( next );
@@ -1043,7 +1043,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     @Test
     public void testApplyThrowsExceptionOnNullInput() throws MetricParameterException
     {
-        MetricProcessor<PoolOfPairs<Double, Double>> processor =
+        MetricProcessor<Pool<Pair<Double, Double>>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( new ProjectConfig( null,
                                                                                         null,
                                                                                         null,
@@ -1107,7 +1107,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                    null );
 
 
-        MetricProcessor<PoolOfPairs<Double, Double>> processor =
+        MetricProcessor<Pool<Pair<Double, Double>>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( mockedConfig,
                                                                      Collections.singleton( StatisticType.DOUBLE_SCORE ) );
 

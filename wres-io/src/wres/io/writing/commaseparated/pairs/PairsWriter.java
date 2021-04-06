@@ -26,7 +26,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.pools.pairs.PoolOfPairs;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
@@ -49,7 +49,7 @@ import wres.util.TimeHelper;
  * @author james.brown@hydrosolved.com
  */
 
-public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, Supplier<Set<Path>>, Closeable
+public abstract class PairsWriter<L, R> implements Consumer<Pool<Pair<L, R>>>, Supplier<Set<Path>>, Closeable
 {
 
     /**
@@ -129,7 +129,7 @@ public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, 
      * @throws NullPointerException if the pairs are null
      */
 
-    StringJoiner getHeaderFromPairs( PoolOfPairs<L, R> pairs )
+    StringJoiner getHeaderFromPairs( Pool<Pair<L, R>> pairs )
     {
         Objects.requireNonNull( pairs, "Cannot obtain header from null pairs." );
 
@@ -208,7 +208,7 @@ public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, 
      */
 
     @Override
-    public void accept( PoolOfPairs<L, R> pairs )
+    public void accept( Pool<Pair<L, R>> pairs )
     {
         Objects.requireNonNull( pairs, "Cannot write null pairs." );
 
@@ -434,7 +434,7 @@ public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, 
      * @throws NullPointerException if the header is null
      */
 
-    private void writeHeaderIfRequired( final PoolOfPairs<L, R> pairs ) throws IOException
+    private void writeHeaderIfRequired( final Pool<Pair<L, R>> pairs ) throws IOException
     {
         Objects.requireNonNull( pairs, "Specify a non-null header for writing pairs." );
 

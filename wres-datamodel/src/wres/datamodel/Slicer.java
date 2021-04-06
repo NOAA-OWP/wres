@@ -29,7 +29,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.BasicPool.SampleDataBasicBuilder;
+import wres.datamodel.pools.BasicPool.Builder;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.statistics.ScoreStatistic.ScoreComponent;
 import wres.datamodel.statistics.Statistic;
@@ -351,14 +351,14 @@ public final class Slicer
      */
 
     public static <T> Pool<T> filter( Pool<T> input,
-                                            Predicate<T> condition,
-                                            DoublePredicate applyToClimatology )
+                                      Predicate<T> condition,
+                                      DoublePredicate applyToClimatology )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
         Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
 
-        SampleDataBasicBuilder<T> builder = new SampleDataBasicBuilder<>();
+        Builder<T> builder = new Builder<>();
 
         List<T> mainPairs = input.getRawData();
         List<T> mainPairsSubset =
@@ -641,7 +641,7 @@ public final class Slicer
 
         Objects.requireNonNull( transformer, NULL_MAPPER_EXCEPTION );
 
-        SampleDataBasicBuilder<T> builder = new SampleDataBasicBuilder<>();
+        Builder<T> builder = new Builder<>();
 
         builder.setClimatology( input.getClimatology() )
                .setMetadata( input.getMetadata() );

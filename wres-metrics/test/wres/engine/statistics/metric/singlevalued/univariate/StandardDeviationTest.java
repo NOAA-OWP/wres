@@ -14,9 +14,9 @@ import org.junit.Test;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.pools.BasicPool;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreMetric;
@@ -62,7 +62,7 @@ public final class StandardDeviationTest
     public void testApply()
     {
         //Generate some data
-        PoolOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsOne();
+        Pool<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Check the results
         DoubleScoreStatisticOuter actual = this.stdev.apply( input );
@@ -141,7 +141,7 @@ public final class StandardDeviationTest
     public void testExceptionOnNullInput()
     {
         PoolException actual = assertThrows( PoolException.class,
-                                                   () -> this.stdev.apply( null ) );
+                                             () -> this.stdev.apply( null ) );
 
         assertEquals( "Specify non-null input to the '" + this.stdev.getName() + "'.", actual.getMessage() );
     }

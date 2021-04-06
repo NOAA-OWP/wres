@@ -16,8 +16,8 @@ import org.slf4j.LoggerFactory;
 import com.google.protobuf.Timestamp;
 
 import wres.datamodel.MetricConstants;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
-import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -29,10 +29,10 @@ import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDurati
 
 /**
  * <p>Constructs a {@link Metric} that returns the fractional difference in time between the maximum values recorded in 
- * the left and right side of each time-series in the {@link PoolOfPairs}. The denominator in the fraction is 
- * given by the period, in hours, between the basis time and the time at which the maximum value is recorded in the 
- * left side of the paired input. Thus, for forecast time-series, the output is properly interpreted as the duration 
- * per hour of forecast lead time until the observed peak occurred.</p>
+ * the left and right side of each time-series in the {@link Pool}. The denominator in the fraction is given by the 
+ * period, in hours, between the basis time and the time at which the maximum value is recorded in the left side of the 
+ * paired input. Thus, for forecast time-series, the output is properly interpreted as the duration per hour of forecast 
+ * lead time until the observed peak occurred.</p>
  * 
  * <p>For multiple peaks with the same value, the peak with the latest {@link Instant} is chosen. A negative 
  * {@link Duration} indicates that the predicted peak was too early, i.e., occurred earlier than the observed peak.</p>
@@ -93,7 +93,7 @@ public class TimeToPeakRelativeError extends TimingError
     }
 
     @Override
-    public DurationDiagramStatisticOuter apply( PoolOfPairs<Double, Double> s )
+    public DurationDiagramStatisticOuter apply( Pool<Pair<Double, Double>> s )
     {
         if ( Objects.isNull( s ) )
         {

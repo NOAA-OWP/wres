@@ -28,7 +28,6 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.BasicPool;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
@@ -182,7 +181,7 @@ public final class MetricTestDataFactory
      * @return single-valued pairs
      */
 
-    public static PoolOfPairs<Double, Double> getSingleValuedPairsOne()
+    public static wres.datamodel.pools.Pool<Pair<Double, Double>> getSingleValuedPairsOne()
     {
         //Construct some single-valued pairs
         SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
@@ -214,7 +213,7 @@ public final class MetricTestDataFactory
      * @return single-valued pairs
      */
 
-    public static PoolOfPairs<Double, Double> getSingleValuedPairsTwo()
+    public static wres.datamodel.pools.Pool<Pair<Double, Double>> getSingleValuedPairsTwo()
     {
         //Construct some single-valued pairs
         SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
@@ -285,7 +284,7 @@ public final class MetricTestDataFactory
      * @return single-valued pairs
      */
 
-    public static PoolOfPairs<Double, Double> getSingleValuedPairsThree()
+    public static wres.datamodel.pools.Pool<Pair<Double, Double>> getSingleValuedPairsThree()
     {
         //Construct some single-valued pairs
         SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
@@ -326,7 +325,7 @@ public final class MetricTestDataFactory
      * @return single-valued pairs
      */
 
-    public static PoolOfPairs<Double, Double> getSingleValuedPairsFour()
+    public static wres.datamodel.pools.Pool<Pair<Double, Double>> getSingleValuedPairsFour()
     {
         //Construct some single-valued pairs
         SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
@@ -435,7 +434,7 @@ public final class MetricTestDataFactory
      * @return single-valued pairs
      */
 
-    public static PoolOfPairs<Double, Double> getSingleValuedPairsSix()
+    public static wres.datamodel.pools.Pool<Pair<Double, Double>> getSingleValuedPairsSix()
     {
         //Construct some single-valued pairs
         SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
@@ -474,7 +473,7 @@ public final class MetricTestDataFactory
      * @return single-valued pairs
      */
 
-    public static PoolOfPairs<Double, Double> getSingleValuedPairsSeven()
+    public static wres.datamodel.pools.Pool<Pair<Double, Double>> getSingleValuedPairsSeven()
     {
         //Construct some single-valued pairs
         Evaluation evaluation = Evaluation.newBuilder()
@@ -512,7 +511,7 @@ public final class MetricTestDataFactory
      * @return single-valued pairs
      */
 
-    public static PoolOfPairs<Double, Double> getSingleValuedPairsEight()
+    public static wres.datamodel.pools.Pool<Pair<Double, Double>> getSingleValuedPairsEight()
     {
         //Construct some single-valued pairs
         SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
@@ -541,14 +540,14 @@ public final class MetricTestDataFactory
     }
 
     /**
-     * Returns a list of {@link PoolOfPairs} with single-valued pairs which correspond to the pairs 
+     * Returns a list of {@link Pool} with single-valued pairs which correspond to the pairs 
      * associated with system test scenario504 as of commit e91b36a8f6b798d1987e78a0f37b38f3ca4501ae.
      * The pairs are reproduced to 2 d.p. only.
      * 
      * @return a time series of single-valued pairs
      */
 
-    public static PoolOfPairs<Double, Double> getSingleValuedPairsNine()
+    public static wres.datamodel.pools.Pool<Pair<Double, Double>> getSingleValuedPairsNine()
     {
         Builder<Double, Double> tsBuilder = new Builder<>();
 
@@ -697,7 +696,7 @@ public final class MetricTestDataFactory
      * @throws IOException if the read fails
      */
 
-    public static PoolOfPairs<Double, Ensemble> getEnsemblePairsOne() throws IOException
+    public static wres.datamodel.pools.Pool<Pair<Double, Ensemble>> getEnsemblePairsOne() throws IOException
     {
         //Construct some ensemble pairs
         SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
@@ -776,7 +775,7 @@ public final class MetricTestDataFactory
      * @throws IOException if the read fails
      */
 
-    public static PoolOfPairs<Double, Ensemble> getEnsemblePairsOneWithMissings() throws IOException
+    public static wres.datamodel.pools.Pool<Pair<Double, Ensemble>> getEnsemblePairsOneWithMissings() throws IOException
     {
         //Construct some ensemble pairs
         final SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
@@ -860,7 +859,7 @@ public final class MetricTestDataFactory
      * @throws IOException if the read fails
      */
 
-    public static PoolOfPairs<Double, Ensemble> getEnsemblePairsTwo() throws IOException
+    public static wres.datamodel.pools.Pool<Pair<Double, Ensemble>> getEnsemblePairsTwo() throws IOException
     {
         //Construct some ensemble pairs
         final SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
@@ -925,7 +924,7 @@ public final class MetricTestDataFactory
      * @return ensemble pairs
      */
 
-    public static PoolOfPairs<Double, Ensemble> getEnsemblePairsThree()
+    public static wres.datamodel.pools.Pool<Pair<Double, Ensemble>> getEnsemblePairsThree()
     {
         //Construct some ensemble pairs
 
@@ -965,7 +964,7 @@ public final class MetricTestDataFactory
      * @return ensemble pairs
      */
 
-    public static PoolOfPairs<Double, Ensemble> getEnsemblePairsFour()
+    public static wres.datamodel.pools.Pool<Pair<Double, Ensemble>> getEnsemblePairsFour()
     {
         //Construct some ensemble pairs
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
@@ -1560,12 +1559,12 @@ public final class MetricTestDataFactory
     }
 
     /**
-     * Returns a {@link PoolOfPairs} with single-valued pairs containing fake data.
+     * Returns a {@link PoolOf} with single-valued pairs containing fake data.
      * 
      * @return a time-series of single-valued pairs
      */
 
-    public static PoolOfPairs<Double, Double> getTimeSeriesOfSingleValuedPairsOne()
+    public static wres.datamodel.pools.Pool<Pair<Double, Double>> getTimeSeriesOfSingleValuedPairsOne()
     {
         // Build an immutable regular time-series of single-valued pairs
         Builder<Double, Double> builder =
@@ -1620,12 +1619,12 @@ public final class MetricTestDataFactory
     }
 
     /**
-     * Returns a {@link PoolOfPairs} with single-valued pairs containing fake data.
+     * Returns a {@link Pool} with single-valued pairs containing fake data.
      * 
      * @return a time-series of single-valued pairs
      */
 
-    public static PoolOfPairs<Double, Double> getTimeSeriesOfSingleValuedPairsTwo()
+    public static wres.datamodel.pools.Pool<Pair<Double, Double>> getTimeSeriesOfSingleValuedPairsTwo()
     {
         // Build an immutable regular time-series of single-valued pairs
         Builder<Double, Double> builder =
@@ -1667,12 +1666,12 @@ public final class MetricTestDataFactory
     }
 
     /**
-     * Returns a {@link PoolOfPairs} with single-valued pairs containing fake data.
+     * Returns a {@link Pool} with single-valued pairs containing fake data.
      * 
      * @return a time-series of single-valued pairs
      */
 
-    public static PoolOfPairs<Double, Double> getTimeSeriesOfSingleValuedPairsThree()
+    public static wres.datamodel.pools.Pool<Pair<Double, Double>> getTimeSeriesOfSingleValuedPairsThree()
     {
         // Build an immutable regular time-series of single-valued pairs
         Builder<Double, Double> builder =
@@ -1717,12 +1716,12 @@ public final class MetricTestDataFactory
     }
 
     /**
-     * Returns a {@link PoolOfPairs} with single-valued pairs containing no data.
+     * Returns a {@link Pool} with single-valued pairs containing no data.
      * 
      * @return a time-series of single-valued pairs
      */
 
-    public static PoolOfPairs<Double, Double> getTimeSeriesOfSingleValuedPairsFour()
+    public static wres.datamodel.pools.Pool<Pair<Double, Double>> getTimeSeriesOfSingleValuedPairsFour()
     {
         // Build an immutable regular time-series of single-valued pairs
         Builder<Double, Double> builder =
@@ -1754,12 +1753,12 @@ public final class MetricTestDataFactory
 
 
     /**
-     * Returns a {@link PoolOfPairs} with single-valued pairs containing fake data with the same peak at multiple times.
+     * Returns a {@link Pool} with single-valued pairs containing fake data with the same peak at multiple times.
      * 
      * @return a time-series of single-valued pairs
      */
 
-    public static PoolOfPairs<Double, Double> getTimeSeriesOfSingleValuedPairsFive()
+    public static wres.datamodel.pools.Pool<Pair<Double, Double>> getTimeSeriesOfSingleValuedPairsFive()
     {
         // Build an immutable regular time-series of single-valued pairs
         Builder<Double, Double> builder =

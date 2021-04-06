@@ -6,7 +6,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import wres.datamodel.VectorOfDoubles;
@@ -19,11 +18,11 @@ import wres.datamodel.time.TimeSeries;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
- * <p>A pool of pairs that additionally offers a time-series view of the pairs.
+ * <p>A pool of pairs.
  * 
  * @author james.brown@hydrosolved.com
  */
-public class PoolOfPairs<L, R> implements Pool<Pair<L, R>>, Supplier<List<TimeSeries<Pair<L, R>>>>
+public class PoolOfPairs<L, R> implements Pool<Pair<L, R>>
 {
 
     /**
@@ -270,19 +269,19 @@ public class PoolOfPairs<L, R> implements Pool<Pair<L, R>>, Supplier<List<TimeSe
          * @throws NullPointerException if the input is null
          */
 
-        public Builder<L, R> addPoolOfPairs( PoolOfPairs<L, R> poolOfPairs )
+        public Builder<L, R> addPoolOfPairs( Pool<Pair<L, R>> poolOfPairs )
         {
             Objects.requireNonNull( poolOfPairs, NULL_INPUT );
 
             this.main.addAll( poolOfPairs.get() );
-            this.mainMeta = poolOfPairs.mainMeta;
-            this.climatology = poolOfPairs.climatology;
+            this.mainMeta = poolOfPairs.getMetadata();
+            this.climatology = poolOfPairs.getClimatology();
 
             if ( poolOfPairs.hasBaseline() )
             {
-                PoolOfPairs<L, R> base = poolOfPairs.getBaselineData();
+                Pool<Pair<L, R>> base = poolOfPairs.getBaselineData();
                 this.baseline.addAll( base.get() );
-                this.baselineMeta = poolOfPairs.baselineMeta;
+                this.baselineMeta = poolOfPairs.getBaselineData().getMetadata();
             }
 
             return this;

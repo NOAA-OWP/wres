@@ -1,23 +1,27 @@
 package wres.datamodel.pools;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.time.TimeSeries;
 
 /**
- * <p>Sample data to be iterated over by a metric. A sample may comprise paired data or unpaired data.
- * Optionally, it may contain a baseline dataset to be used in the same context (e.g. for skill scores) and a 
- * climatological dataset, which is used to derive quantiles from climatological probabilities.</p>
+ * <p>An atomic collection of samples from which a statistic is computed using a metric. The samples may comprise paired 
+ * or unpaired values. Optionally, it may contain a baseline dataset to be used in the same context (e.g. for skill 
+ * scores) and a climatological dataset, which is used to derive quantiles from climatological probabilities.</p>
  * 
- * <p>TODO: replace the nomenclature of "sample data" with "pool". See #89095.
+ * <p>Optionally, provides a time-series view of the pooled data.</p>.
  * 
  * <p><b>Implementation Requirements:</b></p>
  * 
- * <p>A dataset may contain values that correspond to a missing value identifier.</p>
+ * <p>A dataset may contain values that correspond to a missing value identifier. Some implementations may elect to 
+ * not provide a time-series view of the data, in which case {@link #get()} should throw an 
+ * {@link UnsupportedOperationException}. This may be useful when the time-indexing is not available or not needed.</p>
  * 
  * @author james.brown@hydrosolved.com
  */
-public interface Pool<S>
+public interface Pool<S> extends Supplier<List<TimeSeries<S>>>
 {
 
     /**
@@ -36,11 +40,11 @@ public interface Pool<S>
      */
 
     boolean hasClimatology();
-    
+
     /**
-     * Returns the raw sample.
+     * Returns the raw data.
      * 
-     * @return the raw sample
+     * @return the raw data
      */
 
     List<S> getRawData();
@@ -68,5 +72,13 @@ public interface Pool<S>
      */
 
     VectorOfDoubles getClimatology();
+
+    /**
+     * Returns a time-series view of the data or throws an {@link UnsupportedOperationException} if not implemented.
+     * 
+     * @throws UnsupportedOperationException if the implementation does not support a time-series view
+     */
+
+    List<TimeSeries<S>> get();
 
 }

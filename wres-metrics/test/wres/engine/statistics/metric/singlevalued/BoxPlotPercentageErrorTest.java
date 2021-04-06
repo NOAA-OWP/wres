@@ -20,7 +20,6 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.BasicPool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.time.Event;
@@ -59,7 +58,7 @@ public final class BoxPlotPercentageErrorTest
     public void testApplyAgainstSingleValuedPairsOne()
     {
         //Generate some data
-        PoolOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsOne();
+        Pool<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         BoxplotStatisticOuter actual = this.boxPlotPercentageError.apply( input );
 
@@ -91,7 +90,7 @@ public final class BoxPlotPercentageErrorTest
     public void testApplyAgainstSingleValuedPairsNine()
     {
         //Generate some data
-        PoolOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsNine();
+        Pool<Pair<Double, Double>>  input = MetricTestDataFactory.getSingleValuedPairsNine();
 
         //Check the results        
         List<BoxplotStatistic> actualRaw = new ArrayList<>();
