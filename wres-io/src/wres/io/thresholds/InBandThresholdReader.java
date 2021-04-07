@@ -13,9 +13,17 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class InBandThresholdReader {
-    public InBandThresholdReader(final ProjectConfig projectConfig, final ThresholdBuilderCollection sharedBuilders) {
+    public InBandThresholdReader( final ProjectConfig projectConfig,
+                                  final ThresholdBuilderCollection sharedBuilders,
+                                  final MeasurementUnit measurementUnits )
+    {
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( sharedBuilders );
+        Objects.requireNonNull( measurementUnits );
+        
         this.sharedBuilders = sharedBuilders;
         this.projectConfig = projectConfig;
+        this.measurementUnits = measurementUnits;
     }
 
     public void read() {
@@ -99,15 +107,9 @@ public class InBandThresholdReader {
     private void readThresholds(ThresholdsConfig thresholdsConfig, Set<MetricConstants> metrics) {
         Objects.requireNonNull( projectConfig, "Specify a non-null project configuration." );
 
-        // Find the units associated with the pairs
-        MeasurementUnit units = null;
-        if ( Objects.nonNull( projectConfig.getPair() ) && Objects.nonNull( projectConfig.getPair().getUnit() ) )
-        {
-            units = MeasurementUnit.of(projectConfig.getPair().getUnit() );
-        }
-
         // Thresholds
-        Set<ThresholdOuter> thresholds = InBandThresholdReader.createThresholds( thresholdsConfig, units );
+        Set<ThresholdOuter> thresholds = InBandThresholdReader.createThresholds( thresholdsConfig, 
+                                                                                 this.measurementUnits );
 
         for (MetricConstants metric : metrics) {
 
@@ -302,5 +304,6 @@ public class InBandThresholdReader {
     }
 
     private final ProjectConfig projectConfig;
+    private final MeasurementUnit measurementUnits;
     private final ThresholdBuilderCollection sharedBuilders;
 }

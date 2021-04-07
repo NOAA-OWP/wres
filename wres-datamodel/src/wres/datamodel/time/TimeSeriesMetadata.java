@@ -334,7 +334,15 @@ public class TimeSeriesMetadata
         this.referenceTimes = localTimes;
         this.timeScale = builder.timeScale;
 
-        String cachedVariableName = STRING_CACHE.getIfPresent( builder.variableName );
+        String localVariableName = builder.variableName;
+        FeatureKey localFeature = builder.feature;
+        String localUnits = builder.unit;
+        
+        Objects.requireNonNull( localVariableName, "A timeseries requires a variable name." );
+        Objects.requireNonNull( localFeature, "A timeseries requires a feature." );
+        Objects.requireNonNull( localUnits, "A timeseries requires measurement units." );
+        
+        String cachedVariableName = STRING_CACHE.getIfPresent( localVariableName );
 
         if ( Objects.nonNull( cachedVariableName ) )
         {
@@ -342,11 +350,11 @@ public class TimeSeriesMetadata
         }
         else
         {
-            this.variableName = builder.variableName;
+            this.variableName = localVariableName;
             STRING_CACHE.put( this.variableName, this.variableName );
         }
 
-        FeatureKey cachedFeatureKey = FEATURE_KEY_CACHE.getIfPresent( builder.feature );
+        FeatureKey cachedFeatureKey = FEATURE_KEY_CACHE.getIfPresent( localFeature );
 
         if ( Objects.nonNull( cachedFeatureKey ) )
         {
@@ -354,11 +362,11 @@ public class TimeSeriesMetadata
         }
         else
         {
-            this.feature = builder.feature;
+            this.feature = localFeature;
             FEATURE_KEY_CACHE.put( this.feature, this.feature );
         }
 
-        String cachedUnit = STRING_CACHE.getIfPresent( builder.unit );
+        String cachedUnit = STRING_CACHE.getIfPresent( localUnits );
 
         if ( Objects.nonNull( cachedUnit ) )
         {
@@ -366,7 +374,7 @@ public class TimeSeriesMetadata
         }
         else
         {
-            this.unit = builder.unit;
+            this.unit = localUnits;
             STRING_CACHE.put( this.unit, this.unit );
         }
         

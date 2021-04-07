@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.FeatureTuple;
+import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.io.retrieval.UnitMapper;
 import wres.system.SystemSettings;
@@ -44,7 +45,9 @@ public class ThresholdReader {
                 this.builders
         );
 
-        InBandThresholdReader inBandReader = new InBandThresholdReader(this.projectConfig, this.builders);
+        MeasurementUnit units =
+                MeasurementUnit.of( this.desiredMeasurementUnitConverter.getDesiredMeasurementUnitName() );
+        InBandThresholdReader inBandReader = new InBandThresholdReader(this.projectConfig, this.builders, units );
 
         externalReader.read();
         inBandReader.read();

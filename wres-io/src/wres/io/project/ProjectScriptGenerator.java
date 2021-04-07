@@ -25,6 +25,7 @@ final class ProjectScriptGenerator
      * @param projectId The wres.project row id to look for intersecting data.
      * @param featureDeclarations Original or generated feature declarations.
      * @param hasBaseline Whether the project has a baseline dataset.
+     * @return the script
      */
 
     static DataScripter createIntersectingFeaturesScript( Database database,
@@ -150,6 +151,42 @@ final class ProjectScriptGenerator
         return script;
     }
 
+    /**
+     * Creates a script that retrieves the mostly commonly occurring measurement unit among all sources for each side of
+     * data (left, right or baseline) and then selects the right or left or baseline among them as the representative
+     * unit, in that order. 
+     * 
+     * @param database The database to use
+     * @param projectId The wres.project row id to look for intersecting data.
+     * @return the script
+     */
+
+    static DataScripter createUnitScript( Database database,
+                                          int projectId )
+    {
+        DataScripter script = new DataScripter( database );
+
+        script.addLine( "/* For a given project, select the most common measurement unit (by source)" );
+        script.addLine( "   for the right-ish sources. All time-series have units. */" );
+        script.addLine( "SELECT MU.unit_name," );
+        script.addTab().addLine( "T.measurementunit_id," );
+        script.addTab().addLine( "PS.member" );
+        script.addLine( "FROM wres.TimeSeries T" );
+        script.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
+        script.addTab( 2 ).addLine( "ON PS.source_id = T.source_id" );
+        script.addTab().addLine( "INNER JOIN wres.MeasurementUnit MU" );
+        script.addTab( 2 ).addLine( "ON MU.measurementunit_id = T.measurementunit_id" );
+        script.addLine( "WHERE PS.project_id=", projectId );
+        script.addTab().addLine( "AND PS.member='right'" );
+        script.addLine( "GROUP BY T.measurementunit_id," );
+        script.addTab().addLine( "PS.member," );
+        script.addTab().addLine( "MU.unit_name" );
+        script.addLine( "ORDER BY COUNT( T.measurementunit_id ) DESC" );
+        script.addLine( "LIMIT 1;" );
+
+        return script;
+    }
+    
     /**
      * Returns a temporary table name. Can't use the current time in millis as
      * sole seed because the collision to avoid would be when this method runs

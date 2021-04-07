@@ -27,7 +27,6 @@ import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.statistics.StatisticsForProject.Builder;
 import wres.datamodel.thresholds.ThresholdsByMetric;

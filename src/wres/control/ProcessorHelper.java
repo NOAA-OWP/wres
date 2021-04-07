@@ -136,7 +136,7 @@ class ProcessorHelper
         LOGGER.debug( "These formats will be delivered by internal subscribers: {}.", internalFormats );
 
         String consumerId = Evaluation.getUniqueId();
-        
+
         // Moving this into the try-with-resources would require a different approach than notifying the evaluation to 
         // stop( Exception e ) on encountering an error that is not visible to it. See discussion in #90292.
         Evaluation evaluation = null;
@@ -162,22 +162,21 @@ class ProcessorHelper
                                                                             consumerId )
                                                     .build();
 
-            // Open an evaluation, to be closed on completion or stopped on exception
-            evaluation = Evaluation.of( evaluationDescription,
-                                        connections,
-                                        ProcessorHelper.CLIENT_ID,
-                                        evaluationId,
-                                        subscriberApprover );
+            // Package the details needed to build the evaluation
+            EvaluationDetails evaluationDetails = new EvaluationDetails( projectConfigPlus,
+                                                                         evaluationDescription,
+                                                                         evaluationId,
+                                                                         subscriberApprover,
+                                                                         connections );
 
-            Set<Path> pathsWritten = ProcessorHelper.processProjectConfig( evaluation,
-                                                                           systemSettings,
-                                                                           databaseServices,
-                                                                           projectConfigPlus,
-                                                                           executors,
-                                                                           sharedWriters,
-                                                                           netcdfWriters,
-                                                                           outputDirectory );
-            returnMe.addAll( pathsWritten );
+            // Open an evaluation, to be closed on completion or stopped on exception
+            evaluation = ProcessorHelper.processProjectConfig( evaluationDetails,
+                                                               systemSettings,
+                                                               databaseServices,
+                                                               executors,
+                                                               sharedWriters,
+                                                               netcdfWriters,
+                                                               outputDirectory );
 
             // Wait for the evaluation to conclude
             evaluation.await();
@@ -196,6 +195,16 @@ class ProcessorHelper
             for ( NetcdfOutputWriter writer : netcdfWriters )
             {
                 writer.close();
+            }
+
+            // Add the paths written by shared writers
+            if ( sharedWriters.hasSharedSampleWriters() )
+            {
+                returnMe.addAll( sharedWriters.getSampleDataWriters().get() );
+            }
+            if ( sharedWriters.hasSharedBaselineSampleWriters() )
+            {
+                returnMe.addAll( sharedWriters.getBaselineSampleDataWriters().get() );
             }
 
             return Collections.unmodifiableSet( returnMe );
@@ -285,39 +294,33 @@ class ProcessorHelper
      * thresholds and metrics.
      *
      * Assumes that a shared lock for evaluation has already been obtained.
-     * @param evaluation the evaluation
+     * @param evaluationDetails the evaluation details
      * @param systemSettings the system settings
      * @param databaseServices the database services
-     * @param projectConfigPlus the project configuration
      * @param executors the executors
      * @param netcdfWriters netCDF writers
      * @param sharedWriters for writing
      * @param outputDirectory the output directory
      * @throws WresProcessingException if the processing failed for any reason
-     * @return the paths to which outputs were written
+     * @return the evaluation
      */
 
-    private static Set<Path> processProjectConfig( Evaluation evaluation,
-                                                   SystemSettings systemSettings,
-                                                   DatabaseServices databaseServices,
-                                                   ProjectConfigPlus projectConfigPlus,
-                                                   Executors executors,
-                                                   SharedWriters sharedWriters,
-                                                   List<NetcdfOutputWriter> netcdfWriters,
-                                                   Path outputDirectory )
+    private static Evaluation processProjectConfig( EvaluationDetails evaluationDetails,
+                                                    SystemSettings systemSettings,
+                                                    DatabaseServices databaseServices,
+                                                    Executors executors,
+                                                    SharedWriters sharedWriters,
+                                                    List<NetcdfOutputWriter> netcdfWriters,
+                                                    Path outputDirectory )
     {
-        Set<Path> pathsWrittenTo = new HashSet<>();
+        Evaluation evaluation = null;
 
         try
         {
-            final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+            ProjectConfigPlus projectConfigPlus = evaluationDetails.getProjectConfigPlus();
+            ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
             ProgressMonitor.setShowStepDescription( false );
             ProgressMonitor.resetMonitor();
-
-            // Get a unit mapper for the declared measurement units
-            PairConfig pairConfig = projectConfig.getPair();
-            String desiredMeasurementUnit = pairConfig.getUnit();
-            UnitMapper unitMapper = UnitMapper.of( databaseServices.getDatabase(), desiredMeasurementUnit );
 
             // Look up any needed feature correlations, generate a new declaration.
             ProjectConfig featurefulProjectConfig = FeatureFinder.fillFeatures( projectConfig );
@@ -333,6 +336,27 @@ class ProcessorHelper
                                                  executors.getIoExecutor(),
                                                  featurefulProjectConfig,
                                                  databaseServices.getDatabaseLockManager() );
+
+            // Get a unit mapper for the declared or analyzed measurement units
+            String desiredMeasurementUnit = project.getMeasurementUnit();
+            UnitMapper unitMapper = UnitMapper.of( databaseServices.getDatabase(), desiredMeasurementUnit );
+
+            // Update the evaluation description with any analyzed units
+            wres.statistics.generated.Evaluation evaluationDescription =
+                    evaluationDetails.getEvaluationDescription()
+                                     .toBuilder()
+                                     .setMeasurementUnit( desiredMeasurementUnit )
+                                     .build();
+
+            // Build the evaluation. In future, there may be a desire to build the evaluation prior to ingest, in order 
+            // to message the status of ingest. In order to build an evaluation before ingest, those parts of the 
+            // evaluation description that depend on the data would need to be part of the pool description instead 
+            // (e.g., the measurement units). Indeed, the time scale is part of the pool description for this reason.
+            evaluation = Evaluation.of( evaluationDescription,
+                                        evaluationDetails.getBrokerConnections(),
+                                        ProcessorHelper.CLIENT_ID,
+                                        evaluationDetails.getEvaluationId(),
+                                        evaluationDetails.getSubscriberApprover() );
 
             Operations.prepareForExecution( project );
 
@@ -430,27 +454,15 @@ class ProcessorHelper
             // message count for all message types, thereby allowing consumers to know when they are done/
             evaluation.markPublicationCompleteReportedSuccess();
 
-            // Find the paths written to by writers
-            pathsWrittenTo.addAll( featureReport.getPathsWrittenTo() );
-
-            if ( sharedWriters.hasSharedSampleWriters() )
-            {
-                pathsWrittenTo.addAll( sharedWriters.getSampleDataWriters().get() );
-            }
-            if ( sharedWriters.hasSharedBaselineSampleWriters() )
-            {
-                pathsWrittenTo.addAll( sharedWriters.getBaselineSampleDataWriters().get() );
-            }
-
             // Report on the features
             featureReport.report();
         }
-        catch ( CompletionException | IllegalArgumentException | IOException | NoDataException e )
+        catch ( CompletionException | IllegalArgumentException | IOException | NoDataException | SQLException e )
         {
             throw new WresProcessingException( "Project failed to complete with the following error: ", e );
         }
 
-        return Collections.unmodifiableSet( pathsWrittenTo );
+        return evaluation;
     }
 
     /**
@@ -996,6 +1008,87 @@ class ProcessorHelper
         }
 
         return pathString;
+    }
+
+    /**
+     * Small value class to collect together variables needed to instantiate an evaluation.
+     */
+
+    private static class EvaluationDetails
+    {
+        /** Project configuration. */
+        private final ProjectConfigPlus projectConfigPlus;
+        /** Evaluation description. */
+        private final wres.statistics.generated.Evaluation evaluationDescription;
+        /** Unique evaluation identifier. */
+        private final String evaluationId;
+        /** Approves format writer subscriptions that attempt to serve an evaluation. */
+        private final SubscriberApprover subscriberApprover;
+        /** Broker connections. */
+        private final BrokerConnectionFactory connections;
+
+        /**
+         * @return the project configuration
+         */
+        private ProjectConfigPlus getProjectConfigPlus()
+        {
+            return projectConfigPlus;
+        }
+
+        /**
+         * @return the evaluation description
+         */
+        private wres.statistics.generated.Evaluation getEvaluationDescription()
+        {
+            return evaluationDescription;
+        }
+
+        /**
+         * @return the evaluation identifier
+         */
+        private String getEvaluationId()
+        {
+            return evaluationId;
+        }
+
+        /**
+         * @return the subscriber approver
+         */
+        private SubscriberApprover getSubscriberApprover()
+        {
+            return subscriberApprover;
+        }
+
+        /**
+         * @return the broker connection factory
+         */
+        private BrokerConnectionFactory getBrokerConnections()
+        {
+            return connections;
+        }
+
+        /**
+         * Builds an instance.
+         * 
+         * @param projectConfigPlus the project declaration
+         * @param evaluationDescription the evaluation description
+         * @param evaluationId the evaluation identifier
+         * @param subscriberApprover the subscriber approver
+         * @param connections the broker connections
+         */
+
+        private EvaluationDetails( ProjectConfigPlus projectConfigPlus,
+                                   wres.statistics.generated.Evaluation evaluationDescription,
+                                   String evaluationId,
+                                   SubscriberApprover subscriberApprover,
+                                   BrokerConnectionFactory connections )
+        {
+            this.projectConfigPlus = projectConfigPlus;
+            this.evaluationDescription = evaluationDescription;
+            this.evaluationId = evaluationId;
+            this.subscriberApprover = subscriberApprover;
+            this.connections = connections;
+        }
     }
 
     private ProcessorHelper()
