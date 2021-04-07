@@ -71,7 +71,16 @@ public class Project
      */
     private final Object featureLock = new Object();
 
-    private Integer projectID = null;
+    private Integer projectId = null;
+    
+    /**
+     * The measurement unit, which is the declared unit, if available, else the most commonly occurring unit among the 
+     * project sources, with a preference for the mostly commonly occurring right-sided source unit. See 
+     * {@link ProjectScriptGenerator#createUnitScript(Database, int)}.
+     */
+    
+    private String measurementUnit = null;
+    
     private final ProjectConfig projectConfig;
     private final SystemSettings systemSettings;
     private final Database database;
@@ -148,6 +157,60 @@ public class Project
     public Features getFeaturesCache()
     {
         return this.featuresCache;
+    }
+
+    /**
+     * @return the measurement unit, which is either the declared unit of the analyzed unit, but possibly null
+     * @throws SQLException if the measurement unit is not declared and could not be determined from the project sources
+     * @throws IllegalArgumentException if the project identity is required and undefined
+     */
+
+    public String getMeasurementUnit() throws SQLException
+    {
+        // Declared unit available?
+        String declaredUnit = this.getProjectConfig()
+                                  .getPair()
+                                  .getUnit();
+        if ( Objects.isNull( this.measurementUnit ) && Objects.nonNull( declaredUnit ) && !declaredUnit.isBlank() )
+        {
+            this.measurementUnit = declaredUnit;
+
+            LOGGER.debug( "Determined the measurement unit from the project declaration as {}.",
+                          this.getMeasurementUnit() );
+        }
+
+        // Still not available? Then analyze the unit.
+        if ( Objects.isNull( this.measurementUnit ) )
+        {
+            if ( Objects.isNull( this.getId() ) )
+            {
+                throw new IllegalArgumentException( "Cannot analyze the measurement unit for the project until the "
+                                                    + "project identity is known." );
+            }
+
+            DataScripter scripter = ProjectScriptGenerator.createUnitScript( this.getDatabase(), this.getId() );
+
+            try ( DataProvider dataProvider = scripter.buffer() )
+            {
+                if ( dataProvider.next() )
+                {
+                    this.measurementUnit = dataProvider.getString( "unit_name" );
+
+                    String member = dataProvider.getString( "member" );
+
+                    LOGGER.debug( "Determined the measurement unit by analyzing the project sources. The analyzed "
+                                  + "measurement unit is {} and corresponds to the most commonly occurring unit among "
+                                  + "time-series from {} sources. The script used to discover the measurement unit "
+                                  + "was: {}{}",
+                                  this.measurementUnit,
+                                  member,
+                                  System.getProperty( "line.separator" ),
+                                  scripter );
+                }
+            }
+        }
+
+        return this.measurementUnit;
     }
 
     private Ensembles getEnsemblesCache()
@@ -620,7 +683,7 @@ public class Project
 
     public Integer getId()
     {
-        return this.projectID;
+        return this.projectId;
     }
 
     private DataScripter getInsertSelectStatement()
@@ -659,7 +722,7 @@ public class Project
 
         if ( this.performedInsert )
         {
-            this.projectID = saveScript.getInsertedIds()
+            this.projectId = saveScript.getInsertedIds()
                                        .get( 0 )
                                        .intValue();
         }
@@ -676,7 +739,7 @@ public class Project
 
             try ( DataProvider data = scriptWithId.getData() )
             {
-                this.projectID = data.getInt( PROJECT_ID );
+                this.projectId = data.getInt( PROJECT_ID );
             }
         }
 

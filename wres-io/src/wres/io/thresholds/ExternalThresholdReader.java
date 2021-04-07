@@ -20,7 +20,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -34,19 +33,28 @@ public class ExternalThresholdReader {
     private final UnitMapper desiredMeasurementUnitConverter;
     private final ThresholdBuilderCollection sharedBuilders;
     private final Set<FeatureTuple> recognizedFeatures = new HashSet<>();
+    private final MeasurementUnit desiredMeasurementUnit;
 
     public ExternalThresholdReader(
-            final SystemSettings systemSettings,
-            final ProjectConfig projectConfig,
-            final Set<FeatureTuple> features,
-            final UnitMapper desiredMeasurementUnitConverter,
-            final ThresholdBuilderCollection builders
-    ) {
+                                    final SystemSettings systemSettings,
+                                    final ProjectConfig projectConfig,
+                                    final Set<FeatureTuple> features,
+                                    final UnitMapper desiredMeasurementUnitConverter,
+                                    final ThresholdBuilderCollection builders )
+    {
+        Objects.requireNonNull( systemSettings );
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( features );
+        Objects.requireNonNull( desiredMeasurementUnitConverter );
+        Objects.requireNonNull( builders );
+        
         this.systemSettings = systemSettings;
         this.projectConfig = projectConfig;
         this.features = features;
         this.desiredMeasurementUnitConverter = desiredMeasurementUnitConverter;
         this.sharedBuilders = builders;
+        this.desiredMeasurementUnit =
+                MeasurementUnit.of( this.desiredMeasurementUnitConverter.getDesiredMeasurementUnitName() );
     }
 
     public void read() {
@@ -284,13 +292,7 @@ public class ExternalThresholdReader {
     }
 
     private MeasurementUnit getDesiredMeasurementUnit() {
-        MeasurementUnit measurementUnit = null;
-
-        if (this.projectConfig.getPair().getUnit() != null && !this.projectConfig.getPair().getUnit().isBlank()) {
-            measurementUnit = MeasurementUnit.of(this.projectConfig.getPair().getUnit());
-        }
-
-        return measurementUnit;
+        return this.desiredMeasurementUnit;
     }
 
     private MeasurementUnit getSourceMeasurementUnit(ThresholdsConfig config) {
