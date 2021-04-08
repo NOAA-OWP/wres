@@ -7,6 +7,7 @@
 # source the WRES environment variables
 #. WRES_Variables.txt 
 . ~/.bash_profile
+. ~/.mailrc
 cd ~
 TIMESTAMP=$(/usr/bin/date +"%Y%m%d%H%M%S")
 TOPPWD=/wres_share/releases/JUnitTests
@@ -14,8 +15,7 @@ LOGFILE=$TOPPWD/JUnit_systestsLog_${TIMESTAMP}.txt
 TESTINGJ=/wres_share/releases/install_scripts/testingJ.txt
 PENDINGQUEUEJ=/wres_share/releases/pendingQueueJ.txt
 wresGraphicsZipDirectory=/wres_share/releases/archive/graphics
-WRES_GROUP=Raymond.Chui@***REMOVED***,Hank.Herr@***REMOVED***,james.d.brown@***REMOVED***,jesse.bickel@***REMOVED***,christopher.tubbs@***REMOVED***,travis.quarterman@***REMOVED***,arthur.raney@***REMOVED***
-#WRES_GROUP=Raymond.Chui@***REMOVED***
+#WRES_GROUP=Raymond.Chui@***REMOVED***,Hank.Herr@***REMOVED***,james.d.brown@***REMOVED***,jesse.bickel@***REMOVED***,christopher.tubbs@***REMOVED***,travis.quarterman@***REMOVED***,arthur.raney@***REMOVED***
 export JAVA_HOME=/usr/lib/jvm/java-11-openjdk
 #/usr/bin/touch $LOGFILE
 if [ -f /wres_share/releases/systests/installing ]
@@ -161,7 +161,8 @@ else
 	if [ -s testDBError.txt ]
 	then
 		MAIL_SUBJECT="Dudes, JUnit in $SYSTESTS_DIR Tested $WRES_REVISION with Database problem"
-		/usr/bin/mailx -F -S smtp=nwcss-mail01.owp.nws.***REMOVED*** -s "$MAIL_SUBJECT" $WRES_GROUP < testDBError.txt  2>&1 | /usr/bin/tee --append $LOGFILE
+#		/usr/bin/mailx -F -S smtp=nwcss-mail01.owp.nws.***REMOVED*** -s "$MAIL_SUBJECT" $WRES_GROUP < testDBError.txt  2>&1 | /usr/bin/tee --append $LOGFILE
+		/usr/bin/mailx -F -A WRES_Setting -s "$MAIL_SUBJECT" -v WRES_GROUP < testDBError.txt  2>&1 | /usr/bin/tee --append $LOGFILE
 		cat testDBError.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 		rm -v testDBError.txt testDBError.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 		rm -v $TESTINGJ 2>&1 | /usr/bin/tee --append $LOGFILE
@@ -254,47 +255,42 @@ else
 	ls -l summary.txt | /usr/bin/tee --append $LOGFILE
 fi
 
-#MAIL_SUBJECT="JUnit in $SYSTESTS_DIR Tested $WRES_REVISION : $pass_nums PASSED; $failure_nums FAILED"
 MAIL_SUBJECT="JUnit in $SYSTESTS_DIR Tested $WRES_REVISION with $WRESVIS_REVISION  : $pass_nums PASSED; $failure_nums FAILED"
 LOGFILESIZE=`ls -s $LOGFILE | gawk '{print $1}'`
 echo "LOGFILESIZE = $LOGFILESIZE" 2>&1 | /usr/bin/tee --append $LOGFILE
 if [ $LOGFILESIZE -lt 9999 ]
 then
-	#/usr/bin/mailx -F -S smtp=nwcss-mail01.owp.nws.***REMOVED*** -s "$MAIL_SUBJECT" -a $LOGFILE $WRES_GROUP < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
 #	/usr/bin/mailx -F -S smtp=nwcss-mail01.owp.nws.***REMOVED*** -s "$MAIL_SUBJECT" -a $LOGFILE -a $LOGFILE_GRAPHICS $WRES_GROUP < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
-#	echo '{"issue": {"notes": ' > redmineFile.txt
-#	echo "\"$MAIL_SUBJECT\"" >> redmineFile.txt
-#	cat summary.txt  >> redmineFile.txt
-#	echo '}}' >> redmineFile.txt
-#	echo "cat summary.txt redmineFile.txt" 2>&1 | /usr/bin/tee --append $LOGFILE
-	echo "cat summary.txt" 2>&1 | /usr/bin/tee --append $LOGFILE
-	cat summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
-#	cat redmineFile.txt 2>&1 | /usr/bin/tee --append $LOGFILE
-	ls -l $WRES_DIRJ/install_scripts/redmineTemplateFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE
-	if [ -f $WRES_DIRJ/install_scripts/redmineTemplateFile.xml ]
-	then
-		cp -v $WRES_DIRJ/install_scripts/redmineTemplateFile.xml redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE 
-		sed -i s/"TheSubjectLine"/"$MAIL_SUBJECT"/g redmineTempFile.xml
-#		SUMMARY=`cat summary.txt`
-#		echo "SUMMARY = $SUMMARY" 2>&1 | /usr/bin/tee --append $LOGFILE
-#		sed -i s/"TheSummaryTextFile"/"$SUMMARY"/g redmineTempFile.xml  2>&1 | /usr/bin/tee --append $LOGFILE
-		cat summary.txt >> redmineTempFile.xml
-		echo "</notes>" >> redmineTempFile.xml
-		echo "</issue>" >> redmineTempFile.xml
-		cat redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE 
-		/usr/bin/curl -x '' -H 'X-Redmine***REMOVED***: ***REMOVED***' https://***REMOVED***/redmine/issues/89538.xml -X PUT -H 'Content-Type: text/xml' -T redmineTempFile.xml 
-		rm -v redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE
-	else
-		ls -l $WRES_DIRJ/install_scripts/redmineTemplateFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE
-	fi
-	#/usr/bin/curl -x '' -H 'X-Redmine***REMOVED***: ***REMOVED***' https://***REMOVED***/redmine/issues/89538.xml -X PUT -H 'Content-Type: application/json' -d '{"issue": {"notes": "$SUMMARY"}}'
-#	/usr/bin/curl -x '' -H 'X-Redmine***REMOVED***: ***REMOVED***' https://***REMOVED***/redmine/issues/89538.xml -X PUT -H 'Content-Type: application/json' -T redmineFile.txt
+#	Note, WRES_Setting and WRES_GROUP variable are set in ~/.mailrc
+	/usr/bin/mailx -F -A WRES_Setting -s "$MAIL_SUBJECT" -a $LOGFILE -a $LOGFILE_GRAPHICS -v WRES_GROUP < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
+# --------------- when SMTP server is down, then uncomment below lines ------------------------------
+# Attached the email to Redmine ticket #89538
+
+#	echo "cat summary.txt" 2>&1 | /usr/bin/tee --append $LOGFILE
+#	cat summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
+#	ls -l $WRES_DIRJ/install_scripts/redmineTemplateFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE
+#	if [ -f $WRES_DIRJ/install_scripts/redmineTemplateFile.xml ]
+#	then
+#		cp -v $WRES_DIRJ/install_scripts/redmineTemplateFile.xml redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE 
+#		sed -i s/"TheSubjectLine"/"$MAIL_SUBJECT"/g redmineTempFile.xml
+#		cat summary.txt >> redmineTempFile.xml
+#		echo "</notes>" >> redmineTempFile.xml
+#		echo "</issue>" >> redmineTempFile.xml
+#		cat redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE 
+#		/usr/bin/curl -x '' -H 'X-Redmine***REMOVED***: ***REMOVED***' https://***REMOVED***/redmine/issues/89538.xml -X PUT -H 'Content-Type: text/xml' -T redmineTempFile.xml 
+#		rm -v redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE
+#	else
+#		ls -l $WRES_DIRJ/install_scripts/redmineTemplateFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE
+#	fi
+
+# -------- when SMTP server is down, then uncomment above lines ------------------------------
 else
 	echo "$LOGFILE block size $LOGFILESIZE is too large to attach in email" > tempfile.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 	echo ".................." >> tempfile.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 	cat summary.txt >> tempfile.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 	mv -v tempfile.txt summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
-	/usr/bin/mailx -F -S smtp=nwcss-mail01.owp.nws.***REMOVED*** -s "$MAIL_SUBJECT" $WRES_GROUP < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
+#	/usr/bin/mailx -F -S smtp=nwcss-mail01.owp.nws.***REMOVED*** -s "$MAIL_SUBJECT" $WRES_GROUP < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
+	/usr/bin/mailx -F -A WRES_Setting -s "$MAIL_SUBJECT" -v WRES_GROUP < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
 fi
 ls -l passes.txt failures.txt passed_failed.txt summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 rm -v passes.txt failures.txt passed_failed.txt summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
