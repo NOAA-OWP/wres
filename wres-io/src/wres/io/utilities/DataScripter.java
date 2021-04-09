@@ -1,5 +1,6 @@
 package wres.io.utilities;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -206,14 +207,17 @@ public class DataScripter extends ScriptBuilder
 
     /**
      * Retrieves the described data in a streaming data provider
+     * The caller must provide the connection to use and close it along with
+     * closing the DataProvider.
+     * @param connection The connection to use for streaming data.
      * @return A DataSet containing all returned values
      * @throws SQLException Thrown if the DataSet could not be created
      */
-    public DataProvider buffer() throws SQLException
+    public DataProvider buffer( Connection connection ) throws SQLException
     {
         Query query = this.formQuery()
                           .useCursor( true );
-        return database.buffer( query, this.isHighPriority );
+        return database.buffer( connection, query );
     }
 
     /**

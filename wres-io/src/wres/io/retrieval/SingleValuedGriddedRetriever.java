@@ -1,6 +1,7 @@
 package wres.io.retrieval;
 
 import java.io.IOException;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -274,7 +275,9 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
                           this.script );
         }
 
-        try ( DataProvider provider = scripter.buffer() )
+        try ( Connection connection = this.getDatabase()
+                                          .getConnection();
+              DataProvider provider = scripter.buffer( connection ) )
         {
             List<String> paths = new ArrayList<>();
 

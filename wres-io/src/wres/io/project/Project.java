@@ -1,5 +1,6 @@
 package wres.io.project;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.MonthDay;
@@ -190,7 +191,9 @@ public class Project
 
             DataScripter scripter = ProjectScriptGenerator.createUnitScript( this.getDatabase(), this.getId() );
 
-            try ( DataProvider dataProvider = scripter.buffer() )
+            try ( Connection connection = this.getDatabase()
+                                              .getConnection();
+                  DataProvider dataProvider = scripter.buffer( connection ) )
             {
                 if ( dataProvider.next() )
                 {
@@ -288,7 +291,8 @@ public class Project
 
             LOGGER.debug( "getIntersectingFeatures will run: {}", script );
 
-            try ( DataProvider dataProvider = script.buffer() )
+            try ( Connection connection = database.getConnection();
+                  DataProvider dataProvider = script.buffer( connection ) )
             {
                 while ( dataProvider.next() )
                 {

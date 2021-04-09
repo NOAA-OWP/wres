@@ -335,6 +335,24 @@ public class Database {
         return highPriorityConnectionPool.getConnection();
     }
 
+
+    /**
+     * Get a connection from either the normal or high priority pool
+     * @param highPriority Whether to get from the high priority pool.
+     * @return A connection
+     * @throws SQLException When something goes wrong
+     */
+
+    private Connection getConnection( boolean highPriority ) throws SQLException
+    {
+        if ( highPriority )
+        {
+            return this.getHighPriorityConnection();
+        }
+
+        return this.getConnection();
+    }
+
 	/**
 	 * Returns the connection to the connection pool.
 	 * @param connection The connection to return
@@ -592,9 +610,10 @@ public class Database {
             // that couldn't be added
 		    if ( LOGGER.isDebugEnabled() )
             {
+                String allValues = values.toString();
+                int subStringMax = Math.min( allValues.length(), 5000 );
                 LOGGER.debug( "Data could not be copied to the database:{}{}...",
-                              copy_definition, values.toString()
-                                                     .substring( 0, 5000 ) );
+                              copy_definition, allValues.substring( 0, subStringMax ) );
             }
 
             throw new IngestException( "Data could not be copied to the database.",
@@ -747,34 +766,10 @@ public class Database {
     int execute( final Query query, final boolean isHighPriority) throws SQLException
     {
         int modifiedRows = 0;
-        Connection connection = null;
 
-        try
+        try ( Connection connection = this.getConnection( isHighPriority ) )
         {
-            if (isHighPriority)
-            {
-                connection = this.getHighPriorityConnection();
-            }
-            else
-            {
-                connection = this.getConnection();
-            }
-
             modifiedRows = query.execute( connection );
-        }
-        finally
-        {
-            if (connection != null)
-            {
-                if (isHighPriority)
-                {
-                    Database.returnHighPriorityConnection( connection );
-                }
-                else
-                {
-                    Database.returnConnection( connection );
-                }
-            }
         }
 
         return modifiedRows;
@@ -791,7 +786,8 @@ public class Database {
     {
         // Since Database.buffer performs all the heavy lifting, we can just rely on that. Setting that
         // call in the try statement ensures that it is closed once the in-memory results are created
-        try ( DataProvider rawProvider = this.buffer(query, isHighPriority) )
+        try ( Connection connection = this.getConnection( isHighPriority);
+              DataProvider rawProvider = this.buffer( connection, query ) )
         {
             return DataSetProvider.from(rawProvider);
         }
@@ -806,23 +802,11 @@ public class Database {
      *         Failure to do so will result in a leak.
      *     </p>
      * @param query The query that holds the information needed to call the database
-     * @param isHighPriority Whether or not a high priority connection is required
      * @return A record of the results of the database call
      * @throws SQLException Thrown if there was an error when connecting to the database
      */
-    DataProvider buffer(final Query query, final boolean isHighPriority) throws SQLException
+    DataProvider buffer( Connection connection, Query query ) throws SQLException
     {
-        Connection connection;
-
-        if (isHighPriority)
-        {
-            connection = this.getHighPriorityConnection();
-        }
-        else
-        {
-            connection = this.getConnection();
-        }
-
         return new SQLDataProvider( connection, query.call( connection ) );
     }
 
@@ -837,7 +821,8 @@ public class Database {
      */
     <V> V retrieve( final Query query, final String label, final boolean isHighPriority) throws SQLException
     {
-        try( DataProvider data = this.buffer( query, isHighPriority ) )
+        try ( Connection connection = this.getConnection( isHighPriority );
+              DataProvider data = this.buffer( connection, query ) )
         {
             if (data.isEmpty())
             {
@@ -860,7 +845,8 @@ public class Database {
             final boolean isHighPriority)
             throws SQLException
     {
-        try ( DataProvider data = this.buffer( query, isHighPriority) )
+        try ( Connection connection = this.getConnection( isHighPriority );
+              DataProvider data = this.buffer( connection, query ) )
         {
             data.consume( consumer );
         }
@@ -879,7 +865,8 @@ public class Database {
     {
         List<U> result;
 
-        try ( DataProvider data = this.buffer( query, isHighPriority) )
+        try ( Connection connection = this.getConnection( isHighPriority );
+              DataProvider data = this.buffer( connection, query ) )
         {
             result = new ArrayList<>( data.interpret( interpretor ) );
         }
