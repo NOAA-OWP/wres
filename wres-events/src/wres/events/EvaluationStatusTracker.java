@@ -1123,9 +1123,8 @@ class EvaluationStatusTracker implements Closeable
                     message.acknowledge();
                 }
             }
-            catch ( JMSException | InvalidProtocolBufferException | RuntimeException e )
+            catch ( JMSException | InvalidProtocolBufferException e )
             {
-                // Messages are on the DLQ, but signal locally too
                 if ( Objects.isNull( this.trackerFailedOn ) )
                 {
                     this.trackerFailedOn = receivedBytes;
