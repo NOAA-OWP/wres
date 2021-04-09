@@ -260,28 +260,29 @@ LOGFILESIZE=`ls -s $LOGFILE | gawk '{print $1}'`
 echo "LOGFILESIZE = $LOGFILESIZE" 2>&1 | /usr/bin/tee --append $LOGFILE
 if [ $LOGFILESIZE -lt 9999 ]
 then
-#	/usr/bin/mailx -F -S smtp=nwcss-mail01.owp.nws.***REMOVED*** -s "$MAIL_SUBJECT" -a $LOGFILE -a $LOGFILE_GRAPHICS $WRES_GROUP < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
+# WRES Team prefer send the test result summary to Redmine ticket #89538 instead direct email to them. April, 2021 by RHC
+# Below two lines are direct email summary
 #	Note, WRES_Setting and WRES_GROUP variable are set in ~/.mailrc
-	/usr/bin/mailx -F -A WRES_Setting -s "$MAIL_SUBJECT" -a $LOGFILE -a $LOGFILE_GRAPHICS -v WRES_GROUP < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
-# --------------- when SMTP server is down, then uncomment below lines ------------------------------
+#	/usr/bin/mailx -F -A WRES_Setting -s "$MAIL_SUBJECT" -a $LOGFILE -a $LOGFILE_GRAPHICS -v WRES_GROUP < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
+# --------------- when SMTP server is down, then uncomment below lines --------March, 2021 by RHC---------------
 # Attached the email to Redmine ticket #89538
 
-#	echo "cat summary.txt" 2>&1 | /usr/bin/tee --append $LOGFILE
-#	cat summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
-#	ls -l $WRES_DIRJ/install_scripts/redmineTemplateFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE
-#	if [ -f $WRES_DIRJ/install_scripts/redmineTemplateFile.xml ]
-#	then
-#		cp -v $WRES_DIRJ/install_scripts/redmineTemplateFile.xml redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE 
-#		sed -i s/"TheSubjectLine"/"$MAIL_SUBJECT"/g redmineTempFile.xml
-#		cat summary.txt >> redmineTempFile.xml
-#		echo "</notes>" >> redmineTempFile.xml
-#		echo "</issue>" >> redmineTempFile.xml
-#		cat redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE 
-#		/usr/bin/curl -x '' -H 'X-Redmine***REMOVED***: ***REMOVED***' https://***REMOVED***/redmine/issues/89538.xml -X PUT -H 'Content-Type: text/xml' -T redmineTempFile.xml 
-#		rm -v redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE
-#	else
-#		ls -l $WRES_DIRJ/install_scripts/redmineTemplateFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE
-#	fi
+	echo "cat summary.txt" 2>&1 | /usr/bin/tee --append $LOGFILE
+	cat summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
+	ls -l $WRES_DIRJ/install_scripts/redmineTemplateFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE
+	if [ -f $WRES_DIRJ/install_scripts/redmineTemplateFile.xml ]
+	then
+		cp -v $WRES_DIRJ/install_scripts/redmineTemplateFile.xml redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE 
+		sed -i s/"TheSubjectLine"/"$MAIL_SUBJECT"/g redmineTempFile.xml
+		cat summary.txt >> redmineTempFile.xml
+		echo "</notes>" >> redmineTempFile.xml
+		echo "</issue>" >> redmineTempFile.xml
+		cat redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE 
+		/usr/bin/curl -x '' -H 'X-Redmine***REMOVED***: ***REMOVED***' https://***REMOVED***/redmine/issues/89538.xml -X PUT -H 'Content-Type: text/xml' -T redmineTempFile.xml 
+		rm -v redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE
+	else
+		ls -l $WRES_DIRJ/install_scripts/redmineTemplateFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE
+	fi
 
 # -------- when SMTP server is down, then uncomment above lines ------------------------------
 else
