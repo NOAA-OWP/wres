@@ -1,5 +1,6 @@
 package wres.io.retrieval;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
@@ -214,7 +215,8 @@ public class UnitMapper
         dataScripter.setHighPriority( true );
 
         // Retrieve the conversions
-        try ( DataProvider provider = dataScripter.buffer() )
+        try ( Connection connection = database.getConnection();
+              DataProvider provider = dataScripter.buffer( connection ) )
         {
             Long desiredUnitId = null;
             while ( provider.next() )

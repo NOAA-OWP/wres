@@ -1,5 +1,6 @@
 package wres.io.retrieval;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
@@ -195,7 +196,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         // Acquire the raw time-series data from the db for the input time-series identifier
         DataScripter scripter = new DataScripter( database, script );
 
-        try ( DataProvider provider = scripter.buffer() )
+        try ( Connection connection = database.getConnection();
+              DataProvider provider = scripter.buffer( connection ) )
         {
             Map<Integer, TimeSeriesBuilder<S>> builders = new TreeMap<>();
 

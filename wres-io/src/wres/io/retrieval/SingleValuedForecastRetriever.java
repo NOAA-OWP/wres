@@ -1,5 +1,6 @@
 package wres.io.retrieval;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.Objects;
@@ -172,7 +173,9 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
                           script );
         }
 
-        try ( DataProvider provider = dataScripter.buffer() )
+        try ( Connection connection = this.getDatabase()
+                                          .getConnection();
+              DataProvider provider = dataScripter.buffer( connection ) )
         {
             LongStream.Builder b = LongStream.builder();
 
