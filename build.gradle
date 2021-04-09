@@ -1350,7 +1350,6 @@ apply plugin: 'org.owasp.dependencycheck'
 
 dependencies
 {
-    compile project(':wres-util')
     compile project(':wres-system')
     compile project(':wres-datamodel')
     compile project(':wres-io')

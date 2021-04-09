@@ -38,7 +38,6 @@ import wres.io.concurrency.Pipelines;
 import wres.io.pooling.PoolFactory;
 import wres.io.project.Project;
 import wres.io.retrieval.UnitMapper;
-import wres.util.IterationFailedException;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
 import wres.statistics.generated.Statistics;
 
@@ -274,54 +273,46 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
         // Something published?
         AtomicBoolean published = new AtomicBoolean();
-
-        try
+       
+        for ( Supplier<Pool<Pair<L, R>>> poolSupplier : pools )
         {
-            for ( Supplier<Pool<Pair<L, R>>> poolSupplier : pools )
-            {
-                // Behold, the feature processing pipeline
-                final CompletableFuture<Void> pipeline =
-                        // Retrieve the pairs                
-                        CompletableFuture.supplyAsync( poolSupplier, this.executors.getPairExecutor() )
-                                         // Write the main pairs, as needed
-                                         .thenApply( this.getPairWritingTask( false, pairsWriter, projectConfig ) )
-                                         // Write the baseline pairs, as needed
-                                         .thenApply( this.getPairWritingTask( true, basePairsWriter, projectConfig ) )
-                                         // Compute the statistics
-                                         .thenApply( this.getStatisticsProcessingTask( processor, projectConfig ) )
-                                         // Publish the statistics for awaiting format consumers
-                                         .thenAcceptAsync( statistics -> {
+            // Behold, the feature processing pipeline
+            final CompletableFuture<Void> pipeline =
+                    // Retrieve the pairs                
+                    CompletableFuture.supplyAsync( poolSupplier, this.executors.getPairExecutor() )
+                                     // Write the main pairs, as needed
+                                     .thenApply( this.getPairWritingTask( false, pairsWriter, projectConfig ) )
+                                     // Write the baseline pairs, as needed
+                                     .thenApply( this.getPairWritingTask( true, basePairsWriter, projectConfig ) )
+                                     // Compute the statistics
+                                     .thenApply( this.getStatisticsProcessingTask( processor, projectConfig ) )
+                                     // Publish the statistics for awaiting format consumers
+                                     .thenAcceptAsync( statistics -> {
 
-                                             boolean success = this.publish( evaluation,
-                                                                             statistics,
-                                                                             this.getGroupId(),
-                                                                             processor.getMetricOutputTypesToCache() );
+                                         boolean success = this.publish( evaluation,
+                                                                         statistics,
+                                                                         this.getGroupId(),
+                                                                         processor.getMetricOutputTypesToCache() );
 
-                                             // Notify that something was published
-                                             // This is needed to confirm group completion - cannot complete a message
-                                             // group if nothing was published to it.
-                                             if ( success )
-                                             {
-                                                 published.set( true );
-                                             }
+                                         // Notify that something was published
+                                         // This is needed to confirm group completion - cannot complete a message
+                                         // group if nothing was published to it.
+                                         if ( success )
+                                         {
+                                             published.set( true );
+                                         }
 
-                                             // Register statistics produced
-                                             typesProduced.addAll( statistics.getStatisticTypes() );
-                                         },
-                                                           // Consuming happens in the product thread pool and publishing
-                                                           // should happen in a different one because production is
-                                                           // flow-controlled with respect to consumption using a naive 
-                                                           // blocking approach, which would otherwise risk deadlock. 
-                                                           this.executors.getPairExecutor() );
+                                         // Register statistics produced
+                                         typesProduced.addAll( statistics.getStatisticTypes() );
+                                     },
+                                                       // Consuming happens in the product thread pool and publishing
+                                                       // should happen in a different one because production is
+                                                       // flow-controlled with respect to consumption using a naive 
+                                                       // blocking approach, which would otherwise risk deadlock. 
+                                                       this.executors.getPairExecutor() );
 
-                // Add the task to the list
-                listOfFutures.add( pipeline );
-            }
-        }
-        catch ( IterationFailedException re )
-        {
-            // Otherwise, chain and propagate the exception up to the top.
-            throw new WresProcessingException( "Iteration failed", re );
+            // Add the task to the list
+            listOfFutures.add( pipeline );
         }
 
         // Complete all tasks or one exceptionally

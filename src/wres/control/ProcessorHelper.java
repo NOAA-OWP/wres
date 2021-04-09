@@ -14,7 +14,6 @@ import java.text.DecimalFormat;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -222,11 +221,11 @@ class ProcessorHelper
         // Internal error
         catch ( RuntimeException internalError )
         {
-            // Stop forcibly
-            LOGGER.debug( "Forcibly stopping evaluation {} upon encountering an internal error.", evaluationId );
-
             if ( Objects.nonNull( evaluation ) )
             {
+                // Stop forcibly
+                LOGGER.debug( "Forcibly stopping evaluation {} upon encountering an internal error.", evaluationId );
+
                 evaluation.stop( internalError );
             }
 
@@ -457,9 +456,25 @@ class ProcessorHelper
             // Report on the features
             featureReport.report();
         }
-        catch ( CompletionException | IllegalArgumentException | IOException | NoDataException | SQLException e )
+        catch ( IOException | SQLException | RuntimeException internalError )
         {
-            throw new WresProcessingException( "Project failed to complete with the following error: ", e );
+            if ( Objects.nonNull( evaluation ) )
+            {
+                LOGGER.debug( "Forcibly stopping evaluation {} upon encountering an internal error.",
+                              evaluation.getEvaluationId() );
+                
+                try
+                {
+                    evaluation.close();
+                }
+                catch ( IOException e )
+                {
+                    String message = "Failed to close evaluation " + evaluation.getEvaluationId() + ".";
+                    LOGGER.warn( message, e );
+                }
+            }
+
+            throw new WresProcessingException( "Project failed to complete with the following error: ", internalError );
         }
 
         return evaluation;
