@@ -438,7 +438,7 @@ class ProcessorHelper
 
                 CompletableFuture<Void> nextFeatureTask = CompletableFuture.supplyAsync( featureProcessor,
                                                                                          executors.getFeatureExecutor() )
-                                                                           .thenAccept( featureReport );
+                                                                           .thenAccept( featureReport );                                                                           
 
                 // Add to list of tasks
                 featureTasks.add( nextFeatureTask );
@@ -465,7 +465,7 @@ class ProcessorHelper
                 
                 try
                 {
-                    evaluation.close();
+                    evaluation.stop( internalError );
                 }
                 catch ( IOException e )
                 {
