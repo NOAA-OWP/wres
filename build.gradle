@@ -170,7 +170,7 @@ subprojects
 
     test
     {
-        maxHeapSize = "1680m"
+        maxHeapSize = "1894m"
         testLogging.showStandardStreams = true
         systemProperties += [ 'user.timezone': 'UTC' ]
     }
@@ -1323,7 +1323,7 @@ mainClassName = 'wres.Main'
 sourceCompatibility = '11'
 targetCompatibility = '11'
 
-applicationDefaultJvmArgs = ['-Xms1680m', '-Xmx1680m',
+applicationDefaultJvmArgs = ['-Xms1894m', '-Xmx1894m',
                              '-XX:MaxDirectMemorySize=512m',
                              '-XX:+HeapDumpOnOutOfMemoryError',
                              '-Duser.timezone=UTC',
