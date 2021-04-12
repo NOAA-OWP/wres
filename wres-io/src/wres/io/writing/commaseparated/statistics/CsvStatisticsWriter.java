@@ -118,7 +118,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * Platform-dependent line separator.
      */
 
-    private static final String LINE_SEPARATOR = System.getProperty( "line.separator" );
+    private static final String LINE_SEPARATOR = System.lineSeparator();
 
     /**
      * Lock for writing pairs to the {@link #path} for which this writer is built.

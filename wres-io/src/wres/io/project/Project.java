@@ -207,7 +207,7 @@ public class Project
                                   + "was: {}{}",
                                   this.measurementUnit,
                                   member,
-                                  System.getProperty( "line.separator" ),
+                                  System.lineSeparator(),
                                   scripter );
                 }
             }

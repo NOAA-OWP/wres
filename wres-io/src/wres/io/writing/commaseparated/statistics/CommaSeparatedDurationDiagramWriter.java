@@ -40,8 +40,10 @@ import wres.io.writing.commaseparated.CommaSeparatedUtilities;
  * Helps write paired output comprising {@link DurationDiagramStatisticOuter} to a file of Comma Separated Values (CSV).
  * 
  * @author james.brown@hydrosolved.com
+ * @deprecated since v5.8. Use the {@link CsvStatisticsWriter} instead.
  */
 
+@Deprecated( since = "5.8", forRemoval = true )
 public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatisticsWriter
         implements Function<List<DurationDiagramStatisticOuter>, Set<Path>>
 {

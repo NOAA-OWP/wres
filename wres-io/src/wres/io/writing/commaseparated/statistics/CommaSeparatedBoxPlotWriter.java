@@ -43,8 +43,10 @@ import wres.statistics.generated.BoxplotStatistic.Box;
  * Helps write box plots comprising {@link BoxplotStatisticOuter} to a file of Comma Separated Values (CSV).
  * 
  * @author james.brown@hydrosolved.com
+ * @deprecated since v5.8. Use the {@link CsvStatisticsWriter} instead.
  */
 
+@Deprecated( since = "5.8", forRemoval = true )
 public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
         implements Function<List<BoxplotStatisticOuter>, Set<Path>>
 {

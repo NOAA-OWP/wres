@@ -23,8 +23,10 @@ import wres.io.writing.WriterTestHelper;
 
 /**
  * Tests the writing of box plot outputs to a file of Comma Separated Values (CSV).
+ * @deprecated since v5.8. Use the {@link CsvStatisticsWriter} instead.
  */
 
+@Deprecated( since = "5.8", forRemoval = true )
 public class CommaSeparatedBoxPlotWriterTest
 {
 

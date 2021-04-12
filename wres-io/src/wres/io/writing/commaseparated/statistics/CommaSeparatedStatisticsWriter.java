@@ -34,7 +34,10 @@ import wres.util.TimeHelper;
  *
  * @author jesse
  * @author james.brown@hydrosolved.com
+ * @deprecated since v5.8. Use the {@link CsvStatisticsWriter} instead.
  */
+
+@Deprecated( since = "5.8", forRemoval = true )
 abstract class CommaSeparatedStatisticsWriter
 {
 
