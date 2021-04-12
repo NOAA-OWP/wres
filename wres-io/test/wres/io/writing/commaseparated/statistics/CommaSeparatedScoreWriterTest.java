@@ -27,8 +27,10 @@ import wres.io.writing.WriterTestHelper;
 
 /**
  * Tests the writing of score outputs to a file of Comma Separated Values (CSV).
+ * @deprecated since v5.8. Use the {@link CsvStatisticsWriter} instead.
  */
 
+@Deprecated( since = "5.8", forRemoval = true )
 public class CommaSeparatedScoreWriterTest
 {
     private final Path outputDirectory = Paths.get( System.getProperty( "java.io.tmpdir" ) );

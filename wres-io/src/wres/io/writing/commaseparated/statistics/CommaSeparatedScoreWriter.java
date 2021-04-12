@@ -43,8 +43,10 @@ import wres.io.writing.commaseparated.CommaSeparatedUtilities;
  * @param <S>  the score component type
  * @param <T> the score type
  * @author james.brown@hydrosolved.com
+ * @deprecated since v5.8. Use the {@link CsvStatisticsWriter} instead.
  */
 
+@Deprecated( since = "5.8", forRemoval = true )
 public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends ScoreStatistic<?, S>>
         extends CommaSeparatedStatisticsWriter
         implements Function<List<T>, Set<Path>>
