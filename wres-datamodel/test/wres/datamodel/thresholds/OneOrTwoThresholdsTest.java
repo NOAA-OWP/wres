@@ -2,11 +2,10 @@ package wres.datamodel.thresholds;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -19,9 +18,6 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
  */
 public final class OneOrTwoThresholdsTest
 {
-    
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * Constructs a {@link OneOrTwoThresholds} and confirms that the {@link OneOrTwoThresholds#first()} returns the 
@@ -257,9 +253,7 @@ public final class OneOrTwoThresholdsTest
     @Test
     public void testExceptionOnConstructionWithNulInput()
     {
-        exception.expect( NullPointerException.class );
-
-        OneOrTwoThresholds.of( null, null );
+        assertThrows( NullPointerException.class, () -> OneOrTwoThresholds.of( null, null ) );
     }
 
 }

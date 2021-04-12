@@ -36,7 +36,6 @@ import wres.datamodel.FeatureTuple;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.statistics.BoxplotStatisticOuter;

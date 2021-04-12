@@ -285,6 +285,9 @@ public class DataScripter extends ScriptBuilder
      * against a database. Instead, use the runnable methods in this class to directly execute the script instance. 
      * Examples of these methods are {@link #execute()} and {@link #buffer(Connection)}.
      * 
+     * <p>When inserting a parameter into a prepared statement, the string representation of the parameter is used.
+     * There is currently no special treatment of arrays, for example.
+     *
      * @return a runnable string representation of the script
      * @throws IllegalFormatException if the script could not be formatted
      */
