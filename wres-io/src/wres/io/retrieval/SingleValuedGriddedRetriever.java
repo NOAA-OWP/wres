@@ -3,7 +3,6 @@ package wres.io.retrieval;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -11,9 +10,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.FeatureKey;
@@ -24,6 +20,7 @@ import wres.grid.client.SingleValuedTimeSeriesResponse;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
+import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 
 /**
@@ -43,20 +40,6 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
             "Cannot build a time-series retriever without a ";
 
     /**
-     * Log message.
-     */
-
-    private static final String LOG_SCRIPT =
-            "Built retriever {} for the retrieval of single-valued gridded forecasts using this script to obtain "
-                                             + "the paths to the gridded data files:{}{}";
-
-    /**
-     * Logger.
-     */
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( SingleValuedGriddedRetriever.class );
-
-    /**
      * Error message when attempting to retrieve by identifier. See #68334 and #56214-56.
      */
 
@@ -64,24 +47,24 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
                                                       + "currently possible.";
 
     /**
-     * Start of script for {@link #getAllIdentifiers()}.
+     * Start of script.
      */
 
     private static final String GET_START_OF_SCRIPT =
             SingleValuedGriddedRetriever.getStartOfScriptForGetAllTimeSeries();
 
     /**
-     * End of script for {@link #getAllIdentifiers()}.
+     * End of script.
      */
 
     private static final String GET_END_OF_SCRIPT =
             SingleValuedGriddedRetriever.getEndOfScriptForGetAllTimeSeries();
 
     /**
-     * Complete script for {@link #getAllIdentifiers()}.
+     * Complete script.
      */
 
-    private final String script;
+    private final DataScripter script;
 
     /**
      * The variable name.
@@ -264,20 +247,12 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
 
     private Request getRequest() throws SQLException
     {
-        DataScripter scripter = new DataScripter( this.getDatabase(),
-                                                  this.script );
-
-        if ( LOGGER.isDebugEnabled() )
-        {
-            LOGGER.debug( LOG_SCRIPT,
-                          this,
-                          System.lineSeparator(),
-                          this.script );
-        }
+        // Log the script
+        super.logScript( this.script );
 
         try ( Connection connection = this.getDatabase()
                                           .getConnection();
-              DataProvider provider = scripter.buffer( connection ) )
+              DataProvider provider = this.script.buffer( connection ) )
         {
             List<String> paths = new ArrayList<>();
 
@@ -393,8 +368,8 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
         scripter.addTab( 2 ).addLine( "SELECT 1" );
         scripter.addTab( 2 ).addLine( "FROM wres.ProjectSource PS" );
         scripter.addTab( 3 ).addLine( "WHERE PS.source_id = S.source_id" );
-        scripter.addTab( 2 ).addLine( "AND PS.project_id = ''{0}''" );
-        scripter.addTab( 3 ).addLine( "AND PS.member = ''{1}''" );
+        scripter.addTab( 2 ).addLine( "AND PS.project_id = ?" );
+        scripter.addTab( 3 ).addLine( "AND PS.member = ?" );
         scripter.addTab().addLine( ");" );
 
         return scripter.toString();
@@ -442,22 +417,21 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
      * @return the script for acquiring source paths
      */
 
-    private String getScript()
+    private DataScripter getScript()
     {
-        // Start of the script
-        ScriptBuilder scripter = new ScriptBuilder( GET_START_OF_SCRIPT );
+        Database database = super.getDatabase();
+        DataScripter dataScripter = new DataScripter( database, GET_START_OF_SCRIPT );
 
         // Time window
-        this.addTimeWindowClause( scripter, 0 );
+        this.addTimeWindowClause( dataScripter, 0 );
 
         // End of the script
-        String end = MessageFormat.format( GET_END_OF_SCRIPT,
-                                           this.getProjectId(),
-                                           this.getLeftOrRightOrBaseline()
+        dataScripter.addLine( GET_END_OF_SCRIPT );
+        dataScripter.addArgument( this.getProjectId() )
+                    .addArgument( this.getLeftOrRightOrBaseline()
                                                .value() );
-        scripter.addLine( end );
 
-        return scripter.toString();
+        return dataScripter;
     }
 
 }

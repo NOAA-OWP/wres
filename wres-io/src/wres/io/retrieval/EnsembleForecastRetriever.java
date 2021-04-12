@@ -4,19 +4,17 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.StringJoiner;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.time.TimeSeries;
 import wres.io.utilities.DataProvider;
+import wres.io.utilities.DataScripter;
+import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 
 /**
@@ -43,24 +41,11 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
                                                       + "ensemble time-series in the WRES database.";
 
     /**
-     * Log message.
-     */
-
-    private static final String LOG_SCRIPT =
-            "Built retriever {} for the retrieval of ensemble forecasts using script:{}{}";
-
-    /**
      * Start of script for {@link #getAllIdentifiers()}.
      */
 
     private static final String GET_ALL_TIME_SERIES_SCRIPT =
             EnsembleForecastRetriever.getStartOfScriptForGetAllTimeSeries();
-
-    /**
-     * Logger.
-     */
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( EnsembleForecastRetriever.class );
 
     /**
      * A set of <code>ensemble_id</code> to include in the selection.
@@ -189,44 +174,39 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
     {
         this.validateForMultiSeriesRetrieval();
 
-        ScriptBuilder scripter = new ScriptBuilder( GET_ALL_TIME_SERIES_SCRIPT );
+        Database database = super.getDatabase();
+        DataScripter dataScripter = new DataScripter( database, GET_ALL_TIME_SERIES_SCRIPT );
 
         // Add basic constraints at zero tabs
-        this.addProjectVariableAndMemberConstraints( scripter, 0 );
+        this.addProjectFeatureVariableAndMemberConstraints( dataScripter, 0 );
 
         // Add time window constraint at zero tabs
-        this.addTimeWindowClause( scripter, 0 );
+        this.addTimeWindowClause( dataScripter, 0 );
 
         // Add season constraint at one tab
-        this.addSeasonClause( scripter, 1 );
+        this.addSeasonClause( dataScripter, 1 );
 
         // Add ensemble member constraints at one tab
-        this.addEnsembleMemberClauses( scripter, 1 );
+        this.addEnsembleMemberClauses( dataScripter, 1 );
 
         String groupBySource = ", TS.source_id";
 
         // Add GROUP BY clause
-        scripter.addLine( "GROUP BY TS.initialization_date, "
-                          + "TSV.lead, "
-                          + "TS.scale_period, "
-                          + "TS.scale_function, "
-                          + "TS.measurementunit_id"
-                          + groupBySource );
+        dataScripter.addLine( "GROUP BY TS.initialization_date, "
+                              + "TSV.lead, "
+                              + "TS.scale_period, "
+                              + "TS.scale_function, "
+                              + "TS.measurementunit_id"
+                              + groupBySource );
 
         // Add ORDER BY clause
-        scripter.addLine( "ORDER BY TS.initialization_date, valid_time, series_id;" );
+        dataScripter.addLine( "ORDER BY TS.initialization_date, valid_time, series_id;" );
 
-        String script = scripter.toString();
+        // Log the script
+        super.logScript( dataScripter );
 
-        if ( LOGGER.isDebugEnabled() )
-        {
-            LOGGER.debug( LOG_SCRIPT,
-                          this,
-                          System.lineSeparator(),
-                          script );
-        }
-
-        return this.getTimeSeriesFromScript( script, this.getDataSupplier() );
+        // Retrieve the time-series        
+        return this.getTimeSeriesFromScript( dataScripter, this.getDataSupplier() );
     }
 
     @Override
@@ -243,7 +223,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
      * @throws NullPointerException if the input is null
      */
 
-    private void addEnsembleMemberClauses( ScriptBuilder script, int tabsIn )
+    private void addEnsembleMemberClauses( DataScripter script, int tabsIn )
     {
         Objects.requireNonNull( script );
 
@@ -254,18 +234,16 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
             if ( Objects.nonNull( this.ensembleIdsToInclude )
                  && !this.ensembleIdsToInclude.isEmpty() )
             {
-                StringJoiner include = new StringJoiner( ",", "IN(", ")" );
-                this.ensembleIdsToInclude.forEach( next -> include.add( "'" + next.toString() + "'" ) );
-                script.addTab( tabsIn ).addLine( "AND E.ensemble_id ", include.toString() );
+                script.addTab( tabsIn ).addLine( "AND E.ensemble_id = ANY(?)" );
+                script.addArgument( this.ensembleIdsToInclude.toArray( new Long[this.ensembleIdsToInclude.size()] ) );
             }
 
             // Ignore these
             if ( Objects.nonNull( this.ensembleIdsToExclude )
                  && !this.ensembleIdsToExclude.isEmpty() )
             {
-                StringJoiner exclude = new StringJoiner( ",", "IN(", ")" );
-                this.ensembleIdsToExclude.forEach( next -> exclude.add( "'" + next.toString() + "'" ) );
-                script.addTab( tabsIn ).addLine( "AND NOT E.ensemble_id ", exclude.toString() );
+                script.addTab( tabsIn ).addLine( "AND NOT E.ensemble_id = ANY(?)" );
+                script.addArgument( this.ensembleIdsToExclude.toArray( new Long[this.ensembleIdsToExclude.size()] ) );
             }
         }
     }

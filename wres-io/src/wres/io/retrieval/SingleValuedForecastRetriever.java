@@ -5,20 +5,16 @@ import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.Objects;
 import java.util.Optional;
-
-import java.util.StringJoiner;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import wres.datamodel.MissingValues;
 import wres.datamodel.time.TimeSeries;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
+import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 
 /**
@@ -33,15 +29,15 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
     /**
      * <code>ORDER BY</code> clause, which is repeated several times.
      */
-    
-    private static final String ORDER_BY_OCCURRENCES_TS_INITIALIZATION_DATE_VALID_TIME_SERIES_ID = 
+
+    private static final String ORDER_BY_OCCURRENCES_TS_INITIALIZATION_DATE_VALID_TIME_SERIES_ID =
             "ORDER BY occurrences, TS.initialization_date, valid_time, series_id;";
 
     /**
      * <code>GROUP BY</code> clause, which is repeated several times.
      */
-    
-    private static final String GROUP_BY_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE = 
+
+    private static final String GROUP_BY_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE =
             "GROUP BY series_id, TSV.lead, TSV.series_value";
 
     /**
@@ -55,13 +51,6 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
      */
 
     private static final String MEASUREMENT = "measurement";
-
-    /**
-     * Log message.
-     */
-
-    private static final String LOG_SCRIPT =
-            "Built retriever {} for the retrieval of single-valued forecasts using script:{}{}";
 
     /**
      * Template script for the {@link #get(long)}.
@@ -83,12 +72,6 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
 
     private static final String GET_ALL_TIME_SERIES_SCRIPT =
             SingleValuedForecastRetriever.getStartOfScriptForGetAllTimeSeries();
-    
-    /**
-     * Logger.
-     */
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( SingleValuedForecastRetriever.class );
 
     /**
      * Builder.
@@ -117,29 +100,27 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
     {
         String script = MessageFormat.format( GET_ONE_TIME_SERIES_SCRIPT, identifier );
 
-        ScriptBuilder scripter = new ScriptBuilder( script );
+        Database database = super.getDatabase();
+        DataScripter dataScripter = new DataScripter( database, script );
+        
+        // Add the first argument, the time-series identifier
+        dataScripter.addArgument( identifier );
 
         // Time window constraint for individual series?
-        this.addTimeWindowClause( scripter, 0 );
-        
+        this.addTimeWindowClause( dataScripter, 0 );
+
         // Add season constraint
-        this.addSeasonClause( scripter, 1 );
+        this.addSeasonClause( dataScripter, 1 );
 
         // Add GROUP BY and ORDER BY clauses
-        scripter.addLine( GROUP_BY_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE ); // #56214-272
-        scripter.addLine( ORDER_BY_OCCURRENCES_TS_INITIALIZATION_DATE_VALID_TIME_SERIES_ID );
+        dataScripter.addLine( GROUP_BY_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE ); // #56214-272
+        dataScripter.addLine( ORDER_BY_OCCURRENCES_TS_INITIALIZATION_DATE_VALID_TIME_SERIES_ID );
 
-        script = scripter.toString();
+        // Log
+        super.logScript( dataScripter );
 
-        if ( LOGGER.isDebugEnabled() )
-        {
-            LOGGER.debug( LOG_SCRIPT,
-                          this,
-                          System.lineSeparator(),
-                          script );
-        }
-
-        return this.getTimeSeriesFromScript( script, this.getDataSupplier() )
+        // Retrieve the time-series
+        return this.getTimeSeriesFromScript( dataScripter, this.getDataSupplier() )
                    .findFirst();
     }
 
@@ -154,24 +135,14 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
     {
         this.validateForMultiSeriesRetrieval();
 
-        ScriptBuilder scripter = new ScriptBuilder( GET_ALL_IDENTIFIERS_SCRIPT );
+        Database database = super.getDatabase();
+        DataScripter dataScripter = new DataScripter( database, GET_ALL_IDENTIFIERS_SCRIPT );
 
         // Add basic constraints
-        this.addProjectVariableAndMemberConstraints( scripter, 0 );
+        this.addProjectFeatureVariableAndMemberConstraints( dataScripter, 0 );
 
-        String script = scripter.toString();
-
-        // Acquire the time-series identifiers
-        DataScripter dataScripter = new DataScripter( super.getDatabase(),
-                                                      script );
-
-        if ( LOGGER.isDebugEnabled() )
-        {
-            LOGGER.debug( LOG_SCRIPT,
-                          this,
-                          System.lineSeparator(),
-                          script );
-        }
+        // Log
+        super.logScript( dataScripter );
 
         try ( Connection connection = this.getDatabase()
                                           .getConnection();
@@ -207,41 +178,35 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
 
         this.validateForMultiSeriesRetrieval();
 
-        ScriptBuilder scripter = new ScriptBuilder( GET_ALL_TIME_SERIES_SCRIPT );
+        Database database = super.getDatabase();
+        DataScripter dataScripter = new DataScripter( database, GET_ALL_TIME_SERIES_SCRIPT );
 
         // Add basic constraints at zero tabs
-        this.addProjectVariableAndMemberConstraints( scripter, 0 );
+        this.addProjectFeatureVariableAndMemberConstraints( dataScripter, 0 );
 
         // Time window constraint at zero tabs
-        this.addTimeWindowClause( scripter, 0 );
-        
+        this.addTimeWindowClause( dataScripter, 0 );
+
         // Add season constraint at one tab
-        this.addSeasonClause( scripter, 1 );
-        
-        // Add constraint on the timeseries_ids provided
-        StringJoiner joiner = new StringJoiner( ",", "(", ")" );
-        identifiers.forEach( next -> joiner.add( "'" + Long.toString( next ) + "'" ) );
-        scripter.addTab( 1 ).addLine( "AND TS.timeseries_id IN ", joiner.toString() );
+        this.addSeasonClause( dataScripter, 1 );
 
+        // Add the time-series identifiers
+        dataScripter.addTab( 1 ).addLine( "AND TS.timeseries_id = ANY(?)" );
+        dataScripter.addArgument( identifiers.boxed().toArray() );
+        
         // Add GROUP BY clause
-        scripter.addLine( GROUP_BY_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE ); // #56214-272
-        
+        dataScripter.addLine( GROUP_BY_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE ); // #56214-272
+
         // Add ORDER BY clause
-        scripter.addLine( ORDER_BY_OCCURRENCES_TS_INITIALIZATION_DATE_VALID_TIME_SERIES_ID );
+        dataScripter.addLine( ORDER_BY_OCCURRENCES_TS_INITIALIZATION_DATE_VALID_TIME_SERIES_ID );
 
-        String script = scripter.toString();
+        // Log
+        super.logScript( dataScripter );
 
-        if ( LOGGER.isDebugEnabled() )
-        {
-            LOGGER.debug( LOG_SCRIPT,
-                          this,
-                          System.lineSeparator(),
-                          script );
-        }
-
-        return this.getTimeSeriesFromScript( script, this.getDataSupplier() );
+        // Retrieve the time-series
+        return this.getTimeSeriesFromScript( dataScripter, this.getDataSupplier() );
     }
-    
+
     /**
      * Overrides the default implementation to get all time-series in one pull, rather than one pull for each series.
      * 
@@ -254,34 +219,29 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
     {
         this.validateForMultiSeriesRetrieval();
 
-        ScriptBuilder scripter = new ScriptBuilder( GET_ALL_TIME_SERIES_SCRIPT );
+        Database database = super.getDatabase();
+        DataScripter dataScripter = new DataScripter( database, GET_ALL_TIME_SERIES_SCRIPT );
 
         // Add basic constraints at zero tabs
-        this.addProjectVariableAndMemberConstraints( scripter, 0 );
-        
+        this.addProjectFeatureVariableAndMemberConstraints( dataScripter, 0 );
+
         // Add time window constraint at zero tabs
-        this.addTimeWindowClause( scripter, 0 );
-        
+        this.addTimeWindowClause( dataScripter, 0 );
+
         // Add season constraint at one tab
-        this.addSeasonClause( scripter, 1 );
-        
+        this.addSeasonClause( dataScripter, 1 );
+
         // Add GROUP BY clause
-        scripter.addLine( GROUP_BY_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE ); // #56214-272
-        
+        dataScripter.addLine( GROUP_BY_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE ); // #56214-272
+
         // Add ORDER BY clause
-        scripter.addLine( ORDER_BY_OCCURRENCES_TS_INITIALIZATION_DATE_VALID_TIME_SERIES_ID );
+        dataScripter.addLine( ORDER_BY_OCCURRENCES_TS_INITIALIZATION_DATE_VALID_TIME_SERIES_ID );
 
-        String script = scripter.toString();
+        // Log
+        super.logScript( dataScripter );
 
-        if ( LOGGER.isDebugEnabled() )
-        {
-            LOGGER.debug( LOG_SCRIPT,
-                          this,
-                          System.lineSeparator(),
-                          script );
-        }
-        
-        return this.getTimeSeriesFromScript( script, this.getDataSupplier() );
+        // Retrieve the time-series
+        return this.getTimeSeriesFromScript( dataScripter, this.getDataSupplier() );
     }
 
     @Override
@@ -298,26 +258,26 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
 
     private Function<DataProvider, Double> getDataSupplier()
     {
-        return provider -> {           
+        return provider -> {
             // Raw value
             double unmapped = provider.getDouble( MEASUREMENT );
-            
-            if( !Double.isFinite( unmapped ) )
+
+            if ( !Double.isFinite( unmapped ) )
             {
                 return MissingValues.DOUBLE;
             }
-            
+
             // Existing units
             long measurementUnitId = provider.getLong( "measurementunit_id" );
-            
+
             // Units mapper
             DoubleUnaryOperator mapper = this.getMeasurementUnitMapper().getUnitMapper( measurementUnitId );
-            
+
             // Convert
             return mapper.applyAsDouble( unmapped );
         };
     }
-    
+
     /**
      * Returns an unpopulated script to acquire a time-series from the WRES database. The placeholders are in the
      * {@link MessageFormat} format. This is akin to a prepared statement string.
@@ -333,11 +293,11 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         scripter.addTab().addLine( "TS.initialization_date AS reference_time," );
         scripter.addTab().addLine( "TS.initialization_date + INTERVAL ''1 MINUTE'' * TSV.lead AS valid_time," );
         scripter.addTab().addLine( "TSV.series_value AS measurement," );
-        scripter.addTab().addLine( "TS.measurementunit_id" ); 
+        scripter.addTab().addLine( "TS.measurementunit_id" );
         scripter.addTab().addLine( FROM_WRES_TIME_SERIES_TS );
         scripter.addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
-        scripter.addTab( 2 ).addLine( "ON TS.timeseries_id = TSV.timeseries_id" );        
-        scripter.addTab().addLine( "WHERE TS.timeseries_id = ''{0}''" );
+        scripter.addTab( 2 ).addLine( "ON TS.timeseries_id = TSV.timeseries_id" );
+        scripter.addTab().addLine( "WHERE TS.timeseries_id = ?" );
 
         return scripter.toString();
     }
@@ -369,7 +329,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         scripter.addTab( 2 ).addLine( "ON PS.source_id = TS.source_id" );
 
         return scripter.toString();
-    }  
+    }
 
     /**
      * Returns the start of a script to acquire the time-series identifiers.

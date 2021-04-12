@@ -5,8 +5,9 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.MonthDay;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -15,7 +16,6 @@ import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -35,7 +35,6 @@ import wres.io.data.caching.Features;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
-import wres.io.utilities.ScriptBuilder;
 
 /**
  * Abstract base class for retrieving {@link TimeSeries} from the WRES database.
@@ -45,6 +44,12 @@ import wres.io.utilities.ScriptBuilder;
 
 abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 {
+
+    /**
+     * String used repeatedly to denote a reference_time.
+     */
+
+    private static final String REFERENCE_TIME = "reference_time";
 
     /**
      * Message used several times.
@@ -63,7 +68,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * Operator used several times in scripts.
      */
 
-    private static final String LESS_EQUAL = " <= '";
+    private static final String LESS_EQUAL = " <= ?";
 
     /**
      * Logger.
@@ -71,11 +76,23 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesRetriever.class );
 
+    /**
+     * Log message for the retriever script.
+     */
+
+    private static final String LOG_SCRIPT = "Built retriever {}:{}{}The script was built as a prepared statement with "
+                                             + "the following list of parameters: {}.";
+
+    /**
+     * Database instance.
+     */
+
     private final Database database;
 
     /**
      * Features cache/orm to allow "get db id from a FeatureKey."
      */
+
     private final Features featuresCache;
 
     /**
@@ -97,7 +114,16 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     private final Integer projectId;
 
+    /**
+     * The feature.
+     */
+
     private final FeatureKey feature;
+
+    /**
+     * The variable name.
+     */
+
     private final String variableName;
 
     /**
@@ -143,7 +169,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     private final String leadDurationColumn;
 
-
     /**
      * Reference time type. If there are multiple instances per time-series in future, then the shape of retrieval will 
      * substantively differ and the reference time type would necessarily become inline to the time-series, not 
@@ -187,14 +212,14 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @param script the script
      * @param mapper a function that retrieves a time-series value from a prescribed column in a {@link DataProvider}
      * @return the time-series
+     * @throws NullPointerException if either input is null
      * @throws DataAccessException if data could not be accessed for whatever reason
      */
 
-    <S> Stream<TimeSeries<S>> getTimeSeriesFromScript( String script, Function<DataProvider, S> mapper )
+    <S> Stream<TimeSeries<S>> getTimeSeriesFromScript( DataScripter scripter, Function<DataProvider, S> mapper )
     {
-        Database database = this.getDatabase();
-        // Acquire the raw time-series data from the db for the input time-series identifier
-        DataScripter scripter = new DataScripter( database, script );
+        Objects.requireNonNull( scripter );
+        Objects.requireNonNull( mapper );
 
         try ( Connection connection = database.getConnection();
               DataProvider provider = scripter.buffer( connection ) )
@@ -234,9 +259,9 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 Map<ReferenceTimeType, Instant> referenceTimes = Collections.emptyMap();
 
                 // Add the explicit reference time
-                if ( provider.hasColumn( "reference_time" ) && !provider.isNull( "reference_time" ) )
+                if ( provider.hasColumn( REFERENCE_TIME ) && !provider.isNull( REFERENCE_TIME ) )
                 {
-                    Instant referenceTime = provider.getInstant( "reference_time" );
+                    Instant referenceTime = provider.getInstant( REFERENCE_TIME );
                     referenceTimes = Map.of( this.getReferenceTimeType(), referenceTime );
                 }
 
@@ -279,7 +304,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @throws NullPointerException if the input is null
      */
 
-    void addTimeWindowClause( ScriptBuilder script, int tabsIn )
+    void addTimeWindowClause( DataScripter script, int tabsIn )
     {
         Objects.requireNonNull( script );
 
@@ -321,7 +346,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @throws NullPointerException if the input is null
      */
 
-    void addSeasonClause( ScriptBuilder script, int tabsIn )
+    void addSeasonClause( DataScripter script, int tabsIn )
     {
         Objects.requireNonNull( script );
 
@@ -330,7 +355,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         {
             String columnName = this.getTimeColumnName();
 
-            String dateTemplate = "MAKE_DATE( EXTRACT( YEAR FROM " + columnName + " )::INTEGER, %d, %d)";
+            String dateTemplate = "MAKE_DATE( CAST( EXTRACT( YEAR FROM " + columnName + " ) AS INTEGER ), ?, ?)";
 
             // Seasons can wrap, so order the start and end correctly
             MonthDay earliestDay = this.seasonStart;
@@ -344,10 +369,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 daysFlipped = true;
             }
 
-            String earliestConstraint =
-                    String.format( dateTemplate, earliestDay.getMonthValue(), earliestDay.getDayOfMonth() );
-            String latestConstraint =
-                    String.format( dateTemplate, latestDay.getMonthValue(), latestDay.getDayOfMonth() );
+            String earliestConstraint = dateTemplate;
+            String latestConstraint = dateTemplate;
 
             if ( daysFlipped )
             {
@@ -356,9 +379,9 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                                 "so we're going to check for values before the latest ",
                                 "date and after the earliest" );
                 script.addTab( tabsIn + 1 )
-                      .addLine( "("
+                      .addLine( "CAST ("
                                 + columnName
-                                + ")::DATE <= ",
+                                + " AS DATE ) <= ",
                                 earliestConstraint,
                                 " -- In the set [1/1, ",
                                 earliestDay.getMonthValue(),
@@ -366,9 +389,9 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                                 earliestDay.getDayOfMonth(),
                                 "]" );
                 script.addTab( tabsIn + 1 )
-                      .addLine( "OR (",
+                      .addLine( "OR CAST (",
                                 columnName,
-                                ")::DATE >= ",
+                                " AS DATE ) >= ",
                                 latestConstraint,
                                 " -- Or in the set [",
                                 latestDay.getMonthValue(),
@@ -379,54 +402,59 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             }
             else
             {
-                script.addTab().addLine( "AND (", columnName + ")::DATE >= ", earliestConstraint );
-                script.addTab().addLine( "AND (", columnName, ")::DATE <= ", latestConstraint );
+                script.addTab().addLine( "AND CAST (", columnName + " AS DATE ) >= ", earliestConstraint );
+                script.addTab().addLine( "AND CAST (", columnName, " AS DATE ) <= ", latestConstraint );
             }
+            
+            // Add the parameters in order
+            script.addArgument( earliestDay.getMonthValue() )
+                  .addArgument( earliestDay.getDayOfMonth() )
+                  .addArgument( latestDay.getMonthValue() )
+                  .addArgument( latestDay.getDayOfMonth() );
         }
     }
 
     /**
-     * Where available adds the clauses to the input script associated with {@link #getProjectId()}, 
+     * Where available adds the clauses to the input script associated with {@link #getProjectId()}, the 
+     * {@link #getVariableName()}, {@link #getFeatureId()} and {@link #getLeftOrRightOrBaseline()}. 
      *
      * @param script the script to augment
      * @param tabsIn the number of tabs in for the outermost clause
      */
 
-    void addProjectVariableAndMemberConstraints( ScriptBuilder script, int tabsIn )
+    void addProjectFeatureVariableAndMemberConstraints( DataScripter script, int tabsIn )
     {
-        // project_id
+        // Project identifier
         if ( Objects.nonNull( this.getProjectId() ) )
         {
-            this.addWhereOrAndClause( script, tabsIn, "PS.project_id = ", this.getProjectId() );
+            this.addWhereOrAndClause( script, tabsIn, "PS.project_id = ?", this.getProjectId() );
         }
 
-        // variable name
+        // Variable name
         if ( Objects.nonNull( this.getVariableName() ) )
         {
             this.addWhereOrAndClause( script,
                                       tabsIn,
-                                      "TS.variable_name = '",
-                                      this.getVariableName(),
-                                      "'" );
+                                      "TS.variable_name = ?",
+                                      this.getVariableName() );
         }
 
-        // Feature id, can be null with no baseline.
+        // Feature identifier, can be null with no baseline.
         if ( Objects.nonNull( this.getFeature() ) )
         {
             this.addWhereOrAndClause( script,
                                       tabsIn,
-                                      "TS.feature_id = ",
+                                      "TS.feature_id = ?",
                                       this.getFeatureId() );
         }
 
-        // member
+        // Member
         if ( Objects.nonNull( this.getLeftOrRightOrBaseline() ) )
         {
             this.addWhereOrAndClause( script,
                                       tabsIn,
-                                      "PS.member = '",
-                                      this.getLeftOrRightOrBaseline().toString().toLowerCase(),
-                                      "'" );
+                                      "PS.member = ?",
+                                      this.getLeftOrRightOrBaseline().toString().toLowerCase() );
         }
     }
 
@@ -536,30 +564,26 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * 
      * @param script the script
      * @param tabsIn the number of tabs in for the outermost clause
-     * @param clauseElements the clause elements
+     * @param clause the clause
+     * @param parameter the parameter
      */
 
-    void addWhereOrAndClause( ScriptBuilder script, int tabsIn, Object... clauseElements )
+    void addWhereOrAndClause( DataScripter script, int tabsIn, String clause, Object parameter )
     {
         Objects.requireNonNull( script );
 
-        Objects.requireNonNull( clauseElements );
+        Objects.requireNonNull( clause );
 
         String existing = script.toString();
         String[] lines = existing.split( "\\r?\\n" );
 
         if ( lines.length == 0 )
         {
-            throw new IllegalStateException( "Cannot add the clause '" + Arrays.toString( clauseElements )
+            throw new IllegalStateException( "Cannot add the clause '" + clause
                                              + "' to the input script, because the script is improperly formed." );
         }
 
         String lastLine = lines[lines.length - 1];
-
-        // Compose the clause elements into a clause
-        String clause = Arrays.stream( clauseElements )
-                              .map( Object::toString )
-                              .collect( Collectors.joining() );
 
         StringJoiner joiner = new StringJoiner( "" );
         String tab = "    ";
@@ -577,6 +601,12 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         else
         {
             script.addTab( tabsIn ).addLine( "WHERE ", clause );
+        }
+
+        // Add the parameter
+        if ( Objects.nonNull( parameter ) )
+        {
+            script.addArgument( parameter );
         }
     }
 
@@ -601,6 +631,35 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             throw new DataAccessException( "There is no leftOrRightOrBaseline identifier associated with this Data "
                                            + "Access Object: cannot determine the time-series identifiers without a "
                                            + "leftOrRightOrBaseline." );
+        }
+    }
+
+    /**
+     * Logs a script.
+     * @param dataScripter the script to log
+     */
+
+    void logScript( DataScripter dataScripter )
+    {
+        // Log the prepared statement actually used
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( LOG_SCRIPT,
+                          this,
+                          System.lineSeparator(),
+                          dataScripter,
+                          dataScripter.getParameters() );
+        }
+
+        // Log the runnable form of the prepared statement to assist in debugging
+        if ( LOGGER.isTraceEnabled() )
+        {
+            LOGGER.trace( "The following runnable script was obtained from the prepared statement in retriever {}. "
+                          + "As such, this script differs from the original script and is designed to assist in "
+                          + "debugging only. See the DEBUG logging for the original, prepared, statement:{}{}",
+                          this,
+                          System.lineSeparator(),
+                          dataScripter.toStringRunnableForDebugPurposes() );
         }
     }
 
@@ -754,7 +813,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @throws NullPointerException if any input is null
      */
 
-    private void addLeadBoundsToScript( ScriptBuilder script, TimeWindowOuter filter, int tabsIn )
+    private void addLeadBoundsToScript( DataScripter script, TimeWindowOuter filter, int tabsIn )
     {
         Objects.requireNonNull( script );
 
@@ -803,27 +862,26 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @param tabsIn the number of tabs in
      */
 
-    private void addLeadBoundsClauseToScript( ScriptBuilder script, Long lowerLead, Long upperLead, int tabsIn )
+    private void addLeadBoundsClauseToScript( DataScripter script, Long lowerLead, Long upperLead, int tabsIn )
     {
         // Add the clause
         if ( Objects.nonNull( lowerLead ) && Objects.nonNull( upperLead )
              && Long.compare( lowerLead, upperLead ) == 0 )
         {
-            this.addWhereOrAndClause( script, tabsIn, this.getLeadDurationColumnName() + " = '", upperLead, "'" );
+            this.addWhereOrAndClause( script, tabsIn, this.getLeadDurationColumnName() + " = ?", upperLead );
         }
         else
         {
             if ( Objects.nonNull( lowerLead ) )
             {
-                this.addWhereOrAndClause( script, tabsIn, this.getLeadDurationColumnName() + " > '", lowerLead, "'" );
+                this.addWhereOrAndClause( script, tabsIn, this.getLeadDurationColumnName() + " > ?", lowerLead );
             }
             if ( Objects.nonNull( upperLead ) )
             {
                 this.addWhereOrAndClause( script,
                                           tabsIn,
                                           this.getLeadDurationColumnName() + LESS_EQUAL,
-                                          upperLead,
-                                          "'" );
+                                          upperLead );
             }
         }
     }
@@ -838,7 +896,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @throws NullPointerException if any input is null
      */
 
-    private void addValidTimeBoundsToScriptUsingReferenceTimeAndLeadDuration( ScriptBuilder script,
+    private void addValidTimeBoundsToScriptUsingReferenceTimeAndLeadDuration( DataScripter script,
                                                                               TimeWindowOuter filter,
                                                                               int tabsIn )
     {
@@ -849,18 +907,18 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         // Lower and upper bounds are equal
         if ( filter.getEarliestValidTime().equals( filter.getLatestValidTime() ) )
         {
-            String validTime = filter.getEarliestValidTime().toString();
+            OffsetDateTime validTime = OffsetDateTime.ofInstant( filter.getEarliestValidTime(),
+                                                                 ZoneId.of( "UTC" ) );
 
             String clause = this.getTimeColumnName()
                             + INTERVAL_1_MINUTE
                             + this.getLeadDurationColumnName()
-                            + " = '";
+                            + " = ?";
 
             this.addWhereOrAndClause( script,
                                       tabsIn,
                                       clause,
-                                      validTime,
-                                      "'" );
+                                      validTime );
         }
         // Lower bound
         else
@@ -868,24 +926,25 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
             if ( !filter.getEarliestValidTime().equals( Instant.MIN ) )
             {
-                String lowerValidTime = filter.getEarliestValidTime().toString();
+                OffsetDateTime lowerValidTime = OffsetDateTime.ofInstant( filter.getEarliestValidTime(),
+                                                                          ZoneId.of( "UTC" ) );
 
                 String clause = this.getTimeColumnName()
                                 + INTERVAL_1_MINUTE
                                 + this.getLeadDurationColumnName()
-                                + " > '";
+                                + " > ?";
 
                 this.addWhereOrAndClause( script,
                                           tabsIn,
                                           clause,
-                                          lowerValidTime,
-                                          "'" );
+                                          lowerValidTime );
             }
 
             // Upper bound
             if ( !filter.getLatestValidTime().equals( Instant.MAX ) )
             {
-                String upperValidTime = filter.getLatestValidTime().toString();
+                OffsetDateTime upperValidTime = OffsetDateTime.ofInstant( filter.getLatestValidTime(),
+                                                                          ZoneId.of( "UTC" ) );
 
                 String clause = this.getTimeColumnName()
                                 + INTERVAL_1_MINUTE
@@ -895,8 +954,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 this.addWhereOrAndClause( script,
                                           tabsIn,
                                           clause,
-                                          upperValidTime,
-                                          "'" );
+                                          upperValidTime );
             }
         }
     }
@@ -910,7 +968,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @throws NullPointerException if any input is null
      */
 
-    private void addValidTimeBoundsToScript( ScriptBuilder script, TimeWindowOuter filter, int tabsIn )
+    private void addValidTimeBoundsToScript( DataScripter script, TimeWindowOuter filter, int tabsIn )
     {
         Objects.requireNonNull( script );
 
@@ -922,12 +980,18 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         // Add the clauses
         if ( !lowerValidTime.equals( Instant.MIN ) )
         {
-            this.addWhereOrAndClause( script, tabsIn, this.getTimeColumnName() + " > '", lowerValidTime, "'" );
+            this.addWhereOrAndClause( script,
+                                      tabsIn,
+                                      this.getTimeColumnName() + " > ?",
+                                      OffsetDateTime.ofInstant( lowerValidTime, ZoneId.of( "UTC" ) ) );
         }
 
         if ( !upperValidTime.equals( Instant.MAX ) )
         {
-            this.addWhereOrAndClause( script, tabsIn, this.getTimeColumnName() + LESS_EQUAL, upperValidTime, "'" );
+            this.addWhereOrAndClause( script,
+                                      tabsIn,
+                                      this.getTimeColumnName() + LESS_EQUAL,
+                                      OffsetDateTime.ofInstant( upperValidTime, ZoneId.of( "UTC" ) ) );
         }
 
         // Log the bounds in case they were inferred
@@ -1031,7 +1095,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @throws NullPointerException if any input is null
      */
 
-    private void addReferenceTimeBoundsToScript( ScriptBuilder script, TimeWindowOuter filter, int tabsIn )
+    private void addReferenceTimeBoundsToScript( DataScripter script, TimeWindowOuter filter, int tabsIn )
     {
         Objects.requireNonNull( script );
 
@@ -1040,28 +1104,35 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         // Lower and upper bounds are equal
         if ( filter.getEarliestReferenceTime().equals( filter.getLatestReferenceTime() ) )
         {
-            String referenceTime = filter.getEarliestReferenceTime().toString();
+            OffsetDateTime referenceTime = OffsetDateTime.ofInstant( filter.getEarliestReferenceTime(),
+                                                                     ZoneId.of( "UTC" ) );
 
-            this.addWhereOrAndClause( script, tabsIn, this.getTimeColumnName() + " = '", referenceTime, "'" );
+            this.addWhereOrAndClause( script, tabsIn, this.getTimeColumnName() + " = ?", referenceTime );
         }
         else
         {
             // Lower bound
             if ( !filter.getEarliestReferenceTime().equals( Instant.MIN ) )
             {
-                String lowerReferenceTime = filter.getEarliestReferenceTime().toString();
-                this.addWhereOrAndClause( script, tabsIn, this.getTimeColumnName() + " > '", lowerReferenceTime, "'" );
+                OffsetDateTime lowerReferenceTime = OffsetDateTime.ofInstant( filter.getEarliestReferenceTime(),
+                                                                              ZoneId.of( "UTC" ) );
+
+                this.addWhereOrAndClause( script,
+                                          tabsIn,
+                                          this.getTimeColumnName() + " > ?",
+                                          lowerReferenceTime );
             }
 
             // Upper bound
             if ( !filter.getLatestReferenceTime().equals( Instant.MAX ) )
             {
-                String upperReferenceTime = filter.getLatestReferenceTime().toString();
+                OffsetDateTime upperReferenceTime = OffsetDateTime.ofInstant( filter.getLatestReferenceTime(),
+                                                                              ZoneId.of( "UTC" ) );
+
                 this.addWhereOrAndClause( script,
                                           tabsIn,
                                           this.getTimeColumnName() + LESS_EQUAL,
-                                          upperReferenceTime,
-                                          "'" );
+                                          upperReferenceTime );
             }
         }
     }
@@ -1429,7 +1500,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         }
 
     }
-
 
     /**
      * Use the features cache to get a db id for the feature associated.

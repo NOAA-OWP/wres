@@ -7,12 +7,11 @@ import java.util.function.Function;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import wres.datamodel.MissingValues;
 import wres.datamodel.time.TimeSeries;
 import wres.io.utilities.DataProvider;
+import wres.io.utilities.DataScripter;
+import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 
 /**
@@ -30,18 +29,6 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
 
     private static final String NO_IDENTIFIER_ERROR = "Retrieval of observed time-series by identifier is not "
                                                       + "currently possible.";
-
-    /**
-     * Log message.
-     */
-
-    private static final String LOG_SCRIPT = "Built retriever {} for the retrieval of observations:{}{}";
-
-    /**
-     * Logger.
-     */
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( ObservationRetriever.class );
 
     /**
      * Builder.
@@ -114,29 +101,25 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
     public Stream<TimeSeries<Double>> get()
     {
         this.validateForMultiSeriesRetrieval();
-        ScriptBuilder scripter = new ScriptBuilder();
         String timeSeriesTableScript = getStartOfScriptForGetAllTimeSeries();
-        scripter.add( timeSeriesTableScript );
-        this.addTimeWindowClause( scripter, 0 );
-        this.addSeasonClause( scripter, 1 );
-        this.addProjectVariableAndMemberConstraints( scripter, 0 );
 
-        scripter.addLine( "GROUP BY TS.timeseries_id, TSV.lead, TSV.series_value" );
+        Database database = super.getDatabase();
+        DataScripter dataScripter = new DataScripter( database, timeSeriesTableScript );
+        
+        this.addTimeWindowClause( dataScripter, 0 );
+        this.addSeasonClause( dataScripter, 1 );
+        this.addProjectFeatureVariableAndMemberConstraints( dataScripter, 0 );
+
+        dataScripter.addLine( "GROUP BY TS.timeseries_id, TSV.lead, TSV.series_value" );
 
         // Add ORDER BY clause
-        scripter.addLine( "ORDER BY series_id, valid_time;" );
+        dataScripter.addLine( "ORDER BY series_id, valid_time;" );
 
-        String script = scripter.toString();
+        // Log the script
+        super.logScript( dataScripter );
 
-        if ( LOGGER.isDebugEnabled() )
-        {
-            LOGGER.debug( LOG_SCRIPT,
-                          this,
-                          System.lineSeparator(),
-                          script );
-        }
-
-        return this.getTimeSeriesFromScript( script, this.getDataSupplier() );
+        // Retrieve the time-series
+        return this.getTimeSeriesFromScript( dataScripter, this.getDataSupplier() );
     }
 
     @Override

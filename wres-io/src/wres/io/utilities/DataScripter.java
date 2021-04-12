@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.IllegalFormatException;
 
 import wres.util.functional.ExceptionalConsumer;
 import wres.util.functional.ExceptionalFunction;
@@ -45,7 +46,7 @@ public class DataScripter extends ScriptBuilder
 
     /**
      * Sets whether or not to run the query within a single transaction
-     * @param useTransaction Whethr or not to run the query within a transaction
+     * @param useTransaction Whether or not to run the query within a transaction
      */
     public void setUseTransaction(boolean useTransaction)
     {
@@ -55,12 +56,14 @@ public class DataScripter extends ScriptBuilder
     /**
      * Adds an argument to insert into the script while running the query in the database
      * @param argument The argument to run in the database
+     * @return The updated DataScripter
      */
-    public void addArgument(final Object argument)
+    public DataScripter addArgument(final Object argument)
     {
         this.arguments.add(argument);
+        
+        return this;
     }
-
 
     /**
      * Add a SQLSTATE that causes indefinite retry of the query
@@ -190,7 +193,7 @@ public class DataScripter extends ScriptBuilder
      * Schedules the query to run in the database asynchronously
      * @return The scheduled task
      */
-    public Future issue()
+    public Future<?> issue()
     {
         return database.issue( this.formQuery(), this.isHighPriority );
     }
@@ -263,7 +266,45 @@ public class DataScripter extends ScriptBuilder
     {
         return this.insertedIds;
     }
+    
+    /**
+     * @return the parameters associated with the script.
+     */
 
+    public List<Object> getParameters()
+    {
+        return Collections.unmodifiableList( this.arguments );
+    }
+    
+    /**
+     * <p>Returns a string representation of the script that is runnable on a database instance. If the script contains 
+     * a prepared statement, then the parameters are added inline to the script.
+     * 
+     * <p>This is a utility method to assist in logging scripts that can be copied from the log and executed against a 
+     * database instance, in order to assist in debugging. It should not be used to obtain a script to run in code 
+     * against a database. Instead, use the runnable methods in this class to directly execute the script instance. 
+     * Examples of these methods are {@link #execute()} and {@link #buffer(Connection)}.
+     * 
+     * @return a runnable string representation of the script
+     * @throws IllegalFormatException if the script could not be formatted
+     */
+    
+    public String toStringRunnableForDebugPurposes()
+    {
+        // Already runnable?
+        if( this.arguments.isEmpty() )
+        {
+            return super.toString();
+        }
+        // Prepared statement, so add parameters inline
+        else
+        {
+            String script = super.toString();
+            script = script.replaceAll( "\\?", "'%s'" );
+            return String.format( script, this.arguments.toArray() );
+        }
+    }
+    
     /**
      * Creates the query to run in the database based on the configured settings
      * @return The query to run
