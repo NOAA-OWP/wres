@@ -50,9 +50,12 @@ public class UnitsTest
                 Quantities.getQuantity( someCubicMetersPerSecondNoUnits,
                                         CUBIC_METRE_PER_SECOND );
         LOGGER.debug( "Quantity of CMS flow: {}", someCubicMetersPerSecond );
-        double someCubicFeetPerSecondNoUnits =
-                Units.convertFlow( someCubicMetersPerSecond,
-                                   CUBIC_FOOT_PER_SECOND );
+        
+        UnitConverter converter = someCubicMetersPerSecond.getUnit()
+                                                          .getConverterTo( CUBIC_FOOT_PER_SECOND );
+        double someCubicFeetPerSecondNoUnits = converter.convert( someCubicMetersPerSecond.getValue() )
+                                                        .doubleValue();
+
         LOGGER.debug( "Converted-to-CFS raw value: {}",
                       someCubicFeetPerSecondNoUnits );
         assertTrue(
