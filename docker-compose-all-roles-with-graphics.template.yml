@@ -129,7 +129,8 @@ services:
             wres_net:
     graphics:
         depends_on:
-        - eventsbroker
+            eventsbroker:
+                condition: service_started
         image: "${DOCKER_REGISTRY}/wres/wres-graphics:GRAPHICS_IMAGE"
         restart: always
         # For graphics outputs
