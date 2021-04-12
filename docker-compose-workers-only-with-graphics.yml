@@ -10,7 +10,7 @@ networks:
                   gateway: 172.19.254.193
 services:
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210412-9fd5831"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210412-fb3cff3"
         restart: always
         depends_on:
             eventsbroker:
@@ -45,7 +45,7 @@ services:
          - 5673
         ports:
          - 15673:15673
-        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20210412-f0a7afb"
+        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20210412-fb3cff3"
         restart: always
         volumes:
          # For qpid work files
@@ -68,7 +68,7 @@ services:
         depends_on:
             eventsbroker:
                 condition: service_started
-        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20210412-398e4c0"
+        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20210412-fb3cff3"
         restart: always
         # For graphics outputs
         volumes:
