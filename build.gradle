@@ -226,7 +226,7 @@ project(':wres-util')
         testCompile 'junit:junit:4.13.2'
 
         // Mocking help
-        testCompile 'org.mockito:mockito-core:3.8.0'
+        testCompile 'org.mockito:mockito-core:3.9.0'
 
         // super-duper mocking help (mocking static, private methods)
         testCompile 'org.powermock:powermock-api-mockito2:2.0.9'
@@ -245,7 +245,7 @@ project(':wres-system')
 
         // to use native postgres copy, need this on compile, otherwise runtime
         compile 'org.postgresql:postgresql:42.2.19'
-        compile group: 'org.liquibase', name: 'liquibase-core', version: '4.3.2'
+        compile 'org.liquibase:liquibase-core:4.3.3'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
         runtimeOnly 'com.mattbertolini:liquibase-slf4j:4.0.0'
@@ -296,7 +296,7 @@ project(':wres-datamodel')
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:3.8.0'
+        testImplementation 'org.mockito:mockito-core:3.9.0'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.1'
@@ -327,12 +327,12 @@ project(':wres-io')
         compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
         // JSON deserialization uses jackson directly. Specify recent version.
-        compile 'com.fasterxml.jackson.core:jackson-databind:2.12.2'
-        compile 'com.fasterxml.jackson.core:jackson-annotations:2.12.2'
-        compile 'com.fasterxml.jackson.core:jackson-core:2.12.2'
+        compile 'com.fasterxml.jackson.core:jackson-databind:2.12.3'
+        compile 'com.fasterxml.jackson.core:jackson-annotations:2.12.3'
+        compile 'com.fasterxml.jackson.core:jackson-core:2.12.3'
 
         // For Java 8 java.time support
-        compile 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.12.2'
+        compile 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.12.3'
 
         compile('edu.ucar:cdm-core:5.4.1')
         {
@@ -372,10 +372,10 @@ project(':wres-io')
         //JB @ 02/16/17
         testCompile group: 'com.google.guava', name: 'guava-testlib', version: '30.1.1-jre'
 
-        testCompile group: 'org.liquibase', name: 'liquibase-core', version: '4.3.2'
+        testCompile 'org.liquibase:liquibase-core:4.3.3'
 
         // Mocking help
-        testCompile 'org.mockito:mockito-core:3.8.0'
+        testCompile 'org.mockito:mockito-core:3.9.0'
 
         // TODO: remove dependence on powermock, remove powermock completely.
         testCompile 'org.powermock:powermock-api-mockito2:2.0.9'
@@ -449,7 +449,7 @@ project(':wres-metrics')
 
         testCompile project (':wres-datamodel')
         testCompile 'junit:junit:4.13.2'
-        testCompile 'org.mockito:mockito-core:3.8.0'
+        testCompile 'org.mockito:mockito-core:3.9.0'
     }
 }
 
@@ -665,7 +665,7 @@ project(':wres-vis')
         testCompile 'junit:junit:4.13.2'
 
         // Mocking help
-        testCompile 'org.mockito:mockito-core:3.8.0'
+        testCompile 'org.mockito:mockito-core:3.9.0'
 
         testRuntime files('dist/lib/conf')
     }
@@ -1132,9 +1132,9 @@ project(':wres-events')
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.1'
 
         // Mocking help
-        testCompile 'org.mockito:mockito-core:3.8.0'
+        testCompile 'org.mockito:mockito-core:3.9.0'
         // Mocking final classes
-        testImplementation 'org.mockito:mockito-inline:3.8.0'
+        testImplementation 'org.mockito:mockito-inline:3.9.0'
     }
 
     // Facilitate unit tests with JUnit
@@ -1379,7 +1379,7 @@ dependencies
 
 
     testCompile 'org.junit.jupiter:junit-jupiter-api:5.7.1'
-    testCompile 'org.mockito:mockito-core:3.8.0'
+    testCompile 'org.mockito:mockito-core:3.9.0'
 
     testRuntime 'org.junit.jupiter:junit-jupiter-engine:5.7.1'
 }
