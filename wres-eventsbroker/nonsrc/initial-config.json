@@ -30,7 +30,7 @@
 		{
 			"name": "wres-truststore",
 			"type": "NonJavaTrustStore",
-			"certificatesUrl": "${wres.secrets_dir}${file.separator}wres_ca_expires_2024_x509_cert.pem"
+			"certificatesUrl": "${wres.secrets_dir}${file.separator}ca_x509_cert.pem"
 		}
 	],
 	"brokerloggers": [
