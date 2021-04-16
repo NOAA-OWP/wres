@@ -14,7 +14,6 @@ import wres.datamodel.MissingValues;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
-import wres.io.utilities.ScriptBuilder;
 
 /**
  * A collection of functions for mapping between measurement units, as recognized by the WRES database. Construct 
@@ -116,12 +115,12 @@ public class UnitMapper
      * 
      * @return the name of the desired measurement unit
      */
-    
+
     public String getDesiredMeasurementUnitName()
     {
         return this.desiredMeasurementUnit;
     }
-    
+
     /**
      * Returns a unit mapper for the existing <code>measurementunit_id</code> provided.
      * 
@@ -152,7 +151,7 @@ public class UnitMapper
 
         return this.conversions.get( measurementUnitId );
     }
-    
+
     /**
      * Hidden constructor.
      * 
@@ -179,37 +178,34 @@ public class UnitMapper
         this.desiredMeasurementUnit = desiredMeasurementUnit.toUpperCase();
 
         // Create the retrieval script      
-        ScriptBuilder scripter = new ScriptBuilder();
+        DataScripter dataScripter = new DataScripter( database );
 
-        scripter.addLine( "WITH units AS (" );
-        scripter.addTab().addLine( "SELECT UC.*" );
-        scripter.addTab().addLine( "FROM wres.UnitConversion UC" );
-        scripter.addTab().addLine( "INNER JOIN wres.MeasurementUnit M" );
-        scripter.addTab( 2 ).addLine( "ON M.measurementunit_id = UC.to_unit" );
+        dataScripter.addLine( "WITH units AS (" );
+        dataScripter.addTab().addLine( "SELECT UC.*" );
+        dataScripter.addTab().addLine( "FROM wres.UnitConversion UC" );
+        dataScripter.addTab().addLine( "INNER JOIN wres.MeasurementUnit M" );
+        dataScripter.addTab( 2 ).addLine( "ON M.measurementunit_id = UC.to_unit" );
         // Check for both upper and lower case unit names
-        scripter.addTab()
-                .addLine( "WHERE M.unit_name IN ('",
-                          this.desiredMeasurementUnit,
-                          "', '",
-                          this.desiredMeasurementUnit.toLowerCase(),
-                          "')" );
-        scripter.addLine( ")" );
-        scripter.addLine( "SELECT M.unit_name AS from_unit_name, units.*" );
-        scripter.addLine( "FROM wres.MeasurementUnit M" );
-        scripter.addLine( "INNER JOIN units" );
-        scripter.addTab().addLine( "ON units.from_unit = M.measurementunit_id" );
+        dataScripter.addTab()
+                    .addLine( "WHERE M.unit_name IN (?,?)" );
+        dataScripter.addLine( ")" );
+        dataScripter.addLine( "SELECT M.unit_name AS from_unit_name, units.*" );
+        dataScripter.addLine( "FROM wres.MeasurementUnit M" );
+        dataScripter.addLine( "INNER JOIN units" );
+        dataScripter.addTab().addLine( "ON units.from_unit = M.measurementunit_id" );
 
-        String script = scripter.toString();
+        // Add the arguments
+        dataScripter.addArgument( this.desiredMeasurementUnit )
+                    .addArgument( this.desiredMeasurementUnit.toLowerCase() );
 
         if ( LOGGER.isDebugEnabled() )
         {
-            LOGGER.debug( "Created the following script to retrieve measurement unit conversions from the database:"
-                          + "{}{}",
+            LOGGER.debug( "Created the following script to retrieve measurement unit conversions from the database: {}"
+                          + "{}The script was built as a prepared statement with the following list of parameters: {}.",
                           System.lineSeparator(),
-                          script );
+                          dataScripter,
+                          dataScripter.getParameters() );
         }
-
-        DataScripter dataScripter = new DataScripter( database, script );
 
         // Set high priority
         dataScripter.setHighPriority( true );
