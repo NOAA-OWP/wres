@@ -30,6 +30,7 @@ import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.events.Evaluation;
+import wres.events.EvaluationEventUtilities;
 import wres.events.subscribe.ConsumerFactory;
 import wres.events.subscribe.EvaluationSubscriber;
 import wres.events.subscribe.SubscriberApprover;
@@ -68,7 +69,7 @@ class ProcessorHelper
      * Unique identifier for this instance of the core messaging client.
      */
 
-    private static final String CLIENT_ID = Evaluation.getUniqueId();
+    private static final String CLIENT_ID = EvaluationEventUtilities.getUniqueId();
 
     /**
      * Processes a {@link ProjectConfigPlus} using a prescribed {@link ExecutorService} for each of the pairs, 
@@ -103,7 +104,7 @@ class ProcessorHelper
         Set<Path> returnMe = new TreeSet<>();
 
         // Get a unique evaluation identifier
-        String evaluationId = Evaluation.getUniqueId();
+        String evaluationId = EvaluationEventUtilities.getUniqueId();
 
         // Create output directory
         Path outputDirectory = ProcessorHelper.createTempOutputDirectory( evaluationId );
@@ -134,7 +135,7 @@ class ProcessorHelper
 
         LOGGER.debug( "These formats will be delivered by internal subscribers: {}.", internalFormats );
 
-        String consumerId = Evaluation.getUniqueId();
+        String consumerId = EvaluationEventUtilities.getUniqueId();
 
         // Moving this into the try-with-resources would require a different approach than notifying the evaluation to 
         // stop( Exception e ) on encountering an error that is not visible to it. See discussion in #90292.

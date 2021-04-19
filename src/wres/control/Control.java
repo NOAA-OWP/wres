@@ -475,7 +475,7 @@ public class Control implements Function<String[], ExecutionResult>,
         }
         catch ( IOException e )
         {
-            LOGGER.error( "Failed to close broker connections." );
+            LOGGER.warn( "Failed to close broker connections." );
         }  
     }
     

@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import net.jcip.annotations.GuardedBy;
 import net.jcip.annotations.ThreadSafe;
 import wres.events.EvaluationEventException;
+import wres.events.EvaluationEventUtilities;
 import wres.events.TimedCountDownLatch;
 import wres.events.publish.MessagePublisher;
 import wres.events.publish.MessagePublisher.MessageProperty;
@@ -283,8 +284,8 @@ class EvaluationConsumer
     }
 
     /**
-     * Marks an evaluation as failed for reasons outside the control of this consumer. In other words, the evaluation 
-     * should be marked complete from the perspective of this consumer.
+     * Marks an evaluation as failed for reasons outside the control of this consumer, such as a failure during message
+     * publication. In other words, the evaluation should be marked complete from the perspective of this consumer.
      * 
      * @param status the completion status notified to this consumer
      * @throws JMSException if the failure cannot be notified
@@ -511,8 +512,6 @@ class EvaluationConsumer
      */
     boolean isFailed()
     {
-        // Explicitly marked failed or some 
-
         return this.isFailed.get();
     }
 
@@ -636,7 +635,7 @@ class EvaluationConsumer
         }
 
         // Create the metadata
-        String messageId = "ID:" + this.getClientId() + "-m" + wres.events.Evaluation.getUniqueId();
+        String messageId = "ID:" + this.getClientId() + "-m" + EvaluationEventUtilities.getUniqueId();
 
         ByteBuffer buffer = ByteBuffer.wrap( message.build()
                                                     .toByteArray() );

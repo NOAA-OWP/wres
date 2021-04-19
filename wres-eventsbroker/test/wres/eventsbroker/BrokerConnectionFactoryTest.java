@@ -48,7 +48,7 @@ public class BrokerConnectionFactoryTest
             // Application/JMS-level message selection based on correlation id
             String messageSelector = "JMSCorrelationID = '" + evaluationId + "'";
 
-            try ( Connection connection = factory.get().createConnection();
+            try ( Connection connection = factory.get();
                   Session session = connection.createSession( false, Session.AUTO_ACKNOWLEDGE );
                   MessageProducer evaluationProducer = session.createProducer( evaluationTopic );
                   MessageProducer evaluationStatusProducer = session.createProducer( evaluationStatusTopic );

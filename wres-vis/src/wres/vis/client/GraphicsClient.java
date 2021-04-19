@@ -1,11 +1,11 @@
 package wres.vis.client;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -24,7 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import wres.events.Evaluation;
+import wres.events.EvaluationEventUtilities;
 import wres.events.subscribe.ConsumerFactory;
 import wres.events.subscribe.EvaluationSubscriber;
 import wres.events.subscribe.SubscriberStatus;
@@ -39,7 +39,7 @@ import wres.util.Strings;
  * @author james.brown@hydrosolved.com
  */
 
-class GraphicsClient implements Closeable
+class GraphicsClient
 {
 
     /**
@@ -103,10 +103,16 @@ class GraphicsClient implements Closeable
     private final EvaluationSubscriber graphicsSubscriber;
 
     /**
-     * Is {@code true} if the client has been stopped, otherwise {@code false}.
+     * The consumer factory.
      */
 
-    private final AtomicBoolean isStopped;
+    private final ConsumerFactory consumerFactory;
+
+    /**
+     * Is {@code true} if the client has been closed, otherwise {@code false}.
+     */
+
+    private final AtomicBoolean isClosed;
 
     /**
      * Start the graphics server.
@@ -130,52 +136,61 @@ class GraphicsClient implements Closeable
         // Create the server
         int exitCode = 0;
 
-        try ( BrokerConnectionFactory broker = BrokerConnectionFactory.of();
-              GraphicsClient graphics = GraphicsClient.of( broker ) )
+        BrokerConnectionFactory broker = BrokerConnectionFactory.of();
+        GraphicsClient graphics = GraphicsClient.of( broker );
+
+        Instant started = Instant.now();
+
+        // Add a shutdown hook to respond gracefully to SIGINT signals
+        Runtime.getRuntime()
+               .addShutdownHook( new Thread( () -> {
+
+                   LOGGER.info( "Closing WRES Graphics Client {}...", graphics );
+
+                   // Close the resources
+                   graphics.stop();
+
+                   try
+                   {
+                       LOGGER.info( "Closing broker connections {}.", broker );
+                       broker.close();
+                   }
+                   catch ( IOException e )
+                   {
+                       LOGGER.error( "Failed to close the broker connections associated with graphics client {}.",
+                                     graphics );
+
+                   }
+
+                   Instant ended = Instant.now();
+                   Duration duration = Duration.between( started, ended );
+
+                   LOGGER.info( "Closed WRES Graphics Client {}, which ran for '{}' and processed {} packets of "
+                                + "statistics across {} evaluations.",
+                                graphics,
+                                duration,
+                                graphics.getSubscriberStatus().getStatisticsCount(),
+                                graphics.getSubscriberStatus().getEvaluationCount() );
+               } ) );
+
+        try
         {
-            Instant started = Instant.now();
-
-            // Add a shutdown hook to respond gracefully to SIGINT signals
-            // Given the try-with-resources, this may initiate a close twice, 
-            // but a shutdown hook works in more circumstances than a try/finally.
-            Runtime.getRuntime().addShutdownHook( new Thread( () -> {
-                LOGGER.info( "Closing WRES Graphics Client {}...", graphics.getClientId() );
-
-                Instant ended = Instant.now();
-                Duration duration = Duration.between( started, ended );
-
-                // Close the graphics subscriber unless the broker that supports it is running inside this process.
-                // If the broker is running inside this process, all connected resources are destroyed with the broker.
-                // In that case, formally closing these resources will lead to an unclean exit because the resources
-                // and connections have already been closed when the shutdown hook has been initiated.
-                if ( !broker.hasEmbeddedBroker() )
-                {
-                    graphics.stop();
-                }
-
-                LOGGER.info( "Closed WRES Graphics Client {}, which ran for '{}' and processed {} packets of "
-                             + "statistics across {} evaluations.",
-                             graphics.getClientId(),
-                             duration,
-                             graphics.getSubscriberStatus().getStatisticsCount(),
-                             graphics.getSubscriberStatus().getEvaluationCount() );
-            } ) );
-
             // Start the subscriber
             graphics.start();
 
-            // Await termination
+            // Await termination of the client
             graphics.await();
         }
         catch ( InterruptedException e )
         {
-            Thread.currentThread().interrupt();
-
             LOGGER.error( "Interrupted while waiting for a WRES Graphics Client." );
 
             exitCode = 1;
+
+            Thread.currentThread().interrupt();
+
         }
-        catch ( GraphicsClientException | IOException f )
+        catch ( GraphicsClientException f )
         {
             LOGGER.error( "Encountered an internal error in a WRES Graphics Client, which will now shut down.", f );
 
@@ -185,13 +200,84 @@ class GraphicsClient implements Closeable
         System.exit( exitCode );
     }
 
+    @Override
+    public String toString()
+    {
+        return this.getClientId();
+    }
+
+    /**
+     * Creates an instance.
+     * @param broker the broker
+     * @return an instance of the server
+     */
+
+    static GraphicsClient of( BrokerConnectionFactory broker )
+    {
+        return new GraphicsClient( broker );
+    }
+
+    /**
+     * Starts the client.
+     */
+
+    void start()
+    {
+        this.clientExecutor.submit( this::run );
+    }
+
+    /**
+     * Stops the client.
+     */
+    void stop()
+    {
+        // Not closed already?
+        if ( !this.isClosed.getAndSet( true ) )
+        {
+            this.timer.cancel();
+
+            if ( Objects.nonNull( this.consumerFactory ) )
+            {
+                try
+                {
+                    this.consumerFactory.close();
+                }
+                catch ( IOException e )
+                {
+                    LOGGER.error( "While closing graphics client {}, failed to close a statistics consumer factory.",
+                                  this );
+                }
+            }
+
+            if ( Objects.nonNull( this.graphicsSubscriber ) )
+            {
+                try
+                {
+                    this.graphicsSubscriber.close();
+                }
+                catch ( IOException e )
+                {
+                    if ( LOGGER.isWarnEnabled() )
+                    {
+                        String message = "Failed to close subscriber " + this.graphicsSubscriber.getClientId() + ".";
+                        LOGGER.warn( message, e );
+                    }
+                }
+            }
+
+            this.closeExecutors();
+
+            this.latch.countDown();
+        }
+    }
+
     /**
      * Creates a timer task, which tracks the status of the server.
      */
 
     private void run()
     {
-        LOGGER.info( "WRES Graphics client {} is running.", this.getClientId() );
+        LOGGER.info( "WRES Graphics client {} is running.", this );
 
         // The status is mutable and is updated by the subscriber
         SubscriberStatus status = this.getSubscriberStatus();
@@ -222,32 +308,15 @@ class GraphicsClient implements Closeable
                 {
                     LOGGER.error( "While checking the graphics client for the health of its subscribers, discovered a "
                                   + "failed subscriber with identifier {}. The graphics client will now close.",
-                                  client.getClientId() );
+                                  client );
 
-                    client.close();
+                    client.stop();
                 }
             }
         };
 
         this.timer.schedule( sweeper, 0, GraphicsClient.STATUS_UPDATE_MILLISECONDS );
         this.timer.schedule( healthChecker, 0, GraphicsClient.HEALTH_CHECK_MILLISECONDS );
-    }
-
-    @Override
-    public void close()
-    {
-        this.stop();
-    }
-
-    /**
-     * Creates an instance.
-     * @param broker the broker
-     * @return an instance of the server
-     */
-
-    static GraphicsClient of( BrokerConnectionFactory broker )
-    {
-        return new GraphicsClient( broker );
     }
 
     /**
@@ -261,6 +330,72 @@ class GraphicsClient implements Closeable
     }
 
     /**
+     * Closes the executors that serve this client.
+     */
+
+    private void closeExecutors()
+    {
+        this.getGraphicsExecutor()
+            .shutdown();
+
+        try
+        {
+            boolean terminated = this.getGraphicsExecutor()
+                                     .awaitTermination( 5, TimeUnit.SECONDS );
+
+            if ( !terminated )
+            {
+                List<Runnable> tasks = this.getGraphicsExecutor()
+                                           .shutdownNow();
+
+                if ( !tasks.isEmpty() && LOGGER.isInfoEnabled() )
+                {
+                    LOGGER.info( "Abandoned {} tasks from {}",
+                                 tasks.size(),
+                                 this.getGraphicsExecutor() );
+                }
+            }
+        }
+        catch ( InterruptedException ie )
+        {
+            LOGGER.warn( "Interrupted while shutting down the graphics executor service {} in WRES Graphics "
+                         + "Client {}.",
+                         this.getGraphicsExecutor(),
+                         this );
+
+            Thread.currentThread().interrupt();
+        }
+
+        this.getClientExecutor()
+            .shutdown();
+
+        try
+        {
+            boolean terminated = this.getClientExecutor()
+                                     .awaitTermination( 5, TimeUnit.SECONDS );
+
+            if ( !terminated )
+            {
+                List<Runnable> tasks = this.getClientExecutor()
+                                           .shutdownNow();
+
+                if ( !tasks.isEmpty() && LOGGER.isInfoEnabled() )
+                {
+                    LOGGER.info( "Abandoned {} tasks from {}",
+                                 tasks.size(),
+                                 this.getClientExecutor() );
+                }
+            }
+        }
+        catch ( InterruptedException e )
+        {
+            LOGGER.warn( "Failed to close all resources used by WRES Graphics Client {}.", this );
+
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    /**
      * @return the graphics subscriber.
      */
 
@@ -270,81 +405,7 @@ class GraphicsClient implements Closeable
     }
 
     /**
-     * Starts the server.
-     */
-
-    void start()
-    {
-        this.clientExecutor.submit( this::run );
-    }
-
-    /**
-     * Stops the server.
-     */
-
-    private void stop()
-    {
-        // Not stopped already?
-        if ( !this.isStopped.getAndSet( true ) )
-        {
-            this.timer.cancel();
-
-            if ( Objects.nonNull( this.graphicsSubscriber ) )
-            {
-                try
-                {
-                    this.graphicsSubscriber.close();
-                }
-                catch ( IOException e )
-                {
-                    if ( LOGGER.isWarnEnabled() )
-                    {
-                        String message = "Failed to close subscriber " + this.graphicsSubscriber.getClientId() + ".";
-                        LOGGER.warn( message, e );
-                    }
-                }
-            }
-
-            this.getGraphicsExecutor()
-                .shutdown();
-
-            try
-            {
-                this.getGraphicsExecutor()
-                    .awaitTermination( 5, TimeUnit.SECONDS );
-            }
-            catch ( InterruptedException ie )
-            {
-                LOGGER.warn( "Interrupted while shutting down the graphics executor service {} in WRES Graphics "
-                             + "Client {}.",
-                             this.getGraphicsExecutor(),
-                             this.getClientId() );
-
-                Thread.currentThread().interrupt();
-            }
-
-            this.getClientExecutor()
-                .shutdown();
-
-            try
-            {
-                this.getClientExecutor().awaitTermination( 1, TimeUnit.SECONDS );
-            }
-            catch ( InterruptedException e )
-            {
-                LOGGER.warn( "Failed to close all resources used by WRES Graphics Client {}.", this.getClientId() );
-
-                Thread.currentThread().interrupt();
-            }
-
-            this.latch.countDown();
-
-            LOGGER.info( "WRES Graphics Client {} has stopped.", this.getClientId() );
-        }
-    }
-
-    /**
-     * Stops the server.
+     * Awaits completion.
      * @throws InterruptedException if the server is interrupted.
      */
 
@@ -391,7 +452,7 @@ class GraphicsClient implements Closeable
         LOGGER.info( "Creating WRES Graphics Client..." );
 
         UncaughtExceptionHandler handler = ( a, b ) -> {
-            String message = "Encountered an internal error in WRES Graphics Client " + this.getClientId() + ".";
+            String message = "Encountered an internal error in WRES Graphics Client " + this + ".";
             LOGGER.error( message, b );
             this.stop();
         };
@@ -404,17 +465,17 @@ class GraphicsClient implements Closeable
         this.timer = new Timer( true );
         this.latch = new CountDownLatch( 1 );
         this.graphicsWorker = this.createGraphicsExecutor();
-        this.isStopped = new AtomicBoolean();
+        this.isClosed = new AtomicBoolean();
 
         // Client identifier = identifier of the one subscriber it composes
-        String subscriberId = Evaluation.getUniqueId();
+        String subscriberId = EvaluationEventUtilities.getUniqueId();
+
+        // A factory that creates consumers on demand
+        this.consumerFactory = new GraphicsConsumerFactory( subscriberId );
 
         try
         {
-            // A factory that creates consumers on demand
-            ConsumerFactory consumerFactory = new GraphicsConsumerFactory( subscriberId );
-
-            this.graphicsSubscriber = EvaluationSubscriber.of( consumerFactory,
+            this.graphicsSubscriber = EvaluationSubscriber.of( this.consumerFactory,
                                                                this.getGraphicsExecutor(),
                                                                broker );
         }
@@ -425,7 +486,7 @@ class GraphicsClient implements Closeable
                                                e );
         }
 
-        LOGGER.info( "Finished creating WRES Graphics Client with subscriber identifier {}.", this.getClientId() );
+        LOGGER.info( "Finished creating WRES Graphics Client with subscriber identifier {}.", this );
     }
 
     /**
@@ -437,7 +498,7 @@ class GraphicsClient implements Closeable
     {
         UncaughtExceptionHandler handler = ( a, b ) -> {
             String message = "Encountered an internal error in a WRES Graphics Worker of WRES Graphics Client "
-                             + this.getClientId()
+                             + this
                              + ".";
             LOGGER.error( message, b );
             this.stop();

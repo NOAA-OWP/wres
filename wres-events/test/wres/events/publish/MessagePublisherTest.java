@@ -12,7 +12,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
-import javax.jms.ConnectionFactory;
 import javax.jms.DeliveryMode;
 import javax.jms.Destination;
 import javax.jms.JMSException;
@@ -61,7 +60,7 @@ class MessagePublisherTest
         try ( MessagePublisher publisher =
                 MessagePublisher.of( MessagePublisherTest.connections,
                                      MessagePublisherTest.connections.getDestination( "status" ) );
-              Connection consumerConnection = MessagePublisherTest.connections.get().createConnection();
+              Connection consumerConnection = MessagePublisherTest.connections.get();
               Session session = consumerConnection.createSession( false, Session.AUTO_ACKNOWLEDGE );
               MessageConsumer consumer =
                       session.createConsumer( MessagePublisherTest.connections.getDestination( "status" ) ) )
@@ -94,15 +93,12 @@ class MessagePublisherTest
     {
         // Goal: mock a MessageProducer whose send method needs to be invoked
         BrokerConnectionFactory mockFactory = Mockito.mock( BrokerConnectionFactory.class );
-        ConnectionFactory mockRawFactory = Mockito.mock( ConnectionFactory.class );
-        Mockito.when( mockFactory.get() )
-               .thenReturn( mockRawFactory );
 
         Mockito.when( mockFactory.getMaximumMessageRetries() )
                .thenReturn( 1 );
 
         Connection mockConnection = Mockito.mock( Connection.class );
-        Mockito.when( mockRawFactory.createConnection() )
+        Mockito.when( mockFactory.get() )
                .thenReturn( mockConnection );
 
         Session mockSession = Mockito.mock( Session.class );
@@ -115,7 +111,7 @@ class MessagePublisherTest
         Mockito.when( mockSession.createProducer( statusDestination ) )
                .thenReturn( mockProducer );
 
-        Connection realConnection = MessagePublisherTest.connections.get().createConnection();
+        Connection realConnection = MessagePublisherTest.connections.get();
         Session realSession = realConnection.createSession( false, Session.AUTO_ACKNOWLEDGE );
 
         // Create an answer that records an actual message when MessageProducer::send is invoked

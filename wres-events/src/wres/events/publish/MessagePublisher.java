@@ -23,8 +23,8 @@ import javax.jms.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.events.Evaluation;
 import wres.events.EvaluationEventException;
+import wres.events.EvaluationEventUtilities;
 import wres.eventsbroker.BrokerConnectionFactory;
 
 /**
@@ -68,7 +68,7 @@ public class MessagePublisher implements Closeable
         NETCDF,
 
         CSV,
-        
+
         CSV2,
 
         PAIRS;
@@ -160,34 +160,6 @@ public class MessagePublisher implements Closeable
 
     private final AtomicBoolean isClosed;
 
-    @Override
-    public String toString()
-    {
-        return this.identifier;
-    }
-    
-    @Override
-    public void close() throws IOException
-    {
-        if ( !this.isClosed.getAndSet( true ) )
-        {
-            LOGGER.debug( "Closing message publisher {}.", this );
-
-            try
-            {
-                // No need to close session etc.
-                this.connection.close();
-            }
-            catch ( JMSException e )
-            {
-                LOGGER.error( "Encountered an error while attempting to close a connection within message "
-                              + "publisher {}: {}",
-                              this,
-                              e.getMessage() );
-            }
-        }
-    }
-
     /**
      * Creates an instance with default settings.
      * 
@@ -234,6 +206,35 @@ public class MessagePublisher implements Closeable
         return new MessagePublisher( connectionFactory, destination, deliveryMode, messagePriority, messageTimeToLive );
     }
 
+    @Override
+    public String toString()
+    {
+        return this.identifier;
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        if ( !this.isClosed.getAndSet( true ) )
+        {
+            LOGGER.debug( "Closing message publisher {}.", this );
+
+            try
+            {
+                // No need to close session etc.
+                this.connection.close();
+                LOGGER.debug( "Closed connection {} in publisher {}.", this.connection, this );
+            }
+            catch ( JMSException e )
+            {
+                LOGGER.warn( "Encountered an error while attempting to close a connection within message "
+                             + "publisher {}: {}",
+                             this,
+                             e.getMessage() );
+            }
+        }
+    }
+
     /**
      * Publishes a message to a destination.
      * 
@@ -251,7 +252,7 @@ public class MessagePublisher implements Closeable
 
         // Create an immutable copy
         Map<MessageProperty, String> immutableMeta = Collections.unmodifiableMap( metadata );
-        
+
         // Still open?
         if ( this.isClosed() )
         {
@@ -320,14 +321,14 @@ public class MessagePublisher implements Closeable
         for ( int i = 0; i <= retries; i++ )
         {
             // Still open?
-            if( this.isClosed() )
+            if ( this.isClosed() )
             {
                 LOGGER.debug( "Not attempting to publish message {} because the publisher has closed.",
                               metadata.get( MessageProperty.JMS_MESSAGE_ID ) );
-                
+
                 return;
             }
-            
+
             try
             {
                 if ( i > 0 )
@@ -470,10 +471,12 @@ public class MessagePublisher implements Closeable
         Objects.requireNonNull( destination );
 
         // Create a unique identifier for the publisher
-        this.identifier = Evaluation.getUniqueId();
+        this.identifier = EvaluationEventUtilities.getUniqueId();
 
-        this.connection = connectionFactory.get()
-                                           .createConnection();
+        // The connection factory is responsible for closing this. The connection owns all other resources to be closed.
+        // According to the JMS specification, Connection::close will close all these resources.
+        this.connection = connectionFactory.get();
+        LOGGER.debug( "Created connection {} in publisher {}.", this.connection, this );
 
         this.retryCount = connectionFactory.getMaximumMessageRetries();
 
@@ -494,7 +497,7 @@ public class MessagePublisher implements Closeable
         this.producer = this.session.createProducer( this.destination );
         this.isClosed = new AtomicBoolean();
 
-        this.connection.start();
+        connection.start();
 
         LOGGER.debug( "Created a messager publisher, {}, which is ready to receive messages to publish to destination "
                       + "{}. The messager publisher is configured with delivery mode {}, message priority {} and "
