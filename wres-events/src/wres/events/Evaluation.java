@@ -2,8 +2,6 @@ package wres.events;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -608,32 +606,18 @@ public class Evaluation implements Closeable
     public void stop( Exception exception ) throws IOException
     {
         LOGGER.debug( "Stopping evaluation {} on encountering an exception.", this.getEvaluationId() );
-
-        // Create a string representation of the exception stack
-        try ( StringWriter sw = new StringWriter() )
+        
+        if ( Objects.nonNull( exception ) )
         {
-
-            sw.append( EVALUATION_STRING + this.getEvaluationId() + " failed." );
-
-            if ( Objects.nonNull( exception ) )
-            {
-                sw.append( " The following exception was encountered: " );
-                PrintWriter pw = new PrintWriter( sw );
-                exception.printStackTrace( pw );
-            }
-
             // Create an event to report on it
-            EvaluationStatusEvent event = EvaluationStatusEvent.newBuilder()
-                                                               .setEventType( StatusMessageType.ERROR )
-                                                               .setEventMessage( sw.toString() )
-                                                               .build();
+            EvaluationStatusEvent event = EvaluationEventUtilities.getStatusEventFromException( exception );
 
             this.errorsOnCompletion.add( event );
         }
 
         // Stop any flow control
         this.stopFlowControl();
-        
+
         // Set a non-normal exit code
         this.exitCode.set( 1 );
 

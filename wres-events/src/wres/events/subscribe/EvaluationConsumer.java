@@ -40,7 +40,6 @@ import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
-import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusMessageType;
 
 /**
  * <p>Consumer of messages for one evaluation. Receives messages and forwards them to underlying consumers, which 
@@ -546,11 +545,16 @@ class EvaluationConsumer
             }
 
             // Create the exception events to notify
-            List<EvaluationStatusEvent> events = this.getExceptionEvents( cause );
+            List<EvaluationStatusEvent> causeEvents = new ArrayList<>();
+            if ( Objects.nonNull( cause ) )
+            {
+                EvaluationStatusEvent causeEvent = EvaluationEventUtilities.getStatusEventFromException( cause );
+                causeEvents.add( causeEvent );
+            }
 
             this.publishCompletionState( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE,
                                          null,
-                                         events );
+                                         Collections.unmodifiableList( causeEvents ) );
 
             LOGGER.warn( "Consumer {} has marked evaluation {} as failed unrecoverably.",
                          this.getClientId(),
@@ -827,69 +831,6 @@ class EvaluationConsumer
 
         // If consumption is complete, then close the consumer
         this.closeConsumerIfComplete();
-    }
-
-    /**
-     * Creates exception events to notify.
-     * 
-     * @param exception the exception
-     * @return the exception events
-     */
-
-    private List<EvaluationStatusEvent> getExceptionEvents( Exception exception )
-    {
-        // Nothing to report
-        if ( Objects.isNull( exception ) )
-        {
-            return List.of();
-        }
-
-        EvaluationStatusEvent.Builder event = EvaluationStatusEvent.newBuilder()
-                                                                   .setEventType( StatusMessageType.ERROR )
-                                                                   .setEventMessage( exception.getClass() + ": "
-                                                                                     + exception.getMessage() );
-
-        // Add up to five causes, where available
-        Throwable cause = exception.getCause();
-        List<EvaluationStatusEvent.Builder> causes = new ArrayList<>();
-        for ( int i = 0; i < 5; i++ )
-        {
-            if ( Objects.nonNull( cause ) )
-            {
-                String causeClass = cause.getClass() + ": ";
-                String message = "";
-
-                if ( Objects.nonNull( cause.getMessage() ) )
-                {
-                    message = cause.getMessage();
-                }
-                EvaluationStatusEvent.Builder causeEvent = EvaluationStatusEvent.newBuilder()
-                                                                                .setEventType( StatusMessageType.ERROR )
-                                                                                .setEventMessage( causeClass
-                                                                                                  + message );
-                causes.add( causeEvent );
-            }
-            else
-            {
-                break;
-            }
-
-            cause = cause.getCause();
-        }
-
-        // Add the causes in reverse order so that they propagate up the build
-        if ( !causes.isEmpty() )
-        {
-            for ( int i = causes.size() - 1; i > 0; i-- )
-            {
-                causes.get( i - 1 )
-                      .setCause( causes.get( i ) );
-            }
-
-            event.setCause( causes.get( 0 ) );
-        }
-
-        return List.of( event.build() );
     }
 
     /**
