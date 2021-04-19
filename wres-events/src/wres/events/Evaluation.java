@@ -7,10 +7,8 @@ import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
@@ -101,12 +99,6 @@ public class Evaluation implements Closeable
 
     private static final String PUBLICATION_COMPLETE_ERROR = "Publication to this evaluation has been notified "
                                                              + "complete and no further messages may be published.";
-
-    /**
-     * Used to generate unique evaluation identifiers.
-     */
-
-    private static final RandomString ID_GENERATOR = new RandomString();
 
     /**
      * Default name for the queue on the amq.topic that accepts evaluation messages.
@@ -639,6 +631,9 @@ public class Evaluation implements Closeable
             this.errorsOnCompletion.add( event );
         }
 
+        // Stop any flow control
+        this.stopFlowControl();
+        
         // Set a non-normal exit code
         this.exitCode.set( 1 );
 
@@ -708,6 +703,7 @@ public class Evaluation implements Closeable
         this.closeGracefully( this.evaluationPublisher );
         this.closeGracefully( this.evaluationStatusPublisher );
         this.closeGracefully( this.statisticsPublisher );
+        this.closeGracefully( this.pairsPublisher );
 
         // Close the status tracker
         this.statusTracker.close();
@@ -948,7 +944,7 @@ public class Evaluation implements Closeable
         }
 
         /**
-         * Sets the evaluation identifier. See {@link Evaluation#getUniqueId()}.
+         * Sets the evaluation identifier. See {@link EvaluationEventUtilities#getUniqueId()}.
          * 
          * @param evaluationId the evaluation identifier
          * @return this builder 
@@ -985,18 +981,6 @@ public class Evaluation implements Closeable
         {
             return new Evaluation( this );
         }
-    }
-
-    /**
-     * Returns a unique identifier for identifying a component of an evaluation, such as the evaluation itself or an
-     * internal subscriber.
-     * 
-     * @return a unique identifier
-     */
-
-    public static String getUniqueId()
-    {
-        return Evaluation.ID_GENERATOR.generate();
     }
 
     /**
@@ -1353,7 +1337,7 @@ public class Evaluation implements Closeable
 
         if ( Objects.isNull( internalId ) )
         {
-            internalId = Evaluation.getUniqueId();
+            internalId = EvaluationEventUtilities.getUniqueId();
         }
 
         this.evaluationId = internalId;
@@ -1486,7 +1470,7 @@ public class Evaluation implements Closeable
                                   String groupId )
     {
         // Published below, so increment by 1 here 
-        String messageId = "ID:" + this.getEvaluationId() + "-m" + Evaluation.getUniqueId();
+        String messageId = "ID:" + this.getEvaluationId() + "-m" + EvaluationEventUtilities.getUniqueId();
 
         // Create the metadata
         Map<MessageProperty, String> properties = new EnumMap<>( MessageProperty.class );
@@ -1566,6 +1550,7 @@ public class Evaluation implements Closeable
         try
         {
             publisher.close();
+            LOGGER.debug( "Closed publisher {} in evaluation {}.", publisher, this );
         }
         catch ( IOException e )
         {
@@ -1573,26 +1558,6 @@ public class Evaluation implements Closeable
                              + this.getEvaluationId();
 
             LOGGER.error( message, e );
-        }
-    }
-
-    /**
-     * Generate a compact, unique, identifier for an evaluation. Thanks to: 
-     * https://neilmadden.blog/2018/08/30/moving-away-from-uuids/
-     * 
-     * @author james.brown@hydrosolved.com
-     */
-
-    private static class RandomString
-    {
-        private static final SecureRandom random = new SecureRandom();
-        private static final Base64.Encoder encoder = Base64.getUrlEncoder().withoutPadding();
-
-        private String generate()
-        {
-            byte[] buffer = new byte[20];
-            random.nextBytes( buffer );
-            return encoder.encodeToString( buffer );
         }
     }
 

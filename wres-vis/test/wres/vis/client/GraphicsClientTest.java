@@ -105,33 +105,36 @@ public class GraphicsClientTest
 
         // Open an evaluation, closing on completion
         Path basePath = null;
-        try ( // This is the graphics server instance, which normally runs in a separate process
-              GraphicsClient graphics = GraphicsClient.of( GraphicsClientTest.connections ) )
+        
+        GraphicsClient graphics = GraphicsClient.of( GraphicsClientTest.connections );
+
+        // Start the graphics client
+        graphics.start();
+
+        try ( // This is the evaluation instance that declares png output
+              Evaluation evaluation = Evaluation.of( this.oneEvaluation,
+                                                     GraphicsClientTest.connections,
+                                                     "aClient" ); )
         {
-            // Start the graphics client
-            graphics.start();
 
-            try ( // This is the evaluation instance that declares png output
-                  Evaluation evaluation = Evaluation.of( this.oneEvaluation,
-                                                         GraphicsClientTest.connections,
-                                                         "aClient" ); )
-            {
+            // Publish the statistics to a "feature" group
+            evaluation.publish( this.oneStatistics, "DRRC2" );
 
-                // Publish the statistics to a "feature" group
-                evaluation.publish( this.oneStatistics, "DRRC2" );
+            // Mark publication complete, which implicitly marks all groups complete
+            evaluation.markPublicationCompleteReportedSuccess();
 
-                // Mark publication complete, which implicitly marks all groups complete
-                evaluation.markPublicationCompleteReportedSuccess();
+            // Wait for the evaluation to complete
+            evaluation.await();
 
-                // Wait for the evaluation to complete
-                evaluation.await();
+            // Record the paths written to assert against
+            actualPathsWritten = evaluation.getPathsWrittenBySubscribers();
 
-                // Record the paths written to assert against
-                actualPathsWritten = evaluation.getPathsWrittenBySubscribers();
+            basePath = this.outputPath.resolve( "wres_evaluation_" + evaluation.getEvaluationId() );
 
-                basePath = this.outputPath.resolve( "wres_evaluation_" + evaluation.getEvaluationId() );
-
-            }
+        }
+        finally
+        {
+            graphics.stop();
         }
 
         // Make assertions about the graphics written by the single external subscription.

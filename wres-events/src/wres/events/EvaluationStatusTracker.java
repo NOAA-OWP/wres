@@ -26,7 +26,6 @@ import javax.jms.BytesMessage;
 import javax.jms.Connection;
 import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
-import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
 import javax.jms.Session;
@@ -96,12 +95,6 @@ class EvaluationStatusTracker implements Closeable
      */
 
     private final AtomicInteger retriesAttempted;
-
-    /**
-     * A message that could not be consumed by this status tracker, null if no failure.
-     */
-
-    private Message trackerFailedOn = null;
 
     /**
      * Is <code>true</code> if the subscriber failed after all attempts to recover.
@@ -250,7 +243,7 @@ class EvaluationStatusTracker implements Closeable
                                  + this.getEvaluationId()
                                  + ", failed to remove the subscription from the session.";
 
-                LOGGER.error( message, e );
+                LOGGER.warn( message, e );
             }
         }
 
@@ -258,6 +251,7 @@ class EvaluationStatusTracker implements Closeable
         try
         {
             this.connection.close();
+            LOGGER.debug( "Closed connection {} in evaluation status tracker {}.", this.connection, this );
         }
         catch ( JMSException e )
         {
@@ -266,7 +260,7 @@ class EvaluationStatusTracker implements Closeable
                              + this.getEvaluationId()
                              + ", failed to close the connection.";
 
-            LOGGER.error( message, e );
+            LOGGER.warn( message, e );
         }
 
         // Stop the subscriber inactivity timer
@@ -346,8 +340,7 @@ class EvaluationStatusTracker implements Closeable
     }
 
     /**
-     * Returns <code>true</code> if this status tracker is in a failure state, otherwise <code>false</code> . 
-     * Note that {@link #getFirstFailure()} may contain an exception that was recovered.
+     * Returns <code>true</code> if this status tracker is in a failure state, otherwise <code>false</code>.
      * 
      * @return true if an unrecoverable exception occurred.
      */
@@ -355,17 +348,6 @@ class EvaluationStatusTracker implements Closeable
     boolean isFailed()
     {
         return this.isFailedUnrecoverably.get();
-    }
-
-    /**
-     * Returns a message on which consumption failed, <code>null</code> if no failure occurred.
-     * 
-     * @return a message that was not consumed
-     */
-
-    Message getFirstFailure()
-    {
-        return this.trackerFailedOn;
     }
 
     /**
@@ -470,46 +452,21 @@ class EvaluationStatusTracker implements Closeable
     private void stopOnFailure( EvaluationStatus failure )
     {
         // Mark failed
-        this.markSubscriberFailed();
+        this.markStatusTrackerFailed();
 
         // Non-zero exit code
         this.exitCode.set( 1 );
 
+        // Now that the evaluation has stopped, check that the notification was not duplicated, as this would indicate
+        // a subscriber notification failure: we expect one notification per subscriber
         String consumerId = failure.getConsumer()
                                    .getConsumerId();
 
+        // Signal the failing consumer
+        boolean consumerAlreadyFailed = false;
         if ( !consumerId.isBlank() )
         {
-            // Failed previously. Probably a subscriber notification error.
-            if ( this.failure.contains( consumerId ) )
-            {
-                throw new IllegalStateException( WHILE_PROCESSING_EVALUATION
-                                                 + this.getEvaluationId()
-                                                 + ENCOUNTERED_AN_ATTEMPT_TO_MARK_SUBSCRIBER
-                                                 + consumerId
-                                                 + " as "
-                                                 + CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE
-                                                 + " when it has already been marked as "
-                                                 + CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE
-                                                 + ". This probably represents an error in the subscriber that should "
-                                                 + "be fixed." );
-            }
-
-            this.failure.add( consumerId );
-
-            // Succeeded previously. Definitely a subscriber notification failure.
-            if ( this.success.contains( consumerId ) )
-            {
-                throw new IllegalStateException( WHILE_PROCESSING_EVALUATION
-                                                 + this.getEvaluationId()
-                                                 + ENCOUNTERED_AN_ATTEMPT_TO_MARK_SUBSCRIBER
-                                                 + consumerId
-                                                 + " as "
-                                                 + CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE
-                                                 + " when it has previously been marked as "
-                                                 + CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS
-                                                 + ". This is an error in the subscriber that should be fixed." );
-            }
+            consumerAlreadyFailed = !this.failure.add( consumerId );
         }
 
         // Add any paths written
@@ -530,21 +487,53 @@ class EvaluationStatusTracker implements Closeable
         this.negotiatedSubscriberLatches.forEach( ( a, b ) -> b.countDown() );
         this.subscriberNegotiator.stopNegotiation();
 
-        // Stop any flow control blocking
-        this.flowController.stop();
-
-        // Close the evaluation
+        // Stop the evaluation, which also stops flow control
         try
         {
-            this.evaluation.close();
+            LOGGER.debug( "The evaluation status tracker that is tracking evaluation {} encountered a request to stop "
+                          + "on failure with signal {}. Stopping the evaluation.",
+                          this.getEvaluationId(),
+                          failure.getCompletionStatus() );
+
+            this.evaluation.stop( null );
         }
         catch ( IOException e )
         {
-            String message = "Encountered an exception while closing evaluation "
+            String message = "Encountered an exception while stopping evaluation "
                              + this.getEvaluationId()
                              + ".";
 
             LOGGER.warn( message, e );
+        }
+
+        // Now that the evaluation has stopped, check that the notification was not duplicated, as this would indicate
+        // a subscriber notification failure: we expect one notification per subscriber. Do this last because it should 
+        // not prevent the evaluation from closing and freeing resources.
+        if ( consumerAlreadyFailed )
+        {
+            throw new IllegalStateException( WHILE_PROCESSING_EVALUATION
+                                             + this.getEvaluationId()
+                                             + ENCOUNTERED_AN_ATTEMPT_TO_MARK_SUBSCRIBER
+                                             + consumerId
+                                             + " as "
+                                             + CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE
+                                             + " when it has already been marked as "
+                                             + CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE
+                                             + ". This probably represents an error in the subscriber that should "
+                                             + "be fixed." );
+        }
+        // Succeeded previously. Definitely a subscriber notification failure.
+        if ( !consumerId.isBlank() && this.success.contains( consumerId ) )
+        {
+            throw new IllegalStateException( WHILE_PROCESSING_EVALUATION
+                                             + this.getEvaluationId()
+                                             + ENCOUNTERED_AN_ATTEMPT_TO_MARK_SUBSCRIBER
+                                             + consumerId
+                                             + " as "
+                                             + CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE
+                                             + " when it has previously been marked as "
+                                             + CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS
+                                             + ". This is an error in the subscriber that should be fixed." );
         }
     }
 
@@ -586,21 +575,21 @@ class EvaluationStatusTracker implements Closeable
      * @param statusTracker the status tracker
      * @param evaluationId the evaluation identifier
      * @param consumerId the consumer identifier
-     * @param nextLatch the latch corresponding to the subscriber whose status is being tracked
+     * @param subscriberLatch the latch corresponding to the subscriber whose status is being tracked
      * @return the monitor task
      */
 
     private TimerTask getInactiveSubscriberMonitorTask( EvaluationStatusTracker statusTracker,
                                                         String evaluationId,
                                                         String consumerId,
-                                                        TimedCountDownLatch nextLatch )
+                                                        TimedCountDownLatch subscriberLatch )
     {
         // Create a timer task to log progress while awaiting the subscriber
         AtomicReference<Instant> then = new AtomicReference<>( Instant.now() );
         Duration periodToWait = Duration.of( this.timeoutDuringConsumption,
                                              ChronoUnit.valueOf( this.timeoutDuringConsumptionUnits.name() ) );
 
-        AtomicInteger resetCount = new AtomicInteger( nextLatch.getResetCount() );
+        AtomicInteger resetCount = new AtomicInteger( subscriberLatch.getResetCount() );
 
         return new TimerTask()
         {
@@ -608,14 +597,14 @@ class EvaluationStatusTracker implements Closeable
             public void run()
             {
                 // Only continue to monitor if the latch has not been counted down
-                if ( nextLatch.getCount() > 0 )
+                if ( subscriberLatch.getCount() > 0 )
                 {
                     Duration timeElapsed = Duration.between( then.get(), Instant.now() );
                     Duration timeLeft = periodToWait.minus( timeElapsed );
 
                     // Latch was reset, so report the new time left
                     String append = "";
-                    if ( nextLatch.getResetCount() > resetCount.get() )
+                    if ( subscriberLatch.getResetCount() > resetCount.get() )
                     {
                         append = " (the subscriber just registered an update, which reset the clock)";
                         timeLeft = periodToWait;
@@ -1006,7 +995,7 @@ class EvaluationStatusTracker implements Closeable
         this.negotiatedSubscriberLatches = new ConcurrentHashMap<>();
 
         // Create a unique identifier for this tracker so that it can ignore messages related to itself
-        this.trackerId = Evaluation.getUniqueId();
+        this.trackerId = EvaluationEventUtilities.getUniqueId();
         this.resourcesWritten = new HashSet<>();
         this.retriesAttempted = new AtomicInteger();
         this.isFailedUnrecoverably = new AtomicBoolean();
@@ -1015,10 +1004,12 @@ class EvaluationStatusTracker implements Closeable
         // Set the message consumer and listener
         try
         {
-            this.connection = broker.get()
-                                    .createConnection();
-            this.connection.setExceptionListener( new ConnectionExceptionListener( this.getTrackerId() ) );
-            this.session = this.connection.createSession( false, Session.CLIENT_ACKNOWLEDGE );
+            // Get a connection
+            this.connection = broker.get();
+            LOGGER.debug( "Created connection {} in evaluation status tracker {}.", this.connection, this );
+
+            this.connection.setExceptionListener( new ConnectionExceptionListener( this ) );
+            this.session = connection.createSession( false, Session.CLIENT_ACKNOWLEDGE );
             Topic topic = (Topic) broker.getDestination( Evaluation.EVALUATION_STATUS_QUEUE );
 
             // Only consider messages that belong to this evaluation. Even when negotiating subscribers, offers should
@@ -1125,11 +1116,6 @@ class EvaluationStatusTracker implements Closeable
             }
             catch ( JMSException | InvalidProtocolBufferException e )
             {
-                if ( Objects.isNull( this.trackerFailedOn ) )
-                {
-                    this.trackerFailedOn = receivedBytes;
-                }
-
                 // Attempt to recover and flag recovery locally
                 this.recover( messageId, correlationId, e );
                 recovering.set( true );
@@ -1139,7 +1125,7 @@ class EvaluationStatusTracker implements Closeable
                 // A consumption failed and a recovery is not underway. Unrecoverable.
                 if ( !consumeSucceeded.get() && !recovering.get() )
                 {
-                    this.markSubscriberFailed();
+                    this.markStatusTrackerFailed();
                 }
             }
         };
@@ -1210,7 +1196,7 @@ class EvaluationStatusTracker implements Closeable
 
     private void recover( String messageId, String correlationId, Exception exception )
     {
-        // Only try to recover if an evaluation hasn't already failed        
+        // Only try to recover if the tracker hasn't already failed        
         if ( !this.isFailed() )
         {
             int retryCount = this.getNumberOfRetriesAttempted()
@@ -1271,8 +1257,8 @@ class EvaluationStatusTracker implements Closeable
                               correlationId,
                               this.getMaximumRetries() );
 
-                // Register the subscriber as failed
-                this.markSubscriberFailed();
+                // Register the status tracker as failed
+                this.markStatusTrackerFailed();
             }
         }
     }
@@ -1313,10 +1299,10 @@ class EvaluationStatusTracker implements Closeable
     }
 
     /**
-     * Marks the subscriber as failed after all recovery attempts.
+     * Marks the tracker as failed after all recovery attempts.
      */
 
-    private void markSubscriberFailed()
+    private void markStatusTrackerFailed()
     {
         this.isFailedUnrecoverably.set( true );
     }
@@ -1336,34 +1322,45 @@ class EvaluationStatusTracker implements Closeable
 
     private static class ConnectionExceptionListener implements ExceptionListener
     {
-        private static final Logger LOGGER = LoggerFactory.getLogger( ConnectionExceptionListener.class );
 
         /**
-         * The client that encountered the exception.
+         * The status tracker.
          */
 
-        private final String clientId;
+        private final EvaluationStatusTracker statusTracker;
 
         @Override
         public void onException( JMSException exception )
         {
-            LOGGER.warn( "An exception listener uncovered an error in client {}. {}",
-                         this.clientId,
-                         exception.getMessage() );
+            String message = WHILE_COMPLETING_EVALUATION + this.statusTracker.getEvaluationId()
+                             + ", encountered an error on a connection owned by the evaluation status tracker "
+                             + "responsible for tracking this evaluation. If a failover policy was configured on the "
+                             + "connection factory (e.g., connection retries), then that policy was exhausted before "
+                             + "this error was thrown. As such, the error is not recoverable and the evaluation will "
+                             + "now stop.";
+
+            EvaluationStatus status = EvaluationStatus.newBuilder()
+                                                      .setClientId( this.statusTracker.getClientId() )
+                                                      .setCompletionStatus( CompletionStatus.EVALUATION_COMPLETE_REPORTED_FAILURE )
+                                                      .addStatusEvents( EvaluationStatusEvent.newBuilder()
+                                                                                             .setEventType( StatusMessageType.ERROR )
+                                                                                             .setEventMessage( message ) )
+                                                      .build();
+
+            this.statusTracker.stopOnFailure( status );
         }
 
         /**
-         * Creates an instance with an evaluation identifier and a message client identifier.
+         * Creates an instance with a status tracker.
          * 
-         * @param evaluationId the evaluation identifier
-         * @param clientId the client identifier
+         * @param statusTracker the status tracker
          */
 
-        ConnectionExceptionListener( String clientId )
+        ConnectionExceptionListener( EvaluationStatusTracker statusTracker )
         {
-            Objects.requireNonNull( clientId );
+            Objects.requireNonNull( statusTracker );
 
-            this.clientId = clientId;
+            this.statusTracker = statusTracker;
         }
 
     }

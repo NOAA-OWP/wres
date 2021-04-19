@@ -4,6 +4,9 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -11,9 +14,15 @@ import java.util.Properties;
 import java.util.function.Supplier;
 
 import javax.jms.Connection;
+import javax.jms.ConnectionConsumer;
 import javax.jms.ConnectionFactory;
+import javax.jms.ConnectionMetaData;
 import javax.jms.Destination;
+import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
+import javax.jms.ServerSessionPool;
+import javax.jms.Session;
+import javax.jms.Topic;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -53,7 +62,7 @@ import wres.eventsbroker.embedded.EmbeddedBroker;
  * @author james.brown@hydrosolved.com
  */
 
-public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFactory>
+public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
 {
 
     private static final String IN_THE_MAP_OF_PROPERTIES = " in the map of properties.";
@@ -115,6 +124,24 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
     private final ConnectionFactory connectionFactory;
 
     /**
+     * The pool of all connections issued by this instance.
+     */
+
+    private final List<Connection> connectionPool;
+
+    /**
+     * A lock for the {@link connectionPool}.
+     */
+
+    private final Object connectionPoolLock;
+
+    /**
+     * Is {@code true} if the broker has been closed, otherwise {@code false}.
+     */
+
+    private boolean isClosed;
+
+    /**
      * <p>Returns an instance of a factory, which is created using {@link DEFAULT_PROPERTIES}. If an embedded broker is
      * required and the broker configuration requests a specific TCP port (not reserved TCP port 0), then the embedded
      * broker is lenient when the configured port is already bound, instead choosing an available port.
@@ -150,10 +177,35 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
         return new BrokerConnectionFactory( BrokerConnectionFactory.DEFAULT_PROPERTIES, dynamicBindingAllowed );
     }
 
+    /**
+     * Returns a {@link Connection}, which must be closed on completion. Calling {@link #close()} will close all 
+     * connections issued by this factory that have not been closed already.
+     * 
+     * @throws FailedToAcquireConnectionException if a connection could not be acquired for any reason
+     */
+
     @Override
-    public ConnectionFactory get()
+    public Connection get()
     {
-        return this.connectionFactory;
+        if ( this.isClosed() )
+        {
+            throw new FailedToAcquireConnectionException( "Cannot acquire a connection: the broker connection factory "
+                                                          + "has been closed." );
+        }
+
+        try
+        {
+            Connection connection = new WrappedConnection( this.connectionFactory.createConnection(), this );
+            synchronized ( this.connectionPoolLock )
+            {
+                this.connectionPool.add( connection );
+            }
+            return connection;
+        }
+        catch ( JMSException e )
+        {
+            throw new FailedToAcquireConnectionException( "While attempting to acquire a broker connection.", e );
+        }
     }
 
     /**
@@ -172,14 +224,49 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
         return (Destination) this.context.lookup( name );
     }
 
+    /**
+     * Closes all connections supplied by this instance and any embedded broker if created.
+     * @throws IOException if the resource could not be closed for any reason
+     */
+
     @Override
     public void close() throws IOException
     {
+        LOGGER.info( "Closing broker connection factory {} and all associated broker connections.", this );
+
+        // Flag closed
+        this.isClosed = true;
+
+        // Close connections
+        Iterator<Connection> iterator = this.connectionPool.iterator();
+        while ( iterator.hasNext() )
+        {
+            try
+            {
+                // Safely remove before closing, which otherwise triggers removal
+                Connection connection = iterator.next();
+                iterator.remove();
+
+                // Close
+                connection.close();
+            }
+            catch ( JMSException e )
+            {
+                LOGGER.warn( "Failed to close a broker connection. This message may be repeated for other "
+                             + "connections." );
+            }
+        }
+
         if ( this.hasEmbeddedBroker() )
         {
-            LOGGER.debug( "Closing the embedded broker." );
-
-            this.broker.close();
+            try
+            {
+                this.broker.close();
+            }
+            catch ( IOException e )
+            {
+                throw new IOException( "While attempting to close an embedded broker.", e );
+            }
         }
     }
 
@@ -209,6 +296,15 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
     }
 
     /**
+     * @return true if closed.
+     */
+
+    public boolean isClosed()
+    {
+        return this.isClosed;
+    }
+
+    /**
      * Constructs a new instances and creates an embedded broker as necessary.
      * 
      * @param dynamicBindingAllowed is true to override a configured port that is bound, false to throw an exception
@@ -235,6 +331,8 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
                                                                 + " file on the class path." );
         }
 
+        this.connectionPool = new ArrayList<>();
+        this.connectionPoolLock = new Object();
 
         // The connection property name
         String connectionPropertyName = null;
@@ -305,7 +403,8 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
                                  BrokerConnectionFactory.MAXIMUM_CONNECTION_RETRIES );
 
             // Document
-            LOGGER.info( "Created a connection factory with name {} and binding URL {}.",
+            LOGGER.info( "Created a broker connection factory {} with name {} and binding URL {}.",
+                         this,
                          connectionPropertyName,
                          properties.getProperty( connectionPropertyName ) );
         }
@@ -350,8 +449,8 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
 
         // No failover/connection retries on an embedded broker: #89950
         url = url + "&failover='nofailover'";
-        LOGGER.debug( "Adjusted the embedded broker url to remove all failover logic. The old url was {}. The new url is"
-                      + " {}.",
+        LOGGER.debug( "Adjusted the embedded broker url to remove all failover logic. The old url was {}. The new url "
+                      + "is {}.",
                       properties.getProperty( key ),
                       url );
 
@@ -728,5 +827,209 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
 
         return (ConnectionFactory) context.lookup( factoryName );
     }
+
+    /**
+     * A runtime exception indicating a failure to load the configuration needed to connect to a broker.
+     * 
+     * @author james.brown@hydrosolved.com
+     */
+
+    private static class FailedToAcquireConnectionException extends RuntimeException
+    {
+
+        /**
+         * Serial version identifier.
+         */
+
+        private static final long serialVersionUID = -5224784772553896250L;
+
+        /**
+         * Constructs a {@link CouldNotLoadBrokerConfigurationException} with the specified message.
+         * 
+         * @param message the message.
+         */
+
+        public FailedToAcquireConnectionException( final String message )
+        {
+            super( message );
+        }
+
+        /**
+         * Constructs a {@link CouldNotLoadBrokerConfigurationException} with the specified message and cause.
+         * 
+         * @param message the message.
+         * @param cause the cause of the exception
+         */
+
+        public FailedToAcquireConnectionException( final String message, final Throwable cause )
+        {
+            super( message, cause );
+        }
+    }
+
+    /**
+     * A wrapper for a {@link Connection}, which removes a closed connection from the pool.
+     */
+
+    private static class WrappedConnection implements Connection
+    {
+
+        private final Connection connection;
+        private final BrokerConnectionFactory owner;
+
+        @Override
+        public Session createSession( boolean transacted, int acknowledgeMode ) throws JMSException
+        {
+            return this.connection.createSession( transacted, acknowledgeMode );
+        }
+
+        @Override
+        public Session createSession( int sessionMode ) throws JMSException
+        {
+            return this.connection.createSession( sessionMode );
+        }
+
+        @Override
+        public Session createSession() throws JMSException
+        {
+            return this.connection.createSession();
+        }
+
+        @Override
+        public String getClientID() throws JMSException
+        {
+            return this.connection.getClientID();
+        }
+
+        @Override
+        public void setClientID( String clientID ) throws JMSException
+        {
+            this.connection.setClientID( clientID );
+        }
+
+        @Override
+        public ConnectionMetaData getMetaData() throws JMSException
+        {
+            return this.connection.getMetaData();
+        }
+
+        @Override
+        public ExceptionListener getExceptionListener() throws JMSException
+        {
+            return this.connection.getExceptionListener();
+        }
+
+        @Override
+        public void setExceptionListener( ExceptionListener listener ) throws JMSException
+        {
+            this.connection.setExceptionListener( listener );
+        }
+
+        @Override
+        public void start() throws JMSException
+        {
+            this.connection.start();
+        }
+
+        @Override
+        public void stop() throws JMSException
+        {
+            this.connection.stop();
+        }
+
+        @Override
+        public void close() throws JMSException
+        {
+            boolean removed = false;
+
+            synchronized ( this.owner.connectionPoolLock )
+            {
+                removed = this.owner.connectionPool.remove( this );
+            }
+
+            LOGGER.debug( "Upon closing connection {}, removed it from the connection pool in {}: {}",
+                          this,
+                          this.owner,
+                          removed );
+
+            this.connection.close();
+        }
+
+        @Override
+        public ConnectionConsumer createConnectionConsumer( Destination destination,
+                                                            String messageSelector,
+                                                            ServerSessionPool sessionPool,
+                                                            int maxMessages )
+                throws JMSException
+        {
+            return this.connection.createConnectionConsumer( destination, messageSelector, sessionPool, maxMessages );
+        }
+
+        @Override
+        public ConnectionConsumer createSharedConnectionConsumer( Topic topic,
+                                                                  String subscriptionName,
+                                                                  String messageSelector,
+                                                                  ServerSessionPool sessionPool,
+                                                                  int maxMessages )
+                throws JMSException
+        {
+            return this.connection.createSharedConnectionConsumer( topic,
+                                                                   subscriptionName,
+                                                                   messageSelector,
+                                                                   sessionPool,
+                                                                   maxMessages );
+        }
+
+        @Override
+        public ConnectionConsumer createDurableConnectionConsumer( Topic topic,
+                                                                   String subscriptionName,
+                                                                   String messageSelector,
+                                                                   ServerSessionPool sessionPool,
+                                                                   int maxMessages )
+                throws JMSException
+        {
+            return this.connection.createDurableConnectionConsumer( topic,
+                                                                    subscriptionName,
+                                                                    messageSelector,
+                                                                    sessionPool,
+                                                                    maxMessages );
+        }
+
+        @Override
+        public ConnectionConsumer createSharedDurableConnectionConsumer( Topic topic,
+                                                                         String subscriptionName,
+                                                                         String messageSelector,
+                                                                         ServerSessionPool sessionPool,
+                                                                         int maxMessages )
+                throws JMSException
+        {
+            return this.connection.createSharedDurableConnectionConsumer( topic,
+                                                                          subscriptionName,
+                                                                          messageSelector,
+                                                                          sessionPool,
+                                                                          maxMessages );
+        }
+
+        @Override
+        public String toString()
+        {
+            return this.getClass().getName() + "@" + Integer.toHexString( this.connection.hashCode() );
+        }
+
+        /**
+         * Builds an instance.
+         * @param connection a connection to wrap
+         * @param owner the factory that owns the connection
+         */
+
+        private WrappedConnection( Connection connection, BrokerConnectionFactory owner )
+        {
+            Objects.requireNonNull( connection );
+            this.connection = connection;
+            this.owner = owner;
+        }
+
+    }
+
 
 }

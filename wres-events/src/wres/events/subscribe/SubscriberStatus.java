@@ -7,9 +7,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import net.jcip.annotations.ThreadSafe;
 
 /**
@@ -23,9 +20,6 @@ import net.jcip.annotations.ThreadSafe;
 public class SubscriberStatus
 {
 
-    /** Logger.*/
-    private static final Logger LOGGER = LoggerFactory.getLogger( SubscriberStatus.class );
-    
     /** The client identifier.*/
     private final String clientId;
 
@@ -126,15 +120,10 @@ public class SubscriberStatus
 
     /**
      * Flags an unrecoverable failure in the subscriber.
-     * @param exception the unrecoverable consumer exception that caused the failure
      */
 
-    public void markFailedUnrecoverably( RuntimeException exception )
+    public void markFailedUnrecoverably()
     {
-        String failure = "Evaluation subscriber " + this.clientId + " has failed unrecoverably and will now stop.";
-
-        LOGGER.error( failure, exception );
-
         this.isFailed.set( true );
     }
 
