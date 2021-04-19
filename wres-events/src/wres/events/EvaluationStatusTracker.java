@@ -452,7 +452,7 @@ class EvaluationStatusTracker implements Closeable
     private void stopOnFailure( EvaluationStatus failure )
     {
         // Mark failed
-        this.markStatusTrackerFailed();
+        this.isFailedUnrecoverably.set( true );
 
         // Non-zero exit code
         this.exitCode.set( 1 );
@@ -614,6 +614,18 @@ class EvaluationStatusTracker implements Closeable
                         then.set( Instant.now() );
                     }
 
+                    // Insufficient progress?
+                    if ( timeLeft.isNegative() )
+                    {
+                        EvaluationStatus status =
+                                statusTracker.getStatusMessageIndicatingConsumptionFailureOnInactivity( evaluationId,
+                                                                                                        consumerId,
+                                                                                                        periodToWait );
+
+                        statusTracker.stopOnFailure( status );
+                    }
+
+                    // Report
                     if ( timeElapsed.compareTo( EvaluationStatusTracker.MINIMUM_PERIOD_BEFORE_REPORTING_INACTIVE_SUBSCRIBER ) > 0
                          && LOGGER.isInfoEnabled() )
                     {
@@ -624,17 +636,6 @@ class EvaluationStatusTracker implements Closeable
                                      consumerId,
                                      timeLeft,
                                      append );
-                    }
-
-                    // Insufficient progress?
-                    if ( timeLeft.isNegative() && !statusTracker.isFailed() )
-                    {
-                        EvaluationStatus status =
-                                statusTracker.getStatusMessageIndicatingConsumptionFailureOnInactivity( evaluationId,
-                                                                                                        consumerId,
-                                                                                                        periodToWait );
-
-                        statusTracker.stopOnFailure( status );
                     }
                 }
             }
@@ -976,7 +977,7 @@ class EvaluationStatusTracker implements Closeable
         this.negotiatedSubscribers = new EnumMap<>( Format.class );
         this.flowController = flowController;
         this.formatsRequired = formatsRequired;
-        this.subscriberInactivityTimer = new Timer( true );
+        this.subscriberInactivityTimer = new Timer( "SubscriberInactivityTimer-1", true );
         this.subscriberApprover = subscriberApprover;
         this.subscriberNegotiator = new SubscriberNegotiator( this.evaluation,
                                                               this.formatsRequired,
@@ -1075,13 +1076,6 @@ class EvaluationStatusTracker implements Closeable
     {
         // Now listen for status messages when a group completes
         MessageListener listener = message -> {
-
-            // Throwing exceptions on the MessageListener::onMessage is considered a bug, so need to track status and 
-            // exit gracefully when problems occur. The message is either delivered, the session is recovering or the
-            // subscriber is unrecoverable.
-            AtomicBoolean consumeSucceeded = new AtomicBoolean();
-            AtomicBoolean recovering = new AtomicBoolean();
-
             BytesMessage receivedBytes = (BytesMessage) message;
             String messageId = null;
             String correlationId = null;
@@ -1108,25 +1102,28 @@ class EvaluationStatusTracker implements Closeable
                     // Accept the message
                     this.acceptStatusMessage( statusMessage );
 
-                    consumeSucceeded.set( true );
-
                     // Acknowledge
                     message.acknowledge();
                 }
             }
+            // Throwing exceptions on the MessageListener::onMessage is considered a bug, so need to track status and 
+            // exit gracefully when problems occur. The message is either delivered, a checked exception is caught and
+            // the session is recovering, an unchecked exception is caught and the subscriber is unrecoverable or an
+            // unrecoverable error is thrown/unhandled.
             catch ( JMSException | InvalidProtocolBufferException e )
             {
                 // Attempt to recover and flag recovery locally
                 this.recover( messageId, correlationId, e );
-                recovering.set( true );
             }
-            finally
+            catch ( RuntimeException e )
             {
-                // A consumption failed and a recovery is not underway. Unrecoverable.
-                if ( !consumeSucceeded.get() && !recovering.get() )
-                {
-                    this.markStatusTrackerFailed();
-                }
+                LOGGER.error( "While processing an evaluation status message, encountered an unrecoverable error that "
+                              + "will stop the evaluation status tracker.",
+                              e );
+
+                EvaluationStatus errorStatusMessage = this.getStatusMessageFromException( e );
+
+                this.stopOnFailure( errorStatusMessage );
             }
         };
 
@@ -1257,10 +1254,28 @@ class EvaluationStatusTracker implements Closeable
                               correlationId,
                               this.getMaximumRetries() );
 
+                EvaluationStatus errorStatusMessage = this.getStatusMessageFromException( exception );
+
                 // Register the status tracker as failed
-                this.markStatusTrackerFailed();
+                this.stopOnFailure( errorStatusMessage );
             }
         }
+    }
+
+    /**
+     * Returns a status message from an exception.
+     * @param e the exception
+     * @return the status message that wraps the exception
+     */
+
+    private EvaluationStatus getStatusMessageFromException( Exception e )
+    {
+        EvaluationStatusEvent errorEvent = EvaluationEventUtilities.getStatusEventFromException( e );
+        return EvaluationStatus.newBuilder()
+                               .setClientId( this.getClientId() )
+                               .setCompletionStatus( CompletionStatus.EVALUATION_COMPLETE_REPORTED_FAILURE )
+                               .addStatusEvents( errorEvent )
+                               .build();
     }
 
     /**
@@ -1296,15 +1311,6 @@ class EvaluationStatusTracker implements Closeable
     private int getMaximumRetries()
     {
         return this.maximumRetries;
-    }
-
-    /**
-     * Marks the tracker as failed after all recovery attempts.
-     */
-
-    private void markStatusTrackerFailed()
-    {
-        this.isFailedUnrecoverably.set( true );
     }
 
     /**
