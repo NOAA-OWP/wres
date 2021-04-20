@@ -44,7 +44,6 @@ class EvaluationStatusTrackerTest
     @Test
     void testNegotiationWithTwoCompetingSubscribersAndOneBestSubscriber() throws IOException, InterruptedException
     {
-
         // Use an evaluation instance as a publisher and a separate status tracker as a receiver in order to test the
         // status tracker. Mocking could be used, but this is cleaner. It creates two status trackers, but only 
         // one is tested/asserted against.
@@ -138,6 +137,9 @@ class EvaluationStatusTrackerTest
             expected.put( Format.PNG, "anotherConsumer" );
 
             assertEquals( expected, actual );
+            
+            // Forcibly stop the evaluation
+            evaluation.stop( null );
         }
     }
 
@@ -246,6 +248,9 @@ class EvaluationStatusTrackerTest
             // Should be one of the three options, which are all equally good
             assertTrue( actualSubscriber.equals( "aConsumer" ) || actualSubscriber.equals( "anotherConsumer" )
                         || actualSubscriber.equals( "yetAnotherConsumer" ) );
+            
+            // Forcibly stop the evaluation
+            evaluation.stop( null );
         }
     }
 
@@ -361,6 +366,9 @@ class EvaluationStatusTrackerTest
 
             // Should be one of the two options, which are both equally good
             assertTrue( actualSubscriber.equals( "aConsumer" ) || actualSubscriber.equals( "anotherConsumer" ) );
+            
+            // Forcibly stop the evaluation
+            evaluation.stop( null );
         }
     }
 

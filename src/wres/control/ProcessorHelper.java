@@ -464,15 +464,7 @@ class ProcessorHelper
                 LOGGER.debug( "Forcibly stopping evaluation {} upon encountering an internal error.",
                               evaluation.getEvaluationId() );
                 
-                try
-                {
-                    evaluation.stop( internalError );
-                }
-                catch ( IOException e )
-                {
-                    String message = "Failed to close evaluation " + evaluation.getEvaluationId() + ".";
-                    LOGGER.warn( message, e );
-                }
+                evaluation.stop( internalError );
             }
 
             throw new WresProcessingException( "Project failed to complete with the following error: ", internalError );

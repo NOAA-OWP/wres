@@ -9,7 +9,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -230,12 +229,6 @@ public class Evaluation implements Closeable
      */
 
     private final ProducerFlowController flowController;
-
-    /**
-     * When an evaluation completes with a non-zero exit code, a record of the errors encountered.
-     */
-
-    private final Set<EvaluationStatusEvent> errorsOnCompletion;
 
     /**
      * Returns the unique evaluation identifier.
@@ -596,38 +589,31 @@ public class Evaluation implements Closeable
      * <p>The provided exception is used to notify consumers of the failed evaluation, even when publication has been
      * marked complete for this instance.
      * 
-     * <p>Calling this method multiple times has no effect (other than logging the additional attempts).
+     * <p>Calling this method multiple times has no effect.
      * 
      * @param exception an optional exception instance to propagate to consumers
-     * @throws IOException if the evaluation could not be stopped. 
      * @see #close()
      */
 
-    public void stop( Exception exception ) throws IOException
+    public void stop( Exception exception )
     {
-        LOGGER.debug( "Stopping evaluation {} on encountering an exception.", this.getEvaluationId() );
-        
-        if ( Objects.nonNull( exception ) )
+        if ( !this.isStopped.getAndSet( true ) )
         {
-            // Create an event to report on it
-            EvaluationStatusEvent event = EvaluationEventUtilities.getStatusEventFromException( exception );
+            LOGGER.debug( "Stopping evaluation {} on encountering an exception.", this.getEvaluationId() );
 
-            this.errorsOnCompletion.add( event );
+            // Publish the completion status, if possible
+            this.publishCompletionStatus( CompletionStatus.EVALUATION_COMPLETE_REPORTED_FAILURE, exception );
+
+            // Stop any flow control
+            this.stopFlowControl();
+
+            // Set a non-normal exit code
+            this.exitCode.set( 1 );
         }
-
-        // Stop any flow control
-        this.stopFlowControl();
-
-        // Set a non-normal exit code
-        this.exitCode.set( 1 );
-
-        // Now do the actual close ordinarily
-        this.close();
     }
 
     /**
-     * <p>Closes the evaluation. After closure, the status of this evaluation can be acquired from 
-     * {@link #getExitCode()}.
+     * <p>Closes the evaluation.
      * 
      * <p>This method does not wait for publication or consumption to complete. To await completion, call 
      * {@link #await()} before calling {@link #close()}. An exception may be notified with {@link #stop(Exception)}.
@@ -647,60 +633,34 @@ public class Evaluation implements Closeable
 
         LOGGER.debug( "Closing evaluation {}.", this.getEvaluationId() );
 
-        // Determine and publish the completion status
-        CompletionStatus onCompletion = CompletionStatus.EVALUATION_COMPLETE_REPORTED_SUCCESS;
-        if ( this.getExitCode() != 0 )
-        {
-            onCompletion = CompletionStatus.EVALUATION_COMPLETE_REPORTED_FAILURE;
-        }
-
-        Instant now = Instant.now();
-        long seconds = now.getEpochSecond();
-        int nanos = now.getNano();
-
-        EvaluationStatus complete = EvaluationStatus.newBuilder()
-                                                    .setCompletionStatus( onCompletion )
-                                                    .setTime( Timestamp.newBuilder()
-                                                                       .setSeconds( seconds )
-                                                                       .setNanos( nanos ) )
-                                                    .addAllStatusEvents( this.errorsOnCompletion )
-                                                    .build();
-
-        ByteBuffer body = ByteBuffer.wrap( complete.toByteArray() );
-
-        try
-        {
-            // Internal publish in case publication has already been completed for this instance      
-            this.internalPublish( body,
-                                  this.evaluationStatusPublisher,
-                                  Evaluation.EVALUATION_STATUS_QUEUE,
-                                  null );
-        }
-        catch ( EvaluationEventException e )
-        {
-            LOGGER.debug( "Unable to publish the completion status of evaluation {}, which was {}.",
-                          this.getEvaluationId(),
-                          onCompletion );
-        }
-
         // Close the publishers gracefully
         this.closeGracefully( this.evaluationPublisher );
         this.closeGracefully( this.evaluationStatusPublisher );
         this.closeGracefully( this.statisticsPublisher );
         this.closeGracefully( this.pairsPublisher );
-
-        // Close the status tracker
+        
+        // Close the tracker
         this.statusTracker.close();
 
-        LOGGER.info( "Closed evaluation {} with status {}. This evaluation contained 1 evaluation description "
-                     + "message, {} statistics messages, {} pairs messages and {} evaluation status messages. The "
-                     + "exit code was {}.",
-                     this.getEvaluationId(),
-                     onCompletion,
-                     this.getPublishedMessageCount() - 1,
-                     this.getPublishedPairsMessageCount(),
-                     this.getPublishedStatusMessageCount(),
-                     this.getExitCode() );
+        if ( LOGGER.isInfoEnabled() )
+        {
+            // Log the completion status
+            CompletionStatus onCompletion = CompletionStatus.EVALUATION_COMPLETE_REPORTED_SUCCESS;
+            if ( this.getExitCode() != 0 )
+            {
+                onCompletion = CompletionStatus.EVALUATION_COMPLETE_REPORTED_FAILURE;
+            }
+
+            LOGGER.info( "Closed evaluation {} with status {}. This evaluation contained 1 evaluation description "
+                         + "message, {} statistics messages, {} pairs messages and {} evaluation status messages. The "
+                         + "exit code was {}.",
+                         this.getEvaluationId(),
+                         onCompletion,
+                         this.getPublishedMessageCount() - 1,
+                         this.getPublishedPairsMessageCount(),
+                         this.getPublishedStatusMessageCount(),
+                         this.getExitCode() );
+        }
     }
 
     /**
@@ -803,15 +763,12 @@ public class Evaluation implements Closeable
             throw new EvaluationEventException( "Interrupted while waiting for evaluation {} to complete."
                                                 + this.getEvaluationId() );
         }
-        catch ( IOException e )
-        {
-            LOGGER.debug( "Encountered an error while awaiting completion of evaluation {}, but failed to "
-                          + "stop the evaluation.",
-                          this.getEvaluationId() );
-        }
 
         // Evaluation finished (but not yet closed)
         this.isStopped.set( true );
+
+        // Publish success, which is only awaited by the tracker on closing
+        this.publishCompletionStatus( CompletionStatus.EVALUATION_COMPLETE_REPORTED_SUCCESS, null );
 
         return this.getExitCode();
     }
@@ -1034,6 +991,17 @@ public class Evaluation implements Closeable
             this.queuesConstructed = new AtomicInteger();
         }
     }
+    
+    /**
+     * Returns the unique identifier of the client that is responsible for publishing the evaluation being tracked.
+     * 
+     * @return the client identifier
+     */
+
+    String getClientId()
+    {
+        return this.clientId;
+    }    
 
     /**
      * Starts producer flow control when consumption lags behind production.
@@ -1055,14 +1023,46 @@ public class Evaluation implements Closeable
     }
 
     /**
-     * Returns the unique identifier of the client that is responsible for publishing the evaluation being tracked.
-     * 
-     * @return the client identifier
+     * Publishes the completion status of an evaluation.
+     * @param completionStatus the completion status
+     * @param exception an optional exception encountered before completion
      */
 
-    String getClientId()
+    private void publishCompletionStatus( CompletionStatus completionStatus, Exception exception )
     {
-        return this.clientId;
+        Instant now = Instant.now();
+        long seconds = now.getEpochSecond();
+        int nanos = now.getNano();
+
+        EvaluationStatus.Builder complete = EvaluationStatus.newBuilder()
+                                                            .setCompletionStatus( completionStatus )
+                                                            .setTime( Timestamp.newBuilder()
+                                                                               .setSeconds( seconds )
+                                                                               .setNanos( nanos ) );
+
+        if ( Objects.nonNull( exception ) )
+        {
+            EvaluationStatusEvent event = EvaluationEventUtilities.getStatusEventFromException( exception );
+            complete.addStatusEvents( event );
+        }
+
+        EvaluationStatus toPublish = complete.build();
+        ByteBuffer body = ByteBuffer.wrap( toPublish.toByteArray() );
+
+        try
+        {
+            // Internal publish in case publication has already been completed for this instance      
+            this.internalPublish( body,
+                                  this.evaluationStatusPublisher,
+                                  Evaluation.EVALUATION_STATUS_QUEUE,
+                                  null );
+        }
+        catch ( EvaluationEventException e )
+        {
+            LOGGER.warn( "Unable to publish the completion status of evaluation {}, which was {}.",
+                         this.getEvaluationId(),
+                         completionStatus );
+        }
     }
 
     /**
@@ -1365,7 +1365,6 @@ public class Evaluation implements Closeable
         this.publicationComplete = new AtomicBoolean();
         this.isStopped = new AtomicBoolean();
         this.isClosed = new AtomicBoolean();
-        this.errorsOnCompletion = new HashSet<>();
         this.flowController = new ProducerFlowController( this );
 
         try

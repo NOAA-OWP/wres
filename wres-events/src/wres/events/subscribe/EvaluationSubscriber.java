@@ -559,13 +559,12 @@ public class EvaluationSubscriber implements Closeable
             String correlationId = null;
             String groupId = null;
 
-            EvaluationConsumer consumer = null;
-
             try
             {
                 messageId = message.getJMSMessageID();
                 correlationId = message.getJMSCorrelationID();
                 groupId = message.getStringProperty( EvaluationSubscriber.GROUP_ID_STRING );
+                EvaluationConsumer consumer = null;
 
                 // Ignore status messages about consumers, including this one
                 if ( this.shouldIForwardThisMessageForConsumption( message, QueueType.EVALUATION_STATUS_QUEUE ) )
@@ -757,9 +756,28 @@ public class EvaluationSubscriber implements Closeable
                           messageId,
                           evaluationId );
 
-            consumer = this.getOrCreateNewEvaluationConsumer( evaluationId );
-
-            consumer.acceptStatusMessage( statusEvent, groupId, messageId );
+            // Ignore this message if the completion status is EVALUATION_COMPLETE_REPORTED_SUCCESS because a subscriber
+            // does not await this status before it flags its own work complete for an evaluation and such a message 
+            // should not trigger a new evaluation to be opened from the perspective of this subscriber. See #90908-8.
+            if ( completionStatus == CompletionStatus.EVALUATION_COMPLETE_REPORTED_SUCCESS )
+            {
+                if ( LOGGER.isDebugEnabled() )
+                {
+                    LOGGER.debug( "Subscriber {} received a status message {} with completion status {}, which will "
+                                  + "not be forwarded for consumption because subscribers do not await the completion "
+                                  + "of an evaluation, only of their work on behalf of an evaluation, and such a "
+                                  + "message should not start a new evaluation from the perspective of this subscriber.",
+                                  this.getClientId(),
+                                  messageId,
+                                  completionStatus,
+                                  evaluationId );
+                }
+            }
+            else
+            {
+                consumer = this.getOrCreateNewEvaluationConsumer( evaluationId );
+                consumer.acceptStatusMessage( statusEvent, groupId, messageId );
+            }
         }
 
         return consumer;
