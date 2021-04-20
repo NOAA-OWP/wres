@@ -1,7 +1,6 @@
 package wres.events;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
@@ -107,6 +106,15 @@ class EvaluationStatusTracker implements Closeable
      */
 
     private final CountDownLatch publicationLatch = new CountDownLatch( 1 );
+
+    /**
+     * A latch that records the completion of the evaluation, which requires the receipt of an 
+     * {@link EvaluationStatusMessage} with {@link CompletionStatus#EVALUATION_COMPLETE_REPORTED_SUCCESS} else a 
+     * failure. For the latter, an evaluation may complete without receipt of a status message because the messaging 
+     * infrastructure may be down.
+     */
+
+    private final CountDownLatch evaluationCompletionLatch = new CountDownLatch( 1 );
 
     /**
      * A latch for each top-level subscriber by subscriber identifier. A top-level subscriber collates one or more 
@@ -229,6 +237,18 @@ class EvaluationStatusTracker implements Closeable
     @Override
     public void close()
     {
+        // Awaiting receipt of the final success message, else failure and then close the tracker
+        try
+        {
+            this.awaitSuccessMessageOrFailure();
+        }
+        catch ( InterruptedException e )
+        {
+            String message = "Interrupted while awaiting the completion of evaluation " + this.getEvaluationId() + ".";
+            LOGGER.warn( message, e );
+            Thread.currentThread().interrupt();
+        }
+        
         // Unsubscribe any durable subscriber
         if ( this.isDurableSubscriber() )
         {
@@ -442,6 +462,21 @@ class EvaluationStatusTracker implements Closeable
                                                    + "order to reset the timeout period. " );
         }
     }
+    
+    /**
+     * Awaits the receipt of an {@link EvaluationStatus} message with 
+     * {@link CompletionStatus#EVALUATION_COMPLETE_REPORTED_SUCCESS}, else the failure of the evaluation, regardless of 
+     * whether a message was received. Receipt of a success message can only be awaited once {@link #await()} returns 
+     * because an evaluation cannot message its success until all of its awaited stages have completed.
+     * 
+     * @throws InterruptedException if interrupted while waiting
+     */
+
+    private void awaitSuccessMessageOrFailure() throws InterruptedException
+    {
+        LOGGER.debug( "Awaiting  of evaluation status tracker {}.", this );
+        this.evaluationCompletionLatch.await();
+    }
 
     /**
      * Stops all tracking on failure.
@@ -486,25 +521,15 @@ class EvaluationStatusTracker implements Closeable
         this.publicationLatch.countDown();
         this.negotiatedSubscriberLatches.forEach( ( a, b ) -> b.countDown() );
         this.subscriberNegotiator.stopNegotiation();
+        this.evaluationCompletionLatch.countDown();
 
         // Stop the evaluation, which also stops flow control
-        try
-        {
-            LOGGER.debug( "The evaluation status tracker that is tracking evaluation {} encountered a request to stop "
-                          + "on failure with signal {}. Stopping the evaluation.",
-                          this.getEvaluationId(),
-                          failure.getCompletionStatus() );
+        LOGGER.debug( "The evaluation status tracker that is tracking evaluation {} encountered a request to stop "
+                      + "on failure with signal {}. Stopping the evaluation.",
+                      this.getEvaluationId(),
+                      failure.getCompletionStatus() );
 
-            this.evaluation.stop( null );
-        }
-        catch ( IOException e )
-        {
-            String message = "Encountered an exception while stopping evaluation "
-                             + this.getEvaluationId()
-                             + ".";
-
-            LOGGER.warn( message, e );
-        }
+        this.evaluation.stop( null );
 
         // Now that the evaluation has stopped, check that the notification was not duplicated, as this would indicate
         // a subscriber notification failure: we expect one notification per subscriber. Do this last because it should 
@@ -734,6 +759,22 @@ class EvaluationStatusTracker implements Closeable
             // Only grouped messages control flow.
             LOGGER.debug( "Not attempting to stop flow control because the message received had no consumer set." );
         }
+    }
+
+    /**
+     * Registers the completion of the evaluation with {@link CompletionStatus#EVALUATION_COMPLETE_REPORTED_SUCCESS}.
+    
+     * @param message the status message containing the status event
+     * @throws NullPointerException if the message is null
+     */
+
+    private void registerSuccess( EvaluationStatus message )
+    {
+        Objects.requireNonNull( message );
+
+        LOGGER.debug( "Registered the successful completion of evaluation {}.", this.getEvaluationId() );
+
+        this.evaluationCompletionLatch.countDown();
     }
 
     /**
@@ -1099,11 +1140,20 @@ class EvaluationStatusTracker implements Closeable
 
                     EvaluationStatus statusMessage = EvaluationStatus.parseFrom( bufferedMessage.array() );
 
-                    // Accept the message
-                    this.acceptStatusMessage( statusMessage );
-
-                    // Acknowledge
-                    message.acknowledge();
+                    // Order of receipt and ack requires special handling on final success message otherwise the
+                    // connection and session may be closed before the ack
+                    if ( statusMessage.getCompletionStatus() == CompletionStatus.EVALUATION_COMPLETE_REPORTED_SUCCESS )
+                    {
+                        // Acknowledge and accept the message
+                        message.acknowledge();
+                        this.acceptStatusMessage( statusMessage );
+                    }
+                    else
+                    {
+                        // Accept and acknowledge the message
+                        this.acceptStatusMessage( statusMessage );
+                        message.acknowledge();
+                    }
                 }
             }
             // Throwing exceptions on the MessageListener::onMessage is considered a bug, so need to track status and 
@@ -1171,6 +1221,9 @@ class EvaluationStatusTracker implements Closeable
                 break;
             case EVALUATION_COMPLETE_REPORTED_FAILURE:
                 this.stopOnFailure( message );
+                break;
+            case EVALUATION_COMPLETE_REPORTED_SUCCESS:
+                this.registerSuccess( message );
                 break;
             default:
                 break;
