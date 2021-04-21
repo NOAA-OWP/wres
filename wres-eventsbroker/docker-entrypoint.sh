@@ -1,6 +1,4 @@
 #!/bin/sh
-# Set a lenient umask for files written by the qpid process to allow for their removal
-umask 0002
 
 # For any files not written using the default umask, make them group-writable on exit
 trap stop TERM INT
@@ -20,8 +18,6 @@ stop() {
     if [ "$stopped" = "false" ]
     then
         echo "Stopping the wres-eventsbroker. Bye bye..."
-        # Make the qpid files group writable
-        chmod -R 770 ${QPID_WORK}
         stopped="true"
         exit 0
     fi

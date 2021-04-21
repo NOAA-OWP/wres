@@ -326,23 +326,23 @@ select yn in "Yes" "No"; do
     esac
 done
 
-cp docker-compose-all-roles-with-graphics.template.yml docker-compose-all-roles-with-graphics.yml 
-sed -i "s/TASKER_IMAGE/${tasker_version}/" docker-compose-all-roles-with-graphics.yml
-sed -i "s/BROKER_IMAGE/${broker_version}/" docker-compose-all-roles-with-graphics.yml
-sed -i "s/REDIS_IMAGE/${redis_version}/" docker-compose-all-roles-with-graphics.yml
-sed -i "s/WORKER_IMAGE/${overall_version}/" docker-compose-all-roles-with-graphics.yml # By design... The tag for the worker image is the "overall_version".
-sed -i "s/EVENTS_IMAGE/${eventsbroker_version}/" docker-compose-all-roles-with-graphics.yml
-sed -i "s/GRAPHICS_IMAGE/${graphics_version}/" docker-compose-all-roles-with-graphics.yml
-sed -i "s/OVERALL_IMAGE/${overall_version}/" docker-compose-all-roles-with-graphics.yml
+cp compose-entry.template.yml compose-entry.yml 
+sed -i "s/TASKER_IMAGE/${tasker_version}/" compose-entry.yml
+sed -i "s/BROKER_IMAGE/${broker_version}/" compose-entry.yml
+sed -i "s/REDIS_IMAGE/${redis_version}/" compose-entry.yml
+sed -i "s/WORKER_IMAGE/${overall_version}/" compose-entry.yml # By design... The tag for the worker image is the "overall_version".
+sed -i "s/EVENTS_IMAGE/${eventsbroker_version}/" compose-entry.yml
+sed -i "s/GRAPHICS_IMAGE/${graphics_version}/" compose-entry.yml
+sed -i "s/OVERALL_IMAGE/${overall_version}/" compose-entry.yml
 
-cp docker-compose-workers-only-with-graphics.template.yml docker-compose-workers-only-with-graphics.yml
-sed -i "s/TASKER_IMAGE/${tasker_version}/" docker-compose-workers-only-with-graphics.yml
-sed -i "s/BROKER_IMAGE/${broker_version}/" docker-compose-workers-only-with-graphics.yml
-sed -i "s/REDIS_IMAGE/${redis_version}/" docker-compose-workers-only-with-graphics.yml
-sed -i "s/WORKER_IMAGE/${overall_version}/" docker-compose-workers-only-with-graphics.yml # By design... The tag for the worker image is the "overall_version".
-sed -i "s/EVENTS_IMAGE/${eventsbroker_version}/" docker-compose-workers-only-with-graphics.yml
-sed -i "s/GRAPHICS_IMAGE/${graphics_version}/" docker-compose-workers-only-with-graphics.yml
-sed -i "s/OVERALL_IMAGE/${overall_version}/" docker-compose-workers-only-with-graphics.yml
+cp compose-workers.template.yml compose-workers.yml
+sed -i "s/TASKER_IMAGE/${tasker_version}/" compose-workers.yml
+sed -i "s/BROKER_IMAGE/${broker_version}/" compose-workers.yml
+sed -i "s/REDIS_IMAGE/${redis_version}/" compose-workers.yml
+sed -i "s/WORKER_IMAGE/${overall_version}/" compose-workers.yml # By design... The tag for the worker image is the "overall_version".
+sed -i "s/EVENTS_IMAGE/${eventsbroker_version}/" compose-workers.yml
+sed -i "s/GRAPHICS_IMAGE/${graphics_version}/" compose-workers.yml
+sed -i "s/OVERALL_IMAGE/${overall_version}/" compose-workers.yml
 
 echo ""
 echo "The two .yml files have been updated.  Please push them to the repository, if appropriate, or use 'git checkout' to undo the changes."
