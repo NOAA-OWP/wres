@@ -133,17 +133,49 @@ then
     echo ""
     echo "Please download these files and place them in the stated directory:"
     echo ""
-    echo "    $core_url  -  build/distributions"
-    echo "    $worker_url  -  wres-worker/build/distributions"
-    echo "    $tasker_url  -  wres-tasker/build/distributions"
-    echo "    $graphics_url  -  wres-vis/build/distributions"
+
+    if [[ ! -f ./build/distributions/$wres_core_file ]]
+    then
+        echo "    $core_url  -  build/distributions"
+    fi
+
+    if [[ ! -f ./wres-worker/build/distributions/$worker_shim_file ]]
+    then
+        echo "    $worker_url  -  wres-worker/build/distributions"
+    fi
+
+    if [[ ! -f ./wres-tasker/build/distributions/$tasker_file ]]
+    then
+        echo "    $tasker_url  -  wres-tasker/build/distributions"
+    fi
+
+    if [[ ! -f ./wres-vis/build/distributions/$graphics_file ]]
+    then
+        echo "    $graphics_url  -  wres-vis/build/distributions"
+    fi
     echo ""
     echo "You can use the following curl commands, with user name and token specified in ~/jenkins_token, to obtain the files:"
     echo ""
-    echo "     curl --config ~/jenkins_token -o ./build/distributions/$wres_core_file $core_url"
-    echo "     curl --config ~/jenkins_token -o ./wres-worker/build/distributions/$worker_shim_file $worker_url"
-    echo "     curl --config ~/jenkins_token -o ./wres-tasker/build/distributions/$tasker_file $tasker_url"
-    echo "     curl --config ~/jenkins_token -o ./wres-vis/build/distributions/$graphics_file $graphics_url"
+
+    if [[ ! -f ./build/distributions/$wres_core_file ]]
+    then
+        echo "     curl --config ~/jenkins_token -o ./build/distributions/$wres_core_file $core_url"
+    fi
+
+    if [[ ! -f ./wres-worker/build/distributions/$worker_shim_file ]]
+    then
+        echo "     curl --config ~/jenkins_token -o ./wres-worker/build/distributions/$worker_shim_file $worker_url"
+    fi
+
+    if [[ ! -f ./wres-tasker/build/distributions/$tasker_file ]]
+    then
+        echo "     curl --config ~/jenkins_token -o ./wres-tasker/build/distributions/$tasker_file $tasker_url"
+    fi
+
+    if [[ ! -f ./wres-vis/build/distributions/$graphics_file ]]
+    then
+        echo "     curl --config ~/jenkins_token -o ./wres-vis/build/distributions/$graphics_file $graphics_url"
+    fi
     echo ""
     echo "You can also use the '-u user:token' option instead of '--config ~/jenkins_token', e.g. '-u <user.name>:<Jenkins API token>'."
     echo ""
