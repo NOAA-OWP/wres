@@ -289,7 +289,7 @@ final class ProjectScriptGenerator
     }
 
     /**
-     * Replace ' with ` and replace ; with ,
+     * Use an allowed-character list to prevent control chars and/or ; and '
      *
      * Only here because the commons-lang method is deprecated, commons-text
      * does not provide a method to escape sql, and esapi only has something
@@ -302,15 +302,17 @@ final class ProjectScriptGenerator
      * @return the same original String if it passes validation.
      * @throws IllegalArgumentException If dangerous char found.
      */
-    private static String validateStringForSql( String possiblyDangerousString )
+    static String validateStringForSql( String possiblyDangerousString )
     {
         possiblyDangerousString.chars()
                                .forEach( c -> {
                                    if ( !Character.isAlphabetic( c )
                                         && !Character.isDigit( c )
                                         && !Character.isSpaceChar( c )
-                                        && !Character.isIdeographic( c ) )
-                                       throw new IllegalArgumentException( "Invalid char found" );
+                                        && !Character.isIdeographic( c )
+                                        && Character.getType( c ) != Character.DASH_PUNCTUATION
+                                        && Character.getType( c ) != Character.CONNECTOR_PUNCTUATION )
+                                       throw new IllegalArgumentException( "Unsupported char '" + c + " found" );
                                } );
 
         return possiblyDangerousString;
