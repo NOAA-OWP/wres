@@ -24,7 +24,7 @@ RUN apk add tar && \
 
 #############
 # Final image
-FROM azul/zulu-openjdk-debian:11.0.10-11.45.27
+FROM azul/zulu-openjdk-debian:11.0.11-11.48.21
 
 # Set env vars expected by qpid
 ENV QPID_HOME=/usr/local
