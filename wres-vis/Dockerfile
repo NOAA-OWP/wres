@@ -7,6 +7,8 @@ RUN dnf install -y \
     fontconfig-2.13.1-3.el8 \
     dejavu-fonts-common-2.35-6.el8 \
     dejavu-sans-fonts-2.35-6.el8 \
+    procps-ng-3.3.15-3.el8_3.1 \
+    iproute-5.3.0-5.el8 \
     && dnf clean all
 
 # Run the app as non-root, so create a non-root user.
