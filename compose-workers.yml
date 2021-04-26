@@ -10,7 +10,7 @@ networks:
                   gateway: 172.19.254.193
 services:
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210422-826feab"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210426-d3dc8f5"
         restart: always
         depends_on:
             eventsbroker:
@@ -68,7 +68,7 @@ services:
         depends_on:
             eventsbroker:
                 condition: service_started
-        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20210422-826feab"
+        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20210426-419da9d"
         restart: always
         # For graphics outputs
         volumes:
