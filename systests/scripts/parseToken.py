@@ -8,10 +8,14 @@ from xml.etree import ElementTree as ET
 # Created: April,2021
 
 if len(sys.argv) < 2:
-	print "Usage: " + sys.argv[0] + " inputFile.html"
+	print "Usage: " + sys.argv[0] + " inputFile.xml"
 	exit(2)
 else:
 	inputFile = sys.argv[1]
+
+if inputFile.rfind(".xml") < 0:
+	print "input file name must with .xml extension!"
+	exit(2)
 
 #print "inputFile = " + inputFile
 zipFile = inputFile.rstrip(".xml")
@@ -20,10 +24,10 @@ tree = ET # an ET tree
 xhtml = tree.parse(inputFile)
 
 root = xhtml.getroot()
-#print "<upload>"
+print "<"+root.tag+">"
 for child in root:
 	print "<"+child.tag+">"+child.text+"</"+child.tag+">"
 
 print "<filename>"+zipFile+"</filename>"
 print "<content_type>application/octet-stream</content_type>"
-#print "</upload>"
+print "</"+root.tag+">"

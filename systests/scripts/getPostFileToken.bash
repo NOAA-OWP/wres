@@ -18,12 +18,6 @@ echo "JUnitLog_FILENAME = $JUnitLog_FILENAME"
 echo "graphicsLog_FILENAME = $graphicsLog_FILENAME"
 echo "outputFile = " $outputFile
 #exit
-echo "<?xml version=\"1.0\" ?><issue>" > $outputFile
-#echo "<subject>" >> $outputFile
-#echo "$MAIL_SUBJECT" >> $outputFile
-#echo "</subject>" >>  $outputFile
-echo "<notes>" >>  $outputFile
-echo -n "Attached two zip files are " >> $outputFile
 
 if [ -f ${JUnitLog_FILENAME} ]
 then
@@ -38,8 +32,9 @@ then
 #		ls ${JUnitLog_FILENAME_Base}.xml
 		rm -v ${JUnitLog_FILENAME_BaseZip}.xml
 	fi
+#	echo -n "$JUnitLog_FILENAME_BaseZip and " >> $outputFile
 fi
-echo -n "$JUnitLog_FILENAME_BaseZip and " >> $outputFile
+
 if [ -f ${graphicsLog_FILENAME} ]
 then
 	graphicsLog_FILENAME_Base=`/bin/basename ${graphicsLog_FILENAME}`
@@ -53,41 +48,44 @@ then
 #		ls ${graphicsLog_FILENAME_Base}.xml
 		rm -v ${graphicsLog_FILENAME_BaseZip}.xml
 	fi
+#	echo "${graphicsLog_FILENAME_BaseZip}" >> $outputFile
 fi
-echo "${graphicsLog_FILENAME_BaseZip}" >> $outputFile
 #exit
-echo "<uploads>" >> $outputFile 
+echo "<uploads type=\"array\">" >> $outputFile 
 # get JUnitLog token
 if [ -f ${JUnitLog_FILENAME_BaseZip} ]
 then
 	curl -H 'X-Redmine***REMOVED***: ***REMOVED***' --data-binary "@${JUnitLog_FILENAME_BaseZip}" -H "Content-Type: application/octet-stream" -X POST https://***REMOVED***/redmine/uploads.xml?filename=${JUnitLog_FILENAME_BaseZip} -o ${JUnitLog_FILENAME_BaseZip}.xml -v
 
+	if [ -s ${JUnitLog_FILENAME_BaseZip}.xml ]
+	then
 	# Parse the token to the XML file
-	/wres_share/releases/install_scripts/parseToken.py ${JUnitLog_FILENAME_BaseZip}.xml >> $outputFile
+		/wres_share/releases/install_scripts/parseToken.py ${JUnitLog_FILENAME_BaseZip}.xml >> $outputFile
+	fi
 fi
 # get graphicsLog token
 if [ -f ${graphicsLog_FILENAME_BaseZip} ]
 then
 	curl -H 'X-Redmine***REMOVED***: ***REMOVED***' --data-binary "@${graphicsLog_FILENAME_BaseZip}" -H "Content-Type: application/octet-stream" -X POST https://***REMOVED***/redmine/uploads.xml?filename=${graphicsLog_FILENAME_BaseZip} -o ${graphicsLog_FILENAME_BaseZip}.xml -v
 
+	if [ -s ${graphicsLog_FILENAME_BaseZip}.xml ]
+	then
 	# Parse the token to the XML file
-	/wres_share/releases/install_scripts/parseToken.py ${graphicsLog_FILENAME_BaseZip}.xml >> $outputFile
+		/wres_share/releases/install_scripts/parseToken.py ${graphicsLog_FILENAME_BaseZip}.xml >> $outputFile
+	fi
 fi
 echo "</uploads>" >> $outputFile
-echo "</notes>" >> $outputFile
 echo "</issue>" >> $outputFile
 
 cat $outputFile
 
 #exit
-# There are no errors, but the two zip files do not upload to Redmine, why?!
 /usr/bin/curl -v -x '' -H 'X-Redmine***REMOVED***: ***REMOVED***' https://***REMOVED***/redmine/issues/89538.xml -X PUT -H 'Content-Type: application/xml' -d "@${outputFile}"
 
-#/usr/bin/curl -v -x '' -H 'X-Redmine***REMOVED***: ***REMOVED***' -H "Content-Type: application/xml" -X POST --data-binary "@${outputFile}" https://***REMOVED***/redmine/issues/89538.xml
 
-ls -l ${JUnitLog_FILENAME_Base} ${graphicsLog_FILENAME_Base}
-ls -l ${JUnitLog_FILENAME_BaseZip} ${graphicsLog_FILENAME_BaseZip}
-ls -l ${JUnitLog_FILENAME_BaseZip}.xml ${graphicsLog_FILENAME_BaseZip}.xml
-#rm -v ${JUnitLog_FILENAME_BaseZip} ${graphicsLog_FILENAME_BaseZip}
-
-#/usr/bin/curl -x '' -H 'X-Redmine***REMOVED***: ***REMOVED***' -v -H "Content-Type: application/xml" -X POST --data-binary "@${outputFile}" https://***REMOVED***/redmine/issues/89538.xml
+#ls -l ${JUnitLog_FILENAME_Base} ${graphicsLog_FILENAME_Base}
+rm -v ${JUnitLog_FILENAME_Base} ${graphicsLog_FILENAME_Base}
+#ls -l ${JUnitLog_FILENAME_BaseZip} ${graphicsLog_FILENAME_BaseZip}
+rm -v ${JUnitLog_FILENAME_BaseZip} ${graphicsLog_FILENAME_BaseZip}
+#ls -l ${JUnitLog_FILENAME_BaseZip}.xml ${graphicsLog_FILENAME_BaseZip}.xml
+rm -v ${JUnitLog_FILENAME_BaseZip}.xml ${graphicsLog_FILENAME_BaseZip}.xml

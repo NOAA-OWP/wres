@@ -269,20 +269,17 @@ then
 
 	echo "cat summary.txt" 2>&1 | /usr/bin/tee --append $LOGFILE
 	cat summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
-	ls -l $WRES_DIRJ/install_scripts/redmineTemplateFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE
-	if [ -f $WRES_DIRJ/install_scripts/redmineTemplateFile.xml ]
-	then
-		cp -v $WRES_DIRJ/install_scripts/redmineTemplateFile.xml redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE 
-		sed -i s/"TheSubjectLine"/"$MAIL_SUBJECT"/g redmineTempFile.xml
-		cat summary.txt >> redmineTempFile.xml
-		echo "</notes>" >> redmineTempFile.xml
-		echo "</issue>" >> redmineTempFile.xml
-		cat redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE 
-		/usr/bin/curl -x '' -H 'X-Redmine***REMOVED***: ***REMOVED***' https://***REMOVED***/redmine/issues/89538.xml -X PUT -H 'Content-Type: text/xml' -T redmineTempFile.xml 
-		rm -v redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE
-	else
-		ls -l $WRES_DIRJ/install_scripts/redmineTemplateFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE
-	fi
+
+	echo "<?xml version=\"1.0\" ?><issue><subject>" > redmineTempFile.xml
+	echo "$MAIL_SUBJECT" >> redmineTempFile.xml
+	echo "</subject><notes>" >> redmineTempFile.xml
+	cat summary.txt >> redmineTempFile.xml
+	echo "</notes>" >> redmineTempFile.xml
+	# pass the log files and output XML file to below script, it will zip the log files, get their tokens, append all
+	# neccessary XML element tags, then upload the zip files and update the Redmine ticket #89538
+	$WRES_DIRJ/install_scripts/getPostFileToken.bash ${LOGFILE} ${LOGFILE_GRAPHICS} redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE 
+
+	rm -v redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE
 
 # -------- when SMTP server is down, then uncomment above lines ------------------------------
 else
