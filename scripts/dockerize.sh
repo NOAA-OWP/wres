@@ -49,8 +49,11 @@ wres_worker_shim_version=$( echo "$all_versions" | grep "^wres-worker version" |
 eventsbroker_version=$( echo "$all_versions" | grep "^wres-eventsbroker version" | cut -d' ' -f3 )
 graphics_version=$( echo "$all_versions" | grep "^wres-vis version" | cut -d' ' -f3 )
 
+# These will be the zip ids, as distinct from the previously-found image ids.
 wres_core_version=$overall_version
 wres_tasker_version=$tasker_version
+wres_vis_version=$graphics_version
+
 
 # Sometimes auto-detection of versions does not work, because if no code changed
 # then gradle will not create a new zip file. So the caller must specify each
@@ -88,7 +91,7 @@ fi
 
 if [[ "$7" != "" && "$7" != "auto" ]]
 then
-    graphics_version=$7
+    wres_vis_version=$7
 fi
 
 echo ""
@@ -102,7 +105,8 @@ echo "Tasker docker image version is $tasker_version"
 echo "Broker docker image version is $broker_version"
 echo "Redis docker image version is $redis_version"
 echo "WRES events broker docker image version is $eventsbroker_version"
-echo "WRES graphics client docker image version is $graphics_version"
+echo "WRES vis binary zip version is $wres_vis_version"
+echo "WRES graphics docker image version is $graphics_version"
 
 
 #=============================================================
@@ -114,19 +118,19 @@ echo "Identifying .zip files required..."
 wres_core_file=wres-${wres_core_version}.zip
 worker_shim_file=wres-worker-${wres_worker_shim_version}.zip
 tasker_file=wres-tasker-${wres_tasker_version}.zip
-graphics_file=wres-vis-${graphics_version}.zip
+vis_file=wres-vis-${wres_vis_version}.zip
 
 jenkins_workspace=https://***REMOVED***/jenkins/job/Verify_OWP_WRES/ws
 core_url=$jenkins_workspace/build/distributions/$wres_core_file
 worker_url=$jenkins_workspace/wres-worker/build/distributions/$worker_shim_file
 tasker_url=$jenkins_workspace/wres-tasker/build/distributions/$tasker_file
-graphics_url=$jenkins_workspace/wres-vis/build/distributions/$graphics_file
+vis_url=$jenkins_workspace/wres-vis/build/distributions/$vis_file
 
 # Ensure the distribution zip files are present for successful docker build
 if [[ ! -f ./build/distributions/$wres_core_file || \
          ! -f ./wres-worker/build/distributions/$worker_shim_file || \
          ! -f ./wres-tasker/build/distributions/$tasker_file || \
-         ! -f ./wres-vis/build/distributions/$graphics_file  ]]
+         ! -f ./wres-vis/build/distributions/$vis_file  ]]
 then
     echo ""
     echo "It appears you are not an automated build server (or something went wrong if you are)."
@@ -149,9 +153,9 @@ then
         echo "    $tasker_url  -  wres-tasker/build/distributions"
     fi
 
-    if [[ ! -f ./wres-vis/build/distributions/$graphics_file ]]
+    if [[ ! -f ./wres-vis/build/distributions/$vis_file ]]
     then
-        echo "    $graphics_url  -  wres-vis/build/distributions"
+        echo "    $vis_url  -  wres-vis/build/distributions"
     fi
     echo ""
     echo "You can use the following curl commands, with user name and token specified in ~/jenkins_token, to obtain the files:"
@@ -172,9 +176,9 @@ then
         echo "     curl --config ~/jenkins_token -o ./wres-tasker/build/distributions/$tasker_file $tasker_url"
     fi
 
-    if [[ ! -f ./wres-vis/build/distributions/$graphics_file ]]
+    if [[ ! -f ./wres-vis/build/distributions/$vis_file ]]
     then
-        echo "     curl --config ~/jenkins_token -o ./wres-vis/build/distributions/$graphics_file $graphics_url"
+        echo "     curl --config ~/jenkins_token -o ./wres-vis/build/distributions/$vis_file $vis_url"
     fi
     echo ""
     echo "You can also use the '-u user:token' option instead of '--config ~/jenkins_token', e.g. '-u <user.name>:<Jenkins API token>'."
@@ -235,7 +239,7 @@ echo "Built wres/wres-eventsbroker:$eventsbroker_version -- $eventsbroker_image_
 # Build and tag the graphics image
 echo "Building graphics image..."
 pushd wres-vis
-graphics_image_id=$( docker build --build-arg version=$graphics_version --quiet --tag wres/wres-graphics:$graphics_version . )
+graphics_image_id=$( docker build --build-arg version=$wres_vis_version --quiet --tag wres/wres-graphics:$graphics_version . )
 popd
 
 echo "Built wres/wres-graphics:$graphics_version -- $graphics_image_id"
