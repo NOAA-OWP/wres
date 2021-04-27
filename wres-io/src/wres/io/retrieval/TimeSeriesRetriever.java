@@ -49,7 +49,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * String used repeatedly to denote a reference_time.
      */
 
-    private static final String REFERENCE_TIME = "reference_time";
+    static final String REFERENCE_TIME = "reference_time";
 
     /**
      * Message used several times.
@@ -274,7 +274,10 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 String functionString = provider.getString( "scale_function" );
                 Duration period = provider.getDuration( "scale_period" );
 
-                TimeScaleOuter latestScale = this.checkAndGetLatestScale( lastScale, period, functionString, event );
+                TimeScaleOuter latestScale = this.checkAndGetLatestScale( lastScale,
+                                                                          period,
+                                                                          functionString,
+                                                                          validTime );
 
                 TimeSeriesMetadata metadata =
                         TimeSeriesMetadata.of( referenceTimes,
@@ -405,7 +408,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 script.addTab().addLine( "AND CAST (", columnName + " AS DATE ) >= ", earliestConstraint );
                 script.addTab().addLine( "AND CAST (", columnName, " AS DATE ) <= ", latestConstraint );
             }
-            
+
             // Add the parameters in order
             script.addArgument( earliestDay.getMonthValue() )
                   .addArgument( earliestDay.getDayOfMonth() )
@@ -687,15 +690,15 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @param lastScale the last scale information retrieved
      * @param period the period of ther current time scale to be retrieved
      * @param functionString the function string for the current time scale to be retrieved
-     * @param event the event whose time scale is to be determined, which helps with messaging
+     * @param validTime the valid time of the event whose time scale is to be determined, which helps with messaging
      * @return the current time scale
      * @throws DataAccessException if the current time scale is inconsistent with the last time scale
      */
 
-    private <S> TimeScaleOuter checkAndGetLatestScale( TimeScaleOuter lastScale,
-                                                       Duration period,
-                                                       String functionString,
-                                                       Event<S> event )
+    <S> TimeScaleOuter checkAndGetLatestScale( TimeScaleOuter lastScale,
+                                               Duration period,
+                                               String functionString,
+                                               Instant validTime )
     {
 
         Duration periodToUse = null;
@@ -740,7 +743,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
         if ( Objects.nonNull( lastScale ) && !lastScale.equals( returnMe ) )
         {
-            throw new DataAccessException( "The time scale information associated with event '" + event
+            throw new DataAccessException( "The time scale information associated with an event at'" + validTime
                                            + "' is '"
                                            + returnMe
                                            + "' but other events in the same series have a different time "
