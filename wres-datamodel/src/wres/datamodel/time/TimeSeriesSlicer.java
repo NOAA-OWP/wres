@@ -1107,6 +1107,7 @@ public final class TimeSeriesSlicer
         if ( !labels.isEmpty() )
         {
             String[] stringLabels = labels.toArray( new String[labels.size()] );
+            // These are de-duplicated centrally
             labs = Labels.of( stringLabels );
         }
         else

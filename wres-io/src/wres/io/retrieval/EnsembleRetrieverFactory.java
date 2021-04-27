@@ -25,7 +25,6 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Features;
 import wres.io.project.Project;
-import wres.io.retrieval.EnsembleForecastRetriever.Builder;
 import wres.io.utilities.Database;
 
 /**
@@ -48,6 +47,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     /**
      * Message about features, re-used several times.
      */
+
     private static final String FEATURE_MESSAGE = ", feature ";
 
     /**
@@ -56,7 +56,16 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
 
     private static final String AND_TIME_WINDOW_MESSAGE = " and time window ";
 
+    /**
+     * Database.
+     */
+
     private final Database database;
+
+    /**
+     * Features cache.
+     */
+
     private final Features featuresCache;
 
     /**
@@ -111,12 +120,20 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
      * A single-valued retriever factory for the left-ish data.
      */
 
-    private final RetrieverFactory<Double,Double> leftFactory;
+    private final RetrieverFactory<Double, Double> leftFactory;
+
+    /**
+     * @return the database.
+     */
 
     private Database getDatabase()
     {
         return this.database;
     }
+
+    /**
+     * @return the features cache.
+     */
 
     private Features getFeaturesCache()
     {
@@ -174,7 +191,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
             return this.getRightRetrieverBuilder( this.rightConfig.getType() )
                        .setEnsembleIdsToInclude( ensembleIdsToInclude )
                        .setEnsembleIdsToExclude( ensembleIdsToExclude )
-                       .setDatabase( this.getDatabase()  )
+                       .setDatabase( this.getDatabase() )
                        .setFeaturesCache( this.getFeaturesCache() )
                        .setProjectId( this.project.getId() )
                        .setFeature( this.feature.getRight() )
@@ -200,7 +217,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
                                            e );
         }
     }
-    
+
     @Override
     public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever()
     {
@@ -310,7 +327,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
 
         // Obtain and set the desired time scale. 
         this.desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
-        
+
         // Create a factory for the left-ish data
         this.leftFactory = SingleValuedRetrieverFactory.of( database,
                                                             featuresCache,
@@ -331,7 +348,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     {
         if ( dataType == DatasourceType.ENSEMBLE_FORECASTS )
         {
-            return (Builder) new EnsembleForecastRetriever.Builder().setReferenceTimeType( ReferenceTimeType.T0 );
+            return (EnsembleForecastRetriever.Builder) new EnsembleForecastRetriever.Builder().setReferenceTimeType( ReferenceTimeType.T0 );
         }
         else
         {
