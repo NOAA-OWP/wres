@@ -58,9 +58,6 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
 
     private static final String AND_TIME_WINDOW_MESSAGE = " and time window ";
 
-    private final Database database;
-    private final Features featuresCache;
-
     /**
      * The project.
      */
@@ -121,21 +118,9 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
 
     private final String featureString;
 
-    private Database getDatabase()
-    {
-        return this.database;
-    }
-
-    private Features getFeaturesCache()
-    {
-        return this.featuresCache;
-    }
-
     /**
      * Returns an instance.
      *
-     * @param database The database to use.
-     * @param featuresCache The features cache to use.
      * @param project the project
      * @param feature a feature to evaluate
      * @param unitMapper the unit mapper
@@ -143,15 +128,11 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
      * @throws NullPointerException if any input is null
      */
 
-    public static SingleValuedRetrieverFactory of( Database database,
-                                                   Features featuresCache,
-                                                   Project project,
+    public static SingleValuedRetrieverFactory of( Project project,
                                                    FeatureTuple feature,
                                                    UnitMapper unitMapper )
     {
-        return new SingleValuedRetrieverFactory( database,
-                                                 featuresCache,
-                                                 project,
+        return new SingleValuedRetrieverFactory( project,
                                                  feature,
                                                  unitMapper );
     }
@@ -303,49 +284,23 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     }
 
     /**
-     * Hidden constructor.
-     * 
-     * @param project the project
-     * @param feature a feature
-     * @param unitMapper the unit mapper
-     * @throws NullPointerException if any input is null
+     * @return the database.
      */
 
-    private SingleValuedRetrieverFactory( Database database,
-                                          Features featuresCache,
-                                          Project project,
-                                          FeatureTuple feature,
-                                          UnitMapper unitMapper )
+    private Database getDatabase()
     {
-        Objects.requireNonNull( database );
-        Objects.requireNonNull( featuresCache );
-        Objects.requireNonNull( project );
-        Objects.requireNonNull( unitMapper );
-        Objects.requireNonNull( feature );
-
-        this.database = database;
-        this.featuresCache = featuresCache;
-        this.project = project;
-        this.feature = feature;
-        this.unitMapper = unitMapper;
-
-        this.featureString = feature.toString();
-
-        ProjectConfig projectConfig = project.getProjectConfig();
-        PairConfig pairConfig = projectConfig.getPair();
-        Inputs inputsConfig = projectConfig.getInputs();
-        this.leftConfig = inputsConfig.getLeft();
-        this.rightConfig = inputsConfig.getRight();
-        this.baselineConfig = inputsConfig.getBaseline();
-
-        // Obtain any seasonal constraints
-        this.seasonStart = project.getEarliestDayInSeason();
-        this.seasonEnd = project.getLatestDayInSeason();
-
-        // Obtain and set the desired time scale. 
-        this.desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
+        return this.project.getDatabase();
     }
 
+    /**
+     * @return the features cache.
+     */
+
+    private Features getFeaturesCache()
+    {
+        return this.project.getFeaturesCache();
+    }
+    
     /**
      * Returns a builder for a retriever.
      * 
@@ -439,5 +394,44 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     private Project getProject()
     {
         return this.project;
+    }    
+    
+    /**
+     * Hidden constructor.
+     * 
+     * @param project the project
+     * @param feature a feature
+     * @param unitMapper the unit mapper
+     * @throws NullPointerException if any input is null
+     */
+
+    private SingleValuedRetrieverFactory( Project project,
+                                          FeatureTuple feature,
+                                          UnitMapper unitMapper )
+    {
+        Objects.requireNonNull( project );
+        Objects.requireNonNull( unitMapper );
+        Objects.requireNonNull( feature );
+
+        this.project = project;
+        this.feature = feature;
+        this.unitMapper = unitMapper;
+
+        this.featureString = feature.toString();
+
+        ProjectConfig projectConfig = project.getProjectConfig();
+        PairConfig pairConfig = projectConfig.getPair();
+        Inputs inputsConfig = projectConfig.getInputs();
+        this.leftConfig = inputsConfig.getLeft();
+        this.rightConfig = inputsConfig.getRight();
+        this.baselineConfig = inputsConfig.getBaseline();
+
+        // Obtain any seasonal constraints
+        this.seasonStart = project.getEarliestDayInSeason();
+        this.seasonEnd = project.getLatestDayInSeason();
+
+        // Obtain and set the desired time scale. 
+        this.desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
     }
+
 }

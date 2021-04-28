@@ -28,6 +28,7 @@ import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
+import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.project.Project;
 import wres.io.retrieval.UnitMapper;
@@ -46,6 +47,7 @@ public class PoolsGeneratorTest
 
     private @Mock Database wresDatabase;
     private @Mock Features featuresCache;
+    private @Mock Ensembles ensemblesCache;
     private @Mock UnitMapper unitMapper;
 
     @Before
@@ -130,6 +132,8 @@ public class PoolsGeneratorTest
         Mockito.when( project.getBaselineVariableName() ).thenReturn( null );
         Mockito.when( project.hasBaseline() ).thenReturn( false );
         Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
+        Mockito.when( project.getDatabase() ).thenReturn( this.wresDatabase );
+        Mockito.when( project.getFeaturesCache() ).thenReturn( this.featuresCache );
 
         ProjectConfigPlus projectConfigPlus = Mockito.mock( ProjectConfigPlus.class );
         Mockito.when( projectConfigPlus.getProjectConfig() )
@@ -143,8 +147,6 @@ public class PoolsGeneratorTest
         // Create the actual output
         List<Supplier<Pool<Pair<Double, Double>>>> actual =
                 PoolFactory.getSingleValuedPools( mockEvaluation,
-                                                  this.wresDatabase,
-                                                  this.featuresCache,
                                                   project,
                                                   new FeatureTuple( feature, feature, null ),
                                                   this.unitMapper );
@@ -231,6 +233,9 @@ public class PoolsGeneratorTest
         Mockito.when( project.getBaselineVariableName() ).thenReturn( null );
         Mockito.when( project.hasBaseline() ).thenReturn( false );
         Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
+        Mockito.when( project.getDatabase() ).thenReturn( this.wresDatabase );
+        Mockito.when( project.getFeaturesCache() ).thenReturn( this.featuresCache );
+        Mockito.when( project.getEnsemblesCache() ).thenReturn( this.ensemblesCache );
 
         ProjectConfigPlus projectConfigPlus = Mockito.mock( ProjectConfigPlus.class );
         Mockito.when( projectConfigPlus.getProjectConfig() )
@@ -244,8 +249,6 @@ public class PoolsGeneratorTest
         // Create the actual output
         List<Supplier<Pool<Pair<Double, Ensemble>>>> actual =
                 PoolFactory.getEnsemblePools( mockEvaluation,
-                                              this.wresDatabase,
-                                              this.featuresCache,
                                               project,
                                               new FeatureTuple( feature, feature, null ),
                                               this.unitMapper );

@@ -49,13 +49,11 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.generators.PersistenceGenerator;
 import wres.events.Evaluation;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Features;
 import wres.io.project.Project;
 import wres.io.retrieval.EnsembleRetrieverFactory;
 import wres.io.retrieval.RetrieverFactory;
 import wres.io.retrieval.SingleValuedRetrieverFactory;
 import wres.io.retrieval.UnitMapper;
-import wres.io.utilities.Database;
 
 /**
  * A factory class for generating the pools of pairs associated with an evaluation.
@@ -89,8 +87,6 @@ public class PoolFactory
      * Create pools for single-valued data from a prescribed {@link Project} and {@link Feature}.
      * 
      * @param evaluation the evaluation description
-     * @param database The database to use.
-     * @param featuresCache The features cache/orm to use.
      * @param project the project for which pools are required
      * @param feature the feature for which pools are required
      * @param unitMapper the mapper to convert measurement units
@@ -101,16 +97,12 @@ public class PoolFactory
      */
 
     public static List<Supplier<Pool<Pair<Double, Double>>>> getSingleValuedPools( Evaluation evaluation,
-                                                                                   Database database,
-                                                                                   Features featuresCache,
                                                                                    Project project,
                                                                                    FeatureTuple feature,
                                                                                    UnitMapper unitMapper )
     {
         Objects.requireNonNull( evaluation, "Cannot create pools from a null evaluation." );
         Objects.requireNonNull( project, "Cannot create pools from a null project." );
-        Objects.requireNonNull( featuresCache, "Cannot create pools without a feature cache." );
-        Objects.requireNonNull( database, "Cannot create pools without a database instance." );
         Objects.requireNonNull( unitMapper, "Cannot create pools without a measurement unit mapper." );
         Objects.requireNonNull( unitMapper, "Cannot create pools without a feature description." );
 
@@ -133,9 +125,7 @@ public class PoolFactory
         TimeScaleOuter desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
 
         // Create a feature-shaped retriever factory to support retrieval for this project
-        RetrieverFactory<Double, Double> retrieverFactory = SingleValuedRetrieverFactory.of( database,
-                                                                                             featuresCache,
-                                                                                             project,
+        RetrieverFactory<Double, Double> retrieverFactory = SingleValuedRetrieverFactory.of( project,
                                                                                              feature,
                                                                                              unitMapper );
 
@@ -219,8 +209,6 @@ public class PoolFactory
      * Create pools for ensemble data from a prescribed {@link Project} and {@link Feature}.
      * 
      * @param evaluation the evaluation description
-     * @param database The database to use.
-     * @param featuresCache The features cache to use.
      * @param project the project for which pools are required
      * @param feature the feature for which pools are required
      * @param unitMapper the mapper to convert measurement units
@@ -231,16 +219,12 @@ public class PoolFactory
      */
 
     public static List<Supplier<Pool<Pair<Double, Ensemble>>>> getEnsemblePools( Evaluation evaluation,
-                                                                                 Database database,
-                                                                                 Features featuresCache,
                                                                                  Project project,
                                                                                  FeatureTuple feature,
                                                                                  UnitMapper unitMapper )
     {
         Objects.requireNonNull( evaluation, "Cannot create pools from a null evaluation." );
         Objects.requireNonNull( project, "Cannot create pools from a null project." );
-        Objects.requireNonNull( featuresCache, "Cannot create pools without a feature cache." );
-        Objects.requireNonNull( database, "Cannot create pools without a database instance." );
         Objects.requireNonNull( unitMapper, "Cannot create pools without a measurement unit mapper." );
         Objects.requireNonNull( unitMapper, "Cannot create pools without a feature description." );
 
@@ -262,9 +246,7 @@ public class PoolFactory
         TimeScaleOuter desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
 
         // Create a feature-shaped retriever factory to support retrieval for this project
-        RetrieverFactory<Double, Ensemble> retrieverFactory = EnsembleRetrieverFactory.of( database,
-                                                                                           featuresCache,
-                                                                                           project,
+        RetrieverFactory<Double, Ensemble> retrieverFactory = EnsembleRetrieverFactory.of( project,
                                                                                            feature,
                                                                                            unitMapper );
 

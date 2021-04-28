@@ -41,7 +41,6 @@ import wres.io.concurrency.Executor;
 import wres.config.generated.DataSourceBaselineConfig;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
-import wres.config.generated.Feature;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
@@ -128,7 +127,7 @@ public class SingleValuedRetrieverFactoryTest
     @Before
     public void runBeforeEachTest() throws SQLException, LiquibaseException
     {
-        MockitoAnnotations.initMocks( this );
+        MockitoAnnotations.openMocks( this );
 
         // Create the database and connection pool
         this.testDatabase = new TestDatabase( "SingleValuedRetrieverFactoryTest" );
@@ -429,12 +428,12 @@ public class SingleValuedRetrieverFactoryTest
         Mockito.when( project.getBaselineVariableName() ).thenReturn( STREAMFLOW );
         Mockito.when( project.hasBaseline() ).thenReturn( true );
         Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
-
+        Mockito.when( project.getDatabase() ).thenReturn( this.wresDatabase );
+        Mockito.when( project.getFeaturesCache() ).thenReturn( this.featuresCache );
+        
         // Create the factory instance
         UnitMapper unitMapper = UnitMapper.of( this.wresDatabase, CFS );
-        this.factoryToTest = SingleValuedRetrieverFactory.of( this.wresDatabase,
-                                                              this.featuresCache,
-                                                              project,
+        this.factoryToTest = SingleValuedRetrieverFactory.of( project,
                                                               featureTuple,
                                                               unitMapper );
     }

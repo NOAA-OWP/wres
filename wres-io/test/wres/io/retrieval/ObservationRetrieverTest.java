@@ -111,7 +111,7 @@ public class ObservationRetrieverTest
     @Before
     public void setup() throws Exception
     {
-        MockitoAnnotations.initMocks( this );
+        MockitoAnnotations.openMocks( this );
 
         // Create the database and connection pool
         this.testDatabase = new TestDatabase( "ObservationRetrieverTest" );

@@ -10,7 +10,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,8 +20,6 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.DurationBoundsType;
 import wres.config.generated.DurationUnit;
-import wres.config.generated.EnsembleCondition;
-import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.FeatureTuple;
@@ -160,6 +157,11 @@ public class Project
         return this.featuresCache;
     }
 
+    public Ensembles getEnsemblesCache()
+    {
+        return this.ensemblesCache;
+    }
+
     /**
      * @return the measurement unit, which is either the declared unit of the analyzed unit, but possibly null
      * @throws SQLException if the measurement unit is not declared and could not be determined from the project sources
@@ -214,11 +216,6 @@ public class Project
         }
 
         return this.measurementUnit;
-    }
-
-    private Ensembles getEnsemblesCache()
-    {
-        return this.ensemblesCache;
     }
 
     /**
@@ -359,59 +356,6 @@ public class Project
         }
 
         return Collections.unmodifiableSet( this.features );
-    }
-
-    /**
-     * Returns a set of <code>ensemble_id</code> that should be included or excluded. The empty set should be 
-     * interpreted as no constraints existing and, hence, that all possible <code>ensemble_id</code> should be included.
-     * 
-     * @param dataType the data type
-     * @param include is true to search for constraints to include, false to exclude
-     * @return the members to include
-     * @throws SQLException if the ensemble identifiers could not be retrieved
-     * @throws NullPointerException if the dataType is null
-     * @throws IllegalArgumentException if the dataType declaration is invalid
-     */
-
-    public Set<Long> getEnsembleMembersToFilter( LeftOrRightOrBaseline dataType, boolean include )
-            throws SQLException
-    {
-        Objects.requireNonNull( dataType );
-
-        DataSourceConfig config = null;
-        switch ( dataType )
-        {
-            case LEFT:
-                config = this.getProjectConfig().getInputs().getLeft();
-                break;
-            case RIGHT:
-                config = this.getProjectConfig().getInputs().getRight();
-                break;
-            case BASELINE:
-                config = this.getProjectConfig().getInputs().getBaseline();
-                break;
-            default:
-                throw new IllegalArgumentException( "Unrecognized data type '" + dataType + "'." );
-
-        }
-
-        Set<Long> returnMe = new TreeSet<>();
-
-        if ( Objects.nonNull( config ) && !config.getEnsemble().isEmpty() )
-        {
-            List<EnsembleCondition> conditions = config.getEnsemble();
-            Ensembles ensemblesCache = this.getEnsemblesCache();
-
-            for ( EnsembleCondition condition : conditions )
-            {
-                if ( condition.isExclude() != include )
-                {
-                    returnMe.addAll( ensemblesCache.getEnsembleIDs( condition ) );
-                }
-            }
-        }
-
-        return Collections.unmodifiableSet( returnMe );
     }
 
     /**

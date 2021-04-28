@@ -52,6 +52,7 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.details.EnsembleDetails;
 import wres.io.data.details.FeatureDetails;
@@ -75,6 +76,7 @@ public class EnsembleRetrieverFactoryTest
     @Mock
     private Executor mockExecutor;
     private Features featuresCache;
+    private Ensembles ensemblesCache;
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
     private Connection rawConnection;
@@ -154,7 +156,6 @@ public class EnsembleRetrieverFactoryTest
                .thenReturn( this.dataSource );
 
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
-        this.featuresCache = new Features( this.wresDatabase );
 
         // Create the connection and schema, set up mock settings
         this.createTheConnectionAndSchema();
@@ -166,6 +167,10 @@ public class EnsembleRetrieverFactoryTest
         this.addTwoForecastTimeSeriesEachWithFiveEventsToTheDatabase();
         this.addAnObservedTimeSeriesWithTenEventsToTheDatabase();
 
+        // Create the caches/orms
+        this.featuresCache = new Features( this.wresDatabase );
+        this.ensemblesCache = new Ensembles( this.wresDatabase );
+        
         // Create the retriever factory to test
         this.createEnsembleRetrieverFactory();
     }
@@ -467,11 +472,13 @@ public class EnsembleRetrieverFactoryTest
         Mockito.when( project.getBaselineVariableName() ).thenReturn( STREAMFLOW );
         Mockito.when( project.hasBaseline() ).thenReturn( true );
         Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
+        Mockito.when( project.getDatabase() ).thenReturn( this.wresDatabase );
+        Mockito.when( project.getFeaturesCache() ).thenReturn( this.featuresCache );
+        Mockito.when( project.getEnsemblesCache() ).thenReturn( this.ensemblesCache );
 
         // Create the factory instance
         UnitMapper unitMapper = UnitMapper.of( this.wresDatabase, CFS );
-        this.factoryToTest =
-                EnsembleRetrieverFactory.of( this.wresDatabase, featuresCache, project, featureTuple, unitMapper );
+        this.factoryToTest = EnsembleRetrieverFactory.of( project, featureTuple, unitMapper );
     }
 
     /**

@@ -1,30 +1,21 @@
 package wres.io.retrieval;
 
-import java.sql.Connection;
 import java.sql.SQLException;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.DoubleUnaryOperator;
+import java.util.function.Function;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
-import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.time.Event;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeriesMetadata;
-import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
+import wres.io.data.caching.Ensembles;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
@@ -73,6 +64,12 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
     private final Set<Long> ensembleIdsToExclude;
 
     /**
+     * The ensemble cache.
+     */
+
+    private final Ensembles ensemblesCache;
+
+    /**
      * Builder.
      */
 
@@ -82,13 +79,19 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
          * A set of <code>ensemble_id</code> to include in the selection.
          */
 
-        private Set<Long> ensembleIdsToInclude;
+        private Set<Long> ensembleIdsToInclude = new HashSet<>();
 
         /**
          * A set of <code>ensemble_id</code> to exclude from the selection.
          */
 
-        private Set<Long> ensembleIdsToExclude;
+        private Set<Long> ensembleIdsToExclude = new HashSet<>();
+
+        /**
+         * The ensemble cache.
+         */
+
+        private Ensembles ensemblesCache;
 
         /**
          * Adds a set of <code>ensemble_id</code> to include in the selection.
@@ -99,7 +102,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
 
         Builder setEnsembleIdsToInclude( Set<Long> ensembleIdsToInclude )
         {
-            this.ensembleIdsToInclude = ensembleIdsToInclude;
+            this.ensembleIdsToInclude.addAll( ensembleIdsToInclude );
 
             return this;
         }
@@ -113,7 +116,21 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
 
         Builder setEnsembleIdsToExclude( Set<Long> ensembleIdsToExclude )
         {
-            this.ensembleIdsToExclude = ensembleIdsToExclude;
+            this.ensembleIdsToExclude.addAll( ensembleIdsToExclude );
+
+            return this;
+        }
+
+        /**
+         * Sets the ensemble orm/cache.
+         * 
+         * @param ensemblesCache the ensembles cache
+         * @return the builder
+         */
+
+        Builder setEnsemblesCache( Ensembles ensemblesCache )
+        {
+            this.ensemblesCache = ensemblesCache;
 
             return this;
         }
@@ -199,17 +216,19 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         // Add season constraint at one tab
         this.addSeasonClause( dataScripter, 1 );
 
-        // Add ensemble member constraints at one tab
-        this.addEnsembleMemberClauses( dataScripter, 1 );
-
-        // Add ORDER BY clause
-        dataScripter.addLine( "ORDER BY series_id, reference_time, valid_time, ensemble_name;" );
+        // Add GROUP BY clause
+        dataScripter.addLine( "GROUP BY reference_time, "
+                              + "series_id, "
+                              + "TSV.lead, "
+                              + "TS.scale_period, "
+                              + "TS.scale_function, "
+                              + "TS.measurementunit_id;" );
 
         // Log the script
         super.logScript( dataScripter );
 
-        // Return the composed time-series
-        return this.getTimeSeriesFromScript( dataScripter );
+        // Retrieve the time-series        
+        return this.getTimeSeriesFromScript( dataScripter, this.getDataSupplier() );
     }
 
     @Override
@@ -219,56 +238,133 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
     }
 
     /**
-     * Adds clause for each ensemble member constraint discovered.
+     * Returns a function that obtains the measured value in the desired units from a {@link DataProvider}.
      * 
-     * @param script the script to augment
-     * @param tabsIn the number of tabs in for the outermost clause
-     * @throws NullPointerException if the input is null
+     * TODO: include the labels too, once they are needed. See #56214-37 for the amended script. When processing these, 
+     * obtain the labels from a local cache, because they will be repeated across many ensembles, typically, and 
+     * String[] are comparatively expensive.
+     * 
+     * @return a function to obtain the measured value in the correct units
      */
 
-    private void addEnsembleMemberClauses( DataScripter script, int tabsIn )
+    private Function<DataProvider, Ensemble> getDataSupplier()
     {
-        Objects.requireNonNull( script );
+        return provider -> {
 
-        // Does the filter exist?
-        if ( this.hasEnsembleConstraint() )
-        {
-            // Include these
-            if ( Objects.nonNull( this.ensembleIdsToInclude )
-                 && !this.ensembleIdsToInclude.isEmpty() )
+            // Existing units
+            long measurementUnitId = provider.getLong( "measurementunit_id" );
+
+            // Units mapper
+            DoubleUnaryOperator mapper = this.getMeasurementUnitMapper().getUnitMapper( measurementUnitId );
+
+            Double[] members = provider.getDoubleArray( "ensemble_members" );
+            Integer[] ids = provider.getIntegerArray( "ensemble_ids" );
+
+            // Re-duplication is handled in the superclass, so do not consider here, instead map by label
+            Map<String, Double> ensemble = new TreeMap<>();
+
+            // Iterate the members, map the units and discover the names and add to the map
+            for ( int i = 0; i < members.length; i++ )
             {
-                script.addTab( tabsIn ).addLine( "AND E.ensemble_id = ANY(?)" );
-                script.addArgument( this.ensembleIdsToInclude.toArray( new Long[this.ensembleIdsToInclude.size()] ) );
+                // Use this member?
+                if ( this.getUseThisEnsembleId( ids[i] ) )
+                {
+                    // Get the name from the cache
+                    String name = null;
+                    try
+                    {
+                        name = this.getEnsemblesCache()
+                                   .getEnsembleName( ids[i] );
+                    }
+                    catch ( SQLException e )
+                    {
+                        throw new DataAccessException( "While attempting to map an ensemble identifier to a name.", e );
+                    }
+
+                    // Map the units
+                    double mapped = mapper.applyAsDouble( members[i] );
+                    ensemble.put( name, mapped );
+                }
             }
 
-            // Ignore these
-            if ( Objects.nonNull( this.ensembleIdsToExclude )
-                 && !this.ensembleIdsToExclude.isEmpty() )
-            {
-                script.addTab( tabsIn ).addLine( "AND NOT E.ensemble_id = ANY(?)" );
-                script.addArgument( this.ensembleIdsToExclude.toArray( new Long[this.ensembleIdsToExclude.size()] ) );
-            }
-        }
+            // Labels are cached centrally
+            String[] names = ensemble.keySet()
+                                     .toArray( new String[ensemble.size()] );
+            Labels labels = Labels.of( names );
+            double[] unboxed = ensemble.values()
+                                       .stream()
+                                       .mapToDouble( Double::doubleValue )
+                                       .toArray();
+
+            return Ensemble.of( unboxed, labels );
+        };
     }
 
     /**
-     * Returns <code>true</code> if one or more ensemble constraints are present, otherwise <code>false</code>.
-     * 
-     * @return true if one or more ensemble constraints are defined, otherwise false
+     * @param ensembleId the ensemble identifier to consider
+     * @return {@code true} if the ensemble identifier should be considered, otherwise false
+     */
+
+    private boolean getUseThisEnsembleId( long ensembleId )
+    {
+        // Empty means unconstrained
+        if ( !this.hasEnsembleConstraint() )
+        {
+            return true;
+        }
+
+        boolean include = true;
+        if ( !this.getEnsembleIdsToInclude().isEmpty() )
+        {
+            include = this.getEnsembleIdsToInclude().contains( ensembleId );
+        }
+
+        if ( !this.getEnsembleIdsToExclude().isEmpty() )
+        {
+            include = include && !this.getEnsembleIdsToExclude().contains( ensembleId );
+        }
+
+        return include;
+    }
+
+    /**
+     * @return {@code true} if one or more ensemble constraints are present, otherwise {@code false}.
      */
 
     private boolean hasEnsembleConstraint()
     {
-        return Objects.nonNull( this.ensembleIdsToInclude ) || Objects.nonNull( this.ensembleIdsToExclude );
+        return !this.ensembleIdsToInclude.isEmpty() || !this.ensembleIdsToExclude.isEmpty();
+    }
+
+    /**
+     * @return ensemble identifiers to include
+     */
+
+    private Set<Long> getEnsembleIdsToInclude()
+    {
+        return this.ensembleIdsToInclude;
+    }
+
+    /**
+     * @return ensemble identifiers to exclude
+     */
+
+    private Set<Long> getEnsembleIdsToExclude()
+    {
+        return this.ensembleIdsToExclude;
+    }
+
+    /**
+     * @return the ensemble cache
+     */
+
+    private Ensembles getEnsemblesCache()
+    {
+        return this.ensemblesCache;
     }
 
     /**
      * Returns the start of a script to acquire a time-series from the WRES database for all time-series.
-     * 
-     * TODO: support reduplication of time-series for ensemble forecasts. See #56214-272. Also see 
-     * {@link SingleValuedForecastRetriever} and {@link TimeSeriesRetriever} for the hint required in the form of a
-     * series count for each identified series. Note that the <code>timeseries_id</code> is common across duplicated
-     * series.
      * 
      * @return the start of a script for the time-series
      */
@@ -281,191 +377,20 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         scripter.addTab().addLine( "TS.source_id AS series_id," );
         scripter.addTab().addLine( "TS.initialization_date AS reference_time," );
         scripter.addTab().addLine( "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead AS valid_time," );
-        scripter.addTab().addLine( "TSV.series_value AS ensemble_member," );
-        scripter.addTab().addLine( "E.ensemble_name AS ensemble_name," );
+        scripter.addTab().addLine( "ARRAY_AGG(TSV.series_value ORDER BY TS.ensemble_id) AS ensemble_members," );
+        scripter.addTab().addLine( "ARRAY_AGG(TS.ensemble_id ORDER BY TS.ensemble_id) AS ensemble_ids," );
         scripter.addTab().addLine( "TS.scale_period," );
         scripter.addTab().addLine( "TS.scale_function," );
-        scripter.addTab().addLine( "TS.measurementunit_id" );
+        scripter.addTab().addLine( "TS.measurementunit_id," );
+        // To discover duplicates
+        scripter.addTab().addLine( "COUNT(TS.ensemble_id) / COUNT(DISTINCT TS.ensemble_id) AS occurrences" );
         scripter.addLine( FROM_WRES_TIME_SERIES_TS );
-        scripter.addTab().addLine( "INNER JOIN wres.Ensemble E" );
-        scripter.addTab( 2 ).addLine( "ON E.ensemble_id = TS.ensemble_id" );
         scripter.addTab().addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
         scripter.addTab( 2 ).addLine( "ON TSV.timeseries_id = TS.timeseries_id" );
         scripter.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
         scripter.addTab( 2 ).addLine( "ON PS.source_id = TS.source_id" );
 
         return scripter.toString();
-    }
-
-    /**
-     * Creates a stream of ensemble time-series from a retrieval script.
-     * 
-     * @param script the retrieval script
-     * @return the ensemble time-series in a stream
-     */
-
-    private Stream<TimeSeries<Ensemble>> getTimeSeriesFromScript( DataScripter script )
-    {
-        Database database = super.getDatabase();
-        try ( Connection connection = database.getConnection();
-              DataProvider provider = script.buffer( connection ) )
-        {
-            List<TimeSeries<Ensemble>> ensembles = new ArrayList<>();
-
-            TimeScaleOuter lastScale = null; // Last time scale
-            Long lastSeriesId = null; // Last identity for the ensemble time-series
-            Instant lastReferenceTime = null; // Last reference time
-            Map<Instant, Map<String, Double>> events = new TreeMap<>(); // [valid_time,(label, member)]
-
-            // Events for last duplicate
-            double duplicateCount = 1;
-            Set<String> labels = new HashSet<>(); // The set of labels to help determine duplicates
-
-            // Iterate through the ordered events
-            while ( provider.next() )
-            {
-                // The reference time
-                Instant referenceTime = provider.getInstant( TimeSeriesRetriever.REFERENCE_TIME );
-
-                // The series identity
-                Long seriesId = provider.getLong( "series_id" );
-
-                // Ordered data, so create a time-series when the reference time flips
-                if ( Objects.nonNull( lastSeriesId ) && !seriesId.equals( lastSeriesId ) )
-                {
-                    // Calculate the number of replications and then replicate the series
-                    int replications = (int) Math.ceil( duplicateCount / labels.size() );
-                    List<TimeSeries<Ensemble>> ensemble = this.getTimeSeriesFromEvents( lastReferenceTime,
-                                                                                        events,
-                                                                                        lastScale,
-                                                                                        replications );
-                    ensembles.addAll( ensemble );
-                    events.clear();
-                    labels.clear();
-                    duplicateCount = 1;
-                }
-
-                // Get the valid time
-                Instant validTime = provider.getInstant( "valid_time" );
-
-                // Get or add the event container
-                Map<String, Double> nextEvent = events.get( validTime );
-                if ( Objects.isNull( nextEvent ) )
-                {
-                    nextEvent = new TreeMap<>();
-                    events.put( validTime, nextEvent );
-                }
-
-                // Get the label
-                String label = provider.getString( "ensemble_name" );
-                labels.add( label );
-
-                // Duplicate?
-                if ( nextEvent.containsKey( label ) )
-                {
-                    duplicateCount++;
-                }
-
-                // Existing units
-                long measurementUnitId = provider.getLong( "measurementunit_id" );
-
-                // Units mapper
-                DoubleUnaryOperator mapper = this.getMeasurementUnitMapper()
-                                                 .getUnitMapper( measurementUnitId );
-
-                // Get the value and map the units                
-                Double value = provider.getDouble( "ensemble_member" );
-                double mapped = mapper.applyAsDouble( value );
-                nextEvent.put( label, mapped );
-
-                // Add the time-scale info
-                String functionString = provider.getString( "scale_function" );
-                Duration period = provider.getDuration( "scale_period" );
-
-                TimeScaleOuter latestScale = super.checkAndGetLatestScale( lastScale,
-                                                                           period,
-                                                                           functionString,
-                                                                           validTime );
-
-                lastScale = latestScale;
-                lastReferenceTime = referenceTime;
-                lastSeriesId = seriesId;
-            }
-
-            // Calculate the number of replications and then replicate the series
-            int replications = (int) Math.ceil( duplicateCount / labels.size() );
-            List<TimeSeries<Ensemble>> lastSeries = this.getTimeSeriesFromEvents( lastReferenceTime,
-                                                                                  events,
-                                                                                  lastScale,
-                                                                                  replications );
-            ensembles.addAll( lastSeries );
-
-            return ensembles.stream();
-        }
-        catch ( SQLException e )
-        {
-            throw new DataAccessException( "Failed to access the time-series data.", e );
-        }
-    }
-
-    /**
-     * Creates an ensemble time-series from a collection of events.
-     * 
-     * @param referenceTime the reference time
-     * @param events the events
-     * @param timeScale the time scale
-     * @param duplicateCount the number of series to add
-     * @return the ensemble time-series
-     */
-
-    private List<TimeSeries<Ensemble>> getTimeSeriesFromEvents( Instant referenceTime,
-                                                                Map<Instant, Map<String, Double>> events,
-                                                                TimeScaleOuter timeScale,
-                                                                int duplicateCount )
-    {
-
-        TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<>();
-
-        Map<ReferenceTimeType, Instant> referenceTimes = Map.of( this.getReferenceTimeType(), referenceTime );
-
-        TimeSeriesMetadata metadata =
-                TimeSeriesMetadata.of( referenceTimes,
-                                       timeScale,
-                                       this.getVariableName(),
-                                       this.getFeature(),
-                                       this.getMeasurementUnitMapper()
-                                           .getDesiredMeasurementUnitName() );
-        builder.setMetadata( metadata );
-
-        // Create the events
-        for ( Map.Entry<Instant, Map<String, Double>> nextEvent : events.entrySet() )
-        {
-            Map<String, Double> members = nextEvent.getValue();
-            double[] doubles = members.values()
-                                      .stream()
-                                      .mapToDouble( Double::doubleValue )
-                                      .toArray();
-            String[] labels = members.keySet()
-                                     .toArray( new String[doubles.length] );
-
-
-            Ensemble next = Ensemble.of( doubles, Labels.of( labels ) );
-            Instant validTime = nextEvent.getKey();
-            Event<Ensemble> event = Event.of( validTime, next );
-
-            builder.addEvent( event );
-        }
-
-        List<TimeSeries<Ensemble>> ensembles = new ArrayList<>();
-        TimeSeries<Ensemble> ensemble = builder.build();
-
-        // Re-duplicate
-        for ( int i = 0; i < duplicateCount; i++ )
-        {
-            ensembles.add( ensemble );
-        }
-
-        return Collections.unmodifiableList( ensembles );
     }
 
     /**
@@ -476,9 +401,14 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
     private EnsembleForecastRetriever( Builder builder )
     {
         super( builder, "TS.initialization_date", "TSV.lead" );
-
         this.ensembleIdsToInclude = builder.ensembleIdsToInclude;
         this.ensembleIdsToExclude = builder.ensembleIdsToExclude;
+        this.ensemblesCache = builder.ensemblesCache;
+
+        Objects.requireNonNull( this.ensemblesCache,
+                                "The ensemble cache is required when building an ensemble "
+                                                     + "retriever." );
     }
+
 
 }

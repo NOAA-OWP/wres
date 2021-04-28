@@ -104,7 +104,7 @@ public class SingleValuedGriddedRetrieverTest
     @Before
     public void setup() throws SQLException, LiquibaseException
     {
-        MockitoAnnotations.initMocks( this );
+        MockitoAnnotations.openMocks( this );
         // Create the database and connection pool
         this.testDatabase = new TestDatabase( "SingleValuedGriddedRetriever" );
         this.dataSource = this.testDatabase.getNewHikariDataSource();
