@@ -122,6 +122,18 @@ public class Ensembles extends Cache<EnsembleDetails, String> {
 		return this.getID( new EnsembleDetails( name ) );
 	}
 
+	/**
+     * Returns the name of an ensemble trace from the global cache based on its identifier
+     * @param ensembleId The ensemble identifier
+     * @return The name
+     * @throws SQLException Thrown if the ID could not be retrieved from the database
+     */
+    public String getEnsembleName( long ensembleId ) throws SQLException
+    {
+        EnsembleDetails details = super.get( ensembleId );       
+        return details.getKey();
+    }
+	
 	public Long getDefaultEnsembleID() throws SQLException
     {
         return this.getEnsembleID( "default" );

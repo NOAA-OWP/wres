@@ -168,8 +168,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             {
                 List<Supplier<Pool<Pair<Double, Ensemble>>>> pools =
                         PoolFactory.getEnsemblePools( this.evaluation,
-                                                      this.project.getDatabase(),
-                                                      this.project.getFeaturesCache(),
                                                       this.project,
                                                       this.feature,
                                                       this.unitMapper );
@@ -204,8 +202,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             {
                 List<Supplier<Pool<Pair<Double, Double>>>> pools =
                         PoolFactory.getSingleValuedPools( this.evaluation,
-                                                          this.project.getDatabase(),
-                                                          this.project.getFeaturesCache(),
                                                           this.project,
                                                           this.feature,
                                                           this.unitMapper );

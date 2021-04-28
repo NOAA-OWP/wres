@@ -48,6 +48,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
+import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.details.EnsembleDetails;
 import wres.io.data.details.FeatureDetails;
@@ -72,6 +73,7 @@ public class EnsembleForecastRetrieverTest
     @Mock
     private Executor mockExecutor;
     private Features featuresCache;
+    private Ensembles ensemblesCache;
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
     private Connection rawConnection;
@@ -145,7 +147,6 @@ public class EnsembleForecastRetrieverTest
                .thenReturn( this.dataSource );
 
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
-        this.featuresCache = new Features( this.wresDatabase );
 
         // Create a connection and schema
         this.rawConnection = DriverManager.getConnection( this.testDatabase.getJdbcString() );
@@ -160,7 +161,11 @@ public class EnsembleForecastRetrieverTest
         this.addOneForecastTimeSeriesWithFiveEventsAndThreeMembersToTheDatabase();
 
         // Create the unit mapper
-        unitMapper = UnitMapper.of( this.wresDatabase, UNITS );
+        this.unitMapper = UnitMapper.of( this.wresDatabase, UNITS );
+        
+        // Create the orms
+        this.featuresCache = new Features( this.wresDatabase );
+        this.ensemblesCache = new Ensembles( this.wresDatabase );
     }
 
     @Test
@@ -168,7 +173,8 @@ public class EnsembleForecastRetrieverTest
     {
         // Build the retriever
         Retriever<TimeSeries<Ensemble>> forecastRetriever =
-                new EnsembleForecastRetriever.Builder().setDatabase( this.wresDatabase )
+                new EnsembleForecastRetriever.Builder().setEnsemblesCache( this.ensemblesCache )
+                                                       .setDatabase( this.wresDatabase )
                                                        .setFeaturesCache( this.featuresCache )
                                                        .setProjectId( PROJECT_ID )
                                                        .setVariableName( VARIABLE_NAME )
@@ -222,7 +228,8 @@ public class EnsembleForecastRetrieverTest
     {
         // Build the retriever with ensemble constraints
         Retriever<TimeSeries<Ensemble>> forecastRetriever =
-                new EnsembleForecastRetriever.Builder().setEnsembleIdsToInclude( Set.of( this.secondMemberId ) )
+                new EnsembleForecastRetriever.Builder().setEnsemblesCache( this.ensemblesCache )
+                                                       .setEnsembleIdsToInclude( Set.of( this.secondMemberId ) )
                                                        .setEnsembleIdsToExclude( Set.of( this.firstMemberId,
                                                                                          this.thirdMemberId ) )
                                                        .setDatabase( this.wresDatabase )
@@ -279,7 +286,8 @@ public class EnsembleForecastRetrieverTest
     {
         // Build the retriever
         Retriever<TimeSeries<Ensemble>> forecastRetriever =
-                new EnsembleForecastRetriever.Builder().setDatabase( this.wresDatabase )
+                new EnsembleForecastRetriever.Builder().setEnsemblesCache( this.ensemblesCache )
+                                                       .setDatabase( this.wresDatabase )
                                                        .setProjectId( PROJECT_ID )
                                                        .setVariableName( VARIABLE_NAME )
                                                        .setFeature( FEATURE )
@@ -298,7 +306,8 @@ public class EnsembleForecastRetrieverTest
     {
         // Build the retriever
         Retriever<TimeSeries<Ensemble>> forecastRetriever =
-                new EnsembleForecastRetriever.Builder().setDatabase( this.wresDatabase )
+                new EnsembleForecastRetriever.Builder().setEnsemblesCache( this.ensemblesCache )
+                                                       .setDatabase( this.wresDatabase )
                                                        .setProjectId( PROJECT_ID )
                                                        .setVariableName( VARIABLE_NAME )
                                                        .setFeature( FEATURE )
@@ -317,7 +326,8 @@ public class EnsembleForecastRetrieverTest
     {
         // Build the retriever
         Retriever<TimeSeries<Ensemble>> forecastRetriever =
-                new EnsembleForecastRetriever.Builder().setDatabase( this.wresDatabase )
+                new EnsembleForecastRetriever.Builder().setEnsemblesCache( this.ensemblesCache )
+                                                       .setDatabase( this.wresDatabase )
                                                        .setProjectId( PROJECT_ID )
                                                        .setVariableName( VARIABLE_NAME )
                                                        .setFeature( FEATURE )

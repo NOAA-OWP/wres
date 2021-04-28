@@ -573,17 +573,60 @@ public class SQLDataProvider implements DataProvider
     }
 
     @Override
-    public Integer[] getIntegerArray(String columnName)
+    public Integer[] getIntegerArray( String columnName )
     {
+        Array outer = null;
+        Integer[] rawResult;
+
         try
         {
-            return (Integer[])this.resultSet.getArray( columnName ).getArray();
+            // Probe the inner type of array before casting
+            // See #56214-139-140
+            outer = this.resultSet.getArray( columnName );
+            Object inner = outer.getArray();
+
+            if ( inner instanceof Integer[] )
+            {
+                rawResult = (Integer[]) inner;
+            }
+            else if ( inner instanceof Object[] )
+            {
+                Object[] toTransform = (Object[]) inner;
+                rawResult = Arrays.copyOf( toTransform, toTransform.length, Integer[].class );
+            }
+            else
+            {
+                throw new ClassCastException( "Could not cast the input type of '"
+                                              + inner.getClass()
+                                              + "' with SQL type '"
+                                              + outer.getBaseTypeName()
+                                              + "' to a Integer[]." );
+            }
         }
-        catch (SQLException e)
+        catch ( SQLException e )
         {
             throw new IllegalStateException( THE_DATA_IS_NOT_ACCESSIBLE, e );
         }
-    }
+        finally
+        {
+            // Unfortunately, Closeable was not used in JDBC
+            if ( Objects.nonNull( outer ) )
+            {
+                try
+                {
+                    outer.free();
+                }
+                catch ( SQLException se )
+                {
+                    LOGGER.warn( "Could not release resources for column {} in {}",
+                                 columnName,
+                                 this.resultSet );
+                }
+            }
+        }
+
+        return rawResult;
+    }  
 
     @Override
     public String[] getStringArray(String columnName)
