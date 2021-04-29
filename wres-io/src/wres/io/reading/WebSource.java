@@ -1075,7 +1075,7 @@ class WebSource implements Callable<List<IngestResult>>
                                    String nwsLocationId,
                                    List<UrlParameter> additionalParameters )
     {
-        if ( !baseUri.getPath()
+/*        if ( !baseUri.getPath()
                      .toLowerCase()
                      .endsWith( "ahps" ) &&
              !baseUri.getPath()
@@ -1087,6 +1087,7 @@ class WebSource implements Callable<List<IngestResult>>
                          "https://***REMOVED***.***REMOVED***.***REMOVED***/api/prod/forecasts/streamflow/ahps'"
                          + " but instead got " + baseUri.toString() );
         }
+*/
 
         String basePath = baseUri.getPath();
 
@@ -1098,7 +1099,7 @@ class WebSource implements Callable<List<IngestResult>>
 
         Map<String, String> wrdsParameters = createWrdsAhpsUrlParameters( issuedRange,
                                                                           additionalParameters );
-        String pathWithLocation = basePath + "nwsLocations/"
+        String pathWithLocation = basePath //+ "nwsLocations/"
                                   + nwsLocationId;
         URIBuilder uriBuilder = new URIBuilder( this.getBaseUri() );
         uriBuilder.setPath( pathWithLocation );
@@ -1276,7 +1277,6 @@ class WebSource implements Callable<List<IngestResult>>
         urlParameters.put( "issuedTime", "[" + issuedRange.getLeft().toString()
                                          + "," + issuedRange.getRight().toString()
                                          + "]" );
-        urlParameters.put( "validTime", "all" );
 
 
         return Collections.unmodifiableMap( urlParameters );
