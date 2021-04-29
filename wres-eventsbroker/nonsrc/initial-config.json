@@ -35,7 +35,7 @@
 	],
 	"brokerloggers": [
 		{
-			"name": "logfile",
+			"name": "file",
 			"type": "File",
 			"fileName": "${qpid.work_dir}${file.separator}log${file.separator}qpid.log",
 			"brokerloginclusionrules": [
@@ -68,6 +68,36 @@
 		{
 			"name": "memory",
 			"type": "Memory",
+			"brokerloginclusionrules": [
+				{
+					"name": "Operational",
+					"type": "NameAndLevel",
+					"level": "INFO",
+					"loggerName": "qpid.message.*"
+				},
+				{
+					"name": "Qpid",
+					"type": "NameAndLevel",
+					"level": "INFO",
+					"loggerName": "org.apache.qpid.*"
+				},
+				{
+					"name": "Root",
+					"type": "NameAndLevel",
+					"level": "WARN",
+					"loggerName": "ROOT"
+				},
+				{
+					"name": "Statistics",
+					"type": "NameAndLevel",
+					"level": "INFO",
+					"loggerName": "qpid.statistics.*"
+				}
+			]
+		},		
+		{
+			"name": "console",
+			"type": "Console",
 			"brokerloginclusionrules": [
 				{
 					"name": "Operational",
