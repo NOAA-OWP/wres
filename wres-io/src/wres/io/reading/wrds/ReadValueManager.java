@@ -201,6 +201,10 @@ public class ReadValueManager
         {
             ForecastResponse response = mapper.readValue( rawForecast,
                                                           ForecastResponse.class );
+
+            Objects.requireNonNull( response.forecasts, "Failed to obtain response from the WRDS url " 
+                + location + ". Was the correct URL provided in the declaration?" );
+
             List<IngestResult> results = new ArrayList<>( response.forecasts.length );
 
             for ( Forecast forecast : response.getForecasts() )
