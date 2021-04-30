@@ -556,6 +556,7 @@ public class EvaluationSubscriber implements Closeable
 
             BytesMessage receivedBytes = (BytesMessage) message;
             String messageId = null;
+            com.google.protobuf.Message messageBody = null;
             String correlationId = null;
             String groupId = null;
 
@@ -579,6 +580,7 @@ public class EvaluationSubscriber implements Closeable
                     ByteBuffer buffer = ByteBuffer.wrap( messageContainer );
 
                     EvaluationStatus statusEvent = EvaluationStatus.parseFrom( buffer );
+                    messageBody = statusEvent;
 
                     consumer = this.processStatusEvent( statusEvent,
                                                         correlationId,
@@ -603,7 +605,7 @@ public class EvaluationSubscriber implements Closeable
             // Attempt to recover
             catch ( JMSException | InvalidProtocolBufferException | ConsumerException e )
             {
-                this.recover( messageId, correlationId, this.statusSession, e );
+                this.recover( messageId, messageBody, correlationId, this.statusSession, e );
             }
             // Do not attempt to recover
             catch ( UnrecoverableEvaluationException e )
@@ -639,6 +641,7 @@ public class EvaluationSubscriber implements Closeable
         return message -> {
             BytesMessage receivedBytes = (BytesMessage) message;
             String messageId = null;
+            com.google.protobuf.Message messageBody = null;
             String correlationId = null;
             String groupId = null;
 
@@ -669,6 +672,7 @@ public class EvaluationSubscriber implements Closeable
                     ByteBuffer buffer = ByteBuffer.wrap( messageContainer );
 
                     Statistics statistics = Statistics.parseFrom( buffer );
+                    messageBody = statistics;
 
                     consumer.acceptStatisticsMessage( statistics, groupId, messageId );
 
@@ -692,7 +696,7 @@ public class EvaluationSubscriber implements Closeable
             // Attempt to recover
             catch ( JMSException | InvalidProtocolBufferException | ConsumerException e )
             {
-                this.recover( messageId, correlationId, this.statisticsSession, e );
+                this.recover( messageId, messageBody, correlationId, this.statisticsSession, e );
             }
             // Do not attempt to recover
             catch ( UnrecoverableEvaluationException e )
@@ -809,6 +813,7 @@ public class EvaluationSubscriber implements Closeable
 
             BytesMessage receivedBytes = (BytesMessage) message;
             String messageId = null;
+            com.google.protobuf.Message messageBody = null;
             String correlationId = null;
             String jobId = null;
 
@@ -839,6 +844,7 @@ public class EvaluationSubscriber implements Closeable
                     ByteBuffer buffer = ByteBuffer.wrap( messageContainer );
 
                     Evaluation evaluation = Evaluation.parseFrom( buffer );
+                    messageBody = evaluation;
 
                     consumer.acceptEvaluationMessage( evaluation, messageId, jobId );
 
@@ -859,7 +865,7 @@ public class EvaluationSubscriber implements Closeable
             // Attempt to recover
             catch ( JMSException | InvalidProtocolBufferException | ConsumerException e )
             {
-                this.recover( messageId, correlationId, this.evaluationDescriptionSession, e );
+                this.recover( messageId, messageBody, correlationId, this.evaluationDescriptionSession, e );
             }
             // Do not attempt to recover
             catch ( UnrecoverableEvaluationException e )
@@ -989,12 +995,17 @@ public class EvaluationSubscriber implements Closeable
      * consumer must be "retry friendly", which means that it must clean up before throwing an exception.
      * 
      * @param messageId the message identifier for the exceptional consumption
+     * @param message the message
      * @param evaluationId the correlation identifier for the exceptional consumption
      * @param session the session to recover
      * @param exception the exception encountered
      */
 
-    private void recover( String messageId, String evaluationId, Session session, Exception exception )
+    private void recover( String messageId,
+                          com.google.protobuf.Message message,
+                          String evaluationId,
+                          Session session,
+                          Exception exception )
     {
         LOGGER.debug( "Recovery triggered for message {} in evaluation {}.", messageId, evaluationId );
 
@@ -1012,7 +1023,7 @@ public class EvaluationSubscriber implements Closeable
         {
             LOGGER.debug( "Attempting retry of message {} for evaluation {}.", messageId, evaluationId );
 
-            this.attemptRetry( messageId, evaluationId, session, exception );
+            this.attemptRetry( messageId, message, evaluationId, session, exception );
 
             // Last one? Then stop and mark failed because recovery won't be triggered again (recovery attempts are 
             // handled by broker configuration, which is used to set the internal retry count used here).
@@ -1031,21 +1042,22 @@ public class EvaluationSubscriber implements Closeable
         // Evaluation has failed unrecoverably or all evaluations on this subscriber have failed unrecoverably
         else if ( this.isEvaluationFailed( evaluationId ) || this.isSubscriberFailed() && LOGGER.isDebugEnabled() )
         {
-            String message = "While attempting to consume a message with identifier " + messageId
-                             + " and correlation identifier "
-                             + ""
-                             + evaluationId
-                             + IN_SUBSCRIBER
-                             + this.getClientId()
-                             + ", encountered an error. No further retries will be attempted "
-                             + "because the evaluation has been marked failed unrecoverably. At the time of "
-                             + "unrecoverable failure, "
-                             + attemptedRetries
-                             + " of "
-                             + retryCount
-                             + " retries had been attempted.";
+            String logMessage = "While attempting to consume a message with identifier " + messageId
+                                + " and correlation identifier "
+                                + ""
+                                + evaluationId
+                                + IN_SUBSCRIBER
+                                + this.getClientId()
+                                + ", encountered an error. No further retries will be attempted "
+                                + "because the evaluation has been marked failed unrecoverably. At the time of "
+                                + "unrecoverable failure, "
+                                + attemptedRetries
+                                + " of "
+                                + retryCount
+                                + " retries had been attempted. The message body was: "
+                                + message;
 
-            LOGGER.debug( message, exception );
+            LOGGER.debug( logMessage, exception );
         }
     }
 
@@ -1078,12 +1090,17 @@ public class EvaluationSubscriber implements Closeable
      * Attempts to recover a session on failure.
      * 
      * @param messageId the message identifier for the exceptional consumption
+     * @param message the message body
      * @param evaluationId the correlation identifier for the exceptional consumption
      * @param session the session to recover
      * @param exception the exception encountered
      */
 
-    private void attemptRetry( String messageId, String evaluationId, Session session, Exception exception )
+    private void attemptRetry( String messageId,
+                               com.google.protobuf.Message message,
+                               String evaluationId,
+                               Session session,
+                               Exception exception )
     {
         // Incremented (starting from zero) in advance of this retry
         int retryCount = this.getNumberOfRetriesAttempted( evaluationId )
@@ -1108,9 +1125,10 @@ public class EvaluationSubscriber implements Closeable
                                   + "unrecoverable failure for evaluation "
                                   + evaluationId
                                   + ", unless the subscriber is otherwise marked "
-                                  + "failed (in which case further retries may not occur).";
+                                  + "failed (in which case further retries may not occur). The message body was: "
+                                  + message;
 
-            LOGGER.error( errorMessage, exception );
+            LOGGER.warn( errorMessage, exception );
 
             // Attempt recovery in order to cycle the delivery attempts. When the maximum is reached, poison
             // messages should hit the Dead Letter Queue (DLQ), assuming a DLQ is configured.
@@ -1118,21 +1136,21 @@ public class EvaluationSubscriber implements Closeable
         }
         catch ( JMSException f )
         {
-            String message = "While attempting to recover a session for evaluation " + evaluationId
-                             + IN_SUBSCRIBER
-                             + this.getClientId()
-                             + ", encountered "
-                             + "an error that prevented recovery.";
+            String logMessage = "While attempting to recover a session for evaluation " + evaluationId
+                                + IN_SUBSCRIBER
+                                + this.getClientId()
+                                + ", encountered "
+                                + "an error that prevented recovery.";
 
-            LOGGER.error( message, f );
+            LOGGER.error( logMessage, f );
         }
         catch ( InterruptedException e )
         {
             Thread.currentThread().interrupt();
 
-            String message = "Interrupted while waiting to recover a session in evaluation " + evaluationId + ".";
+            String logMessage = "Interrupted while waiting to recover a session in evaluation " + evaluationId + ".";
 
-            LOGGER.error( message, evaluationId );
+            LOGGER.error( logMessage, evaluationId );
         }
     }
 

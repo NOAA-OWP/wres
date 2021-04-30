@@ -767,8 +767,9 @@ public class Evaluation implements Closeable
         // Evaluation finished (but not yet closed)
         this.isStopped.set( true );
 
-        // Publish success, which is only awaited by the tracker on closing
-        this.publishCompletionStatus( CompletionStatus.EVALUATION_COMPLETE_REPORTED_SUCCESS, null );
+        // Do not publish success because no subscriber can leverage it for any purpose (subscribers must report 
+        // success to reach this point). Equally, a short-running subscriber (one that dies with an evaluation) may 
+        // receive it while shutting down, which can lead to an exception. See #90908.
 
         return this.getExitCode();
     }
