@@ -1,7 +1,5 @@
 package wres.io.config;
 
-import static wres.config.generated.SourceTransformationType.PERSISTENCE;
-
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.file.Path;
@@ -85,30 +83,6 @@ public class ConfigHelper
         // prevent construction
     }
 
-    // TODO: Move to wres-config
-    public static boolean usesNetCDFData( ProjectConfig projectConfig )
-    {
-        boolean usesNetcdf = wres.util.Collections.exists(
-                                                           projectConfig.getInputs().getLeft().getSource(),
-                                                           source -> source.getFormat() != null &&
-                                                                     source.getFormat().equals( Format.NET_CDF ) );
-
-        usesNetcdf = usesNetcdf || wres.util.Collections.exists(
-                                                                 projectConfig.getInputs().getRight().getSource(),
-                                                                 source -> source.getFormat() != null &&
-                                                                           source.getFormat()
-                                                                                 .equals( Format.NET_CDF ) );
-
-        if ( !usesNetcdf && projectConfig.getInputs().getBaseline() != null )
-        {
-            usesNetcdf = wres.util.Collections.exists(
-                                                       projectConfig.getInputs().getBaseline().getSource(),
-                                                       source -> source.getFormat() != null &&
-                                                                 source.getFormat().equals( Format.NET_CDF ) );
-        }
-
-        return usesNetcdf;
-    }
 
     /**
      * Creates a hash for the indicated project configuration based on its
@@ -237,53 +211,6 @@ public class ConfigHelper
         return result;
     }
 
-
-    /**
-     * Returns true if the sourceConfig from projectConfig is a persistence
-     * baseline element.
-     * @param projectConfig the project config, not null
-     * @param sourceConfig the source config, not null
-     * @return true when sourceConfig indicates persistence baseline.
-     * @throws NullPointerException when projectConfig or sourceConfig are null
-     */
-
-    public static boolean isPersistence( ProjectConfig projectConfig,
-                                         DataSourceConfig sourceConfig )
-    {
-        Objects.requireNonNull( projectConfig );
-        Objects.requireNonNull( sourceConfig );
-
-        return projectConfig.getInputs()
-                            .getBaseline() != null
-               && ConfigHelper.getLeftOrRightOrBaseline( projectConfig,
-                                                         sourceConfig )
-                              .equals( LeftOrRightOrBaseline.BASELINE )
-               && projectConfig.getInputs()
-                               .getBaseline()
-                               .getTransformation() != null
-               && projectConfig.getInputs()
-                               .getBaseline()
-                               .getTransformation()
-                               .equals( PERSISTENCE );
-    }
-
-
-    /**
-     * Report if the projectConfig has a persistence baseline
-     * @param projectConfig the project config to look at
-     * @return true if the projectConfig has persistence baseline, false otherwise
-     * @throws NullPointerException when projectConfig or its inputs are null
-     */
-
-    public static boolean hasPersistenceBaseline( ProjectConfig projectConfig )
-    {
-        Objects.requireNonNull( projectConfig );
-        Objects.requireNonNull( projectConfig.getInputs() );
-
-        return projectConfig.getInputs().getBaseline() != null
-               && ConfigHelper.isPersistence( projectConfig,
-                                              projectConfig.getInputs().getBaseline() );
-    }
 
     /**
      * Return <code>true</code> if the project uses probability thresholds, otherwise <code>false</code>.
@@ -712,20 +639,6 @@ public class ConfigHelper
         }
 
         return Collections.unmodifiableSortedSet( featureNames );
-    }
-
-    public static DataSourceConfig getDataSourceBySide( final ProjectConfig projectConfig,
-                                                        final LeftOrRightOrBaseline side )
-    {
-        switch ( side )
-        {
-            case LEFT:
-                return projectConfig.getInputs().getLeft();
-            case RIGHT:
-                return projectConfig.getInputs().getRight();
-            default:
-                return projectConfig.getInputs().getBaseline();
-        }
     }
 
     public static FeatureDimension getConcreteFeatureDimension( final DataSourceConfig datasource )
