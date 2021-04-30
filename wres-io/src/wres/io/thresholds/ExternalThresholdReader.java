@@ -1,6 +1,7 @@
 package wres.io.thresholds;
 
 import wres.config.MetricConfigException;
+import wres.config.ProjectConfigs;
 import wres.config.generated.*;
 import wres.datamodel.DataFactory;
 import wres.datamodel.FeatureTuple;
@@ -106,7 +107,7 @@ public class ExternalThresholdReader {
         ThresholdsConfig.Source source = (ThresholdsConfig.Source)thresholdsConfig.getCommaSeparatedValuesOrSource();
         LeftOrRightOrBaseline tupleSide = source.getFeatureNameFrom();
 
-        DataSourceConfig dataSourceConfig = ConfigHelper.getDataSourceBySide(this.projectConfig, tupleSide);
+        DataSourceConfig dataSourceConfig = ProjectConfigs.getDataSourceBySide( this.projectConfig, tupleSide);
         FeatureDimension featureDimension = ConfigHelper.getConcreteFeatureDimension(dataSourceConfig);
 
         Set<FeatureTuple> recognizedFeatures = new HashSet<>();

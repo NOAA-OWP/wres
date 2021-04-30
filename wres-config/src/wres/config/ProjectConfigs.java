@@ -1,5 +1,7 @@
 package wres.config;
 
+import java.io.IOException;
+import java.io.StringWriter;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -8,12 +10,22 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static wres.config.generated.LeftOrRightOrBaseline.BASELINE;
+import static wres.config.generated.LeftOrRightOrBaseline.LEFT;
+import static wres.config.generated.LeftOrRightOrBaseline.RIGHT;
+
+import wres.config.generated.DataSourceBaselineConfig;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
@@ -284,5 +296,182 @@ public class ProjectConfigs
         return null;
     }
 
+
+    /**
+     * Get the declaration for a given dataset side, left or right or baseline.
+     * @param projectConfig The project declaration to search.
+     * @param side The side to return.
+     * @return The declaration element for the left or right or baseline.
+     */
+
+    public static DataSourceConfig getDataSourceBySide( final ProjectConfig projectConfig,
+                                                        final LeftOrRightOrBaseline side )
+    {
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( side );
+        Inputs inputs = projectConfig.getInputs();
+
+        if ( side.equals( LEFT ) )
+        {
+            return inputs.getLeft();
+        }
+        else if ( side.equals( RIGHT ) )
+        {
+            return inputs.getRight();
+        }
+        else if ( side.equals( BASELINE ) )
+        {
+            return inputs.getBaseline();
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "Unsupported side: " + side );
+        }
+    }
+
+
+    /**
+     * Given a declaration, add another source to it, returning the result.
+     * The resulting String will be a WRES declaration. The original formatting
+     * may be lost and comments may be stripped. Otherwise it should function
+     * the same way as without calling this method, with the only difference
+     * being additional data in the dataset.
+     *
+     * This method does parsing and writing of Strings. If you have an
+     * already parsed declaration in a ProjectConfig, use the other addSource.
+     *
+     * @param rawDeclaration The original declaration String.
+     * @param origin A named origin of the declaration for messages/exceptions.
+     * @param source The source to add to the declaration String.
+     * @param side Which dataset to add the source: left, right, or baseline.
+     * @return A new, modified declaration with the source added. Reformatted.
+     * @throws IOException on failure to read the rawDeclaration
+     * @throws JAXBException on failure to transform to the returned declaration
+     * @throws IllegalArgumentException When adding baseline when no baseline.
+     * @throws UnsupportedOperationException When code does not support side.
+     */
+
+    public static String addSource( String rawDeclaration,
+                                    String origin,
+                                    LeftOrRightOrBaseline side,
+                                    DataSourceConfig.Source source )
+            throws IOException, JAXBException
+    {
+        // Is this dangerous? Potentially raw user bytes being logged here.
+        LOGGER.debug( "addSource original raw declaration: \n{}",
+                      rawDeclaration );
+        ProjectConfigPlus projectConfigPlus = ProjectConfigPlus.from( rawDeclaration,
+                                                                      origin );
+        ProjectConfig oldDeclaration = projectConfigPlus.getProjectConfig();
+        LOGGER.debug( "addSource original (parsed) declaration: \n{}",
+                      oldDeclaration );
+        ProjectConfig newDeclaration = ProjectConfigs.addSource( oldDeclaration,
+                                                                 side,
+                                                                 source );
+        JAXBContext jaxbContext = JAXBContext.newInstance( ProjectConfig.class );
+        Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
+        jaxbMarshaller.setProperty( Marshaller.JAXB_FORMATTED_OUTPUT,
+                                    Boolean.TRUE );
+        jaxbMarshaller.setProperty( Marshaller.JAXB_ENCODING, "UTF-8" );
+        StringWriter stringWriter = new StringWriter();
+        jaxbMarshaller.marshal( newDeclaration, stringWriter );
+        LOGGER.debug( "Transformed into: \n{}", stringWriter );
+        return stringWriter.toString();
+    }
+
+
+    /**
+     * Given a declaration, add another source to it, returning the result.
+     * The resulting ProjectConfig will be the original plus the source given.
+     *
+     * @param oldDeclaration The original declaration.
+     * @param source The source to add to the declaration String.
+     * @param side Which dataset to add the source: left, right, or baseline.
+     * @return A new declaration based on the original with the source added.
+     * @throws IllegalArgumentException When adding baseline when no baseline.
+     * @throws UnsupportedOperationException When code does not support side.
+     */
+
+    public static ProjectConfig addSource( ProjectConfig oldDeclaration,
+                                           LeftOrRightOrBaseline side,
+                                           DataSourceConfig.Source source )
+    {
+        if ( side.equals( BASELINE )
+             && Objects.isNull( oldDeclaration.getInputs()
+                                              .getBaseline() ) )
+        {
+            throw new IllegalArgumentException( "Unable to add to baseline because there was no baseline!" );
+        }
+
+        DataSourceConfig oldDataset = ProjectConfigs.getDataSourceBySide( oldDeclaration,
+                                                                          side );
+        List<DataSourceConfig.Source> addedSources = new ArrayList<>( oldDataset.getSource() );
+        addedSources.add( source );
+        DataSourceConfig newDataset =
+                new DataSourceConfig( oldDataset.getType(),
+                                      addedSources,
+                                      oldDataset.getVariable(),
+                                      oldDataset.getTransformation(),
+                                      oldDataset.getEnsemble(),
+                                      oldDataset.getTimeShift(),
+                                      oldDataset.getExistingTimeScale(),
+                                      oldDataset.getUrlParameter(),
+                                      oldDataset.getRemoveMemberByValidYear(),
+                                      oldDataset.getLabel(),
+                                      oldDataset.getFeatureDimension() );
+        ProjectConfig.Inputs newInputs;
+
+        if ( side.equals( LEFT ) )
+        {
+            newInputs = new ProjectConfig.Inputs( newDataset,
+                                                  oldDeclaration.getInputs()
+                                                                .getRight(),
+                                                  oldDeclaration.getInputs()
+                                                                .getBaseline() );
+        }
+        else if ( side.equals( RIGHT ) )
+        {
+            newInputs = new ProjectConfig.Inputs( oldDeclaration.getInputs()
+                                                                .getLeft(),
+                                                  newDataset,
+                                                  oldDeclaration.getInputs()
+                                                                .getBaseline() );
+        }
+        else if ( side.equals( BASELINE ) )
+        {
+            DataSourceBaselineConfig baselineConfig =
+                    new DataSourceBaselineConfig( newDataset.getType(),
+                                                  newDataset.getSource(),
+                                                  newDataset.getVariable(),
+                                                  newDataset.getTransformation(),
+                                                  newDataset.getEnsemble(),
+                                                  newDataset.getTimeShift(),
+                                                  newDataset.getExistingTimeScale(),
+                                                  newDataset.getUrlParameter(),
+                                                  newDataset.getRemoveMemberByValidYear(),
+                                                  newDataset.getLabel(),
+                                                  newDataset.getFeatureDimension(),
+                                                  oldDeclaration.getInputs()
+                                                                .getBaseline()
+                                                                .isSeparateMetrics() );
+            newInputs = new ProjectConfig.Inputs( oldDeclaration.getInputs()
+                                                                .getLeft(),
+                                                  oldDeclaration.getInputs()
+                                                                .getRight(),
+                                                  baselineConfig );
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "Unable to add to "
+                                                     + side );
+        }
+
+        return new ProjectConfig( newInputs,
+                                  oldDeclaration.getPair(),
+                                  oldDeclaration.getMetrics(),
+                                  oldDeclaration.getOutputs(),
+                                  oldDeclaration.getLabel(),
+                                  oldDeclaration.getName() );
+    }
 }
 
