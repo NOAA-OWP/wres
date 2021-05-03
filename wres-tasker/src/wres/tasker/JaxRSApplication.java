@@ -1,7 +1,5 @@
 package wres.tasker;
 
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 import jakarta.ws.rs.ApplicationPath;
 import jakarta.ws.rs.core.Application;
@@ -18,12 +16,11 @@ public class JaxRSApplication extends Application
     @Override
     public Set<Class<?>> getClasses()
     {
-        Set<Class<?>> s = new HashSet<>( 5 );
-        s.add( WresJob.class );
-        s.add( WresJobResult.class );
-        s.add( WresJobStdout.class );
-        s.add( WresJobStderr.class );
-        s.add( WresJobOutput.class );
-        return Collections.unmodifiableSet( s );
+        return Set.of( WresJob.class,
+                       WresJobResult.class,
+                       WresJobStdout.class,
+                       WresJobStderr.class,
+                       WresJobOutput.class,
+                       WresJobInput.class );
     }
 }

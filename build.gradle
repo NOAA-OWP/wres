@@ -989,6 +989,9 @@ project(':wres-tasker')
         // DefaultServlet.class
         compile 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.0.2'
 
+        // To handle multipart post
+        compile 'org.glassfish.jersey.media:jersey-media-multipart:3.0.2'
+
         // To temporarily cache/store-in-RAM job metadata when redis unavailable
         compile 'com.github.ben-manes.caffeine:caffeine:3.0.1'
 
