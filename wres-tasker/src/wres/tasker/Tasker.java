@@ -16,6 +16,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,6 +115,10 @@ public class Tasker
         // https://stackoverflow.com/questions/22994690/which-init-param-to-use-jersey-config-server-provider-packages-or-javax-ws-rs-a#23041643
         dynamicHolder.setInitParameter( "jakarta.ws.rs.Application",
                                         JaxRSApplication.class.getCanonicalName() );
+
+        // To handle multipart post data, unfortunately jersey-specific:
+        dynamicHolder.setInitParameter( "jersey.config.server.provider.classnames",
+                                        MultiPartFeature.class.getCanonicalName() );
 
         // Static handler:
         ResourceHandler resourceHandler = new ResourceHandler();
