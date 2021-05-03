@@ -1075,19 +1075,6 @@ class WebSource implements Callable<List<IngestResult>>
                                    String nwsLocationId,
                                    List<UrlParameter> additionalParameters )
     {
-/*        if ( !baseUri.getPath()
-                     .toLowerCase()
-                     .endsWith( "ahps" ) &&
-             !baseUri.getPath()
-                     .toLowerCase()
-                     .endsWith( "ahps/" )
-             && LOGGER.isWarnEnabled() )
-        {
-            LOGGER.warn( "Expected URI like '" +
-                         "https://***REMOVED***.***REMOVED***.***REMOVED***/api/prod/forecasts/streamflow/ahps'"
-                         + " but instead got " + baseUri.toString() );
-        }
-*/
 
         String basePath = baseUri.getPath();
 
@@ -1099,7 +1086,7 @@ class WebSource implements Callable<List<IngestResult>>
 
         Map<String, String> wrdsParameters = createWrdsAhpsUrlParameters( issuedRange,
                                                                           additionalParameters );
-        String pathWithLocation = basePath //+ "nwsLocations/"
+        String pathWithLocation = basePath 
                                   + nwsLocationId;
         URIBuilder uriBuilder = new URIBuilder( this.getBaseUri() );
         uriBuilder.setPath( pathWithLocation );
