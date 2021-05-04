@@ -4,9 +4,11 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.net.URI;
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
@@ -54,6 +56,8 @@ class JobResults
     private static final Logger LOGGER = LoggerFactory.getLogger( JobResults.class );
     private static final long EXPIRY_IN_MINUTES = Duration.ofDays( 14 )
                                                           .toMinutes();
+    /** To generate job ids. The job id is a kind of token: use SecureRandom */
+    private static final Random RANDOM = new SecureRandom();
 
     public enum WhichStream
     {
@@ -96,6 +100,8 @@ class JobResults
     enum JobState
     {
         NOT_FOUND,
+        /** For when data has yet to be posted */
+        AWAITING_DATA,
         // We could also have IN_QUEUE which would require better tracking
         IN_PROGRESS,
         COMPLETED_REPORTED_SUCCESS,
@@ -447,25 +453,20 @@ class JobResults
         }
     }
 
+
     /**
-     * Register a job request id with JobResults so that results are able to
-     * be completely retrieved from a back-end web service.
-     * The bad part of this setup is the assumption of a single web server
-     * running also holding the results in memory. The memory issue can be fixed
-     * with a temp file, but really it is the single web server issue that is
-     * the bigger problem. Storing results in a database may be better.
-     * @param jobStatusExchangeName the queue with job results
-     * @param jobId the job to look for
-     * @return a future with the job id, can be ignored because results are
-     * available via JobResults.getJobResult(...)
-     * @throws IOException when connecting to broker fails
-     * @throws TimeoutException when connecting to broker fails
+     * Register a a new job, without yet watching for results from a worker.
+     * @return The newly created and registered job id.
      */
 
-    Future<Integer> registerjobId( String jobStatusExchangeName,
-                                   String jobId )
-            throws IOException, TimeoutException
+    String registerNewJob()
     {
+        // Guarantee a positive number. Using Math.abs would open up failure
+        // in edge cases. A while loop seems complex. Thanks to Ted Hopp
+        // on StackOverflow question id 5827023.
+        long someRandomNumber = RANDOM.nextLong() & Long.MAX_VALUE;
+
+        String jobId = String.valueOf( someRandomNumber );
         JobMetadata jobMetadata = new JobMetadata( jobId );
         boolean metadataExisted;
 
@@ -493,19 +494,51 @@ class JobResults
             }
              */
 
-            metadataExisted = ( ( RMapCache<String,JobMetadata> ) this.jobMetadataById )
-                    .putIfAbsent( jobId, jobMetadata,
-                                  EXPIRY_IN_MINUTES, TimeUnit.MINUTES ) != null;
+            metadataExisted =
+                    ( ( RMapCache<String, JobMetadata> ) this.jobMetadataById )
+                            .putIfAbsent( jobId, jobMetadata,
+                                          EXPIRY_IN_MINUTES, TimeUnit.MINUTES )
+                    != null;
         }
         else
         {
-            metadataExisted = this.jobMetadataById.putIfAbsent( jobId, jobMetadata ) != null;
+            metadataExisted =
+                    this.jobMetadataById.putIfAbsent( jobId, jobMetadata )
+                    != null;
         }
 
         if ( metadataExisted )
         {
             LOGGER.warn( "jobId {} may have been registered twice",
                          jobId );
+        }
+
+        return jobId;
+    }
+
+
+    /**
+     * Start watching for an already-registered job's feedback via broker.
+     *
+     * The job must have already been registered via registerJobId.
+     *
+     * @param jobId The job id (already registered)
+     * @param jobStatusExchangeName the exchange name for job results
+     * @return Future exit code
+     * @throws IOException when connecting to broker fails
+     * @throws TimeoutException when connecting to broker fails
+     * @throws IllegalStateException when the job id is not found.
+     */
+
+    Future<Integer> watchForJobFeedback( String jobId,
+                                         String jobStatusExchangeName )
+            throws IOException, TimeoutException
+    {
+        JobMetadata jobMetadata = this.jobMetadataById.get( jobId );
+
+        if ( Objects.isNull( jobMetadata ) )
+        {
+            throw new IllegalStateException( "Job " + jobId + " not found." );
         }
 
         JobResultWatcher jobResultWatcher = new JobResultWatcher( this.getConnection(),
@@ -698,5 +731,56 @@ class JobResults
         }
 
         return metadata.getOutputs();
+    }
+
+    /**
+     * Set the declaration for a job. Can only be done once.
+     * @throws IllegalStateException When job id non-existent or dec already set
+     */
+    void setDeclaration( String jobId, String projectDeclaration )
+    {
+        JobMetadata metadata = jobMetadataById.get( jobId );
+
+        if ( Objects.isNull( metadata ) )
+        {
+            throw new IllegalStateException( "Job id " + jobId + " not found." );
+        }
+
+        String existingDeclaration = metadata.getProjectDeclaration();
+
+        if ( Objects.nonNull( existingDeclaration ) )
+        {
+            throw new IllegalStateException( "Job id " + jobId
+                                             + " already had declaration set!" );
+        }
+
+        metadata.setProjectDeclaration( projectDeclaration );
+    }
+
+    void addInput( String jobId, String side, URI input )
+    {
+        JobMetadata metadata = jobMetadataById.get( jobId );
+
+        if ( Objects.isNull( metadata ) )
+        {
+            throw new IllegalStateException( "Job id " + jobId + " not found." );
+        }
+
+        if ( side.equalsIgnoreCase( "left" ) )
+        {
+            metadata.addLeftInput( input );
+        }
+        else if ( side.equalsIgnoreCase( "right" ) )
+        {
+            metadata.addRightInput( input );
+        }
+        else if ( side.equalsIgnoreCase( "baseline" ) )
+        {
+            metadata.addBaselineInput( input );
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "Unsupported side " + side );
+        }
     }
 }
