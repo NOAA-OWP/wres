@@ -2,7 +2,13 @@ package wres.tasker;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.EnumSet;
+import java.util.Objects;
+import java.util.Set;
 
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
@@ -16,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import static jakarta.ws.rs.core.MediaType.MULTIPART_FORM_DATA;
 import static jakarta.ws.rs.core.MediaType.TEXT_PLAIN;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 @Path( "/job/{jobId}/input/{dataset}" )
 public class WresJobInput
@@ -29,22 +36,77 @@ public class WresJobInput
                                             @PathParam( "dataset" ) String dataset,
                                             @FormDataParam( "data" ) InputStream data )
     {
-        LOGGER.debug( "Data being put in job {}, on {} side.", id, dataset );
-        // TODO: validate job id, side name (l/r/b)
+        LOGGER.debug( "Data might be put in job {}, on {} side.", id, dataset );
+
+        // Round-about way of validating job id: look for job state
+        JobResults.JobState jobState = WresJob.getSharedJobResults()
+                                              .getJobResult( id );
+
+        if ( jobState.equals( JobResults.JobState.NOT_FOUND ) )
+        {
+            return Response.status( Response.Status.NOT_FOUND )
+                           .entity( id + " not found." )
+                           .build();
+        }
+
         // TODO: detect (or read given) content type of the data
+
+        FileAttribute<Set<PosixFilePermission>> posixAttributes;
+
+        // Indirect way of detecting "is this unix or not"
+        if ( System.getProperty( "file.separator" )
+                   .equals( "/" ) )
+        {
+            Set<PosixFilePermission> permissions;
+            LOGGER.debug( "Detected unix system." );
+            permissions = EnumSet.of(
+                    PosixFilePermission.OWNER_READ,
+                    PosixFilePermission.OWNER_WRITE,
+                    PosixFilePermission.OWNER_EXECUTE,
+                    PosixFilePermission.GROUP_READ,
+                    PosixFilePermission.GROUP_WRITE,
+                    PosixFilePermission.GROUP_EXECUTE );
+                    PosixFilePermissions.asFileAttribute( permissions );
+            posixAttributes = PosixFilePermissions.asFileAttribute( permissions );
+        }
+        else
+        {
+            LOGGER.debug( "Detected windows system." );
+            posixAttributes = null;
+        }
+
+        java.nio.file.Path temp = null;
 
         try
         {
-            String result = new String( data.readAllBytes(),
-                                        StandardCharsets.UTF_8 );
-            LOGGER.debug( "Data: {}", result );
-            // TODO: put the data somewhere
+            if ( Objects.nonNull( posixAttributes  ) )
+            {
+                temp = Files.createTempFile( id, "", posixAttributes );
+            }
+            else
+            {
+                temp = Files.createTempFile( id, "" );
+            }
+
+            Files.copy( data, temp, REPLACE_EXISTING );
+            LOGGER.debug( "Data in: {}", temp );
         }
         catch ( IOException ioe )
         {
             LOGGER.warn( "While reading InputStream:", ioe );
 
-            // TODO: attempt to delete the data if anything was created.
+            if ( Objects.nonNull( temp ) )
+            {
+                try
+                {
+                    Files.deleteIfExists( temp );
+                }
+                catch ( IOException ioe2 )
+                {
+                    LOGGER.warn( "Failed to delete {}", temp );
+                }
+            }
+
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity( "Failed to read from stream: " + ioe.getMessage() )
                            .build();
