@@ -38,6 +38,21 @@ public class JobMetadata
     @RCascade( RCascadeType.ALL )
     private ConcurrentMap<Integer,String> stderr;
 
+    /** Optional: only set when posting job input via tasker */
+    private String projectDeclaration;
+
+    /** Inputs to be added to the above declaration when posting job input */
+    @RCascade( RCascadeType.ALL )
+    private SortedSet<URI> leftInputs;
+
+    /** Inputs to be added to the above declaration when posting job input */
+    @RCascade( RCascadeType.ALL )
+    private SortedSet<URI> rightInputs;
+
+    /** Inputs to be added to the above declaration when posting job input */
+    @RCascade( RCascadeType.ALL )
+    private SortedSet<URI> baselineInputs;
+
     public JobMetadata( String id )
     {
         Objects.requireNonNull( id );
@@ -52,6 +67,10 @@ public class JobMetadata
         this.outputs = new ConcurrentSkipListSet<>();
         this.stdout = new ConcurrentHashMap<>();
         this.stderr = new ConcurrentHashMap<>();
+        this.projectDeclaration = null;
+        this.leftInputs = new ConcurrentSkipListSet<>();
+        this.rightInputs = new ConcurrentSkipListSet<>();
+        this.baselineInputs = new ConcurrentSkipListSet<>();
     }
 
     /**
@@ -88,6 +107,48 @@ public class JobMetadata
     public void setExitCode( Integer exitCode )
     {
         this.exitCode = exitCode;
+    }
+
+
+    public String getProjectDeclaration()
+    {
+        return this.projectDeclaration;
+    }
+
+    public void setProjectDeclaration( String projectDeclaration )
+    {
+        this.projectDeclaration = projectDeclaration;
+    }
+
+
+    public SortedSet<URI> getLeftInputs()
+    {
+        return this.leftInputs;
+    }
+
+    public void setLeftInputs( SortedSet<URI> leftInputs )
+    {
+        this.leftInputs = leftInputs;
+    }
+
+    public SortedSet<URI> getRightInputs()
+    {
+        return this.rightInputs;
+    }
+
+    public void setRightInputs( SortedSet<URI> rightInputs )
+    {
+        this.rightInputs = rightInputs;
+    }
+
+    public SortedSet<URI> getBaselineInputs()
+    {
+        return this.baselineInputs;
+    }
+
+    public void setBaselineInputs( SortedSet<URI> baselineInputs )
+    {
+        this.baselineInputs = baselineInputs;
     }
 
     /**
@@ -167,6 +228,23 @@ public class JobMetadata
         }
     }
 
+    void addLeftInput( URI input )
+    {
+        SortedSet<URI> uris = this.getLeftInputs();
+        uris.add( input );
+    }
+
+    void addRightInput( URI input )
+    {
+        SortedSet<URI> uris = this.getRightInputs();
+        uris.add( input );
+    }
+
+    void addBaselineInput( URI input )
+    {
+        SortedSet<URI> uris = this.getBaselineInputs();
+        uris.add( input );
+    }
 
     /**
      * Return whether the exit code has been set or not, aka whether this job
@@ -186,6 +264,10 @@ public class JobMetadata
                 .append( "id", this.getId() )
                 .append( "exitCode", this.getExitCode() )
                 .append( "outputs", this.getOutputs() )
+                .append( "projectDeclaration", this.getProjectDeclaration() )
+                .append( "leftInputs", this.getLeftInputs() )
+                .append( "rightInputs", this.getRightInputs() )
+                .append( "baselineInputs", this.getBaselineInputs() )
                 .toString();
     }
 }

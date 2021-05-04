@@ -2,6 +2,7 @@ package wres.tasker;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
@@ -32,20 +33,20 @@ public class WresJobInput
     @POST
     @Consumes( MULTIPART_FORM_DATA )
     @Produces( TEXT_PLAIN )
-    public Response putSourceFileInDataset( @PathParam( "jobId" ) String id,
+    public Response putSourceFileInDataset( @PathParam( "jobId" ) String jobId,
                                             @PathParam( "dataset" ) String dataset,
                                             @FormDataParam( "data" ) InputStream data )
     {
-        LOGGER.debug( "Data might be put in job {}, on {} side.", id, dataset );
+        LOGGER.debug( "Data might be put in job {}, on {} side.", jobId, dataset );
 
         // Round-about way of validating job id: look for job state
         JobResults.JobState jobState = WresJob.getSharedJobResults()
-                                              .getJobResult( id );
+                                              .getJobResult( jobId );
 
         if ( jobState.equals( JobResults.JobState.NOT_FOUND ) )
         {
             return Response.status( Response.Status.NOT_FOUND )
-                           .entity( id + " not found." )
+                           .entity( jobId + " not found." )
                            .build();
         }
 
@@ -81,11 +82,11 @@ public class WresJobInput
         {
             if ( Objects.nonNull( posixAttributes  ) )
             {
-                temp = Files.createTempFile( id, "", posixAttributes );
+                temp = Files.createTempFile( jobId, "", posixAttributes );
             }
             else
             {
-                temp = Files.createTempFile( id, "" );
+                temp = Files.createTempFile( jobId, "" );
             }
 
             Files.copy( data, temp, REPLACE_EXISTING );
@@ -112,6 +113,9 @@ public class WresJobInput
                            .build();
         }
 
+        JobResults results = WresJob.getSharedJobResults();
+        URI uri = temp.toUri();
+        results.addInput( jobId, dataset, uri );
         return Response.status( Response.Status.OK )
                        .build();
     }

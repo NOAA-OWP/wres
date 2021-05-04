@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Objects;
-import java.util.Random;
 import java.util.StringJoiner;
 import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLContext;
@@ -15,6 +14,7 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DefaultSaslConfig;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.FormParam;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -57,7 +57,6 @@ public class WresJob
 
     // Using a member variable fails, make it same across instances.
     private static final ConnectionFactory CONNECTION_FACTORY = new ConnectionFactory();
-    private static final Random RANDOM = new Random( System.currentTimeMillis() );
     private static final String REDIS_HOST_SYSTEM_PROPERTY_NAME = "wres.redisHost";
     private static final String REDIS_PORT_SYSTEM_PROPERTY_NAME = "wres.redisPort";
     private static final int DEFAULT_REDIS_PORT = 6379;
@@ -162,16 +161,36 @@ public class WresJob
                                              e );
         }
 
+        // TODO add test for connectivity to redis via redisson
+
         return "Up";
     }
 
 
+    /**
+     * Post a declaration to start a new WRES job.
+     * @param projectConfig The declaration to use in a new job.
+     * @param wresUser Do not use. Deprecated field.
+     * @param verb The verb to run on the declaration, default is execute.
+     * @param postInput If the caller wishes to post input, true, default false.
+     * @return HTTP 201 on success, 4XX on client error, 5XX on server error.
+     */
+
     @POST
     @Consumes( APPLICATION_FORM_URLENCODED )
     @Produces( TEXT_HTML )
-    public Response postWresJob( @FormParam( "projectConfig" ) String projectConfig,
-                                 @Deprecated @FormParam( "userName" ) String wresUser,
-                                 @FormParam( "verb" ) String verb )
+    public Response postWresJob( @FormParam( "projectConfig" )
+                                 @DefaultValue( "" )
+                                 String projectConfig,
+                                 @Deprecated
+                                 @FormParam( "userName" )
+                                 String wresUser,
+                                 @FormParam( "verb" )
+                                 @DefaultValue( "execute" )
+                                 String verb,
+                                 @FormParam( "postInput" )
+                                 @DefaultValue( "false" )
+                                 boolean postInput )
     {
         int lengthOfProjectDeclaration = projectConfig.length();
 
@@ -220,19 +239,15 @@ public class WresJob
             actualVerb = Verb.EXECUTE;
         }
 
-        Job.job jobMessage = Job.job.newBuilder()
-                                    .setProjectConfig( projectConfig )
-                                    .setVerb( actualVerb )
-                                    .build();
-        String jobId;
-
+        // Before registering a new job, see if there are already too many.
         try
         {
-            jobId = sendMessage( jobMessage.toByteArray() );
+            int queueLength = this.getJobQueueLength();
+            this.validateQueueLength( queueLength );
         }
         catch ( IOException | TimeoutException e )
         {
-            LOGGER.error( "Attempt to send message failed.", e );
+            LOGGER.error( "Attempt to check queue length failed.", e );
             return WresJob.internalServerError();
         }
         catch ( TooManyEvaluationsInQueueException tmeiqe )
@@ -241,7 +256,9 @@ public class WresJob
             return WresJob.serviceUnavailable( "Too many evaluations are in the queue, try again in a moment." );
         }
 
-        String urlCreated= "/job/" + jobId;
+        String jobId = JOB_RESULTS.registerNewJob();
+
+        String urlCreated = "/job/" + jobId;
         URI resourceCreated;
 
         try
@@ -252,6 +269,43 @@ public class WresJob
         {
             LOGGER.error( "Failed to create uri using {}", urlCreated, use );
             return WresJob.internalServerError();
+        }
+
+        // If the caller wishes to post input data: parameter postInput=true
+        if ( postInput )
+        {
+            // Pause before sending. Parse the declaration and add inputs before
+            // sending along. This request will result in 201 created response
+            // and the caller must send another request saying "I have finished
+            // posting input."
+            JOB_RESULTS.setDeclaration( jobId, projectConfig );
+            return Response.created( resourceCreated )
+                           .entity( "<!DOCTYPE html><html><head><title>Evaluation job received.</title></head>"
+                                    + "<body><h1>Evaluation job " + jobId + " has been received for processing.</h1>"
+                                    + "<p>See <a href=\""
+                                    + urlCreated + "\">" + urlCreated
+                                    + "</a></p></body></html>" )
+                           .build();
+        }
+
+        Job.job jobMessage = Job.job.newBuilder()
+                                    .setProjectConfig( projectConfig )
+                                    .setVerb( actualVerb )
+                                    .build();
+
+        try
+        {
+            sendDeclarationMessage( jobId, jobMessage.toByteArray() );
+        }
+        catch ( IOException | TimeoutException e )
+        {
+            LOGGER.error( "Attempt to send message failed.", e );
+            return WresJob.internalServerError();
+        }
+        catch ( TooManyEvaluationsInQueueException tmeiqe )
+        {
+            LOGGER.warn( "Did not send job, returning 503.", tmeiqe );
+            return WresJob.serviceUnavailable( "Too many evaluations are in the queue, try again in a moment." );
         }
 
         return Response.created( resourceCreated )
@@ -330,10 +384,11 @@ public class WresJob
      *
      * @param message
      * @throws IOException when connectivity, queue declaration, or publication fails
-     * @throws TooManyEvaluationsInQueueException when queue has lots of jobs
+     * @throws IllegalStateException when the job does not exist in shared state
      * @throws TimeoutException
      */
-    private String sendMessage( byte[] message )
+    private void sendDeclarationMessage( String jobId,
+                                         byte[] message )
             throws IOException, TimeoutException
     {
         // Use a shared connection across requests.
@@ -341,30 +396,12 @@ public class WresJob
 
         try ( Channel channel = connection.createChannel() )
         {
-            // Guarantee a positive number. Using Math.abs would open up failure
-            // in edge cases. A while loop seems complex. Thanks to Ted Hopp
-            // on StackOverflow question id 5827023.
-            long someRandomNumber = RANDOM.nextLong() & Long.MAX_VALUE;
-
-            String jobId = String.valueOf( someRandomNumber );
-
             AMQP.Queue.DeclareOk declareOk =
                     channel.queueDeclare( SEND_QUEUE_NAME,
                                           false,
                                           false,
                                           false,
                                           null );
-
-            int queueLength = declareOk.getMessageCount();
-
-            if ( queueLength > MAXIMUM_EVALUATION_COUNT )
-            {
-                throw new TooManyEvaluationsInQueueException( "Too many evaluations in the queue. "
-                                                              + queueLength
-                                                              + " found, will continue to reject evaluations until "
-                                                              + MAXIMUM_EVALUATION_COUNT
-                                                              + " or fewer are in the queue." );
-            }
 
             // Tell the worker where to send results.
             String jobStatusExchange = JobResults.getJobStatusExchangeName();
@@ -381,8 +418,8 @@ public class WresJob
             // end up dropping on the floor, that is why this is called prior
             // to even publishing the job at all. JobResults is a bag-o-state.
 
-            JOB_RESULTS.registerjobId( jobStatusExchange,
-                                       jobId );
+            JOB_RESULTS.watchForJobFeedback( jobId,
+                                             jobStatusExchange );
 
             channel.basicPublish( "",
                                   SEND_QUEUE_NAME,
@@ -393,7 +430,42 @@ public class WresJob
                          SEND_QUEUE_NAME, properties );
             LOGGER.debug( "I sent this message to queue '{}' with properties '{}': {}.",
                           SEND_QUEUE_NAME, properties, message );
-            return jobId;
+        }
+    }
+
+
+    private int getJobQueueLength() throws IOException, TimeoutException
+    {
+        Connection connection = WresJob.getConnection();
+
+        try ( Channel channel = connection.createChannel() )
+        {
+            AMQP.Queue.DeclareOk declareOk =
+                    channel.queueDeclare( SEND_QUEUE_NAME,
+                                          false,
+                                          false,
+                                          false,
+                                          null );
+            return declareOk.getMessageCount();
+        }
+    }
+
+
+    /**
+     * Check to see if there are too many actively worked jobs in the job queue.
+     * @param queueLength The length of the queue.
+     * @throws TooManyEvaluationsInQueueException When too many jobs queued.
+     */
+
+    private void validateQueueLength( int queueLength )
+    {
+        if ( queueLength > MAXIMUM_EVALUATION_COUNT )
+        {
+            throw new TooManyEvaluationsInQueueException( "Too many evaluations in the queue. "
+                                                          + queueLength
+                                                          + " found, will continue to reject evaluations until "
+                                                          + MAXIMUM_EVALUATION_COUNT
+                                                          + " or fewer are in the queue." );
         }
     }
 
