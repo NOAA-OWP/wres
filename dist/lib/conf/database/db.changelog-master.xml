@@ -23,6 +23,7 @@
     <include file="wres.Project_v5.xml" relativeToChangelogFile="true" />
     <include file="wres.ProjectSource_v5.xml" relativeToChangelogFile="true" />
     <include file="wres.ProjectSource_v6.xml" relativeToChangelogFile="true" />
+    <include file="wres.ProjectSource_v7.xml" relativeToChangelogFile="true" />
     <include file="operating_member_v2.xml" relativeToChangelogFile="true" />
     <include file="wres.Ensemble_v3.xml" relativeToChangelogFile="true" />
     <include file="wres.Ensemble_v4.xml" relativeToChangelogFile="true" />
