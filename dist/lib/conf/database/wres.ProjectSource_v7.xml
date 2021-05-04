@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="wres.ProjectSource v7 - Delete project_id/member index"
+               author="James Brown">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="ProjectSource" schemaName="wres" />
+            <indexExists indexName="projectsource_project_index"
+                         tableName="ProjectSource" schemaName="wres" />
+        </preConditions>
+        <dropIndex  indexName="projectsource_project_index"
+                    schemaName="wres"
+                    tableName="ProjectSource" />
+    </changeSet>
+
+    <changeSet id="wres.ProjectSource v7 - Delete source_id index"
+               author="James Brown">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="ProjectSource" schemaName="wres" />
+            <indexExists indexName="projectsource_source_index"
+                         tableName="ProjectSource" schemaName="wres" />
+        </preConditions>
+        <dropIndex  indexName="projectsource_source_index"
+                    schemaName="wres"
+                    tableName="ProjectSource" />
+    </changeSet>
+
+    <changeSet id="wres.ProjectSource v7 - Create index on source_id, project_id and member"
+               author="James Brown">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="ProjectSource" schemaName="wres" />
+            <not>
+                <indexExists indexName="projectsource_all_index"
+                             columnNames="source_id,project_id,member"
+                             tableName="ProjectSource" schemaName="wres" />
+            </not>
+        </preConditions>
+        <createIndex  indexName="projectsource_all_index"
+                      tableName="ProjectSource" schemaName="wres">
+            <column name="source_id" />
+            <column name="project_id" />
+            <column name="member" />
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
