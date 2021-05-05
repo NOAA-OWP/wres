@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.net.UnknownHostException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -202,8 +203,11 @@ public class ReadValueManager
             ForecastResponse response = mapper.readValue( rawForecast,
                                                           ForecastResponse.class );
 
-            Objects.requireNonNull( response.forecasts, "Failed to obtain response from the WRDS url " 
-                + location + ". Was the correct URL provided in the declaration?" );
+            if (response.forecasts == null)
+            {
+                throw new UnknownHostException("Failed to obtain response from the WRDS url "
+                    + location + ". Was the correct URL provided in the declaration?");
+            }
 
             List<IngestResult> results = new ArrayList<>( response.forecasts.length );
 
