@@ -1,11 +1,13 @@
 package wres.tasker;
 
 import java.net.URI;
+import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.redisson.api.RCascadeType;
 import org.redisson.api.annotation.RCascade;
@@ -39,19 +41,19 @@ public class JobMetadata
     private ConcurrentMap<Integer,String> stderr;
 
     /** Optional: only set when posting job input via tasker */
-    private String projectDeclaration;
+    private byte[] jobMessage;
 
     /** Inputs to be added to the above declaration when posting job input */
     @RCascade( RCascadeType.ALL )
-    private SortedSet<URI> leftInputs;
+    private List<URI> leftInputs;
 
     /** Inputs to be added to the above declaration when posting job input */
     @RCascade( RCascadeType.ALL )
-    private SortedSet<URI> rightInputs;
+    private List<URI> rightInputs;
 
     /** Inputs to be added to the above declaration when posting job input */
     @RCascade( RCascadeType.ALL )
-    private SortedSet<URI> baselineInputs;
+    private List<URI> baselineInputs;
 
     public JobMetadata( String id )
     {
@@ -67,10 +69,10 @@ public class JobMetadata
         this.outputs = new ConcurrentSkipListSet<>();
         this.stdout = new ConcurrentHashMap<>();
         this.stderr = new ConcurrentHashMap<>();
-        this.projectDeclaration = null;
-        this.leftInputs = new ConcurrentSkipListSet<>();
-        this.rightInputs = new ConcurrentSkipListSet<>();
-        this.baselineInputs = new ConcurrentSkipListSet<>();
+        this.jobMessage = null;
+        this.leftInputs = new CopyOnWriteArrayList<>();
+        this.rightInputs = new CopyOnWriteArrayList<>();
+        this.baselineInputs = new CopyOnWriteArrayList<>();
     }
 
     /**
@@ -110,43 +112,42 @@ public class JobMetadata
     }
 
 
-    public String getProjectDeclaration()
+    public byte[] getJobMessage()
     {
-        return this.projectDeclaration;
+        return this.jobMessage;
     }
 
-    public void setProjectDeclaration( String projectDeclaration )
+    public void setJobMessage( byte[] jobMessage )
     {
-        this.projectDeclaration = projectDeclaration;
+        this.jobMessage = jobMessage;
     }
 
-
-    public SortedSet<URI> getLeftInputs()
+    public List<URI> getLeftInputs()
     {
         return this.leftInputs;
     }
 
-    public void setLeftInputs( SortedSet<URI> leftInputs )
+    public void setLeftInputs( List<URI> leftInputs )
     {
         this.leftInputs = leftInputs;
     }
 
-    public SortedSet<URI> getRightInputs()
+    public List<URI> getRightInputs()
     {
         return this.rightInputs;
     }
 
-    public void setRightInputs( SortedSet<URI> rightInputs )
+    public void setRightInputs( List<URI> rightInputs )
     {
         this.rightInputs = rightInputs;
     }
 
-    public SortedSet<URI> getBaselineInputs()
+    public List<URI> getBaselineInputs()
     {
         return this.baselineInputs;
     }
 
-    public void setBaselineInputs( SortedSet<URI> baselineInputs )
+    public void setBaselineInputs( List<URI> baselineInputs )
     {
         this.baselineInputs = baselineInputs;
     }
@@ -230,19 +231,19 @@ public class JobMetadata
 
     void addLeftInput( URI input )
     {
-        SortedSet<URI> uris = this.getLeftInputs();
+        List<URI> uris = this.getLeftInputs();
         uris.add( input );
     }
 
     void addRightInput( URI input )
     {
-        SortedSet<URI> uris = this.getRightInputs();
+        List<URI> uris = this.getRightInputs();
         uris.add( input );
     }
 
     void addBaselineInput( URI input )
     {
-        SortedSet<URI> uris = this.getBaselineInputs();
+        List<URI> uris = this.getBaselineInputs();
         uris.add( input );
     }
 
@@ -264,7 +265,7 @@ public class JobMetadata
                 .append( "id", this.getId() )
                 .append( "exitCode", this.getExitCode() )
                 .append( "outputs", this.getOutputs() )
-                .append( "projectDeclaration", this.getProjectDeclaration() )
+                .append( "jobMessage", this.getJobMessage() )
                 .append( "leftInputs", this.getLeftInputs() )
                 .append( "rightInputs", this.getRightInputs() )
                 .append( "baselineInputs", this.getBaselineInputs() )

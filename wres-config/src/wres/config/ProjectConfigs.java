@@ -342,8 +342,9 @@ public class ProjectConfigs
      *
      * @param rawDeclaration The original declaration String.
      * @param origin A named origin of the declaration for messages/exceptions.
-     * @param source The source to add to the declaration String.
-     * @param side Which dataset to add the source: left, right, or baseline.
+     * @param leftSources The left sources to add to the declaration String.
+     * @param rightSources The right sources to add to the declaration String.
+     * @param baselineSources The right sources to add to the declaration String.
      * @return A new, modified declaration with the source added. Reformatted.
      * @throws IOException on failure to read the rawDeclaration
      * @throws JAXBException on failure to transform to the returned declaration
@@ -351,12 +352,18 @@ public class ProjectConfigs
      * @throws UnsupportedOperationException When code does not support side.
      */
 
-    public static String addSource( String rawDeclaration,
-                                    String origin,
-                                    LeftOrRightOrBaseline side,
-                                    DataSourceConfig.Source source )
+    public static String addSources( String rawDeclaration,
+                                     String origin,
+                                     List<DataSourceConfig.Source> leftSources,
+                                     List<DataSourceConfig.Source> rightSources,
+                                     List<DataSourceConfig.Source> baselineSources )
             throws IOException, JAXBException
     {
+        Objects.requireNonNull( rawDeclaration );
+        Objects.requireNonNull( origin );
+        Objects.requireNonNull( leftSources );
+        Objects.requireNonNull( baselineSources );
+
         // Is this dangerous? Potentially raw user bytes being logged here.
         LOGGER.debug( "addSource original raw declaration: \n{}",
                       rawDeclaration );
@@ -365,9 +372,10 @@ public class ProjectConfigs
         ProjectConfig oldDeclaration = projectConfigPlus.getProjectConfig();
         LOGGER.debug( "addSource original (parsed) declaration: \n{}",
                       oldDeclaration );
-        ProjectConfig newDeclaration = ProjectConfigs.addSource( oldDeclaration,
-                                                                 side,
-                                                                 source );
+        ProjectConfig newDeclaration = ProjectConfigs.addSources( oldDeclaration,
+                                                                  leftSources,
+                                                                  rightSources,
+                                                                  baselineSources );
         JAXBContext jaxbContext = JAXBContext.newInstance( ProjectConfig.class );
         Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
         jaxbMarshaller.setProperty( Marshaller.JAXB_FORMATTED_OUTPUT,
@@ -381,90 +389,99 @@ public class ProjectConfigs
 
 
     /**
-     * Given a declaration, add another source to it, returning the result.
+     * Given a declaration, add sources to it, returning the result.
      * The resulting ProjectConfig will be the original plus the source given.
      *
      * @param oldDeclaration The original declaration.
-     * @param source The source to add to the declaration String.
-     * @param side Which dataset to add the source: left, right, or baseline.
+     * @param leftSources The left sources to add to the declaration String,
+     *                    empty if none.
+     * @param rightSources The right sources to add to the declaration String,
+     *                     empty if none.
+     * @param baselineSources The baseline sources to add to the declaration
+     *                        String, null or empty if no baseline.
      * @return A new declaration based on the original with the source added.
      * @throws IllegalArgumentException When adding baseline when no baseline.
      * @throws UnsupportedOperationException When code does not support side.
      */
 
-    public static ProjectConfig addSource( ProjectConfig oldDeclaration,
-                                           LeftOrRightOrBaseline side,
-                                           DataSourceConfig.Source source )
+    public static ProjectConfig addSources( ProjectConfig oldDeclaration,
+                                            List<DataSourceConfig.Source> leftSources,
+                                            List<DataSourceConfig.Source> rightSources,
+                                            List<DataSourceConfig.Source> baselineSources )
     {
-        if ( side.equals( BASELINE )
-             && Objects.isNull( oldDeclaration.getInputs()
-                                              .getBaseline() ) )
+        Objects.requireNonNull( leftSources );
+        Objects.requireNonNull( rightSources );
+
+        if ( baselineSources != null
+             && !baselineSources.isEmpty()
+             && oldDeclaration.getInputs()
+                              .getBaseline() == null )
         {
-            throw new IllegalArgumentException( "Unable to add to baseline because there was no baseline!" );
+            throw new ProjectConfigException( oldDeclaration.getInputs(),
+                                              "Unable to add to baseline because there was no baseline!" );
         }
 
-        DataSourceConfig oldDataset = ProjectConfigs.getDataSourceBySide( oldDeclaration,
-                                                                          side );
-        List<DataSourceConfig.Source> addedSources = new ArrayList<>( oldDataset.getSource() );
-        addedSources.add( source );
-        DataSourceConfig newDataset =
-                new DataSourceConfig( oldDataset.getType(),
-                                      addedSources,
-                                      oldDataset.getVariable(),
-                                      oldDataset.getTransformation(),
-                                      oldDataset.getEnsemble(),
-                                      oldDataset.getTimeShift(),
-                                      oldDataset.getExistingTimeScale(),
-                                      oldDataset.getUrlParameter(),
-                                      oldDataset.getRemoveMemberByValidYear(),
-                                      oldDataset.getLabel(),
-                                      oldDataset.getFeatureDimension() );
+        DataSourceConfig oldLeftDataset = oldDeclaration.getInputs()
+                                                        .getLeft();
+        List<DataSourceConfig.Source> newLeftSources =
+                new ArrayList<>( oldLeftDataset.getSource() );
+        newLeftSources.addAll( leftSources );
+        DataSourceConfig newLeftDataset =
+                new DataSourceConfig( oldLeftDataset.getType(),
+                                      newLeftSources,
+                                      oldLeftDataset.getVariable(),
+                                      oldLeftDataset.getTransformation(),
+                                      oldLeftDataset.getEnsemble(),
+                                      oldLeftDataset.getTimeShift(),
+                                      oldLeftDataset.getExistingTimeScale(),
+                                      oldLeftDataset.getUrlParameter(),
+                                      oldLeftDataset.getRemoveMemberByValidYear(),
+                                      oldLeftDataset.getLabel(),
+                                      oldLeftDataset.getFeatureDimension() );
+        DataSourceConfig oldRightDataset = oldDeclaration.getInputs()
+                                                         .getRight();
+        List<DataSourceConfig.Source> newRightSources =
+                new ArrayList<>( oldRightDataset.getSource() );
+        newRightSources.addAll( rightSources );
+        DataSourceConfig newRightDataset =
+                new DataSourceConfig( oldRightDataset.getType(),
+                                      newRightSources,
+                                      oldRightDataset.getVariable(),
+                                      oldRightDataset.getTransformation(),
+                                      oldRightDataset.getEnsemble(),
+                                      oldRightDataset.getTimeShift(),
+                                      oldRightDataset.getExistingTimeScale(),
+                                      oldRightDataset.getUrlParameter(),
+                                      oldRightDataset.getRemoveMemberByValidYear(),
+                                      oldRightDataset.getLabel(),
+                                      oldRightDataset.getFeatureDimension() );
+        DataSourceBaselineConfig oldBaselineDataset = oldDeclaration.getInputs()
+                                                                    .getBaseline();
+        DataSourceBaselineConfig newBaselineDataset = null;
+        if ( oldBaselineDataset != null && baselineSources != null )
+        {
+            List<DataSourceConfig.Source> newBaselineSources =
+                    new ArrayList<>( oldBaselineDataset.getSource() );
+            newBaselineSources.addAll( baselineSources );
+            newBaselineDataset =
+                    new DataSourceBaselineConfig( oldBaselineDataset.getType(),
+                                                  newBaselineSources,
+                                                  oldBaselineDataset.getVariable(),
+                                                  oldBaselineDataset.getTransformation(),
+                                                  oldBaselineDataset.getEnsemble(),
+                                                  oldBaselineDataset.getTimeShift(),
+                                                  oldBaselineDataset.getExistingTimeScale(),
+                                                  oldBaselineDataset.getUrlParameter(),
+                                                  oldBaselineDataset.getRemoveMemberByValidYear(),
+                                                  oldBaselineDataset.getLabel(),
+                                                  oldBaselineDataset.getFeatureDimension(),
+                                                  oldBaselineDataset.isSeparateMetrics() );
+        }
+
         ProjectConfig.Inputs newInputs;
-
-        if ( side.equals( LEFT ) )
-        {
-            newInputs = new ProjectConfig.Inputs( newDataset,
-                                                  oldDeclaration.getInputs()
-                                                                .getRight(),
-                                                  oldDeclaration.getInputs()
-                                                                .getBaseline() );
-        }
-        else if ( side.equals( RIGHT ) )
-        {
-            newInputs = new ProjectConfig.Inputs( oldDeclaration.getInputs()
-                                                                .getLeft(),
-                                                  newDataset,
-                                                  oldDeclaration.getInputs()
-                                                                .getBaseline() );
-        }
-        else if ( side.equals( BASELINE ) )
-        {
-            DataSourceBaselineConfig baselineConfig =
-                    new DataSourceBaselineConfig( newDataset.getType(),
-                                                  newDataset.getSource(),
-                                                  newDataset.getVariable(),
-                                                  newDataset.getTransformation(),
-                                                  newDataset.getEnsemble(),
-                                                  newDataset.getTimeShift(),
-                                                  newDataset.getExistingTimeScale(),
-                                                  newDataset.getUrlParameter(),
-                                                  newDataset.getRemoveMemberByValidYear(),
-                                                  newDataset.getLabel(),
-                                                  newDataset.getFeatureDimension(),
-                                                  oldDeclaration.getInputs()
-                                                                .getBaseline()
-                                                                .isSeparateMetrics() );
-            newInputs = new ProjectConfig.Inputs( oldDeclaration.getInputs()
-                                                                .getLeft(),
-                                                  oldDeclaration.getInputs()
-                                                                .getRight(),
-                                                  baselineConfig );
-        }
-        else
-        {
-            throw new UnsupportedOperationException( "Unable to add to "
-                                                     + side );
-        }
+        newInputs = new ProjectConfig.Inputs( newLeftDataset,
+                                              newRightDataset,
+                                              newBaselineDataset );
 
         return new ProjectConfig( newInputs,
                                   oldDeclaration.getPair(),
@@ -474,4 +491,3 @@ public class ProjectConfigs
                                   oldDeclaration.getName() );
     }
 }
-
