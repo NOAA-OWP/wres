@@ -6,6 +6,8 @@ import java.io.OutputStreamWriter;
 import java.net.URI;
 import java.security.SecureRandom;
 import java.time.Duration;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
@@ -737,8 +739,10 @@ class JobResults
      * Set the declaration for a job. Can only be done once.
      * @throws IllegalStateException When job id non-existent or dec already set
      */
-    void setDeclaration( String jobId, String projectDeclaration )
+    void setJobMessage( String jobId, byte[] jobMessage )
     {
+        LOGGER.debug( "Setting declaration for jobId={} to: \n{}",
+                      jobId, jobMessage );
         JobMetadata metadata = jobMetadataById.get( jobId );
 
         if ( Objects.isNull( metadata ) )
@@ -746,15 +750,66 @@ class JobResults
             throw new IllegalStateException( "Job id " + jobId + " not found." );
         }
 
-        String existingDeclaration = metadata.getProjectDeclaration();
+        byte[] originalMessage = metadata.getJobMessage();
 
-        if ( Objects.nonNull( existingDeclaration ) )
+        if ( Objects.nonNull( originalMessage ) )
         {
             throw new IllegalStateException( "Job id " + jobId
                                              + " already had declaration set!" );
         }
 
-        metadata.setProjectDeclaration( projectDeclaration );
+        metadata.setJobMessage( jobMessage );
+    }
+
+    /**
+     * Get the declaration for a job
+     */
+    byte[] getJobMessage( String jobId )
+    {
+        JobMetadata metadata = jobMetadataById.get( jobId );
+
+        if ( metadata == null )
+        {
+            throw new IllegalStateException( "Job id " + jobId + " not found." );
+        }
+
+        return metadata.getJobMessage();
+    }
+
+    List<URI> getLeftInputs( String jobId )
+    {
+        JobMetadata metadata = jobMetadataById.get( jobId );
+
+        if ( metadata == null )
+        {
+            throw new IllegalStateException( "Job id " + jobId + " not found." );
+        }
+
+        return Collections.unmodifiableList( metadata.getLeftInputs() );
+    }
+
+    List<URI> getRightInputs( String jobId )
+    {
+        JobMetadata metadata = jobMetadataById.get( jobId );
+
+        if ( metadata == null )
+        {
+            throw new IllegalStateException( "Job id " + jobId + " not found." );
+        }
+
+        return Collections.unmodifiableList( metadata.getRightInputs() );
+    }
+
+    List<URI> getBaselineInputs( String jobId )
+    {
+        JobMetadata metadata = jobMetadataById.get( jobId );
+
+        if ( metadata == null )
+        {
+            throw new IllegalStateException( "Job id " + jobId + " not found." );
+        }
+
+        return Collections.unmodifiableList( metadata.getBaselineInputs() );
     }
 
     void addInput( String jobId, String side, URI input )

@@ -964,6 +964,9 @@ project(':wres-tasker')
 {
     dependencies
     {
+        // To allow for programmatic post of input data:
+        compile project( ':wres-config' )
+
         compile project( ':wres-messages' )
         compile 'org.slf4j:slf4j-api:2.0.0-alpha1'
         compile 'com.rabbitmq:amqp-client:5.12.0'

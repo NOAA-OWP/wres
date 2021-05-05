@@ -59,6 +59,10 @@ public class WresJob
     private static final ConnectionFactory CONNECTION_FACTORY = new ConnectionFactory();
     private static final String REDIS_HOST_SYSTEM_PROPERTY_NAME = "wres.redisHost";
     private static final String REDIS_PORT_SYSTEM_PROPERTY_NAME = "wres.redisPort";
+
+    /** To disable the queue length check, e.g. for development or testing */
+    private static final String SKIP_QUEUE_LENGTH_CHECK_SYSTEM_PROPERTY_NAME =
+            "wres.tasker.skipQueueLengthCheck";
     private static final int DEFAULT_REDIS_PORT = 6379;
     private static final RedissonClient REDISSON_CLIENT;
 
@@ -271,6 +275,11 @@ public class WresJob
             return WresJob.internalServerError();
         }
 
+        Job.job jobMessage = Job.job.newBuilder()
+                                    .setProjectConfig( projectConfig )
+                                    .setVerb( actualVerb )
+                                    .build();
+
         // If the caller wishes to post input data: parameter postInput=true
         if ( postInput )
         {
@@ -278,7 +287,7 @@ public class WresJob
             // sending along. This request will result in 201 created response
             // and the caller must send another request saying "I have finished
             // posting input."
-            JOB_RESULTS.setDeclaration( jobId, projectConfig );
+            JOB_RESULTS.setJobMessage( jobId, jobMessage.toByteArray() );
             return Response.created( resourceCreated )
                            .entity( "<!DOCTYPE html><html><head><title>Evaluation job received.</title></head>"
                                     + "<body><h1>Evaluation job " + jobId + " has been received for processing.</h1>"
@@ -287,11 +296,6 @@ public class WresJob
                                     + "</a></p></body></html>" )
                            .build();
         }
-
-        Job.job jobMessage = Job.job.newBuilder()
-                                    .setProjectConfig( projectConfig )
-                                    .setVerb( actualVerb )
-                                    .build();
 
         try
         {
@@ -333,11 +337,7 @@ public class WresJob
 
         if ( Objects.isNull( jobResult ) )
         {
-            return Response.status( Response.Status.NOT_FOUND )
-                           .entity( "<!DOCTYPE html><html><head><title>Not Found</title></head>"
-                                    + " <body><h1>Not found</h1><p>Could not find job "
-                                    + jobId + "</p></body></html>")
-                               .build();
+            return WresJob.notFound( "Could not find job " + jobId );
         }
 
         String jobUrl= "/job/" + jobId;
@@ -387,8 +387,7 @@ public class WresJob
      * @throws IllegalStateException when the job does not exist in shared state
      * @throws TimeoutException
      */
-    private void sendDeclarationMessage( String jobId,
-                                         byte[] message )
+    static void sendDeclarationMessage( String jobId, byte[] message )
             throws IOException, TimeoutException
     {
         // Use a shared connection across requests.
@@ -434,8 +433,22 @@ public class WresJob
     }
 
 
+    /**
+     * Get the length of the job queue.
+     * @return The length of the job queue, or 0 when System Property
+     * wres.tasker.skipQueueLengthCheck is set to true.
+     * @throws IOException When communication with broker fails.
+     * @throws TimeoutException When connection to broker times out.
+     */
     private int getJobQueueLength() throws IOException, TimeoutException
     {
+        String skipCheck = System.getProperty( SKIP_QUEUE_LENGTH_CHECK_SYSTEM_PROPERTY_NAME );
+
+        if ( skipCheck != null && skipCheck.equalsIgnoreCase( "true" ) )
+        {
+            return 0;
+        }
+
         Connection connection = WresJob.getConnection();
 
         try ( Channel channel = connection.createChannel() )

@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Test;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.InterfaceShortHand;
-import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
@@ -227,10 +226,11 @@ public class ProjectConfigsTest
                                              null,
                                              null,
                                              null );
-        String resultDeclaration = ProjectConfigs.addSource( originalDeclaration,
-                                                             "a test class",
-                                                             LeftOrRightOrBaseline.LEFT,
-                                                             toAdd );
+        String resultDeclaration = ProjectConfigs.addSources( originalDeclaration,
+                                                              "a test class",
+                                                              List.of( toAdd ),
+                                                              Collections.emptyList(),
+                                                              Collections.emptyList() );
         assertFalse( originalDeclaration.contains( newSource ),
                      "The original should not have the new source but did:\n"
                      + originalDeclaration );
