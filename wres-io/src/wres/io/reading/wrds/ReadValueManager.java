@@ -205,8 +205,8 @@ public class ReadValueManager
 
             if (response.forecasts == null)
             {
-                throw new UnknownHostException("Failed to obtain response from the WRDS url "
-                    + location + ". Was the correct URL provided in the declaration?");
+                throw new IngestException("Failed to obtain response from the WRDS url. "
+                    + "Was the correct URL provided in the declaration?");
             }
 
             List<IngestResult> results = new ArrayList<>( response.forecasts.length );
