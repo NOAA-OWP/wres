@@ -237,5 +237,8 @@ public class ProjectConfigsTest
         assertTrue( resultDeclaration.contains( newSource ),
                     "The result should have the new source but did not:\n"
                     + resultDeclaration );
+        assertTrue( resultDeclaration.contains( "<project" ),
+                    "The result should have the project element, but did not:\n"
+                    + resultDeclaration);
     }
 }

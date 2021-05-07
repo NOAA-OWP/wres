@@ -11,8 +11,10 @@ import java.util.Objects;
 import java.util.Optional;
 
 import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
+import javax.xml.namespace.QName;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -376,13 +378,17 @@ public class ProjectConfigs
                                                                   leftSources,
                                                                   rightSources,
                                                                   baselineSources );
+        JAXBElement<ProjectConfig> xsdAndJaxbAreWeird =
+                new JAXBElement<>( new QName( "project" ),
+                                   ProjectConfig.class,
+                                   newDeclaration );
         JAXBContext jaxbContext = JAXBContext.newInstance( ProjectConfig.class );
         Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
         jaxbMarshaller.setProperty( Marshaller.JAXB_FORMATTED_OUTPUT,
                                     Boolean.TRUE );
         jaxbMarshaller.setProperty( Marshaller.JAXB_ENCODING, "UTF-8" );
         StringWriter stringWriter = new StringWriter();
-        jaxbMarshaller.marshal( newDeclaration, stringWriter );
+        jaxbMarshaller.marshal( xsdAndJaxbAreWeird, stringWriter );
         LOGGER.debug( "Transformed into: \n{}", stringWriter );
         return stringWriter.toString();
     }
