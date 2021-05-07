@@ -16,23 +16,31 @@ services:
             eventsbroker:
                 condition: service_started
         volumes:
-         # For input and output data:
-         - /mnt/wres_share:/mnt/wres_share
+         # To write user output data:
+         - /mnt/wres_share/evaluations:/mnt/wres_share/evaluations
+         # To read user input data:
+         - /home:/home:ro
+         # To read user input data written by tasker:
+         - /mnt/wres_share/input_data:/mnt/wres_share/input_data:ro
+         # To read test input data:
+         - /mnt/wres_share/systests:/mnt/wres_share/systests:ro
          # For certificates, keys that correspond to them, and .pgpass:
          - /mnt/wres_keys:/wres_secrets:ro
-         # For input data:
-         - /home:/home:ro
+         # To write heap dumps (worker-shim process):
+         - /mnt/wres_share/heap_dumps/worker-shim:/mnt/wres_share/heap_dumps/worker-shim
+         # To write heap dumps (core WRES process):
+         - /mnt/wres_share/heap_dumps/wres:/mnt/wres_share/heap_dumps/wres
          # For logs (inside container, avoid writing to read-only /home)
          - /container_home
         environment:
-         - JAVA_OPTS=-Dwres.broker=***REMOVED***wres-broker${WRES_ENV_SUFFIX} -Djava.io.tmpdir=/mnt/wres_share/evaluations -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
+         - JAVA_OPTS=-Dwres.broker=***REMOVED***wres-broker${WRES_ENV_SUFFIX} -Djava.io.tmpdir=/mnt/wres_share/evaluations -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/worker-shim/java_pid%p.hprof /mnt/wres_share/heap_dumps/worker-shim/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/worker-shim/java_pid%p_`hostname`.hprof'
          - PGPASSFILE=/wres_secrets/.pgpass
          # Use caller-specified db hostname from env var WRES_DB_FQDN.
          # Do not auto-liquibase-migrate on each evaluation. This requires an
          # administrator to run the migration(s) during or after deployment.
          # Write heap dumps to the root of the volume above.
          # Override the broker address and port in the binding URL of the event.properties.
-         - INNER_JAVA_OPTS=-Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Dwres.externalGraphics=true -Djava.io.tmpdir=/mnt/wres_share/evaluations -Dwres.databaseHost=${WRES_DB_FQDN} -Dwres.databaseName=wres8 -Dwres.username=wres_user8 -Dwres.attemptToMigrate=false -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
+         - INNER_JAVA_OPTS=-Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Dwres.externalGraphics=true -Djava.io.tmpdir=/mnt/wres_share/evaluations -Dwres.databaseHost=${WRES_DB_FQDN} -Dwres.databaseName=wres8 -Dwres.username=wres_user8 -Dwres.attemptToMigrate=false -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/wres -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/wres/java_pid%p.hprof /mnt/wres_share/heap_dumps/wres/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/wres/java_pid%p_`hostname`.hprof'
         # Shim JVM should have 32m max heap, core JVM should have 1680m max heap
         mem_limit: 2814m
         cap_drop:
@@ -49,14 +57,14 @@ services:
         restart: always
         volumes:
          # For heap-dump files
-         - /mnt/wres_share:/mnt/wres_share
+         - /mnt/wres_share/heap_dumps/eventsbroker:/mnt/wres_share/heap_dumps/eventsbroker
          # For certificates and keys that correspond to them
          - /mnt/wres_keys:/wres_secrets:ro
         environment:
          # The broker uses heap memory to run and direct memory for messages
          - QPID_WORK=/container_home
          - QPID_JAVA_MEM=-Xms256m -Xmx256m -XX:MaxDirectMemorySize=2048m
-         - QPID_JAVA_GC=-XX:+UseConcMarkSweepGC -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/mnt/wres_share
+         - QPID_JAVA_GC=-XX:+UseConcMarkSweepGC -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/eventsbroker
         # Broker heap plus direct memory is 2304m in QPID_JAVA_MEM
         mem_limit: 2560m
         cap_drop:
@@ -70,12 +78,14 @@ services:
                 condition: service_started
         image: "${DOCKER_REGISTRY}/wres/wres-graphics:GRAPHICS_IMAGE"
         restart: always
-        # For graphics outputs
         volumes:
-         - /mnt/wres_share:/mnt/wres_share
+         # To write graphics outputs
+         - /mnt/wres_share/evaluations:/mnt/wres_share/evaluations
+         # To write heap dumps
+         - /mnt/wres_share/heap_dumps/graphics:/mnt/wres_share/heap_dumps/graphics
         environment:
          # Override the broker address and port in the binding URL of the event.properties
-         - JAVA_OPTS=-Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Djava.io.tmpdir=/mnt/wres_share/evaluations -Xms512m -Xmx512m -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
+         - JAVA_OPTS=-Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Djava.io.tmpdir=/mnt/wres_share/evaluations -Xms512m -Xmx512m -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/graphics -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/graphics/java_pid%p.hprof /mnt/wres_share/heap_dumps/graphics/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/graphics/java_pid%p_`hostname`.hprof'
         # Graphics limit is 512m in JAVA_OPTS
         mem_limit: 768m
         cap_drop:
