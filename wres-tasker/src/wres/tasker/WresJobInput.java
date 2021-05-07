@@ -82,12 +82,12 @@ public class WresJobInput
         // TODO: detect (or read given) content type of the data, add suffix.
 
         FileAttribute<Set<PosixFilePermission>> posixAttributes;
+        Set<PosixFilePermission> permissions;
 
         // Indirect way of detecting "is this unix or not"
         if ( System.getProperty( "file.separator" )
                    .equals( "/" ) )
         {
-            Set<PosixFilePermission> permissions;
             LOGGER.debug( "Detected unix system." );
             permissions = EnumSet.of(
                     PosixFilePermission.OWNER_READ,
@@ -96,12 +96,12 @@ public class WresJobInput
                     PosixFilePermission.GROUP_READ,
                     PosixFilePermission.GROUP_WRITE,
                     PosixFilePermission.GROUP_EXECUTE );
-                    PosixFilePermissions.asFileAttribute( permissions );
             posixAttributes = PosixFilePermissions.asFileAttribute( permissions );
         }
         else
         {
             LOGGER.debug( "Detected windows system." );
+            permissions = null;
             posixAttributes = null;
         }
 
@@ -119,6 +119,13 @@ public class WresJobInput
             }
 
             Files.copy( data, temp, REPLACE_EXISTING );
+
+            // After the copy, the permissions may not have stuck. Re-apply.
+            if ( Objects.nonNull( permissions ) )
+            {
+                Files.setPosixFilePermissions( temp, permissions );
+            }
+
             LOGGER.debug( "Data in: {}", temp );
         }
         catch ( IOException ioe )
