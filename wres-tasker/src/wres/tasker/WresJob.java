@@ -288,9 +288,11 @@ public class WresJob
             // and the caller must send another request saying "I have finished
             // posting input."
             JOB_RESULTS.setJobMessage( jobId, jobMessage.toByteArray() );
+            JOB_RESULTS.setAwaitingPostInputData( jobId );
             return Response.created( resourceCreated )
                            .entity( "<!DOCTYPE html><html><head><title>Evaluation job received.</title></head>"
-                                    + "<body><h1>Evaluation job " + jobId + " has been received for processing.</h1>"
+                                    + "<body><h1>Evaluation job "
+                                    + jobId + " has been received, the next step is to post input data.</h1>"
                                     + "<p>See <a href=\""
                                     + urlCreated + "\">" + urlCreated
                                     + "</a></p></body></html>" )
@@ -312,8 +314,7 @@ public class WresJob
             return WresJob.serviceUnavailable( "Too many evaluations are in the queue, try again in a moment." );
         }
 
-        WresJob.getSharedJobResults()
-               .setInQueue( jobId );
+        JOB_RESULTS.setInQueue( jobId );
 
         return Response.created( resourceCreated )
                        .entity( "<!DOCTYPE html><html><head><title>Evaluation job received.</title></head>"
