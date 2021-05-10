@@ -30,7 +30,7 @@ public class JobMetadata
     private static final String TO = " to ";
 
     /** Descriptions of the state of a WRES evaluation job */
-    enum JobState
+    public enum JobState
     {
         /** The job was created by tasker, but not yet sent anywhere */
         CREATED,
