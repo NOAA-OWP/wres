@@ -10,7 +10,7 @@ networks:
                   gateway: 172.19.254.193
 services:
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210510-5f76b31"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210510-dc74b7d"
         restart: always
         depends_on:
             eventsbroker:
