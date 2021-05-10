@@ -906,6 +906,27 @@ class JobResults
         metadata.setJobState( JobMetadata.JobState.IN_QUEUE );
     }
 
+
+    /**
+     * Mark the job as awaiting input data.
+     * @param jobId The job to mark as waiting for input data to be posted.
+     * @throws IllegalArgumentException When job not found.
+     * @throws IllegalStateException When illegal state transition is requested.
+     */
+
+    void setAwaitingPostInputData( String jobId )
+    {
+        JobMetadata metadata = jobMetadataById.get( jobId );
+
+        if ( metadata == null )
+        {
+            throw new IllegalArgumentException( "Unable to find jobId " + jobId );
+        }
+
+        metadata.setJobState( JobMetadata.JobState.AWAITING_DATA );
+    }
+
+
     /**
      * Mark the job as no longer accepting input data, transition state to some
      * other thing besides AWAITING_DATA.
