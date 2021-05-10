@@ -3,6 +3,7 @@ package wres.tasker;
 import java.net.URI;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -25,6 +26,29 @@ import org.slf4j.LoggerFactory;
 public class JobMetadata
 {
     protected static final Logger LOGGER = LoggerFactory.getLogger( JobMetadata.class );
+    private static final String CAN_ONLY_TRANSITION_FROM = "Can only transition from ";
+    private static final String TO = " to ";
+
+    /** Descriptions of the state of a WRES evaluation job */
+    enum JobState
+    {
+        /** The job was created by tasker, but not yet sent anywhere */
+        CREATED,
+        /** For when data has yet to be posted */
+        AWAITING_DATA,
+        /** For when no more data can be posted, but job not yet submitted */
+        NO_LONGER_AWAITING_DATA,
+        /** When the job has been submitted to the job queue */
+        IN_QUEUE,
+        /** When the job has been started by a worker */
+        IN_PROGRESS,
+        /** The job has finished and the worker reported successful */
+        COMPLETED_REPORTED_SUCCESS,
+        /** The job has finshed and the worker reported failure */
+        COMPLETED_REPORTED_FAILURE,
+        /** For use by other classes when no JobMetadata exists */
+        NOT_FOUND
+    }
 
     @RId
     private String id;
@@ -55,6 +79,8 @@ public class JobMetadata
     @RCascade( RCascadeType.ALL )
     private List<URI> baselineInputs;
 
+    private JobState jobState;
+
     public JobMetadata( String id )
     {
         Objects.requireNonNull( id );
@@ -73,6 +99,7 @@ public class JobMetadata
         this.leftInputs = new CopyOnWriteArrayList<>();
         this.rightInputs = new CopyOnWriteArrayList<>();
         this.baselineInputs = new CopyOnWriteArrayList<>();
+        this.jobState = JobState.CREATED;
     }
 
     /**
@@ -193,6 +220,91 @@ public class JobMetadata
         this.stderr = stderr;
     }
 
+    public JobState getJobState()
+    {
+        return this.jobState;
+    }
+
+    /**
+     * When setting job state, verify the state transition is valid. Very picky
+     * about state transitions, expecting only transitions when calling this.
+     *
+     * @param jobState The new job state (not NOT_FOUND)
+     * @throws IllegalStateException When an illegal job state transition occurs
+     */
+
+    public void setJobState( JobState jobState )
+    {
+        if ( this.jobState == null )
+        {
+            if ( !jobState.equals( JobState.CREATED ) )
+            {
+                throw new IllegalStateException( CAN_ONLY_TRANSITION_FROM
+                                                 + " null " + TO
+                                                 + JobState.CREATED );
+            }
+        }
+        else if ( jobState.equals( JobState.NOT_FOUND ) )
+        {
+            throw new IllegalArgumentException( "Cannot set to "
+                                                + JobState.NOT_FOUND );
+        }
+        else if ( this.jobState.equals( JobState.CREATED ) )
+        {
+            Set<JobState> createdToThese = Set.of( JobState.IN_QUEUE,
+                                                   JobState.AWAITING_DATA );
+            if ( !createdToThese.contains( jobState ) )
+            {
+                throw new IllegalStateException( CAN_ONLY_TRANSITION_FROM
+                                                 + JobState.CREATED + TO
+                                                 + createdToThese );
+            }
+        }
+        else if ( this.jobState.equals( JobState.AWAITING_DATA ) )
+        {
+            if ( !jobState.equals( JobState.NO_LONGER_AWAITING_DATA ) )
+            {
+                throw new IllegalStateException( CAN_ONLY_TRANSITION_FROM
+                                                 + JobState.AWAITING_DATA + TO
+                                                 + JobState.NO_LONGER_AWAITING_DATA );
+            }
+        }
+        else if ( this.jobState.equals( JobState.NO_LONGER_AWAITING_DATA ) )
+        {
+            if ( !jobState.equals( JobState.IN_QUEUE ) )
+            {
+                throw new IllegalStateException( CAN_ONLY_TRANSITION_FROM
+                                                 + JobState.NO_LONGER_AWAITING_DATA
+                                                 + TO + JobState.IN_QUEUE );
+            }
+        }
+        else if ( this.jobState.equals( JobState.IN_QUEUE ) )
+        {
+            Set<JobState> inQueueToThese = Set.of( JobState.IN_PROGRESS,
+                                                   JobState.COMPLETED_REPORTED_FAILURE,
+                                                   JobState.COMPLETED_REPORTED_SUCCESS );
+            if ( !inQueueToThese.contains( JobState.IN_PROGRESS) )
+            {
+                throw new IllegalStateException( CAN_ONLY_TRANSITION_FROM
+                                                 + JobState.IN_QUEUE
+                                                 + TO + inQueueToThese );
+            }
+        }
+        else if ( this.jobState.equals( JobState.IN_PROGRESS ) )
+        {
+            Set<JobState> inProgressToThese = Set.of( JobState.COMPLETED_REPORTED_FAILURE,
+                                                      JobState.COMPLETED_REPORTED_SUCCESS );
+            if ( !inProgressToThese.contains( JobState.IN_PROGRESS) )
+            {
+                throw new IllegalStateException( CAN_ONLY_TRANSITION_FROM
+                                                 + JobState.IN_PROGRESS
+                                                 + TO + inProgressToThese );
+            }
+        }
+
+        this.jobState = jobState;
+    }
+
     void addStdout( Integer index, String line )
     {
         String result = this.getStdout()
@@ -271,4 +383,5 @@ public class JobMetadata
                 .append( "baselineInputs", this.getBaselineInputs() )
                 .toString();
     }
+
 }

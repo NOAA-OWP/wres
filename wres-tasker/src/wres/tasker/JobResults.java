@@ -101,18 +101,6 @@ class JobResults
     /** The lock to guard connection when init fails on construction */
     private final Object CONNECTION_LOCK = new Object();
 
-    /** Descriptions of the state of a WRES evaluation job */
-    enum JobState
-    {
-        NOT_FOUND,
-        /** For when data has yet to be posted */
-        AWAITING_DATA,
-        // We could also have IN_QUEUE which would require better tracking
-        IN_PROGRESS,
-        COMPLETED_REPORTED_SUCCESS,
-        COMPLETED_REPORTED_FAILURE
-    }
-
     JobResults( ConnectionFactory connectionFactory,
                 RedissonClient redissonClient )
     {
@@ -237,8 +225,9 @@ class JobResults
 
 
         /**
-         * Watch for the job exit code message. After the exit message is heard,
-         * delete any input data associated with the job.
+         * Watch for the job exit code message. After one is seen:
+         * Update the job state.
+         * Delete any input data associated with the job.
          *
          * @return the result of the job id (correlation id) or Integer.MIN_VALUE when interrupted
          * @throws IOException when queue declaration fails
@@ -306,6 +295,18 @@ class JobResults
             sharedData.setExitCode( resultValue );
             LOGGER.debug( "Shared metadata after setting exit code to {}: {}",
                           resultValue, sharedData );
+
+            if ( resultValue == 0 )
+            {
+                sharedData.setJobState( JobMetadata.JobState.COMPLETED_REPORTED_SUCCESS );
+            }
+            else
+            {
+                sharedData.setJobState( JobMetadata.JobState.COMPLETED_REPORTED_FAILURE );
+            }
+
+            LOGGER.debug( "Shared metadata after setting job state: {}",
+                          jobMetadata );
 
             // When there are posted input data related to this job, remove them
             for ( URI uri : sharedData.getLeftInputs() )
@@ -605,6 +606,12 @@ class JobResults
                                                                          jobMetadata,
                                                                          WhichStream.STDERR );
 
+        // Watch for worker reports on job status to help mark the transition
+        // from JobState IN_QUEUE to IN_PROGRESS
+        JobStatusWatcher jobStatusWatcher = new JobStatusWatcher( this.getConnection(),
+                                                                  jobStatusExchangeName,
+                                                                  jobMetadata );
+
         // Share the output locations, allows service endpoint to find files.
         // Not relying on inner classes, so need to pass the shared location to
         // the watcher in order for watcher to know where to put messages.
@@ -615,6 +622,7 @@ class JobResults
         EXECUTOR.submit( stdoutWatcher );
         EXECUTOR.submit( stderrWatcher );
         EXECUTOR.submit( jobOutputWatcher );
+        EXECUTOR.submit( jobStatusWatcher );
         return EXECUTOR.submit( jobResultWatcher );
     }
 
@@ -631,31 +639,21 @@ class JobResults
     /**
      * Get a description of the status of a wres evaluation job
      * @param correlationId the job id to look for
-     * @return description of the status
+     * @return description of the status, null when not found
      */
 
-    JobState getJobResult( String correlationId )
+    JobMetadata.JobState getJobState( String correlationId )
     {
-        JobMetadata result = jobMetadataById.get( correlationId );
+        JobMetadata jobMetadata = jobMetadataById.get( correlationId );
 
-        LOGGER.debug( "Here is the job result: {}", result );
+        LOGGER.debug( "Here is the job metadata: {}", jobMetadata );
 
-        if ( Objects.isNull( result ) )
+        if ( Objects.isNull( jobMetadata ) )
         {
-            return JobState.NOT_FOUND;
+            return JobMetadata.JobState.NOT_FOUND;
         }
-        else if ( !result.isFinished() )
-        {
-            return JobState.IN_PROGRESS;
-        }
-        else if ( result.getExitCode() == 0 )
-        {
-            return JobState.COMPLETED_REPORTED_SUCCESS;
-        }
-        else
-        {
-            return JobState.COMPLETED_REPORTED_FAILURE;
-        }
+
+        return jobMetadata.getJobState();
     }
 
     /**
@@ -888,4 +886,43 @@ class JobResults
             throw new UnsupportedOperationException( "Unsupported side " + side );
         }
     }
+
+
+    /**
+     * Mark the job as being in the queue, transition state to IN_QUEUE
+     * @param jobId The job to mark as being IN_QUEUE.
+     * @throws IllegalArgumentException When job not found.
+     * @throws IllegalStateException When illegal state transition is requested.
+     */
+    void setInQueue( String jobId )
+    {
+        JobMetadata metadata = jobMetadataById.get( jobId );
+
+        if ( metadata == null )
+        {
+            throw new IllegalArgumentException( "Unable to find jobId " + jobId );
+        }
+
+        metadata.setJobState( JobMetadata.JobState.IN_QUEUE );
+    }
+
+    /**
+     * Mark the job as no longer accepting input data, transition state to some
+     * other thing besides AWAITING_DATA.
+     * @param jobId The job to mark as no longer accepting input data.
+     * @throws IllegalArgumentException When job not found.
+     * @throws IllegalStateException When illegal state transition is requested.
+     */
+    void setPostInputDone( String jobId )
+    {
+        JobMetadata metadata = jobMetadataById.get( jobId );
+
+        if ( metadata == null )
+        {
+            throw new IllegalArgumentException( "Unable to find jobId " + jobId );
+        }
+
+        metadata.setJobState( JobMetadata.JobState.NO_LONGER_AWAITING_DATA );
+    }
+
 }

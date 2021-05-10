@@ -67,17 +67,24 @@ public class WresJobInput
         LOGGER.debug( "Data might be put in job {}, on {} side.", jobId, dataset );
 
         // Round-about way of validating job id: look for job state
-        JobResults.JobState jobState = WresJob.getSharedJobResults()
-                                              .getJobResult( jobId );
+        JobMetadata.JobState jobState = WresJob.getSharedJobResults()
+                                               .getJobState( jobId );
 
-        // TODO: only allow posting inputs with job state of "AWAITING_DATA"
-        // (Once that job state is accurately reported)
-        if ( jobState.equals( JobResults.JobState.NOT_FOUND ) )
+        if ( jobState.equals( JobMetadata.JobState.NOT_FOUND ) )
         {
             return Response.status( Response.Status.NOT_FOUND )
                            .entity( jobId + " not found." )
                            .build();
         }
+
+        if ( !jobState.equals( JobMetadata.JobState.AWAITING_DATA ) )
+        {
+            return Response.status( Response.Status.BAD_REQUEST )
+                           .entity( jobId + " is no longer awaiting data: "
+                                    + jobState )
+                           .build();
+        }
+
 
         // TODO: detect (or read given) content type of the data, add suffix.
 
@@ -181,15 +188,23 @@ public class WresJobInput
                                  boolean postInputDone )
     {
         // Round-about way of validating job id: look for job state
-        JobResults.JobState jobState = WresJob.getSharedJobResults()
-                                              .getJobResult( jobId );
+        JobMetadata.JobState jobState = WresJob.getSharedJobResults()
+                                               .getJobState( jobId );
 
         // TODO: only allow posting inputs with job state of "AWAITING_DATA"
         // (Once that job state is accurately reported)
-        if ( jobState.equals( JobResults.JobState.NOT_FOUND ) )
+        if ( jobState.equals( JobMetadata.JobState.NOT_FOUND ) )
         {
             return Response.status( Response.Status.NOT_FOUND )
                            .entity( jobId + " not found." )
+                           .build();
+        }
+
+        if ( !jobState.equals( JobMetadata.JobState.AWAITING_DATA ) )
+        {
+            return Response.status( Response.Status.BAD_REQUEST )
+                           .entity( jobId + " is no longer awaiting data: "
+                                    + jobState )
                            .build();
         }
 
@@ -200,6 +215,9 @@ public class WresJobInput
                            .build();
         }
 
+        // Mark the job as no longer AWAITING_DATA
+        WresJob.getSharedJobResults()
+               .setPostInputDone( jobId );
         LOGGER.debug( "Inputs have been fully posted." );
         JobResults results = WresJob.getSharedJobResults();
         byte[] jobMessageBytes = results.getJobMessage( jobId );
@@ -301,6 +319,9 @@ public class WresJobInput
                                     + e.getMessage() )
                            .build();
         }
+
+        WresJob.getSharedJobResults()
+               .setInQueue( jobId );
 
         return Response.status( Response.Status.OK )
                        .build();
