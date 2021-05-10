@@ -111,11 +111,11 @@ public class WresJobInput
         {
             if ( Objects.nonNull( posixAttributes  ) )
             {
-                temp = Files.createTempFile( jobId, "", posixAttributes );
+                temp = Files.createTempFile( jobId + "_", "", posixAttributes );
             }
             else
             {
-                temp = Files.createTempFile( jobId, "" );
+                temp = Files.createTempFile( jobId + "_", "" );
             }
 
             Files.copy( data, temp, REPLACE_EXISTING );
