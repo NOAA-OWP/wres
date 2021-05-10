@@ -1,7 +1,6 @@
 package wres.tasker;
 
 import java.net.URI;
-import java.util.Set;
 import java.util.function.Consumer;
 
 import com.google.protobuf.GeneratedMessageV3;

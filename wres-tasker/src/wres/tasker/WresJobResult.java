@@ -28,10 +28,10 @@ public class WresJobResult
     @Produces( MediaType.TEXT_PLAIN )
     public Response getWresJobResult( @PathParam( "jobId" ) String jobId )
     {
-        JobResults.JobState jobState = WresJob.getSharedJobResults()
-                                              .getJobResult( jobId );
+        JobMetadata.JobState jobState = WresJob.getSharedJobResults()
+                                               .getJobState( jobId );
 
-        if ( jobState.equals( JobResults.JobState.NOT_FOUND ) )
+        if ( jobState.equals( JobMetadata.JobState.NOT_FOUND ) )
         {
             return Response.status( Response.Status.NOT_FOUND )
                            .entity( jobState.toString() )

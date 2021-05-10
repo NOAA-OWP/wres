@@ -312,6 +312,9 @@ public class WresJob
             return WresJob.serviceUnavailable( "Too many evaluations are in the queue, try again in a moment." );
         }
 
+        WresJob.getSharedJobResults()
+               .setInQueue( jobId );
+
         return Response.created( resourceCreated )
                        .entity( "<!DOCTYPE html><html><head><title>Evaluation job received.</title></head>"
                             + "<body><h1>Evaluation job " + jobId + " has been received for processing.</h1>"
@@ -350,7 +353,7 @@ public class WresJob
         // Create a list of actual job states from the enum that affords them.
         StringJoiner jobStates = new StringJoiner( ", " );
 
-        for ( JobResults.JobState jobState : JobResults.JobState.values() )
+        for ( JobMetadata.JobState jobState : JobMetadata.JobState.values() )
         {
             jobStates.add( jobState.toString() );
         }
