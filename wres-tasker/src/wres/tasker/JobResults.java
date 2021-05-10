@@ -4,6 +4,9 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Collections;
@@ -232,7 +235,11 @@ class JobResults
             return this.jobMetadata;
         }
 
+
         /**
+         * Watch for the job exit code message. After the exit message is heard,
+         * delete any input data associated with the job.
+         *
          * @return the result of the job id (correlation id) or Integer.MIN_VALUE when interrupted
          * @throws IOException when queue declaration fails
          */
@@ -299,6 +306,49 @@ class JobResults
             sharedData.setExitCode( resultValue );
             LOGGER.debug( "Shared metadata after setting exit code to {}: {}",
                           resultValue, sharedData );
+
+            // When there are posted input data related to this job, remove them
+            for ( URI uri : sharedData.getLeftInputs() )
+            {
+                try
+                {
+                    Path pathToDelete = Paths.get( uri );
+                    Files.deleteIfExists( pathToDelete );
+                }
+                catch ( IOException ioe )
+                {
+                    LOGGER.warn( "Failed to delete left data for job {} at {}",
+                                 jobId, uri, ioe );
+                }
+            }
+
+            for ( URI uri : sharedData.getRightInputs() )
+            {
+                try
+                {
+                    Path pathToDelete = Paths.get( uri );
+                    Files.deleteIfExists( pathToDelete );
+                }
+                catch ( IOException ioe )
+                {
+                    LOGGER.warn( "Failed to delete right data for job {} at {}",
+                                 jobId, uri, ioe );
+                }
+            }
+
+            for ( URI uri : sharedData.getBaselineInputs() )
+            {
+                try
+                {
+                    Path pathToDelete = Paths.get( uri );
+                    Files.deleteIfExists( pathToDelete );
+                }
+                catch ( IOException ioe )
+                {
+                    LOGGER.warn( "Failed to delete baseline data for job {} at {}",
+                                 jobId, uri, ioe );
+                }
+            }
 
             return resultValue;
         }
