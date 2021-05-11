@@ -16,6 +16,7 @@ repositories
 }
 
 apply plugin: 'java'
+apply plugin: 'jacoco'
 
 // The default value of the versionToTest will be picked up from
 // gradle.properties file. versionToTest can be overridden at gradle run time
@@ -203,4 +204,28 @@ test
     systemProperties += [ "user.timezone": "UTC" ]
     println( "Test JVM System Properties to be applied: ${furtherSplittedTestJvmProperties}" )
     systemProperties += furtherSplittedTestJvmProperties
+
+    jacoco
+    {
+        includes = [ "wres.*" ]
+    }
+}
+
+jacocoTestReport
+{
+    reports
+    {
+        classDirectories.setFrom( fileTree( dir: buildDir,
+                                                 include: "wres-*/lib/wres*.jar" ) )
+        // jacoco still does not see the sources despite this following line.
+        sourceDirectories.setFrom( fileTree( dir: buildDir,
+                                             include: "wres-*/src/*.jar" ) )
+        xml.enabled false
+        csv.enabled true
+        html.enabled true
+    }
+
+    // The list of jars is found else this would not print it successfully.
+    doLast { println( classDirectories.asList() ) }
+    doLast { println( sourceDirectories.asList() ) }
 }
