@@ -86,6 +86,7 @@ public class PoolsGeneratorTest
                                                  null,
                                                  null,
                                                  issuedDatesPoolingWindowConfig,
+                                                 null,
                                                  leadTimesPoolingWindowConfig,
                                                  null,
                                                  null );
@@ -187,6 +188,7 @@ public class PoolsGeneratorTest
                                                  null,
                                                  null,
                                                  issuedDatesPoolingWindowConfig,
+                                                 null,
                                                  leadTimesPoolingWindowConfig,
                                                  null,
                                                  null );

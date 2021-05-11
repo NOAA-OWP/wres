@@ -53,15 +53,6 @@ public final class TimeWindowOuterTest
         assertEquals( window.getLatestValidTime(), FOURTH_TIME );
         assertEquals( window.getEarliestLeadDuration(), Duration.ofHours( 6 ) );
         assertEquals( window.getLatestLeadDuration(), Duration.ofHours( 120 ) );
-
-        //Test mid-point of window 
-        assertTrue( "Unexpected error in mid-point of time window.",
-                    TimeWindowOuter.of( SECOND_TIME,
-                                        Instant.parse( "1985-01-10T00:00:00Z" ),
-                                        Duration.ofHours( 6 ),
-                                        Duration.ofHours( 120 ) )
-                                   .getMidPointBetweenEarliestAndLatestReferenceTimes()
-                                   .equals( Instant.parse( "1985-01-05T12:00:00Z" ) ) );
     }
 
     /**

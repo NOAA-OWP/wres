@@ -162,6 +162,7 @@ public class DataCardSourceTest
                                                 null,
                                                 null,
                                                 null,
+                                                null,
                                                 null );
 
         ProjectConfig projectConfig = new ProjectConfig( inputs,
@@ -249,6 +250,7 @@ public class DataCardSourceTest
         PairConfig pairConfig = new PairConfig( "CMS",
                                                 null,
                                                 features,
+                                                null,
                                                 null,
                                                 null,
                                                 null,

@@ -1009,6 +1009,22 @@ public final class TimeSeriesSlicer
     }
 
     /**
+     * Returns the mid-point on the UTC timeline between the two inputs
+     * 
+     * @return the mid-point on the UTC timeline
+     * @throws NullPointerException if either input is null
+     */
+
+    public static Instant getMidPointBetweenTimes( Instant earliest, Instant latest )
+    {
+        Objects.requireNonNull( earliest );
+        Objects.requireNonNull( latest );
+        
+        return earliest.plus( Duration.between( earliest, latest )
+                                      .dividedBy( 2 ) );
+    }
+    
+    /**
      * Throws an exception if any time-series has one or more reference times or metadata that is inconsistent with 
      * another time-series
      * 

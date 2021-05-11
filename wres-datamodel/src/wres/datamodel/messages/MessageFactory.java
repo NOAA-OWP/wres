@@ -1288,6 +1288,9 @@ public class MessageFactory
         boolean issuedDatesPools = Objects.nonNull( projectConfig.getPair() )
                                    && Objects.nonNull( projectConfig.getPair().getIssuedDatesPoolingWindow() );
 
+        boolean validDatesPools = Objects.nonNull( projectConfig.getPair() )
+                                  && Objects.nonNull( projectConfig.getPair().getValidDatesPoolingWindow() );
+
         // Iterate the destinations
         for ( DestinationConfig destination : outputs.getDestination() )
         {
@@ -1301,6 +1304,7 @@ public class MessageFactory
                                            durationFormat,
                                            builder,
                                            issuedDatesPools,
+                                           validDatesPools,
                                            override );
         }
 
@@ -1313,6 +1317,7 @@ public class MessageFactory
      * @param durationFormat the optional duration format
      * @param builder the builder
      * @param issuedDatesPools is true if there are issued dates pools
+     * @param validDatesPools is true if there are valid dates pools
      * @param override optional overrides
      * @throws IllegalArgumentException if the declared format does not map to a recognized type
      */
@@ -1320,6 +1325,7 @@ public class MessageFactory
                                         wres.config.generated.DurationUnit durationFormat,
                                         Outputs.Builder builder,
                                         boolean issuedDatesPools,
+                                        boolean validDatesPools,
                                         String override )
     {
         DestinationType destinationType = destination.getType();
@@ -1327,7 +1333,12 @@ public class MessageFactory
         // Graphic formats
         if ( ProjectConfigs.isGraphicsType( destinationType ) )
         {
-            MessageFactory.addGraphicsDestination( destination, durationFormat, builder, issuedDatesPools, override );
+            MessageFactory.addGraphicsDestination( destination,
+                                                   durationFormat,
+                                                   builder,
+                                                   issuedDatesPools,
+                                                   validDatesPools,
+                                                   override );
         }
         // Numeric formats
         else
@@ -1342,6 +1353,7 @@ public class MessageFactory
      * @param durationFormat the optional duration format
      * @param builder the builder
      * @param issuedDatesPools is true if there are issued dates pools
+     * @param validDatesPools is true if there are valid dates pools
      * @param override optional overrides
      * @throws IllegalArgumentException if the declared format does not map to a recognized type
      */
@@ -1350,6 +1362,7 @@ public class MessageFactory
                                                 wres.config.generated.DurationUnit durationFormat,
                                                 Outputs.Builder builder,
                                                 boolean issuedDatesPools,
+                                                boolean validDatesPools,
                                                 String override )
     {
         DestinationType destinationType = destination.getType();
@@ -1357,6 +1370,7 @@ public class MessageFactory
         GraphicFormat generalOptions = MessageFactory.getGeneralGraphicOptions( destination,
                                                                                 durationFormat,
                                                                                 issuedDatesPools,
+                                                                                validDatesPools,
                                                                                 override );
 
         if ( destinationType == DestinationType.PNG || destinationType == DestinationType.GRAPHIC )
@@ -1434,12 +1448,14 @@ public class MessageFactory
      * @param destination the destination
      * @param durationFormat the optional duration format
      * @param issuedDatesPools is true if there are issued dates pools
+     * @param validDatesPools is true if there are valid dates pools
      * @param override optional overrides
      * @return the graphic format options
      */
     private static GraphicFormat getGeneralGraphicOptions( DestinationConfig destination,
                                                            wres.config.generated.DurationUnit durationFormat,
                                                            boolean issuedDatesPools,
+                                                           boolean validDatesPools,
                                                            String override )
     {
         GraphicalType graphics = destination.getGraphical();
@@ -1449,6 +1465,17 @@ public class MessageFactory
         // No graphics options declared, so return default options
         if ( Objects.isNull( graphics ) )
         {
+            if ( issuedDatesPools )
+            {
+                return generalOptions.setShape( GraphicShape.ISSUED_DATE_POOLS )
+                                     .build();
+            }
+            else if ( validDatesPools )
+            {
+                return generalOptions.setShape( GraphicShape.VALID_DATE_POOLS )
+                                     .build();
+            }
+
             return generalOptions.setShape( GraphicShape.LEAD_THRESHOLD )
                                  .build();
         }
@@ -1487,6 +1514,10 @@ public class MessageFactory
         if ( issuedDatesPools )
         {
             generalOptions.setShape( GraphicShape.ISSUED_DATE_POOLS );
+        }
+        else if ( validDatesPools )
+        {
+            generalOptions.setShape( GraphicShape.VALID_DATE_POOLS );
         }
         else if ( Objects.nonNull( destination.getOutputType() ) )
         {

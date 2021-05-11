@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -39,7 +40,9 @@ import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
 import wres.util.TimeHelper;
 
 /**
@@ -358,13 +361,14 @@ abstract class XYChartDataSourceFactory
      * @param orderIndex Order index of the data source; lower index sources are drawn on top of higher index sources.
      * @param input The data to plot.
      * @param durationUnits the duration units
+     * @param graphicShape the graphic shape
      * @return A data source to be used to draw the plot.
      * @throws NullPointerException if the input or durationUnits are null
      */
-    static DefaultXYChartDataSource
-            ofDoubleScoreOutputByPoolingWindow( final int orderIndex,
-                                                final List<DoubleScoreComponentOuter> input,
-                                                final ChronoUnit durationUnits )
+    static DefaultXYChartDataSource ofDoubleScoreOutputByPoolingWindow( int orderIndex,
+                                                                        List<DoubleScoreComponentOuter> input,
+                                                                        ChronoUnit durationUnits,
+                                                                        GraphicShape graphicShape )
     {
         Objects.requireNonNull( input, "Specify non-null input." );
 
@@ -387,7 +391,7 @@ abstract class XYChartDataSourceFactory
                 // Build the TimeSeriesCollection
                 TimeSeriesCollection returnMe = new TimeSeriesCollection();
 
-                // Filter by the lead time window, as contained within the TimeWindow portion of the key.
+                // Filter by lead durations
                 SortedSet<Pair<Duration, Duration>> durations = Slicer.discover( input,
                                                                                  next -> Pair.of( next.getMetadata()
                                                                                                       .getTimeWindow()
@@ -396,65 +400,75 @@ abstract class XYChartDataSourceFactory
                                                                                                       .getTimeWindow()
                                                                                                       .getLatestLeadDuration() ) );
 
-                for ( Pair<Duration, Duration> nextTime : durations )
+                // Filter by valid times if each series should contain issued date pools, otherwise allow all valid
+                // times
+                SortedSet<Pair<Instant, Instant>> validTimes = new TreeSet<>();
+                
+                // Series by issued time 
+                if( graphicShape == GraphicShape.ISSUED_DATE_POOLS )
                 {
-                    // Slice the data by the lead time in the window.  The resulting output will span
-                    // multiple issued time windows and thresholds.
-                    List<DoubleScoreComponentOuter> slice = Slicer.filter( input,
-                                                                           next -> next.getMetadata()
-                                                                                       .getTimeWindow()
-                                                                                       .getEarliestLeadDuration()
-                                                                                       .equals( nextTime.getLeft() )
-                                                                                   && next.getMetadata()
-                                                                                          .getTimeWindow()
-                                                                                          .getLatestLeadDuration()
-                                                                                          .equals( nextTime.getRight() ) );
-
-                    // Filter by threshold
-                    SortedSet<OneOrTwoThresholds> thresholds =
-                            Slicer.discover( slice, next -> next.getMetadata().getThresholds() );
-                    for ( OneOrTwoThresholds nextThreshold : thresholds )
+                    SortedSet<Pair<Instant, Instant>> uniqueValidTimes = Slicer.discover( input,
+                                                                                    next -> Pair.of( next.getMetadata()
+                                                                                                         .getTimeWindow()
+                                                                                                         .getEarliestValidTime(),
+                                                                                                     next.getMetadata()
+                                                                                                         .getTimeWindow()
+                                                                                                         .getLatestValidTime() ) );
+                    validTimes.addAll( uniqueValidTimes );
+                }
+                // Series by valid time
+                else
+                {
+                    validTimes.add( Pair.of( Instant.MIN, Instant.MAX ) );
+                }
+                
+                // Iterate the durations
+                for ( Pair<Duration, Duration> nextDuration : durations )
+                {
+                    // Iterate the valid times
+                    for ( Pair<Instant, Instant> nextValidTime : validTimes )
                     {
-                        // Slice the data by threshold.  The resulting data will still contain potentially
-                        // multiple issued time pooling windows.
-                        List<DoubleScoreComponentOuter> finalSlice =
-                                Slicer.filter( slice,
-                                               next -> next.getMetadata()
-                                                           .getThresholds()
-                                                           .equals( nextThreshold ) );
+                        // Slice the data by the lead duration
+                        List<DoubleScoreComponentOuter> slice = Slicer.filter( input,
+                                                                               next -> next.getMetadata()
+                                                                                           .getTimeWindow()
+                                                                                           .getEarliestLeadDuration()
+                                                                                           .equals( nextDuration.getLeft() )
+                                                                                       && next.getMetadata()
+                                                                                              .getTimeWindow()
+                                                                                              .getLatestLeadDuration()
+                                                                                              .equals( nextDuration.getRight() ) );
 
-                        // Create the time series with a label determined by whether the lead time is a 
-                        // single value or window.
-                        String leadKey =
-                                Long.toString( TimeHelper.durationToLongUnits( nextTime.getRight(), durationUnits ) );
-                        if ( !nextTime.getLeft().equals( nextTime.getRight() ) )
+                        // Slice the data by valid time if the series should contain issued times
+                        if( graphicShape == GraphicShape.ISSUED_DATE_POOLS )
                         {
-                            leadKey = "(" + TimeHelper.durationToLongUnits( nextTime.getLeft(), durationUnits )
-                                      + ","
-                                      + TimeHelper.durationToLongUnits( nextTime.getRight(), durationUnits )
-                                      + "]";
+                            slice = Slicer.filter( slice,
+                                                   next -> next.getMetadata()
+                                                               .getTimeWindow()
+                                                               .getEarliestValidTime()
+                                                               .equals( nextValidTime.getLeft() )
+                                                           && next.getMetadata()
+                                                                  .getTimeWindow()
+                                                                  .getLatestValidTime()
+                                                                  .equals( nextValidTime.getRight() ) );
                         }
-                        TimeSeries next = new TimeSeries( leadKey + ", "
-                                                          + nextThreshold.toStringWithoutUnits(),
-                                                          FixedMillisecond.class );
 
-                        // Loop through the slice, forming a time series from the issued time pooling windows
-                        // and corresponding values.
-                        for ( DoubleScoreComponentOuter nextDouble : finalSlice )
-                        {
-                            next.add( new FixedMillisecond( nextDouble.getMetadata()
-                                                                      .getTimeWindow()
-                                                                      .getMidPointBetweenEarliestAndLatestReferenceTimes()
-                                                                      .toEpochMilli() ),
-                                      nextDouble.getData().getValue() );
-                        }
-                        returnMe.addSeries( next );
+                        // Add the next set of series
+                        XYChartDataSourceFactory.addSeriesForPoolingWindow( returnMe,
+                                                                            slice,
+                                                                            nextDuration,
+                                                                            nextValidTime,
+                                                                            graphicShape,
+                                                                            durationUnits );
                     }
+
                 }
                 return returnMe;
             }
         };
 
+        // Set the chart parameters for each series
+        // Find the lead durations
         SortedSet<Pair<Duration, Duration>> durations = Slicer.discover( input,
                                                                          next -> Pair.of( next.getMetadata()
                                                                                               .getTimeWindow()
@@ -462,21 +476,45 @@ abstract class XYChartDataSourceFactory
                                                                                           next.getMetadata()
                                                                                               .getTimeWindow()
                                                                                               .getLatestLeadDuration() ) );
+
+        // Find the valid times
+        int validTimesCount = 1;
+
+        String domainAxisLabel = "";
+        if ( graphicShape == GraphicShape.ISSUED_DATE_POOLS )
+        {
+            SortedSet<Pair<Instant, Instant>> validTimes = Slicer.discover( input,
+                                                                            next -> Pair.of( next.getMetadata()
+                                                                                                 .getTimeWindow()
+                                                                                                 .getEarliestValidTime(),
+                                                                                             next.getMetadata()
+                                                                                                 .getTimeWindow()
+                                                                                                 .getLatestValidTime() ) );
+            validTimesCount = validTimes.size();
+
+            domainAxisLabel = "TIME AT CENTER OF ISSUED TIME WINDOW [UTC]";
+        }
+        else if ( graphicShape == GraphicShape.VALID_DATE_POOLS )
+        {
+            domainAxisLabel = "TIME AT CENTER OF VALID TIME WINDOW [UTC]";
+        }
+
+        // Find the thresholds
         SortedSet<OneOrTwoThresholds> thresholds =
                 Slicer.discover( input, next -> next.getMetadata().getThresholds() );
 
         buildInitialParameters( source,
                                 orderIndex,
-                                durations.size() * thresholds.size() ); //one series per lead and threshold
-        source.getDefaultFullySpecifiedDataSourceDrawingParameters()
-              .setDefaultDomainAxisTitle( "TIME AT CENTER OF WINDOW [UTC]" );
+                                durations.size() * thresholds.size() * validTimesCount );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultRangeAxisTitle( METRIC_SHORT_NAME_METRIC_COMPONENT_NAME_SUFFIX_OUTPUT_UNITS_LABEL_SUFFIX );
         source.setXAxisType( ChartConstants.AXIS_IS_TIME );
+        source.getDefaultFullySpecifiedDataSourceDrawingParameters()
+              .setDefaultDomainAxisTitle( domainAxisLabel );
 
         return source;
     }
-
+    
     /**
      * Factory method for scalar output plotted against threshold with lead time in the legend.
      * @param orderIndex Order index of the data source; lower index sources are drawn on top of higher index sources.
@@ -700,6 +738,145 @@ abstract class XYChartDataSourceFactory
         }
     }
 
+    /**
+     * Adds one or more series to a collection of time-based pools based on their lead durations and valid times.
+     * 
+     * @param collection the collection to expand
+     * @param slice the slice of statistics from which to generate series
+     * @param leadDurations the lead durations by which to filter series
+     * @param validTimes the valid times by which to filter series
+     * @param GraphicShape the graphic shape
+     * @param durationUnits the duration units
+     */
+    
+    private static void addSeriesForPoolingWindow( TimeSeriesCollection collection,
+                                                   List<DoubleScoreComponentOuter> slice,
+                                                   Pair<Duration,Duration> leadDurations,
+                                                   Pair<Instant,Instant> validTimes,
+                                                   GraphicShape graphicShape,
+                                                   ChronoUnit durationUnits )
+    {
+        // Filter by threshold
+        SortedSet<OneOrTwoThresholds> thresholds =
+                Slicer.discover( slice, next -> next.getMetadata().getThresholds() );
+        for ( OneOrTwoThresholds nextThreshold : thresholds )
+        {
+            // Slice the data by threshold.  The resulting data will still contain potentially
+            // multiple issued time pooling windows and/or valid time pooling windows.
+            List<DoubleScoreComponentOuter> finalSlice =
+                    Slicer.filter( slice,
+                                   next -> next.getMetadata()
+                                               .getThresholds()
+                                               .equals( nextThreshold ) );
+
+            // Create the time series with a label
+            String seriesName = XYChartDataSourceFactory.getNameForPoolingWindowSeries( leadDurations.getLeft(),
+                                                                                        leadDurations.getRight(),
+                                                                                        validTimes.getLeft(),
+                                                                                        validTimes.getRight(),
+                                                                                        nextThreshold,
+                                                                                        durationUnits );
+            TimeSeries next = new TimeSeries( seriesName,
+                                              FixedMillisecond.class );
+
+            // Loop through the slice, forming a time series from the issued time or valid time pooling 
+            // windows and corresponding values.
+            for ( DoubleScoreComponentOuter nextDouble : finalSlice )
+            {
+                Instant midpoint =
+                        XYChartDataSourceFactory.getMidpointBetweenTimes( nextDouble.getMetadata()
+                                                                                    .getTimeWindow(),
+                                                                          graphicShape == GraphicShape.ISSUED_DATE_POOLS );
+
+                FixedMillisecond time = new FixedMillisecond( midpoint.toEpochMilli() );
+                Double value = nextDouble.getData().getValue();
+                next.add( time, value );
+            }
+
+            collection.addSeries( next );
+        }
+    }    
+    
+    /**
+     * Returns a series name from the inputs.
+     * 
+     * @param earliest the earliest lead duration
+     * @param latest the latest lead duration
+     * @param earliestValidTime the earliest valid time
+     * @param latestValidTime the latest valid time
+     * @param thresholds the thresholds
+     * @param durationUnits the duration units
+     * @return a series name
+     */
+    private static String getNameForPoolingWindowSeries( Duration earliest,
+                                                         Duration latest,
+                                                         Instant earliestValidTime,
+                                                         Instant latestValidTime,
+                                                         OneOrTwoThresholds thresholds,
+                                                         ChronoUnit durationUnits )
+    {
+        String key = "";
+
+        // If the lead durations are unbounded, do not qualify them, else qualify them
+        if ( !earliest.equals( TimeWindowOuter.DURATION_MIN ) || !latest.equals( TimeWindowOuter.DURATION_MAX ) )
+        {
+            // Zero-width interval
+            if ( earliest.equals( latest ) )
+            {
+                key = key + Long.toString( TimeHelper.durationToLongUnits( latest, durationUnits ) ) + ", ";
+            }
+            else
+            {
+                key = key + "("
+                      + TimeHelper.durationToLongUnits( earliest, durationUnits )
+                      + ","
+                      + TimeHelper.durationToLongUnits( latest, durationUnits )
+                      + "], ";
+            }
+        }
+
+        // If the valid times are unbounded, do not qualify them, else qualify them
+        if ( !earliestValidTime.equals( Instant.MIN ) || !latestValidTime.equals( Instant.MAX ) )
+        {
+            // Zero-width interval
+            if ( earliestValidTime.equals( latestValidTime ) )
+            {
+                key = key + latestValidTime.toString().replace( "Z", "" ) + ","; // Zone in legend title
+            }
+            else
+            {
+                key = key + "("
+                      + earliestValidTime.toString().replace( "Z", "" )
+                      + ","
+                      + latestValidTime.toString().replace( "Z", "" )
+                      + "], "; // Zone in legend title
+            }
+        }
+
+        return key + thresholds.toStringWithoutUnits();
+    }
+
+    /**
+     * Returns the midpoint between the reference times or valid times.
+     * 
+     * @param timeWindow the time window
+     * @param referenceTimes is true to return the midpoint between the reference times, false for valid times
+     * @return the midpoint between the times
+     */
+
+    private static Instant getMidpointBetweenTimes( TimeWindowOuter timeWindow, boolean referenceTimes )
+    {
+        if ( referenceTimes )
+        {
+            return TimeSeriesSlicer.getMidPointBetweenTimes( timeWindow.getEarliestReferenceTime(),
+                                                             timeWindow.getLatestReferenceTime() );
+        }
+        else
+        {
+            return TimeSeriesSlicer.getMidPointBetweenTimes( timeWindow.getEarliestValidTime(),
+                                                             timeWindow.getLatestValidTime() );
+        }
+    }
 
     /**
      * Initializes the parameters, including creating {@link SeriesDrawingParameters} for each series.  

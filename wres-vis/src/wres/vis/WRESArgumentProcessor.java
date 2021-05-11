@@ -1,5 +1,6 @@
 package wres.vis;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -28,6 +29,7 @@ import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.GeometryTuple;
+import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
 import wres.util.TimeHelper;
 import wres.vis.ChartEngineFactory.ChartType;
 
@@ -39,6 +41,7 @@ import wres.vis.ChartEngineFactory.ChartType;
  */
 class WRESArgumentProcessor extends DefaultArgumentsProcessor
 {
+    private static final String THRESHOLD = "Threshold ";
     private static final String VARIABLE_NAME = "variableName";
     private static final String LEGEND_TITLE = "legendTitle";
     private static final String LEGEND_UNITS_TEXT = "legendUnitsText";
@@ -475,24 +478,39 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * and the legend includes both lead time and threshold.
      * @param <T> the output type
      * @param displayedPlotInput the plot input
+     * @param graphicShape the graphic shape
      */
-    public <T extends Statistic<?>> void addPoolingWindowArguments( List<T> displayedPlotInput )
+    public <T extends Statistic<?>> void addPoolingWindowArguments( List<T> displayedPlotInput,
+                                                                    GraphicShape graphicShape )
     {
-        PoolMetadata meta = displayedPlotInput.get( 0 ).getMetadata();
+        PoolMetadata meta = displayedPlotInput.get( 0 )
+                                              .getMetadata();
 
         String durationUnitsString = "[" + this.getDurationUnits().name().toUpperCase() + "]";
 
-        if ( !meta.getTimeWindow()
-                  .getEarliestLeadDuration()
-                  .equals( meta.getTimeWindow().getLatestLeadDuration() ) )
-        {
-            addArgument( LEGEND_TITLE, "Lead time window " + durationUnitsString + ", Threshold " );
-        }
-        else
-        {
+        String legendTitle = "";
 
-            addArgument( LEGEND_TITLE, "Lead time " + durationUnitsString + ", Threshold " );
+        Duration earliest = meta.getTimeWindow().getEarliestLeadDuration();
+        Duration latest = meta.getTimeWindow().getLatestLeadDuration();
+        Instant earliestValidTime = meta.getTimeWindow().getEarliestValidTime();
+        Instant latestValidTime = meta.getTimeWindow().getLatestValidTime();
+
+        // If the lead durations are unbounded, do not qualify them, else qualify them
+        if ( !earliest.equals( TimeWindowOuter.DURATION_MIN ) || !latest.equals( TimeWindowOuter.DURATION_MAX ) )
+        {
+            legendTitle = legendTitle + "Lead time window " + durationUnitsString + ", ";
         }
+
+        // If the valid times are unbounded, do not qualify them, else qualify them
+        if ( graphicShape != GraphicShape.VALID_DATE_POOLS
+             && ( !earliestValidTime.equals( Instant.MIN ) || !latestValidTime.equals( Instant.MAX ) ) )
+        {
+            legendTitle = legendTitle + "Valid time window (UTC), ";
+        }
+        
+        legendTitle =  legendTitle + THRESHOLD;
+        
+        addArgument( LEGEND_TITLE, legendTitle );
         addArgument( LEGEND_UNITS_TEXT, "[" + meta.getMeasurementUnit() + "]" );
     }
 
@@ -513,7 +531,7 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
     public <T extends Statistic<?>> void addTimeToPeakArguments( List<T> displayedPlotInput )
     {
         PoolMetadata meta = displayedPlotInput.get( 0 ).getMetadata();
-        addArgument( LEGEND_TITLE, "Threshold " );
+        addArgument( LEGEND_TITLE, THRESHOLD );
         addArgument( LEGEND_UNITS_TEXT, "[" + meta.getMeasurementUnit() + "]" );
     }
 

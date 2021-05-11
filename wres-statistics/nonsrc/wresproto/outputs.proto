@@ -36,8 +36,12 @@ message Outputs
             // against one or more thresholds.
             
             ISSUED_DATE_POOLS = 3;
-            // Create a graphic that contains one series for each threshold 
-            // against one or more issued datetime pools.
+            // Create a graphic in which each series contains one or more issued
+            // datetime pools.
+
+            VALID_DATE_POOLS = 4;
+            // Create a graphic in which each series contains one or more valid
+            // datetime pools.
         }
 
         GraphicShape shape = 1;

@@ -167,6 +167,7 @@ public class FeatureFinderTest
                                null,
                                null,
                                null,
+                               null,
                                null );
     }
 

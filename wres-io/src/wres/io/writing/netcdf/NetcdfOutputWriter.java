@@ -3,8 +3,10 @@ package wres.io.writing.netcdf;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -21,6 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
@@ -66,13 +69,14 @@ import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.io.concurrency.Executor;
-import wres.io.config.ConfigHelper;
+import wres.io.utilities.NoDataException;
 import wres.io.writing.WriteException;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
 import wres.system.SystemSettings;
 import wres.util.FutureQueue;
 import wres.util.Strings;
+import wres.util.TimeHelper;
 
 /**
  * A writer is instantiated in two stages. First, the writer is built. Second, the blobs are initialized for writing. 
@@ -361,11 +365,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                                                             desiredTimeScale );
 
             // Create the blob path
-            Path targetPath = ConfigHelper.getOutputPathToWriteForOneTimeWindow( this.getOutputDirectory(),
-                                                                                 this.getDestinationConfig(),
-                                                                                 this.getScenarioNameForBlobOrNull( inputs ),
-                                                                                 nextWindow,
-                                                                                 this.getDurationUnits() );
+            Path targetPath = this.getOutputPathToWriteForOneTimeWindow( this.getOutputDirectory(),
+                                                                         this.getProjectConfig().getPair(),
+                                                                         this.getDestinationConfig(),
+                                                                         this.getScenarioNameForBlobOrNull( inputs ),
+                                                                         nextWindow,
+                                                                         this.getDurationUnits() );
 
             String pathActuallyWritten;
 
@@ -406,6 +411,87 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         }
 
         return Collections.unmodifiableSet( returnMe );
+    }
+    
+    /**
+     * Returns a formatted file name for writing outputs to a specific time window using the destination 
+     * information and other hints provided.
+     *
+     * @param outputDirectory the directory into which to write
+     * @param pairConfig the pairs declaration
+     * @param destinationConfig the destination information
+     * @param scenarioName the optional scenario name
+     * @param timeWindow the time window
+     * @param leadUnits the time units to use for the lead durations
+     * @return the file name
+     * @throws NoDataException if the output is empty
+     * @throws NullPointerException if any of the inputs is null
+     * @throws IOException if the path cannot be produced
+     */
+
+    private Path getOutputPathToWriteForOneTimeWindow( Path outputDirectory,
+                                                       PairConfig pairConfig,
+                                                       DestinationConfig destinationConfig,
+                                                       String scenarioName,
+                                                       TimeWindowOuter timeWindow,
+                                                       ChronoUnit leadUnits )
+            throws IOException
+    {
+        Objects.requireNonNull( outputDirectory, "Enter non-null output directory to establish a path for writing." );
+        Objects.requireNonNull( destinationConfig, "Enter non-null time window to establish a path for writing." );
+        Objects.requireNonNull( timeWindow, "Enter a non-null time window  to establish a path for writing." );
+        Objects.requireNonNull( leadUnits,
+                                "Enter a non-null time unit for the lead durations to establish a path for writing." );
+        Objects.requireNonNull( pairConfig, "Provide non-null pair configuration to establish a path for writing." );
+
+        StringJoiner filename = new StringJoiner( "_" );
+
+        // Add optional scenario identifier
+        if ( Objects.nonNull( scenarioName ) )
+        {
+            filename.add( scenarioName );
+        }
+
+        // Add latest reference time identifier (good enough for an ordered sequence of pools, not for arbitrary pools)
+        if ( !timeWindow.getLatestReferenceTime().equals( Instant.MAX ) )
+        {
+            String lastTime = timeWindow.getLatestReferenceTime().toString();
+            lastTime = lastTime.replace( "-", "" )
+                               .replace( ":", "" )
+                               .replace( "Z$", "" );
+
+            filename.add( lastTime );
+        }
+        
+        // Add latest valid time identifier (good enough for an ordered sequence of pools, not for arbitrary pools)
+        // For backwards compatibility of file names, only qualify when valid dates pooling windows are supplied
+        if ( Objects.nonNull( pairConfig.getValidDatesPoolingWindow() )
+             && !timeWindow.getLatestValidTime().equals( Instant.MAX ) )
+        {
+            String lastTime = timeWindow.getLatestValidTime().toString();
+            lastTime = lastTime.replace( "-", "" )
+                               .replace( ":", "" )
+                               .replace( "Z$", "" );
+
+            filename.add( lastTime );
+        }
+
+        // Format the duration with the default format
+        filename.add( Long.toString( TimeHelper.durationToLongUnits( timeWindow.getLatestLeadDuration(),
+                                                                     leadUnits ) ) );
+        filename.add( leadUnits.name().toUpperCase() );
+
+        String extension = "";
+        if ( destinationConfig.getType() == DestinationType.NETCDF
+             || destinationConfig.getType() == DestinationType.NETCDF_2 )
+        {
+            extension = ".nc";
+        }
+
+        // Sanitize file name
+        String safeName = URLEncoder.encode( filename.toString().replace( " ", "_" ) + extension, "UTF-8" );
+
+        return Paths.get( outputDirectory.toString(), safeName );
     }
 
     /**
