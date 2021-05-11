@@ -44,9 +44,9 @@ class SampleSize<S extends Pool<?>> extends OrdinaryScore<S, DoubleScoreStatisti
      */
 
     public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( Double.NEGATIVE_INFINITY )
+                                                                                    .setMinimum( 0 )
                                                                                     .setMaximum( Double.POSITIVE_INFINITY )
-                                                                                    .setOptimum( 0.0 )
+                                                                                    .setOptimum( Double.POSITIVE_INFINITY )
                                                                                     .setName( ComponentName.MAIN )
                                                                                     .setUnits( "COUNT" )
                                                                                     .build();

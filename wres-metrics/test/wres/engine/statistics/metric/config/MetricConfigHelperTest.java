@@ -240,6 +240,7 @@ public final class MetricConfigHelperTest
                                                    null,
                                                    null,
                                                    null,
+                                                   null,
                                                    null ),
                                    Arrays.asList( new MetricsConfig( thresholds, metrics, null ) ),
                                    null,

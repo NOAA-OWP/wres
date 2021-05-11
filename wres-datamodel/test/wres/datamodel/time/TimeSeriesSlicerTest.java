@@ -1002,6 +1002,17 @@ public final class TimeSeriesSlicerTest
         assertEquals( expected, actual );
     }
 
+    @Test
+    public void testGetMidpointBetweenTwoTimes()
+    {
+        Instant actual = TimeSeriesSlicer.getMidPointBetweenTimes( Instant.parse( "1985-01-01T00:00:00Z" ), 
+                                                                   Instant.parse( "1985-01-10T00:00:00Z" ) );
+        
+        Instant expected = Instant.parse( "1985-01-05T12:00:00Z" );
+
+        assertEquals( "Unexpected error in mid-point of time window.", expected, actual );
+    }
+    
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0 )
     {
         return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),

@@ -949,6 +949,7 @@ time scale within a single class, rather than two classes.
             <xs:element name="desiredTimeScale" type="desiredTimeScale" minOccurs="0" />
 
             <xs:element name="issuedDatesPoolingWindow" type="poolingWindow" minOccurs="0"/>
+            <xs:element name="validDatesPoolingWindow" type="poolingWindow" minOccurs="0"/>
             <xs:element name="leadTimesPoolingWindow" type="poolingWindow" minOccurs="0"/>
             <xs:element name="crossPair" type="crossPair" minOccurs="0" />
         </xs:sequence>

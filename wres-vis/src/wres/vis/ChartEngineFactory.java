@@ -63,6 +63,7 @@ import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
  */
 public abstract class ChartEngineFactory
 {
+    private static final String BOX_PLOT_OF_ERRORS_TEMPLATE_XML = "boxPlotOfErrorsTemplate.xml";
     private static final Logger LOGGER = LoggerFactory.getLogger( ChartEngineFactory.class );
 
     /**
@@ -134,11 +135,11 @@ public abstract class ChartEngineFactory
         metricSpecificTemplateMap.put( MetricConstants.QUANTILE_QUANTILE_DIAGRAM, "qqDiagramTemplate.xml" );
         metricSpecificTemplateMap.put( MetricConstants.RANK_HISTOGRAM, "rankHistogramTemplate.xml" );
         metricSpecificTemplateMap.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
-                                       "boxPlotOfErrorsTemplate.xml" );
+                                       BOX_PLOT_OF_ERRORS_TEMPLATE_XML );
         metricSpecificTemplateMap.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                       "boxPlotOfErrorsTemplate.xml" );
-        metricSpecificTemplateMap.put( MetricConstants.BOX_PLOT_OF_ERRORS, "boxPlotOfErrorsTemplate.xml" );
-        metricSpecificTemplateMap.put( MetricConstants.BOX_PLOT_OF_PERCENTAGE_ERRORS, "boxPlotOfErrorsTemplate.xml" );
+                                       BOX_PLOT_OF_ERRORS_TEMPLATE_XML );
+        metricSpecificTemplateMap.put( MetricConstants.BOX_PLOT_OF_ERRORS, BOX_PLOT_OF_ERRORS_TEMPLATE_XML );
+        metricSpecificTemplateMap.put( MetricConstants.BOX_PLOT_OF_PERCENTAGE_ERRORS, BOX_PLOT_OF_ERRORS_TEMPLATE_XML );
         metricSpecificTemplateMap.put( MetricConstants.TIME_TO_PEAK_ERROR, "timeToPeakErrorTemplate.xml" );
         metricSpecificTemplateMap.put( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR, "timeToPeakErrorTemplate.xml" );
         metricSpecificTemplateMap.put( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
@@ -179,14 +180,14 @@ public abstract class ChartEngineFactory
         Objects.requireNonNull( metricName );
         
         //Pooling window case.
-        if ( graphicShape == GraphicShape.ISSUED_DATE_POOLS )
+        if ( graphicShape == GraphicShape.ISSUED_DATE_POOLS || graphicShape == GraphicShape.VALID_DATE_POOLS )
         {
             return ChartType.POOLING_WINDOW;
         }
 
         //All others.  If user specified nothing, pull from the map.  Otherwise base it on the user
         //specified type.
-        if ( ( graphicShape == null ) || ( graphicShape == GraphicShape.DEFAULT ) )
+        if ( graphicShape == GraphicShape.DEFAULT )
         {
             return ChartEngineFactory.metricOutputGroupToDefaultChartTypeMap.get( metricName.getMetricOutputGroup() );
         }
@@ -897,8 +898,11 @@ public abstract class ChartEngineFactory
         //This is for plots that operate with sequences of time windows (e.g. rolling windows)
         else if ( usedPlotType == ChartType.POOLING_WINDOW )
         {
-            source = XYChartDataSourceFactory.ofDoubleScoreOutputByPoolingWindow( 0, input, durationUnits );
-            arguments.addPoolingWindowArguments( input );
+            source = XYChartDataSourceFactory.ofDoubleScoreOutputByPoolingWindow( 0,
+                                                                                  input,
+                                                                                  durationUnits,
+                                                                                  graphicShape );
+            arguments.addPoolingWindowArguments( input, graphicShape );
         }
         else
         {

@@ -452,20 +452,6 @@ public final class TimeWindowOuter implements Comparable<TimeWindowOuter>
     }
 
     /**
-     * Returns the mid-point on the UTC timeline between the {@link #getEarliestReferenceTime()} and the 
-     * {@link #getLatestReferenceTime()}.
-     * 
-     * @return the mid-point on the UTC timeline
-     */
-
-    public Instant getMidPointBetweenEarliestAndLatestReferenceTimes()
-    {
-        return this.getEarliestReferenceTime()
-                   .plus( Duration.between( this.getEarliestReferenceTime(), this.getLatestReferenceTime() )
-                                  .dividedBy( 2 ) );
-    }
-
-    /**
      * Returns <code>true</code> if {@link #getEarliestReferenceTime()} returns {@link Instant#MIN} or 
      * {@link #getLatestReferenceTime()} returns {@link Instant#MAX}, otherwise <code>false</code>.
      * 

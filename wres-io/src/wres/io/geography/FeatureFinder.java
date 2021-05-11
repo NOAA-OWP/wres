@@ -177,6 +177,7 @@ public class FeatureFinder
                                                                originalPairDeclaration.getValues(),
                                                                originalPairDeclaration.getDesiredTimeScale(),
                                                                originalPairDeclaration.getIssuedDatesPoolingWindow(),
+                                                               originalPairDeclaration.getValidDatesPoolingWindow(),
                                                                originalPairDeclaration.getLeadTimesPoolingWindow(),
                                                                originalPairDeclaration.getCrossPair(),
                                                                originalPairDeclaration.getLabel() );
