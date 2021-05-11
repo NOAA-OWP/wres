@@ -143,7 +143,7 @@ public class ScenarioHelper
     protected static void assertOutputsMatchBenchmarks( ScenarioInformation scenarioInfo,
                                                         Set<Path> initialOutputSet )
     {
-        LOGGER.info( "Asserting that outputs match benchmarks..." + scenarioInfo.getName() );
+        LOGGER.info( "Asserting that outputs match benchmarks for {}...", scenarioInfo.getName() );
         
         //Assert the output as being valid and then get the output from the provided Control if so.
         assertWRESOutputValid( scenarioInfo, initialOutputSet );
