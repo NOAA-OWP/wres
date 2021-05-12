@@ -214,10 +214,18 @@ public class DatacardSource extends BasicSource
 
                 //Process time interval.
                 setTimeStep( line.substring( 29, 31) );
-                if ( line.length() > 45 )
+                // #91908
+                if ( line.length() >= 34 )
                 {
+                    // Read up to character 45 or the EOL, whichever comes first: #91908
+                    int stop = 45;                    
+                    if( line.length() < 45 )
+                    {
+                        stop = line.length();
+                    }
+                    
                     // Location id. As of 5.0, use location name verbatim.
-                    featureName = line.substring( 34, 45 )
+                    featureName = line.substring( 34, stop )
                                       .strip();
                 }
 
