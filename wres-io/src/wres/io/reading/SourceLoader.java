@@ -395,29 +395,16 @@ public class SourceLoader
      * @param source the source to ingest
      * @param projectConfig the project configuration causing the ingest
      * @param lockManager the lock manager to use
-     * @param hash the hash of the source data, null if unknown.
      * @return a list of future lists of ingest results, possibly empty
      */
 
     private List<CompletableFuture<List<IngestResult>>> ingestData( DataSource source,
                                                                     ProjectConfig projectConfig,
-                                                                    DatabaseLockManager lockManager,
-                                                                    String hash )
+                                                                    DatabaseLockManager lockManager )
     {
         Objects.requireNonNull( source );
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( lockManager );
-
-        if ( Objects.nonNull( hash ) )
-        {
-            LOGGER.debug( "ingestData() with hash known in advance: {}, {}",
-                          source, hash );
-        }
-        else
-        {
-            LOGGER.debug( "ingestData() with no hash known in advance: {}",
-                          source );
-        }
 
         List<CompletableFuture<List<IngestResult>>> tasks = new ArrayList<>();
         CompletableFuture<List<IngestResult>> task;
@@ -438,26 +425,6 @@ public class SourceLoader
                                            this.getLockManager(),
                                            source.getTimeSeries() );
             task = CompletableFuture.supplyAsync( ingester::call,
-                                                  this.getExecutor() );
-        }
-        else if ( Objects.nonNull( hash ) )
-        {
-            IngestSaver ingestSaver =
-                    IngestSaver.createTask()
-                               .withSystemSettings( this.getSystemSettings() )
-                               .withDatabase( this.getDatabase() )
-                               .withDataSourcesCache( this.getDataSourcesCache() )
-                               .withFeaturesCache( this.getFeaturesCache() )
-                               .withVariablesCache( this.getVariablesCache() )
-                               .withEnsemblesCache( this.getEnsemblesCache() )
-                               .withMeasurementUnitsCache( this.getMeasurementUnitsCache() )
-                               .withProject( projectConfig )
-                               .withDataSource( source )
-                               .withHash( hash )
-                               .withProgressMonitoring()
-                               .withLockManager( lockManager )
-                               .build();
-            task = CompletableFuture.supplyAsync( ingestSaver::call,
                                                   this.getExecutor() );
         }
         else
@@ -487,9 +454,7 @@ public class SourceLoader
 
 
     /**
-     * Ingest data where the the source is known to be a file, but the hash is
-     * not yet known. This method uses the more generic ingestData method after
-     * computing the hash.
+     * Ingest data where the the source is known to be a file.
      *
      * @param source the source to ingest, must be a file
      * @param projectConfig the project configuration causing the ingest
@@ -545,8 +510,7 @@ public class SourceLoader
                 List<CompletableFuture<List<IngestResult>>> futureList =
                         this.ingestData( source,
                                          projectConfig,
-                                         lockManager,
-                                         null );
+                                         lockManager );
                 tasks.addAll( futureList );
         }
         else if ( sourceStatus.equals( SourceStatus.INCOMPLETE_WITH_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING ) )
@@ -555,7 +519,6 @@ public class SourceLoader
             // attempt cleanup: some process trying to ingest the source
             // died during ingest and data needs to be cleaned out.
             long surrogateKey = checkIngest.getSurrogateKey();
-            String hash = checkIngest.getHash();
             LOGGER.info(
                     "Another WRES instance started to ingest a source like '{}' identified by '{}' but did not finish, cleaning up...",
                     sourceUri,
@@ -567,8 +530,7 @@ public class SourceLoader
             List<CompletableFuture<List<IngestResult>>> futureList =
                     this.ingestData( source,
                                      projectConfig,
-                                     lockManager,
-                                     null );
+                                     lockManager );
             tasks.addAll( futureList );
         }
         else if ( sourceStatus.equals( SourceStatus.COMPLETED ) )
@@ -705,7 +667,7 @@ public class SourceLoader
         }
 
         // Get the surrogate key if it exists
-        long surrogateKey = KEY_NOT_FOUND;
+        final long surrogateKey;
         Long dataSourceKey = null;
         DataSources dataSourcesCache = this.getDataSourcesCache();
 
@@ -851,8 +813,7 @@ public class SourceLoader
                               ingestResult );
                 return this.ingestData( ingestResult.getDataSource(),
                                         this.projectConfig,
-                                        this.lockManager,
-                                        hash );
+                                        this.lockManager );
             }
             else
             {
