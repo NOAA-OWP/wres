@@ -11,12 +11,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.Ensemble;
-import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.Slicer;
+import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.metrics.MetricConstants.MetricGroup;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.FunctionFactory;

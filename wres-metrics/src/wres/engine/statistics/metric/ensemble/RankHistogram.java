@@ -14,9 +14,9 @@ import java.util.stream.IntStream;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.Ensemble;
-import wres.datamodel.MetricConstants;
 import wres.datamodel.MissingValues;
 import wres.datamodel.Slicer;
+import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DiagramStatisticOuter;

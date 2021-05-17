@@ -14,10 +14,10 @@ import com.google.protobuf.Timestamp;
 
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
-import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
 import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;

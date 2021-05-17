@@ -9,10 +9,10 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.Ensemble;
-import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.metrics.MetricConstants.MetricDimension;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;

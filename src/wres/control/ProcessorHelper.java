@@ -16,6 +16,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -372,15 +373,27 @@ class ProcessorHelper
             // to wres-metrics, given that they are resolved by project configuration that is
             // passed separately to wres-metrics. Options include moving MetricProcessor* to
             // wres-control, since they make processing decisions, or passing ResolvedProject onwards
-            ThresholdReader thresholdReader = new ThresholdReader(
-                                                                   systemSettings,
-                                                                   projectConfig,
-                                                                   unitMapper,
-                                                                   decomposedFeatures );
-            Map<FeatureTuple, ThresholdsByMetric> thresholds = thresholdReader.read();
+            List<MetricsAndThresholds> metricsAndThresholds = new ArrayList<>();
+            Set<FeatureTuple> havingThresholds = new TreeSet<>();
+            for ( MetricsConfig metricsConfig : projectConfig.getMetrics() )
+            {
+                ThresholdReader thresholdReader = new ThresholdReader(
+                                                                       systemSettings,
+                                                                       projectConfig,
+                                                                       metricsConfig,
+                                                                       unitMapper,
+                                                                       decomposedFeatures );
 
-            // Features having thresholds as reported by the threshold reader.
-            Set<FeatureTuple> havingThresholds = thresholdReader.getEvaluatableFeatures();
+                Map<FeatureTuple, ThresholdsByMetric> nextThresholds = thresholdReader.read();
+                Set<FeatureTuple> features = thresholdReader.getEvaluatableFeatures();
+                MetricsAndThresholds nextMetrics = new MetricsAndThresholds( nextThresholds, 0 );
+                metricsAndThresholds.add( nextMetrics );
+                havingThresholds.addAll( features );
+            }
+
+            // Render the bags of thresholds and features immutable
+            metricsAndThresholds = Collections.unmodifiableList( metricsAndThresholds );
+            havingThresholds = Collections.unmodifiableSet( havingThresholds );
 
             // If the left dataset name exists in thresholds, keep it in the set.
             decomposedFeatures = Collections.unmodifiableSet( havingThresholds );
@@ -397,6 +410,10 @@ class ProcessorHelper
             // Create any netcdf blobs for writing. See #80267-137.
             if ( !netcdfWriters.isEmpty() )
             {
+                List<Map<FeatureTuple, ThresholdsByMetric>> thresholds = metricsAndThresholds.stream()
+                                                                                             .map( MetricsAndThresholds::getThresholdsByMetric )
+                                                                                             .collect( Collectors.toList() );
+
                 for ( NetcdfOutputWriter writer : netcdfWriters )
                 {
                     writer.createBlobsForWriting( decomposedFeatures,
@@ -411,7 +428,7 @@ class ProcessorHelper
                                                                   projectConfigPlus,
                                                                   decomposedFeatures,
                                                                   projectIdentifier,
-                                                                  thresholds,
+                                                                  metricsAndThresholds,
                                                                   outputDirectory );
 
             // Tasks for features
@@ -439,7 +456,7 @@ class ProcessorHelper
 
                 CompletableFuture<Void> nextFeatureTask = CompletableFuture.supplyAsync( featureProcessor,
                                                                                          executors.getFeatureExecutor() )
-                                                                           .thenAccept( featureReport );                                                                           
+                                                                           .thenAccept( featureReport );
 
                 // Add to list of tasks
                 featureTasks.add( nextFeatureTask );
@@ -463,7 +480,7 @@ class ProcessorHelper
             {
                 LOGGER.debug( "Forcibly stopping evaluation {} upon encountering an internal error.",
                               evaluation.getEvaluationId() );
-                
+
                 evaluation.stop( internalError );
             }
 
@@ -926,7 +943,57 @@ class ProcessorHelper
             this.sharedSampleWriters = sharedSampleWriters;
             this.sharedBaselineSampleWriters = sharedBaselineSampleWriters;
         }
+    }
 
+    /**
+     * Small class to collect together resolved metrics and thresholds for evaluation.
+     */
+
+    static class MetricsAndThresholds
+    {
+        /** Thresholds by metric. */
+        private final Map<FeatureTuple, ThresholdsByMetric> thresholdsByMetric;
+        /** Minimum sample size. */
+        private final int minimumSampleSize;
+
+        /**
+         * @param featureTuple the feature
+         * @return the thresholds by metric
+         */
+        ThresholdsByMetric getThresholdsByMetric( FeatureTuple featureTuple )
+        {
+            return this.thresholdsByMetric.get( featureTuple );
+        }
+
+        /**
+         * @return the minimum sample size
+         */
+        int getMinimumSampleSize()
+        {
+            return this.minimumSampleSize;
+        }
+
+        /**
+         * @param featureTuple the feature
+         * @return the thresholds by metric
+         */
+        Map<FeatureTuple, ThresholdsByMetric> getThresholdsByMetric()
+        {
+            return this.thresholdsByMetric;
+        }
+
+        /**
+         * Create an instance.
+         * 
+         * @param thresholdsByMetric the thresholds by metric
+         * @param minimumSampleSize the minimum sample size
+         */
+        private MetricsAndThresholds( Map<FeatureTuple, ThresholdsByMetric> thresholdsByMetric,
+                                      int minimumSampleSize )
+        {
+            this.thresholdsByMetric = Collections.unmodifiableMap( thresholdsByMetric );
+            this.minimumSampleSize = minimumSampleSize;
+        }
     }
 
     /**

@@ -3,6 +3,7 @@ package wres.io.thresholds;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.pools.MeasurementUnit;
@@ -18,6 +19,7 @@ public class ThresholdReader {
 
     private final SystemSettings systemSettings;
     private final ProjectConfig projectConfig;
+    private final MetricsConfig metricsConfig;
     private final UnitMapper desiredMeasurementUnitConverter;
     private final Set<FeatureTuple> features;
     private final Set<FeatureTuple> encounteredFeatures = new HashSet<>();
@@ -26,35 +28,41 @@ public class ThresholdReader {
     public ThresholdReader(
             final SystemSettings settings,
             final ProjectConfig projectConfig,
+            final MetricsConfig metricsConfig,
             final UnitMapper unitMapper,
             final Set<FeatureTuple> features
     ) {
         this.systemSettings = settings;
         this.projectConfig = projectConfig;
+        this.metricsConfig = metricsConfig;
         this.desiredMeasurementUnitConverter = unitMapper;
         this.features = features;
         this.builders.initialize( this.features );
     }
 
-    public Map<FeatureTuple, ThresholdsByMetric> read() {
+    public Map<FeatureTuple, ThresholdsByMetric> read()
+    {
         ExternalThresholdReader externalReader = new ExternalThresholdReader(
-                this.systemSettings,
-                this.projectConfig,
-                this.features,
-                this.desiredMeasurementUnitConverter,
-                this.builders
-        );
+                                                                              this.systemSettings,
+                                                                              this.projectConfig,
+                                                                              this.metricsConfig,
+                                                                              this.features,
+                                                                              this.desiredMeasurementUnitConverter,
+                                                                              this.builders );
 
         MeasurementUnit units =
                 MeasurementUnit.of( this.desiredMeasurementUnitConverter.getDesiredMeasurementUnitName() );
-        InBandThresholdReader inBandReader = new InBandThresholdReader(this.projectConfig, this.builders, units );
+        InBandThresholdReader inBandReader = new InBandThresholdReader( this.projectConfig, 
+                                                                        this.metricsConfig, 
+                                                                        this.builders, 
+                                                                        units );
 
         externalReader.read();
         inBandReader.read();
 
-        this.encounteredFeatures.addAll(externalReader.getRecognizedFeatures());
+        this.encounteredFeatures.addAll( externalReader.getRecognizedFeatures() );
 
-        this.builders.addAllDataThresholds(projectConfig);
+        this.builders.addAllDataThresholds( this.projectConfig, this.metricsConfig );
 
         return Collections.unmodifiableMap( this.builders.build() );
     }

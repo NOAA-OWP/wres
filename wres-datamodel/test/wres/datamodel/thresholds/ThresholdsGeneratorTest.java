@@ -27,8 +27,8 @@ import wres.config.generated.ThresholdDataType;
 import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
-import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 
 /**

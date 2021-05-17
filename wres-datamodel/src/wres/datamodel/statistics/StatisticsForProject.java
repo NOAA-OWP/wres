@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import wres.datamodel.MetricConstants.StatisticType;
+import wres.datamodel.metrics.MetricConstants.StatisticType;
 
 /**
  * <p>An immutable store of {@link Statistic} associated with a verification project. This is the top-level

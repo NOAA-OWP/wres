@@ -54,13 +54,13 @@ import ucar.nc2.dt.grid.GridDataset;
 import wres.config.generated.*;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.FeatureTuple;
-import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.MissingValues;
 import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.metrics.MetricConstants.MetricGroup;
+import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
@@ -252,7 +252,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      */
 
     public void createBlobsForWriting( Set<FeatureTuple> features,
-                                       Map<FeatureTuple, ThresholdsByMetric> thresholds )
+                                       List<Map<FeatureTuple, ThresholdsByMetric>> thresholds )
             throws IOException
     {
         Objects.requireNonNull( thresholds );
@@ -948,7 +948,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      * @return the unique thresholds for which blobs should be created
      */
 
-    private ThresholdsByMetric getUniqueThresholdsForScoreMetrics( Map<FeatureTuple, ThresholdsByMetric> thresholds )
+    private ThresholdsByMetric getUniqueThresholdsForScoreMetrics( List<Map<FeatureTuple, ThresholdsByMetric>> thresholds )
     {
         Objects.requireNonNull( thresholds );
 
@@ -957,28 +957,31 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         // Create a set of thresholds for each metric in a map.        
         Map<MetricConstants, SortedSet<OneOrTwoThresholds>> thresholdsMap = new EnumMap<>( MetricConstants.class );
 
-        for ( ThresholdsByMetric next : thresholds.values() )
+        for ( Map<FeatureTuple, ThresholdsByMetric> map : thresholds )
         {
-            Map<MetricConstants, SortedSet<OneOrTwoThresholds>> nextMapping = next.getOneOrTwoThresholds();
-
-            for ( Map.Entry<MetricConstants, SortedSet<OneOrTwoThresholds>> nextEntry : nextMapping.entrySet() )
+            for ( ThresholdsByMetric next : map.values() )
             {
-                MetricConstants nextMetric = nextEntry.getKey();
+                Map<MetricConstants, SortedSet<OneOrTwoThresholds>> nextMapping = next.getOneOrTwoThresholds();
 
-                // Only allow scores 
-                if ( nextMetric.isInGroup( StatisticType.DOUBLE_SCORE ) )
+                for ( Map.Entry<MetricConstants, SortedSet<OneOrTwoThresholds>> nextEntry : nextMapping.entrySet() )
                 {
-                    // Get the existing mapping or a new sorted set instantiated with the threshold comparator
-                    SortedSet<OneOrTwoThresholds> mapped =
-                            thresholdsMap.getOrDefault( nextMetric,
-                                                        new TreeSet<>( thresholdComparator ) );
+                    MetricConstants nextMetric = nextEntry.getKey();
 
-                    mapped.addAll( nextEntry.getValue() );
-
-                    // Add it to the map if not already there
-                    if ( !thresholdsMap.containsKey( nextMetric ) )
+                    // Only allow scores 
+                    if ( nextMetric.isInGroup( StatisticType.DOUBLE_SCORE ) )
                     {
-                        thresholdsMap.put( nextMetric, mapped );
+                        // Get the existing mapping or a new sorted set instantiated with the threshold comparator
+                        SortedSet<OneOrTwoThresholds> mapped =
+                                thresholdsMap.getOrDefault( nextMetric,
+                                                            new TreeSet<>( thresholdComparator ) );
+
+                        mapped.addAll( nextEntry.getValue() );
+
+                        // Add it to the map if not already there
+                        if ( !thresholdsMap.containsKey( nextMetric ) )
+                        {
+                            thresholdsMap.put( nextMetric, mapped );
+                        }
                     }
                 }
             }

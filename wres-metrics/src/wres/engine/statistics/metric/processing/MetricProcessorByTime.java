@@ -13,13 +13,13 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.SampleDataGroup;
-import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.BasicPool.Builder;
 import wres.datamodel.Slicer;
+import wres.datamodel.metrics.Metrics;
+import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
+import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticsForProject;
@@ -60,7 +60,8 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
     @Override
     public boolean hasCachedMetricOutput()
     {
-        return futures.stream().anyMatch( MetricFuturesByTime::hasFutureOutputs );
+        return futures.stream()
+                      .anyMatch( MetricFuturesByTime::hasFutureOutputs );
     }
 
     @Override
@@ -137,20 +138,16 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
      * @param input the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
-     * @param ignoreTheseMetrics a set of metrics within the prescribed group that should be ignored
      */
 
     void processDichotomousPairs( Pool<Pair<Boolean, Boolean>> input,
                                   MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
-                                  StatisticType outGroup,
-                                  Set<MetricConstants> ignoreTheseMetrics )
+                                  StatisticType outGroup )
     {
 
         if ( outGroup == StatisticType.DOUBLE_SCORE )
         {
-            futures.addDoubleScoreOutput( this.processDichotomousPairs( input,
-                                                                        this.dichotomousScalar,
-                                                                        ignoreTheseMetrics ) );
+            futures.addDoubleScoreOutput( this.processDichotomousPairs( input, this.dichotomousScalar ) );
         }
 
     }
@@ -217,7 +214,7 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
      * Constructor.
      * 
      * @param config the project configuration
-     * @param externalThresholds an optional set of canonical thresholds, may be null
+     * @param metrics the metrics to process
      * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
      * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
      * @param mergeSet a list of {@link StatisticType} whose outputs should be retained and merged across calls to
@@ -228,13 +225,13 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
      */
 
     MetricProcessorByTime( final ProjectConfig config,
-                           final ThresholdsByMetric externalThresholds,
+                           final Metrics metrics,
                            final ExecutorService thresholdExecutor,
                            final ExecutorService metricExecutor,
                            final Set<StatisticType> mergeSet )
             throws MetricParameterException
     {
-        super( config, externalThresholds, thresholdExecutor, metricExecutor, mergeSet );
+        super( config, metrics, thresholdExecutor, metricExecutor, mergeSet );
     }
 
     /**
@@ -252,7 +249,8 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
                                                       StatisticType outGroup )
     {
         // Find the thresholds for this group and for the required types
-        ThresholdsByMetric filtered = this.getThresholdsByMetric()
+        ThresholdsByMetric filtered = this.getMetrics()
+                                          .getThresholdsByMetric()
                                           .filterByGroup( SampleDataGroup.SINGLE_VALUED, outGroup )
                                           .filterByType( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
 
@@ -264,8 +262,6 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
         // Iterate the thresholds
         for ( ThresholdOuter threshold : union )
         {
-            Set<MetricConstants> ignoreTheseMetrics = filtered.doesNotHaveTheseMetricsForThisThreshold( threshold );
-
             // Add the quantiles to the threshold
             ThresholdOuter useMe = this.addQuantilesToThreshold( threshold, sorted );
             OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( useMe );
@@ -296,8 +292,7 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
 
             this.processSingleValuedPairs( pairs,
                                            futures,
-                                           outGroup,
-                                           ignoreTheseMetrics );
+                                           outGroup );
         }
     }
 
@@ -308,31 +303,26 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
      * @param input the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
-     * @param ignoreTheseMetrics a set of metrics within the prescribed group that should be ignored
      */
 
     private void processSingleValuedPairs( Pool<Pair<Double, Double>> input,
                                            MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
-                                           StatisticType outGroup,
-                                           Set<MetricConstants> ignoreTheseMetrics )
+                                           StatisticType outGroup )
     {
         switch ( outGroup )
         {
             case DOUBLE_SCORE:
                 futures.addDoubleScoreOutput( this.processSingleValuedPairs( input,
-                                                                             this.singleValuedScore,
-                                                                             ignoreTheseMetrics ) );
+                                                                             this.singleValuedScore ) );
                 break;
 
             case DIAGRAM:
                 futures.addDiagramOutput( this.processSingleValuedPairs( input,
-                                                                         this.singleValuedDiagrams,
-                                                                         ignoreTheseMetrics ) );
+                                                                         this.singleValuedDiagrams ) );
                 break;
             case BOXPLOT_PER_POOL:
                 futures.addBoxPlotOutputPerPool( this.processSingleValuedPairs( input,
-                                                                                this.singleValuedBoxPlot,
-                                                                                ignoreTheseMetrics ) );
+                                                                                this.singleValuedBoxPlot ) );
                 break;
             default:
                 throw new IllegalStateException( "The statistic group '" + outGroup
@@ -347,19 +337,16 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
      * @param <T> the type of {@link Statistic}
      * @param pairs the pairs
      * @param collection the collection of metrics
-     * @param ignoreTheseMetrics a set of metrics within the prescribed group that should ignored
      * @return the future result
      */
 
     private <T extends Statistic<?>> Future<List<T>>
             processSingleValuedPairs( Pool<Pair<Double, Double>> pairs,
-                                      MetricCollection<Pool<Pair<Double, Double>>, T, T> collection,
-                                      Set<MetricConstants> ignoreTheseMetrics )
+                                      MetricCollection<Pool<Pair<Double, Double>>, T, T> collection )
     {
-        return CompletableFuture.supplyAsync( () -> collection.apply( pairs, ignoreTheseMetrics ),
+        return CompletableFuture.supplyAsync( () -> collection.apply( pairs ),
                                               this.thresholdExecutor );
     }
-
 
     /**
      * Builds a metric future for a {@link MetricCollection} that consumes dichotomous pairs.
@@ -368,16 +355,14 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
      * @param threshold the threshold
      * @param pairs the pairs
      * @param collection the metric collection
-     * @param ignoreTheseMetrics a set of metrics within the prescribed group that should be ignored
      * @return true if the future was added successfully
      */
 
     private <T extends Statistic<?>> Future<List<T>>
             processDichotomousPairs( Pool<Pair<Boolean, Boolean>> pairs,
-                                     MetricCollection<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, T> collection,
-                                     Set<MetricConstants> ignoreTheseMetrics )
+                                     MetricCollection<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, T> collection )
     {
-        return CompletableFuture.supplyAsync( () -> collection.apply( pairs, ignoreTheseMetrics ),
+        return CompletableFuture.supplyAsync( () -> collection.apply( pairs ),
                                               this.thresholdExecutor );
     }
 

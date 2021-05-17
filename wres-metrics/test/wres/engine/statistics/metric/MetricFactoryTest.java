@@ -26,7 +26,9 @@ import wres.config.generated.ThresholdDataType;
 import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
-import wres.datamodel.MetricConstants;
+import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.metrics.Metrics;
+import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsGenerator;
 import wres.engine.statistics.metric.categorical.EquitableThreatScore;
 import wres.engine.statistics.metric.categorical.PeirceSkillScore;
@@ -374,7 +376,7 @@ public final class MetricFactoryTest
     public void testOfMetricProcessorByTimeSingleValuedPairs() throws MetricParameterException
     {
         assertTrue( MetricFactory.ofMetricProcessorForSingleValuedPairs( mockSingleValued,
-                                                                            null ) instanceof MetricProcessorByTimeSingleValuedPairs );
+                                                                         null ) instanceof MetricProcessorByTimeSingleValuedPairs );
     }
 
     /**
@@ -387,7 +389,7 @@ public final class MetricFactoryTest
     public void testOfMetricProcessorByTimeEnsemblePairs() throws MetricParameterException
     {
         assertTrue( MetricFactory.ofMetricProcessorForEnsemblePairs( mockEnsemble,
-                                                                        null ) instanceof MetricProcessorByTimeEnsemblePairs );
+                                                                     null ) instanceof MetricProcessorByTimeEnsemblePairs );
     }
 
     /**
@@ -401,9 +403,13 @@ public final class MetricFactoryTest
     public void testOfMetricProcessorByTimeSingleValuedPairsWithExternalThresholds()
             throws MetricParameterException
     {
+        ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( this.mockSingleValued );
+
+        Metrics metrics = Metrics.of( thresholdsByMetric, 0 );
+
         assertTrue( MetricFactory.ofMetricProcessorForSingleValuedPairs( mockSingleValued,
-                                                                            null,
-                                                                            null ) instanceof MetricProcessorByTimeSingleValuedPairs );
+                                                                         metrics,
+                                                                         null ) instanceof MetricProcessorByTimeSingleValuedPairs );
     }
 
     /**
@@ -416,9 +422,13 @@ public final class MetricFactoryTest
     public void testOfMetricProcessorByTimeEnsemblePairsWithExternalThresholds()
             throws MetricParameterException
     {
-        assertTrue( MetricFactory.ofMetricProcessorForEnsemblePairs( mockEnsemble,
-                ThresholdsGenerator.getThresholdsFromConfig(mockEnsemble),
-                                                                        null ) instanceof MetricProcessorByTimeEnsemblePairs );
+        ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( this.mockEnsemble );
+
+        Metrics metrics = Metrics.of( thresholdsByMetric, 0 );
+
+        assertTrue( MetricFactory.ofMetricProcessorForEnsemblePairs( this.mockEnsemble,
+                                                                     metrics,
+                                                                     null ) instanceof MetricProcessorByTimeEnsemblePairs );
     }
 
     /**

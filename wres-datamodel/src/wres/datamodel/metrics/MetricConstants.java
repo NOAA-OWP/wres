@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.metrics;
 
 import java.util.Arrays;
 import java.util.Collections;

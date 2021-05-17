@@ -38,10 +38,10 @@ import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeSeriesMetricConfig;
 import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.DataFactory;
-import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
@@ -501,7 +501,7 @@ public final class MetricConfigHelperTest
 
     /**
      * Tests the {@link MetricConfigHelper#hasTheseOutputsByThresholdLead(ProjectConfig, 
-     * wres.datamodel.MetricConstants.StatisticType)}.
+     * wres.datamodel.metrics.MetricConstants.StatisticType)}.
      * @throws MetricConfigException if the metric configuration is invalid
      */
 

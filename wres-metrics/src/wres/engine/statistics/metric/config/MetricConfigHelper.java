@@ -1,7 +1,5 @@
 package wres.engine.statistics.metric.config;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
@@ -19,9 +17,8 @@ import wres.config.generated.SummaryStatisticsName;
 import wres.config.generated.TimeSeriesMetricConfig;
 import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.DataFactory;
-import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.StatisticType;
-import wres.datamodel.thresholds.ThresholdsByMetric;
+import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.metrics.MetricConstants.StatisticType;
 
 /**
  * A helper class for interpreting and using the {@link ProjectConfig} in the context of verification metrics.
@@ -133,52 +130,6 @@ public final class MetricConfigHelper
         returnMe.addAll( MetricConfigHelper.getTimeSeriesMetricsFromConfig( config ) );
 
         return Collections.unmodifiableSet( returnMe );
-    }
-
-    /**
-     * Reads the internally configured thresholds, combines them with any supplied, external, thresholds, and 
-     * returns the union of all thresholds.
-     *
-     * @param external an optional source of external thresholds, may be null
-     * @return the union of internal and external thresholds
-     * @throws MetricConfigException if the metric configuration is invalid
-     * @throws NullPointerException if the projectConfig or dataFactory is null
-     */
-
-    public static ThresholdsByMetric getThresholdsFromConfig( ThresholdsByMetric external )
-    {
-        if ( Objects.nonNull( external ) )
-        {
-            return MetricConfigHelper.getThresholdsFromConfig( Arrays.asList( external ) );
-        }
-
-        return null;
-    }
-
-    /**
-     * Reads the internally configured thresholds, combines them with any supplied, external, thresholds, and 
-     * returns the union of all thresholds.
-     *
-     * @param externalThresholds an optional source of external thresholds, may be null
-     * @return the union of internal and external thresholds
-     * @throws MetricConfigException if the metric configuration is invalid
-     * @throws NullPointerException if the projectConfig or dataFactory is null
-     */
-
-    public static ThresholdsByMetric getThresholdsFromConfig( Collection<ThresholdsByMetric> externalThresholds )
-    {
-        ThresholdsByMetric allThresholds = null;
-
-        for (ThresholdsByMetric thresholds : externalThresholds) {
-            if (allThresholds == null) {
-                allThresholds = thresholds;
-            }
-            else {
-                allThresholds = allThresholds.unionWithThisStore(thresholds);
-            }
-        }
-
-        return allThresholds;
     }
 
     /**

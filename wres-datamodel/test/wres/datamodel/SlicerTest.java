@@ -22,6 +22,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.datamodel.Ensemble.Labels;
+import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.BasicPool;
 import wres.datamodel.pools.PoolMetadata;

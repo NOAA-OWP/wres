@@ -12,7 +12,7 @@ import java.util.concurrent.Future;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.MetricConstants.StatisticType;
+import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;

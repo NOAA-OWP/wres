@@ -11,9 +11,9 @@ import java.util.function.BiPredicate;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
-import wres.datamodel.MetricConstants;
 import wres.datamodel.MissingValues;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.metrics.MetricConstants;
 
 /**
  * Tests the {@link FunctionFactory}.

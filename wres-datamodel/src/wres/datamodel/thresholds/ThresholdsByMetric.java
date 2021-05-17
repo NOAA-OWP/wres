@@ -17,9 +17,9 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.SampleDataGroup;
-import wres.datamodel.MetricConstants.StatisticType;
+import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
+import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 
 /**
@@ -505,14 +505,7 @@ public class ThresholdsByMetric
 
     public Set<MetricConstants> hasThresholdsForTheseMetrics()
     {
-        Set<MetricConstants> returnMe = new HashSet<>();
-
-        for ( ThresholdGroup nextType : ThresholdGroup.values() )
-        {
-            returnMe.addAll( this.getThresholds( nextType ).keySet() );
-        }
-
-        return Collections.unmodifiableSet( returnMe );
+        return this.getMetrics();
     }
 
     /**

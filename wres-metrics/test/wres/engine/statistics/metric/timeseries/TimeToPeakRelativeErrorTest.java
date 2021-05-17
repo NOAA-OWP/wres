@@ -11,7 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 import com.google.protobuf.Timestamp;
 
-import wres.datamodel.MetricConstants;
+import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;

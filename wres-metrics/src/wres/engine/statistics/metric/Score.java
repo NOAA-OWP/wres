@@ -1,6 +1,6 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.MetricConstants.MetricGroup;
+import wres.datamodel.metrics.MetricConstants.MetricGroup;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.statistics.ScoreStatistic;
 

@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -21,14 +22,15 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.ProjectConfig;
 import wres.control.ProcessorHelper.Executors;
+import wres.control.ProcessorHelper.MetricsAndThresholds;
 import wres.control.ProcessorHelper.SharedWriters;
 import wres.datamodel.Ensemble;
 import wres.datamodel.FeatureTuple;
-import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.metrics.Metrics;
+import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.statistics.StatisticsForProject;
-import wres.datamodel.statistics.StatisticsForProject.Builder;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -150,9 +152,11 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         // Report
         LOGGER.debug( "Started feature '{}'", this.feature );
 
-        final ProjectConfig projectConfig = this.resolvedProject.getProjectConfig();
-        final ThresholdsByMetric thresholds =
-                this.resolvedProject.getThresholdForFeature( this.feature );
+        ProjectConfig projectConfig = this.resolvedProject.getProjectConfig();
+        List<MetricsAndThresholds> metricsAndThresholds = this.resolvedProject.getMetricsAndThresholds();
+
+        // Get the metrics to process
+        List<Metrics> metrics = this.getMetrics( metricsAndThresholds );
 
         // TODO: do NOT rely on the declared type. Instead, determine it, post-ingest,
         // from the ResolvedProject. See #57301.
@@ -184,15 +188,13 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                     basePairsWriter = this.sharedWriters.getBaselineSampleDataWriters().getEnsembleWriter();
                 }
 
-                MetricProcessor<Pool<Pair<Double, Ensemble>>> processor =
-                        MetricFactory.ofMetricProcessorForEnsemblePairs( projectConfig,
-                                                                         thresholds,
-                                                                         this.executors.getThresholdExecutor(),
-                                                                         this.executors.getMetricExecutor() );
+                List<MetricProcessor<Pool<Pair<Double, Ensemble>>>> processors =
+                        this.getEnsembleProcessors( projectConfig,
+                                                    metrics );
 
                 return this.processFeature( this.evaluation,
                                             projectConfig,
-                                            processor,
+                                            processors,
                                             pools,
                                             pairsWriter,
                                             basePairsWriter );
@@ -218,15 +220,13 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                     basePairsWriter = this.sharedWriters.getBaselineSampleDataWriters().getSingleValuedWriter();
                 }
 
-                MetricProcessor<Pool<Pair<Double, Double>>> processor =
-                        MetricFactory.ofMetricProcessorForSingleValuedPairs( projectConfig,
-                                                                             thresholds,
-                                                                             this.executors.getThresholdExecutor(),
-                                                                             this.executors.getMetricExecutor() );
+                List<MetricProcessor<Pool<Pair<Double, Double>>>> processors =
+                        this.getSingleValuedProcessors( projectConfig,
+                                                        metrics );
 
                 return this.processFeature( this.evaluation,
                                             projectConfig,
-                                            processor,
+                                            processors,
                                             pools,
                                             pairsWriter,
                                             basePairsWriter );
@@ -245,7 +245,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @param <R> the right data type
      * @param evaluation the evaluation
      * @param projectConfig the project declaration
-     * @param processor the metric processor
+     * @param processors the metric processors
      * @param pools the data pools
      * @param pairsWriter the pairs writer
      * @param basePairsWriter the baseline pairs writer
@@ -254,7 +254,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
     private <L, R> FeatureProcessingResult processFeature( Evaluation evaluation,
                                                            ProjectConfig projectConfig,
-                                                           MetricProcessor<Pool<Pair<L, R>>> processor,
+                                                           List<MetricProcessor<Pool<Pair<L, R>>>> processors,
                                                            List<Supplier<Pool<Pair<L, R>>>> pools,
                                                            PairsWriter<L, R> pairsWriter,
                                                            PairsWriter<L, R> basePairsWriter )
@@ -269,7 +269,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
         // Something published?
         AtomicBoolean published = new AtomicBoolean();
-       
+
         for ( Supplier<Pool<Pair<L, R>>> poolSupplier : pools )
         {
             // Behold, the feature processing pipeline
@@ -281,14 +281,19 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                      // Write the baseline pairs, as needed
                                      .thenApply( this.getPairWritingTask( true, basePairsWriter, projectConfig ) )
                                      // Compute the statistics
-                                     .thenApply( this.getStatisticsProcessingTask( processor, projectConfig ) )
+                                     .thenApply( this.getStatisticsProcessingTask( processors, projectConfig ) )
                                      // Publish the statistics for awaiting format consumers
                                      .thenAcceptAsync( statistics -> {
+
+                                         Set<StatisticType> cachedTypes = processors.stream()
+                                                                                    .flatMap( next -> next.getMetricOutputTypesToCache()
+                                                                                                          .stream() )
+                                                                                    .collect( Collectors.toSet() );
 
                                          boolean success = this.publish( evaluation,
                                                                          statistics,
                                                                          this.getGroupId(),
-                                                                         processor.getMetricOutputTypesToCache() );
+                                                                         cachedTypes );
 
                                          // Notify that something was published
                                          // This is needed to confirm group completion - cannot complete a message
@@ -318,14 +323,17 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             Pipelines.doAllOrException( listOfFutures ).join();
 
             // Publish any end of pipeline/cached statistics and notify complete
-            if ( processor.hasCachedMetricOutput() )
+            for ( MetricProcessor<Pool<Pair<L, R>>> processor : processors )
             {
-                this.publish( evaluation,
-                              processor.getCachedMetricOutput(),
-                              this.getGroupId(),
-                              Collections.emptySet() );
+                if ( processor.hasCachedMetricOutput() )
+                {
+                    this.publish( evaluation,
+                                  processor.getCachedMetricOutput(),
+                                  this.getGroupId(),
+                                  Collections.emptySet() );
 
-                published.set( true );
+                    published.set( true );
+                }
             }
 
             // Published? Then mark complete.
@@ -463,17 +471,19 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * 
      * @param <L> the left data type
      * @param <R> the right data type
-     * @param processor the metric processor
+     * @param processors the metric processors
      * @param projectConfig the project declaration
      * @return a function that consumes a pool and produces statistics
      */
 
     private <L, R> Function<Pool<Pair<L, R>>, StatisticsForProject>
-            getStatisticsProcessingTask( MetricProcessor<Pool<Pair<L, R>>> processor,
+            getStatisticsProcessingTask( List<MetricProcessor<Pool<Pair<L, R>>>> processors,
                                          ProjectConfig projectConfig )
     {
         return pool -> {
             Objects.requireNonNull( pool );
+
+            StatisticsForProject.Builder builder = new StatisticsForProject.Builder();
 
             // No data in the composition
             if ( pool.getRawData().isEmpty()
@@ -481,38 +491,113 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             {
                 LOGGER.debug( "Empty pool discovered for {}: no statistics will be produced.", pool.getMetadata() );
 
-                Builder builder = new Builder();
-
                 // Empty container
                 return builder.build();
             }
 
-            StatisticsForProject statistics = processor.apply( pool );
-
-            // Compute separate statistics for the baseline?
-            if ( pool.hasBaseline() && projectConfig.getInputs().getBaseline().isSeparateMetrics() )
+            // Implement all processing and store the results
+            try
             {
-                LOGGER.debug( "Computing separate statistics for the baseline pairs associated with pool {}.",
-                              pool.getMetadata() );
 
-                StatisticsForProject baselineStatistics = processor.apply( pool.getBaselineData() );
-
-                try
+                for ( MetricProcessor<Pool<Pair<L, R>>> processor : processors )
                 {
-                    statistics = new Builder().addStatistics( statistics )
-                                              .addStatistics( baselineStatistics )
-                                              .build();
+                    StatisticsForProject statistics = processor.apply( pool );
+                    builder.addStatistics( statistics );
                 }
-                catch ( InterruptedException e )
-                {
-                    Thread.currentThread().interrupt();
 
-                    throw new WresProcessingException( this.errorMessage, e );
+                // Compute separate statistics for the baseline?
+                if ( pool.hasBaseline() && projectConfig.getInputs().getBaseline().isSeparateMetrics() )
+                {
+                    LOGGER.debug( "Computing separate statistics for the baseline pairs associated with pool {}.",
+                                  pool.getMetadata() );
+
+                    for ( MetricProcessor<Pool<Pair<L, R>>> processor : processors )
+                    {
+                        StatisticsForProject statistics = processor.apply( pool.getBaselineData() );
+                        builder.addStatistics( statistics );
+                    }
                 }
             }
+            catch ( InterruptedException e )
+            {
+                Thread.currentThread().interrupt();
 
-            return statistics;
+                throw new WresProcessingException( this.errorMessage, e );
+            }
+
+            return builder.build();
         };
+    }
+
+    /**
+     * @param projectConfig the project configuration
+     * @param metrics the metrics
+     * @return the ensemble processors
+     * @throws MetricParameterException if any metric parameters are incorrect
+     */
+
+    private List<MetricProcessor<Pool<Pair<Double, Ensemble>>>> getEnsembleProcessors( ProjectConfig projectConfig,
+                                                                                       List<Metrics> metrics )
+            throws MetricParameterException
+    {
+        List<MetricProcessor<Pool<Pair<Double, Ensemble>>>> processors = new ArrayList<>();
+
+        for ( Metrics nextMetrics : metrics )
+        {
+            MetricProcessor<Pool<Pair<Double, Ensemble>>> nextProcessor =
+                    MetricFactory.ofMetricProcessorForEnsemblePairs( projectConfig,
+                                                                     nextMetrics,
+                                                                     this.executors.getThresholdExecutor(),
+                                                                     this.executors.getMetricExecutor() );
+            processors.add( nextProcessor );
+        }
+
+        return Collections.unmodifiableList( processors );
+    }
+
+    /**
+     * @param projectConfig the project configuration
+     * @param metrics the metrics
+     * @return the single-valued processors
+     * @throws MetricParameterException if any metric parameters are incorrect
+     */
+
+    private List<MetricProcessor<Pool<Pair<Double, Double>>>> getSingleValuedProcessors( ProjectConfig projectConfig,
+                                                                                         List<Metrics> metrics )
+            throws MetricParameterException
+    {
+        List<MetricProcessor<Pool<Pair<Double, Double>>>> processors = new ArrayList<>();
+
+        for ( Metrics nextMetrics : metrics )
+        {
+            MetricProcessor<Pool<Pair<Double, Double>>> nextProcessor =
+                    MetricFactory.ofMetricProcessorForSingleValuedPairs( projectConfig,
+                                                                         nextMetrics,
+                                                                         this.executors.getThresholdExecutor(),
+                                                                         this.executors.getMetricExecutor() );
+            processors.add( nextProcessor );
+        }
+
+        return Collections.unmodifiableList( processors );
+    }
+
+    /**
+     * @param metricsAndThresholds the metrics and thresholds
+     * @return the metrics from the thresholds and metrics 
+     */
+
+    private List<Metrics> getMetrics( List<MetricsAndThresholds> metricsAndThresholds )
+    {
+        List<Metrics> metrics = new ArrayList<>();
+
+        for ( MetricsAndThresholds next : metricsAndThresholds )
+        {
+            ThresholdsByMetric thresholds = next.getThresholdsByMetric( this.feature );
+            Metrics nextMetrics = Metrics.of( thresholds, next.getMinimumSampleSize() );
+            metrics.add( nextMetrics );
+        }
+
+        return Collections.unmodifiableList( metrics );
     }
 
 }

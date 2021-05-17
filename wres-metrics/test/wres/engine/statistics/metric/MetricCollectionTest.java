@@ -6,9 +6,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -24,11 +22,10 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 
-import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
 import wres.datamodel.Slicer;
+import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.Statistic;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
@@ -39,14 +36,9 @@ import wres.engine.statistics.metric.categorical.ProbabilityOfFalseDetection;
 import wres.engine.statistics.metric.categorical.ThreatScore;
 import wres.engine.statistics.metric.discreteprobability.BrierScore;
 import wres.engine.statistics.metric.discreteprobability.BrierSkillScore;
-import wres.engine.statistics.metric.singlevalued.CorrelationPearsons;
 import wres.engine.statistics.metric.singlevalued.MeanError;
 import wres.engine.statistics.metric.singlevalued.MeanSquareError;
 import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore;
-import wres.statistics.generated.DoubleScoreMetric;
-import wres.statistics.generated.DoubleScoreStatistic;
-import wres.statistics.generated.MetricName;
-import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link MetricCollection}.
@@ -327,59 +319,6 @@ public class MetricCollectionTest
     }
 
     /**
-     * Expects a {@link MetricCalculationException} when calling 
-     * {@link MetricCollection#apply(wres.datamodel.pools.Pool, Set)} with a null set of metrics to ignore.
-     * 
-     * @throws MetricCalculationException if the execution fails
-     * @throws MetricParameterException if the metric construction fails
-     */
-
-    @Test
-    public void testApplyWithNullSetToIgnore() throws MetricParameterException
-    {
-
-        //Create a collection of metrics that consume single-valued pairs and produce a scalar output
-        final MetricCollectionBuilder<Pool<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> n =
-                MetricCollectionBuilder.of();
-
-        final Pool<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
-
-        final MetricCollection<Pool<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> collection =
-                n.addMetric( MeanError.of() ).setExecutorService( metricPool ).build();
-
-        //Null input
-        MetricCalculationException expected =
-                assertThrows( MetricCalculationException.class, () -> collection.apply( input, null ) );
-
-        assertEquals( "Specify a non-null set of metrics to ignore, such as the empty set.", expected.getMessage() );
-    }
-
-    /**
-     * Expects an empty response when calling
-     * {@link MetricCollection#apply(wres.datamodel.pools.Pool, Set)} with a set of metrics to ignore that 
-     * includes all metrics in the collection.
-     * 
-     * @throws MetricCalculationException if the execution fails
-     * @throws MetricParameterException if the metric construction fails
-     */
-
-    @Test
-    public void testApplyWithAllMetricsToIgnore() throws MetricParameterException
-    {
-
-        //Create a collection of metrics that consume single-valued pairs and produce a scalar output
-        MetricCollectionBuilder<Pool<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> n =
-                MetricCollectionBuilder.of();
-
-        Pool<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
-
-        MetricCollection<Pool<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> collection =
-                n.addMetric( MeanError.of() ).setExecutorService( this.metricPool ).build();
-
-        assertEquals( collection.apply( input, Collections.singleton( MetricConstants.MEAN_ERROR ) ), List.of() );
-    }
-
-    /**
      * Expects a {@link MetricParameterException} when building a {@link MetricCollection} without an 
      * {@link ExecutorService}.
      * 
@@ -624,54 +563,6 @@ public class MetricCollectionTest
 
         assertTrue( testMe.test( actualFifth, expectedFifth ) );
 
-    }
-
-    /**
-     * Construct a collection of metrics that consume single-valued pairs and produce scalar outputs. Computes and 
-     * benchmarks the output when specifying a non-empty set of metrics to ignore for
-     * {@link MetricCollection#apply(wres.datamodel.pools.Pool, Set)}.
-     * @throws MetricParameterException if the metric construction fails 
-     */
-
-    @Test
-    public void testOfSingleValuedScalarWithIgnore() throws MetricParameterException
-    {
-        //Generate some data
-        final Pool<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
-
-        //Add some appropriate metrics to the collection
-        final MetricCollection<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> collection =
-                MetricFactory.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
-                                                             MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
-                                                             MetricConstants.MEAN_SQUARE_ERROR,
-                                                             MetricConstants.COEFFICIENT_OF_DETERMINATION );
-        //Compute them, ignoring two metrics
-        Set<MetricConstants> ignore = new HashSet<>( Arrays.asList( MetricConstants.COEFFICIENT_OF_DETERMINATION,
-                                                                    MetricConstants.MEAN_SQUARE_ERROR ) );
-        List<DoubleScoreStatisticOuter> actual = collection.apply( input, ignore );
-        PoolMetadata outM = PoolMetadata.of();
-
-        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setMetric( CorrelationPearsons.MAIN )
-                                                                               .setValue( 0.9999999910148981 )
-                                                                               .build();
-
-        DoubleScoreMetric rho =
-                DoubleScoreMetric.newBuilder()
-                                 .setName( MetricName.PEARSON_CORRELATION_COEFFICIENT )
-                                 .build();
-
-        DoubleScoreStatistic score =
-                DoubleScoreStatistic.newBuilder()
-                                    .setMetric( rho )
-                                    .addStatistics( component )
-                                    .build();
-
-        List<DoubleScoreStatisticOuter> expected =
-                Arrays.asList( DoubleScoreStatisticOuter.of( score, outM ) );
-
-        //Check them   
-        assertEquals( expected, actual );
     }
 
     @After

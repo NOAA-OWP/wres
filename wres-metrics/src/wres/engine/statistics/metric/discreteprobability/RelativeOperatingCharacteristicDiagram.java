@@ -9,10 +9,10 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
 
-import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
 import wres.datamodel.MissingValues;
 import wres.datamodel.Slicer;
+import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;

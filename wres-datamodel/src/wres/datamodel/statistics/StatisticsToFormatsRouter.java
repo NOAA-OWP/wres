@@ -18,8 +18,8 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DestinationType;
 import wres.config.generated.LeftOrRightOrBaseline;
-import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
+import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.PoolMetadata;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.BoxplotStatistic;

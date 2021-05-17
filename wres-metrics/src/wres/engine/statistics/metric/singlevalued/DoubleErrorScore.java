@@ -8,11 +8,11 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.MissingValues;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.metrics.MetricConstants.MetricGroup;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.DoubleErrorFunction;
 import wres.engine.statistics.metric.FunctionFactory;

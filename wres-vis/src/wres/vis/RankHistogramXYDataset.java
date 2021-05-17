@@ -3,7 +3,7 @@ package wres.vis;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
-import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.metrics.MetricConstants.MetricDimension;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 
 class RankHistogramXYDataset extends DiagramStatisticXYDataset
@@ -21,9 +21,9 @@ class RankHistogramXYDataset extends DiagramStatisticXYDataset
      */
 
     RankHistogramXYDataset( final List<DiagramStatisticOuter> input,
-                                   final MetricDimension xConstant,
-                                   final MetricDimension yConstant,
-                                   final ChronoUnit durationUnits )
+                            final MetricDimension xConstant,
+                            final MetricDimension yConstant,
+                            final ChronoUnit durationUnits )
     {
         super( input, xConstant, yConstant, durationUnits );
     }
