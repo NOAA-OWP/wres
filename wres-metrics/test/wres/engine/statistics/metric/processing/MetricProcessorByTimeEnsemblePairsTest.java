@@ -34,10 +34,10 @@ import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
-import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.SampleDataGroup;
-import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
+import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.OneOrTwoDoubles;
@@ -699,10 +699,10 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                  StatisticType.set() );
         //Check for the expected number of metrics
         //One fewer than total, as sample size appears in both ensemble and single-valued
-        assertTrue( processor.metrics.size() == SampleDataGroup.ENSEMBLE.getMetrics().size()
-                                                + SampleDataGroup.DISCRETE_PROBABILITY.getMetrics().size()
-                                                + SampleDataGroup.SINGLE_VALUED.getMetrics().size()
-                                                - 1 );
+        assertTrue( processor.metrics.getMetrics().size() == SampleDataGroup.ENSEMBLE.getMetrics().size()
+                                                             + SampleDataGroup.DISCRETE_PROBABILITY.getMetrics().size()
+                                                             + SampleDataGroup.SINGLE_VALUED.getMetrics().size()
+                                                             - 1 );
     }
 
     @Test

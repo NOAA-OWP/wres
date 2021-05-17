@@ -13,13 +13,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.Ensemble;
-import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.BasicPool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.metrics.MetricConstants.MetricDimension;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.statistics.generated.BoxplotMetric;

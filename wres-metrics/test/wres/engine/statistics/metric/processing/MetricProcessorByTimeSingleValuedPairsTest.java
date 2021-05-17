@@ -35,10 +35,11 @@ import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeSeriesMetricConfig;
 import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.FeatureTuple;
-import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.SampleDataGroup;
-import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.metrics.Metrics;
+import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
+import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
@@ -123,10 +124,15 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     {
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithoutThresholds.xml";
 
-        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) )
+                                                .getProjectConfig();
+
+        ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( config );
+        Metrics metrics = Metrics.of( thresholdsByMetric, 0 );
+
         MetricProcessor<Pool<Pair<Double, Double>>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
-                                                                     ThresholdsGenerator.getThresholdsFromConfig( config ),
+                                                                     metrics,
                                                                      Executors.newSingleThreadExecutor(),
                                                                      Executors.newSingleThreadExecutor(),
                                                                      null );
@@ -299,7 +305,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         int expected = SampleDataGroup.SINGLE_VALUED.getMetrics().size()
                        + SampleDataGroup.DICHOTOMOUS.getMetrics().size()
                        - MetricConstants.CONTINGENCY_TABLE.getAllComponents().size();
-        int actual = processor.metrics.size();
+        int actual = processor.metrics.getMetrics().size();
 
         assertEquals( expected, actual );
     }
@@ -719,9 +725,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         // Ensure that the entire set of thresholds is assembled to be passed to the processor
         thresholdsByMetric =
                 ThresholdsGenerator.getThresholdsFromConfig( config ).unionWithThisStore( thresholdsByMetric );
+
+        Metrics metrics = Metrics.of( thresholdsByMetric, 0 );
+
         MetricProcessor<Pool<Pair<Double, Double>>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
-                                                                     thresholdsByMetric,
+                                                                     metrics,
                                                                      StatisticType.set() );
 
         Pool<Pair<Double, Double>> pairs = MetricTestDataFactory.getSingleValuedPairsFour();

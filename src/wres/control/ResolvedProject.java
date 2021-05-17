@@ -3,18 +3,16 @@ package wres.control;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
-import wres.config.MetricConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
+import wres.control.ProcessorHelper.MetricsAndThresholds;
 import wres.datamodel.FeatureTuple;
-import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.StatisticType;
-import wres.datamodel.thresholds.ThresholdsByMetric;
+import wres.datamodel.metrics.MetricConstants;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 
 /**
@@ -35,26 +33,26 @@ class ResolvedProject
     private final ProjectConfigPlus projectConfigPlus;
     private final Set<FeatureTuple> decomposedFeatures;
     private final String projectIdentifier;
-    private final Map<FeatureTuple, ThresholdsByMetric> thresholds;
+    private final List<MetricsAndThresholds> metricsAndThresholds;
     private final Path outputDirectory;
 
     private ResolvedProject( ProjectConfigPlus projectConfigPlus,
                              Set<FeatureTuple> decomposedFeatures,
                              String projectIdentifier,
-                             Map<FeatureTuple, ThresholdsByMetric> thresholds,
+                             List<MetricsAndThresholds> thresholds,
                              Path outputDirectory )
     {
         this.projectConfigPlus = projectConfigPlus;
         this.decomposedFeatures = Collections.unmodifiableSet( decomposedFeatures );
         this.projectIdentifier = projectIdentifier;
-        this.thresholds = Collections.unmodifiableMap( thresholds );
+        this.metricsAndThresholds = Collections.unmodifiableList( thresholds );
         this.outputDirectory = outputDirectory;
     }
 
     static ResolvedProject of( ProjectConfigPlus projectConfigPlus,
                                Set<FeatureTuple> decomposedFeatures,
                                String projectIdentifier,
-                               Map<FeatureTuple, ThresholdsByMetric> thresholds,
+                               List<MetricsAndThresholds> thresholds,
                                Path outputDirectory )
     {
         return new ResolvedProject( projectConfigPlus,
@@ -135,51 +133,14 @@ class ResolvedProject
         return this.getProjectConfigPlus()
                    .getGraphicsStrings();
     }
-
-    private Map<FeatureTuple, ThresholdsByMetric> getThresholds()
-    {
-        return this.thresholds;
-    }
-
-    ThresholdsByMetric getThresholdForFeature( FeatureTuple featureTuple )
-    {
-        return this.getThresholds().get( featureTuple );
-    }
     
     /**
-     * Returns the cardinality of the set of thresholds that apply across 
-     * all features. These include thresholds that are sourced externally 
-     * and apply to specific features and thresholds that are sourced
-     * from within the project configuration and apply to all features. 
-     * The cardinality refers to the set of composed thresholds used
-     * to produce the metric output and not the total number of 
-     * thresholds, i.e. there is one composed threshold for each output.  
-     * 
-     * @param outGroup an optional output group for which the 
-     *            cardinality is required, may be null for all groups
-     * @return the cardinality of the set of thresholds
-     * @throws MetricConfigException if the configuration of 
-     *            thresholds is incorrect
+     * @return the metrics and thresholds.
      */
-    
-    int getThresholdCount( StatisticType outGroup )
-    {
-        // Obtain the union of internal and external thresholds
-        ThresholdsByMetric thresholds =
-                MetricConfigHelper.getThresholdsFromConfig( this.thresholds.values() );
-        // Filter the thresholds if required
-        if( Objects.nonNull( outGroup ) )
-        {
-            thresholds = thresholds.filterByGroup( outGroup );
-        }
-        
-        // Return the cardinality of the set of composed thresholds
-        return thresholds.unionOfOneOrTwoThresholds().size();
-    }
 
-    int getFeatureCount()
+    List<MetricsAndThresholds> getMetricsAndThresholds()
     {
-        return this.getDecomposedFeatures().size();
+        return this.metricsAndThresholds;
     }
 
     /**
@@ -203,7 +164,7 @@ class ResolvedProject
 
         return Collections.unmodifiableSet( result );
     }
-
+    
     /**
      * @return the shared output directory to store output files
      */

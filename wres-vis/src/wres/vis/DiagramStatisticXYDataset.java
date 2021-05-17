@@ -8,8 +8,8 @@ import java.util.SortedSet;
 
 import org.jfree.data.xy.XYDataset;
 
-import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Slicer;
+import wres.datamodel.metrics.MetricConstants.MetricDimension;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;

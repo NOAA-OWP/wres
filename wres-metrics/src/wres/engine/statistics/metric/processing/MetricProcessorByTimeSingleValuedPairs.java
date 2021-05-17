@@ -23,10 +23,11 @@ import wres.config.MetricConfigException;
 import wres.config.ProjectConfigs;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
-import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.SampleDataGroup;
-import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.metrics.Metrics;
+import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
+import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.BasicPool;
@@ -98,7 +99,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                           + "time window {}, since time-series metrics are not required.",
                           MessageFactory.parse( input.getMetadata().getPool().getGeometryTuples( 0 ) ),
                           inputNoMissing.getMetadata().getTimeWindow() );
-            
+
             inputNoMissing = TimeSeriesSlicer.filter( input,
                                                       Slicer.leftAndRight( MetricProcessor.ADMISSABLE_DATA ),
                                                       MetricProcessor.ADMISSABLE_DATA );
@@ -141,7 +142,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      * Hidden constructor.
      * 
      * @param config the project configuration
-     * @param externalThresholds an optional set of external thresholds, may be null
+     * @param metrics the metrics to process
      * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
      * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
      * @param mergeSet a list of {@link StatisticType} whose outputs should be retained and merged across calls to
@@ -152,13 +153,13 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      */
 
     public MetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
-                                                   final ThresholdsByMetric externalThresholds,
+                                                   final Metrics metrics,
                                                    final ExecutorService thresholdExecutor,
                                                    final ExecutorService metricExecutor,
                                                    final Set<StatisticType> mergeSet )
             throws MetricParameterException
     {
-        super( config, externalThresholds, thresholdExecutor, metricExecutor, mergeSet );
+        super( config, metrics, thresholdExecutor, metricExecutor, mergeSet );
 
         //Construct the metrics
 
@@ -221,7 +222,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         }
 
         //Check the metrics individually, as some may belong to multiple groups
-        for ( MetricConstants next : this.metrics )
+        for ( MetricConstants next : this.getMetrics().getMetrics() )
         {
             if ( ! ( next.isInGroup( SampleDataGroup.SINGLE_VALUED )
                      || next.isInGroup( SampleDataGroup.SINGLE_VALUED_TIME_SERIES )
@@ -234,7 +235,8 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
             // Thresholds required for dichotomous metrics
             if ( next.isInGroup( SampleDataGroup.DICHOTOMOUS )
-                 && !this.getThresholdsByMetric()
+                 && !this.getMetrics()
+                         .getThresholdsByMetric()
                          .hasThresholdsForThisMetricAndTheseTypes( next,
                                                                    ThresholdGroup.PROBABILITY,
                                                                    ThresholdGroup.VALUE ) )
@@ -355,7 +357,8 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                      StatisticType outGroup )
     {
         // Find the thresholds for this group and for the required types
-        ThresholdsByMetric filtered = this.getThresholdsByMetric()
+        ThresholdsByMetric filtered = this.getMetrics()
+                                          .getThresholdsByMetric()
                                           .filterByGroup( SampleDataGroup.DICHOTOMOUS, outGroup )
                                           .filterByType( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
 
@@ -370,8 +373,6 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
             ThresholdOuter useMe = this.addQuantilesToThreshold( threshold, sorted );
             OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( useMe );
-
-            Set<MetricConstants> ignoreTheseMetrics = filtered.doesNotHaveTheseMetricsForThisThreshold( threshold );
 
             //Define a mapper to convert the single-valued pairs to dichotomous pairs
             Function<Pair<Double, Double>, Pair<Boolean, Boolean>> mapper =
@@ -396,8 +397,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
             this.processDichotomousPairs( transformed,
                                           futures,
-                                          outGroup,
-                                          ignoreTheseMetrics );
+                                          outGroup );
 
         }
     }
@@ -416,7 +416,8 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                          StatisticType outGroup )
     {
         // Find the thresholds for this group and for the required types
-        ThresholdsByMetric filtered = this.getThresholdsByMetric()
+        ThresholdsByMetric filtered = this.getMetrics()
+                                          .getThresholdsByMetric()
                                           .filterByGroup( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, outGroup )
                                           .filterByType( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
 
@@ -428,8 +429,6 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         // Iterate the thresholds
         for ( ThresholdOuter threshold : union )
         {
-            Set<MetricConstants> ignoreTheseMetrics = filtered.doesNotHaveTheseMetricsForThisThreshold( threshold );
-
             // Add quantiles to threshold
             ThresholdOuter useMe = this.addQuantilesToThreshold( threshold, sorted );
             OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( useMe );
@@ -465,9 +464,8 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             // Build the future result
             final Pool<Pair<Double, Double>> finalPairs = pairs;
             Future<List<DurationDiagramStatisticOuter>> output =
-                    CompletableFuture.supplyAsync( () -> this.timeSeries.apply( finalPairs, ignoreTheseMetrics ),
-                                                   this.thresholdExecutor );
-            
+                    CompletableFuture.supplyAsync( () -> this.timeSeries.apply( finalPairs ), this.thresholdExecutor );
+
             // Add the future result to the store
             futures.addDurationDiagramOutput( output );
         }

@@ -7,9 +7,9 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.MetricConstants;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.Slicer;
+import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.engine.statistics.metric.Diagram;

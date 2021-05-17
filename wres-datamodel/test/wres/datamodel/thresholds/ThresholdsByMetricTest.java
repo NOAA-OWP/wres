@@ -12,10 +12,10 @@ import java.util.Set;
 
 import org.junit.Test;
 
-import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.SampleDataGroup;
-import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
+import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.thresholds.ThresholdsByMetric.Builder;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
@@ -496,7 +496,7 @@ public class ThresholdsByMetricTest
     }
 
     /**
-     * Tests the {@link ThresholdsByMetric#filterByGroup(wres.datamodel.MetricConstants.SampleDataGroup)}.
+     * Tests the {@link ThresholdsByMetric#filterByGroup(wres.datamodel.metrics.MetricConstants.SampleDataGroup)}.
      */
 
     @Test

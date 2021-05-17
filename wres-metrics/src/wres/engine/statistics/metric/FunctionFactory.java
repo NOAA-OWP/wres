@@ -16,10 +16,10 @@ import java.util.function.ToDoubleFunction;
 
 import org.apache.commons.math3.stat.descriptive.rank.Median;
 
-import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.MissingValues;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.metrics.MetricConstants.MetricGroup;
 
 /**
  * A factory class for constructing elementary functions.

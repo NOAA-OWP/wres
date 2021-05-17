@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.Ensemble.Labels;
+import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.BasicPool.Builder;

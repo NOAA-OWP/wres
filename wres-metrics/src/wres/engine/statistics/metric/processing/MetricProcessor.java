@@ -15,12 +15,13 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.SampleDataGroup;
-import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
+import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.metrics.Metrics;
+import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
+import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.Statistic;
@@ -33,7 +34,6 @@ import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
-import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
@@ -106,12 +106,6 @@ public abstract class MetricProcessor<S extends Pool<?>>
     final ThresholdOuter allDataThreshold;
 
     /**
-     * Set of thresholds associated with each metric.
-     */
-
-    final ThresholdsByMetric thresholdsByMetric;
-
-    /**
      * A {@link MetricCollection} of {@link Metric} that consume single-valued pairs and produce {@link ScoreStatistic}.
      */
 
@@ -135,13 +129,13 @@ public abstract class MetricProcessor<S extends Pool<?>>
      * A {@link MetricCollection} of {@link Metric} that consume dichotomous pairs and produce {@link ScoreStatistic}.
      */
 
-    final MetricCollection<Pool<Pair<Boolean,Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> dichotomousScalar;
+    final MetricCollection<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> dichotomousScalar;
 
     /**
-     * The set of metrics associated with the verification project.
+     * The metrics to process.
      */
 
-    final Set<MetricConstants> metrics;
+    final Metrics metrics;
 
     /**
      * An array of {@link StatisticType} that should be retained and merged across calls. May be null.
@@ -183,7 +177,8 @@ public abstract class MetricProcessor<S extends Pool<?>>
 
     public Set<StatisticType> getCachedMetricOutputTypes() throws InterruptedException
     {
-        return this.getCachedMetricOutput().getStatisticTypes();
+        return this.getCachedMetricOutput()
+                   .getStatisticTypes();
     }
 
     /**
@@ -244,7 +239,9 @@ public abstract class MetricProcessor<S extends Pool<?>>
 
     public boolean hasMetrics( SampleDataGroup inGroup )
     {
-        return metrics.stream().anyMatch( a -> a.isInGroup( inGroup ) );
+        return this.metrics.getMetrics()
+                           .stream()
+                           .anyMatch( a -> a.isInGroup( inGroup ) );
 
     }
 
@@ -257,7 +254,9 @@ public abstract class MetricProcessor<S extends Pool<?>>
 
     public boolean hasMetrics( StatisticType outGroup )
     {
-        return this.metrics.stream().anyMatch( a -> a.isInGroup( outGroup ) );
+        return this.metrics.getMetrics()
+                           .stream()
+                           .anyMatch( a -> a.isInGroup( outGroup ) );
     }
 
     /**
@@ -317,7 +316,7 @@ public abstract class MetricProcessor<S extends Pool<?>>
      * Constructor.
      * 
      * @param config the project configuration
-     * @param externalThresholds an optional set of external thresholds, may be null
+     * @param metrics the metrics to process
      * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
      * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
      * @param mergeSet a list of {@link StatisticType} whose outputs should be retained and merged across calls to
@@ -328,7 +327,7 @@ public abstract class MetricProcessor<S extends Pool<?>>
      */
 
     MetricProcessor( final ProjectConfig config,
-                     final ThresholdsByMetric externalThresholds,
+                     final Metrics metrics,
                      final ExecutorService thresholdExecutor,
                      final ExecutorService metricExecutor,
                      final Set<StatisticType> mergeSet )
@@ -340,8 +339,10 @@ public abstract class MetricProcessor<S extends Pool<?>>
         Objects.requireNonNull( thresholdExecutor, "Specify a non-null threshold executor service." );
 
         Objects.requireNonNull( metricExecutor, "Specify a non-null metric executor service." );
+        
+        Objects.requireNonNull( metrics, "Specify a non-null collection of metrics to process." );
 
-        this.metrics = MetricConfigHelper.getMetricsFromConfig( config );
+        this.metrics = metrics;
 
         LOGGER.debug( "Based on the project declaration, the following metrics will be computed: {}.", this.metrics );
 
@@ -365,8 +366,8 @@ public abstract class MetricProcessor<S extends Pool<?>>
         {
             this.singleValuedDiagrams =
                     MetricFactory.ofSingleValuedDiagramCollection( metricExecutor,
-                                                                       this.getMetrics( SampleDataGroup.SINGLE_VALUED,
-                                                                                        StatisticType.DIAGRAM ) );
+                                                                   this.getMetrics( SampleDataGroup.SINGLE_VALUED,
+                                                                                    StatisticType.DIAGRAM ) );
 
             LOGGER.debug( "Created the single-valued diagrams for processing. {}", this.singleValuedDiagrams );
         }
@@ -405,17 +406,9 @@ public abstract class MetricProcessor<S extends Pool<?>>
             this.singleValuedBoxPlot = null;
         }
 
-        //Set the thresholds: canonical --> metric-local overrides --> global
-        if (externalThresholds != null) {
-            this.thresholdsByMetric = externalThresholds;
-        }
-        else {
-            this.thresholdsByMetric = new ThresholdsByMetric.Builder().build();
-        }
-
         if ( Objects.nonNull( mergeSet ) )
         {
-            this.mergeSet = Set.copyOf(mergeSet);
+            this.mergeSet = Set.copyOf( mergeSet );
         }
         else
         {
@@ -426,22 +419,22 @@ public abstract class MetricProcessor<S extends Pool<?>>
         this.thresholdExecutor = thresholdExecutor;
 
         this.allDataThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                              Operator.GREATER,
-                                              ThresholdDataType.LEFT_AND_RIGHT );
+                                                   Operator.GREATER,
+                                                   ThresholdDataType.LEFT_AND_RIGHT );
 
         //Finally, validate the configuration against the parameters set
         this.validate( config );
     }
 
     /**
-     * Returns the thresholds.
+     * Returns the metrics to process.
      * 
-     * @return the thresholds
+     * @return the metrics
      */
 
-    ThresholdsByMetric getThresholdsByMetric()
+    Metrics getMetrics()
     {
-        return this.thresholdsByMetric;
+        return this.metrics;
     }
 
     /**
@@ -482,7 +475,7 @@ public abstract class MetricProcessor<S extends Pool<?>>
     {
 
         // Unconditional set
-        Set<MetricConstants> unconditional = new HashSet<>( this.metrics );
+        Set<MetricConstants> unconditional = new HashSet<>( this.metrics.getMetrics() );
 
         // Remove metrics not in the input group
         if ( Objects.nonNull( inGroup ) )
@@ -501,8 +494,7 @@ public abstract class MetricProcessor<S extends Pool<?>>
         unconditional.remove( MetricConstants.FALSE_POSITIVES );
         unconditional.remove( MetricConstants.FALSE_NEGATIVES );
         unconditional.remove( MetricConstants.TRUE_NEGATIVES );
-        
-        // Return, removing any duplicate sample size instance, if needed
+
         return unconditional.toArray( new MetricConstants[unconditional.size()] );
     }
 

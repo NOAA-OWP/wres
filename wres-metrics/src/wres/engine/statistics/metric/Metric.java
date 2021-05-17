@@ -2,7 +2,7 @@ package wres.engine.statistics.metric;
 
 import java.util.function.Function;
 
-import wres.datamodel.MetricConstants;
+import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.Statistic;

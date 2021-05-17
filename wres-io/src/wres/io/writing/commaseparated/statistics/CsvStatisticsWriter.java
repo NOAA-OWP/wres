@@ -24,9 +24,9 @@ import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.GuardedBy;
 import net.jcip.annotations.ThreadSafe;
-import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.metrics.MetricConstants.MetricDimension;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.ReferenceTimeType;

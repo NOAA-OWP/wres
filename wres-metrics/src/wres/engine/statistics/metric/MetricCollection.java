@@ -15,15 +15,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
+import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.statistics.Statistic;
 import wres.engine.statistics.metric.categorical.ContingencyTable;
@@ -56,7 +55,7 @@ import wres.engine.statistics.metric.categorical.ContingencyTable;
  */
 
 public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U extends Statistic<?>>
-        implements BiFunction<S, Set<MetricConstants>, List<U>>
+        implements Function<S, List<U>>
 {
 
     /**
@@ -85,32 +84,18 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
     private final ExecutorService metricPool;
 
     /**
-     * Applies the input to the collection for all metrics in the collection.
+     * Computes all metrics.
      * 
      * @param input the input
-     * @return the collection output
-     * @throws MetricCalculationException if the calculation fails for any reason
-     */
-
-    public List<U> apply( final S input )
-    {
-        return this.apply( input, Collections.emptySet() );
-    }
-
-    /**
-     * Computes all metrics except the metrics in the ignore set.
-     * 
-     * @param input the input
-     * @param ignoreTheseMetrics the set of metrics to ignore
      * @throws MetricCalculationException if the calculation fails for any reason
      */
 
     @Override
-    public List<U> apply( final S input, final Set<MetricConstants> ignoreTheseMetrics )
+    public List<U> apply( final S input )
     {
         try
         {
-            return this.applyInternal( input, ignoreTheseMetrics );
+            return this.applyInternal( input );
         }
         catch ( ExecutionException e )
         {
@@ -244,14 +229,13 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
      * supplied, the {@link ForkJoinPool#commonPool()}.
      * 
      * @param input the metric input
-     * @param ignoreTheseMetrics a set of metrics that should be ignored when computing this collection
      * @return the output for each metric, contained in a collection
      * @throws ExecutionException if the execution fails
      * @throws InterruptedException if the execution is cancelled
      * @throws MetricCalculationException if one or more of the inputs is invalid
      */
 
-    private List<U> applyInternal( final S input, final Set<MetricConstants> ignoreTheseMetrics )
+    private List<U> applyInternal( final S input )
             throws InterruptedException, ExecutionException
     {
         //Bounds checks
@@ -259,38 +243,12 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
         {
             throw new MetricCalculationException( "Specify non-null input to the metric collection." );
         }
-        if ( Objects.isNull( ignoreTheseMetrics ) )
-        {
-            throw new MetricCalculationException( "Specify a non-null set of metrics to ignore, such as the empty "
-                                                  + "set." );
-        }
-
-        // If all of the stored metrics are contained in the ignored metrics so warn and return an empty list
-        // See #88569
-        if ( ignoreTheseMetrics.containsAll( this.getMetrics() ) )
-        {
-            LOGGER.debug( "When computing metrics for pool {}, discovered a collection of metrics in which all metrics "
-                          + "were ignored. The collection contained {} and the metrics ignored were {}.",
-                          input.getMetadata(),
-                          this.getMetrics(),
-                          ignoreTheseMetrics );
-
-            return List.of();
-        }
-
-        //Compute only the required metrics
-        Map<MetricConstants, Metric<S, U>> localMetrics = this.getMetricsButIgnoreThese( ignoreTheseMetrics );
-        Map<MetricConstants, Map<MetricConstants, Collectable<S, T, U>>> localCollectableMetrics =
-                this.getCollectableMetricsButIgnoreThese( ignoreTheseMetrics );
-
-        //Remove from each map in the collection
-        localCollectableMetrics.forEach( ( key, value ) -> value.keySet().removeAll( ignoreTheseMetrics ) );
 
         //Collection of future metric results
         final List<CompletableFuture<U>> metricFutures = new ArrayList<>();
 
         //Create the futures for the collectable metrics
-        for ( Map<MetricConstants, Collectable<S, T, U>> next : localCollectableMetrics.values() )
+        for ( Map<MetricConstants, Collectable<S, T, U>> next : this.collectableMetrics.values() )
         {
             // Proceed
             if ( !next.isEmpty() )
@@ -307,7 +265,7 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
             }
         }
         //Create the futures for the ordinary metrics
-        localMetrics.forEach( ( key,
+        this.metrics.forEach( ( key,
                                 value ) -> metricFutures.add( CompletableFuture.supplyAsync( () -> value.apply( input ),
                                                                                              this.metricPool ) ) );
         //Compute the results
@@ -436,78 +394,6 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
                           this.metrics.size() + collected.size(),
                           completed );
         }
-    }
-
-    /**
-     * Helper that returns a set of all stored metrics.
-     * 
-     * @return all stored metrics
-     */
-
-    private Set<MetricConstants> getMetrics()
-    {
-        return Stream.concat( this.collectableMetrics.keySet().stream(), this.metrics.keySet().stream() )
-                     .collect( Collectors.toSet() );
-    }
-
-    /**
-     * Returns the set of all stored metrics, except the metrics to ignore.
-     * 
-     * @param ignoreTheseMetrics the metrics to ignore
-     * @return the metrics, minus any ignored ones
-     */
-
-    private Map<MetricConstants, Metric<S, U>> getMetricsButIgnoreThese( Set<MetricConstants> ignoreTheseMetrics )
-    {
-        Map<MetricConstants, Metric<S, U>> returnMe = new EnumMap<>( MetricConstants.class );
-        for ( Map.Entry<MetricConstants, Metric<S, U>> next : this.metrics.entrySet() )
-        {
-            if ( !ignoreTheseMetrics.contains( next.getKey() ) )
-            {
-                returnMe.put( next.getKey(), next.getValue() );
-            }
-        }
-
-        return Collections.unmodifiableMap( returnMe );
-    }
-
-    /**
-     * Returns the set of all stored metrics, except the metrics to ignore.
-     * 
-     * @param ignoreTheseMetrics the metrics to ignore
-     * @return the metrics, minus any ignored ones
-     */
-
-    private Map<MetricConstants, Map<MetricConstants, Collectable<S, T, U>>>
-            getCollectableMetricsButIgnoreThese( Set<MetricConstants> ignoreTheseMetrics )
-    {
-        Map<MetricConstants, Map<MetricConstants, Collectable<S, T, U>>> returnMe =
-                new EnumMap<>( MetricConstants.class );
-        for ( Entry<MetricConstants, Map<MetricConstants, Collectable<S, T, U>>> next : this.collectableMetrics.entrySet() )
-        {
-            if ( !ignoreTheseMetrics.contains( next.getKey() ) )
-            {
-                Map<MetricConstants, Collectable<S, T, U>> inner = returnMe.get( next.getKey() );
-
-                if ( Objects.isNull( inner ) )
-                {
-                    inner = new EnumMap<>( MetricConstants.class );
-                    returnMe.put( next.getKey(), inner );
-                }
-
-                Map<MetricConstants, Collectable<S, T, U>> nextValue = next.getValue();
-
-                for ( Entry<MetricConstants, Collectable<S, T, U>> nextInnerValue : nextValue.entrySet() )
-                {
-                    if ( !ignoreTheseMetrics.contains( nextInnerValue.getKey() ) )
-                    {
-                        inner.put( nextInnerValue.getKey(), nextInnerValue.getValue() );
-                    }
-                }
-            }
-        }
-
-        return Collections.unmodifiableMap( returnMe );
     }
 
 }

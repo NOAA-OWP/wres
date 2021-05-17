@@ -16,8 +16,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.Ensemble;
-import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.BasicPool;
 import wres.datamodel.pools.PoolException;
@@ -25,6 +23,8 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Probability;
 import wres.datamodel.Slicer;
+import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.metrics.MetricConstants.MetricGroup;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;

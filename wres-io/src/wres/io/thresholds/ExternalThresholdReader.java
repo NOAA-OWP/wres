@@ -5,7 +5,7 @@ import wres.config.ProjectConfigs;
 import wres.config.generated.*;
 import wres.datamodel.DataFactory;
 import wres.datamodel.FeatureTuple;
-import wres.datamodel.MetricConstants;
+import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
@@ -30,6 +30,7 @@ public class ExternalThresholdReader {
 
     private final SystemSettings systemSettings;
     private final ProjectConfig projectConfig;
+    private final MetricsConfig metricsConfig;
     private final Set<FeatureTuple> features;
     private final UnitMapper desiredMeasurementUnitConverter;
     private final ThresholdBuilderCollection sharedBuilders;
@@ -39,18 +40,21 @@ public class ExternalThresholdReader {
     public ExternalThresholdReader(
                                     final SystemSettings systemSettings,
                                     final ProjectConfig projectConfig,
+                                    final MetricsConfig metricsConfig,
                                     final Set<FeatureTuple> features,
                                     final UnitMapper desiredMeasurementUnitConverter,
                                     final ThresholdBuilderCollection builders )
     {
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( metricsConfig );
         Objects.requireNonNull( features );
         Objects.requireNonNull( desiredMeasurementUnitConverter );
         Objects.requireNonNull( builders );
         
         this.systemSettings = systemSettings;
         this.projectConfig = projectConfig;
+        this.metricsConfig = metricsConfig;
         this.features = features;
         this.desiredMeasurementUnitConverter = desiredMeasurementUnitConverter;
         this.sharedBuilders = builders;
@@ -58,17 +62,15 @@ public class ExternalThresholdReader {
                 MeasurementUnit.of( this.desiredMeasurementUnitConverter.getDesiredMeasurementUnitName() );
     }
 
-    public void read() {
-        for ( MetricsConfig config : this.projectConfig.getMetrics() )
+    public void read()
+    {       
+        Set<MetricConstants> metrics = DataFactory.getMetricsFromMetricsConfig( this.metricsConfig, 
+                                                                                this.projectConfig );
+        
+        for ( ThresholdsConfig thresholdsConfig : this.getThresholds( this.metricsConfig ) )
         {
-            for ( ThresholdsConfig thresholdsConfig : this.getThresholds( config) )
-            {
-                Set<FeatureTuple> readFeatures = this.readThreshold(
-                        thresholdsConfig,
-                        DataFactory.getMetricsFromMetricsConfig(config, this.projectConfig)
-                );
-                this.recognizedFeatures.addAll(readFeatures);
-            }
+            Set<FeatureTuple> readFeatures = this.readThreshold( thresholdsConfig, metrics );
+            this.recognizedFeatures.addAll( readFeatures );
         }
     }
 

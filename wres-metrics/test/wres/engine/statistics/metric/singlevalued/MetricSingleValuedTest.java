@@ -4,7 +4,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import wres.datamodel.MetricConstants;
+import wres.datamodel.metrics.MetricConstants;
 import wres.engine.statistics.metric.Metric;
 
 /**

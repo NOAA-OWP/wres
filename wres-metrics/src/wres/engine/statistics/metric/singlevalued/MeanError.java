@@ -2,7 +2,7 @@ package wres.engine.statistics.metric.singlevalued;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.MetricConstants;
+import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.MetricName;

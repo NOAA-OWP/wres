@@ -3,8 +3,8 @@ package wres.io.thresholds;
 import wres.config.MetricConfigException;
 import wres.config.generated.*;
 import wres.datamodel.DataFactory;
-import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
@@ -14,26 +14,28 @@ import java.util.stream.Collectors;
 
 public class InBandThresholdReader {
     public InBandThresholdReader( final ProjectConfig projectConfig,
+                                  final MetricsConfig metricsConfig,
                                   final ThresholdBuilderCollection sharedBuilders,
                                   final MeasurementUnit measurementUnits )
     {
         Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( metricsConfig );
         Objects.requireNonNull( sharedBuilders );
         Objects.requireNonNull( measurementUnits );
         
         this.sharedBuilders = sharedBuilders;
         this.projectConfig = projectConfig;
+        this.metricsConfig = metricsConfig;
         this.measurementUnits = measurementUnits;
     }
 
-    public void read() {
-        for (MetricsConfig config : this.projectConfig.getMetrics()) {
-            for (ThresholdsConfig thresholdsConfig : this.getThresholds(config)) {
-                this.readThresholds(
-                        thresholdsConfig,
-                        DataFactory.getMetricsFromMetricsConfig(config, this.projectConfig)
-                );
-            }
+    public void read()
+    {
+        for ( ThresholdsConfig thresholdsConfig : this.getThresholds( this.metricsConfig ) )
+        {
+            this.readThresholds(
+                                 thresholdsConfig,
+                                 DataFactory.getMetricsFromMetricsConfig( this.metricsConfig, this.projectConfig ) );
         }
     }
 
@@ -304,6 +306,7 @@ public class InBandThresholdReader {
     }
 
     private final ProjectConfig projectConfig;
+    private final MetricsConfig metricsConfig;
     private final MeasurementUnit measurementUnits;
     private final ThresholdBuilderCollection sharedBuilders;
 }

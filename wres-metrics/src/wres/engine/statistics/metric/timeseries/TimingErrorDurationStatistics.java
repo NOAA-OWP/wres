@@ -11,9 +11,9 @@ import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
 
-import wres.datamodel.MetricConstants;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;

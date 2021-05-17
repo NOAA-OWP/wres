@@ -29,12 +29,13 @@ import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.Ensemble;
-import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.SampleDataGroup;
-import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.metrics.Metrics;
+import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
+import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
@@ -109,9 +110,13 @@ public final class MetricProcessorTest
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithoutThresholds.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+
+        ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( config );
+        Metrics metrics = Metrics.of( thresholdsByMetric, 0 );
+
         MetricProcessor<Pool<Pair<Double, Double>>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
-                                                                     ThresholdsGenerator.getThresholdsFromConfig( config ),
+                                                                     metrics,
                                                                      thresholdExecutor,
                                                                      metricExecutor,
                                                                      Collections.singleton( StatisticType.DOUBLE_SCORE ) );
@@ -320,7 +325,8 @@ public final class MetricProcessorTest
                                                                      StatisticType.set() );
 
         ThresholdsByMetric thresholds =
-                processor.getThresholdsByMetric()
+                processor.getMetrics()
+                         .getThresholdsByMetric()
                          .filterByGroup( SampleDataGroup.SINGLE_VALUED,
                                          StatisticType.DOUBLE_SCORE );
 
@@ -383,7 +389,8 @@ public final class MetricProcessorTest
                                                                           Operator.GREATER,
                                                                           ThresholdDataType.LEFT );
 
-        ThresholdsByMetric thresholds = processor.getThresholdsByMetric();
+        ThresholdsByMetric thresholds = processor.getMetrics()
+                                                 .getThresholdsByMetric();
 
         Set<MetricConstants> firstSet =
                 thresholds.doesNotHaveTheseMetricsForThisThreshold( firstTest );
