@@ -521,30 +521,35 @@ public class Evaluation implements Closeable
      * 
      * @param groupId the group identifier
      * @see #markPublicationCompleteReportedSuccess()
-     * @throws IllegalArgumentException if no messages were published for the prescribed group prior to completion
      * @throws NullPointerException if the group identifier is null
      */
 
     public void markGroupPublicationCompleteReportedSuccess( String groupId )
     {
         Objects.requireNonNull( groupId );
+        
+        AtomicInteger groupCount = new AtomicInteger( 0 );
 
-        if ( !this.messageGroups.containsKey( groupId ) )
+        // Some messages published?
+        if ( this.messageGroups.containsKey( groupId ) )
         {
-            throw new IllegalArgumentException( "Cannot close message group " + groupId
-                                                + " because no statistics "
-                                                + "messages were published to this group." );
+            AtomicInteger mCount = this.messageGroups.get( groupId );
+            groupCount = mCount;
+        }
+        // No. This is allowed in a no data scenario.
+        else
+        {
+            LOGGER.warn( "Marking message group {} complete, but no statistics messages were published to this message "
+                    + "group.", groupId );
         }
 
         CompletionStatus status = CompletionStatus.GROUP_PUBLICATION_COMPLETE;
-
-        AtomicInteger count = this.messageGroups.get( groupId );
 
         EvaluationStatus complete = EvaluationStatus.newBuilder()
                                                     .setClientId( this.getClientId() )
                                                     .setCompletionStatus( status )
                                                     .setGroupId( groupId )
-                                                    .setMessageCount( count.get() )
+                                                    .setMessageCount( groupCount.get() )
                                                     .build();
 
         this.publish( complete, groupId );
@@ -556,11 +561,11 @@ public class Evaluation implements Closeable
                           + "were published to this group.",
                           groupId,
                           this.getEvaluationId(),
-                          count.get() );
+                          groupCount.get() );
         }
 
         // Make completion of this group transparent to publishers by assigning a negative message count
-        count.set( -1 );
+        groupCount.set( -1 );
     }
 
     /**
@@ -1243,13 +1248,14 @@ public class Evaluation implements Closeable
         {
             this.validateGroupId( groupId );
 
-            if ( message.getMessageCount() == 0 )
+            // Can happen in a no data scenario
+            if ( message.getMessageCount() == 0 && LOGGER.isWarnEnabled() )
             {
-                throw new IllegalArgumentException( WHILE_PUBLISHING_TO_EVALUATION + this.getEvaluationId()
-                                                    + DISCOVERED_AN_EVALUATION_MESSAGE_WITH_MISSING_INFORMATION
-                                                    + "The expected message count is required when the completion "
-                                                    + "status reports "
-                                                    + CompletionStatus.GROUP_PUBLICATION_COMPLETE );
+                LOGGER.warn( WHILE_PUBLISHING_TO_EVALUATION + "{}"
+                             + " discovered an evaluation status message with an expected message count of zero. This "
+                             + "is unusual when reporting {} and may indicate an error.",
+                             this.getEvaluationId(),
+                             CompletionStatus.GROUP_PUBLICATION_COMPLETE );
             }
         }
 

@@ -47,7 +47,6 @@ import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
-import wres.datamodel.thresholds.ThresholdsByMetric.Builder;
 import wres.datamodel.thresholds.ThresholdsGenerator;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 
@@ -94,7 +93,7 @@ public final class MetricConfigHelperTest
         defaultMockedConfig =
                 new ProjectConfig( null,
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
                                    new Outputs( Arrays.asList( new DestinationConfig( OutputTypeSelection.THRESHOLD_LEAD,
                                                                                       null,
                                                                                       null,
@@ -242,7 +241,7 @@ public final class MetricConfigHelperTest
                                                    null,
                                                    null,
                                                    null ),
-                                   Arrays.asList( new MetricsConfig( thresholds, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
                                    null,
                                    null,
                                    null );
@@ -256,12 +255,12 @@ public final class MetricConfigHelperTest
                                                dimension ) );
         mockExternal.put( MetricConstants.BIAS_FRACTION, atomicExternal );
 
-        ThresholdsByMetric externalThresholds =
-                new Builder().addThresholds( mockExternal, ThresholdGroup.VALUE ).build();
+        ThresholdsByMetric.Builder builder = new ThresholdsByMetric.Builder();
+        builder.addThresholds( mockExternal, ThresholdGroup.VALUE );
+        builder.addThresholds( ThresholdsGenerator.getThresholdsFromConfig( mockedConfig )
+                                                             .getOneOrTwoThresholds() );
 
-        // Compute combined thresholds
-        ThresholdsByMetric actualByMetric =
-                ThresholdsGenerator.getThresholdsFromConfig( mockedConfig ).unionWithThisStore( externalThresholds );
+        ThresholdsByMetric actualByMetric = builder.build();
 
         Map<MetricConstants, SortedSet<OneOrTwoThresholds>> actual = actualByMetric.getOneOrTwoThresholds();
 
@@ -390,7 +389,7 @@ public final class MetricConfigHelperTest
                                                            TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR,
                                                            statsConfig ) );
 
-        MetricsConfig metrics = new MetricsConfig( null, null, timeSeriesMetrics );
+        MetricsConfig metrics = new MetricsConfig( null, 0, null, timeSeriesMetrics );
 
         ProjectConfig mockedConfig =
                 new ProjectConfig( null,
@@ -440,7 +439,7 @@ public final class MetricConfigHelperTest
                                                            TimeSeriesMetricConfigName.ALL_VALID,
                                                            statsConfig ) );
 
-        MetricsConfig metrics = new MetricsConfig( null, null, timeSeriesMetrics );
+        MetricsConfig metrics = new MetricsConfig( null, 0, null, timeSeriesMetrics );
 
         ProjectConfig mockedConfig =
                 new ProjectConfig( null,
@@ -461,7 +460,7 @@ public final class MetricConfigHelperTest
                                                            TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR,
                                                            null ) );
 
-        MetricsConfig metricsNullStats = new MetricsConfig( null, null, timeSeriesMetrics );
+        MetricsConfig metricsNullStats = new MetricsConfig( null, 0, null, timeSeriesMetrics );
 
         ProjectConfig mockedConfigNullStats =
                 new ProjectConfig( null,
@@ -519,7 +518,7 @@ public final class MetricConfigHelperTest
         ProjectConfig mockedConfig =
                 new ProjectConfig( null,
                                    null,
-                                   Arrays.asList( new MetricsConfig( null, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( null, 0, metrics, null ) ),
                                    null,
                                    null,
                                    null );
@@ -531,7 +530,7 @@ public final class MetricConfigHelperTest
         ProjectConfig mockedConfigWithOutput =
                 new ProjectConfig( null,
                                    null,
-                                   Arrays.asList( new MetricsConfig( null, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( null, 0, metrics, null ) ),
                                    new Outputs( Arrays.asList( new DestinationConfig( OutputTypeSelection.LEAD_THRESHOLD,
                                                                                       null,
                                                                                       null,
@@ -566,7 +565,7 @@ public final class MetricConfigHelperTest
         ProjectConfig mockedConfigWithOutput =
                 new ProjectConfig( null,
                                    null,
-                                   Arrays.asList( new MetricsConfig( null, null, metrics ) ),
+                                   Arrays.asList( new MetricsConfig( null, 0, null, metrics ) ),
                                    new Outputs( null,
                                                 null ),
                                    null,

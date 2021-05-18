@@ -14,8 +14,6 @@ import org.junit.Test;
 
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metrics.MetricConstants;
-import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
-import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.thresholds.ThresholdsByMetric.Builder;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
@@ -152,76 +150,6 @@ public class ThresholdsByMetricTest
     }
 
     /**
-     * Tests the {@link ThresholdsByMetric#unionForThisMetric(MetricConstants)}.
-     */
-
-    @Test
-    public void testUnionForThisMetric()
-    {
-        ThresholdsByMetric container = this.getDefaultContainerOne();
-
-        Set<ThresholdOuter> expected = new HashSet<>();
-
-        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
-
-        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
-
-        expected.add( ThresholdOuter.of( OneOrTwoDoubles.of( 0.2 ),
-                                               Operator.GREATER,
-                                               ThresholdDataType.LEFT ) );
-
-        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
-
-        expected.add( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 0.4 ),
-                                                       OneOrTwoDoubles.of( 0.5 ),
-                                                       Operator.GREATER,
-                                                       ThresholdDataType.LEFT ) );
-
-        assertTrue( expected.equals( container.unionForThisMetric( MetricConstants.FREQUENCY_BIAS ) ) );
-
-        assertTrue( Collections.emptySet().equals( container.unionForThisMetric( MetricConstants.BIAS_FRACTION ) ) );
-    }
-
-    /**
-     * Tests the {@link ThresholdsByMetric#unionForTheseTypes(ThresholdGroup...)}.
-     */
-
-    @Test
-    public void testUnionForTheseTypes()
-    {
-        ThresholdsByMetric container = this.getDefaultContainerOne();
-
-        Set<ThresholdOuter> expected = new HashSet<>();
-
-        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
-
-        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
-
-        expected.add( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 0.4 ),
-                                                       OneOrTwoDoubles.of( 0.5 ),
-                                                       Operator.GREATER,
-                                                       ThresholdDataType.LEFT ) );
-
-        assertTrue( expected.equals( container.unionForTheseTypes( ThresholdGroup.PROBABILITY,
-                                                                   ThresholdGroup.QUANTILE ) ) );
-
-        // Test the empty set
-        assertTrue( Collections.emptySet().equals( container.unionForTheseTypes( (ThresholdGroup[]) null ) ) );
-
-        assertTrue( Collections.emptySet().equals( container.unionForTheseTypes() ) );
-    }
-
-    /**
      * Tests the {@link ThresholdsByMetric#unionForThisMetricAndTheseTypes(MetricConstants, ThresholdGroup...)}.
      */
 
@@ -256,67 +184,6 @@ public class ThresholdsByMetricTest
 
         assertTrue( Collections.emptySet()
                                .equals( container.unionForThisMetricAndTheseTypes( MetricConstants.FREQUENCY_BIAS ) ) );
-    }
-
-    /**
-     * Tests the {@link ThresholdsByMetric#unionWithThisStore(ThresholdsByMetric)}.
-     */
-
-    @Test
-    public void testUnionWithThisStore()
-    {
-        ThresholdsByMetric container = this.getDefaultContainerOne();
-
-        Set<ThresholdOuter> expected = new HashSet<>();
-
-        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
-
-        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
-
-        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.7 ),
-                                                          Operator.GREATER_EQUAL,
-                                                          ThresholdDataType.LEFT ) );
-
-        expected.add( ThresholdOuter.of( OneOrTwoDoubles.of( 0.2 ),
-                                               Operator.GREATER,
-                                               ThresholdDataType.LEFT ) );
-
-        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
-
-        expected.add( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 0.4 ),
-                                                       OneOrTwoDoubles.of( 0.5 ),
-                                                       Operator.GREATER,
-                                                       ThresholdDataType.LEFT ) );
-
-        ThresholdsByMetric containerTwo = this.getDefaultContainerTwo();
-
-        ThresholdsByMetric union = container.unionWithThisStore( containerTwo );
-
-        assertTrue( expected.equals( union.unionForThisMetric( MetricConstants.FREQUENCY_BIAS ) ) );
-
-        // Union with itself
-        assertTrue( union.unionWithThisStore( union ) == union );
-
-        // Union for stores with different types        
-        ThresholdsByMetric secondUnion = containerTwo.unionWithThisStore( this.getDefaultContainerThree() );
-
-        Set<ThresholdOuter> expectedSecond = new HashSet<>();
-
-        expectedSecond.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.7 ),
-                                                                Operator.GREATER_EQUAL,
-                                                                ThresholdDataType.LEFT ) );
-
-        expectedSecond.add( ThresholdOuter.of( OneOrTwoDoubles.of( 12.0 ),
-                                                     Operator.LESS,
-                                                     ThresholdDataType.LEFT ) );
-
-        assertTrue( expectedSecond.equals( secondUnion.unionForThisMetric( MetricConstants.FREQUENCY_BIAS ) ) );
     }
 
     /**
@@ -361,26 +228,6 @@ public class ThresholdsByMetricTest
     }
 
     /**
-     * Tests the {@link ThresholdsByMetric#getThresholdTypes()}.
-     */
-
-    @Test
-    public void testGetThresholdTypes()
-    {
-        ThresholdsByMetric container = this.getDefaultContainerOne();
-
-        Set<ThresholdGroup> expected = new HashSet<>( Arrays.asList( ThresholdGroup.values() ) );
-
-        assertTrue( container.getThresholdTypes().equals( expected ) );
-
-        ThresholdsByMetric containerTwo = this.getDefaultContainerTwo();
-
-        Set<ThresholdGroup> expectedTwo = new HashSet<>( Arrays.asList( ThresholdGroup.PROBABILITY ) );
-
-        assertTrue( containerTwo.getThresholdTypes().equals( expectedTwo ) );
-    }
-
-    /**
      * Tests the {@link ThresholdsByMetric#getThresholdTypesForThisMetric(MetricConstants)}.
      */
 
@@ -399,60 +246,7 @@ public class ThresholdsByMetricTest
     }
 
     /**
-     * Tests the {@link ThresholdsByMetric#hasTheseMetricsForThisThreshold(ThresholdOuter)}.
-     */
-
-    @Test
-    public void testHasTheseMetricsForThisThreshold()
-    {
-        ThresholdsByMetric container = this.getDefaultContainerOne();
-
-        Set<MetricConstants> expected = new HashSet<>( Arrays.asList( MetricConstants.FREQUENCY_BIAS ) );
-
-        ThresholdOuter threshold = ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
-                                                                  Operator.GREATER,
-                                                                  ThresholdDataType.LEFT );
-
-        assertTrue( container.hasTheseMetricsForThisThreshold( threshold ).equals( expected ) );
-
-        // Empty set       
-        ThresholdOuter secondThreshold = ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.9 ),
-                                                                        Operator.GREATER,
-                                                                        ThresholdDataType.LEFT );
-
-        assertTrue( container.hasTheseMetricsForThisThreshold( secondThreshold ).equals( Collections.emptySet() ) );
-
-    }
-
-    /**
-     * Tests the {@link ThresholdsByMetric#doesNotHaveTheseMetricsForThisThreshold(ThresholdOuter)}.
-     */
-
-    @Test
-    public void testDoesNotHaveTheseMetricsForThisThreshold()
-    {
-        ThresholdsByMetric container = this.getDefaultContainerOne();
-
-
-        ThresholdOuter threshold = ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
-                                                                  Operator.GREATER,
-                                                                  ThresholdDataType.LEFT );
-
-        assertTrue( container.doesNotHaveTheseMetricsForThisThreshold( threshold ).equals( Collections.emptySet() ) );
-
-        // Empty set       
-        ThresholdOuter secondThreshold = ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.9 ),
-                                                                        Operator.GREATER,
-                                                                        ThresholdDataType.LEFT );
-
-        Set<MetricConstants> expected = new HashSet<>( Arrays.asList( MetricConstants.FREQUENCY_BIAS ) );
-
-        assertTrue( container.doesNotHaveTheseMetricsForThisThreshold( secondThreshold ).equals( expected ) );
-
-    }
-
-    /**
-     * Tests the {@link ThresholdsByMetric#hasThresholdsForTheseMetrics()}.
+     * Tests the {@link ThresholdsByMetric#getMetrics()}.
      */
 
     @Test
@@ -462,7 +256,7 @@ public class ThresholdsByMetricTest
 
         Set<MetricConstants> expected = new HashSet<>( Arrays.asList( MetricConstants.FREQUENCY_BIAS ) );
 
-        assertTrue( container.hasThresholdsForTheseMetrics().equals( expected ) );
+        assertTrue( container.getMetrics().equals( expected ) );
     }
 
     /**
@@ -493,44 +287,6 @@ public class ThresholdsByMetricTest
         // Set all types       
         assertTrue( container == container.filterByType( ThresholdGroup.values() ) );
 
-    }
-
-    /**
-     * Tests the {@link ThresholdsByMetric#filterByGroup(wres.datamodel.metrics.MetricConstants.SampleDataGroup)}.
-     */
-
-    @Test
-    public void testFilterByGroup()
-    {
-        ThresholdsByMetric container = this.getDefaultContainerOne();
-
-        Set<ThresholdOuter> expected = new HashSet<>();
-
-        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
-
-        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
-
-        assertTrue( expected.equals( container.filterByGroup( SampleDataGroup.DICHOTOMOUS,
-                                                              StatisticType.DOUBLE_SCORE )
-                                              .filterByType( ThresholdGroup.PROBABILITY )
-                                              .union() ) );
-        assertTrue( expected.equals( container.filterByGroup( SampleDataGroup.DICHOTOMOUS,
-                                                              null )
-                                              .filterByType( ThresholdGroup.PROBABILITY )
-                                              .union() ) );
-        assertTrue( expected.equals( container.filterByGroup( null,
-                                                              StatisticType.DOUBLE_SCORE )
-                                              .filterByType( ThresholdGroup.PROBABILITY )
-                                              .union() ) );
-
-        // Test the unfiltered set
-        assertTrue( expected.equals( container.filterByGroup( null, null )
-                                              .filterByType( ThresholdGroup.PROBABILITY )
-                                              .union() ) );
     }
 
     /**
@@ -638,28 +394,6 @@ public class ThresholdsByMetricTest
                                                                                              Operator.GREATER_EQUAL,
                                                                                              ThresholdDataType.LEFT ) ) ) );
         builder.addThresholds( probabilities, ThresholdGroup.PROBABILITY );
-
-        return builder.build();
-    }
-
-    /**
-     * Returns a default container for testing.
-     * 
-     * @return a default container
-     */
-
-    private ThresholdsByMetric getDefaultContainerThree()
-    {
-
-        Builder builder = new Builder();
-
-        // Probability thresholds
-        Map<MetricConstants, Set<ThresholdOuter>> values = new EnumMap<>( MetricConstants.class );
-        values.put( MetricConstants.FREQUENCY_BIAS,
-                    new HashSet<>( Arrays.asList( ThresholdOuter.of( OneOrTwoDoubles.of( 12.0 ),
-                                                                           Operator.LESS,
-                                                                           ThresholdDataType.LEFT ) ) ) );
-        builder.addThresholds( values, ThresholdGroup.VALUE );
 
         return builder.build();
     }

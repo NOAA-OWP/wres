@@ -271,7 +271,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         ThresholdsByMetric thresholdsToWrite = this.getUniqueThresholdsForScoreMetrics( thresholds );
         
         // Should be at least one metric with at least one threshold
-        if( thresholdsToWrite.hasThresholdsForTheseMetrics().isEmpty() )
+        if( thresholdsToWrite.getMetrics().isEmpty() )
         {
             throw new IOException( "Could not identify any thresholds from which to create blobs." );
         }

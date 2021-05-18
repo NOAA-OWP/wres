@@ -24,7 +24,7 @@ import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsGenerator;
-import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
+import wres.engine.statistics.metric.MetricCollection.Builder;
 import wres.engine.statistics.metric.categorical.ContingencyTable;
 import wres.engine.statistics.metric.categorical.EquitableThreatScore;
 import wres.engine.statistics.metric.categorical.FrequencyBias;
@@ -529,8 +529,8 @@ public final class MetricFactory
                                            MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
-                MetricCollectionBuilder.of();
+        final Builder<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
+                Builder.of();
 
         // Add the metrics
         for ( MetricConstants next : metric )
@@ -565,8 +565,8 @@ public final class MetricFactory
                                              MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<Pool<Pair<Double, Double>>, DiagramStatisticOuter, DiagramStatisticOuter> builder =
-                MetricCollectionBuilder.of();
+        final Builder<Pool<Pair<Double, Double>>, DiagramStatisticOuter, DiagramStatisticOuter> builder =
+                Builder.of();
         for ( MetricConstants next : metric )
         {
             builder.addMetric( MetricFactory.ofSingleValuedDiagram( next ) );
@@ -591,8 +591,8 @@ public final class MetricFactory
                                              MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<Pool<Pair<Double, Double>>, BoxplotStatisticOuter, BoxplotStatisticOuter> builder =
-                MetricCollectionBuilder.of();
+        final Builder<Pool<Pair<Double, Double>>, BoxplotStatisticOuter, BoxplotStatisticOuter> builder =
+                Builder.of();
         for ( MetricConstants next : metric )
         {
             builder.addMetric( MetricFactory.ofSingleValuedBoxPlot( next ) );
@@ -618,8 +618,8 @@ public final class MetricFactory
                                                   MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<Pool<Pair<Probability, Probability>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
-                MetricCollectionBuilder.of();
+        final Builder<Pool<Pair<Probability, Probability>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
+                Builder.of();
         for ( MetricConstants next : metric )
         {
             builder.addMetric( MetricFactory.ofDiscreteProbabilityScore( next ) );
@@ -645,8 +645,8 @@ public final class MetricFactory
                                           MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
-                MetricCollectionBuilder.of();
+        final Builder<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
+                Builder.of();
         for ( MetricConstants next : metric )
         {
             // All dichotomous scores are collectable
@@ -673,8 +673,8 @@ public final class MetricFactory
                                                     MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<Pool<Pair<Probability, Probability>>, DiagramStatisticOuter, DiagramStatisticOuter> builder =
-                MetricCollectionBuilder.of();
+        final Builder<Pool<Pair<Probability, Probability>>, DiagramStatisticOuter, DiagramStatisticOuter> builder =
+                Builder.of();
         for ( MetricConstants next : metric )
         {
             builder.addMetric( MetricFactory.ofDiscreteProbabilityDiagram( next ) );
@@ -700,8 +700,8 @@ public final class MetricFactory
                                        MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<Pool<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
-                MetricCollectionBuilder.of();
+        final Builder<Pool<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
+                Builder.of();
         for ( MetricConstants next : metric )
         {
             builder.addMetric( MetricFactory.ofEnsembleScore( next ) );
@@ -725,8 +725,8 @@ public final class MetricFactory
                                          MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<Pool<Pair<Double, Ensemble>>, DiagramStatisticOuter, DiagramStatisticOuter> builder =
-                MetricCollectionBuilder.of();
+        final Builder<Pool<Pair<Double, Ensemble>>, DiagramStatisticOuter, DiagramStatisticOuter> builder =
+                Builder.of();
         for ( MetricConstants next : metric )
         {
             builder.addMetric( MetricFactory.ofEnsembleDiagram( next ) );
@@ -751,8 +751,8 @@ public final class MetricFactory
                                          MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<Pool<Pair<Double, Ensemble>>, BoxplotStatisticOuter, BoxplotStatisticOuter> builder =
-                MetricCollectionBuilder.of();
+        final Builder<Pool<Pair<Double, Ensemble>>, BoxplotStatisticOuter, BoxplotStatisticOuter> builder =
+                Builder.of();
         for ( MetricConstants next : metric )
         {
             builder.addMetric( MetricFactory.ofEnsembleBoxPlot( next ) );
@@ -778,8 +778,8 @@ public final class MetricFactory
                                                 MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<Pool<Pair<Double, Double>>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter> builder =
-                MetricCollectionBuilder.of();
+        final Builder<Pool<Pair<Double, Double>>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter> builder =
+                Builder.of();
         for ( MetricConstants next : metric )
         {
             builder.addMetric( MetricFactory.ofSingleValuedTimeSeries( next ) );
