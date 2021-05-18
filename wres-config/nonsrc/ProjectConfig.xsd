@@ -1001,7 +1001,7 @@ time scale within a single class, rather than two classes.
 
         <xs:sequence>
             <xs:element name="thresholds" type="thresholds" minOccurs="0" maxOccurs="unbounded"/>
-            <xs:element name="minimumSampleSize" type="xs:int" minOccurs="0" maxOccurs="1" default="0"/>
+            <xs:element name="minimumSampleSize" type="xs:int" minOccurs="0" maxOccurs="1" />
             <xs:element name="metric" type="metric" minOccurs="0" maxOccurs="unbounded"/>
             <xs:element name="timeSeriesMetric" type="timeSeriesMetric" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>
