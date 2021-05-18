@@ -248,13 +248,13 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
                 // Remove the filtered metrics for logging
                 all.removeAll( filtered );
 
-                LOGGER.info( "While processing pairs for pool {}, discovered {} baseline pairs, which is fewer than "
-                             + "the minimum sample size of {} pairs. The following metrics will not be computed for "
-                             + "this pool: {}.",
-                             pairs.getBaselineData().getMetadata(),
-                             actualBaselineSampleSize,
-                             minimumSampleSize,
-                             all );
+                LOGGER.debug( "While processing pairs for pool {}, discovered {} baseline pairs, which is fewer than "
+                              + "the minimum sample size of {} pairs. The following metrics will not be computed for "
+                              + "this pool: {}.",
+                              pairs.getBaselineData().getMetadata(),
+                              actualBaselineSampleSize,
+                              minimumSampleSize,
+                              all );
 
                 return CompletableFuture.supplyAsync( () -> collection.apply( pairs, filtered ),
                                                       this.thresholdExecutor );
