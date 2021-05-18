@@ -24,6 +24,7 @@ import wres.datamodel.Probability;
 import wres.datamodel.Slicer;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.Statistic;
 import wres.engine.statistics.metric.MetricCollection.Builder;
@@ -37,6 +38,8 @@ import wres.engine.statistics.metric.discreteprobability.BrierSkillScore;
 import wres.engine.statistics.metric.singlevalued.MeanError;
 import wres.engine.statistics.metric.singlevalued.MeanSquareError;
 import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link MetricCollection}.
@@ -52,12 +55,6 @@ public class MetricCollectionTest
     {
         this.metricPool = Executors.newSingleThreadExecutor();
     }
-
-    /**
-     * Construct a collection of metrics that consume single-valued pairs and produce scalar outputs. Compute and check
-     * the results.
-     * @throws MetricParameterException if the metric construction fails 
-     */
 
     @Test
     public void testApplyWithSingleValuedPairs() throws MetricParameterException
@@ -147,8 +144,8 @@ public class MetricCollectionTest
 
         assertTrue( testMe.test( expectedFirst, actualFirst ) );
         assertTrue( testMe.test( expectedSecond, actualSecond ) );
-    }    
-    
+    }
+
     @Test
     public void testApplyWithDichotomousPairs() throws MetricParameterException
     {
@@ -263,6 +260,38 @@ public class MetricCollectionTest
 
         assertTrue( testMe.test( expectedFirst, actualFirst ) );
         assertTrue( testMe.test( expectedSecond, actualSecond ) );
+    }
+
+    @Test
+    public void testApplyWithSubsetOfMetrics() throws MetricParameterException
+    {
+        Pool<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
+
+        MetricCollection<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> collection =
+                MetricFactory.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
+                                                             MetricConstants.MEAN_ERROR,
+                                                             MetricConstants.SAMPLE_SIZE );
+
+        // Compute the subset
+        List<DoubleScoreStatisticOuter> actualList = collection.apply( input, Set.of( MetricConstants.SAMPLE_SIZE ) );
+
+        assertEquals( 1, actualList.size() );
+
+        DoubleScoreStatisticOuter actual = actualList.get( 0 );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setMetric( SampleSize.MAIN )
+                                                                               .setValue( 10 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( SampleSize.BASIC_METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, PoolMetadata.of() );
+
+        assertEquals( expected, actual );
     }
 
     /**
