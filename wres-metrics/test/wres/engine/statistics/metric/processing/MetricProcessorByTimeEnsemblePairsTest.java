@@ -339,7 +339,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         ProjectConfig mockedConfig =
                 new ProjectConfig( new Inputs( null, null, null ),
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
                                    null,
                                    null,
                                    null );
@@ -543,6 +543,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     {
         MetricsConfig metrics =
                 new MetricsConfig( null,
+                                   0,
                                    Arrays.asList( new MetricConfig( null, MetricConfigName.BRIER_SCORE ) ),
                                    null );
 
@@ -579,7 +580,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         ProjectConfig mockedConfig =
                 new ProjectConfig( null,
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
                                    null,
                                    null,
                                    null );
@@ -607,7 +608,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         ProjectConfig mockedConfig =
                 new ProjectConfig( new Inputs( null, null, null ),
                                    null,
-                                   Arrays.asList( new MetricsConfig( null, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( null, 0, metrics, null ) ),
                                    null,
                                    null,
                                    null );
@@ -639,7 +640,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         ProjectConfig mockedConfig =
                 new ProjectConfig( new Inputs( null, null, null ),
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
                                    null,
                                    null,
                                    null );
@@ -673,7 +674,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         ProjectConfig mockedConfig =
                 new ProjectConfig( new Inputs( null, null, null ),
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
                                    null,
                                    null,
                                    null );
@@ -1157,7 +1158,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                      null ),
                                                null ),
                                    null,
-                                   Arrays.asList( new MetricsConfig( null, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( null, 0, metrics, null ) ),
                                    null,
                                    null,
                                    null );
@@ -1214,7 +1215,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                      null ),
                                                null ),
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
                                    null,
                                    null,
                                    null );

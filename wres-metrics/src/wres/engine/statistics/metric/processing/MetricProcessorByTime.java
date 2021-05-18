@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.processing;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -8,8 +9,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
@@ -18,9 +22,9 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.BasicPool.Builder;
 import wres.datamodel.Slicer;
 import wres.datamodel.metrics.Metrics;
+import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
-import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -43,6 +47,8 @@ import wres.engine.statistics.metric.MetricParameterException;
 public abstract class MetricProcessorByTime<S extends Pool<?>>
         extends MetricProcessor<S>
 {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( MetricProcessorByTime.class );
 
     /**
      * Message that indicates processing is complete.
@@ -77,6 +83,64 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
             }
         }
         return builder.build().getMetricOutput();
+    }
+
+    /**
+     * Helper that returns a predicate for filtering single-valued pairs based on the 
+     * {@link ThresholdOuter#getDataType()} of the input threshold.
+     * 
+     * @param threshold the threshold
+     * @return the predicate for filtering pairs
+     * @throws NullPointerException if the {@link ThresholdOuter#getDataType()} is null
+     * @throws IllegalStateException if the {@link ThresholdOuter#getDataType()} is not recognized
+     */
+
+    static Predicate<Pair<Double, Double>> getFilterForSingleValuedPairs( ThresholdOuter input )
+    {
+        switch ( input.getDataType() )
+        {
+            case LEFT:
+                return Slicer.left( input::test );
+            case LEFT_AND_RIGHT:
+            case LEFT_AND_ANY_RIGHT:
+            case LEFT_AND_RIGHT_MEAN:
+                return Slicer.leftAndRight( input::test );
+            case RIGHT:
+            case ANY_RIGHT:
+            case RIGHT_MEAN:
+                return Slicer.right( input::test );
+            default:
+                throw new IllegalStateException( "Unrecognized threshold type '" + input.getDataType() + "'." );
+        }
+    }
+
+    /**
+     * Helper that returns a predicate for filtering {@link TimeSeriesOfSinglevaluedPairs} based on the 
+     * {@link ThresholdOuter#getDataType()} of the input threshold.
+     * 
+     * @param threshold the threshold
+     * @return the predicate for filtering pairs
+     * @throws NullPointerException if the {@link ThresholdOuter#getDataType()} is null
+     * @throws IllegalStateException if the {@link ThresholdOuter#getDataType()} is not recognized
+     */
+
+    static Predicate<TimeSeries<Pair<Double, Double>>> getFilterForTimeSeriesOfSingleValuedPairs( ThresholdOuter input )
+    {
+        switch ( input.getDataType() )
+        {
+            case LEFT:
+                return TimeSeriesSlicer.anyOfLeftInTimeSeries( input::test );
+            case LEFT_AND_RIGHT:
+            case LEFT_AND_ANY_RIGHT:
+            case LEFT_AND_RIGHT_MEAN:
+                return TimeSeriesSlicer.anyOfLeftAndAnyOfRightInTimeSeries( input::test );
+            case RIGHT:
+            case ANY_RIGHT:
+            case RIGHT_MEAN:
+                return TimeSeriesSlicer.anyOfRightInTimeSeries( input::test );
+            default:
+                throw new IllegalStateException( "Unrecognized threshold type '" + input.getDataType() + "'." );
+        }
     }
 
     /**
@@ -149,65 +213,55 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
         {
             futures.addDoubleScoreOutput( this.processDichotomousPairs( input, this.dichotomousScalar ) );
         }
-
     }
 
     /**
-     * Helper that returns a predicate for filtering single-valued pairs based on the 
-     * {@link ThresholdOuter#getDataType()} of the input threshold.
+     * Inspects the minimum sample size and, if skill metrics are present and the minimum sample size is not met, 
+     * removes the skill metrics from consideration, otherwise leaves them.
      * 
-     * @param threshold the threshold
-     * @return the predicate for filtering pairs
-     * @throws NullPointerException if the {@link ThresholdOuter#getDataType()} is null
-     * @throws IllegalStateException if the {@link ThresholdOuter#getDataType()} is not recognized
+     * @param <U> the left data type
+     * @param <V> the right data type
+     * @param <T> the type of {@link Statistic}
+     * @param pairs the pairs
+     * @param collection the metric collection
+     * @return the future result
      */
 
-    static Predicate<Pair<Double, Double>> getFilterForSingleValuedPairs( ThresholdOuter input )
+    <U, V, T extends Statistic<?>> Future<List<T>>
+            processWithOrWithoutSkillMetrics( Pool<Pair<U, V>> pairs,
+                                              MetricCollection<Pool<Pair<U, V>>, T, T> collection )
     {
-        switch ( input.getDataType() )
-        {
-            case LEFT:
-                return Slicer.left( input::test );
-            case LEFT_AND_RIGHT:
-            case LEFT_AND_ANY_RIGHT:
-            case LEFT_AND_RIGHT_MEAN:
-                return Slicer.leftAndRight( input::test );
-            case RIGHT:
-            case ANY_RIGHT:
-            case RIGHT_MEAN:
-                return Slicer.right( input::test );
-            default:
-                throw new IllegalStateException( "Unrecognized threshold type '" + input.getDataType() + "'." );
-        }
-    }
+        int minimumSampleSize = super.getMetrics().getMinimumSampleSize();
 
-    /**
-     * Helper that returns a predicate for filtering {@link TimeSeriesOfSinglevaluedPairs} based on the 
-     * {@link ThresholdOuter#getDataType()} of the input threshold.
-     * 
-     * @param threshold the threshold
-     * @return the predicate for filtering pairs
-     * @throws NullPointerException if the {@link ThresholdOuter#getDataType()} is null
-     * @throws IllegalStateException if the {@link ThresholdOuter#getDataType()} is not recognized
-     */
-
-    static Predicate<TimeSeries<Pair<Double, Double>>> getFilterForTimeSeriesOfSingleValuedPairs( ThresholdOuter input )
-    {
-        switch ( input.getDataType() )
+        // Are there skill metrics and does the baseline also meet the minimum sample size constraint?
+        if ( collection.getMetrics().stream().anyMatch( MetricConstants::isSkillMetric ) && pairs.hasBaseline() )
         {
-            case LEFT:
-                return TimeSeriesSlicer.anyOfLeftInTimeSeries( input::test );
-            case LEFT_AND_RIGHT:
-            case LEFT_AND_ANY_RIGHT:
-            case LEFT_AND_RIGHT_MEAN:
-                return TimeSeriesSlicer.anyOfLeftAndAnyOfRightInTimeSeries( input::test );
-            case RIGHT:
-            case ANY_RIGHT:
-            case RIGHT_MEAN:
-                return TimeSeriesSlicer.anyOfRightInTimeSeries( input::test );
-            default:
-                throw new IllegalStateException( "Unrecognized threshold type '" + input.getDataType() + "'." );
+            int actualBaselineSampleSize = pairs.getBaselineData().getRawData().size();
+
+            if ( actualBaselineSampleSize < minimumSampleSize )
+            {
+                Set<MetricConstants> all = new HashSet<>( collection.getMetrics() );
+                Set<MetricConstants> filtered = all.stream()
+                                                   .filter( next -> !next.isSkillMetric() )
+                                                   .collect( Collectors.toUnmodifiableSet() );
+
+                // Remove the filtered metrics for logging
+                all.removeAll( filtered );
+
+                LOGGER.info( "While processing pairs for pool {}, discovered {} baseline pairs, which is fewer than "
+                             + "the minimum sample size of {} pairs. The following metrics will not be computed for "
+                             + "this pool: {}.",
+                             pairs.getBaselineData().getMetadata(),
+                             actualBaselineSampleSize,
+                             minimumSampleSize,
+                             all );
+
+                return CompletableFuture.supplyAsync( () -> collection.apply( pairs, filtered ),
+                                                      this.thresholdExecutor );
+            }
         }
+
+        return CompletableFuture.supplyAsync( () -> collection.apply( pairs ), this.thresholdExecutor );
     }
 
     /**
@@ -249,10 +303,10 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
                                                       StatisticType outGroup )
     {
         // Find the thresholds for this group and for the required types
-        ThresholdsByMetric filtered = this.getMetrics()
-                                          .getThresholdsByMetric()
-                                          .filterByGroup( SampleDataGroup.SINGLE_VALUED, outGroup )
-                                          .filterByType( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
+        ThresholdsByMetric filtered = super.getMetrics().getThresholdsByMetric()
+                                                        .filterByGroup( SampleDataGroup.SINGLE_VALUED, outGroup )
+                                                        .filterByType( ThresholdGroup.PROBABILITY,
+                                                                       ThresholdGroup.VALUE );
 
         // Find the union across metrics
         Set<ThresholdOuter> union = filtered.union();
@@ -344,8 +398,38 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
             processSingleValuedPairs( Pool<Pair<Double, Double>> pairs,
                                       MetricCollection<Pool<Pair<Double, Double>>, T, T> collection )
     {
-        return CompletableFuture.supplyAsync( () -> collection.apply( pairs ),
-                                              this.thresholdExecutor );
+        // More samples than the minimum sample size?
+        int minimumSampleSize = super.getMetrics().getMinimumSampleSize();
+
+        // Log and return an empty result if the sample size is too small
+        if ( pairs.getRawData().size() < minimumSampleSize )
+        {
+            if ( LOGGER.isDebugEnabled() )
+            {
+                Set<MetricConstants> collected = new HashSet<>( collection.getMetrics() );
+                collected.remove( MetricConstants.SAMPLE_SIZE );
+
+                LOGGER.debug( "While processing pairs for pool {}, discovered {} pairs, which is fewer than the "
+                              + "minimum sample size of {} pairs. The following metrics will not be computed for this "
+                              + "pool: {}.",
+                              pairs.getMetadata(),
+                              pairs.getRawData().size(),
+                              minimumSampleSize,
+                              collected );
+            }
+
+            // Allow the sample size through without constraint
+            if ( collection.getMetrics().contains( MetricConstants.SAMPLE_SIZE ) )
+            {
+                Set<MetricConstants> ss = Set.of( MetricConstants.SAMPLE_SIZE );
+                return CompletableFuture.supplyAsync( () -> collection.apply( pairs, ss ),
+                                                      this.thresholdExecutor );
+            }
+
+            return CompletableFuture.completedFuture( List.of() );
+        }
+
+        return this.processWithOrWithoutSkillMetrics( pairs, collection );
     }
 
     /**
@@ -360,10 +444,57 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
 
     private <T extends Statistic<?>> Future<List<T>>
             processDichotomousPairs( Pool<Pair<Boolean, Boolean>> pairs,
-                                     MetricCollection<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, T> collection )
+                                     MetricCollection<Pool<Pair<Boolean, Boolean>>, T, T> collection )
     {
-        return CompletableFuture.supplyAsync( () -> collection.apply( pairs ),
-                                              this.thresholdExecutor );
+        // More samples than the minimum sample size?
+        int minimumSampleSize = super.getMetrics().getMinimumSampleSize();
+
+        int actualSampleSize = this.getSampleSizeForDichotomousPairs( pairs );
+
+        // Log and return an empty result if the sample size is too small
+        if ( actualSampleSize < minimumSampleSize )
+        {
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "While processing dichotomous pairs for pool {}, discovered that the smaller of the "
+                              + "number of left occurrences and non-occurrences was {}, which is less than the minimum "
+                              + "sample size of {}. The following metrics will not be computed for this pool: {}.",
+                              pairs.getMetadata(),
+                              actualSampleSize,
+                              minimumSampleSize,
+                              collection.getMetrics() );
+            }
+
+            return CompletableFuture.completedFuture( List.of() );
+        }
+
+        return this.processWithOrWithoutSkillMetrics( pairs, collection );
+    }
+
+    /**
+     * @param pairs the pairs whose sample size is required
+     * @return the sample size for a pool of dichotomous pairs, which is the smaller of left occurrences and 
+     *            non-occurrences
+     */
+
+    private int getSampleSizeForDichotomousPairs( Pool<Pair<Boolean, Boolean>> pairs )
+    {
+        int occurrences = 0;
+        int nonOccurrences = 0;
+
+        for ( Pair<Boolean, Boolean> next : pairs.getRawData() )
+        {
+            if ( Boolean.TRUE.equals( next.getLeft() ) )
+            {
+                occurrences++;
+            }
+            else
+            {
+                nonOccurrences++;
+            }
+        }
+
+        return Math.min( occurrences, nonOccurrences );
     }
 
 }

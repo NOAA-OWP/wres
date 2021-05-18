@@ -321,7 +321,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         ProjectConfig mockedConfig =
                 new ProjectConfig( null,
                                    null,
-                                   Arrays.asList( new MetricsConfig( null, null, metrics ) ),
+                                   Arrays.asList( new MetricsConfig( null, 0, null, metrics ) ),
                                    null,
                                    null,
                                    null );
@@ -433,7 +433,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         ProjectConfig mockedConfig =
                 new ProjectConfig( null,
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds, null, metrics ) ),
+                                   Arrays.asList( new MetricsConfig( thresholds, 0, null, metrics ) ),
                                    null,
                                    null,
                                    null );
@@ -718,13 +718,14 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         canonical.put( MetricConstants.QUANTILE_QUANTILE_DIAGRAM, thresholds );
 
         builder.addThresholds( canonical, ThresholdConstants.ThresholdGroup.PROBABILITY );
-        ThresholdsByMetric thresholdsByMetric = builder.build();
 
-        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) )
+                                                .getProjectConfig();
 
         // Ensure that the entire set of thresholds is assembled to be passed to the processor
-        thresholdsByMetric =
-                ThresholdsGenerator.getThresholdsFromConfig( config ).unionWithThisStore( thresholdsByMetric );
+        builder.addThresholds( ThresholdsGenerator.getThresholdsFromConfig( config ).getOneOrTwoThresholds() );
+
+        ThresholdsByMetric thresholdsByMetric = builder.build();
 
         Metrics metrics = Metrics.of( thresholdsByMetric, 0 );
 
@@ -1072,6 +1073,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     {
         MetricsConfig metrics =
                 new MetricsConfig( null,
+                                   0,
                                    Arrays.asList( new MetricConfig( null, MetricConfigName.FREQUENCY_BIAS ) ),
                                    null );
 
@@ -1110,7 +1112,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         ProjectConfig mockedConfig =
                 new ProjectConfig( null,
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
                                    null,
                                    null,
                                    null );
@@ -1148,7 +1150,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         ProjectConfig mockedConfig =
                 new ProjectConfig( null,
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
                                    null,
                                    null,
                                    null );
@@ -1187,7 +1189,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         ProjectConfig mockedConfig =
                 new ProjectConfig( null,
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds, metrics, timeMetrics ) ),
+                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, timeMetrics ) ),
                                    null,
                                    null,
                                    null );

@@ -861,8 +861,11 @@ class EvaluationConsumer
 
         if ( status.getMessageCount() == 0 )
         {
-            throw new IllegalArgumentException( "The completion status message for group " + groupId
-                                                + " is missing an expected count of messages." );
+            LOGGER.warn( "While registering the expected message count of group {} in consumer {}, discovered a "
+                         + "message count of zero, which may indicate an error, otherwise that no statistics were "
+                         + "published for this group.",
+                         groupId,
+                         this.getClientId() );
         }
 
         // Set the expected count

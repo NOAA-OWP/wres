@@ -969,8 +969,9 @@ time scale within a single class, rather than two classes.
                     corresponding type. In other words, if there is an exact match, 
                     that will be used, else the time-series whose reference times 
                     are nearest overall. Once a time-series has been matched, it cannot
-                    be re-used. Always uses exact matching for valid times.</xs:documentation>
-               </xs:annotation>
+                    be re-used. Always uses exact matching for valid times.
+                </xs:documentation>
+           </xs:annotation>
         <xs:attribute name="exact" type="xs:boolean" default = "false" />
     </xs:complexType>
 
@@ -982,10 +983,25 @@ time scale within a single class, rather than two classes.
             <xs:appinfo>
                 <jaxb:class name="MetricsConfig" />
             </xs:appinfo>
+            <xs:documentation>A collection of metrics to compute, together with their
+                    associated thresholds. The minimumSampleSize defines the minimum 
+                    number of samples for which a statistic will be computed. For 
+                    measures on continuous variables, such as the mean error, the
+                    minimum sample size corresponds to the number of pairs. For 
+                    single-valued measures on dichotomous variables, such as the 
+                    probability of detection, it corresponds to the smaller of the 
+                    number of occurrences and non-occurrences on the left side of 
+                    the pairs. For probabilistic measures on dichotomous variables, 
+                    such as the Brier Score, it corresponds to the smaller of the 
+                    number of occurrences and non-occurrences on the left side of 
+                    the pairs, as represented by a probability of 1.0 and 0.0, 
+                    respectively.
+             </xs:documentation>
         </xs:annotation>
 
         <xs:sequence>
             <xs:element name="thresholds" type="thresholds" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="minimumSampleSize" type="xs:int" minOccurs="0" maxOccurs="1" default="0"/>
             <xs:element name="metric" type="metric" minOccurs="0" maxOccurs="unbounded"/>
             <xs:element name="timeSeriesMetric" type="timeSeriesMetric" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>

@@ -462,7 +462,7 @@ public final class MetricFactoryTest
                                                                      null ),
                                                null ),
                                    null,
-                                   Arrays.asList( new MetricsConfig( null, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( null, 0, metrics, null ) ),
                                    null,
                                    null,
                                    null );
@@ -492,7 +492,7 @@ public final class MetricFactoryTest
                                                                      null ),
                                                null ),
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
                                    new Outputs( Arrays.asList( new DestinationConfig( OutputTypeSelection.THRESHOLD_LEAD,
                                                                                       null,
                                                                                       null,

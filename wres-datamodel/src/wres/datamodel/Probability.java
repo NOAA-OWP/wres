@@ -2,6 +2,8 @@ package wres.datamodel;
 
 import java.util.Objects;
 
+import org.apache.commons.math3.util.Precision;
+
 /**
  * A double value that falls in the unit interval.
  * 
@@ -14,13 +16,13 @@ public class Probability implements Comparable<Probability>
      * Lower bound.
      */
     
-    public static final Probability ZERO = Probability.of( 0.0 );
+    public static final Probability ZERO = new Probability( 0.0 );
     
     /**
      * Upper bound.
      */
     
-    public static final Probability ONE = Probability.of( 1.0 );
+    public static final Probability ONE = new Probability( 1.0 );
 
     /**
      * The probability.
@@ -38,6 +40,16 @@ public class Probability implements Comparable<Probability>
 
     public static Probability of( final double probability )
     {
+        // De-duplicate boundary probabilities
+        if( Precision.equals( probability, 0.0 ) )
+        {
+            return Probability.ZERO;
+        }
+        else if( Precision.equals( probability, 1.0 ) )
+        {
+            return Probability.ONE;
+        }
+        
         return new Probability( probability );
     }
 
@@ -63,6 +75,11 @@ public class Probability implements Comparable<Probability>
     @Override
     public boolean equals( Object other )
     {
+        if( this == other )
+        {
+            return true;
+        }
+        
         if ( ! ( other instanceof Probability ) )
         {
             return false;

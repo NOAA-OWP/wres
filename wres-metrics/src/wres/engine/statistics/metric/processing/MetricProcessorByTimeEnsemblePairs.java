@@ -91,7 +91,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
      */
 
     private final MetricCollection<Pool<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> ensembleScore;
-    
+
     /**
      * A {@link MetricCollection} of {@link Metric} that consume ensemble pairs and produce 
      * {@link DoubleScoreStatisticOuter}. This collection does not include any scores that require a reference or 
@@ -112,7 +112,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
      * {@link BoxplotStatisticOuter}.
      */
 
-    final MetricCollection<Pool<Pair<Double, Ensemble>>, BoxplotStatisticOuter, BoxplotStatisticOuter> ensembleBoxPlot;
+    private final MetricCollection<Pool<Pair<Double, Ensemble>>, BoxplotStatisticOuter, BoxplotStatisticOuter> ensembleBoxPlot;
 
     /**
      * Default function that maps between ensemble pairs and single-valued pairs.
@@ -150,7 +150,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
             Pool<Pair<Double, Double>> singleValued =
                     Slicer.transform( inputNoMissing, toSingleValues );
 
-            this.processSingleValuedPairs( singleValued, futures );
+            super.processSingleValuedPairs( singleValued, futures );
         }
 
         //Process the metrics that consume discrete probability pairs
@@ -237,10 +237,10 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         {
             MetricConstants[] ensembleMetrics = this.getMetrics( SampleDataGroup.ENSEMBLE,
                                                                  StatisticType.DOUBLE_SCORE );
-            
+
             this.ensembleScore = MetricFactory.ofEnsembleScoreCollection( metricExecutor,
                                                                           ensembleMetrics );
-            
+
             // Create a set of metrics for when no baseline is available, assuming there is at least one metric
             if ( ensembleMetrics.length > 1 )
             {
@@ -387,15 +387,14 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         {
 
             // Thresholds required for dichotomous and probability metrics
-            for ( MetricConstants next : this.getMetrics().getMetrics() )
+            for ( MetricConstants next : super.getMetrics().getMetrics() )
             {
                 if ( ( next.isInGroup( SampleDataGroup.DICHOTOMOUS )
                        || next.isInGroup( SampleDataGroup.DISCRETE_PROBABILITY ) )
-                     && !this.getMetrics()
-                             .getThresholdsByMetric()
-                             .hasThresholdsForThisMetricAndTheseTypes( next,
-                                                                       ThresholdGroup.PROBABILITY,
-                                                                       ThresholdGroup.VALUE ) )
+                     && !super.getMetrics().getThresholdsByMetric()
+                                           .hasThresholdsForThisMetricAndTheseTypes( next,
+                                                                                     ThresholdGroup.PROBABILITY,
+                                                                                     ThresholdGroup.VALUE ) )
                 {
                     throw new MetricConfigException( "Cannot configure '" + next
                                                      + "' without thresholds to define the events: "
@@ -466,10 +465,10 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                                                   StatisticType outGroup )
     {
         // Find the thresholds for this group and for the required types
-        ThresholdsByMetric filtered = this.getMetrics()
-                                          .getThresholdsByMetric()
-                                          .filterByGroup( SampleDataGroup.ENSEMBLE, outGroup )
-                                          .filterByType( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
+        ThresholdsByMetric filtered = super.getMetrics().getThresholdsByMetric()
+                                                        .filterByGroup( SampleDataGroup.ENSEMBLE, outGroup )
+                                                        .filterByType( ThresholdGroup.PROBABILITY,
+                                                                       ThresholdGroup.VALUE );
 
         // Find the union across metrics
         Set<ThresholdOuter> union = filtered.union();
@@ -533,7 +532,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         if ( outGroup == StatisticType.DOUBLE_SCORE )
         {
             // Baseline pool without a baseline of its own?
-            if( input.getMetadata().getPool().getIsBaselinePool() && ! input.hasBaseline() )
+            if ( input.getMetadata().getPool().getIsBaselinePool() && !input.hasBaseline() )
             {
                 futures.addDoubleScoreOutput( this.processEnsemblePairs( input, this.ensembleScoreNoBaseline ) );
             }
@@ -606,10 +605,10 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                                                              StatisticType outGroup )
     {
         // Find the thresholds for this group and for the required types
-        ThresholdsByMetric filtered = this.getMetrics()
-                                          .getThresholdsByMetric()
-                                          .filterByGroup( SampleDataGroup.DISCRETE_PROBABILITY, outGroup )
-                                          .filterByType( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
+        ThresholdsByMetric filtered = super.getMetrics().getThresholdsByMetric()
+                                                        .filterByGroup( SampleDataGroup.DISCRETE_PROBABILITY, outGroup )
+                                                        .filterByType( ThresholdGroup.PROBABILITY,
+                                                                       ThresholdGroup.VALUE );
 
         // Find the union across metrics
         Set<ThresholdOuter> union = filtered.union();
@@ -665,7 +664,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
     {
         if ( outGroup == StatisticType.DOUBLE_SCORE )
         {
-            futures.addDoubleScoreOutput( this.processDiscreteProbabilityPairs( input, this.discreteProbabilityScore ) );
+            futures.addDoubleScoreOutput( this.processDiscreteProbabilityPairs( input,
+                                                                                this.discreteProbabilityScore ) );
         }
         else if ( outGroup == StatisticType.DIAGRAM )
         {
@@ -686,7 +686,31 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
             processDiscreteProbabilityPairs( Pool<Pair<Probability, Probability>> pairs,
                                              MetricCollection<Pool<Pair<Probability, Probability>>, T, T> collection )
     {
-        return CompletableFuture.supplyAsync( () -> collection.apply( pairs ), this.thresholdExecutor );
+        // More samples than the minimum sample size?
+        int minimumSampleSize = super.getMetrics().getMinimumSampleSize();
+
+        int actualSampleSize = this.getSampleSizeForProbPairs( pairs );
+
+        // Log and return an empty result if the sample size is too small
+        if ( actualSampleSize < minimumSampleSize )
+        {
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "While evaluating discrete probability pairs for pool {}, discovered that the smaller of "
+                              + "the number of left occurrences (Pr=1.0) and non-occurrences (Pr=0.0) was {}, which is "
+                              + "less than the minimum sample size of {}. The following metrics will not be computed "
+                              + "for this pool: {}.",
+                              pairs.getMetadata(),
+                              actualSampleSize,
+                              minimumSampleSize,
+                              collection.getMetrics() );
+            }
+
+            return CompletableFuture.completedFuture( List.of() );
+        }
+
+        // Are there skill metrics and does the baseline also meet the minimum sample size constraint?
+        return super.processWithOrWithoutSkillMetrics( pairs, collection );
     }
 
     /**
@@ -694,7 +718,6 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
      * {@link ThresholdOuter} and appends it to the input map of futures.
      * 
      * @param <T> the type of {@link Statistic}
-     * @param threshold the threshold
      * @param pairs the pairs
      * @param collection the metric collection
      * @return the future result
@@ -704,7 +727,41 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
             processEnsemblePairs( Pool<Pair<Double, Ensemble>> pairs,
                                   MetricCollection<Pool<Pair<Double, Ensemble>>, T, T> collection )
     {
-        return CompletableFuture.supplyAsync( () -> collection.apply( pairs ), this.thresholdExecutor );
+
+        // More samples than the minimum sample size?
+        int minimumSampleSize = super.getMetrics().getMinimumSampleSize();
+        int actualSampleSize = pairs.getRawData().size();
+
+        // Log and return an empty result if the sample size is too small
+        if ( actualSampleSize < minimumSampleSize )
+        {
+            if ( LOGGER.isDebugEnabled() )
+            {
+                Set<MetricConstants> collected = new HashSet<>( collection.getMetrics() );
+                collected.remove( MetricConstants.SAMPLE_SIZE );
+
+                LOGGER.debug( "While processing pairs for pool {}, discovered {} pairs, which is fewer than the "
+                              + "minimum sample size of {} pairs. The following metrics will not be computed for this "
+                              + "pool: {}.",
+                              pairs.getMetadata(),
+                              actualSampleSize,
+                              minimumSampleSize,
+                              collected );
+            }
+
+            // Allow the sample size through without constraint
+            if ( collection.getMetrics().contains( MetricConstants.SAMPLE_SIZE ) )
+            {
+                Set<MetricConstants> ss = Set.of( MetricConstants.SAMPLE_SIZE );
+                return CompletableFuture.supplyAsync( () -> collection.apply( pairs, ss ),
+                                                      this.thresholdExecutor );
+            }
+
+            return CompletableFuture.completedFuture( List.of() );
+        }
+
+        // Are there skill metrics and does the baseline also meet the minimum sample size constraint?
+        return super.processWithOrWithoutSkillMetrics( pairs, collection );
     }
 
     /**
@@ -722,9 +779,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                                                      StatisticType outGroup )
     {
         // Find the thresholds filtered by group
-        ThresholdsByMetric filtered = this.getMetrics()
-                                          .getThresholdsByMetric()
-                                          .filterByGroup( SampleDataGroup.DICHOTOMOUS, outGroup );
+        ThresholdsByMetric filtered = super.getMetrics().getThresholdsByMetric()
+                                                        .filterByGroup( SampleDataGroup.DICHOTOMOUS, outGroup );
 
         // Find the thresholds filtered by outer type
         ThresholdsByMetric filteredByOuter = filtered.filterByType( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
@@ -779,7 +835,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                                      .setMetadataForBaseline( baselineMeta )
                                      .build();
 
-                this.processDichotomousPairs( dichotomous, futures, outGroup );
+                super.processDichotomousPairs( dichotomous, futures, outGroup );
             }
         }
     }
@@ -796,15 +852,14 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         // All groups that contain dichotomous and multicategory metrics must 
         // have thresholds of type ThresholdType.PROBABILITY_CLASSIFIER
         // Check that the relevant parameters have been set first
-
         Map<MetricConstants, Set<ThresholdOuter>> probabilityClassifiers =
-                this.getMetrics().getThresholdsByMetric().getThresholds( ThresholdGroup.PROBABILITY_CLASSIFIER );
+                super.getMetrics().getThresholdsByMetric()
+                                  .getThresholds( ThresholdGroup.PROBABILITY_CLASSIFIER );
 
         // Multicategory
         if ( this.hasMetrics( SampleDataGroup.MULTICATEGORY ) )
         {
             MetricConstants[] check = this.getMetrics( SampleDataGroup.MULTICATEGORY, null );
-
 
             if ( !Arrays.stream( check )
                         .allMatch( next -> probabilityClassifiers.containsKey( next )
@@ -833,6 +888,32 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                                                  + "non-occurrences." );
             }
         }
+    }
+
+    /**
+     * @param pairs the pairs whose sample size is required
+     * @return the sample size for a pool of probability pairs, which is the smaller of left occurrences (Pr=1.0) and 
+     *            non-occurrences (Pr=0.0)
+     */
+
+    private int getSampleSizeForProbPairs( Pool<Pair<Probability, Probability>> pairs )
+    {
+        int occurrences = 0;
+        int nonOccurrences = 0;
+
+        for ( Pair<Probability, Probability> next : pairs.getRawData() )
+        {
+            if ( next.getLeft().equals( Probability.ONE ) )
+            {
+                occurrences++;
+            }
+            else
+            {
+                nonOccurrences++;
+            }
+        }
+
+        return Math.min( occurrences, nonOccurrences );
     }
 
 }

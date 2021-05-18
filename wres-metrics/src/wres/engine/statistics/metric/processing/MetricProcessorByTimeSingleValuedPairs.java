@@ -111,7 +111,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         //Process the metrics that consume single-valued pairs
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED ) )
         {
-            this.processSingleValuedPairs( inputNoMissing, futures );
+            super.processSingleValuedPairs( inputNoMissing, futures );
         }
         if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS ) )
         {
@@ -222,7 +222,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         }
 
         //Check the metrics individually, as some may belong to multiple groups
-        for ( MetricConstants next : this.getMetrics().getMetrics() )
+        for ( MetricConstants next : super.getMetrics().getMetrics() )
         {
             if ( ! ( next.isInGroup( SampleDataGroup.SINGLE_VALUED )
                      || next.isInGroup( SampleDataGroup.SINGLE_VALUED_TIME_SERIES )
@@ -235,11 +235,10 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
             // Thresholds required for dichotomous metrics
             if ( next.isInGroup( SampleDataGroup.DICHOTOMOUS )
-                 && !this.getMetrics()
-                         .getThresholdsByMetric()
-                         .hasThresholdsForThisMetricAndTheseTypes( next,
-                                                                   ThresholdGroup.PROBABILITY,
-                                                                   ThresholdGroup.VALUE ) )
+                 && !super.getMetrics().getThresholdsByMetric()
+                                       .hasThresholdsForThisMetricAndTheseTypes( next,
+                                                                                 ThresholdGroup.PROBABILITY,
+                                                                                 ThresholdGroup.VALUE ) )
             {
                 throw new MetricConfigException( "Cannot configure '" + next
                                                  + "' without thresholds to define the events: add one "
@@ -357,10 +356,10 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                      StatisticType outGroup )
     {
         // Find the thresholds for this group and for the required types
-        ThresholdsByMetric filtered = this.getMetrics()
-                                          .getThresholdsByMetric()
-                                          .filterByGroup( SampleDataGroup.DICHOTOMOUS, outGroup )
-                                          .filterByType( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
+        ThresholdsByMetric filtered = super.getMetrics().getThresholdsByMetric()
+                                                        .filterByGroup( SampleDataGroup.DICHOTOMOUS, outGroup )
+                                                        .filterByType( ThresholdGroup.PROBABILITY,
+                                                                       ThresholdGroup.VALUE );
 
         // Find the union across metrics
         Set<ThresholdOuter> union = filtered.union();
@@ -395,9 +394,9 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                  .setMetadataForBaseline( baselineMeta )
                                  .build();
 
-            this.processDichotomousPairs( transformed,
-                                          futures,
-                                          outGroup );
+            super.processDichotomousPairs( transformed,
+                                           futures,
+                                           outGroup );
 
         }
     }
@@ -416,10 +415,11 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                          StatisticType outGroup )
     {
         // Find the thresholds for this group and for the required types
-        ThresholdsByMetric filtered = this.getMetrics()
-                                          .getThresholdsByMetric()
-                                          .filterByGroup( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, outGroup )
-                                          .filterByType( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
+        ThresholdsByMetric filtered = super.getMetrics().getThresholdsByMetric()
+                                                        .filterByGroup( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
+                                                                        outGroup )
+                                                        .filterByType( ThresholdGroup.PROBABILITY,
+                                                                       ThresholdGroup.VALUE );
 
         // Find the union across metrics
         Set<ThresholdOuter> union = filtered.union();
@@ -463,13 +463,49 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
             // Build the future result
             final Pool<Pair<Double, Double>> finalPairs = pairs;
-            Future<List<DurationDiagramStatisticOuter>> output =
-                    CompletableFuture.supplyAsync( () -> this.timeSeries.apply( finalPairs ), this.thresholdExecutor );
+            Future<List<DurationDiagramStatisticOuter>> output = this.processTimeSeriesPairs( finalPairs,
+                                                                                              this.timeSeries );
 
             // Add the future result to the store
             futures.addDurationDiagramOutput( output );
         }
 
+    }
+
+    /**
+     * Builds a metric future for a {@link MetricCollection} that consumes single-valued pairs and produces 
+     * {@link DurationDiagramStatisticOuter}.
+     * 
+     * @param pairs the pairs
+     * @param collection the collection of metrics
+     * @return the future result
+     */
+
+    private Future<List<DurationDiagramStatisticOuter>>
+            processTimeSeriesPairs( Pool<Pair<Double, Double>> pairs,
+                                    MetricCollection<Pool<Pair<Double, Double>>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter> collection )
+    {
+        // More samples than the minimum sample size?
+        int minimumSampleSize = super.getMetrics().getMinimumSampleSize();
+
+        // Log and return an empty result if the sample size is too small
+        if ( pairs.get().size() < minimumSampleSize )
+        {
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "While processing time-series for pool {}, discovered {} time-series, which is fewer "
+                              + "than the minimum sample size of {} time-series. The following metrics will not be "
+                              + "computed for this pool: {}.",
+                              pairs.getMetadata(),
+                              pairs.getRawData().size(),
+                              minimumSampleSize,
+                              collection.getMetrics() );
+            }
+
+            return CompletableFuture.completedFuture( List.of() );
+        }
+
+        return this.processWithOrWithoutSkillMetrics( pairs, collection );
     }
 
 }
