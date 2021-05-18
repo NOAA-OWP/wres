@@ -103,7 +103,7 @@ public class ProjectConfigsTest
                                                                      null ),
                                                null ),
                                    null,
-                                   Arrays.asList( new MetricsConfig( null, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( null, 0, metrics, null ) ),
                                    null,
                                    null,
                                    "MockOne" );
@@ -123,7 +123,7 @@ public class ProjectConfigsTest
                                                                      null ),
                                                null ),
                                    null,
-                                   Arrays.asList( new MetricsConfig( null, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( null, 0, metrics, null ) ),
                                    null,
                                    null,
                                    "MockOne" );
@@ -143,7 +143,7 @@ public class ProjectConfigsTest
                                                                      null ),
                                                null ),
                                    null,
-                                   Arrays.asList( new MetricsConfig( null, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( null, 0, metrics, null ) ),
                                    null,
                                    null,
                                    "MockThree" );

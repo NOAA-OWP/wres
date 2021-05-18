@@ -386,7 +386,8 @@ class ProcessorHelper
 
                 Map<FeatureTuple, ThresholdsByMetric> nextThresholds = thresholdReader.read();
                 Set<FeatureTuple> features = thresholdReader.getEvaluatableFeatures();
-                MetricsAndThresholds nextMetrics = new MetricsAndThresholds( nextThresholds, 0 );
+                MetricsAndThresholds nextMetrics = new MetricsAndThresholds( nextThresholds,
+                                                                             metricsConfig.getMinimumSampleSize() );
                 metricsAndThresholds.add( nextMetrics );
                 havingThresholds.addAll( features );
             }
@@ -986,13 +987,25 @@ class ProcessorHelper
          * Create an instance.
          * 
          * @param thresholdsByMetric the thresholds by metric
-         * @param minimumSampleSize the minimum sample size
+         * @param minimumSampleSize the minimum sample size, which is optional and defaults to zero
          */
         private MetricsAndThresholds( Map<FeatureTuple, ThresholdsByMetric> thresholdsByMetric,
-                                      int minimumSampleSize )
+                                      Integer minimumSampleSize )
         {
+            Objects.requireNonNull( thresholdsByMetric );
+            
             this.thresholdsByMetric = Collections.unmodifiableMap( thresholdsByMetric );
-            this.minimumSampleSize = minimumSampleSize;
+            
+            // Defaults to zero
+            if( Objects.isNull( minimumSampleSize ) )
+            {
+                LOGGER.debug( "Setting the minimum sample size to zero for metrics instance {}. ", this );
+                this.minimumSampleSize = 0;
+            }
+            else
+            {
+                this.minimumSampleSize = minimumSampleSize;
+            }
         }
     }
 

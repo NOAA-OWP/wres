@@ -192,14 +192,24 @@ class OneGroupConsumer<T> implements BiConsumer<String, T>, Supplier<Set<Path>>
                                              + " after the group has been consumed." );
         }
 
-        if ( expectedMessageCount <= 0 )
+        if ( expectedMessageCount < 0 )
         {
             throw new IllegalArgumentException( "While setting the expected message count for group "
                                                 + this.getGroupId()
-                                                + "discovered an expected count of less than or equal to zero, which "
+                                                + " discovered an expected count of less than or equal to zero, which "
                                                 + "is not allowed: "
                                                 + expectedMessageCount
                                                 + "." );
+        }
+        
+        if ( expectedMessageCount == 0 && LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "While setting the expected message count of group {} in group consumer {}, discovered a "
+                         + "message count of zero, which may indicate an error, otherwise that no statistics were "
+                         + "published for this group.",
+                         this.getGroupId(),
+                         this );
+
         }
 
         this.expectedMessageCount.set( expectedMessageCount );
@@ -297,7 +307,7 @@ class OneGroupConsumer<T> implements BiConsumer<String, T>, Supplier<Set<Path>>
 
     private boolean isReadyToComplete()
     {
-        return this.expectedMessageCount.get() > 0
+        return this.expectedMessageCount.get() >= 0
                && this.expectedMessageCount.get() == this.actualMessageCount.get()
                && !this.isComplete();
     }
@@ -318,8 +328,9 @@ class OneGroupConsumer<T> implements BiConsumer<String, T>, Supplier<Set<Path>>
         this.innerConsumer = innerConsumer;
         this.cache = new ConcurrentHashMap<>();
         this.isComplete = new AtomicBoolean();
-        this.expectedMessageCount = new AtomicInteger();
-        this.actualMessageCount = new AtomicInteger();
+        // Initialize at non-zero to flag when a valid expectation is received, which includes zero
+        this.expectedMessageCount = new AtomicInteger( -1 );
+        this.actualMessageCount = new AtomicInteger( 0 );  // Initialize at zero
         this.groupId = groupId;
         this.pathsWritten = new TreeSet<>();
     }
