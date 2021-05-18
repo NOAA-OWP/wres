@@ -8,14 +8,14 @@ import wres.util.Strings;
 @JsonIgnoreProperties( ignoreUnknown = true )
 public class LocationNames
 {
-    public String getComId()
+    public String getNwm_feature_id()
     {
-        return comId;
+        return nwm_feature_id;
     }
 
-    public void setComId( String comId )
+    public void setNwm_feature_id( String nwm_feature_id )
     {
-        this.comId = comId;
+        this.nwm_feature_id = nwm_feature_id;
     }
 
     public String getNwsLid()
@@ -50,7 +50,7 @@ public class LocationNames
 
     String nwsLid;
     String usgsSiteCode;
-    String comId;
+    String nwm_feature_id;
     String nwsName;
 
     @Override
@@ -71,10 +71,10 @@ public class LocationNames
             // Otherwise, try to use the gage id if there is one
             return "Gage ID: " + this.getUsgsSiteCode();
         }
-        else if (Strings.hasValue( this.getComId() ))
+        else if (Strings.hasValue( this.getNwm_feature_id() ))
         {
             // If all else fails, if there's a comid, use that one
-            return "COMID: " + this.getComId();
+            return "NWM Feature ID: " + this.getNwm_feature_id();
         }
 
         // If the previous calls failed, just return a statement saying that you don't know where this is
