@@ -1083,6 +1083,16 @@ class WebSource implements Callable<List<IngestResult>>
         {
             basePath = basePath + "/";
         }
+        
+        //Add nws_lid to the end of the path.
+        //TODO Remove the outer if-check once the old, 1.1 API is gone. 
+        if (!basePath.contains( "v1.1" ))
+        {
+            if (!basePath.endsWith("nws_lid/"))
+            {
+                basePath = basePath + "nws_lid/";
+            }
+        }
 
         Map<String, String> wrdsParameters = createWrdsAhpsUrlParameters( issuedRange,
                                                                           additionalParameters );
