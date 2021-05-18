@@ -1,6 +1,5 @@
 package wres.engine.statistics.metric.processing;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -29,10 +28,8 @@ import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.Ensemble;
-import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.Metrics;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
@@ -186,7 +183,7 @@ public final class MetricProcessorTest
         ProjectConfig discreteProbability =
                 new ProjectConfig( null,
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
                                    null,
                                    null,
                                    null );
@@ -205,7 +202,7 @@ public final class MetricProcessorTest
         ProjectConfig dichotomous =
                 new ProjectConfig( null,
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
                                    null,
                                    null,
                                    null );
@@ -224,7 +221,7 @@ public final class MetricProcessorTest
         ProjectConfig singleValued =
                 new ProjectConfig( null,
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
                                    null,
                                    null,
                                    null );
@@ -243,7 +240,7 @@ public final class MetricProcessorTest
         ProjectConfig multicategory =
                 new ProjectConfig( null,
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
                                    null,
                                    null,
                                    null );
@@ -310,124 +307,6 @@ public final class MetricProcessorTest
                              processorEnsemble.hasMetrics( next ) );
             }
         }
-    }
-
-    @Test
-    public void testDoNotComputeTheseMetricsForThisThresholdWithSingleValuedInput()
-            throws IOException, MetricParameterException
-    {
-        //Single-valued case
-        String configPathSingleValued =
-                "testinput/metricProcessorTest/testDoNotComputeTheseMetricsForThisThreshold.xml";
-        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
-        MetricProcessor<Pool<Pair<Double, Double>>> processor =
-                MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
-                                                                     StatisticType.set() );
-
-        ThresholdsByMetric thresholds =
-                processor.getMetrics()
-                         .getThresholdsByMetric()
-                         .filterByGroup( SampleDataGroup.SINGLE_VALUED,
-                                         StatisticType.DOUBLE_SCORE );
-
-        ThresholdOuter firstTest =
-                ThresholdOuter.of( OneOrTwoDoubles.of( 0.5 ),
-                                   Operator.GREATER,
-                                   ThresholdDataType.LEFT,
-                                   MeasurementUnit.of( "CMS" ) );
-        Set<MetricConstants> firstSet =
-                thresholds.doesNotHaveTheseMetricsForThisThreshold( firstTest );
-
-        assertEquals( new HashSet<>( Arrays.asList( MetricConstants.MEAN_SQUARE_ERROR,
-                                                    MetricConstants.MEAN_ABSOLUTE_ERROR ) ),
-                      firstSet );
-        ThresholdOuter secondTest =
-                ThresholdOuter.of( OneOrTwoDoubles.of( 0.75 ),
-                                   Operator.GREATER,
-                                   ThresholdDataType.LEFT,
-                                   MeasurementUnit.of( "CMS" ) );
-        Set<MetricConstants> secondSet =
-                thresholds.doesNotHaveTheseMetricsForThisThreshold( secondTest );
-
-        assertEquals( Collections.emptySet(), secondSet );
-        ThresholdOuter thirdTest =
-                ThresholdOuter.of( OneOrTwoDoubles.of( 0.83 ),
-                                   Operator.GREATER,
-                                   ThresholdDataType.LEFT,
-                                   MeasurementUnit.of( "CMS" ) );
-        Set<MetricConstants> thirdSet =
-                thresholds.doesNotHaveTheseMetricsForThisThreshold( thirdTest );
-
-        assertEquals( new HashSet<>( Arrays.asList( MetricConstants.MEAN_SQUARE_ERROR,
-                                                    MetricConstants.MEAN_ABSOLUTE_ERROR ) ),
-                      thirdSet );
-        ThresholdOuter fourthTest =
-                ThresholdOuter.of( OneOrTwoDoubles.of( 0.9 ),
-                                   Operator.GREATER,
-                                   ThresholdDataType.LEFT,
-                                   MeasurementUnit.of( "CMS" ) );
-        Set<MetricConstants> fourthSet =
-                thresholds.doesNotHaveTheseMetricsForThisThreshold( fourthTest );
-
-        assertEquals( new HashSet<>( Arrays.asList( MetricConstants.MEAN_ERROR,
-                                                    MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
-                                                    MetricConstants.ROOT_MEAN_SQUARE_ERROR ) ),
-                      fourthSet );
-    }
-
-    @Test
-    public void testDoNotComputeTheseMetricsForThisThresholdWithEnsembleInput()
-            throws IOException, MetricParameterException
-    {
-        //Single-valued case
-        String configPathSingleValued = "testinput/metricProcessorTest/testEnsemble.xml";
-        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
-        MetricProcessor<Pool<Pair<Double, Ensemble>>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( config,
-                                                                 StatisticType.set() );
-        ThresholdOuter firstTest = ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
-                                                                          Operator.GREATER,
-                                                                          ThresholdDataType.LEFT );
-
-        ThresholdsByMetric thresholds = processor.getMetrics()
-                                                 .getThresholdsByMetric();
-
-        Set<MetricConstants> firstSet =
-                thresholds.doesNotHaveTheseMetricsForThisThreshold( firstTest );
-
-        assertEquals( new HashSet<>( Arrays.asList( MetricConstants.MEAN_ERROR,
-                                                    MetricConstants.MEAN_SQUARE_ERROR,
-                                                    MetricConstants.BRIER_SCORE ) ),
-                      firstSet );
-
-        ThresholdOuter secondTest = ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.25 ),
-                                                                           Operator.GREATER,
-                                                                           ThresholdDataType.LEFT );
-        Set<MetricConstants> secondSet =
-                thresholds.doesNotHaveTheseMetricsForThisThreshold( secondTest );
-
-        assertEquals( new HashSet<>( Arrays.asList( MetricConstants.MEAN_ERROR,
-                                                    MetricConstants.MEAN_SQUARE_ERROR,
-                                                    MetricConstants.BRIER_SCORE ) ),
-                      secondSet );
-
-        ThresholdOuter thirdTest = ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.5 ),
-                                                                          Operator.GREATER,
-                                                                          ThresholdDataType.LEFT );
-        Set<MetricConstants> thirdSet =
-                thresholds.doesNotHaveTheseMetricsForThisThreshold( thirdTest );
-
-        assertEquals( new HashSet<>( Arrays.asList( MetricConstants.BRIER_SKILL_SCORE,
-                                                    MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE ) ),
-                      thirdSet );
-
-        ThresholdOuter fourthTest = ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.925 ),
-                                                                           Operator.GREATER,
-                                                                           ThresholdDataType.LEFT );
-        Set<MetricConstants> fourthSet =
-                thresholds.doesNotHaveTheseMetricsForThisThreshold( fourthTest );
-
-        assertEquals( Collections.emptySet(), fourthSet );
     }
 
     @Test

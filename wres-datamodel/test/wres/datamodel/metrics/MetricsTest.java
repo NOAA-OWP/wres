@@ -20,7 +20,7 @@ class MetricsTest
     private void runBeforeEachTest()
     {
         ThresholdsByMetric thresholdsByMetric = Mockito.mock( ThresholdsByMetric.class );
-        Mockito.when( thresholdsByMetric.hasThresholdsForTheseMetrics() )
+        Mockito.when( thresholdsByMetric.getMetrics() )
                .thenReturn( Set.of( MetricConstants.MEAN_ERROR ) );
         this.testInstance = Metrics.of( thresholdsByMetric, 7 );
     }
@@ -41,7 +41,7 @@ class MetricsTest
     void testGetThresholds()
     {
         Set<MetricConstants> actual = this.testInstance.getThresholdsByMetric()
-                                                       .hasThresholdsForTheseMetrics();
+                                                       .getMetrics();
         assertEquals( Set.of( MetricConstants.MEAN_ERROR ), actual );
     }
 

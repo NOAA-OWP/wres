@@ -577,6 +577,25 @@ public class Validation
         // Check all metrics config
         for ( MetricsConfig next : projectConfigPlus.getProjectConfig().getMetrics() )
         {
+            // Check the sample size
+            Integer minimumSampleSize = next.getMinimumSampleSize();
+            if ( Objects.nonNull( minimumSampleSize ) && minimumSampleSize < 0 )
+            {
+                if ( LOGGER.isWarnEnabled() )
+                {
+                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                 + " The minimum sample size must be greater than zero ({}).",
+                                 projectConfigPlus,
+                                 next.sourceLocation()
+                                     .getLineNumber(),
+                                 next.sourceLocation()
+                                     .getColumnNumber(),
+                                 minimumSampleSize );
+                }
+
+                returnMe = false;
+            }
+            
             if ( !Validation.isOneMetricsConfigInternallyConsistent( projectConfigPlus, next ) )
             {
                 returnMe = false;

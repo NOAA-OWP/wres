@@ -63,7 +63,7 @@ public class Metrics
     {
         ThresholdsByMetric innerThresholdsByMetric = this.getThresholdsByMetric();
         
-        return innerThresholdsByMetric.hasThresholdsForTheseMetrics();
+        return innerThresholdsByMetric.getMetrics();
     }
 
     /**
