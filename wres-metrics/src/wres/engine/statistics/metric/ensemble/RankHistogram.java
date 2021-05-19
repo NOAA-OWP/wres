@@ -122,33 +122,50 @@ public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, Diagram
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
+        // Empty diagram
+        if ( s.getRawData().isEmpty() )
+        {
+            DiagramStatisticComponent ro =
+                    DiagramStatisticComponent.newBuilder()
+                                             .setMetric( RankHistogram.RANK_ORDER )
+                                             .build();
+
+            DiagramStatisticComponent obs =
+                    DiagramStatisticComponent.newBuilder()
+                                             .setMetric( RankHistogram.OBSERVED_RELATIVE_FREQUENCY )
+                                             .build();
+
+            DiagramStatistic histogram = DiagramStatistic.newBuilder()
+                                                         .addStatistics( ro )
+                                                         .addStatistics( obs )
+                                                         .setMetric( RankHistogram.BASIC_METRIC )
+                                                         .build();
+            
+            return DiagramStatisticOuter.of( histogram, s.getMetadata() );
+        }
+
         double[] ranks = new double[] { MissingValues.DOUBLE };
         double[] relativeFrequencies = new double[] { MissingValues.DOUBLE };
 
-        // Some data to process
-        if ( !s.getRawData().isEmpty() )
+        //Acquire subsets in case of missing data
+        Map<Integer, List<Pair<Double, Ensemble>>> sliced =
+                Slicer.filterByRightSize( s.getRawData() );
+        //Find the subset with the most elements
+        Optional<List<Pair<Double, Ensemble>>> useMe =
+                sliced.values().stream().max( Comparator.comparingInt( List::size ) );
+
+        if ( useMe.isPresent() )
         {
+            //Set the ranked positions as 1:N+1
+            ranks = IntStream.range( 1, useMe.get().get( 0 ).getRight().size() + 2 ).asDoubleStream().toArray();
+            double[] sumRanks = new double[ranks.length]; //Total falling in each ranked position
 
-            //Acquire subsets in case of missing data
-            Map<Integer, List<Pair<Double, Ensemble>>> sliced =
-                    Slicer.filterByRightSize( s.getRawData() );
-            //Find the subset with the most elements
-            Optional<List<Pair<Double, Ensemble>>> useMe =
-                    sliced.values().stream().max( Comparator.comparingInt( List::size ) );
+            //Compute the sum of ranks
+            BiConsumer<Pair<Double, Ensemble>, double[]> ranker = RankHistogram.rankWithTies( rng );
+            useMe.get().forEach( nextPair -> ranker.accept( nextPair, sumRanks ) );
 
-            if ( useMe.isPresent() )
-            {
-                //Set the ranked positions as 1:N+1
-                ranks = IntStream.range( 1, useMe.get().get( 0 ).getRight().size() + 2 ).asDoubleStream().toArray();
-                double[] sumRanks = new double[ranks.length]; //Total falling in each ranked position
-
-                //Compute the sum of ranks
-                BiConsumer<Pair<Double, Ensemble>, double[]> ranker = RankHistogram.rankWithTies( rng );
-                useMe.get().forEach( nextPair -> ranker.accept( nextPair, sumRanks ) );
-
-                //Compute relative frequencies
-                relativeFrequencies = Arrays.stream( sumRanks ).map( a -> a / useMe.get().size() ).toArray();
-            }
+            //Compute relative frequencies
+            relativeFrequencies = Arrays.stream( sumRanks ).map( a -> a / useMe.get().size() ).toArray();
         }
 
         DiagramStatisticComponent ro =
