@@ -42,7 +42,6 @@ import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
-import wres.config.generated.Format;
 import wres.config.generated.IntBoundsType;
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
@@ -122,6 +121,9 @@ public class Validation
         // Assume valid until demonstrated otherwise
         boolean result = true;
 
+        // TODO: remove this boolean when releasing 6.0
+        boolean sourceFormatEventsFound = false;
+
         for ( ValidationEvent ve : projectConfigPlus.getValidationEvents() )
         {
             if ( LOGGER.isWarnEnabled() )
@@ -146,8 +148,31 @@ public class Validation
                 }
             }
 
-            // Any validation event means we fail.
-            result = false;
+            // TODO: remove this exception to validation when releasing 6.0
+            if ( ve.getMessage()
+                   .contains( "'format' is not allowed to appear in element 'source'" ) )
+            {
+                sourceFormatEventsFound = true;
+            }
+            else
+            {
+                result = false;
+            }
+        }
+
+        // TODO: remove this message when releasing 6.0
+        if ( sourceFormatEventsFound )
+        {
+            LOGGER.warn( " The 'format' attribute is deprecated in left/"
+                         + "right/baseline declarations (non-threshold"
+                         + "declarations) and will be removed in a future "
+                         + "release. Alternatives: specify one source per "
+                         + "resource, use the 'pattern' attribute with a glob "
+                         + "pattern specified (e.g. 'pattern=\"**/D*.xml\"' to "
+                         + "include all files starting with 'D' and ending with"
+                         + "'.xml' in all subdirectories), or to leave pattern "
+                         + "unspecified and let WRES auto-detect what it can "
+                         + "read on all files included in/under the URI." );
         }
 
         // Validate data sources
@@ -2376,7 +2401,9 @@ public class Validation
         sourceValid = Validation.isURIDefinedInSourceWhenExpected( projectConfigPlus, source )
                       && sourceValid;
 
-        if ( source.getFormat() == Format.WRDS )
+        if ( source.getInterface() != null
+             && source.getInterface()
+                      .equals( InterfaceShortHand.WRDS_AHPS ) )
         {
             sourceValid = Validation.isWRDSSourceValid( projectConfigPlus,
                                                         dataSourceConfig,
@@ -2499,31 +2526,22 @@ public class Validation
         Objects.requireNonNull( projectConfigPlus, NON_NULL );
         Objects.requireNonNull( source, NON_NULL );
 
-        boolean result = true;
-
-        if ( source.getZoneOffset() != null
-             && source.getFormat() != null
-             && source.getFormat().equals( Format.PI_XML ) )
+        if ( source.getZoneOffset() != null )
         {
             if ( LOGGER.isWarnEnabled() )
             {
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " Please remove the zoneOffset from PI-XML "
-                             + "source configuration. WRES requires PI-XML to "
-                             + "include a zone offset in the data and will use "
-                             + "that. If you wish to have data perform time "
-                             + "travel for whatever reason, there is a "
-                             + "separate <timeShift> configuration option "
-                             +
-                             "for that purpose.",
+                             + "The zoneOffset attribute is only applied to "
+                             + "datacard data. If there are no datacard data "
+                             + "in this evaluation the time zone offset will "
+                             + "come from the data itself and the value in the "
+                             + "attribute will be ignored.",
                              projectConfigPlus.getOrigin(),
                              source.sourceLocation().getLineNumber(),
                              source.sourceLocation().getColumnNumber() );
             }
-
-            result = false;
         }
 
-        return result;
+        return true;
     }
 }

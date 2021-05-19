@@ -26,9 +26,14 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static wres.io.reading.DataSource.DataDisposition.COMPLEX;
+import static wres.io.reading.DataSource.DataDisposition.FILE_OR_DIRECTORY;
+import static wres.io.reading.DataSource.DataDisposition.GZIP;
+import static wres.io.reading.DataSource.DataDisposition.NETCDF_GRIDDED;
+import static wres.io.reading.DataSource.DataDisposition.UNKNOWN;
+
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.Format;
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
@@ -473,9 +478,7 @@ public class SourceLoader
 
         URI sourceUri = source.getUri();
         List<CompletableFuture<List<IngestResult>>> tasks = new ArrayList<>();
-        FileEvaluation checkIngest = shouldIngest( source.getUri(),
-                                                   source.getSource(),
-                                                   source.getContext().getVariable().getValue(),
+        FileEvaluation checkIngest = shouldIngest( source,
                                                    lockManager );
         SourceStatus sourceStatus = checkIngest.getSourceStatus();
 
@@ -571,40 +574,36 @@ public class SourceLoader
      * Determines whether or not data at an indicated path should be ingested.
      * archived data will always be further evaluated to determine whether its
      * individual entries warrent an ingest
-     * @param filePath The path of the file to evaluate
-     * @param source The configuration indicating that the given file might
-     *               need to be ingested
+     * As of 5.11 this method needs revisiting because vector data will be
+     * ingested with TimeSeriesIngester and content type detection above will
+     * skip over UNKNOWN data.
+     * @param dataSource The data source to check
      * @return Whether or not data within the file should be ingested
      * @throws PreIngestException when hashing or id lookup cause some exception
      */
-    private FileEvaluation shouldIngest( final URI filePath,
-                                         final DataSourceConfig.Source source,
-                                         final String variableName,
+    private FileEvaluation shouldIngest( DataSource dataSource,
                                          DatabaseLockManager lockManager )
     {
-        Objects.requireNonNull( filePath );
-        Objects.requireNonNull( source );
-        Objects.requireNonNull( variableName );
+        Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( lockManager );
 
-        Format specifiedFormat = source.getFormat();
-        Format pathFormat = ReaderFactory.getFiletype( filePath );
+        DataSource.DataDisposition disposition = dataSource.getDisposition();
 
         // Archives perform their own ingest verification
-        if ( pathFormat == Format.ARCHIVE )
+        if ( disposition == GZIP )
         {
             LOGGER.debug(
-                    "The data at '{}' will be marked as ingested because it has "
+                    "The data at '{}' will be ingested because it has been "
                     +
                     "determined that it is an archive that will need to " +
                     "be further evaluated.",
-                    filePath );
+                    dataSource.getUri() );
             return new FileEvaluation( null,
                                        SourceStatus.REQUIRES_DECOMPOSITION,
                                        KEY_NOT_FOUND );
         }
 
-        boolean ingest = specifiedFormat == null ||
-                         specifiedFormat.equals( pathFormat );
+        boolean ingest = ( disposition != UNKNOWN );
         SourceStatus sourceStatus = null;
 
         String hash;
@@ -614,9 +613,11 @@ public class SourceLoader
             try
             {
                 // If the format is Netcdf, we want to possibly bypass traditional hashing
-                if ( pathFormat == Format.NET_CDF )
+                if ( disposition == NETCDF_GRIDDED )
                 {
-                    hash = NetCDF.getUniqueIdentifier( filePath, variableName );
+                    hash = NetCDF.getUniqueIdentifier( dataSource.getUri(),
+                                                       dataSource.getVariable()
+                                                                 .getValue() );
                 }
                 else
                 {
@@ -634,7 +635,7 @@ public class SourceLoader
                     LOGGER.debug( "Determined that a source with URI {} and "
                                   + "hash {} has the status of "
                                   + "{}",
-                                  filePath,
+                                  dataSource.getUri(),
                                   hash,
                                   sourceStatus );
                 }
@@ -643,18 +644,16 @@ public class SourceLoader
             {
                 throw new PreIngestException(
                         "Could not determine whether to ingest '"
-                        + filePath + "'",
+                        + dataSource.getUri() + "'",
                         ioe );
             }
         }
         else
         {
-            LOGGER.debug( "The file at '{}' will not be ingested because it " +
-                          "does not match the specified required format. " +
-                          "(specified: {}, encountered: {})",
-                          filePath,
-                          specifiedFormat,
-                          pathFormat );
+            LOGGER.debug( "The file at '{}' will not be ingested because {}{}",
+                          dataSource.getUri(),
+                          "it has data that could not be detected as readable ",
+                          "by WRES" );
             return new FileEvaluation( null,
                                        SourceStatus.INVALID,
                                        KEY_NOT_FOUND );
@@ -680,7 +679,7 @@ public class SourceLoader
             catch ( SQLException se )
             {
                 throw new PreIngestException( "While determining if source '"
-                                              + filePath
+                                              + dataSource.getUri()
                                               + "' should be ingested, "
                                               + "failed to translate natural key '"
                                               + hash + "' to surrogate key.",
@@ -950,7 +949,8 @@ public class SourceLoader
             // If there is a file-like source, test for a directory and decompose it as required
             if( Objects.nonNull( path ) )
             {
-                DataSource source = DataSource.of( nextSource.getKey(),
+                DataSource source = DataSource.of( FILE_OR_DIRECTORY,
+                                                   nextSource.getKey(),
                                                    nextSource.getValue()
                                                              .getLeft(),
                                                    links,
@@ -961,7 +961,8 @@ public class SourceLoader
             // Not a file-like source
             else
             {
-                DataSource source = DataSource.of( nextSource.getKey(),
+                DataSource source = DataSource.of( COMPLEX,
+                                                   nextSource.getKey(),
                                                    nextSource.getValue()
                                                              .getLeft(),
                                                    links,
@@ -1024,10 +1025,21 @@ public class SourceLoader
                     //File must be a file and match the pattern, if the pattern is defined.
                     if ( testFile.isFile() && ( ( matcher == null ) || matcher.matches( path ) ) )
                     {
-                        returnMe.add( DataSource.of( dataSource.getSource(),
-                                                     dataSource.getContext(),
-                                                     dataSource.getLinks(),
-                                                     path.toUri() ) );
+                        DataSource.DataDisposition disposition = DataSource.detectFormat( path.toUri() );
+
+                        if ( disposition != UNKNOWN )
+                        {
+                            returnMe.add( DataSource.of( disposition,
+                                                         dataSource.getSource(),
+                                                         dataSource.getContext(),
+                                                         dataSource.getLinks(),
+                                                         path.toUri() ) );
+                        }
+                        else
+                        {
+                            LOGGER.warn( "Skipping '{}' because WRES cannot read it.",
+                                         path );
+                        }
                     }
                     // Skip and log a warning if this is a normal file (e.g. not a directory) 
                     else if ( testFile.isFile() )
@@ -1037,7 +1049,6 @@ public class SourceLoader
                                      pattern );
                     }
                 } );
-
             }
             catch ( IOException e )
             {
@@ -1057,7 +1068,13 @@ public class SourceLoader
         }
         else
         {
-            returnMe.add( dataSource );
+            DataSource.DataDisposition disposition = DataSource.detectFormat( dataSource.getUri() );
+            DataSource withDisposition = DataSource.of( disposition,
+                                                        dataSource.getSource(),
+                                                        dataSource.getContext(),
+                                                        dataSource.getLinks(),
+                                                        dataSource.getUri() );
+            returnMe.add( withDisposition );
         }
         
         return Collections.unmodifiableSet( returnMe );

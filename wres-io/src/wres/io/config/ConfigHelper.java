@@ -582,13 +582,6 @@ public class ConfigHelper
 
             for ( DataSourceConfig.Source source : datasource.getSource() )
             {
-                String sourceFormat = "";
-
-                if ( source.getFormat() != null )
-                {
-                    sourceFormat = source.getFormat().value().toLowerCase();
-                }
-
                 String sourceInterface = "";
 
                 if ( source.getInterface() != null )
@@ -602,7 +595,7 @@ public class ConfigHelper
                 {
                     address = source.getValue().toString().toLowerCase();
                 }
-                if ( sourceFormat.equals( "netcdf" ) || sourceInterface.contains( "nwm" ) )
+                if ( sourceInterface.contains( "nwm" ) )
                 {
                     if ( foundDimension == null || foundDimension == FeatureDimension.NWM_FEATURE_ID )
                     {
@@ -618,7 +611,7 @@ public class ConfigHelper
                                                          + FeatureDimension.NWM_FEATURE_ID );
                     }
                 }
-                else if ( sourceFormat.equals( "waterml" ) || sourceInterface.contains( "usgs" )
+                else if ( sourceInterface.contains( "usgs" )
                           || address.contains( "usgs.gov/nwis" ) )
                 {
                     if ( foundDimension == null || foundDimension == FeatureDimension.USGS_SITE_CODE )
@@ -635,8 +628,7 @@ public class ConfigHelper
                                                          + FeatureDimension.USGS_SITE_CODE );
                     }
                 }
-                else if ( sourceFormat.equals( "pi-xml" ) || sourceFormat.equals( "datacard" )
-                          || sourceInterface.contains( "ahps" ) )
+                else if ( sourceInterface.contains( "ahps" ) )
                 {
                     if ( foundDimension == null || foundDimension == FeatureDimension.NWS_LID )
                     {

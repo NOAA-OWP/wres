@@ -1,6 +1,7 @@
 package wres.io.reading.datacard;
 
 import static org.mockito.ArgumentMatchers.any;
+import static wres.io.reading.DataSource.DataDisposition.DATACARD;
 
 import java.io.IOException;
 import java.net.URI;
@@ -9,7 +10,6 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import org.junit.Before;
 import org.junit.Ignore;
@@ -22,7 +22,6 @@ import wres.config.generated.DataSourceConfig.Source;
 import wres.config.generated.DataSourceConfig.Variable;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.Feature;
-import wres.config.generated.Format;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
@@ -114,11 +113,9 @@ public class DataCardSourceTest
     {
         URI current = new java.io.File( "." ).toURI();
         List<DataSourceConfig.Source> sourceList = new ArrayList<DataSourceConfig.Source>();
-        Format format = Format.fromValue("datacard");
 
         DataSourceConfig.Source confSource = new Source(current,
                                                         null,
-                                                        format,
                                                         "EST",
                                                         "-999.0",
                                                         null);
@@ -175,7 +172,8 @@ public class DataCardSourceTest
         String filePath = current + "/testinput/datacard/short_HOPR1SNE.QME.OBS";
         URI fileUri = new URI( filePath );
 
-        DataSource dataSource = DataSource.of( confSource,
+        DataSource dataSource = DataSource.of( DATACARD,
+                                               confSource,
                                                config,
                                                Set.of( LeftOrRightOrBaseline.LEFT,
                                                        LeftOrRightOrBaseline.RIGHT ),
@@ -215,11 +213,9 @@ public class DataCardSourceTest
     {
         URI current = new java.io.File( "." ).toURI();
         List<DataSourceConfig.Source> sourceList = new ArrayList<>();
-        Format format = Format.fromValue("datacard");
 
         DataSourceConfig.Source confSource = new Source(current,
                                                         null,
-                                                        format,
                                                         "EST",
                                                         "-997",
                                                         null);
@@ -275,7 +271,8 @@ public class DataCardSourceTest
         String filePath = current + "/testinput/datacard/short_CCRN6.MAP06_short_record";
         URI fileUri = new URI( filePath );
 
-        DataSource dataSource = DataSource.of( confSource,
+        DataSource dataSource = DataSource.of( DATACARD,
+                                               confSource,
                                                config,
                                                Set.of( LeftOrRightOrBaseline.LEFT,
                                                        LeftOrRightOrBaseline.RIGHT ),

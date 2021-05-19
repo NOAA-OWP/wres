@@ -272,6 +272,26 @@ class WebSource implements Callable<List<IngestResult>>
                                                                this.getDataSource(),
                                                                this.getNow() );
         Set<URI> alreadySubmittedUris = new HashSet<>();
+        DataSource source = this.getDataSource();
+        DataSource.DataDisposition disposition;
+
+        if ( this.isUsgsSource( this.getDataSource() ) )
+        {
+            disposition = DataSource.DataDisposition.JSON_WATERML;
+        }
+        else if ( this.isWrdsAhpsSource( this.getDataSource() ) )
+        {
+            disposition = DataSource.DataDisposition.JSON_WRDS_AHPS;
+        }
+        else if ( this.isWrdsNwmSource( this.getDataSource() ) )
+        {
+            disposition = DataSource.DataDisposition.JSON_WRDS_AHPS;
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "Unable to support source "
+                                                     + source );
+        }
 
         if ( this.usesFeatureBlocks() )
         {
@@ -291,7 +311,8 @@ class WebSource implements Callable<List<IngestResult>>
                                              featureBlock );
 
                         DataSource dataSource =
-                                DataSource.of( this.getSourceConfig(),
+                                DataSource.of( disposition,
+                                               this.getSourceConfig(),
                                                this.getDataSourceConfig(),
                                                // Pass through the links because we
                                                // trust the SourceLoader to have
@@ -385,7 +406,8 @@ class WebSource implements Callable<List<IngestResult>>
                     }
 
                     DataSource dataSource =
-                            DataSource.of( this.getSourceConfig(),
+                            DataSource.of( disposition,
+                                           this.getSourceConfig(),
                                            this.getDataSourceConfig(),
                                            // Pass through the links because we
                                            // trust the SourceLoader to have

@@ -84,38 +84,6 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:simpleType name="format">
-        <xs:annotation>
-            <xs:documentation>
-                The format describes the structure of a byte stream but from
-                2016 through at least 2019-10 a format has been used as a
-                filter in some cases and a short-hand in other cases.
-                An additional description of the interface to get data as
-                distinct from the protocol, hostname, and path (which can be
-                found in the URI) can be found in the "interface" type.
-                If WRES eventually auto-detects formats of data encountered on
-                filesystem directory trees while walking them, then this format
-                filter can be deprecated and removed. If any web service
-                interfaces or data access methods abstracted into "interface",
-                then this format filter can be deprecated and removed.
-            </xs:documentation>
-        </xs:annotation>
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="PI-XML" />
-            <xs:enumeration value="netCDF" />
-            <xs:enumeration value="datacard" />
-            <!-- Use interface="usgs_nwis" rather than format="usgs" -->
-            <!-- Neither "archive" nor "all" make sense to me. The idea is to
-                 help describe the actual format of the data when it is not
-                 obvious from examining it. Filtering/conditioning is in another
-                 section of the config. -Jesse -->
-            <xs:enumeration value="archive" />
-            <xs:enumeration value="wrds" />
-            <xs:enumeration value="csv" />
-            <xs:enumeration value="waterml" />
-        </xs:restriction>
-    </xs:simpleType>
-
     <xs:simpleType name="interfaceShortHand">
         <xs:annotation>
             <xs:documentation>
@@ -311,18 +279,6 @@
                                     </xs:documentation>
                                 </xs:annotation>
                             </xs:attribute>
-
-                            <xs:attribute name="format" type="format">
-                                <xs:annotation>
-                                    <xs:documentation>Specifies the format; see available format
-                                        types. This is required for any source. The formats: "PI-XML"
-                                        for FEWS PI-timeseries XML; "usgs" for USGS NWIS; "wrds" for
-                                        WRDS supports JSON; "datacard" for NWS Datacard legacy format;
-                                        "csv" for CSV; "netCDF" for NWM compliant NetCDF files.
-                                    </xs:documentation>
-                                </xs:annotation>
-                            </xs:attribute>
-
 
                             <xs:attribute name="zoneOffset" type="xs:string">
                                 <xs:annotation>

@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.junit.Assert.assertTrue;
+import static wres.io.reading.DataSource.DataDisposition.COMPLEX;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
@@ -70,7 +71,6 @@ public class WebSourceTest
                                                                       InterfaceShortHand.WRDS_NWM,
                                                                       null,
                                                                       null,
-                                                                      null,
                                                                       null );
         DataSourceConfig sourceConfig = new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
                                                               List.of( source ),
@@ -83,7 +83,8 @@ public class WebSourceTest
                                                               null,
                                                               null,
                                                               null );
-        DataSource dataSource = DataSource.of( source,
+        DataSource dataSource = DataSource.of( COMPLEX,
+                                               source,
                                                sourceConfig,
                                                Collections.emptySet(),
                                                BASE_URI );
@@ -124,7 +125,6 @@ public class WebSourceTest
                                                                       InterfaceShortHand.WRDS_AHPS,
                                                                       null,
                                                                       null,
-                                                                      null,
                                                                       null );
         DataSourceConfig sourceConfig = new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
                                                               List.of( source ),
@@ -137,7 +137,8 @@ public class WebSourceTest
                                                               null,
                                                               null,
                                                               null );
-        DataSource dataSource = DataSource.of( source,
+        DataSource dataSource = DataSource.of( COMPLEX,
+                                               source,
                                                sourceConfig,
                                                Collections.emptySet(),
                                                BASE_URI );
@@ -177,7 +178,6 @@ public class WebSourceTest
                                                                       InterfaceShortHand.USGS_NWIS,
                                                                       null,
                                                                       null,
-                                                                      null,
                                                                       null );
         DataSourceConfig sourceConfig = new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
                                                               List.of( source ),
@@ -190,7 +190,8 @@ public class WebSourceTest
                                                               null,
                                                               null,
                                                               null );
-        DataSource dataSource = DataSource.of( source,
+        DataSource dataSource = DataSource.of( COMPLEX,
+                                               source,
                                                sourceConfig,
                                                Collections.emptySet(),
                                                BASE_URI );

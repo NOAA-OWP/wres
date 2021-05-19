@@ -130,7 +130,7 @@ public class ProjectConfigPlus
     private static class ProjValidationEventHandler
             implements ValidationEventHandler, Callable<List<ValidationEvent>>
     {
-        private static final List<ValidationEvent> events = new ArrayList<>();
+        private final List<ValidationEvent> events = new ArrayList<>();
 
         @Override
         public boolean handleEvent(final ValidationEvent validationEvent)

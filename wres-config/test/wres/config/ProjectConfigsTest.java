@@ -224,7 +224,6 @@ public class ProjectConfigsTest
                                              newInterface,
                                              null,
                                              null,
-                                             null,
                                              null );
         String resultDeclaration = ProjectConfigs.addSources( originalDeclaration,
                                                               "a test class",

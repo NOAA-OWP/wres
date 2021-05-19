@@ -31,6 +31,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
+import static wres.io.reading.DataSource.DataDisposition.COMPLEX;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
@@ -164,7 +165,6 @@ public class WrdsNwmReaderTest
                                                                           InterfaceShortHand.WRDS_NWM,
                                                                           null,
                                                                           null,
-                                                                          null,
                                                                           null );
         sourceList.add( confSource );
 
@@ -216,7 +216,8 @@ public class WrdsNwmReaderTest
                                                          null,
                                                          null );
 
-        DataSource dataSource = DataSource.of( confSource,
+        DataSource dataSource = DataSource.of( COMPLEX,
+                                               confSource,
                                                config,
                                                Set.of( LeftOrRightOrBaseline.LEFT,
                                                        LeftOrRightOrBaseline.RIGHT ),
@@ -342,7 +343,6 @@ public class WrdsNwmReaderTest
                                              InterfaceShortHand.WRDS_NWM,
                                              null,
                                              null,
-                                             null,
                                              null );
         sourceList.add( confSource );
 
@@ -395,7 +395,8 @@ public class WrdsNwmReaderTest
                                                          null,
                                                          null );
 
-        DataSource dataSource = DataSource.of( confSource,
+        DataSource dataSource = DataSource.of( COMPLEX,
+                                               confSource,
                                                config,
                                                Set.of( LeftOrRightOrBaseline.LEFT,
                                                        LeftOrRightOrBaseline.RIGHT ),

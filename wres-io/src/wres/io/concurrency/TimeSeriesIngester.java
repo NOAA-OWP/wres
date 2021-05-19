@@ -1,6 +1,9 @@
 package wres.io.concurrency;
 
+import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
@@ -41,6 +44,7 @@ import wres.io.reading.IngestResult;
 import wres.io.reading.IngestedValues;
 import wres.io.reading.PreIngestException;
 import wres.io.reading.SourceCompleter;
+import wres.io.reading.ZippedSource;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
@@ -168,6 +172,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
     @Override
     public List<IngestResult> call()
     {
+        List<IngestResult> results;
         URI location = this.getLocation();
 
         Instant now = Instant.now();
@@ -226,11 +231,11 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
             SourceCompleter completer = createSourceCompleter( source.getId(),
                                                                this.lockManager );
             completer.complete( this.latches );
-            return IngestResult.singleItemListFrom( this.projectConfig,
-                                                    this.dataSource,
-                                                    source.getId(),
-                                                    false,
-                                                    false );
+            results = IngestResult.singleItemListFrom( this.projectConfig,
+                                                       this.dataSource,
+                                                       source.getId(),
+                                                       false,
+                                                       false );
         }
         else
         {
@@ -250,28 +255,47 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
             if ( completed )
             {
                 // Already present and completed
-                return IngestResult.singleItemListFrom( this.projectConfig,
-                                                        this.dataSource,
-                                                        source.getId(),
-                                                        true,
-                                                        false );
+                results = IngestResult.singleItemListFrom( this.projectConfig,
+                                                           this.dataSource,
+                                                           source.getId(),
+                                                           true,
+                                                           false );
+
+                // When successfully completed, remove temp files associated.
+                URI uri = this.dataSource.getUri();
+
+                if ( uri.toString()
+                        .contains( ZippedSource.TEMP_FILE_PREFIX ) )
+                {
+                    try
+                    {
+                        Files.delete( Paths.get( uri ) );
+                    }
+                    catch ( IOException ioe )
+                    {
+                        LOGGER.warn( "Could not remove temp file {}", uri );
+                    }
+                }
             }
             else
             {
                 // Already started but not completed, include the TimeSeries.
                 DataSource dataSourceWithTimeSeries =
-                        DataSource.of( this.dataSource.getSource(),
+                        DataSource.of( this.dataSource.getDisposition(),
+                                       this.dataSource.getSource(),
                                        this.dataSource.getContext(),
                                        this.dataSource.getLinks(),
                                        this.dataSource.getUri(),
                                        this.timeSeries );
-                return IngestResult.singleItemListFrom( this.projectConfig,
-                                                        dataSourceWithTimeSeries,
-                                                        source.getId(),
-                                                        true,
-                                                        true );
+                results = IngestResult.singleItemListFrom( this.projectConfig,
+                                                           dataSourceWithTimeSeries,
+                                                           source.getId(),
+                                                           true,
+                                                           true );
             }
         }
+
+        return results;
     }
 
     private void insertEverything( SystemSettings systemSettings,
