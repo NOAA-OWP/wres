@@ -731,6 +731,9 @@ public class MessageFactory
         Objects.requireNonNull( ignore );
 
         Statistics.Builder statistics = Statistics.newBuilder();
+        
+        // Set the minimum sample size
+        statistics.setMinimumSampleSize( onePool.getMinimumSampleSize() );
 
         PoolMetadata metadata = PoolMetadata.of();
 
@@ -888,7 +891,13 @@ public class MessageFactory
 
         Collection<StatisticsForProject> returnMe = new ArrayList<>();
 
-        mappedStatistics.values().forEach( next -> returnMe.add( next.build() ) );
+        // Build the per-pool statistics
+        for( StatisticsForProject.Builder builder : mappedStatistics.values() )
+        {
+            StatisticsForProject statistics = builder.setMinimumSampleSize( project.getMinimumSampleSize() )
+                                                     .build();
+            returnMe.add( statistics );
+        }
 
         return Collections.unmodifiableCollection( returnMe );
     }

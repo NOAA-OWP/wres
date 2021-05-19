@@ -63,7 +63,12 @@ public class StatisticsForProject
      */
 
     private final List<Future<List<DurationDiagramStatisticOuter>>> paired = new ArrayList<>();
-
+    
+    /**
+     * Minimum sample size used when forming the statistics.
+     */
+    
+    private final int minimumSampleSize;
 
     /**
      * Returns a {@link List} of {@link DoubleScoreStatisticOuter}.
@@ -219,6 +224,15 @@ public class StatisticsForProject
     }
 
     /**
+     * @return the minimum sample size used when calculating statistics.
+     */
+    
+    public int getMinimumSampleSize()
+    {
+        return this.minimumSampleSize;
+    }
+    
+    /**
      * Builder.
      */
 
@@ -268,6 +282,12 @@ public class StatisticsForProject
                 new ConcurrentLinkedQueue<>();
 
         /**
+         * Minimum sample size used when forming the statistics.
+         */
+        
+        private int minimumSampleSize;
+        
+        /**
          * Adds a new {@link DoubleScoreStatisticOuter} for a collection of metrics to the internal store, merging with existing 
          * items that share the same key, as required.
          * 
@@ -275,8 +295,7 @@ public class StatisticsForProject
          * @return the builder
          */
 
-        public Builder
-                addDoubleScoreStatistics( Future<List<DoubleScoreStatisticOuter>> result )
+        public Builder addDoubleScoreStatistics( Future<List<DoubleScoreStatisticOuter>> result )
         {
             this.doubleScoreInternal.add( result );
 
@@ -291,8 +310,7 @@ public class StatisticsForProject
          * @return the builder
          */
 
-        public Builder
-                addDurationScoreStatistics( Future<List<DurationScoreStatisticOuter>> result )
+        public Builder addDurationScoreStatistics( Future<List<DurationScoreStatisticOuter>> result )
         {
             this.durationScoreInternal.add( result );
 
@@ -307,8 +325,7 @@ public class StatisticsForProject
          * @return the builder
          */
 
-        public Builder
-                addDiagramStatistics( Future<List<DiagramStatisticOuter>> result )
+        public Builder addDiagramStatistics( Future<List<DiagramStatisticOuter>> result )
         {
             this.diagramsInternal.add( result );
 
@@ -323,8 +340,7 @@ public class StatisticsForProject
          * @return the builder
          */
 
-        public Builder
-                addBoxPlotStatisticsPerPair( Future<List<BoxplotStatisticOuter>> result )
+        public Builder addBoxPlotStatisticsPerPair( Future<List<BoxplotStatisticOuter>> result )
         {
             this.boxplotPerPairInternal.add( result );
 
@@ -339,8 +355,7 @@ public class StatisticsForProject
          * @return the builder
          */
 
-        public Builder
-                addBoxPlotStatisticsPerPool( Future<List<BoxplotStatisticOuter>> result )
+        public Builder addBoxPlotStatisticsPerPool( Future<List<BoxplotStatisticOuter>> result )
         {
             this.boxplotPerPoolInternal.add( result );
 
@@ -355,8 +370,7 @@ public class StatisticsForProject
          * @return the builder
          */
 
-        public Builder
-                addInstantDurationPairStatistics( Future<List<DurationDiagramStatisticOuter>> result )
+        public Builder addInstantDurationPairStatistics( Future<List<DurationDiagramStatisticOuter>> result )
         {
             this.pairedInternal.add( result );
 
@@ -408,7 +422,20 @@ public class StatisticsForProject
 
             return this;
         }
+        
+        /**
+         * Sets the minimum sample size for statistics calculation.
+         * 
+         * @param minimumSampleSize the minimum sample size
+         * @return the builder
+         */
 
+        public Builder setMinimumSampleSize( int minimumSampleSize )
+        {
+            this.minimumSampleSize = minimumSampleSize;
+            return this;
+        }
+        
         /**
          * Returns a {@link StatisticsForProject}.
          * 
@@ -430,12 +457,13 @@ public class StatisticsForProject
 
     private StatisticsForProject( Builder builder )
     {
-        doubleScores.addAll( builder.doubleScoreInternal );
-        durationScores.addAll( builder.durationScoreInternal );
-        diagrams.addAll( builder.diagramsInternal );
-        boxplotPerPair.addAll( builder.boxplotPerPairInternal );
-        boxplotPerPool.addAll( builder.boxplotPerPoolInternal );
-        paired.addAll( builder.pairedInternal );
+        this.doubleScores.addAll( builder.doubleScoreInternal );
+        this.durationScores.addAll( builder.durationScoreInternal );
+        this.diagrams.addAll( builder.diagramsInternal );
+        this.boxplotPerPair.addAll( builder.boxplotPerPairInternal );
+        this.boxplotPerPool.addAll( builder.boxplotPerPoolInternal );
+        this.paired.addAll( builder.pairedInternal );
+        this.minimumSampleSize = builder.minimumSampleSize;
     }
 
     /**
