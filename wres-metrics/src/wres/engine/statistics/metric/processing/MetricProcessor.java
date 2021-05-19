@@ -279,6 +279,17 @@ public abstract class MetricProcessor<S extends Pool<?>>
                || this.hasMetrics( SampleDataGroup.MULTICATEGORY )
                || this.hasMetrics( SampleDataGroup.DICHOTOMOUS );
     }
+    
+    /**
+     * Returns the metrics to process.
+     * 
+     * @return the metrics
+     */
+
+    public Metrics getMetrics()
+    {
+        return this.metrics;
+    }
 
     /**
      * Validates the configuration and throws a {@link MetricConfigException} if the configuration is invalid.
@@ -424,17 +435,6 @@ public abstract class MetricProcessor<S extends Pool<?>>
 
         //Finally, validate the configuration against the parameters set
         this.validate( config );
-    }
-
-    /**
-     * Returns the metrics to process.
-     * 
-     * @return the metrics
-     */
-
-    Metrics getMetrics()
-    {
-        return this.metrics;
     }
 
     /**

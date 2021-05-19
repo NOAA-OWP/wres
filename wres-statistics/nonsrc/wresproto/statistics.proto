@@ -46,4 +46,7 @@ message Statistics
     
     repeated DurationDiagramStatistic duration_diagrams = 8;
     // Zero or more duration diagram statistics.
+
+    int32 minimum_sample_size = 9;
+    // The minimum sample size used to compute statistics in this collection.
 }

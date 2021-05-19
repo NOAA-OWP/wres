@@ -304,7 +304,12 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                          }
 
                                          // Register statistics produced
-                                         typesProduced.addAll( statistics.getStatisticTypes() );
+                                         Set<StatisticType> types =
+                                                 statistics.stream()
+                                                           .flatMap( next -> next.getStatisticTypes()
+                                                                                 .stream() )
+                                                           .collect( Collectors.toSet() );
+                                         typesProduced.addAll( types );
                                      },
                                                        // Consuming happens in the product thread pool and publishing
                                                        // should happen in a different one because production is
@@ -328,7 +333,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                 if ( processor.hasCachedMetricOutput() )
                 {
                     this.publish( evaluation,
-                                  processor.getCachedMetricOutput(),
+                                  List.of( processor.getCachedMetricOutput() ),
                                   this.getGroupId(),
                                   Collections.emptySet() );
 
@@ -371,7 +376,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      */
 
     private boolean publish( Evaluation evaluation,
-                             StatisticsForProject statistics,
+                             List<StatisticsForProject> statistics,
                              String groupId,
                              Set<StatisticType> ignore )
     {
@@ -384,14 +389,16 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
         try
         {
-            Collection<Statistics> publishMe = MessageFactory.parse( statistics, ignore );
-
-            for ( Statistics next : publishMe )
+            for ( StatisticsForProject nextStatistics : statistics )
             {
-                evaluation.publish( next, groupId );
-                returnMe = true;
-            }
+                Collection<Statistics> publishMe = MessageFactory.parse( nextStatistics, ignore );
 
+                for ( Statistics next : publishMe )
+                {
+                    evaluation.publish( next, groupId );
+                    returnMe = true;
+                }
+            }
             LOGGER.debug( "Published statistics: {}. Ignored these types: {}.", returnMe, ignore );
 
         }
@@ -473,17 +480,17 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @param <R> the right data type
      * @param processors the metric processors
      * @param projectConfig the project declaration
-     * @return a function that consumes a pool and produces statistics
+     * @return a function that consumes a pool and produces one blob of statistics for each processor
      */
 
-    private <L, R> Function<Pool<Pair<L, R>>, StatisticsForProject>
+    private <L, R> Function<Pool<Pair<L, R>>, List<StatisticsForProject>>
             getStatisticsProcessingTask( List<MetricProcessor<Pool<Pair<L, R>>>> processors,
                                          ProjectConfig projectConfig )
     {
         return pool -> {
             Objects.requireNonNull( pool );
 
-            StatisticsForProject.Builder builder = new StatisticsForProject.Builder();
+            List<StatisticsForProject> returnMe = new ArrayList<>();
 
             // No data in the composition
             if ( pool.getRawData().isEmpty()
@@ -492,30 +499,39 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                 LOGGER.debug( "Empty pool discovered for {}: no statistics will be produced.", pool.getMetadata() );
 
                 // Empty container
-                return builder.build();
+                
+                StatisticsForProject empty = new StatisticsForProject.Builder().build();
+                returnMe.add( empty );
+                
+                return returnMe;
             }
 
             // Implement all processing and store the results
             try
             {
-
+                // One blob of statistics for each processor, one processor for each metrics declaration
                 for ( MetricProcessor<Pool<Pair<L, R>>> processor : processors )
                 {
                     StatisticsForProject statistics = processor.apply( pool );
-                    builder.addStatistics( statistics );
-                }
+                    StatisticsForProject.Builder builder = new StatisticsForProject.Builder();
 
-                // Compute separate statistics for the baseline?
-                if ( pool.hasBaseline() && projectConfig.getInputs().getBaseline().isSeparateMetrics() )
-                {
-                    LOGGER.debug( "Computing separate statistics for the baseline pairs associated with pool {}.",
-                                  pool.getMetadata() );
-
-                    for ( MetricProcessor<Pool<Pair<L, R>>> processor : processors )
+                    builder.addStatistics( statistics )
+                           .setMinimumSampleSize( processor.getMetrics().getMinimumSampleSize() );
+                    
+                    // Compute separate statistics for the baseline?
+                    if ( pool.hasBaseline() && projectConfig.getInputs().getBaseline().isSeparateMetrics() )
                     {
-                        StatisticsForProject statistics = processor.apply( pool.getBaselineData() );
-                        builder.addStatistics( statistics );
+                        Pool<Pair<L,R>> baseline = pool.getBaselineData();
+                        
+                        LOGGER.debug( "Computing separate statistics for the baseline pairs associated with pool {}.",
+                                      baseline.getMetadata() );
+
+                            StatisticsForProject baselineStatistics = processor.apply( baseline );
+                            builder.addStatistics( baselineStatistics );
                     }
+                    
+                    StatisticsForProject nextStatistics = builder.build();
+                    returnMe.add( nextStatistics );
                 }
             }
             catch ( InterruptedException e )
@@ -525,7 +541,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                 throw new WresProcessingException( this.errorMessage, e );
             }
 
-            return builder.build();
+            return Collections.unmodifiableList( returnMe );
         };
     }
 
