@@ -94,6 +94,7 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
      * Computes all metrics.
      * 
      * @param input the input
+     * @return statistics the statistics
      * @throws NullPointerException if the input is null
      * @throws MetricCalculationException if the calculation fails for any other reason
      */
@@ -110,6 +111,8 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
      * Computes a subset of metrics.
      * 
      * @param input the input
+     * @param metrics the metrics
+     * @return the statistics
      * @throws NullPointerException if the input is null
      * @throws IllegalArgumentException if the subset is invalid
      * @throws MetricCalculationException if the calculation fails for any other reason

@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -193,7 +194,7 @@ public final class RankHistogramTest
 
         DiagramStatisticOuter actual = this.rh.apply( input );
 
-        List<Double> source = List.of( Double.NaN );
+        List<Double> source = Collections.emptyList();
 
         DiagramStatisticComponent ro =
                 DiagramStatisticComponent.newBuilder()

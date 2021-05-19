@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.processing;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -871,73 +872,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
             processor.apply( next );
         }
-
-        // Validate a subset of the data       
-        assertEquals( 10,
-                      Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
-                                     MetricConstants.THREAT_SCORE )
-                            .size() );
-
-        assertEquals( 20 * 8 + 10,
-                      Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
-                                     metric -> metric.getMetricName() != MetricConstants.THREAT_SCORE )
-                            .size() );
-
-        // Expected result
-        TimeWindowOuter expectedWindow = TimeWindowOuter.of( Instant.MIN,
-                                                             Instant.MAX,
-                                                             Duration.ofHours( 1 ) );
-
-        OneOrTwoThresholds expectedThreshold =
-                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT,
-                                                          MeasurementUnit.of( "CMS" ) ) );
-
-        Evaluation evaluation = Evaluation.newBuilder()
-                                          .setRightVariableName( "SQIN" )
-                                          .setRightDataName( "HEFS" )
-                                          .setMeasurementUnit( "CMS" )
-                                          .build();
-
-        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( DRRC2 ),
-                                                                    expectedWindow,
-                                                                    null,
-                                                                    expectedThreshold,
-                                                                    false );
-
-        PoolMetadata expectedMeta = PoolMetadata.of( evaluation, pool );
-
-        DoubleScoreStatistic table =
-                DoubleScoreStatistic.newBuilder()
-                                    .setMetric( ContingencyTable.BASIC_METRIC )
-                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setMetric( ContingencyTable.TRUE_POSITIVES )
-                                                                                 .setValue( 0 ) )
-                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setMetric( ContingencyTable.FALSE_POSITIVES )
-                                                                                 .setValue( 0 ) )
-                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setMetric( ContingencyTable.FALSE_NEGATIVES )
-                                                                                 .setValue( 0 ) )
-                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setMetric( ContingencyTable.TRUE_NEGATIVES )
-                                                                                 .setValue( 0 ) )
-                                    .build();
-
-        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( table, expectedMeta );
-
-        DoubleScoreStatisticOuter actual = Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
-                                                          meta -> meta.getMetadata()
-                                                                      .getThresholds()
-                                                                      .equals( expectedThreshold )
-                                                                  && meta.getMetadata()
-                                                                         .getTimeWindow()
-                                                                         .equals( expectedWindow )
-                                                                  && meta.getMetricName() == MetricConstants.CONTINGENCY_TABLE )
-                                                 .get( 0 );
-
-        assertEquals( expected, actual );
+ 
+        assertTrue( processor.getCachedMetricOutput().getDoubleScoreStatistics().isEmpty() );
     }
 
     @Test

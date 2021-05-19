@@ -199,19 +199,27 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
     /**
      * Processes one threshold for metrics that consume dichotomous pairs. 
      * 
-     * @param input the input pairs
+     * @param pairs the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
      */
 
-    void processDichotomousPairs( Pool<Pair<Boolean, Boolean>> input,
+    void processDichotomousPairs( Pool<Pair<Boolean, Boolean>> pairs,
                                   MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                   StatisticType outGroup )
     {
+        // Don't waste cpu cycles computing statistics for empty pairs
+        if ( pairs.getRawData().isEmpty() )
+        {
+            LOGGER.debug( "Skipping the calculation of statistics for an empty pool of pairs with metadata {}.",
+                          pairs.getMetadata() );
+
+            return;
+        }
 
         if ( outGroup == StatisticType.DOUBLE_SCORE )
         {
-            futures.addDoubleScoreOutput( this.processDichotomousPairs( input, this.dichotomousScalar ) );
+            futures.addDoubleScoreOutput( this.processDichotomousPairs( pairs, this.dichotomousScalar ) );
         }
     }
 
@@ -354,28 +362,37 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
      * Processes one threshold for metrics that consume single-valued pairs and produce a specified 
      * {@link StatisticType}. 
      * 
-     * @param input the input pairs
+     * @param pairs the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
      */
 
-    private void processSingleValuedPairs( Pool<Pair<Double, Double>> input,
+    private void processSingleValuedPairs( Pool<Pair<Double, Double>> pairs,
                                            MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                            StatisticType outGroup )
     {
+        // Don't waste cpu cycles computing statistics for empty pairs
+        if ( pairs.getRawData().isEmpty() )
+        {
+            LOGGER.debug( "Skipping the calculation of statistics for an empty pool of pairs with metadata {}.",
+                          pairs.getMetadata() );
+
+            return;
+        }
+
         switch ( outGroup )
         {
             case DOUBLE_SCORE:
-                futures.addDoubleScoreOutput( this.processSingleValuedPairs( input,
+                futures.addDoubleScoreOutput( this.processSingleValuedPairs( pairs,
                                                                              this.singleValuedScore ) );
                 break;
 
             case DIAGRAM:
-                futures.addDiagramOutput( this.processSingleValuedPairs( input,
+                futures.addDiagramOutput( this.processSingleValuedPairs( pairs,
                                                                          this.singleValuedDiagrams ) );
                 break;
             case BOXPLOT_PER_POOL:
-                futures.addBoxPlotOutputPerPool( this.processSingleValuedPairs( input,
+                futures.addBoxPlotOutputPerPool( this.processSingleValuedPairs( pairs,
                                                                                 this.singleValuedBoxPlot ) );
                 break;
             default:

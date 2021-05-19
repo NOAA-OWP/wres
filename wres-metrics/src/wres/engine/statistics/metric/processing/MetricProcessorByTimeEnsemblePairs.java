@@ -500,7 +500,6 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                 pairs = Slicer.filter( pairs, filter, null );
             }
 
-
             Builder<Pair<Double, Ensemble>> builder = new Builder<>();
             pairs = builder.addData( pairs )
                            .setMetadata( PoolMetadata.of( pairs.getMetadata(),
@@ -520,34 +519,43 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
      * Processes one threshold for metrics that consume ensemble pairs and produce a specified 
      * {@link StatisticType}. 
      * 
-     * @param input the input pairs
+     * @param pairs the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
      */
 
-    private void processEnsemblePairs( Pool<Pair<Double, Ensemble>> input,
+    private void processEnsemblePairs( Pool<Pair<Double, Ensemble>> pairs,
                                        MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                        StatisticType outGroup )
     {
+        // Don't waste cpu cycles computing statistics for empty pairs
+        if ( pairs.getRawData().isEmpty() )
+        {
+            LOGGER.debug( "Skipping the calculation of statistics for an empty pool of pairs with metadata {}.",
+                          pairs.getMetadata() );
+
+            return;
+        }
+
         if ( outGroup == StatisticType.DOUBLE_SCORE )
         {
             // Baseline pool without a baseline of its own?
-            if ( input.getMetadata().getPool().getIsBaselinePool() && !input.hasBaseline() )
+            if ( pairs.getMetadata().getPool().getIsBaselinePool() && !pairs.hasBaseline() )
             {
-                futures.addDoubleScoreOutput( this.processEnsemblePairs( input, this.ensembleScoreNoBaseline ) );
+                futures.addDoubleScoreOutput( this.processEnsemblePairs( pairs, this.ensembleScoreNoBaseline ) );
             }
             else
             {
-                futures.addDoubleScoreOutput( this.processEnsemblePairs( input, this.ensembleScore ) );
+                futures.addDoubleScoreOutput( this.processEnsemblePairs( pairs, this.ensembleScore ) );
             }
         }
         else if ( outGroup == StatisticType.DIAGRAM )
         {
-            futures.addDiagramOutput( this.processEnsemblePairs( input, this.ensembleDiagrams ) );
+            futures.addDiagramOutput( this.processEnsemblePairs( pairs, this.ensembleDiagrams ) );
         }
         else if ( outGroup == StatisticType.BOXPLOT_PER_PAIR )
         {
-            futures.addBoxPlotOutputPerPair( this.processEnsemblePairs( input, this.ensembleBoxPlot ) );
+            futures.addBoxPlotOutputPerPair( this.processEnsemblePairs( pairs, this.ensembleBoxPlot ) );
         }
     }
 
@@ -652,24 +660,33 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
     /**
      * Processes one threshold for metrics that consume discrete probability pairs for a given {@link StatisticType}.
      * 
-     * @param input the input pairs
+     * @param pairs the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @param threshold the threshold
      */
 
-    private void processDiscreteProbabilityPairs( Pool<Pair<Probability, Probability>> input,
+    private void processDiscreteProbabilityPairs( Pool<Pair<Probability, Probability>> pairs,
                                                   MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                   StatisticType outGroup )
     {
+        // Don't waste cpu cycles computing statistics for empty pairs
+        if ( pairs.getRawData().isEmpty() )
+        {
+            LOGGER.debug( "Skipping the calculation of statistics for an empty pool of pairs with metadata {}.",
+                          pairs.getMetadata() );
+
+            return;
+        }
+
         if ( outGroup == StatisticType.DOUBLE_SCORE )
         {
-            futures.addDoubleScoreOutput( this.processDiscreteProbabilityPairs( input,
+            futures.addDoubleScoreOutput( this.processDiscreteProbabilityPairs( pairs,
                                                                                 this.discreteProbabilityScore ) );
         }
         else if ( outGroup == StatisticType.DIAGRAM )
         {
-            futures.addDiagramOutput( this.processDiscreteProbabilityPairs( input, this.discreteProbabilityDiagrams ) );
+            futures.addDiagramOutput( this.processDiscreteProbabilityPairs( pairs, this.discreteProbabilityDiagrams ) );
         }
     }
 
