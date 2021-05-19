@@ -1,9 +1,10 @@
 package wres.io.reading;
 
 import java.io.IOException;
-import java.net.URI;
 
-import wres.config.generated.Format;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.config.generated.ProjectConfig;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
@@ -19,14 +20,13 @@ import wres.io.reading.wrds.WRDSSource;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
-import wres.util.NetCDF;
-import wres.util.Strings;
 
 /**
  * @author ctubbs
  *
  */
 public class ReaderFactory {
+    private static final Logger LOGGER = LoggerFactory.getLogger( ReaderFactory.class );
     private ReaderFactory(){}
 
     public static BasicSource getReader( SystemSettings systemSettings,
@@ -41,11 +41,11 @@ public class ReaderFactory {
                                          DatabaseLockManager lockManager )
             throws IOException
 	{
-        Format typeOfFile = getFiletype( dataSource.getUri() );
-
+        LOGGER.debug( "getReader called on dataSource {}", dataSource );
+        DataSource.DataDisposition disposition = dataSource.getDisposition();
 		BasicSource source;
 
-		switch (typeOfFile)
+        switch ( disposition )
         {
 			case DATACARD:
                 source = new DatacardSource( systemSettings,
@@ -58,7 +58,7 @@ public class ReaderFactory {
                                              dataSource,
                                              lockManager );
 				break;
-            case ARCHIVE:
+            case GZIP:
                 source = new ZippedSource( systemSettings,
                                            database,
                                            dataSourcesCache,
@@ -70,7 +70,7 @@ public class ReaderFactory {
                                            dataSource,
                                            lockManager );
 				break;
-            case NET_CDF:
+            case NETCDF_GRIDDED:
                 source = new NWMSource( systemSettings,
                                         database,
                                         dataSourcesCache,
@@ -78,7 +78,7 @@ public class ReaderFactory {
                                         dataSource,
                                         lockManager );
 				break;
-			case PI_XML:
+            case XML_PI_TIMESERIES:
                 source = new FEWSSource( systemSettings,
                                          database,
                                          dataSourcesCache,
@@ -90,7 +90,8 @@ public class ReaderFactory {
                                          dataSource,
                                          lockManager );
 				break;
-            case WRDS:
+            case JSON_WRDS_AHPS:
+            case JSON_WRDS_NWM:
                 source = new WRDSSource( systemSettings,
                                          database,
                                          dataSourcesCache,
@@ -102,7 +103,7 @@ public class ReaderFactory {
                                          dataSource,
                                          lockManager );
                 break;
-            case CSV:
+            case CSV_WRES:
                 source = new CSVSource( systemSettings,
                                         database,
                                         featuresCache,
@@ -113,7 +114,7 @@ public class ReaderFactory {
                                         dataSource,
                                         lockManager );
                 break;
-            case WATERML:
+            case JSON_WATERML:
                 source = new WaterMLBasicSource( systemSettings,
                                                  database,
                                                  featuresCache,
@@ -130,56 +131,5 @@ public class ReaderFactory {
 		}
 
 		return source;
-	}
-	
-    static Format getFiletype( final URI filename )
-	{
-        Format type;
-
-		String pathName = filename.toString().toLowerCase();
-
-		// Can't do switch because of the PIXML logic
-
-        if ( filename.getScheme() != null && filename.getScheme().startsWith( "http" ) )
-        {
-            if ( filename.getHost()
-                         .toLowerCase()
-                         .contains( "usgs.gov" ) )
-            {
-                type = Format.WATERML;
-            }
-            else
-            {
-                type = Format.WRDS;
-            }
-        }
-		else if (pathName.endsWith("tar.gz") || pathName.endsWith(".tgz"))
-		{
-            type = Format.ARCHIVE;
-		}
-		else if ( pathName.endsWith(".xml") ||
-				  (pathName.endsWith(".xml.gz")) ||
-				  Strings.contains(pathName, ".+\\.\\d+$"))
-		{
-            type = Format.PI_XML;
-		}
-        else if ( NetCDF.isNetCDFFile(pathName ) )
-        {
-            type = Format.NET_CDF;
-        }
-        else if(pathName.endsWith( ".json" ) || filename.toASCIIString().contains( "***REMOVED***eds-app1" ))
-        {
-            type = Format.WRDS;
-        }
-        else if (pathName.endsWith( ".csv" ))
-        {
-            type = Format.CSV;
-        }
-		else
-		{
-            type = Format.DATACARD;
-		}
-
-		return type;
 	}
 }

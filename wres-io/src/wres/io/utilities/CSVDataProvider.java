@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -97,7 +98,8 @@ class CSVDataProvider implements DataProvider
 
     private void openFile() throws IOException
     {
-        FileReader fileReader = new FileReader( this.filePath );
+        FileReader fileReader = new FileReader( this.filePath,
+                                                StandardCharsets.UTF_8 );
         this.reader = new BufferedReader( fileReader );
 
         // If there aren't any columns defined, try to determine them from a possible header

@@ -251,7 +251,6 @@ public class WresJobInput
                                                                           null,
                                                                           null,
                                                                           null,
-                                                                          null,
                                                                           null );
             leftDataset.add( source );
         }
@@ -262,7 +261,6 @@ public class WresJobInput
                                                                           null,
                                                                           null,
                                                                           null,
-                                                                          null,
                                                                           null );
             rightDataset.add( source );
         }
@@ -270,7 +268,6 @@ public class WresJobInput
         for ( URI uri : baselineUris )
         {
             DataSourceConfig.Source source = new DataSourceConfig.Source( uri,
-                                                                          null,
                                                                           null,
                                                                           null,
                                                                           null,

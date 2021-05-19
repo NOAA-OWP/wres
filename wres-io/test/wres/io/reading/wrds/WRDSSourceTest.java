@@ -24,6 +24,7 @@ import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
+import static wres.io.reading.DataSource.DataDisposition.JSON_WRDS_AHPS;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
@@ -3351,7 +3352,6 @@ public class WRDSSourceTest
                                                                           InterfaceShortHand.WRDS_AHPS,
                                                                           null,
                                                                           null,
-                                                                          null,
                                                                           null );
 
         sourceList.add( confSource );
@@ -3404,7 +3404,8 @@ public class WRDSSourceTest
                                                          null,
                                                          null );
 
-        DataSource dataSource = DataSource.of( confSource,
+        DataSource dataSource = DataSource.of( JSON_WRDS_AHPS,
+                                               confSource,
                                                config,
                                                Set.of( LeftOrRightOrBaseline.LEFT,
                                                        LeftOrRightOrBaseline.RIGHT ),
@@ -3489,7 +3490,6 @@ public class WRDSSourceTest
                                                                           InterfaceShortHand.WRDS_AHPS,
                                                                           null,
                                                                           null,
-                                                                          null,
                                                                           null );
 
         sourceList.add( confSource );
@@ -3542,7 +3542,8 @@ public class WRDSSourceTest
                                                          null,
                                                          null );
 
-        DataSource dataSource = DataSource.of( confSource,
+        DataSource dataSource = DataSource.of( JSON_WRDS_AHPS,
+                                               confSource,
                                                config,
                                                Set.of( LeftOrRightOrBaseline.LEFT,
                                                        LeftOrRightOrBaseline.RIGHT ),
@@ -3617,7 +3618,6 @@ public class WRDSSourceTest
                                                                           InterfaceShortHand.WRDS_AHPS,
                                                                           null,
                                                                           null,
-                                                                          null,
                                                                           null );
 
         sourceList.add( confSource );
@@ -3670,7 +3670,8 @@ public class WRDSSourceTest
                                                          null,
                                                          null );
 
-        DataSource dataSource = DataSource.of( confSource,
+        DataSource dataSource = DataSource.of( JSON_WRDS_AHPS,
+                                               confSource,
                                                config,
                                                Set.of( LeftOrRightOrBaseline.LEFT,
                                                        LeftOrRightOrBaseline.RIGHT ),
@@ -3734,7 +3735,6 @@ public class WRDSSourceTest
                                                                           InterfaceShortHand.WRDS_AHPS,
                                                                           null,
                                                                           null,
-                                                                          null,
                                                                           null );
 
         sourceList.add( confSource );
@@ -3787,7 +3787,8 @@ public class WRDSSourceTest
                                                          null,
                                                          null );
 
-        DataSource dataSource = DataSource.of( confSource,
+        DataSource dataSource = DataSource.of( JSON_WRDS_AHPS,
+                                               confSource,
                                                config,
                                                Set.of( LeftOrRightOrBaseline.LEFT,
                                                        LeftOrRightOrBaseline.RIGHT ),

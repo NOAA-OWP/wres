@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,13 +33,15 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static wres.io.reading.DataSource.DataDisposition.TARBALL;
+import static wres.io.reading.DataSource.DataDisposition.UNKNOWN;
+import static wres.io.reading.DataSource.DataDisposition.XML_PI_TIMESERIES;
+
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.IngestSaver;
 import wres.io.concurrency.WRESCallable;
 import wres.io.concurrency.ZippedPIXMLIngest;
-import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
@@ -58,6 +61,9 @@ import wres.system.SystemSettings;
 public class ZippedSource extends BasicSource {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ZippedSource.class);
+
+    /** After ingest, delete files starting with this prefix. */
+    public static final String TEMP_FILE_PREFIX = "wres_zipped_source_";
 
     private final SystemSettings systemSettings;
     private final Database database;
@@ -110,9 +116,11 @@ public class ZippedSource extends BasicSource {
     @Override
     public List<IngestResult> save()
     {
+        DataSource source = this.getDataSource();
+
         try
         {
-            return issue();
+            return issue( source );
         }
         finally
         {
@@ -198,30 +206,92 @@ public class ZippedSource extends BasicSource {
         return this.measurementUnitsCache;
     }
 
-    private List<IngestResult> issue()
+    private List<IngestResult> issue( DataSource dataSource )
+    {
+        List<IngestResult> result;
+
+        try ( FileInputStream fileStream = new FileInputStream( this.getAbsoluteFilename() );
+              GzipCompressorInputStream decompressedFileStream = new GzipCompressorInputStream( fileStream );
+              BufferedInputStream bufferedStream = new BufferedInputStream( decompressedFileStream ) )
+        {
+            String nameInside = decompressedFileStream.getMetaData()
+                                                      .getFilename();
+            URI mashupUri = URI.create( this.getFilename() + "/" + nameInside );
+            DataSource.DataDisposition disposition = DataSource.detectFormat( bufferedStream,
+                                                                              mashupUri );
+            // TODO: Split tar code out of this class for plain tar processing
+            if ( disposition.equals( TARBALL ) )
+            {
+                result = readFromTarStream( bufferedStream,
+                                            mashupUri );
+            }
+            else if ( disposition.equals( UNKNOWN ) )
+            {
+                LOGGER.warn( "Skipping unknown gzipped data from inside {}",
+                             dataSource );
+                result = Collections.emptyList();
+            }
+            else
+            {
+                // Found some other supported type of document, ingest it.
+                byte[] content = bufferedStream.readAllBytes();
+
+                // Until all simple readers take @InputStream@, make temp file.
+                URI tempFileLocation = this.writeTempFile( nameInside, content );
+                DataSource decompressedSource = DataSource.of( disposition,
+                                                               dataSource.getSource(),
+                                                               dataSource.getContext(),
+                                                               dataSource.getLinks(),
+                                                               tempFileLocation );
+                IngestSaver ingestSaver =
+                        IngestSaver.createTask()
+                                   .withSystemSettings( this.getSystemSettings() )
+                                   .withDatabase( this.getDatabase() )
+                                   .withDataSourcesCache( this.getDataSourcesCache() )
+                                   .withFeaturesCache( this.getFeaturesCache() )
+                                   .withVariablesCache( this.getVariablesCache() )
+                                   .withEnsemblesCache( this.getEnsemblesCache() )
+                                   .withMeasurementUnitsCache( this.getMeasurementUnitsCache() )
+                                   .withProject( this.getProjectConfig() )
+                                   .withDataSource( decompressedSource )
+                                   .withoutHash()
+                                   .withProgressMonitoring()
+                                   .withLockManager( this.getLockManager() )
+                                   .build();
+                result = ingestSaver.call();
+            }
+        }
+        catch ( IOException ioe )
+        {
+            throw new PreIngestException( "Failed to process a gzipped source from "
+                                          + this.getDataSource() );
+        }
+
+        LOGGER.debug("Finished parsing '{}'", this.getFilename());
+        return result;
+    }
+
+    private List<IngestResult> readFromTarStream( InputStream inputStream,
+                                                  URI tarName )
     {
         List<IngestResult> result = new ArrayList<>();
 
-        TarArchiveEntry archivedSource;
-
-        try ( FileInputStream fileStream = new FileInputStream( this.getAbsoluteFilename() );
-              BufferedInputStream bufferedFile = new BufferedInputStream( fileStream );
-              GzipCompressorInputStream decompressedFileStream = new GzipCompressorInputStream( bufferedFile );
-              TarArchiveInputStream archive = new TarArchiveInputStream( decompressedFileStream ) )
+        try ( TarArchiveInputStream archive = new TarArchiveInputStream( inputStream );
+              BufferedInputStream bufferedArchive = new BufferedInputStream( archive ) )
         {
-            archivedSource = archive.getNextTarEntry();
+            TarArchiveEntry archivedSource = archive.getNextTarEntry();
 
-            while (archivedSource != null)
+            while ( archivedSource != null )
             {
-                //ProgressMonitor.increment();
-                if (archivedSource.isFile())
+                if ( archivedSource.isFile() )
                 {
-                    int bytesRead = processFile(archivedSource, archive);
+                    int bytesRead = processTarEntry( archivedSource,
+                                                     bufferedArchive,
+                                                     tarName );
 
                     // The loop can be broken if the end of the file is reached
-                    if (bytesRead == -1)
+                    if ( bytesRead == -1 )
                     {
-                        //ProgressMonitor.completeStep();
                         break;
                     }
                 }
@@ -237,8 +307,7 @@ public class ZippedSource extends BasicSource {
                 }
 
                 archivedSource = archive.getNextTarEntry();
-                //ProgressMonitor.completeStep();
-            }
+           }
 
             Future<List<IngestResult>> ingestTask = this.getIngestTask();
 
@@ -253,14 +322,14 @@ public class ZippedSource extends BasicSource {
                 else if ( LOGGER.isDebugEnabled() )
                 {
                     LOGGER.debug( "A null value was returned in the "
-                                  + "ZippedSource class (1). See also "
-                                  + "Database class? Task: {}", ingestTask );
+                                  + "ZippedSource class (1). Task: {}",
+                                  ingestTask );
                 }
 
                 ingestTask = this.getIngestTask();
             }
 
-            for ( URI filename : this.savedFiles)
+            for ( URI filename : this.savedFiles )
             {
                 Path path = Paths.get( filename );
                 boolean fileRemoved = Files.deleteIfExists( path );
@@ -273,38 +342,48 @@ public class ZippedSource extends BasicSource {
                 }
             }
         }
-        catch ( InterruptedException ie )
-        {
-            LOGGER.warn( "Interrupted while ingesting a zipped source from {}.",
-                         dataSource, ie );
-            Thread.currentThread().interrupt();
-        }
         catch ( ExecutionException | IOException e )
         {
-            throw new PreIngestException( "Failed to process a zipped source from "
-                                          + dataSource, e );
+            throw new PreIngestException( "Failed to process a tarball "
+                                          + tarName + " within source "
+                                          + this.getDataSource(), e );
+        }
+        catch ( InterruptedException ie )
+        {
+            LOGGER.warn( "Interrupted while ingesting a tarball {} from {}.",
+                         tarName, this.getDataSource(), ie );
+            Thread.currentThread().interrupt();
         }
 
-        LOGGER.debug("Finished parsing '{}'", this.getFilename());
         return Collections.unmodifiableList( result );
     }
 
-    private int processFile(TarArchiveEntry source,
-                             TarArchiveInputStream archiveInputStream)
-            throws IOException
+
+    private int processTarEntry( TarArchiveEntry source,
+                                 InputStream archiveInputStream,
+                                 URI tarName )
     {
-        int bytesRead = (int)source.getSize();
-        URI archivedFileName = this.getFilename().resolve( source.getName() );
-        Format sourceType = ReaderFactory.getFiletype( archivedFileName );
+        int expectedByteCount = (int) source.getSize();
+        int bytesRead = 0;
+        URI archivedFileName = URI.create( tarName + "/" + source.getName() );
+        DataSource.DataDisposition disposition = DataSource.detectFormat( archiveInputStream,
+                                                                          archivedFileName );
+
+        if ( disposition == UNKNOWN )
+        {
+            LOGGER.warn( "Skipping unknown data type in {}", archivedFileName );
+            return DataSource.DETECTION_BYTES;
+        }
+
         DataSourceConfig.Source originalSource = this.dataSource.getSource();
 
-        byte[] content = new byte[bytesRead];
+        byte[] content = new byte[expectedByteCount];
 
         try
         {
             bytesRead = archiveInputStream.read( content, 0, content.length );
         }
-        catch (EOFException eof)
+        catch ( EOFException eof )
         {
             String message = "The end of the archive entry for: '"
                              + archivedFileName + "' was "
@@ -318,7 +397,12 @@ public class ZippedSource extends BasicSource {
             // But then again, shouldn't the user be notified that the archive
             // is corrupt? And if so, stopping (propagating here) is the
             // clearest way to notify the user of a corrupt input file.
-            throw new IngestException( message, eof );
+            throw new PreIngestException( message, eof );
+        }
+        catch ( IOException ioe )
+        {
+            throw new PreIngestException( "Failed to read from '"
+                                          + archivedFileName + "'", ioe );
         }
 
         if ( originalSource == null )
@@ -330,26 +414,16 @@ public class ZippedSource extends BasicSource {
             return bytesRead;
         }
 
-        DataSource innerDataSource = DataSource.of( dataSource.getSource(),
-                                                    dataSource.getContext(),
-                                                    dataSource.getLinks(),
-                                                    archivedFileName );
-
-        String message = "The file '{}' will now be ingested as a set of ";
-        if (ConfigHelper.isForecast( this.getDataSource().getContext() ))
-        {
-            message += "forecasts.";
-        }
-        else
-        {
-            message += "observations.";
-        }
-        LOGGER.debug( message, archivedFileName );
-
+        LOGGER.debug( "The file '{}' will now be read.", archivedFileName );
         WRESCallable<List<IngestResult>> ingest;
 
-        if ( sourceType == Format.PI_XML )
+        if ( disposition == XML_PI_TIMESERIES )
         {
+            DataSource innerDataSource = DataSource.of( disposition,
+                                                        dataSource.getSource(),
+                                                        dataSource.getContext(),
+                                                        dataSource.getLinks(),
+                                                        archivedFileName );
             ingest = new ZippedPIXMLIngest( this.getSystemSettings(),
                                             this.getDatabase(),
                                             this.getDataSourcesCache(),
@@ -367,34 +441,73 @@ public class ZippedSource extends BasicSource {
         }
         else
         {
-            File tempFile = File.createTempFile( "wres_zipped_source", source.getName() );
-
-            try ( FileOutputStream stream = new FileOutputStream( tempFile ) )
-            {
-                stream.write(content);
-                URI tempFileLocation = tempFile.toURI();
-                this.savedFiles.add( tempFileLocation );
-
-                ProgressMonitor.increment();
-                Callable<List<IngestResult>> task =
-                        IngestSaver.createTask()
-                                   .withSystemSettings( this.getSystemSettings() )
-                                   .withDatabase( this.getDatabase() )
-                                   .withDataSourcesCache( this.getDataSourcesCache() )
-                                   .withFeaturesCache( this.getFeaturesCache() )
-                                   .withVariablesCache( this.getVariablesCache() )
-                                   .withEnsemblesCache( this.getEnsemblesCache() )
-                                   .withMeasurementUnitsCache( this.getMeasurementUnitsCache() )
-                                   .withProject( this.getProjectConfig() )
-                                   .withDataSource( innerDataSource )
-                                   .withoutHash()
-                                   .withProgressMonitoring()
-                                   .build();
-                this.addIngestTask(task);
-            }
+            URI tempFileLocation = this.writeTempFile( archivedFileName.getPath(),
+                                                       content );
+            this.savedFiles.add( tempFileLocation );
+            DataSource innerDataSource = DataSource.of( disposition,
+                                                        dataSource.getSource(),
+                                                        dataSource.getContext(),
+                                                        dataSource.getLinks(),
+                                                        tempFileLocation );
+            ProgressMonitor.increment();
+            Callable<List<IngestResult>> task =
+                    IngestSaver.createTask()
+                               .withSystemSettings( this.getSystemSettings() )
+                               .withDatabase( this.getDatabase() )
+                               .withDataSourcesCache( this.getDataSourcesCache() )
+                               .withFeaturesCache( this.getFeaturesCache() )
+                               .withVariablesCache( this.getVariablesCache() )
+                               .withEnsemblesCache( this.getEnsemblesCache() )
+                               .withMeasurementUnitsCache( this.getMeasurementUnitsCache() )
+                               .withProject( this.getProjectConfig() )
+                               .withDataSource( innerDataSource )
+                               .withoutHash()
+                               .withProgressMonitoring()
+                               .withLockManager( this.getLockManager() )
+                               .build();
+            this.addIngestTask(task);
         }
 
         return bytesRead;
+    }
+
+
+    /**
+     * Write to a temporary file (yuck, but sometimes not the worst way).
+     * @param endOfName The name to attach to the temp file prefix.
+     * @param bytesToWrite The raw data to write.
+     * @return the URI of the temp file written.
+     */
+
+    private URI writeTempFile( String endOfName,
+                               byte[] bytesToWrite )
+    {
+        File tempFile;
+
+        try
+        {
+            tempFile = File.createTempFile( TEMP_FILE_PREFIX,
+                                            "_" + endOfName );
+        }
+        catch ( IOException ioe )
+        {
+            throw new PreIngestException( "Failed to create temporary file for in-archive data named '"
+                                          + endOfName + "'", ioe );
+        }
+
+        try ( FileOutputStream stream = new FileOutputStream( tempFile ) )
+        {
+            stream.write( bytesToWrite );
+        }
+        catch ( IOException ioe )
+        {
+            throw new PreIngestException( "Failed to write to temporary file '"
+                                          + tempFile
+                                          + "' for in-archive data named '"
+                                          + endOfName + "'", ioe );
+        }
+
+        return tempFile.toURI();
     }
 
     private DatabaseLockManager getLockManager()

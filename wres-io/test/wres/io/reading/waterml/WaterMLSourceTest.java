@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static wres.io.reading.DataSource.DataDisposition.JSON_WATERML;
 
 import wres.config.generated.DataSourceConfig;
 import wres.datamodel.time.TimeSeries;
@@ -32,9 +33,9 @@ public class WaterMLSourceTest
                                              null,
                                              null,
                                              null,
-                                             null,
                                              null );
-        fakeSource = DataSource.of( fakeDeclarationSource,
+        fakeSource = DataSource.of( JSON_WATERML,
+                                    fakeDeclarationSource,
                                     new DataSourceConfig( null,
                                                           List.of( fakeDeclarationSource ),
                                                           null,

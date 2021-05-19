@@ -308,7 +308,7 @@ public final class PIXMLReader extends XMLReader
 	 * @param reader The XML reader, positioned at a "series" tag
 	 */
 	private void parseSeries(XMLStreamReader reader)
-            throws XMLStreamException, SQLException, IOException
+            throws XMLStreamException, SQLException
     {
         // If we get to this point without a zone offset, something is wrong.
         // See #38801 discussion.
@@ -333,16 +333,15 @@ public final class PIXMLReader extends XMLReader
             if ( configuredOffset != null
                  && !configuredOffset.equals( this.getZoneOffset() ) )
             {
-                String message =
-                        "The zone offset specified for a PI-XML source ("
-                        + configuredOffset.toString()
-                        + ") did not match what was in the source data ("
-                        + this.getZoneOffset().toString()
-                        + "). It is best to NOT specify the zone for PI-XML "
-                        + "sources in the project configuration because WRES "
-                        + "can simply use the zone offset found in the data.";
-                throw new ProjectConfigException( this.getSourceConfig(),
-                                                  message );
+                LOGGER.warn( "The zone offset specified {}{}{}{}{}{}{}{}",
+                             "for this source (",
+                             configuredOffset,
+                             ") did not match what was in the source data (",
+                             this.getZoneOffset(),
+                             "). It is best to NOT specify the zone for PI-XML",
+                             " sources in the project declaration because WRES ",
+                             "ignores it and uses the zone offset found in-",
+                             "band in the data");
             }
         }
 

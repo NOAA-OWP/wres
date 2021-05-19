@@ -26,6 +26,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static wres.io.reading.DataSource.DataDisposition.COMPLEX;
+
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.TimeSeries;
@@ -521,7 +523,8 @@ public class NWMReader implements Callable<List<IngestResult>>
                                                     + "/"
                                                     + referenceDatetime.toString() );
                             DataSource innerDataSource =
-                                    DataSource.of( this.getDataSource()
+                                    DataSource.of( COMPLEX,
+                                                   this.getDataSource()
                                                        .getSource(),
                                                    this.getDataSource()
                                                        .getContext(),

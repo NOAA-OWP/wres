@@ -1,13 +1,11 @@
 package wres.system.xml;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.net.URI;
 import java.util.Objects;
-import java.util.zip.GZIPInputStream;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -90,19 +88,8 @@ public abstract class XMLReader
             {
                 // Not found on classpath.
                 // Therefore, attempt to create one from the filesystem now.
-                possibleInputStream = new FileInputStream( new File( this.filename.getPath() ) );
-
-                if ( this.filename.toString().endsWith( ".gz" ) )
-                {
-                    this.inputStream =
-                            new GZIPInputStream( possibleInputStream );
-                    LOGGER.debug( "Found gzip file {}.", this.filename );
-                }
-                else
-                {
-                    this.inputStream = possibleInputStream;
-                    LOGGER.debug( "Found file {}.", this.filename );
-                }
+                this.inputStream = new FileInputStream( this.filename.getPath() );
+                LOGGER.debug( "Found file {}.", this.filename );
             }
         }
     }
@@ -128,18 +115,11 @@ public abstract class XMLReader
      * Attempt to find a resource on the classpath. If not found, return null.
      * @param resourceName the resource name
      * @return InputStream on success, null on failure to find.
-     * @throws IOException when getting a gzipped resource fails
      */
-    private static InputStream getFile( URI resourceName ) throws IOException
+    private static InputStream getFile( URI resourceName )
     {
-        InputStream stream = XMLReader.class.getClassLoader()
-                                            .getResourceAsStream( resourceName.getPath() );
-
-        if ( stream != null && resourceName.toString().endsWith( ".gz" ) )
-        {
-            stream = new GZIPInputStream( stream );
-        }
-        return stream;
+        return XMLReader.class.getClassLoader()
+                              .getResourceAsStream( resourceName.getPath() );
     }
 
     public void parse() throws IOException

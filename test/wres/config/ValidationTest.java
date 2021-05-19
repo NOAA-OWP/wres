@@ -5,20 +5,16 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.xml.sax.Locator;
 
-import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.Feature;
-import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Outputs;
 public class ValidationTest
@@ -57,32 +53,6 @@ public class ValidationTest
             };
     }
 
-
-    @Test
-    public void specifyingOffsetForPIXMLFailsValidation()
-    {
-        ProjectConfigPlus mockProjectConfigPlus = mock( ProjectConfigPlus.class );
-        String mockPath = "fake.xml";
-        when( mockProjectConfigPlus.getOrigin() ).thenReturn( mockPath );
-
-
-        DataSourceConfig.Source source =
-                new DataSourceConfig.Source(
-                        null,
-                        null,
-                        Format.PI_XML,
-                        "-0500",
-                        null,
-                        null
-                );
-
-        source.setSourceLocation( this.fakeSourceLocator );
-
-        boolean result = Validation.isDateConfigValid( mockProjectConfigPlus,
-                                                       source );
-        assertFalse( result, "Expected validation failure when offset "
-                     + " for PI-XML data is specified." );
-    }
 
     @Test
     public void fullFeaturePassesValidation()

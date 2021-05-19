@@ -170,11 +170,10 @@ public class WresJobOutput
                 metadata.set( Metadata.RESOURCE_NAME_KEY,
                               actualFile.toString() );
 
-                try
+                try ( InputStream inputStream = TikaInputStream.get( path ) )
                 {
                     TikaConfig tikaConfig = new TikaConfig();
                     Detector detector = tikaConfig.getDetector();
-                    InputStream inputStream = TikaInputStream.get( path );
                     org.apache.tika.mime.MediaType mediaType =
                             detector.detect( inputStream,
                                              metadata );
