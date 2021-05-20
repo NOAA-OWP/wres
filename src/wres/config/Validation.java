@@ -164,7 +164,7 @@ public class Validation
         if ( sourceFormatEventsFound )
         {
             LOGGER.warn( " The 'format' attribute is deprecated in left/"
-                         + "right/baseline declarations (non-threshold"
+                         + "right/baseline declarations (non-threshold "
                          + "declarations) and will be removed in a future "
                          + "release. Alternatives: specify one source per "
                          + "resource, use the 'pattern' attribute with a glob "

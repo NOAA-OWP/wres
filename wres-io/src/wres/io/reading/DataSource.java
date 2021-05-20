@@ -490,7 +490,7 @@ public class DataSource
 
             if ( jsonCharset == null )
             {
-                throw new PreIngestException( "Unable to detect charset for json document starting with bytes "
+                throw new PreIngestException( "Unable to detect charset for JSON document starting with bytes "
                                               + Arrays.toString( firstBytes ) );
             }
 
@@ -500,17 +500,21 @@ public class DataSource
             {
                 disposition = DataDisposition.JSON_WATERML;
             }
-            else if ( start.contains( "wrds" ) && start.contains( "nwm" ) )
+            // There is a WRDS json format for thresholds (it's not timeseries).
+            else if ( !start.contains( "\"threshold" ) )
             {
-                disposition = DataDisposition.JSON_WRDS_NWM;
-            }
-            else if ( start.contains( "\"header\":" ) )
-            {
-                disposition = DataDisposition.JSON_WRDS_AHPS;
+                if ( start.contains( "wrds" ) && start.contains( "nwm" ) )
+                {
+                    disposition = DataDisposition.JSON_WRDS_NWM;
+                }
+                else if ( start.contains( "\"header\":" ) )
+                {
+                    disposition = DataDisposition.JSON_WRDS_AHPS;
+                }
             }
             else
             {
-                LOGGER.warn( "Found JSON document but it did not appear to be one WRES could read: '{}'",
+                LOGGER.warn( "Found JSON document but it did not appear to be one WRES could parse: '{}'",
                              uri );
             }
         }
@@ -584,7 +588,7 @@ public class DataSource
             }
             else
             {
-                LOGGER.warn( "Found text document but it did not appear to be datacard: '{}'",
+                LOGGER.warn( "Found text/plain document but it did not appear to be NWS datacard: '{}'",
                              uri );
             }
         }
