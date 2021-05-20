@@ -1007,7 +1007,7 @@ public class Evaluation implements Closeable
     String getClientId()
     {
         return this.clientId;
-    }    
+    }
 
     /**
      * Starts producer flow control when consumption lags behind production.
@@ -1042,6 +1042,7 @@ public class Evaluation implements Closeable
 
         EvaluationStatus.Builder complete = EvaluationStatus.newBuilder()
                                                             .setCompletionStatus( completionStatus )
+                                                            .setClientId( this.getClientId() )
                                                             .setTime( Timestamp.newBuilder()
                                                                                .setSeconds( seconds )
                                                                                .setNanos( nanos ) );

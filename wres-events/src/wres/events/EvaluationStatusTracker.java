@@ -102,6 +102,12 @@ class EvaluationStatusTracker implements Closeable
     private final AtomicBoolean isFailedUnrecoverably;
 
     /**
+     * Is <code>true</code> if the tracker has been closed.
+     */
+
+    private final AtomicBoolean isClosed;
+
+    /**
      * A latch that records the completion of publication. There is no timeout on publication.
      */
 
@@ -228,42 +234,51 @@ class EvaluationStatusTracker implements Closeable
     @Override
     public void close()
     {
-        // Unsubscribe any durable subscriber
-        if ( this.isDurableSubscriber() )
+        if ( !this.isClosed.getAndSet( true ) )
         {
+            LOGGER.debug( "Closing the evaluation status tracker for evaluation {}.", this.getEvaluationId() );
+
+            // Unsubscribe any durable subscriber
+            if ( this.isDurableSubscriber() )
+            {
+                try
+                {
+                    this.session.unsubscribe( this.subscriberName );
+                }
+                catch ( JMSException e )
+                {
+                    String message = "While attempting to close evaluation status subscriber " + this.getTrackerId()
+                                     + " for evaluation "
+                                     + this.getEvaluationId()
+                                     + ", failed to remove the subscription from the session.";
+
+                    LOGGER.warn( message, e );
+                }
+            }
+
+            // No need to close the session, only the connection
             try
             {
-                this.session.unsubscribe( this.subscriberName );
+                this.connection.close();
+                LOGGER.debug( "Closed connection {} in evaluation status tracker {}.", this.connection, this );
             }
             catch ( JMSException e )
             {
                 String message = "While attempting to close evaluation status subscriber " + this.getTrackerId()
                                  + " for evaluation "
                                  + this.getEvaluationId()
-                                 + ", failed to remove the subscription from the session.";
+                                 + ", failed to close the connection.";
 
                 LOGGER.warn( message, e );
             }
-        }
 
-        // No need to close the session, only the connection
-        try
+            // Stop the subscriber inactivity timer
+            this.subscriberInactivityTimer.cancel();
+        }
+        else
         {
-            this.connection.close();
-            LOGGER.debug( "Closed connection {} in evaluation status tracker {}.", this.connection, this );
+            LOGGER.debug( "Already closed the evaluation status tracker for evaluation {}.", this.getEvaluationId() );
         }
-        catch ( JMSException e )
-        {
-            String message = "While attempting to close evaluation status subscriber " + this.getTrackerId()
-                             + " for evaluation "
-                             + this.getEvaluationId()
-                             + ", failed to close the connection.";
-
-            LOGGER.warn( message, e );
-        }
-
-        // Stop the subscriber inactivity timer
-        this.subscriberInactivityTimer.cancel();
     }
 
     /**
@@ -456,8 +471,15 @@ class EvaluationStatusTracker implements Closeable
         // Non-zero exit code
         this.exitCode.set( 1 );
 
-        // Now that the evaluation has stopped, check that the notification was not duplicated, as this would indicate
-        // a subscriber notification failure: we expect one notification per subscriber
+        if ( LOGGER.isErrorEnabled() )
+        {
+            LOGGER.error( "While tracking evaluation {}, encountered an error in a messaging client that prevented "
+                          + "the evaluation from succeeding. The error message is:{}{}",
+                          this.getEvaluationId(),
+                          System.lineSeparator(),
+                          failure );
+        }
+
         String consumerId = failure.getConsumer()
                                    .getConsumerId();
 
@@ -472,14 +494,12 @@ class EvaluationStatusTracker implements Closeable
         ProtocolStringList resources = failure.getResourcesCreatedList();
         this.resourcesWritten.addAll( resources );
 
-        LOGGER.debug( "While processing evaluation {}, discovered {} resources that were created by subscribers.",
-                      this.getEvaluationId(),
-                      resources.size() );
-
-        LOGGER.error( "While tracking evaluation {}, encountered an error that prevented completion. The failure "
-                      + "message is {}",
-                      this.getEvaluationId(),
-                      failure );
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "While processing evaluation {}, discovered {} resources that were created by subscribers.",
+                          this.getEvaluationId(),
+                          resources.size() );
+        }
 
         // Stop waiting
         this.publicationLatch.countDown();
@@ -487,12 +507,8 @@ class EvaluationStatusTracker implements Closeable
         this.subscriberNegotiator.stopNegotiation();
 
         // Stop the evaluation, which also stops flow control
-        LOGGER.debug( "The evaluation status tracker that is tracking evaluation {} encountered a request to stop "
-                      + "on failure with signal {}. Stopping the evaluation.",
-                      this.getEvaluationId(),
-                      failure.getCompletionStatus() );
-
-        this.evaluation.stop( null );
+        this.getEvaluation()
+            .stop( null );
 
         // Now that the evaluation has stopped, check that the notification was not duplicated, as this would indicate
         // a subscriber notification failure: we expect one notification per subscriber. Do this last because it should 
@@ -671,7 +687,17 @@ class EvaluationStatusTracker implements Closeable
 
     private String getEvaluationId()
     {
-        return this.evaluation.getEvaluationId();
+        return this.getEvaluation()
+                   .getEvaluationId();
+    }
+
+    /**
+     * @return true if the tracker is closed, false if it is still open.
+     */
+
+    boolean isClosed()
+    {
+        return this.isClosed.get();
     }
 
     /**
@@ -906,7 +932,8 @@ class EvaluationStatusTracker implements Closeable
 
     private String getClientId()
     {
-        return this.evaluation.getClientId();
+        return this.getEvaluation()
+                   .getClientId();
     }
 
     /**
@@ -988,6 +1015,7 @@ class EvaluationStatusTracker implements Closeable
         this.resourcesWritten = new HashSet<>();
         this.retriesAttempted = new AtomicInteger();
         this.isFailedUnrecoverably = new AtomicBoolean();
+        this.isClosed = new AtomicBoolean();
         this.maximumRetries = maximumRetries;
 
         // Set the message consumer and listener
@@ -1070,8 +1098,8 @@ class EvaluationStatusTracker implements Closeable
 
             try
             {
-                // Only consume if the subscriber is live
-                if ( !this.isFailed() )
+                // Only consume if the subscriber is still alive
+                if ( this.isAlive() )
                 {
                     messageId = message.getJMSMessageID();
                     correlationId = message.getJMSCorrelationID();
@@ -1087,9 +1115,15 @@ class EvaluationStatusTracker implements Closeable
 
                     EvaluationStatus statusMessage = EvaluationStatus.parseFrom( bufferedMessage.array() );
 
-                    // Accept and acknowledge the message
+                    // Accept the message
                     this.acceptStatusMessage( statusMessage );
-                    message.acknowledge();
+
+                    // Acknowledge, if the tracker is alive (check again in case the shutdown sequence started after
+                    // entering this method)
+                    if ( this.isAlive() )
+                    {
+                        message.acknowledge();
+                    }
                 }
             }
             // Throwing exceptions on the MessageListener::onMessage is considered a bug, so need to track status and 
@@ -1098,7 +1132,7 @@ class EvaluationStatusTracker implements Closeable
             // unrecoverable error is thrown/unhandled.
             catch ( JMSException | InvalidProtocolBufferException e )
             {
-                // Attempt to recover and flag recovery locally
+                // Attempt to recover
                 this.recover( messageId, correlationId, e );
             }
             catch ( RuntimeException e )
@@ -1121,6 +1155,15 @@ class EvaluationStatusTracker implements Closeable
                       evaluationId );
     }
 
+    /**
+     * @return true if the tracker is still alive, false otherwise
+     */
+    
+    private boolean isAlive()
+    {
+        return !this.isFailed() && !this.isClosed();
+    }
+    
     /**
      * Accepts and routes an evaluation status message.
      * @param message the message
@@ -1179,8 +1222,8 @@ class EvaluationStatusTracker implements Closeable
 
     private void recover( String messageId, String correlationId, Exception exception )
     {
-        // Only try to recover if the tracker hasn't already failed        
-        if ( !this.isFailed() )
+        // Only try to recover if the tracker hasn't already failed or been closed
+        if ( !this.isFailed() && ! this.isClosed() )
         {
             int retryCount = this.getNumberOfRetriesAttempted()
                                  .incrementAndGet(); // Counter starts at zero
@@ -1306,6 +1349,15 @@ class EvaluationStatusTracker implements Closeable
     private String getTrackerId()
     {
         return this.trackerId;
+    }
+
+    /**
+     * @return the evaluation being tracked.
+     */
+
+    private Evaluation getEvaluation()
+    {
+        return this.evaluation;
     }
 
     /**

@@ -168,7 +168,13 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
         // exceptional behavior
         if ( successfulFeaturesToReport.isEmpty() )
         {
-            throw new WresProcessingException( "Statistics could not be produced for any feature tuples.", null );
+            throw new WresProcessingException( "Statistics could not be produced for any feature tuples. This probably "
+                                               + "occurred because none of the feature tuples contained any pools with "
+                                               + "valid pairs. Check that the declaration contains some pools whose "
+                                               + "boundaries (e.g., earliest and latest issued times, earliest and "
+                                               + "latest valid times and earliest and latest lead durations) are "
+                                               + "sufficiently broad to capture some pairs.",
+                                               null );
         }
 
         // Summary report
