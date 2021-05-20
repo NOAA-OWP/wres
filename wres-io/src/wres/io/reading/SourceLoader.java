@@ -1037,7 +1037,7 @@ public class SourceLoader
                         }
                         else
                         {
-                            LOGGER.warn( "Skipping '{}' because WRES cannot read it.",
+                            LOGGER.warn( "Skipping '{}' because WRES will not be able to parse it.",
                                          path );
                         }
                     }
