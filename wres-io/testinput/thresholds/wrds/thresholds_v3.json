@@ -1,0 +1,555 @@
+{
+    "_metrics": {
+        "threshold_count": 10,
+        "total_request_time": 0.39240050315856934
+    },
+    "_warnings": [],
+    "_documentation": {
+        "swagger URL": "***REMOVED***.***REMOVED***.***REMOVED***/docs/location/v3.0/swagger/"
+    },
+    "deployment": {
+        "api_url": "https://***REMOVED***.***REMOVED***.***REMOVED***/api/location/v3.0/nws_threshold/nws_lid/PTSA1,MNTG1,BLOF1,CEDG1,SMAF1/",
+        "stack": "prod",
+        "version": "v3.1.0"
+    },
+    "data_sources": {
+        "metadata_sources": [
+            "NWS data: NRLDB - Last updated: 2021-05-04 17:44:31 UTC",
+            "USGS data: USGS NWIS - Last updated: 2021-05-04 17:15:04 UTC"
+        ],
+        "crosswalk_datasets": {
+            "location_nwm_crosswalk_dataset": {
+                "location_nwm_crosswalk_dataset_id": "1.1",
+                "name": "Location NWM Crosswalk v1.1",
+                "description": "Created 20201106.  Source 1) NWM Routelink File v2.1   2) NHDPlus v2.1   3) GID"
+            },
+            "nws_usgs_crosswalk_dataset": {
+                "nws_usgs_crosswalk_dataset_id": "1.0",
+                "name": "NWS Station to USGS Gages 1.0",
+                "description": "Authoritative 1.0 dataset mapping NWS Stations to USGS Gages"
+            }
+        }
+    },
+    "value_set": [
+        {
+            "metadata": {
+                "data_type": "NWS Stream Thresholds",
+                "nws_lid": "PTSA1",
+                "usgs_site_code": "02372250",
+                "nwm_feature_id": "2323396",
+                "threshold_type": "all (stage,flow)",
+                "stage_units": "FT",
+                "flow_units": "CFS",
+                "calc_flow_units": "CFS",
+                "threshold_source": "NWS-NRLDB",
+                "threshold_source_description": "National Weather Service - National River Location Database"
+            },
+            "stage_values": {
+                "low": 0.0,
+                "bankfull": null,
+                "action": null,
+                "flood": null,
+                "minor": null,
+                "moderate": null,
+                "major": null,
+                "record": null
+            },
+            "flow_values": {
+                "low": 0.0,
+                "bankfull": null,
+                "action": null,
+                "flood": null,
+                "minor": null,
+                "moderate": null,
+                "major": null,
+                "record": null
+            },
+            "calc_flow_values": {
+                "low": null,
+                "bankfull": null,
+                "action": null,
+                "flood": null,
+                "minor": null,
+                "moderate": null,
+                "major": null,
+                "record": null,
+                "rating_curve": {
+                    "location_id": "PTSA1",
+                    "id_type": "NWS Station",
+                    "source": "NRLDB",
+                    "description": "National Weather Service - National River Location Database",
+                    "interpolation_method": null,
+                    "interpolation_description": null
+                }
+            }
+        },
+        {
+            "metadata": {
+                "data_type": "NWS Stream Thresholds",
+                "nws_lid": "PTSA1",
+                "usgs_site_code": "02372250",
+                "nwm_feature_id": "2323396",
+                "threshold_type": "all (stage,flow)",
+                "stage_units": "FT",
+                "flow_units": "CFS",
+                "calc_flow_units": "CFS",
+                "threshold_source": "NWS-NRLDB",
+                "threshold_source_description": "National Weather Service - National River Location Database"
+            },
+            "stage_values": {
+                "low": 0.0,
+                "bankfull": null,
+                "action": null,
+                "flood": null,
+                "minor": null,
+                "moderate": null,
+                "major": null,
+                "record": null
+            },
+            "flow_values": {
+                "low": 0.0,
+                "bankfull": null,
+                "action": null,
+                "flood": null,
+                "minor": null,
+                "moderate": null,
+                "major": null,
+                "record": null
+            },
+            "calc_flow_values": {
+                "low": null,
+                "bankfull": null,
+                "action": null,
+                "flood": null,
+                "minor": null,
+                "moderate": null,
+                "major": null,
+                "record": null,
+                "rating_curve": {
+                    "location_id": "02372250",
+                    "id_type": "USGS Gage",
+                    "source": "USGS Rating Depot",
+                    "description": "The EXSA rating curves provided by USGS",
+                    "interpolation_method": "logarithmic",
+                    "interpolation_description": "logarithmic"
+                }
+            }
+        },
+        {
+            "metadata": {
+                "data_type": "NWS Stream Thresholds",
+                "nws_lid": "MNTG1",
+                "usgs_site_code": "02349605",
+                "nwm_feature_id": "6444276",
+                "threshold_type": "all (stage,flow)",
+                "stage_units": "FT",
+                "flow_units": "CFS",
+                "calc_flow_units": "CFS",
+                "threshold_source": "NWS-NRLDB",
+                "threshold_source_description": "National Weather Service - National River Location Database"
+            },
+            "stage_values": {
+                "low": -0.16,
+                "bankfull": 11.0,
+                "action": 11.0,
+                "flood": 20.0,
+                "minor": 20.0,
+                "moderate": 28.0,
+                "major": 31.0,
+                "record": 34.11
+            },
+            "flow_values": {
+                "low": null,
+                "bankfull": null,
+                "action": 11900.0,
+                "flood": 31500.0,
+                "minor": 31500.0,
+                "moderate": 77929.0,
+                "major": 105100.0,
+                "record": 136000.0
+            },
+            "calc_flow_values": {
+                "low": 557.8,
+                "bankfull": 9379.0,
+                "action": 9379.0,
+                "flood": 35331.0,
+                "minor": 35331.0,
+                "moderate": 102042.0,
+                "major": 142870.0,
+                "record": null,
+                "rating_curve": {
+                    "location_id": "MNTG1",
+                    "id_type": "NWS Station",
+                    "source": "NRLDB",
+                    "description": "National Weather Service - National River Location Database",
+                    "interpolation_method": null,
+                    "interpolation_description": null
+                }
+            }
+        },
+        {
+            "metadata": {
+                "data_type": "NWS Stream Thresholds",
+                "nws_lid": "MNTG1",
+                "usgs_site_code": "02349605",
+                "nwm_feature_id": "6444276",
+                "threshold_type": "all (stage,flow)",
+                "stage_units": "FT",
+                "flow_units": "CFS",
+                "calc_flow_units": "CFS",
+                "threshold_source": "NWS-NRLDB",
+                "threshold_source_description": "National Weather Service - National River Location Database"
+            },
+            "stage_values": {
+                "low": -0.16,
+                "bankfull": 11.0,
+                "action": 11.0,
+                "flood": 20.0,
+                "minor": 20.0,
+                "moderate": 28.0,
+                "major": 31.0,
+                "record": 34.11
+            },
+            "flow_values": {
+                "low": null,
+                "bankfull": null,
+                "action": 11900.0,
+                "flood": 31500.0,
+                "minor": 31500.0,
+                "moderate": 77929.0,
+                "major": 105100.0,
+                "record": 136000.0
+            },
+            "calc_flow_values": {
+                "low": 554.06,
+                "bankfull": 9390.0,
+                "action": 9390.0,
+                "flood": 35329.0,
+                "minor": 35329.0,
+                "moderate": 102040.6,
+                "major": 142867.9,
+                "record": null,
+                "rating_curve": {
+                    "location_id": "02349605",
+                    "id_type": "USGS Gage",
+                    "source": "USGS Rating Depot",
+                    "description": "The EXSA rating curves provided by USGS",
+                    "interpolation_method": "logarithmic",
+                    "interpolation_description": "logarithmic"
+                }
+            }
+        },
+        {
+            "metadata": {
+                "data_type": "NWS Stream Thresholds",
+                "nws_lid": "BLOF1",
+                "usgs_site_code": "02358700",
+                "nwm_feature_id": "2297254",
+                "threshold_type": "all (stage,flow)",
+                "stage_units": "FT",
+                "flow_units": "CFS",
+                "calc_flow_units": "CFS",
+                "threshold_source": "NWS-NRLDB",
+                "threshold_source_description": "National Weather Service - National River Location Database"
+            },
+            "stage_values": {
+                "low": null,
+                "bankfull": 15.0,
+                "action": 13.0,
+                "flood": 17.0,
+                "minor": 17.0,
+                "moderate": 23.5,
+                "major": 26.0,
+                "record": 28.6
+            },
+            "flow_values": {
+                "low": null,
+                "bankfull": null,
+                "action": null,
+                "flood": 36900.0,
+                "minor": null,
+                "moderate": null,
+                "major": null,
+                "record": 209000.0
+            },
+            "calc_flow_values": {
+                "low": null,
+                "bankfull": 38633.0,
+                "action": 31313.0,
+                "flood": 48628.0,
+                "minor": 48628.0,
+                "moderate": 144077.0,
+                "major": 216266.0,
+                "record": null,
+                "rating_curve": {
+                    "location_id": "BLOF1",
+                    "id_type": "NWS Station",
+                    "source": "NRLDB",
+                    "description": "National Weather Service - National River Location Database",
+                    "interpolation_method": null,
+                    "interpolation_description": null
+                }
+            }
+        },
+        {
+            "metadata": {
+                "data_type": "NWS Stream Thresholds",
+                "nws_lid": "BLOF1",
+                "usgs_site_code": "02358700",
+                "nwm_feature_id": "2297254",
+                "threshold_type": "all (stage,flow)",
+                "stage_units": "FT",
+                "flow_units": "CFS",
+                "calc_flow_units": "CFS",
+                "threshold_source": "NWS-NRLDB",
+                "threshold_source_description": "National Weather Service - National River Location Database"
+            },
+            "stage_values": {
+                "low": null,
+                "bankfull": 15.0,
+                "action": 13.0,
+                "flood": 17.0,
+                "minor": 17.0,
+                "moderate": 23.5,
+                "major": 26.0,
+                "record": 28.6
+            },
+            "flow_values": {
+                "low": null,
+                "bankfull": null,
+                "action": null,
+                "flood": 36900.0,
+                "minor": null,
+                "moderate": null,
+                "major": null,
+                "record": 209000.0
+            },
+            "calc_flow_values": {
+                "low": null,
+                "bankfull": 36928.1,
+                "action": 30031.5,
+                "flood": 46234.6,
+                "minor": 46234.6,
+                "moderate": 133995.6,
+                "major": 205562.6,
+                "record": null,
+                "rating_curve": {
+                    "location_id": "02358700",
+                    "id_type": "USGS Gage",
+                    "source": "USGS Rating Depot",
+                    "description": "The EXSA rating curves provided by USGS",
+                    "interpolation_method": "logarithmic",
+                    "interpolation_description": "logarithmic"
+                }
+            }
+        },
+        {
+            "metadata": {
+                "data_type": "NWS Stream Thresholds",
+                "nws_lid": "CEDG1",
+                "usgs_site_code": "02343940",
+                "nwm_feature_id": "2310009",
+                "threshold_type": "all (stage,flow)",
+                "stage_units": "FT",
+                "flow_units": "CFS",
+                "calc_flow_units": "CFS",
+                "threshold_source": "NWS-NRLDB",
+                "threshold_source_description": "National Weather Service - National River Location Database"
+            },
+            "stage_values": {
+                "low": 0.0,
+                "bankfull": null,
+                "action": null,
+                "flood": null,
+                "minor": null,
+                "moderate": null,
+                "major": null,
+                "record": 14.29
+            },
+            "flow_values": {
+                "low": 0.0,
+                "bankfull": null,
+                "action": null,
+                "flood": null,
+                "minor": null,
+                "moderate": null,
+                "major": null,
+                "record": null
+            },
+            "calc_flow_values": {
+                "low": null,
+                "bankfull": null,
+                "action": null,
+                "flood": null,
+                "minor": null,
+                "moderate": null,
+                "major": null,
+                "record": null,
+                "rating_curve": {
+                    "location_id": "CEDG1",
+                    "id_type": "NWS Station",
+                    "source": "NRLDB",
+                    "description": "National Weather Service - National River Location Database",
+                    "interpolation_method": null,
+                    "interpolation_description": null
+                }
+            }
+        },
+        {
+            "metadata": {
+                "data_type": "NWS Stream Thresholds",
+                "nws_lid": "CEDG1",
+                "usgs_site_code": "02343940",
+                "nwm_feature_id": "2310009",
+                "threshold_type": "all (stage,flow)",
+                "stage_units": "FT",
+                "flow_units": "CFS",
+                "calc_flow_units": "CFS",
+                "threshold_source": "NWS-NRLDB",
+                "threshold_source_description": "National Weather Service - National River Location Database"
+            },
+            "stage_values": {
+                "low": 0.0,
+                "bankfull": null,
+                "action": null,
+                "flood": null,
+                "minor": null,
+                "moderate": null,
+                "major": null,
+                "record": 14.29
+            },
+            "flow_values": {
+                "low": 0.0,
+                "bankfull": null,
+                "action": null,
+                "flood": null,
+                "minor": null,
+                "moderate": null,
+                "major": null,
+                "record": null
+            },
+            "calc_flow_values": {
+                "low": null,
+                "bankfull": null,
+                "action": null,
+                "flood": null,
+                "minor": null,
+                "moderate": null,
+                "major": null,
+                "record": null,
+                "rating_curve": {
+                    "location_id": "02343940",
+                    "id_type": "USGS Gage",
+                    "source": "USGS Rating Depot",
+                    "description": "The EXSA rating curves provided by USGS",
+                    "interpolation_method": "logarithmic",
+                    "interpolation_description": "logarithmic"
+                }
+            }
+        },
+        {
+            "metadata": {
+                "data_type": "NWS Stream Thresholds",
+                "nws_lid": "SMAF1",
+                "usgs_site_code": "02359170",
+                "nwm_feature_id": "2298964",
+                "threshold_type": "all (stage,flow)",
+                "stage_units": "FT",
+                "flow_units": "CFS",
+                "calc_flow_units": "CFS",
+                "threshold_source": "NWS-NRLDB",
+                "threshold_source_description": "National Weather Service - National River Location Database"
+            },
+            "stage_values": {
+                "low": 0.0,
+                "bankfull": null,
+                "action": 8.0,
+                "flood": 9.5,
+                "minor": 9.5,
+                "moderate": 11.5,
+                "major": 13.5,
+                "record": 15.36
+            },
+            "flow_values": {
+                "low": 0.0,
+                "bankfull": null,
+                "action": null,
+                "flood": null,
+                "minor": null,
+                "moderate": null,
+                "major": null,
+                "record": 179000.0
+            },
+            "calc_flow_values": {
+                "low": null,
+                "bankfull": null,
+                "action": 45700.0,
+                "flood": 67700.0,
+                "minor": 67700.0,
+                "moderate": 107000.0,
+                "major": 159000.0,
+                "record": 221000.0,
+                "rating_curve": {
+                    "location_id": "SMAF1",
+                    "id_type": "NWS Station",
+                    "source": "NRLDB",
+                    "description": "National Weather Service - National River Location Database",
+                    "interpolation_method": null,
+                    "interpolation_description": null
+                }
+            }
+        },
+        {
+            "metadata": {
+                "data_type": "NWS Stream Thresholds",
+                "nws_lid": "SMAF1",
+                "usgs_site_code": "02359170",
+                "nwm_feature_id": "2298964",
+                "threshold_type": "all (stage,flow)",
+                "stage_units": "FT",
+                "flow_units": "CFS",
+                "calc_flow_units": "CFS",
+                "threshold_source": "NWS-NRLDB",
+                "threshold_source_description": "National Weather Service - National River Location Database"
+            },
+            "stage_values": {
+                "low": 0.0,
+                "bankfull": null,
+                "action": 8.0,
+                "flood": 9.5,
+                "minor": 9.5,
+                "moderate": 11.5,
+                "major": 13.5,
+                "record": 15.36
+            },
+            "flow_values": {
+                "low": 0.0,
+                "bankfull": null,
+                "action": null,
+                "flood": null,
+                "minor": null,
+                "moderate": null,
+                "major": null,
+                "record": 179000.0
+            },
+            "calc_flow_values": {
+                "low": null,
+                "bankfull": null,
+                "action": 47355.4,
+                "flood": 69570.6,
+                "minor": 69570.6,
+                "moderate": 108505.8,
+                "major": 159463.2,
+                "record": 218963.05,
+                "rating_curve": {
+                    "location_id": "02359170",
+                    "id_type": "USGS Gage",
+                    "source": "USGS Rating Depot",
+                    "description": "The EXSA rating curves provided by USGS",
+                    "interpolation_method": "logarithmic",
+                    "interpolation_description": "logarithmic"
+                }
+            }
+        }
+    ]
+}
