@@ -304,6 +304,7 @@ class ProcessorHelper
      * @param outputDirectory the output directory
      * @throws WresProcessingException if the processing failed for any reason
      * @return the evaluation
+     * @throws IOException if an attempt was made to close the evaluation and it failed
      */
 
     private static Evaluation processProjectConfig( EvaluationDetails evaluationDetails,
@@ -312,7 +313,7 @@ class ProcessorHelper
                                                     Executors executors,
                                                     SharedWriters sharedWriters,
                                                     List<NetcdfOutputWriter> netcdfWriters,
-                                                    Path outputDirectory )
+                                                    Path outputDirectory ) throws IOException
     {
         Evaluation evaluation = null;
 
@@ -474,6 +475,9 @@ class ProcessorHelper
 
             // Report on the features
             featureReport.report();
+
+            // Return an evaluation that was opened
+            return evaluation;
         }
         catch ( IOException | SQLException | RuntimeException internalError )
         {
@@ -487,8 +491,14 @@ class ProcessorHelper
 
             throw new WresProcessingException( "Project failed to complete with the following error: ", internalError );
         }
-
-        return evaluation;
+        // Close an evaluation that failed
+        finally
+        {
+            if( Objects.nonNull( evaluation ) && evaluation.isFailed() )
+            {
+                evaluation.close();
+            }
+        }
     }
 
     /**
