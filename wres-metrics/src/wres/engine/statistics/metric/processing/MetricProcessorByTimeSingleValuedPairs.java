@@ -157,7 +157,6 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                    final ExecutorService thresholdExecutor,
                                                    final ExecutorService metricExecutor,
                                                    final Set<StatisticType> mergeSet )
-            throws MetricParameterException
     {
         super( config, metrics, thresholdExecutor, metricExecutor, mergeSet );
 
@@ -505,7 +504,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             return CompletableFuture.completedFuture( List.of() );
         }
 
-        return this.processWithOrWithoutSkillMetrics( pairs, collection );
+        return this.processMetricsRequiredForThisPool( pairs, collection );
     }
 
 }

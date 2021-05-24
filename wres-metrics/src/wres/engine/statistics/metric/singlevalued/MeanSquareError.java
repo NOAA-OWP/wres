@@ -141,7 +141,7 @@ public class MeanSquareError extends SumOfSquareError
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    MeanSquareError( MetricGroup decompositionId ) throws MetricParameterException
+    MeanSquareError( MetricGroup decompositionId )
     {
         super( decompositionId );
     }

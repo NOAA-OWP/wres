@@ -40,9 +40,15 @@
         <destination type="graphic">
             <outputType>threshold lead</outputType>
             <!--Optional: -->
-            <graphical width="800" height="600" />
+            <graphical width="800" height="600">
+                <suppressMetric>ensemble quantile quantile diagram</suppressMetric>
+            </graphical>
         </destination>
-        <destination type="svg" />
+        <destination type="svg">
+            <graphical>
+                <suppressMetric>ensemble quantile quantile diagram</suppressMetric>
+            </graphical>
+        </destination>
     </outputs>
 
 </project>

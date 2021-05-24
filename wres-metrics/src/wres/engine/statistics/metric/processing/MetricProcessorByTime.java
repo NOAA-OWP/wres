@@ -225,7 +225,9 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
 
     /**
      * Inspects the minimum sample size and, if skill metrics are present and the minimum sample size is not met, 
-     * removes the skill metrics from consideration, otherwise leaves them.
+     * removes the skill metrics from consideration, otherwise leaves them. Also, inspects the threshold and eliminates
+     * any metrics from consideration for which {@link MetricConstants#isAThresholdMetric()} returns false when the 
+     * threshold is not the "all data" threshold.
      * 
      * @param <U> the left data type
      * @param <V> the right data type
@@ -236,10 +238,13 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
      */
 
     <U, V, T extends Statistic<?>> Future<List<T>>
-            processWithOrWithoutSkillMetrics( Pool<Pair<U, V>> pairs,
-                                              MetricCollection<Pool<Pair<U, V>>, T, T> collection )
+            processMetricsRequiredForThisPool( Pool<Pair<U, V>> pairs,
+                                               MetricCollection<Pool<Pair<U, V>>, T, T> collection )
     {
         int minimumSampleSize = super.getMetrics().getMinimumSampleSize();
+
+        // The metrics to compute
+        Set<MetricConstants> all = new HashSet<>( collection.getMetrics() );
 
         // Are there skill metrics and does the baseline also meet the minimum sample size constraint?
         if ( collection.getMetrics().stream().anyMatch( MetricConstants::isSkillMetric ) && pairs.hasBaseline() )
@@ -248,28 +253,50 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
 
             if ( actualBaselineSampleSize < minimumSampleSize )
             {
-                Set<MetricConstants> all = new HashSet<>( collection.getMetrics() );
-                Set<MetricConstants> filtered = all.stream()
-                                                   .filter( next -> !next.isSkillMetric() )
-                                                   .collect( Collectors.toUnmodifiableSet() );
+                Set<MetricConstants> filteredInner = all.stream()
+                                                        .filter( MetricConstants::isSkillMetric )
+                                                        .collect( Collectors.toUnmodifiableSet() );
 
-                // Remove the filtered metrics for logging
-                all.removeAll( filtered );
+                // Remove the filtered metrics
+                all.removeAll( filteredInner );
 
-                LOGGER.debug( "While processing pairs for pool {}, discovered {} baseline pairs, which is fewer than "
-                              + "the minimum sample size of {} pairs. The following metrics will not be computed for "
-                              + "this pool: {}.",
-                              pairs.getBaselineData().getMetadata(),
-                              actualBaselineSampleSize,
-                              minimumSampleSize,
-                              all );
-
-                return CompletableFuture.supplyAsync( () -> collection.apply( pairs, filtered ),
-                                                      this.thresholdExecutor );
+                if ( LOGGER.isDebugEnabled() )
+                {
+                    LOGGER.debug( "While processing pairs for pool {}, discovered {} baseline pairs, which is fewer than "
+                                  + "the minimum sample size of {} pairs. The following metrics will not be computed for "
+                                  + "this pool: {}.",
+                                  pairs.getBaselineData().getMetadata(),
+                                  actualBaselineSampleSize,
+                                  minimumSampleSize,
+                                  filteredInner );
+                }
             }
         }
 
-        return CompletableFuture.supplyAsync( () -> collection.apply( pairs ), this.thresholdExecutor );
+        // Are there any metrics that do not accept thresholds and is this a threshold other than "all data"?
+        if ( collection.getMetrics().stream().anyMatch( next -> !next.isAThresholdMetric() )
+             && !ThresholdOuter.ALL_DATA.equals( pairs.getMetadata().getThresholds().first() ) )
+        {
+            Set<MetricConstants> filteredInner = all.stream()
+                                                    .filter( next -> !next.isAThresholdMetric() )
+                                                    .collect( Collectors.toUnmodifiableSet() );
+
+            // Remove the filtered metrics
+            all.removeAll( filteredInner );
+
+            if ( LOGGER.isDebugEnabled() && !filteredInner.isEmpty() )
+            {
+                LOGGER.debug( "While processing pairs for pool {}, discovered {} metrics that cannot be computed for a "
+                              + "threshold of {}. The following metrics will not be computed for this pool: {}.",
+                              pairs.getBaselineData().getMetadata(),
+                              filteredInner.size(),
+                              pairs.getMetadata().getThresholds(),
+                              filteredInner );
+            }
+        }
+
+        return CompletableFuture.supplyAsync( () -> collection.apply( pairs, all ),
+                                              this.thresholdExecutor );
     }
 
     /**
@@ -291,7 +318,6 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
                            final ExecutorService thresholdExecutor,
                            final ExecutorService metricExecutor,
                            final Set<StatisticType> mergeSet )
-            throws MetricParameterException
     {
         super( config, metrics, thresholdExecutor, metricExecutor, mergeSet );
     }
@@ -319,13 +345,13 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
         // Find the union across metrics
         Set<ThresholdOuter> union = filtered.union();
 
-        double[] sorted = this.getSortedClimatology( input, union );
+        double[] sorted = super.getSortedClimatology( input, union );
 
         // Iterate the thresholds
         for ( ThresholdOuter threshold : union )
         {
             // Add the quantiles to the threshold
-            ThresholdOuter useMe = this.addQuantilesToThreshold( threshold, sorted );
+            ThresholdOuter useMe = super.addQuantilesToThreshold( threshold, sorted );
             OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( useMe );
 
             // Add the threshold to the metadata, in order to fully qualify the pairs
@@ -446,7 +472,7 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
             return CompletableFuture.completedFuture( List.of() );
         }
 
-        return this.processWithOrWithoutSkillMetrics( pairs, collection );
+        return this.processMetricsRequiredForThisPool( pairs, collection );
     }
 
     /**
@@ -485,7 +511,7 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
             return CompletableFuture.completedFuture( List.of() );
         }
 
-        return this.processWithOrWithoutSkillMetrics( pairs, collection );
+        return this.processMetricsRequiredForThisPool( pairs, collection );
     }
 
     /**

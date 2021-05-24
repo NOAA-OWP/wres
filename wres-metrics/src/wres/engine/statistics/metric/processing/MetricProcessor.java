@@ -342,7 +342,6 @@ public abstract class MetricProcessor<S extends Pool<?>>
                      final ExecutorService thresholdExecutor,
                      final ExecutorService metricExecutor,
                      final Set<StatisticType> mergeSet )
-            throws MetricParameterException
     {
 
         Objects.requireNonNull( config, MetricConfigHelper.NULL_CONFIGURATION_ERROR );

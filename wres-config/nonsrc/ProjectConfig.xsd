@@ -497,6 +497,7 @@
             <xs:enumeration value="continuous ranked probability skill score" />
             <xs:enumeration value="threat score" />
             <xs:enumeration value="equitable threat score" />
+            <xs:enumeration value="ensemble quantile quantile diagram" />
             <xs:enumeration value="frequency bias" />
             <xs:enumeration value="index of agreement" />
             <xs:enumeration value="kling gupta efficiency" />

@@ -42,6 +42,7 @@ import wres.engine.statistics.metric.ensemble.BoxPlotErrorByForecast;
 import wres.engine.statistics.metric.ensemble.BoxPlotErrorByObserved;
 import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilityScore;
 import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilitySkillScore;
+import wres.engine.statistics.metric.ensemble.EnsembleQuantileQuantileDiagram;
 import wres.engine.statistics.metric.ensemble.RankHistogram;
 import wres.engine.statistics.metric.processing.MetricProcessor;
 import wres.engine.statistics.metric.processing.MetricProcessorByTime;
@@ -111,7 +112,6 @@ public final class MetricFactory
     public static MetricProcessor<Pool<Pair<Double, Double>>>
             ofMetricProcessorForSingleValuedPairs( final ProjectConfig config,
                                                    final Set<StatisticType> mergeSet )
-                    throws MetricParameterException
     {
         ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( config );
         Metrics metrics = Metrics.of( thresholdsByMetric, 0 );
@@ -141,7 +141,6 @@ public final class MetricFactory
     public static MetricProcessor<Pool<Pair<Double, Ensemble>>>
             ofMetricProcessorForEnsemblePairs( final ProjectConfig config,
                                                final Set<StatisticType> mergeSet )
-                    throws MetricParameterException
     {
         ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( config );
         Metrics metrics = Metrics.of( thresholdsByMetric, 0 );
@@ -173,7 +172,6 @@ public final class MetricFactory
             ofMetricProcessorForSingleValuedPairs( final ProjectConfig config,
                                                    final Metrics metrics,
                                                    final Set<StatisticType> mergeSet )
-                    throws MetricParameterException
     {
         return MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
                                                                     metrics,
@@ -202,7 +200,6 @@ public final class MetricFactory
             ofMetricProcessorForEnsemblePairs( final ProjectConfig config,
                                                final Metrics metrics,
                                                final Set<StatisticType> mergeSet )
-                    throws MetricParameterException
     {
         return MetricFactory.ofMetricProcessorForEnsemblePairs( config,
                                                                 metrics,
@@ -233,7 +230,6 @@ public final class MetricFactory
                                                    final Metrics metrics,
                                                    final ExecutorService thresholdExecutor,
                                                    final ExecutorService metricExecutor )
-                    throws MetricParameterException
     {
         Set<StatisticType> mergeSet = MetricConfigHelper.getCacheListFromProjectConfig( config );
 
@@ -265,7 +261,6 @@ public final class MetricFactory
                                                final Metrics metrics,
                                                final ExecutorService thresholdExecutor,
                                                final ExecutorService metricExecutor )
-                    throws MetricParameterException
     {
         Set<StatisticType> mergeSet = MetricConfigHelper.getCacheListFromProjectConfig( config );
 
@@ -300,7 +295,6 @@ public final class MetricFactory
                                                    final ExecutorService thresholdExecutor,
                                                    final ExecutorService metricExecutor,
                                                    final Set<StatisticType> mergeSet )
-                    throws MetricParameterException
     {
         return new MetricProcessorByTimeSingleValuedPairs( config,
                                                            metrics,
@@ -333,7 +327,6 @@ public final class MetricFactory
                                                final ExecutorService thresholdExecutor,
                                                final ExecutorService metricExecutor,
                                                final Set<StatisticType> mergeSet )
-                    throws MetricParameterException
     {
         return new MetricProcessorByTimeEnsemblePairs( config,
                                                        metrics,
@@ -357,7 +350,6 @@ public final class MetricFactory
     public static
             MetricCollection<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
             ofSingleValuedScoreCollection( MetricConstants... metric )
-                    throws MetricParameterException
     {
         return MetricFactory.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(), metric );
     }
@@ -373,7 +365,7 @@ public final class MetricFactory
      */
 
     public static MetricCollection<Pool<Pair<Double, Double>>, DiagramStatisticOuter, DiagramStatisticOuter>
-            ofSingleValuedDiagramCollection( MetricConstants... metric ) throws MetricParameterException
+            ofSingleValuedDiagramCollection( MetricConstants... metric )
     {
         return MetricFactory.ofSingleValuedDiagramCollection( ForkJoinPool.commonPool(), metric );
     }
@@ -392,7 +384,7 @@ public final class MetricFactory
 
     public static
             MetricCollection<Pool<Pair<Probability, Probability>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
-            ofDiscreteProbabilityScoreCollection( MetricConstants... metric ) throws MetricParameterException
+            ofDiscreteProbabilityScoreCollection( MetricConstants... metric )
     {
         return MetricFactory.ofDiscreteProbabilityScoreCollection( ForkJoinPool.commonPool(), metric );
     }
@@ -412,7 +404,6 @@ public final class MetricFactory
     public static
             MetricCollection<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
             ofDichotomousScoreCollection( MetricConstants... metric )
-                    throws MetricParameterException
     {
         return MetricFactory.ofDichotomousScoreCollection( ForkJoinPool.commonPool(), metric );
     }
@@ -431,7 +422,7 @@ public final class MetricFactory
 
     public static
             MetricCollection<Pool<Pair<Probability, Probability>>, DiagramStatisticOuter, DiagramStatisticOuter>
-            ofDiscreteProbabilityDiagramCollection( MetricConstants... metric ) throws MetricParameterException
+            ofDiscreteProbabilityDiagramCollection( MetricConstants... metric )
     {
         return MetricFactory.ofDiscreteProbabilityDiagramCollection( ForkJoinPool.commonPool(), metric );
     }
@@ -451,7 +442,6 @@ public final class MetricFactory
     public static
             MetricCollection<Pool<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
             ofEnsembleScoreCollection( MetricConstants... metric )
-                    throws MetricParameterException
     {
         return MetricFactory.ofEnsembleScoreCollection( ForkJoinPool.commonPool(), metric );
     }
@@ -469,7 +459,7 @@ public final class MetricFactory
      */
 
     public static MetricCollection<Pool<Pair<Double, Ensemble>>, DiagramStatisticOuter, DiagramStatisticOuter>
-            ofEnsembleDiagramCollection( MetricConstants... metric ) throws MetricParameterException
+            ofEnsembleDiagramCollection( MetricConstants... metric )
     {
         return MetricFactory.ofEnsembleDiagramCollection( ForkJoinPool.commonPool(), metric );
     }
@@ -487,7 +477,7 @@ public final class MetricFactory
      */
 
     public static MetricCollection<Pool<Pair<Double, Ensemble>>, BoxplotStatisticOuter, BoxplotStatisticOuter>
-            ofEnsembleBoxPlotCollection( MetricConstants... metric ) throws MetricParameterException
+            ofEnsembleBoxPlotCollection( MetricConstants... metric )
     {
         return MetricFactory.ofEnsembleBoxPlotCollection( ForkJoinPool.commonPool(), metric );
     }
@@ -507,7 +497,6 @@ public final class MetricFactory
     public static
             MetricCollection<Pool<Pair<Double, Double>>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter>
             ofSingleValuedTimeSeriesCollection( MetricConstants... metric )
-                    throws MetricParameterException
     {
         return MetricFactory.ofSingleValuedTimeSeriesCollection( ForkJoinPool.commonPool(), metric );
     }
@@ -527,7 +516,6 @@ public final class MetricFactory
             MetricCollection<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
             ofSingleValuedScoreCollection( ExecutorService executor,
                                            MetricConstants... metric )
-                    throws MetricParameterException
     {
         final Builder<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
                 Builder.of();
@@ -563,7 +551,6 @@ public final class MetricFactory
     public static MetricCollection<Pool<Pair<Double, Double>>, DiagramStatisticOuter, DiagramStatisticOuter>
             ofSingleValuedDiagramCollection( ExecutorService executor,
                                              MetricConstants... metric )
-                    throws MetricParameterException
     {
         final Builder<Pool<Pair<Double, Double>>, DiagramStatisticOuter, DiagramStatisticOuter> builder =
                 Builder.of();
@@ -589,7 +576,6 @@ public final class MetricFactory
     public static MetricCollection<Pool<Pair<Double, Double>>, BoxplotStatisticOuter, BoxplotStatisticOuter>
             ofSingleValuedBoxPlotCollection( ExecutorService executor,
                                              MetricConstants... metric )
-                    throws MetricParameterException
     {
         final Builder<Pool<Pair<Double, Double>>, BoxplotStatisticOuter, BoxplotStatisticOuter> builder =
                 Builder.of();
@@ -616,7 +602,6 @@ public final class MetricFactory
             MetricCollection<Pool<Pair<Probability, Probability>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
             ofDiscreteProbabilityScoreCollection( ExecutorService executor,
                                                   MetricConstants... metric )
-                    throws MetricParameterException
     {
         final Builder<Pool<Pair<Probability, Probability>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
                 Builder.of();
@@ -643,7 +628,6 @@ public final class MetricFactory
             MetricCollection<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
             ofDichotomousScoreCollection( ExecutorService executor,
                                           MetricConstants... metric )
-                    throws MetricParameterException
     {
         final Builder<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
                 Builder.of();
@@ -671,7 +655,6 @@ public final class MetricFactory
             MetricCollection<Pool<Pair<Probability, Probability>>, DiagramStatisticOuter, DiagramStatisticOuter>
             ofDiscreteProbabilityDiagramCollection( ExecutorService executor,
                                                     MetricConstants... metric )
-                    throws MetricParameterException
     {
         final Builder<Pool<Pair<Probability, Probability>>, DiagramStatisticOuter, DiagramStatisticOuter> builder =
                 Builder.of();
@@ -698,7 +681,6 @@ public final class MetricFactory
             MetricCollection<Pool<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
             ofEnsembleScoreCollection( ExecutorService executor,
                                        MetricConstants... metric )
-                    throws MetricParameterException
     {
         final Builder<Pool<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
                 Builder.of();
@@ -723,7 +705,6 @@ public final class MetricFactory
     public static MetricCollection<Pool<Pair<Double, Ensemble>>, DiagramStatisticOuter, DiagramStatisticOuter>
             ofEnsembleDiagramCollection( ExecutorService executor,
                                          MetricConstants... metric )
-                    throws MetricParameterException
     {
         final Builder<Pool<Pair<Double, Ensemble>>, DiagramStatisticOuter, DiagramStatisticOuter> builder =
                 Builder.of();
@@ -749,7 +730,6 @@ public final class MetricFactory
     public static MetricCollection<Pool<Pair<Double, Ensemble>>, BoxplotStatisticOuter, BoxplotStatisticOuter>
             ofEnsembleBoxPlotCollection( ExecutorService executor,
                                          MetricConstants... metric )
-                    throws MetricParameterException
     {
         final Builder<Pool<Pair<Double, Ensemble>>, BoxplotStatisticOuter, BoxplotStatisticOuter> builder =
                 Builder.of();
@@ -776,7 +756,6 @@ public final class MetricFactory
             MetricCollection<Pool<Pair<Double, Double>>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter>
             ofSingleValuedTimeSeriesCollection( ExecutorService executor,
                                                 MetricConstants... metric )
-                    throws MetricParameterException
     {
         final Builder<Pool<Pair<Double, Double>>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter> builder =
                 Builder.of();
@@ -987,7 +966,7 @@ public final class MetricFactory
      */
 
     public static Metric<Pool<Pair<Probability, Probability>>, DiagramStatisticOuter>
-            ofDiscreteProbabilityDiagram( MetricConstants metric ) throws MetricParameterException
+            ofDiscreteProbabilityDiagram( MetricConstants metric )
     {
         switch ( metric )
         {
@@ -1057,14 +1036,15 @@ public final class MetricFactory
     public static Metric<Pool<Pair<Double, Ensemble>>, DiagramStatisticOuter>
             ofEnsembleDiagram( MetricConstants metric )
     {
-        if ( MetricConstants.RANK_HISTOGRAM.equals( metric ) )
+        switch ( metric )
         {
-            Random random = MetricFactory.getRandomNumberGenerator();
-            return RankHistogram.of( random );
-        }
-        else
-        {
-            throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+            case RANK_HISTOGRAM:
+                Random random = MetricFactory.getRandomNumberGenerator();
+                return RankHistogram.of( random );
+            case ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM:
+                return EnsembleQuantileQuantileDiagram.of();
+            default:
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
     }
 
@@ -1153,7 +1133,7 @@ public final class MetricFactory
         String seed = System.getProperty( MetricFactory.TEST_SEED_PROPERTY );
         if ( Objects.nonNull( seed ) )
         {
-            long longSeed = Long.valueOf( seed );
+            long longSeed = Long.parseLong( seed );
             return new Random( longSeed );
         }
 

@@ -163,7 +163,7 @@ public class SumOfSquareError extends DecomposableScore<Pool<Pair<Double, Double
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    SumOfSquareError( MetricGroup decompositionId ) throws MetricParameterException
+    SumOfSquareError( MetricGroup decompositionId )
     {
         super( decompositionId );
     }

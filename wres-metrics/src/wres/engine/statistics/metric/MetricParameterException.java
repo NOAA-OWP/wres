@@ -1,12 +1,12 @@
 package wres.engine.statistics.metric;
 
 /**
- * A checked exception associated with a metric parameter.
+ * An unchecked exception associated with a metric parameter.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public final class MetricParameterException extends Exception
+public final class MetricParameterException extends RuntimeException
 {
 
     /**

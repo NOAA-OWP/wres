@@ -14,8 +14,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.function.Supplier;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.jfree.chart.JFreeChart;
@@ -54,6 +56,8 @@ import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.DiagramStatistic;
+import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
 
 /**
@@ -133,6 +137,7 @@ public abstract class ChartEngineFactory
         metricSpecificTemplateMap.put( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
                                        "rocDiagramTemplate.xml" );
         metricSpecificTemplateMap.put( MetricConstants.QUANTILE_QUANTILE_DIAGRAM, "qqDiagramTemplate.xml" );
+        metricSpecificTemplateMap.put( MetricConstants.ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM, "qqDiagramTemplate.xml" );
         metricSpecificTemplateMap.put( MetricConstants.RANK_HISTOGRAM, "rankHistogramTemplate.xml" );
         metricSpecificTemplateMap.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
                                        BOX_PLOT_OF_ERRORS_TEMPLATE_XML );
@@ -221,7 +226,7 @@ public abstract class ChartEngineFactory
     }
 
     /**
-     * For diagrams only, which use {@link DiagramStatisticOuter}.
+     * For diagrams only, which use {@link DiagramStatisticOuter}, slice by key type and decompose by component name.
      * @param inputKeyInstance The key-instance corresponding to the slice to create.
      * @param input The input from which to draw the data.
      * @param usedPlotType The plot type.
@@ -247,8 +252,53 @@ public abstract class ChartEngineFactory
             throw new IllegalArgumentException( "Plot type " + usedPlotType
                                                 + " is invalid for this diagram." );
         }
-        return inputSlice;
+        
+        // One diagram for each qualifier name in the diagram statistic. This accounts for diagrams that contain the
+        // same metric dimensions multiple times, such as ensemble QQ diagrams
+        List<DiagramStatisticOuter> diagrams = ChartEngineFactory.getDecomposedDiagrams( inputSlice );
+
+        return diagrams;
     }
+    
+    /**
+     * @param diagrams the diagrams to decompose
+     * @return one diagram for each qualifier name
+     */
+
+    private static List<DiagramStatisticOuter> getDecomposedDiagrams( List<DiagramStatisticOuter> diagrams )
+    {
+        List<DiagramStatisticOuter> returnMe = new ArrayList<>();
+
+        for ( DiagramStatisticOuter diagram : diagrams )
+        {
+            SortedSet<MetricDimension> names = diagram.getComponentNames();
+            SortedSet<String> qualifiers = diagram.getComponentNameQualifiers();
+
+            DiagramStatistic.Builder builder = diagram.getData().toBuilder();
+            for ( String qualifier : qualifiers )
+            {
+                List<DiagramStatisticComponent> components = new ArrayList<>();
+
+                for ( MetricDimension name : names )
+                {
+                    DiagramStatisticComponent next = diagram.getComponent( name, qualifier );
+                    components.add( next );
+                }
+
+                // Add the new diagram for this qualifier
+                builder = builder.clearStatistics();
+                builder.addAllStatistics( components );
+
+                DiagramStatistic newDiagram = builder.build();
+                DiagramStatisticOuter newWrappedDiagram = DiagramStatisticOuter.of( newDiagram, diagram.getMetadata() );
+                returnMe.add( newWrappedDiagram );
+            }
+        }
+        
+        LOGGER.debug( "Decomposed {} diagrams into {} diagrams for plotting.", diagrams.size(), returnMe.size() );
+
+        return Collections.unmodifiableList( returnMe );
+    }    
 
     /**
      * For diagrams only, which use {@link DiagramStatisticOuter}.
@@ -256,12 +306,14 @@ public abstract class ChartEngineFactory
      * @param inputSlice The input slice from which to draw the data.
      * @param usedPlotType The plot type.
      * @param ChronoUnit durationUnits the time units
+     * @param hasRepeatedComponents is true for diagrams that have repeated components, false otherwise
      * @return the argument processor
      */
     private static WRESArgumentProcessor constructDiagramArguments( Object inputKeyInstance,
                                                                     List<DiagramStatisticOuter> inputSlice,
                                                                     ChartType usedPlotType,
-                                                                    ChronoUnit durationUnits )
+                                                                    ChronoUnit durationUnits,
+                                                                    boolean hasRepeatedComponents )
     {
         WRESArgumentProcessor args = new WRESArgumentProcessor( inputSlice.get( 0 ).getMetricName(),
                                                                 null,
@@ -271,11 +323,11 @@ public abstract class ChartEngineFactory
                                                                 durationUnits );
         if ( usedPlotType.equals( ChartType.LEAD_THRESHOLD ) )
         {
-            args.addLeadThresholdArguments( inputSlice, (TimeWindowOuter) inputKeyInstance );
+            args.addLeadThresholdArguments( inputSlice, (TimeWindowOuter) inputKeyInstance, hasRepeatedComponents );
         }
         else if ( usedPlotType == ChartType.THRESHOLD_LEAD )
         {
-            args.addThresholdLeadArguments( inputSlice, (OneOrTwoThresholds) inputKeyInstance );
+            args.addThresholdLeadArguments( inputSlice, (OneOrTwoThresholds) inputKeyInstance, hasRepeatedComponents );
         }
         else
         {
@@ -316,9 +368,9 @@ public abstract class ChartEngineFactory
         final List<DiagramStatisticOuter> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
         WRESArgumentProcessor arguments =
-                constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits );
+                constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits, false );
 
-        dataSources.add( XYChartDataSourceFactory.ofMultiVectorOutputDiagram( 0,
+        dataSources.add( XYChartDataSourceFactory.ofVerificationDiagram( 0,
                                                                               inputSlice,
                                                                               MetricDimension.FORECAST_PROBABILITY,
                                                                               MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
@@ -327,7 +379,7 @@ public abstract class ChartEngineFactory
                                                                               0,
                                                                               null,
                                                                               durationUnits ) );
-        dataSources.add( XYChartDataSourceFactory.ofMultiVectorOutputDiagram( 1,
+        dataSources.add( XYChartDataSourceFactory.ofVerificationDiagram( 1,
                                                                               inputSlice,
                                                                               MetricDimension.FORECAST_PROBABILITY,
                                                                               MetricDimension.SAMPLE_SIZE,
@@ -342,12 +394,13 @@ public abstract class ChartEngineFactory
                                                              new Point2D.Double( 0.0, 0.0 ),
                                                              new Point2D.Double( 1.0, 1.0 ) ) );
 
+        // Create the chart parameters
+        ChartParameters parameters = new ChartParameters( templateName, overrideParametersStr, inputSlice.size() );
 
         //Build the ChartEngine instance.
         return generateChartEngine( dataSources,
                                     arguments,
-                                    templateName,
-                                    overrideParametersStr,
+                                    parameters,
                                     diagonalDataSourceIndices,
                                     axisToSquareAgainstDomain );
     }
@@ -384,9 +437,9 @@ public abstract class ChartEngineFactory
         final List<DiagramStatisticOuter> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
         WRESArgumentProcessor arguments =
-                constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits );
+                constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits, false );
 
-        dataSources.add( XYChartDataSourceFactory.ofMultiVectorOutputDiagram( 0,
+        dataSources.add( XYChartDataSourceFactory.ofVerificationDiagram( 0,
                                                                               inputSlice,
                                                                               MetricDimension.PROBABILITY_OF_FALSE_DETECTION,
                                                                               MetricDimension.PROBABILITY_OF_DETECTION,
@@ -400,12 +453,13 @@ public abstract class ChartEngineFactory
                                                              new Point2D.Double( 0.0, 0.0 ),
                                                              new Point2D.Double( 1.0, 1.0 ) ) );
 
-
+        // Create the chart parameters
+        ChartParameters parameters = new ChartParameters( templateName, overrideParametersStr, inputSlice.size() );
+        
         //Build the ChartEngine instance.
         return generateChartEngine( dataSources,
                                     arguments,
-                                    templateName,
-                                    overrideParametersStr,
+                                    parameters,
                                     diagonalDataSourceIndices,
                                     axisToSquareAgainstDomain );
     }
@@ -441,9 +495,9 @@ public abstract class ChartEngineFactory
         final List<DiagramStatisticOuter> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
         WRESArgumentProcessor arguments =
-                constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits );
+                constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits, false );
 
-        DefaultXYChartDataSource dataSource = XYChartDataSourceFactory.ofMultiVectorOutputDiagram( 0,
+        DefaultXYChartDataSource dataSource = XYChartDataSourceFactory.ofVerificationDiagram( 0,
                                                                                                    inputSlice,
                                                                                                    MetricDimension.OBSERVED_QUANTILES,
                                                                                                    MetricDimension.PREDICTED_QUANTILES,
@@ -460,15 +514,76 @@ public abstract class ChartEngineFactory
         axisToSquareAgainstDomain = ChartConstants.YAXIS_XML_STRINGS[ChartConstants.LEFT_YAXIS_INDEX];
         dataSources.add( dataSource );
 
+        // Create the chart parameters
+        ChartParameters parameters = new ChartParameters( templateName, overrideParametersStr, inputSlice.size() );
+        
         //Build the ChartEngine instance.
         return generateChartEngine( dataSources,
                                     arguments,
-                                    templateName,
-                                    overrideParametersStr,
+                                    parameters,
                                     diagonalDataSourceIndices,
                                     axisToSquareAgainstDomain );
     }
 
+    /**
+     * Constructs an ensemble QQ diagram chart.
+     * @param inputKeyInstance The key-instance for which to build the plot.  The key is one of potentially multiple keys within the input provided next.
+     * @param input The metric output to plot.
+     * @param usedPlotType Name of the resource to load which provides the default template for
+     *            chart construction. May be null to use default template identified in static table.
+     * @param templateName The name of the template to use based on the plot type.  
+     * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
+     *            overrides for the appearance of chart.
+     * @param durationUnits the duration units
+     * @return A {@link ChartEngine} to be stored with the inputKeyInstance in a results map.
+     * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
+     * @throws WRESVisXMLReadingException when reading template fails
+     */
+    private static WRESChartEngine
+            processEnsembleQQDiagram( Object inputKeyInstance,
+                                      List<DiagramStatisticOuter> input,
+                                      ChartType usedPlotType,
+                                      String templateName,
+                                      String overrideParametersStr,
+                                      ChronoUnit durationUnits )
+                    throws ChartEngineException, WRESVisXMLReadingException
+    {
+        final List<XYChartDataSource> dataSources = new ArrayList<>();
+        int[] diagonalDataSourceIndices = null;
+        String axisToSquareAgainstDomain = null;
+
+        final List<DiagramStatisticOuter> inputSlice =
+                sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
+        WRESArgumentProcessor arguments =
+                constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits, true );
+
+        XYChartDataSource dataSource = XYChartDataSourceFactory.ofVerificationDiagram( 0,
+                                                                                       inputSlice,
+                                                                                       MetricDimension.OBSERVED_QUANTILES,
+                                                                                       MetricDimension.PREDICTED_QUANTILES,
+                                                                                       MetricConstants.MetricDimension.OBSERVED_QUANTILES.toString()
+                                                                                                                            + " @variableName@@inputUnitsLabelSuffix@",
+                                                                                       MetricConstants.MetricDimension.PREDICTED_QUANTILES.toString() + " @variableName@@inputUnitsLabelSuffix@",
+                                                                                       0,
+                                                                                       null,
+                                                                                       durationUnits );
+
+        //Diagonal data source added, but it won't show up in the legend since it uses features of WRESChartEngine.
+        //Also squaring the axes.
+        diagonalDataSourceIndices = new int[] { 1 };
+        axisToSquareAgainstDomain = ChartConstants.YAXIS_XML_STRINGS[ChartConstants.LEFT_YAXIS_INDEX];
+        dataSources.add( dataSource );
+
+        // Create the chart parameters
+        ChartParameters parameters = new ChartParameters( templateName, overrideParametersStr, inputSlice.size() );
+        
+        //Build the ChartEngine instance.
+        return generateChartEngine( dataSources,
+                                    arguments,
+                                    parameters,
+                                    diagonalDataSourceIndices,
+                                    axisToSquareAgainstDomain );
+    }
 
     /**
      * Constructs a rank histogram chart.
@@ -500,26 +615,30 @@ public abstract class ChartEngineFactory
         final List<DiagramStatisticOuter> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
         WRESArgumentProcessor arguments =
-                constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits );
+                constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits, false );
 
-        dataSources.add( XYChartDataSourceFactory.ofMultiVectorOutputDiagram( 0,
+        Supplier<XYDataset> dataSupplier = () -> new RankHistogramXYDataset( inputSlice,
+                                                                             MetricDimension.RANK_ORDER,
+                                                                             MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
+                                                                             durationUnits );
+        
+        dataSources.add( XYChartDataSourceFactory.ofVerificationDiagram( 0,
                                                                               inputSlice,
                                                                               MetricDimension.RANK_ORDER,
                                                                               MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
                                                                               "Bin Separating Ranked Ensemble Members",
                                                                               MetricDimension.OBSERVED_RELATIVE_FREQUENCY.toString(),
                                                                               0,
-                                                                              () -> new RankHistogramXYDataset( inputSlice,
-                                                                                                                MetricDimension.RANK_ORDER,
-                                                                                                                MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
-                                                                                                                durationUnits ),
+                                                                              dataSupplier,
                                                                               durationUnits ) );
 
+        // Create the chart parameters
+        ChartParameters parameters = new ChartParameters( templateName, overrideParametersStr, inputSlice.size() );
+        
         //Build the ChartEngine instance.
         return generateChartEngine( dataSources,
                                     arguments,
-                                    templateName,
-                                    overrideParametersStr,
+                                    parameters,
                                     diagonalDataSourceIndices,
                                     axisToSquareAgainstDomain );
     }
@@ -577,39 +696,48 @@ public abstract class ChartEngineFactory
             {
                 case RELIABILITY_DIAGRAM:
                     engine =
-                            processReliabilityDiagram( keyInstance,
-                                                       input,
-                                                       usedPlotType,
-                                                       templateName,
-                                                       overrideParametersStr,
-                                                       durationUnits );
+                            ChartEngineFactory.processReliabilityDiagram( keyInstance,
+                                                                          input,
+                                                                          usedPlotType,
+                                                                          templateName,
+                                                                          overrideParametersStr,
+                                                                          durationUnits );
                     break;
                 case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM:
                     engine =
-                            processROCDiagram( keyInstance,
-                                               input,
-                                               usedPlotType,
-                                               templateName,
-                                               overrideParametersStr,
-                                               durationUnits );
+                            ChartEngineFactory.processROCDiagram( keyInstance,
+                                                                  input,
+                                                                  usedPlotType,
+                                                                  templateName,
+                                                                  overrideParametersStr,
+                                                                  durationUnits );
                     break;
                 case QUANTILE_QUANTILE_DIAGRAM:
                     engine =
-                            processQQDiagram( keyInstance,
-                                              input,
-                                              usedPlotType,
-                                              templateName,
-                                              overrideParametersStr,
-                                              durationUnits );
+                            ChartEngineFactory.processQQDiagram( keyInstance,
+                                                                 input,
+                                                                 usedPlotType,
+                                                                 templateName,
+                                                                 overrideParametersStr,
+                                                                 durationUnits );
+                    break;
+                case ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM:
+                    engine =
+                            ChartEngineFactory.processEnsembleQQDiagram( keyInstance,
+                                                                         input,
+                                                                         usedPlotType,
+                                                                         templateName,
+                                                                         overrideParametersStr,
+                                                                         durationUnits );
                     break;
                 case RANK_HISTOGRAM:
                     engine =
-                            processRankHistogram( keyInstance,
-                                                  input,
-                                                  usedPlotType,
-                                                  templateName,
-                                                  overrideParametersStr,
-                                                  durationUnits );
+                            ChartEngineFactory.processRankHistogram( keyInstance,
+                                                                     input,
+                                                                     usedPlotType,
+                                                                     templateName,
+                                                                     overrideParametersStr,
+                                                                     durationUnits );
                     break;
                 default:
                     throw new IllegalArgumentException( "Unrecognized plot type of " + metricName
@@ -665,11 +793,13 @@ public abstract class ChartEngineFactory
         //Add the data source
         dataSources.add( XYChartDataSourceFactory.ofBoxPlotOutput( 0, input, null, durationUnits ) );
 
+        // Create the chart parameters
+        ChartParameters parameters = new ChartParameters( templateName, overrideParametersStr, 1 );
+        
         //Build the ChartEngine instance.
         return ChartEngineFactory.generateChartEngine( dataSources,
                                                        arguments,
-                                                       templateName,
-                                                       overrideParametersStr,
+                                                       parameters,
                                                        diagonalDataSourceIndices,
                                                        axisToSquareAgainstDomain );
     }
@@ -887,13 +1017,13 @@ public abstract class ChartEngineFactory
         if ( usedPlotType == ChartType.LEAD_THRESHOLD )
         {
             source = XYChartDataSourceFactory.ofDoubleScoreOutputByLeadAndThreshold( 0, input, durationUnits );
-            arguments.addLeadThresholdArguments( input, null );
+            arguments.addLeadThresholdArguments( input, null, false );
         }
         //This is for plots with the threshold on the domain axis and lead time in the legend.
         else if ( usedPlotType == ChartType.THRESHOLD_LEAD )
         {
             source = XYChartDataSourceFactory.ofDoubleScoreOutputByThresholdAndLead( 0, input, durationUnits );
-            arguments.addThresholdLeadArguments( input, null );
+            arguments.addThresholdLeadArguments( input, null, false );
         }
         //This is for plots that operate with sequences of time windows (e.g. rolling windows)
         else if ( usedPlotType == ChartType.POOLING_WINDOW )
@@ -902,6 +1032,7 @@ public abstract class ChartEngineFactory
                                                                                   input,
                                                                                   durationUnits,
                                                                                   graphicShape );
+
             arguments.addPoolingWindowArguments( input, graphicShape );
         }
         else
@@ -916,11 +1047,15 @@ public abstract class ChartEngineFactory
                                                 + "." );
         }
 
+        // Create the chart parameters
+        ChartParameters parameters = new ChartParameters( templateName, 
+                                                          overrideParametersStr, 
+                                                          source.getNumberOfSeries() );
+        
         //Build the ChartEngine instance.
         return generateChartEngine( Lists.newArrayList( source ),
                                     arguments,
-                                    templateName,
-                                    overrideParametersStr,
+                                    parameters,
                                     null,
                                     null );
     }
@@ -980,11 +1115,15 @@ public abstract class ChartEngineFactory
         //Setup the assumed source and arguments.
         source = XYChartDataSourceFactory.ofPairedOutputInstantDuration( 0, input );
 
+        // Create the chart parameters
+        ChartParameters parameters = new ChartParameters( templateName, 
+                                                          overrideParametersStr, 
+                                                          source.getNumberOfSeries() );
+        
         //Build the ChartEngine instance.
         return generateChartEngine( Lists.newArrayList( source ),
                                     arguments,
-                                    templateName,
-                                    overrideParametersStr,
+                                    parameters,
                                     null,
                                     null );
     }
@@ -1043,11 +1182,15 @@ public abstract class ChartEngineFactory
         CategoricalXYChartDataSource source =
                 XYChartDataSourceFactory.ofDurationScoreCategoricalOutput( 0, input );
 
+        // Create the chart parameters
+        ChartParameters parameters = new ChartParameters( templateName, 
+                                                          overrideParametersStr, 
+                                                          source.getNumberOfSeries() );
+        
         //Build the ChartEngine instance.
         return generateChartEngine( Lists.newArrayList( source ),
                                     arguments,
-                                    templateName,
-                                    overrideParametersStr,
+                                    parameters,
                                     null,
                                     null );
     }
@@ -1172,9 +1315,7 @@ public abstract class ChartEngineFactory
      * 
      * @param dataSources The data sources to include.
      * @param arguments The arguments to use.
-     * @param templateName The name of the template system resource or file. It will be loaded here.
-     * @param overrideParametersStr The XML string defining the override parameters supplied by a user. They will be
-     *            read herein.
+     * @param chartParameters the chart parameters
      * @param diagonalDataSourceIndices The indices of the data sources used to define the appearance of the diagonals.
      *            ONLY supply these indices if you want the chart engine to add the diagonals through JFreeChart tools;
      *            such diagonals will never appear in the legend, only on the plot. If you need the diagonal to appear
@@ -1189,87 +1330,154 @@ public abstract class ChartEngineFactory
 
     public static WRESChartEngine generateChartEngine( final List<XYChartDataSource> dataSources,
                                                        final ArgumentsProcessor arguments,
-                                                       final String templateName,
-                                                       final String overrideParametersStr,
+                                                       final ChartParameters chartParameters,
                                                        final int[] diagonalDataSourceIndices,
                                                        final String axisToSquareAgainstDomain )
             throws ChartEngineException, WRESVisXMLReadingException
     {
-        //Load the template parameters.  This will first attempt to load them as a system resource on the class path and
-        //then as a file from the file system.  If neither works, it throws an exception.
-        final ChartDrawingParameters parameters = new ChartDrawingParameters();
-
-        InputStream templateStream =
-                ChartEngineFactory.class.getClassLoader()
-                                        .getResourceAsStream( templateName );
-
-        try
-        {
-            if ( templateStream != null )
-            {
-                XMLTools.readXMLFromStream( templateStream, false, parameters );
-            }
-            else
-            {
-                //XMLTools.readXMLFromFile( new File( templateName ),
-                XMLTools.readXMLFromFile( new File( templateName ).getAbsoluteFile(),
-                                          parameters );
-            }
-        }
-        catch ( GenericXMLReadingHandlerException e )
-        {
-            throw new WRESVisXMLReadingException( "Unable to load default chart drawing parameters from resource or file with name '"
-                                                  + templateName
-                                                  + "': ",
-                                                  e );
-        }
-        finally
-        {
-            if ( templateStream != null )
-            {
-                try
-                {
-                    templateStream.close();
-                }
-                catch ( IOException ioe )
-                {
-                    // Failure to close should not affect primary outputs.
-                    LOGGER.warn( "Failed to close template stream {}",
-                                 templateStream,
-                                 ioe );
-                }
-            }
-        }
-
-        //Process override parameters.
-        ChartDrawingParameters override = null;
-        if ( overrideParametersStr != null )//TRIM ONLY IF NOT NULL!
-        {
-            final String usedStr = overrideParametersStr.trim();
-            if ( !usedStr.isEmpty() )
-            {
-                override = new ChartDrawingParameters();
-                try
-                {
-                    XMLTools.readXMLFromString( usedStr, override );
-                }
-                catch ( GenericXMLReadingHandlerException e )
-                {
-                    String message = "Unable to parse XML provided by user for chart drawing: "
-                                     + System.lineSeparator()
-                                     + usedStr
-                                     + System.lineSeparator()
-                                     + override;
-                    throw new WRESVisXMLReadingException( message, e );
-                }
-            }
-        }
-
         return new WRESChartEngine( dataSources,
                                     arguments,
-                                    parameters,
-                                    override,
+                                    chartParameters.getParameters(),
+                                    chartParameters.getOverrideParameters(),
                                     diagonalDataSourceIndices,
                                     axisToSquareAgainstDomain );
     }
+    
+    /**
+     * Creates a small bag of chart parameters from input strings in XML format.
+     * 
+     * @author Hank.Herr
+     * @author james.brown@hydrosolved.com
+     */
+    private static class ChartParameters
+    {
+        /** The main parameters. */
+        private final ChartDrawingParameters mainParameters;
+        /** The override parameters. */
+        private final ChartDrawingParameters overrideParameters;
+
+        /**
+         * @return the main parameters.
+         */
+        
+        private ChartDrawingParameters getParameters()
+        {
+            return this.mainParameters;
+        }
+        
+        /**
+         * @return the override parameters.
+         */
+        
+        private ChartDrawingParameters getOverrideParameters()
+        {
+            return this.overrideParameters;
+        }
+        
+        /**
+         * Create an instance.
+         * @param templateName The name of the template system resource or file. It will be loaded here.
+         * @param overrideParameters The XML string defining the override parameters supplied by a user. They will be
+         *            read herein.
+         * @param seriesCount The number of series. If greater than 100, no legend is visible.
+         * @throws WRESVisXMLReadingException if the parameters could not be created from the strings
+         */
+
+        private ChartParameters( String templateName, String overrideParameters, int seriesCount )
+                throws WRESVisXMLReadingException
+        {
+            // Load the template parameters.  This will first attempt to load them as a system resource on the class 
+            // path and then as a file from the file system.  If neither works, it throws an exception.
+            final ChartDrawingParameters parameters = new ChartDrawingParameters();
+
+            InputStream templateStream =
+                    ChartEngineFactory.class.getClassLoader()
+                                            .getResourceAsStream( templateName );
+
+            try
+            {
+                if ( templateStream != null )
+                {
+                    XMLTools.readXMLFromStream( templateStream, false, parameters );
+                }
+                else
+                {
+                    //XMLTools.readXMLFromFile( new File( templateName ),
+                    XMLTools.readXMLFromFile( new File( templateName ).getAbsoluteFile(),
+                                              parameters );
+                }
+            }
+            catch ( GenericXMLReadingHandlerException e )
+            {
+                throw new WRESVisXMLReadingException( "Unable to load default chart drawing parameters from resource "
+                                                      + "or file with name '"
+                                                      + templateName
+                                                      + "': ",
+                                                      e );
+            }
+            finally
+            {
+                if ( templateStream != null )
+                {
+                    try
+                    {
+                        templateStream.close();
+                    }
+                    catch ( IOException ioe )
+                    {
+                        // Failure to close should not affect primary outputs.
+                        LOGGER.warn( "Failed to close template stream {}",
+                                     templateStream,
+                                     ioe );
+                    }
+                }
+            }
+
+            //Process override parameters.
+            ChartDrawingParameters override = null;
+            if ( overrideParameters != null )//TRIM ONLY IF NOT NULL!
+            {
+                final String usedStr = overrideParameters.trim();
+                if ( !usedStr.isEmpty() )
+                {
+                    override = new ChartDrawingParameters();
+
+                    try
+                    {
+                        XMLTools.readXMLFromString( usedStr, override );
+                    }
+                    catch ( GenericXMLReadingHandlerException e )
+                    {
+                        String message = "Unable to parse XML provided by user for chart drawing: "
+                                         + System.lineSeparator()
+                                         + usedStr
+                                         + System.lineSeparator()
+                                         + override;
+                        throw new WRESVisXMLReadingException( message, e );
+                    }
+                }
+            }
+
+            // Turn off the legend?
+            if ( seriesCount > 100 )
+            {
+                LOGGER.debug( "While creating a chart, discovered a dataset with more than 100 series ({}). "
+                              + "Overriding the chart drawing parameters to turn off the legend.",
+                              seriesCount );
+
+                parameters.getLegend().setVisible( false );
+
+                if ( Objects.nonNull( override ) )
+                {
+                    override.getLegend().setVisible( false );
+                }
+            }
+            
+            this.mainParameters = parameters;
+            this.overrideParameters = override;
+        }
+    }
+    
+    
+    
 }

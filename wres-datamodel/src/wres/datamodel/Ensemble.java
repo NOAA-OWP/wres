@@ -73,12 +73,34 @@ public class Ensemble implements Comparable<Ensemble>
         }
 
         /**
-         * @return {@code true} if one or more labels is defined, {@code false} if no labels are defined
+         * @return {@code true} if one or more labels is defined, {@code false} if no labels are defined.
          */
 
         public boolean hasLabels()
         {
             return this.labels.length > 0;
+        }
+
+        /**
+         * @return {@code true} if the prescribed label is present, otherwise {@code false}.
+         * @throws NullPointerException if the ensembleName is null.
+         */
+
+        public boolean hasLabel( String ensembleName )
+        {
+            Objects.requireNonNull( ensembleName );
+
+            // Labels are de-duplicated, so search the unordered labels, else would need to store de-duplicated ordered
+            // labels to use a search that relies on order
+            for ( String next : labels )
+            {
+                if ( ensembleName.equals( next ) )
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         @Override

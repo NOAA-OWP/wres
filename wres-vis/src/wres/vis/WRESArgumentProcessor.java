@@ -407,33 +407,54 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param <T> the output type
      * @param displayedPlotInput the plot input
      * @param plotTimeWindow the time window
+     * @param hasRepeatedComponents is true for diagrams that have repeated components, false otherwise
      */
     public <T extends Statistic<?>> void addLeadThresholdArguments( List<T> displayedPlotInput,
-                                                                    TimeWindowOuter plotTimeWindow )
+                                                                    TimeWindowOuter plotTimeWindow,
+                                                                    boolean hasRepeatedComponents )
     {
         PoolMetadata meta = displayedPlotInput.get( 0 ).getMetadata();
 
-        String legendTitle = "Threshold";
-        String legendUnitsText = "";
-        // Display real values for all real-valued thresholds, not just quantiles: #56955
-        SortedSet<Boolean> thresholds =
-                Slicer.discover( displayedPlotInput,
-                                 next -> next.getMetadata().getThresholds().first().hasValues() );
-
-        if ( thresholds.contains( true ) )
+        // One dataset for every qualifier, so one threshold only
+        if ( !hasRepeatedComponents )
         {
-            legendUnitsText += " [" + meta.getMeasurementUnit() + "]";
-        }
+            String legendTitle = "Threshold";
+            String legendUnitsText = "";
+            // Display real values for all real-valued thresholds, not just quantiles: #56955
+            SortedSet<Boolean> thresholds =
+                    Slicer.discover( displayedPlotInput,
+                                     next -> next.getMetadata().getThresholds().first().hasValues() );
 
-        addArgument( LEGEND_TITLE, legendTitle );
-        addArgument( LEGEND_UNITS_TEXT, legendUnitsText );
+            if ( thresholds.contains( true ) )
+            {
+                legendUnitsText += " [" + meta.getMeasurementUnit() + "]";
+            }
+
+            addArgument( LEGEND_TITLE, legendTitle );
+            addArgument( LEGEND_UNITS_TEXT, legendUnitsText );
+        }
+        else
+        {
+            addArgument( LEGEND_TITLE, "Name" );
+            addArgument( LEGEND_UNITS_TEXT, "" );
+        }
+    
         if ( plotTimeWindow != null )
         {
             String durationString =
                     TimeHelper.durationToLongUnits( plotTimeWindow.getLatestLeadDuration(), this.getDurationUnits() )
                                     + " "
                                     + this.getDurationUnits().name().toUpperCase();
-            addArgument( DIAGRAM_INSTANCE_DESCRIPTION, "at Lead Time " + durationString );
+            if( hasRepeatedComponents )
+            {
+                addArgument( DIAGRAM_INSTANCE_DESCRIPTION,
+                             "at Lead Time " + durationString + " and for Threshold All Data" );
+            }
+            else
+            {
+                addArgument( DIAGRAM_INSTANCE_DESCRIPTION, "at Lead Time " + durationString );
+            }
+            
             addArgument( "plotTitleVariable", "Thresholds" );
         }
     }
@@ -444,9 +465,11 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param <T> the output type
      * @param displayedPlotInput the plot input
      * @param threshold the threshold
+     * @param hasRepeatedComponents is true for diagrams that have repeated components, false otherwise
      */
     public <T extends Statistic<?>> void addThresholdLeadArguments( List<T> displayedPlotInput,
-                                                                    OneOrTwoThresholds threshold )
+                                                                    OneOrTwoThresholds threshold,
+                                                                    boolean hasRepeatedComponents )
     {
 
         // Augment the plot title when the input dataset contains a secondary threshold/classifier
@@ -461,9 +484,15 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
             supplementary = " with occurrences defined as " + set;
         }
 
+        String supplementaryLegend = "";
+        if ( hasRepeatedComponents )
+        {
+            supplementaryLegend = ", Name";
+        }
+        
         addArgument( "plotTitleSupplementary", supplementary );
         addArgument( LEGEND_TITLE, "Lead Time" );
-        addArgument( LEGEND_UNITS_TEXT, " [" + this.getDurationUnits().name().toUpperCase() + "]" );
+        addArgument( LEGEND_UNITS_TEXT, " [" + this.getDurationUnits().name().toUpperCase() + "]" + supplementaryLegend );
 
         if ( threshold != null )
         {

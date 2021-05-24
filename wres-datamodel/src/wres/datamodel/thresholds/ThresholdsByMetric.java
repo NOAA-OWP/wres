@@ -496,7 +496,7 @@ public class ThresholdsByMetric
         }
 
         /**
-         * Adds a threshold.If the metric does not support thresholds according to 
+         * Adds a threshold. If the metric does not support thresholds according to 
          * {@link MetricConstants#isAThresholdMetric()}, then the {@link ThresholdOuter#ALL_DATA} threshold is added 
          * instead.
          *

@@ -378,7 +378,7 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
      * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private MetricCollection( final Builder<S, T, U> builder ) throws MetricParameterException
+    private MetricCollection( final Builder<S, T, U> builder )
     {
 
         //Set 
@@ -422,7 +422,7 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
      * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private void validate() throws MetricParameterException
+    private void validate()
     {
         //Validate 
         if ( Objects.isNull( this.metricPool ) )

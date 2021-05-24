@@ -1,17 +1,18 @@
 package wres.datamodel.statistics;
 
 import java.util.Collections;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.apache.commons.lang3.tuple.Pair;
 
 import net.jcip.annotations.Immutable;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.MetricDimension;
 import wres.statistics.generated.DiagramStatistic;
@@ -32,22 +33,34 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
     private final DiagramStatistic diagram;
 
     /**
-     * Local set of component names from the canonical {@link diagram}.
+     * Local set of component names from the canonical {@link #diagram}.
      */
 
     private final SortedSet<MetricDimension> componentNames;
+
+    /**
+     * Local set of component name qualifiers from the canonical {@link #diagram}.
+     */
+
+    private final SortedSet<String> componentNameQualifiers;
 
     /**
      * The metadata associated with the statistic.
      */
 
     private final PoolMetadata metadata;
-    
+
     /**
      * The metric name.
      */
 
     private final MetricConstants metricName;
+
+    /**
+     * An internal map of indexes of pairs of metric names and qualifiers to allow fast lookup.
+     */
+
+    private final Map<Pair<MetricDimension, String>, Integer> componentIndexes;
 
     /**
      * Construct the diagram.
@@ -64,51 +77,12 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
         return new DiagramStatisticOuter( diagram, meta );
     }
 
-    /**
-     * Returns a prescribed vector from the map or null if no mapping exists.
-     * 
-     * @param identifier the identifier
-     * @return a vector or null
-     */
-
-    public VectorOfDoubles getComponent( MetricDimension identifier )
-    {
-        VectorOfDoubles returnMe = null;
-
-        if ( this.hasComponent( identifier ) )
-        {
-            for ( DiagramStatisticComponent next : this.getData()
-                                                       .getStatisticsList() )
-            {
-                if ( identifier.name().equals( next.getMetric().getName().name() ) )
-                {
-                    List<Double> values = next.getValuesList();
-                    returnMe = VectorOfDoubles.of( values.toArray( new Double[values.size()] ) );
-                }
-            }
-        }
-
-        return returnMe;
-    }
-
-    /**
-     * Returns true if the store contains a mapping for the prescribed identifier, false otherwise.
-     * 
-     * @param identifier the identifier
-     * @return true if the mapping exists, false otherwise
-     */
-
-    public boolean hasComponent( MetricDimension identifier )
-    {
-        return this.componentNames.contains( identifier );
-    }
-
     @Override
     public MetricConstants getMetricName()
     {
         return this.metricName;
     }
-    
+
     /**
      * Returns the diagram component names.
      * 
@@ -118,6 +92,45 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
     public SortedSet<MetricDimension> getComponentNames()
     {
         return this.componentNames; // Immutable on construction.
+    }
+
+    /**
+     * Returns the qualifiers for diagram component names where the same name appears more than once.
+     * 
+     * @return the component name qualifiers
+     */
+
+    public SortedSet<String> getComponentNameQualifiers()
+    {
+        return this.componentNameQualifiers;
+    }
+
+    /**
+     * Returns a component with a prescribed name and qualifier.
+     * 
+     * @param name the component name
+     * @param qualifier the component name qualifier
+     * @return the metric component
+     * @throws IllegalArgumentException if no such component exists
+     * @throws NullPointerException if either input is null
+     */
+
+    public DiagramStatisticComponent getComponent( MetricDimension name, String qualifier )
+    {
+        Objects.requireNonNull( name );
+        Objects.requireNonNull( qualifier );
+
+        Pair<MetricDimension, String> key = Pair.of( name, qualifier );
+        if ( !this.componentIndexes.containsKey( key ) )
+        {
+            throw new IllegalArgumentException( "There is no such metric component named " + name
+                                                + " with qualifier "
+                                                + qualifier
+                                                + "." );
+        }
+
+        int componentIndex = this.componentIndexes.get( key );
+        return this.diagram.getStatistics( componentIndex );
     }
 
     @Override
@@ -135,11 +148,17 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
     @Override
     public boolean equals( final Object o )
     {
+        if( o == this )
+        {
+            return true;
+        }
+        
         if ( ! ( o instanceof DiagramStatisticOuter ) )
         {
             return false;
         }
         final DiagramStatisticOuter v = (DiagramStatisticOuter) o;
+
         return this.getMetadata().equals( v.getMetadata() ) && this.getData().equals( v.getData() );
     }
 
@@ -187,14 +206,24 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
         this.metadata = meta;
 
         SortedSet<MetricDimension> componentNames = new TreeSet<>();
+        SortedSet<String> componentNameQualifiers = new TreeSet<>();
+        Map<Pair<MetricDimension, String>, Integer> componentIndexes = new HashMap<>();
 
+        int index = 0;
         for ( DiagramStatisticComponent next : this.getData().getStatisticsList() )
         {
-            componentNames.add( MetricDimension.valueOf( next.getMetric().getName().name() ) );
+            MetricDimension nextName = MetricDimension.valueOf( next.getMetric().getName().name() );
+            componentNames.add( nextName );
+            String nextQualifier = next.getName();
+            componentNameQualifiers.add( nextQualifier );
+            componentIndexes.put( Pair.of( nextName, nextQualifier ), index );
+            index++;
         }
 
         this.componentNames = Collections.unmodifiableSortedSet( componentNames );
+        this.componentNameQualifiers = Collections.unmodifiableSortedSet( componentNameQualifiers );
         this.metricName = MetricConstants.valueOf( diagram.getMetric().getName().name() );
+        this.componentIndexes = componentIndexes; // Not exposed to mutation
     }
 
 }

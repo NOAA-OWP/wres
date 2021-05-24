@@ -528,6 +528,11 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     @Override
     public boolean equals( final Object o )
     {
+        if( o == this )
+        {
+            return true;
+        }
+        
         if ( ! ( o instanceof ThresholdOuter ) )
         {
             return false;

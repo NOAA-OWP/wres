@@ -86,7 +86,6 @@ public class BoxPlotErrorByForecast extends EnsembleBoxPlot
      */
 
     public static BoxPlotErrorByForecast of( MetricDimension domainDimension, VectorOfDoubles probabilities )
-            throws MetricParameterException
     {
         return new BoxPlotErrorByForecast( probabilities, domainDimension );
     }
@@ -172,7 +171,6 @@ public class BoxPlotErrorByForecast extends EnsembleBoxPlot
      */
 
     private BoxPlotErrorByForecast( VectorOfDoubles probabilities, MetricDimension domainDimension )
-            throws MetricParameterException
     {
         this.validateProbabilities( probabilities );
 

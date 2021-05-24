@@ -164,77 +164,70 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                            .getRight()
                                            .getType();
 
-        try
+        // In future, other types of pools may be handled here
+        // Pairs that contain ensemble forecasts
+        if ( type == DatasourceType.ENSEMBLE_FORECASTS )
         {
-            // In future, other types of pools may be handled here
-            // Pairs that contain ensemble forecasts
-            if ( type == DatasourceType.ENSEMBLE_FORECASTS )
+            List<Supplier<Pool<Pair<Double, Ensemble>>>> pools =
+                    PoolFactory.getEnsemblePools( this.evaluation,
+                                                  this.project,
+                                                  this.feature,
+                                                  this.unitMapper );
+
+            // Stand-up the pair writers
+            PairsWriter<Double, Ensemble> pairsWriter = null;
+            PairsWriter<Double, Ensemble> basePairsWriter = null;
+            if ( this.sharedWriters.hasSharedSampleWriters() )
             {
-                List<Supplier<Pool<Pair<Double, Ensemble>>>> pools =
-                        PoolFactory.getEnsemblePools( this.evaluation,
+                pairsWriter = this.sharedWriters.getSampleDataWriters().getEnsembleWriter();
+            }
+            if ( this.sharedWriters.hasSharedBaselineSampleWriters() )
+            {
+                basePairsWriter = this.sharedWriters.getBaselineSampleDataWriters().getEnsembleWriter();
+            }
+
+            List<MetricProcessor<Pool<Pair<Double, Ensemble>>>> processors =
+                    this.getEnsembleProcessors( projectConfig,
+                                                metrics );
+
+            return this.processFeature( this.evaluation,
+                                        projectConfig,
+                                        processors,
+                                        pools,
+                                        pairsWriter,
+                                        basePairsWriter );
+        }
+        // All other types
+        else
+        {
+            List<Supplier<Pool<Pair<Double, Double>>>> pools =
+                    PoolFactory.getSingleValuedPools( this.evaluation,
                                                       this.project,
                                                       this.feature,
                                                       this.unitMapper );
 
-                // Stand-up the pair writers
-                PairsWriter<Double, Ensemble> pairsWriter = null;
-                PairsWriter<Double, Ensemble> basePairsWriter = null;
-                if ( this.sharedWriters.hasSharedSampleWriters() )
-                {
-                    pairsWriter = this.sharedWriters.getSampleDataWriters().getEnsembleWriter();
-                }
-                if ( this.sharedWriters.hasSharedBaselineSampleWriters() )
-                {
-                    basePairsWriter = this.sharedWriters.getBaselineSampleDataWriters().getEnsembleWriter();
-                }
+            // Stand-up the pair writers
+            PairsWriter<Double, Double> pairsWriter = null;
+            PairsWriter<Double, Double> basePairsWriter = null;
+            if ( this.sharedWriters.hasSharedSampleWriters() )
+            {
+                pairsWriter = this.sharedWriters.getSampleDataWriters().getSingleValuedWriter();
+            }
+            if ( this.sharedWriters.hasSharedBaselineSampleWriters() )
+            {
+                basePairsWriter = this.sharedWriters.getBaselineSampleDataWriters().getSingleValuedWriter();
+            }
 
-                List<MetricProcessor<Pool<Pair<Double, Ensemble>>>> processors =
-                        this.getEnsembleProcessors( projectConfig,
+            List<MetricProcessor<Pool<Pair<Double, Double>>>> processors =
+                    this.getSingleValuedProcessors( projectConfig,
                                                     metrics );
 
-                return this.processFeature( this.evaluation,
-                                            projectConfig,
-                                            processors,
-                                            pools,
-                                            pairsWriter,
-                                            basePairsWriter );
-            }
-            // All other types
-            else
-            {
-                List<Supplier<Pool<Pair<Double, Double>>>> pools =
-                        PoolFactory.getSingleValuedPools( this.evaluation,
-                                                          this.project,
-                                                          this.feature,
-                                                          this.unitMapper );
-
-                // Stand-up the pair writers
-                PairsWriter<Double, Double> pairsWriter = null;
-                PairsWriter<Double, Double> basePairsWriter = null;
-                if ( this.sharedWriters.hasSharedSampleWriters() )
-                {
-                    pairsWriter = this.sharedWriters.getSampleDataWriters().getSingleValuedWriter();
-                }
-                if ( this.sharedWriters.hasSharedBaselineSampleWriters() )
-                {
-                    basePairsWriter = this.sharedWriters.getBaselineSampleDataWriters().getSingleValuedWriter();
-                }
-
-                List<MetricProcessor<Pool<Pair<Double, Double>>>> processors =
-                        this.getSingleValuedProcessors( projectConfig,
-                                                        metrics );
-
-                return this.processFeature( this.evaluation,
-                                            projectConfig,
-                                            processors,
-                                            pools,
-                                            pairsWriter,
-                                            basePairsWriter );
-            }
-        }
-        catch ( final MetricParameterException e )
-        {
-            throw new WresProcessingException( this.errorMessage, e );
+            return this.processFeature( this.evaluation,
+                                        projectConfig,
+                                        processors,
+                                        pools,
+                                        pairsWriter,
+                                        basePairsWriter );
         }
     }
 
@@ -499,10 +492,10 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                 LOGGER.debug( "Empty pool discovered for {}: no statistics will be produced.", pool.getMetadata() );
 
                 // Empty container
-                
+
                 StatisticsForProject empty = new StatisticsForProject.Builder().build();
                 returnMe.add( empty );
-                
+
                 return returnMe;
             }
 
@@ -517,19 +510,19 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
                     builder.addStatistics( statistics )
                            .setMinimumSampleSize( processor.getMetrics().getMinimumSampleSize() );
-                    
+
                     // Compute separate statistics for the baseline?
                     if ( pool.hasBaseline() && projectConfig.getInputs().getBaseline().isSeparateMetrics() )
                     {
-                        Pool<Pair<L,R>> baseline = pool.getBaselineData();
-                        
+                        Pool<Pair<L, R>> baseline = pool.getBaselineData();
+
                         LOGGER.debug( "Computing separate statistics for the baseline pairs associated with pool {}.",
                                       baseline.getMetadata() );
 
-                            StatisticsForProject baselineStatistics = processor.apply( baseline );
-                            builder.addStatistics( baselineStatistics );
+                        StatisticsForProject baselineStatistics = processor.apply( baseline );
+                        builder.addStatistics( baselineStatistics );
                     }
-                    
+
                     StatisticsForProject nextStatistics = builder.build();
                     returnMe.add( nextStatistics );
                 }
@@ -554,7 +547,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
     private List<MetricProcessor<Pool<Pair<Double, Ensemble>>>> getEnsembleProcessors( ProjectConfig projectConfig,
                                                                                        List<Metrics> metrics )
-            throws MetricParameterException
     {
         List<MetricProcessor<Pool<Pair<Double, Ensemble>>>> processors = new ArrayList<>();
 
@@ -580,7 +572,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
     private List<MetricProcessor<Pool<Pair<Double, Double>>>> getSingleValuedProcessors( ProjectConfig projectConfig,
                                                                                          List<Metrics> metrics )
-            throws MetricParameterException
     {
         List<MetricProcessor<Pool<Pair<Double, Double>>>> processors = new ArrayList<>();
 

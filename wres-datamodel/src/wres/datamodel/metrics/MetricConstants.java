@@ -188,6 +188,12 @@ public enum MetricConstants
      */
 
     QUANTILE_QUANTILE_DIAGRAM( SampleDataGroup.SINGLE_VALUED, StatisticType.DIAGRAM ),
+    
+    /**
+     * Ensemble Quantile-quantile diagram.
+     */
+
+    ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM( SampleDataGroup.ENSEMBLE, StatisticType.DIAGRAM ),
 
     /**
      * Identifier for the Rank Histogram.
@@ -600,7 +606,8 @@ public enum MetricConstants
     {
         return ! ( this.getMetricOutputGroup() == StatisticType.BOXPLOT_PER_PAIR
                    || this.getMetricOutputGroup() == StatisticType.BOXPLOT_PER_POOL
-                   || this == MetricConstants.QUANTILE_QUANTILE_DIAGRAM );
+                   || this == MetricConstants.QUANTILE_QUANTILE_DIAGRAM
+                   || this == MetricConstants.ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM );
     }
 
     /**
