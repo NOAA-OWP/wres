@@ -37,6 +37,7 @@ public class Metrics
      * 
      * @param thresholdsByMetric the thresholds mapped to metrics
      * @param minimumSampleSize the minimum sample size
+     * @return an instance
      * @throws IllegalArgumentException if the minimum sample size is less than zero
      * @throws NullPointerException if the thresholdsByMetric is null
      */

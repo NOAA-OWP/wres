@@ -23,7 +23,7 @@ public class GeneralThresholdResponse implements Serializable {
 
     /**
      * Convenience wrapper with more intuitive name.  Calls {@link #setValue_set(Collection)}.
-     * @param value_set 
+     * @param value_set the value set
      */
     public void setThresholds(Collection<GeneralThresholdDefinition> value_set) {
         setValue_set(value_set);
