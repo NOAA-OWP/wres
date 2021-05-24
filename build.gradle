@@ -67,6 +67,9 @@ plugins
     
     // Markdown to html
     id 'org.kordamp.gradle.markdown' version '2.2.0'
+
+    // To generate API documentation from JAX-RS annotations and javadocs
+    id "io.swagger.core.v3.swagger-gradle-plugin" version "2.1.9"
 }
 
 repositories
@@ -965,6 +968,14 @@ project(':wres-worker')
 
 project(':wres-tasker')
 {
+    configurations
+    {
+        // This separate configuration keeps swagger jars out of the zip.
+        docGen
+    }
+
+    def swaggerDocsBaseDir = new File( buildDir, "swagger" )
+
     dependencies
     {
         // To allow for programmatic post of input data:
@@ -1037,9 +1048,13 @@ project(':wres-tasker')
         // Provides support for both 0-8 and 0-9-1
         testCompile 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:8.0.4'
         testCompile 'org.apache.qpid:qpid-broker-plugins-memory-store:8.0.4'
+
+        // To generate swagger's openapi.json at build time.
+        docGen 'io.swagger.core.v3:swagger-jaxrs2-jakarta:2.1.9'
     }
 
     apply plugin: 'application'
+    apply plugin: 'io.swagger.core.v3.swagger-gradle-plugin'
 
     mainClassName = 'wres.tasker.Tasker'
     applicationDefaultJvmArgs = ['-Xms340m','-Xmx340m',
@@ -1065,7 +1080,7 @@ project(':wres-tasker')
                 from
                 {
                     // Note: see lengthy note in main application below
-                    ['dist']
+                    [ 'dist', swaggerDocs ]
                 }
             }
         }
@@ -1097,7 +1112,89 @@ project(':wres-tasker')
             }
         }
     }
+
+
+    // Task named "resolve" is from from swagger plugin, generates openapi.json
+    resolve
+    {
+        outputDir = new File( swaggerDocsBaseDir, "lib/static/html/doc" )
+        classpath = sourceSets.main.runtimeClasspath
+        resourcePackages = [ 'wres.tasker' ]
+        buildClasspath = classpath
+        buildClasspath += configurations.docGen
+    }
+
+    // Gets swagger ui zip that has static resources to display openapi.json
+    task ( downloadSwaggerUI, type: Download )
+    {
+        def name = 'v3.49.0.zip'
+        onlyIfModified true
+        overwrite false
+        src "https://github.com/swagger-api/swagger-ui/archive/refs/tags/${name}"
+        dest new File( buildDir, name )
+    }
+
+    // Extracts only the needed static resources from swagger ui zip.
+    task ( extractSwaggerUI, dependsOn: [downloadSwaggerUI, resolve], type: Copy )
+    {
+        from ( zipTree( downloadSwaggerUI.dest ) )
+        {
+            include "*/dist/**"
+
+            // While extracting, remove the first two directories from tree.
+            // https://docs.gradle.org/6.8.1/userguide/working_with_files.html#sec:unpacking_archives_example
+            eachFile {
+                fcd ->
+                    fcd.relativePath = new RelativePath( true,
+                            fcd.relativePath.segments.drop( 2 ) )
+            }
+        }
+
+        into resolve.outputDir
+    }
+
+    // The purpose of this task is to allow a reference to its output above in
+    // the distribution/main section. The reason is the path nesting. The output
+    // from the "resolve" and "extractSwaggerUI" tasks goes into
+    // "$swaggerDocsBaseDir/lib/static/html/doc" directory but we want the
+    // directory structure lib/static/html/doc included. Within the distribution
+    // the lib/static directory is added to the classpath. Then the html
+    // directory is used within the tasker as the base directory for static
+    // resources to be served.
+    // The second purpose of this task is to set the correct, local url having
+    // the generated-by-resolve-task openapi.json inside the unzipped index.html
+    task ( swaggerDocs, dependsOn: extractSwaggerUI, type: Copy )
+    {
+        from ( fileTree( swaggerDocsBaseDir ) )
+        {
+            eachFile
+            {
+                if ( it.getName().equals( "index.html" ) )
+                {
+                    filteringCharset = 'UTF-8'
+
+                    // Replace the default url with openapi.json generated above
+                    filter
+                    {
+                        String line ->
+                            line.contains( "url:" ) ? "url: \"openapi.json\"," : line
+                    }
+
+                    // Doubt we need a download plugin, remove it.
+                    filter
+                    {
+                        String line ->
+                            line.contains( "SwaggerUIBundle.plugins.DownloadUrl" ) ? null : line
+                    }
+
+                }
+            }
+        }
+
+        into new File( buildDir, "swaggerDist" )
+    }
 }
+
 
 project(':wres-eventsbroker')
 {

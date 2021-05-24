@@ -122,7 +122,7 @@ public class Tasker
 
         // Static handler:
         ResourceHandler resourceHandler = new ResourceHandler();
-        resourceHandler.setBaseResource( Resource.newClassPathResource( "index.html" ) );
+        resourceHandler.setBaseResource( Resource.newClassPathResource( "html" ) );
 
         // Have to chain/wrap the handler this way to get both static/dynamic:
         resourceHandler.setHandler( context );
@@ -211,6 +211,4 @@ public class Tasker
         sslContextFactory.setKeyStorePath( ourServerCertificateFilename );
         return sslContextFactory;
     }
-
-
 }
