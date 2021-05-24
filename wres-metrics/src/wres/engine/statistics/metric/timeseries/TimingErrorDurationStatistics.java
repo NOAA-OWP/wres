@@ -135,7 +135,6 @@ public class TimingErrorDurationStatistics
      */
 
     private TimingErrorDurationStatistics( MetricConstants identifier, Set<MetricConstants> statistics )
-            throws MetricParameterException
     {
 
         if ( Objects.isNull( identifier ) )

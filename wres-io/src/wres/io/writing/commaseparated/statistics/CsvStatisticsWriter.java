@@ -105,8 +105,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                          + "UPPER VALUE,DECISION THRESHOLD UNITS,DECISION THRESHOLD LOWER PROBABILITY,"
                                          + "DECISION THRESHOLD UPPER PROBABILITY,DECISION THRESHOLD SIDE,DECISION "
                                          + "THRESHOLD OPERATOR,METRIC NAME,METRIC COMPONENT NAME,METRIC COMPONENT "
-                                         + "UNITS,METRIC COMPONENT MINIMUM,METRIC COMPONENT MAXIMUM,METRIC COMPONENT "
-                                         + "OPTIMUM,STATISTIC GROUP NUMBER,STATISTIC";
+                                         + "QUALIFIER,METRIC COMPONENT UNITS,METRIC COMPONENT MINIMUM,METRIC COMPONENT "
+                                         + "MAXIMUM,METRIC COMPONENT OPTIMUM,STATISTIC GROUP NUMBER,STATISTIC";
 
     /**
      * The CSV delimiter.
@@ -801,6 +801,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             MetricConstants namedMetricComponent = MetricConstants.valueOf( metricComponent.getName().name() );
             this.append( joiner, namedMetricComponent.toString(), false );
 
+            // Name qualifier
+            this.append( joiner, "", false );
+            
             // Add the metric component units
             this.append( joiner, metricComponent.getUnits(), false );
 
@@ -884,6 +887,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             // Add the metric component name, pretty printed
             MetricConstants namedMetricComponent = MetricConstants.valueOf( metricComponent.getName().name() );
             this.append( joiner, namedMetricComponent.toString(), false );
+            
+            // Name qualifier
+            this.append( joiner, "", false );
 
             // Relative timing errors
             if ( metric.getName() == MetricName.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC )
@@ -1020,6 +1026,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                 MetricDimension namedMetricComponent = MetricDimension.valueOf( metricComponent.getName().name() );
                 this.append( joiner, namedMetricComponent.toString(), false );
 
+                // Name qualifier
+                this.append( joiner, next.getName(), false );
+                
                 // Add the metric component units
                 this.append( joiner, metricComponent.getUnits(), false );
 
@@ -1086,6 +1095,10 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             this.append( joiner, namedMetric.toString(), false );
             ReferenceTimeType referenceTimeType = ReferenceTimeType.valueOf( next.getReferenceTimeType().name() );
             this.append( joiner, referenceTimeType.toString(), false );
+            
+            // Name qualifier
+            this.append( joiner, "", false );
+            
             this.append( joiner, epochString, false );
             Instant time = Instant.ofEpochSecond( next.getTime().getSeconds(), next.getTime().getNanos() );
 
@@ -1110,6 +1123,10 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             joinerTwo.merge( poolDescription );
             this.append( joinerTwo, namedMetric.toString(), false );
             this.append( joinerTwo, "ERROR", false );
+            
+            // Name qualifier
+            this.append( joinerTwo, "", false );
+            
             this.append( joinerTwo, durationUnits.toString().toUpperCase(), false );
 
             com.google.protobuf.Duration protoDuration = next.getDuration();
@@ -1250,6 +1267,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
         // Add the component name            
         this.append( joiner, metricComponentName, false );
+        
+        // Add the component qualifier            
+        this.append( joiner, "", false );
 
         // Add the metric component units
         this.append( joiner, units, false );
@@ -1480,8 +1500,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                + "\"String\",\"String\",\"String\",\"String\",\"String\",\"String\",\"String\","
                                + "\"String\",\"String\",\"String\",\"Real\",\"Real\",\"String\",\"Real\",\"Real\","
                                + "\"String\",\"String\",\"String\",\"Real\",\"Real\",\"String\",\"Real\",\"Real\","
-                               + "\"String\",\"String\",\"String\",\"String\",\"String\",\"Real\",\"Real\",\"Real\","
-                               + "\"Integer\",\"Real\"";
+                               + "\"String\",\"String\",\"String\",\"String\",\"String\",\"String\",\"Real\",\"Real\","
+                               + "\"Real\",\"Integer\",\"Real\"";
 
         // Sanity check that the number of column classes equals the number of columns
         int classCount = columnClasses.split( "," ).length;

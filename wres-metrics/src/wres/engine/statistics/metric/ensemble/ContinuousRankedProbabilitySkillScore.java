@@ -81,7 +81,6 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
      */
 
     public static ContinuousRankedProbabilitySkillScore of( MetricGroup decompositionId )
-            throws MetricParameterException
     {
         return new ContinuousRankedProbabilitySkillScore( decompositionId );
     }
@@ -161,7 +160,7 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    private ContinuousRankedProbabilitySkillScore( MetricGroup decompositionId ) throws MetricParameterException
+    private ContinuousRankedProbabilitySkillScore( MetricGroup decompositionId )
     {
         super( decompositionId );
     }

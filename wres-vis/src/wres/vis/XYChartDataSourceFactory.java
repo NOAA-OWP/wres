@@ -87,6 +87,15 @@ abstract class XYChartDataSourceFactory
         // One box per pool? See #62374
         boolean pooledInput = input.get( 0 ).getMetricName().isInGroup( StatisticType.BOXPLOT_PER_POOL );
 
+        int seriesCount = 0;
+
+        if ( input.get( 0 ).getData().getStatisticsCount() != 0 )
+        {
+            seriesCount = input.get( 0 ).getData().getMetric().getQuantilesCount();
+        }
+        
+        final int seriesCountFinal = seriesCount;
+        
         // Should be one dataset only if it is not per-pool
         if ( !pooledInput && input.size() > 1 )
         {
@@ -105,6 +114,12 @@ abstract class XYChartDataSourceFactory
             }
 
             @Override
+            public int getNumberOfSeries()
+            {
+                return seriesCountFinal;
+            }
+            
+            @Override
             protected XYDataset buildXYDataset( DataSourceDrawingParameters arg0 ) throws XYChartDataSourceException
             {
                 // Add a boxplot for output that contains one box per pool. See #62374
@@ -116,13 +131,6 @@ abstract class XYChartDataSourceFactory
                 return new BoxPlotDiagramXYDataset( input );
             }
         };
-
-        int seriesCount = 0;
-
-        if ( input.get( 0 ).getData().getStatisticsCount() != 0 )
-        {
-            seriesCount = input.get( 0 ).getData().getMetric().getQuantilesCount();
-        }
 
         XYChartDataSourceFactory.buildInitialParameters( source,
                                                          orderIndex,
@@ -186,6 +194,12 @@ abstract class XYChartDataSourceFactory
                 this.copyTheseParametersIntoDataSource( newSource );
                 return newSource;
             }
+            
+            @Override
+            public int getNumberOfSeries()
+            {
+                return 1;
+            }
 
             @Override
             protected XYDataset buildXYDataset( DataSourceDrawingParameters arg0 ) throws XYChartDataSourceException
@@ -215,6 +229,9 @@ abstract class XYChartDataSourceFactory
             ofPairedOutputInstantDuration( int orderIndex,
                                            final List<DurationDiagramStatisticOuter> input )
     {
+        int seriesCount = Slicer.discover( input, next -> next.getMetadata().getThresholds() )
+                .size();
+        
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
             @Override
@@ -223,6 +240,12 @@ abstract class XYChartDataSourceFactory
                 DefaultXYChartDataSource newSource = ofPairedOutputInstantDuration( orderIndex, input );
                 this.copyTheseParametersIntoDataSource( newSource );
                 return newSource;
+            }
+            
+            @Override
+            public int getNumberOfSeries()
+            {
+                return seriesCount;
             }
 
             @Override
@@ -275,8 +298,7 @@ abstract class XYChartDataSourceFactory
 
         buildInitialParameters( source,
                                 orderIndex,
-                                Slicer.discover( input, next -> next.getMetadata().getThresholds() )
-                                      .size() ); //# of series = number of thresholds in input.
+                                seriesCount );
         source.setXAxisType( ChartConstants.AXIS_IS_TIME );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultDomainAxisTitle( "FORECAST ISSUE DATE/TIME [UTC]" );
@@ -290,7 +312,7 @@ abstract class XYChartDataSourceFactory
     /**
      * Factory method for diagrams.  Because of the flexible nature of diagrams, a larger number of arguments is required.
      * @param orderIndex Order index of the data source; lower index sources are drawn on top of higher index sources.
-     * @param input The data to plot.
+     * @param diagrams The data to plot.
      * @param xConstant The metric defining the x-values.
      * @param yConstant The metric defining the y-values.
      * @param domainTitle Title for the domain.
@@ -301,32 +323,40 @@ abstract class XYChartDataSourceFactory
      * @param durationUnits the duration units
      * @return A data source that can be used to draw the diagram.
      */
-    static DefaultXYChartDataSource ofMultiVectorOutputDiagram( final int orderIndex,
-                                                                final List<DiagramStatisticOuter> input,
-                                                                final MetricDimension xConstant,
-                                                                final MetricDimension yConstant,
-                                                                final String domainTitle,
-                                                                final String rangeTitle,
-                                                                final Integer subPlotIndex,
-                                                                final Supplier<XYDataset> buildDataSetSupplier,
-                                                                final ChronoUnit durationUnits )
+    static DefaultXYChartDataSource ofVerificationDiagram( final int orderIndex,
+                                                           final List<DiagramStatisticOuter> diagrams,
+                                                           final MetricDimension xConstant,
+                                                           final MetricDimension yConstant,
+                                                           final String domainTitle,
+                                                           final String rangeTitle,
+                                                           final Integer subPlotIndex,
+                                                           final Supplier<XYDataset> buildDataSetSupplier,
+                                                           final ChronoUnit durationUnits )
     {
+        int seriesCount = diagrams.size();
+        
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
             @Override
             public XYChartDataSource returnNewInstanceWithCopyOfInitialParameters() throws XYChartDataSourceException
             {
-                DefaultXYChartDataSource newSource = ofMultiVectorOutputDiagram( orderIndex,
-                                                                                 input,
-                                                                                 xConstant,
-                                                                                 yConstant,
-                                                                                 domainTitle,
-                                                                                 rangeTitle,
-                                                                                 subPlotIndex,
-                                                                                 buildDataSetSupplier,
-                                                                                 durationUnits );
+                DefaultXYChartDataSource newSource = ofVerificationDiagram( orderIndex,
+                                                                            diagrams,
+                                                                            xConstant,
+                                                                            yConstant,
+                                                                            domainTitle,
+                                                                            rangeTitle,
+                                                                            subPlotIndex,
+                                                                            buildDataSetSupplier,
+                                                                            durationUnits );
                 this.copyTheseParametersIntoDataSource( newSource );
                 return newSource;
+            }
+            
+            @Override
+            public int getNumberOfSeries()
+            {
+                return seriesCount;
             }
 
             @Override
@@ -336,14 +366,14 @@ abstract class XYChartDataSourceFactory
                 {
                     return buildDataSetSupplier.get();
                 }
-                return new DiagramStatisticXYDataset( input,
+                return new DiagramStatisticXYDataset( diagrams,
                                                       xConstant,
                                                       yConstant,
                                                       durationUnits );
             }
         };
 
-        buildInitialParameters( source, orderIndex, input.size() );
+        buildInitialParameters( source, orderIndex, seriesCount );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle( domainTitle );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle( rangeTitle );
 
@@ -354,7 +384,6 @@ abstract class XYChartDataSourceFactory
 
         return source;
     }
-
 
     /**
      * Factory method for scalar output plotted by pooling window.
@@ -374,6 +403,44 @@ abstract class XYChartDataSourceFactory
 
         Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
 
+        // Set the chart parameters for each series
+        // Find the lead durations
+        SortedSet<Pair<Duration, Duration>> durations = Slicer.discover( input,
+                                                                         next -> Pair.of( next.getMetadata()
+                                                                                              .getTimeWindow()
+                                                                                              .getEarliestLeadDuration(),
+                                                                                          next.getMetadata()
+                                                                                              .getTimeWindow()
+                                                                                              .getLatestLeadDuration() ) );
+
+        // Find the valid times
+        int validTimesCount = 1;
+
+        String domainAxisLabel = "";
+        if ( graphicShape == GraphicShape.ISSUED_DATE_POOLS )
+        {
+            SortedSet<Pair<Instant, Instant>> validTimes = Slicer.discover( input,
+                                                                            next -> Pair.of( next.getMetadata()
+                                                                                                 .getTimeWindow()
+                                                                                                 .getEarliestValidTime(),
+                                                                                             next.getMetadata()
+                                                                                                 .getTimeWindow()
+                                                                                                 .getLatestValidTime() ) );
+            validTimesCount = validTimes.size();
+
+            domainAxisLabel = "TIME AT CENTER OF ISSUED TIME WINDOW [UTC]";
+        }
+        else if ( graphicShape == GraphicShape.VALID_DATE_POOLS )
+        {
+            domainAxisLabel = "TIME AT CENTER OF VALID TIME WINDOW [UTC]";
+        }
+
+        // Find the thresholds
+        SortedSet<OneOrTwoThresholds> thresholds =
+                Slicer.discover( input, next -> next.getMetadata().getThresholds() );
+        
+        int seriesCount = durations.size() * thresholds.size() * validTimesCount;
+        
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
             @Override
@@ -383,6 +450,12 @@ abstract class XYChartDataSourceFactory
                         ofDoubleScoreOutputByThresholdAndLead( orderIndex, input, durationUnits );
                 this.copyTheseParametersIntoDataSource( newSource );
                 return newSource;
+            }
+            
+            @Override
+            public int getNumberOfSeries()
+            {
+                return seriesCount;
             }
 
             @Override
@@ -467,45 +540,9 @@ abstract class XYChartDataSourceFactory
             }
         };
 
-        // Set the chart parameters for each series
-        // Find the lead durations
-        SortedSet<Pair<Duration, Duration>> durations = Slicer.discover( input,
-                                                                         next -> Pair.of( next.getMetadata()
-                                                                                              .getTimeWindow()
-                                                                                              .getEarliestLeadDuration(),
-                                                                                          next.getMetadata()
-                                                                                              .getTimeWindow()
-                                                                                              .getLatestLeadDuration() ) );
-
-        // Find the valid times
-        int validTimesCount = 1;
-
-        String domainAxisLabel = "";
-        if ( graphicShape == GraphicShape.ISSUED_DATE_POOLS )
-        {
-            SortedSet<Pair<Instant, Instant>> validTimes = Slicer.discover( input,
-                                                                            next -> Pair.of( next.getMetadata()
-                                                                                                 .getTimeWindow()
-                                                                                                 .getEarliestValidTime(),
-                                                                                             next.getMetadata()
-                                                                                                 .getTimeWindow()
-                                                                                                 .getLatestValidTime() ) );
-            validTimesCount = validTimes.size();
-
-            domainAxisLabel = "TIME AT CENTER OF ISSUED TIME WINDOW [UTC]";
-        }
-        else if ( graphicShape == GraphicShape.VALID_DATE_POOLS )
-        {
-            domainAxisLabel = "TIME AT CENTER OF VALID TIME WINDOW [UTC]";
-        }
-
-        // Find the thresholds
-        SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( input, next -> next.getMetadata().getThresholds() );
-
         buildInitialParameters( source,
                                 orderIndex,
-                                durations.size() * thresholds.size() * validTimesCount );
+                                seriesCount );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultRangeAxisTitle( METRIC_SHORT_NAME_METRIC_COMPONENT_NAME_SUFFIX_OUTPUT_UNITS_LABEL_SUFFIX );
         source.setXAxisType( ChartConstants.AXIS_IS_TIME );
@@ -527,6 +564,13 @@ abstract class XYChartDataSourceFactory
                                                    final List<DoubleScoreComponentOuter> input,
                                                    final ChronoUnit durationUnits )
     {
+        
+
+        SortedSet<TimeWindowOuter> timeWindows =
+                Slicer.discover( input, next -> next.getMetadata().getTimeWindow() );
+        
+        int seriesCount = timeWindows.size();
+        
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
 
@@ -538,6 +582,12 @@ abstract class XYChartDataSourceFactory
                 this.copyTheseParametersIntoDataSource( newSource );
                 return newSource;
             }
+            
+            @Override
+            public int getNumberOfSeries()
+            {
+                return seriesCount;
+            }
 
             @Override
             protected XYDataset buildXYDataset( DataSourceDrawingParameters arg0 ) throws XYChartDataSourceException
@@ -546,10 +596,7 @@ abstract class XYChartDataSourceFactory
             }
         };
 
-        SortedSet<TimeWindowOuter> timeWindows =
-                Slicer.discover( input, next -> next.getMetadata().getTimeWindow() );
-
-        buildInitialParameters( source, orderIndex, timeWindows.size() );
+        buildInitialParameters( source, orderIndex, seriesCount );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultDomainAxisTitle( "THRESHOLD VALUE@inputUnitsLabelSuffix@" );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
@@ -576,6 +623,11 @@ abstract class XYChartDataSourceFactory
 
         Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
 
+        SortedSet<OneOrTwoThresholds> thresholds =
+                Slicer.discover( input, next -> next.getMetadata().getThresholds() );
+        
+        int seriesCount = thresholds.size();
+                
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
 
@@ -593,12 +645,15 @@ abstract class XYChartDataSourceFactory
             {
                 return new ScoreOutputByLeadAndThresholdXYDataset( input, durationUnits );
             }
+            
+            @Override
+            public int getNumberOfSeries()
+            {
+                return seriesCount;
+            }
         };
 
-        SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( input, next -> next.getMetadata().getThresholds() );
-
-        buildInitialParameters( source, orderIndex, thresholds.size() );
+        buildInitialParameters( source, orderIndex, seriesCount );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultDomainAxisTitle( "FORECAST LEAD TIME [" + durationUnits.name().toUpperCase() + "]" );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
@@ -667,6 +722,8 @@ abstract class XYChartDataSourceFactory
             legendEntryBySeries.add( entry.getMetadata().getThresholds().toStringWithoutUnits() );
         }
 
+        int seriesCount = yAxisValuesBySeries.size();
+        
         //Creates the source.
         CategoricalXYChartDataSource source;
         try
@@ -684,6 +741,12 @@ abstract class XYChartDataSourceFactory
                     this.copyTheseParametersIntoDataSource( newSource );
                     return newSource;
                 }
+                
+                @Override
+                public int getNumberOfSeries()
+                {
+                    return seriesCount;
+                }
             };
         }
         catch ( XYChartDataSourceException e )
@@ -700,7 +763,7 @@ abstract class XYChartDataSourceFactory
         }
 
         //Some appearance options specific to the input provided.
-        buildInitialParameters( source, orderIndex, yAxisValuesBySeries.size() );
+        buildInitialParameters( source, orderIndex, seriesCount );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters().setPlotterName( "Bar" );
         source.setXAxisType( ChartConstants.AXIS_IS_CATEGORICAL );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle( "@metricName@" );

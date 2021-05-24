@@ -51,7 +51,7 @@ public abstract class DecomposableScore<S extends Pool<?>> extends OrdinaryScore
      * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    protected DecomposableScore( MetricGroup decompositionId ) throws MetricParameterException
+    protected DecomposableScore( MetricGroup decompositionId )
     {
         super();
 

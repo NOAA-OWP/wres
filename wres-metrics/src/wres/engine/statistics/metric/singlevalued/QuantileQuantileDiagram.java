@@ -6,11 +6,12 @@ import java.util.function.DoubleUnaryOperator;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.datamodel.Slicer;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.engine.statistics.metric.Diagram;
 import wres.statistics.generated.DiagramMetric;
@@ -24,6 +25,7 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
  * Compares the quantiles of two samples at a prescribed number (<code>N</code>) of (evenly-spaced) probabilities on the
  * unit interval, namely <code>{1/N+1,...,N/N+1}</code>. If the samples originate from the same probability
  * distribution, the order statistics (and hence the quantiles) should be the same, notwithstanding any sampling error.
+ * Uses as many quantiles as the smaller of the number of order statistics (pairs) and the prescribed count.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -74,7 +76,13 @@ public class QuantileQuantileDiagram extends Diagram<Pool<Pair<Double, Double>>,
      */
 
     private static final int DEFAULT_PROBABILITY_COUNT = 1000;
+    
+    /**
+     * Logger.
+     */
 
+    private static final Logger LOGGER = LoggerFactory.getLogger( QuantileQuantileDiagram.class );
+    
     /**
      * The number of probabilities at which to compute the order statistics.
      */
@@ -106,42 +114,64 @@ public class QuantileQuantileDiagram extends Diagram<Pool<Pair<Double, Double>>,
     }
 
     @Override
-    public DiagramStatisticOuter apply( Pool<Pair<Double, Double>> s )
+    public DiagramStatisticOuter apply( Pool<Pair<Double, Double>> pairs )
     {
-        if ( Objects.isNull( s ) )
+        Objects.requireNonNull( pairs, "Specify non-null input to the '" + this.getName() + "'." );
+
+        int quantileCount = this.probCount;
+
+        // Use the smaller of the number of pairs and the default: no value in more quantiles than order statistics
+        int orderStatistics = pairs.getRawData()
+                                   .size();
+        if ( orderStatistics < quantileCount )
         {
-            throw new PoolException( "Specify non-null input to the '" + this + "'." );
+            LOGGER.debug( "While building a quantile-quantile diagram for {}, discovered a smaller number of order "
+                          + "statistics ({}) than probabilities requested ({}). Using the number of order statistics.",
+                          pairs.getMetadata(),
+                          orderStatistics,
+                          quantileCount );
+
+            quantileCount = orderStatistics;
         }
 
-        //Determine the number of order statistics to compute
-        double[] observedQ = new double[this.probCount];
-        double[] predictedQ = new double[this.probCount];
+        // Determine the number of order statistics to compute
+        double[] observedQ = new double[quantileCount];
+        double[] predictedQ = new double[quantileCount];
 
-        //Get the ordered data
-        double[] sortedLeft = Slicer.getLeftSide( s );
-        double[] sortedRight = Slicer.getRightSide( s );
+        // Remove non-finite
+        double[] sortedLeft = Slicer.getLeftSide( pairs );
+        double[] sortedRight = Slicer.getRightSide( pairs );
+        sortedLeft = Arrays.stream( sortedLeft )
+                           .filter( Double::isFinite )
+                           .toArray();
+        sortedRight = Arrays.stream( sortedRight )
+                            .filter( Double::isFinite )
+                            .toArray();
+
+        // Sort in place
         Arrays.sort( sortedLeft );
         Arrays.sort( sortedRight );
+        
         DoubleUnaryOperator qLeft = Slicer.getQuantileFunction( sortedLeft );
         DoubleUnaryOperator qRight = Slicer.getQuantileFunction( sortedRight );
 
-        //Compute the order statistics
-        for ( int i = 0; i < this.probCount; i++ )
+        // Compute the order statistics
+        for ( int i = 0; i < quantileCount; i++ )
         {
-            double prob = ( i + 1.0 ) / ( this.probCount + 1.0 );
+            double prob = ( i + 1.0 ) / ( quantileCount + 1.0 );
             observedQ[i] = qLeft.applyAsDouble( prob );
             predictedQ[i] = qRight.applyAsDouble( prob );
         }
 
         // Add the units to the quantiles
         DiagramMetricComponent obsWithUnits = QuantileQuantileDiagram.OBSERVED_QUANTILES.toBuilder()
-                                                                                        .setUnits( s.getMetadata()
+                                                                                        .setUnits( pairs.getMetadata()
                                                                                                     .getMeasurementUnit()
                                                                                                     .toString() )
                                                                                         .build();
 
         DiagramMetricComponent predWithUnits = QuantileQuantileDiagram.PREDICTED_QUANTILES.toBuilder()
-                                                                                          .setUnits( s.getMetadata()
+                                                                                          .setUnits( pairs.getMetadata()
                                                                                                       .getMeasurementUnit()
                                                                                                       .toString() )
                                                                                           .build();
@@ -168,7 +198,7 @@ public class QuantileQuantileDiagram extends Diagram<Pool<Pair<Double, Double>>,
                                                      .setMetric( QuantileQuantileDiagram.BASIC_METRIC )
                                                      .build();
 
-        return DiagramStatisticOuter.of( qqDiagram, s.getMetadata() );
+        return DiagramStatisticOuter.of( qqDiagram, pairs.getMetadata() );
     }
 
     @Override

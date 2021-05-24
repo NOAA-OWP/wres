@@ -198,7 +198,6 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                                                final ExecutorService thresholdExecutor,
                                                final ExecutorService metricExecutor,
                                                final Set<StatisticType> mergeSet )
-            throws MetricParameterException
     {
         super( config, metrics, thresholdExecutor, metricExecutor, mergeSet );
 
@@ -473,13 +472,13 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         // Find the union across metrics
         Set<ThresholdOuter> union = filtered.union();
 
-        double[] sorted = getSortedClimatology( input, union );
+        double[] sorted = super.getSortedClimatology( input, union );
 
         // Iterate the thresholds
         for ( ThresholdOuter threshold : union )
         {
             // Add quantiles to threshold
-            ThresholdOuter useMe = addQuantilesToThreshold( threshold, sorted );
+            ThresholdOuter useMe = super.addQuantilesToThreshold( threshold, sorted );
             OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( useMe );
 
             // Add the threshold to the metadata, in order to fully qualify the pairs
@@ -727,7 +726,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         }
 
         // Are there skill metrics and does the baseline also meet the minimum sample size constraint?
-        return super.processWithOrWithoutSkillMetrics( pairs, collection );
+        return super.processMetricsRequiredForThisPool( pairs, collection );
     }
 
     /**
@@ -778,7 +777,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         }
 
         // Are there skill metrics and does the baseline also meet the minimum sample size constraint?
-        return super.processWithOrWithoutSkillMetrics( pairs, collection );
+        return super.processMetricsRequiredForThisPool( pairs, collection );
     }
 
     /**

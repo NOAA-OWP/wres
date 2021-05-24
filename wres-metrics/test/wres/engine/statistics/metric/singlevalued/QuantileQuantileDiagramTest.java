@@ -14,7 +14,6 @@ import org.junit.Test;
 
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.BasicPool;
-import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.statistics.generated.DiagramStatistic;
@@ -99,24 +98,16 @@ public final class QuantileQuantileDiagramTest
 
         DiagramStatisticOuter actual = this.qqd.apply( input );
 
-        List<Double> source = new ArrayList<>();
-        for ( int i = 0; i < 10; i++ )
-        {
-            source.add( Double.NaN );
-        }
-
         DiagramStatisticComponent oqs =
                 DiagramStatisticComponent.newBuilder()
                                          .setMetric( QuantileQuantileDiagram.OBSERVED_QUANTILES.toBuilder()
                                                                                                .setUnits( "DIMENSIONLESS" ) )
-                                         .addAllValues( source )
                                          .build();
 
         DiagramStatisticComponent pqs =
                 DiagramStatisticComponent.newBuilder()
                                          .setMetric( QuantileQuantileDiagram.PREDICTED_QUANTILES.toBuilder()
                                                                                                 .setUnits( "DIMENSIONLESS" ) )
-                                         .addAllValues( source )
                                          .build();
 
         DiagramStatistic expected = DiagramStatistic.newBuilder()
@@ -137,7 +128,7 @@ public final class QuantileQuantileDiagramTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        PoolException expected = assertThrows( PoolException.class, () -> this.qqd.apply( null ) );
+        NullPointerException expected = assertThrows( NullPointerException.class, () -> this.qqd.apply( null ) );
 
         assertEquals( "Specify non-null input to the 'QUANTILE QUANTILE DIAGRAM'.", expected.getMessage() );
     }

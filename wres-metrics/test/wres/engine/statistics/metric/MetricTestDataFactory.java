@@ -926,14 +926,12 @@ public final class MetricTestDataFactory
 
     public static wres.datamodel.pools.Pool<Pair<Double, Ensemble>> getEnsemblePairsThree()
     {
-        //Construct some ensemble pairs
-
-        final SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
+        SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
         values.add( Event.of( Instant.parse( "1985-03-12T00:00:00Z" ), Pair.of( 22.9, Ensemble.of( 22.8, 23.9 ) ) ) );
 
-        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                           Instant.parse( SECOND_TIME ),
-                                                           Duration.ofHours( 24 ) );
+        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
+                                                     Instant.parse( SECOND_TIME ),
+                                                     Duration.ofHours( 24 ) );
 
         FeatureTuple featureTuple = MetricTestDataFactory.getLocation( DRRC2 );
 

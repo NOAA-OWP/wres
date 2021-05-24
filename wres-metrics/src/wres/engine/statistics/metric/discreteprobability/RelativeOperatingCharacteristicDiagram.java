@@ -105,7 +105,7 @@ public class RelativeOperatingCharacteristicDiagram
      * @throws MetricParameterException if the metric cannot be constructed
      */
 
-    public static RelativeOperatingCharacteristicDiagram of() throws MetricParameterException
+    public static RelativeOperatingCharacteristicDiagram of()
     {
         return new RelativeOperatingCharacteristicDiagram( DEFAULT_POINT_COUNT );
     }
@@ -208,7 +208,6 @@ public class RelativeOperatingCharacteristicDiagram
      */
 
     private RelativeOperatingCharacteristicDiagram( int points )
-            throws MetricParameterException
     {
         super();
         this.roc = MetricFactory.ofDichotomousScoreCollection( MetricConstants.PROBABILITY_OF_DETECTION,

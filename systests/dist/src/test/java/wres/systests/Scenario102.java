@@ -36,6 +36,7 @@ public class Scenario102
                     Path.of( "LGNN5_LGNN5_ESP_BRIER_SKILL_SCORE.csv" ),
                     Path.of( "LGNN5_LGNN5_ESP_COEFFICIENT_OF_DETERMINATION.csv" ),
                     Path.of( "LGNN5_LGNN5_ESP_CONTINUOUS_RANKED_PROBABILITY_SCORE.csv" ),
+                    Path.of( "LGNN5_LGNN5_ESP_ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM_151200_SECONDS.csv" ),
                     Path.of( "LGNN5_LGNN5_ESP_INDEX_OF_AGREEMENT.csv" ),
                     Path.of( "LGNN5_LGNN5_ESP_KLING_GUPTA_EFFICIENCY.csv" ),
                     Path.of( "LGNN5_LGNN5_ESP_MAXIMUM.csv" ),

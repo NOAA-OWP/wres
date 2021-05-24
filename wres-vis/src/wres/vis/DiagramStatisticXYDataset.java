@@ -73,8 +73,8 @@ class DiagramStatisticXYDataset
         {
             throw new IllegalArgumentException( "Specify non-empty input." );
         }
-
-        setPlotData( rawData );
+        
+        super.setPlotData( rawData );
     }
 
     @Override
@@ -137,7 +137,8 @@ class DiagramStatisticXYDataset
     @Override
     public int getSeriesCount()
     {
-        return getPlotData().size();
+        return this.getPlotData()
+                   .size();
     }
 
     @Override
@@ -148,27 +149,41 @@ class DiagramStatisticXYDataset
             return getOverrideLegendName( series );
         }
 
+        DiagramStatisticOuter diagram = this.getPlotData()
+                                            .get( series );
+
         SortedSet<TimeWindowOuter> timeWindows =
-                Slicer.discover( getPlotData(), meta -> meta.getMetadata().getTimeWindow() );
+                Slicer.discover( this.getPlotData(), meta -> meta.getMetadata().getTimeWindow() );
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( getPlotData(), meta -> meta.getMetadata().getThresholds() );
+                Slicer.discover( this.getPlotData(), meta -> meta.getMetadata().getThresholds() );
+
+        // Qualifier for dimensions that are repeated, such as quantile curves in an ensemble QQ diagram
+        String qualifier = diagram.getData()
+                                  .getStatistics( 0 )
+                                  .getName();
 
         // One time window and one or more thresholds: label by threshold
         if ( timeWindows.size() == 1 )
         {
-            return getPlotData().get( series )
-                                .getMetadata()
-                                .getThresholds()
-                                .toStringWithoutUnits();
+            // If there is a qualifier, then there is a single threshold and up to N named components, else up to M
+            // thresholds and one named component
+            if( !qualifier.isBlank() )
+            {
+                return qualifier;
+            }
+            
+            return diagram.getMetadata()
+                          .getThresholds()
+                          .toStringWithoutUnits();
         }
         // One threshold and one or more time windows: label by time window
         else if ( thresholds.size() == 1 )
         {
-            return Long.toString( TimeHelper.durationToLongUnits( getPlotData().get( series )
-                                                                               .getMetadata()
-                                                                               .getTimeWindow()
-                                                                               .getLatestLeadDuration(),
-                                                                  this.durationUnits ) );
+            return Long.toString( TimeHelper.durationToLongUnits( diagram.getMetadata()
+                                                                         .getTimeWindow()
+                                                                         .getLatestLeadDuration(),
+                                                                  this.durationUnits ) )
+                   + ", " + qualifier;
         }
         else
         {

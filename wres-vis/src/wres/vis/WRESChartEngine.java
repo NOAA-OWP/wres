@@ -67,6 +67,7 @@ class WRESChartEngine extends ChartEngine
         {
             overrideParameters( overrideParameters );
         }
+        
         this.axisToSquareAgainstDomain = axisToSquareAgainstDomain;
     }
 

@@ -14,7 +14,9 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,9 +50,9 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
 @Deprecated( since = "5.8", forRemoval = true )
 public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
-        implements Function<List<DiagramStatisticOuter>,Set<Path>>
+        implements Function<List<DiagramStatisticOuter>, Set<Path>>
 {
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger( CommaSeparatedDiagramWriter.class );
 
     /**
@@ -85,7 +87,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
         Set<Path> paths = new HashSet<>();
-        
+
         // Write output
         // In principle, each destination could have a different formatter, so 
         // the output must be generated separately for each destination
@@ -93,12 +95,12 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         List<DestinationConfig> numericalDestinations = ProjectConfigs.getDestinationsOfType( super.getProjectConfig(),
                                                                                               DestinationType.NUMERIC,
                                                                                               DestinationType.CSV );
-        
+
         LOGGER.debug( "Writer {} received {} diagram statistics to write to the destination types {}.",
                       this,
                       output.size(),
                       numericalDestinations );
-        
+
         for ( DestinationConfig destinationConfig : numericalDestinations )
         {
 
@@ -132,7 +134,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
             }
         }
 
-        return Collections.unmodifiableSet( paths );      
+        return Collections.unmodifiableSet( paths );
     }
 
     /**
@@ -430,20 +432,50 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         List<Double> valuesToAdd = new ArrayList<>();
 
         SortedSet<MetricDimension> dimensions = next.getComponentNames();
-        for ( MetricDimension nextDimension : dimensions )
+        SortedSet<String> qualifiers = next.getData()
+                                           .getStatisticsList()
+                                           .stream()
+                                           .map( DiagramStatisticComponent::getName )
+                                           .collect( Collectors.toCollection( TreeSet::new ) );
+
+        for ( String qualifier : qualifiers )
         {
-            VectorOfDoubles doubles = next.getComponent( nextDimension );
-
-            // Populate the values
-            Double addMe = Double.NaN;
-            if ( row < doubles.size() )
+            for ( MetricDimension nextDimension : dimensions )
             {
-                addMe = doubles.getDoubles()[row];
-            }
+                VectorOfDoubles doubles = CommaSeparatedDiagramWriter.getComponent( next, nextDimension, qualifier );
 
-            valuesToAdd.add( addMe );
+                // Populate the values
+                if ( Objects.nonNull( doubles ) )
+                {
+                    Double addMe = Double.NaN;
+                    if ( row < doubles.size() )
+                    {
+                        addMe = doubles.getDoubles()[row];
+                    }
+
+                    valuesToAdd.add( addMe );
+                }
+            }
         }
         return valuesToAdd;
+    }
+
+    /**
+     * Returns a prescribed vector from the map or null if no mapping exists.
+     * 
+     * @param diagram the diagram
+     * @param name the component name
+     * @param qualifier the component qualifier
+     * @return a vector or null
+     */
+
+    private static VectorOfDoubles getComponent( DiagramStatisticOuter diagram,
+                                                 MetricDimension name,
+                                                 String qualifier )
+    {
+        DiagramStatisticComponent component = diagram.getComponent( name, qualifier );
+        List<Double> values = component.getValuesList();
+        return VectorOfDoubles.of( values.toArray( new Double[values.size()] ) );
     }
 
     /**
@@ -468,18 +500,35 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         String metricName = data.getMetricName().toString();
 
         SortedSet<MetricDimension> dimensions = data.getComponentNames();
+
+        SortedSet<String> qualifiers = data.getData()
+                                           .getStatisticsList()
+                                           .stream()
+                                           .map( DiagramStatisticComponent::getName )
+                                           .collect( Collectors.toCollection( TreeSet::new ) );
+
         //Add the metric name, dimension, and threshold for each column-vector
         SortedSet<OneOrTwoThresholds> thresholds =
                 Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
         for ( OneOrTwoThresholds nextThreshold : thresholds )
         {
-            for ( MetricDimension nextDimension : dimensions )
+            for ( String qualifier : qualifiers )
             {
-                returnMe.add( HEADER_DELIMITER + metricName
-                              + HEADER_DELIMITER
-                              + nextDimension.toString()
-                              + HEADER_DELIMITER
-                              + nextThreshold.toString() );
+                for ( MetricDimension nextDimension : dimensions )
+                {
+                    String q = qualifier;
+                    if ( !q.isEmpty() )
+                    {
+                        q = HEADER_DELIMITER + q;
+                    }
+
+                    returnMe.add( HEADER_DELIMITER + metricName
+                                  + HEADER_DELIMITER
+                                  + nextDimension.toString()
+                                  + q
+                                  + HEADER_DELIMITER
+                                  + nextThreshold.toString() );
+                }
             }
         }
 

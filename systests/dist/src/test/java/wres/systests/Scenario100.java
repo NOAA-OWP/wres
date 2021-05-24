@@ -46,6 +46,8 @@ public class Scenario100
                     Path.of( "LGNN5_LGNN5_HEFS_COEFFICIENT_OF_DETERMINATION.png" ),
                     Path.of( "LGNN5_LGNN5_HEFS_CONTINUOUS_RANKED_PROBABILITY_SCORE.csv" ),
                     Path.of( "LGNN5_LGNN5_HEFS_CONTINUOUS_RANKED_PROBABILITY_SCORE.png" ),
+                    Path.of( "LGNN5_LGNN5_HEFS_ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM_151200_SECONDS.csv" ),
+                    Path.of( "LGNN5_LGNN5_HEFS_ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM_151200_SECONDS.png" ),
                     Path.of( "LGNN5_LGNN5_HEFS_INDEX_OF_AGREEMENT.csv" ),
                     Path.of( "LGNN5_LGNN5_HEFS_INDEX_OF_AGREEMENT.png" ),
                     Path.of( "LGNN5_LGNN5_HEFS_KLING_GUPTA_EFFICIENCY.csv" ),

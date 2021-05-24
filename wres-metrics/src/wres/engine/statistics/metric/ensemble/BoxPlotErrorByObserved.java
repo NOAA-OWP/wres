@@ -53,7 +53,7 @@ public class BoxPlotErrorByObserved extends EnsembleBoxPlot
      * @return an instance
      */
 
-    public static BoxPlotErrorByObserved of( VectorOfDoubles probabilities ) throws MetricParameterException
+    public static BoxPlotErrorByObserved of( VectorOfDoubles probabilities )
     {
         return new BoxPlotErrorByObserved( probabilities );
     }
@@ -119,7 +119,7 @@ public class BoxPlotErrorByObserved extends EnsembleBoxPlot
      * @throws MetricParameterException if the parameters are incorrect
      */
 
-    private BoxPlotErrorByObserved( VectorOfDoubles probabilities ) throws MetricParameterException
+    private BoxPlotErrorByObserved( VectorOfDoubles probabilities )
     {
         this.validateProbabilities( probabilities );
 

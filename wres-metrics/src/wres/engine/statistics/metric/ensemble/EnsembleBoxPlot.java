@@ -118,7 +118,7 @@ abstract class EnsembleBoxPlot extends Diagram<Pool<Pair<Double, Ensemble>>, Box
      * @throws MetricParameterException if one or more parameters are invalid
      */
 
-    void validateProbabilities( VectorOfDoubles probabilities ) throws MetricParameterException
+    void validateProbabilities( VectorOfDoubles probabilities )
     {
         //Validate the probabilities
         if ( probabilities.size() < 2 )

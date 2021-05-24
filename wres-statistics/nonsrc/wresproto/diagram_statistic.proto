@@ -28,5 +28,9 @@ message DiagramStatistic
         
         repeated double values = 2;
         // The component values.
+
+        string name = 3;
+        // A name to distinguish the component. This is most useful when
+        // a diagram has multiple instances of the same component.
     }
 }

@@ -83,7 +83,8 @@ public class PoolOfPairs<L, R> implements Pool<Pair<L, R>>
         }
 
         Builder<L, R> builder = new Builder<>();
-        builder.setMetadata( this.baselineMeta ).setClimatology( this.climatology );
+        builder.setMetadata( this.baselineMeta )
+               .setClimatology( this.climatology );
 
         for ( TimeSeries<Pair<L, R>> next : this.baseline )
         {

@@ -104,7 +104,6 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
      */
 
     public static ContinuousRankedProbabilityScore of( MetricGroup decompositionId )
-            throws MetricParameterException
     {
         return new ContinuousRankedProbabilityScore( decompositionId );
     }
@@ -198,7 +197,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    ContinuousRankedProbabilityScore( MetricGroup decompositionId ) throws MetricParameterException
+    ContinuousRankedProbabilityScore( MetricGroup decompositionId )
     {
         super( decompositionId );
 
