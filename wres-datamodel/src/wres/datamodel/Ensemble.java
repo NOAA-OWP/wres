@@ -82,6 +82,7 @@ public class Ensemble implements Comparable<Ensemble>
         }
 
         /**
+         * @param ensembleName the ensemble name
          * @return {@code true} if the prescribed label is present, otherwise {@code false}.
          * @throws NullPointerException if the ensembleName is null.
          */

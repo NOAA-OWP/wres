@@ -1011,6 +1011,8 @@ public final class TimeSeriesSlicer
     /**
      * Returns the mid-point on the UTC timeline between the two inputs
      * 
+     * @param earliest the earliest time
+     * @param latest the latest time
      * @return the mid-point on the UTC timeline
      * @throws NullPointerException if either input is null
      */

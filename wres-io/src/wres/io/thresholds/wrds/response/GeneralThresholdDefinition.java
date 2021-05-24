@@ -17,8 +17,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.DoubleUnaryOperator;
 
-import org.apache.qpid.server.model.preferences.Preference;
-
 /**
  * Represents the combined elements that defined an atomic set of thresholds
  */
@@ -138,13 +136,13 @@ public class GeneralThresholdDefinition implements Serializable {
     
     /**
      * 
-     * @param thresholdType
-     * @param thresholdOperator
-     * @param dataType
+     * @param thresholdType the threshold type
+     * @param thresholdOperator the threshold operator
+     * @param dataType the data type
      * @param getCalculated If true, then calculated will be used for flow thresholds if available; 
      * otherwise the original flow thresholds are used.  This flag is ignored for all other thresholds.
-     * @param desiredUnitMapper
-     * @return
+     * @param desiredUnitMapper the unit mapper
+     * @return a map of thresholds by location
      */
     public Map<WrdsLocation, Set<ThresholdOuter>> getThresholds(
             WRDSThresholdType thresholdType,
@@ -155,7 +153,6 @@ public class GeneralThresholdDefinition implements Serializable {
     )
     {
         WrdsLocation location = this.getLocation();
-        Set<ThresholdOuter> thresholds = new HashSet<>();
         Map<String, ThresholdOuter> thresholdMap = new HashMap<>();
         
         //If either of these is null, then it is not used. 
@@ -180,7 +177,7 @@ public class GeneralThresholdDefinition implements Serializable {
         }
         
         //When values is not used, then we are looking at NWS thresholds,
-        //which come with stage, flow, and calculated flow options. Seelct
+        //which come with stage, flow, and calculated flow options. Select
         //based on provided trheshold type.
         else if (thresholdType.equals(WRDSThresholdType.STAGE))
         {
