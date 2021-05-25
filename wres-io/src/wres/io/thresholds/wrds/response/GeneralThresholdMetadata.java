@@ -110,7 +110,4 @@ public class GeneralThresholdMetadata implements Serializable
     {
         this.units = units;
     }
-
-
-    
 }

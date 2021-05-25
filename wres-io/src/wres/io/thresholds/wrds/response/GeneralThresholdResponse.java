@@ -37,7 +37,5 @@ public class GeneralThresholdResponse implements Serializable {
     public void setValue_set( Collection<GeneralThresholdDefinition> value_set )
     {
         this.value_set = value_set;
-    }
-    
-    
+    } 
 }

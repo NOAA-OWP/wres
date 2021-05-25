@@ -20,37 +20,38 @@ import java.util.function.DoubleUnaryOperator;
 /**
  * Represents the combined elements that defined an atomic set of thresholds
  */
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class GeneralThresholdDefinition implements Serializable {
+@JsonIgnoreProperties( ignoreUnknown = true )
+public class GeneralThresholdDefinition implements Serializable
+{
     /**
      * Metadata describing where the values are valid and who produced them
      */
     GeneralThresholdMetadata metadata;
-    
+
     /**
      * The stage values presented by the all-in-one NWS API.
      */
     GeneralThresholdValues stage_values;
-    
-    
+
+
     /**
      * The flow values presented by the all-in-one NWS API.
      */
     GeneralThresholdValues flow_values;
-    
-    
+
+
     /**
      * The calculated flow values presented by the all-in-one NWS API.
      */
     GeneralThresholdValues calc_flow_values;
-    
-    
+
+
     /**
      * The general values presented by other APIs, including the NWS
      * threshold API when stage or flow is specifically requested.
      */
     GeneralThresholdValues values;
-    
+
 
     public GeneralThresholdMetadata getMetadata()
     {
@@ -102,38 +103,49 @@ public class GeneralThresholdDefinition implements Serializable {
         this.values = values;
     }
 
-    public String getThresholdProvider() {
+    /**
+     * 
+     * @return The threshold source or null if it is not specified.
+     */
+    public String getThresholdProvider()
+    {
         String thresholdProvider = null;
-        if( Objects.nonNull( this.getMetadata() ) )
+        if ( Objects.nonNull( this.getMetadata() ) )
         {
             thresholdProvider = this.getMetadata().getThreshold_source();
         }
-        
+
         return thresholdProvider;
     }
 
-    public WrdsLocation getLocation() {
+    public WrdsLocation getLocation()
+    {
         return new WrdsLocation(
-                this.metadata.getNwm_feature_id(),
-                this.metadata.getUsgs_site_code(),
-                this.metadata.getNws_lid(),
-                null
-        );
+                                 this.metadata.getNwm_feature_id(),
+                                 this.metadata.getUsgs_site_code(),
+                                 this.metadata.getNws_lid(),
+                                 null );
     }
-    
-    public String getRatingProvider() 
+
+    /**
+     * 
+     * @return Null if no rating curve is found in the response.  Otherwise,
+     * it returns the rating curve's source.  The rating curve info is currently
+     * found inside of the calc_flow_values for NWS thresholds only.
+     */
+    public String getRatingProvider()
     {
         String ratingProvider = null;
-        if( Objects.nonNull( this.getCalc_flow_values() ) )
+        if ( Objects.nonNull( this.getCalc_flow_values() ) )
         {
-            
+
             ratingProvider = this.getCalc_flow_values().getRating_curve().getSource();
         }
-        
+
         return ratingProvider;
     }
 
-    
+
     /**
      * 
      * @param thresholdType the threshold type
@@ -142,112 +154,113 @@ public class GeneralThresholdDefinition implements Serializable {
      * @param getCalculated If true, then calculated will be used for flow thresholds if available; 
      * otherwise the original flow thresholds are used.  This flag is ignored for all other thresholds.
      * @param desiredUnitMapper the unit mapper
-     * @return a map of thresholds by location
+     * @return a map of thresholds by location.  This is a singleton map: only one location will be
+     * returned at most.  
      */
     public Map<WrdsLocation, Set<ThresholdOuter>> getThresholds(
-            WRDSThresholdType thresholdType,
-            ThresholdConstants.Operator thresholdOperator,
-            ThresholdConstants.ThresholdDataType dataType,
-            boolean getCalculated,
-            UnitMapper desiredUnitMapper
-    )
+                                                                 WRDSThresholdType thresholdType,
+                                                                 ThresholdConstants.Operator thresholdOperator,
+                                                                 ThresholdConstants.ThresholdDataType dataType,
+                                                                 boolean getCalculated,
+                                                                 UnitMapper desiredUnitMapper )
     {
         WrdsLocation location = this.getLocation();
         Map<String, ThresholdOuter> thresholdMap = new HashMap<>();
-        
+
         //If either of these is null, then it is not used. 
         //Be sure to check for null before attempting to use.
         Map<String, Double> calculatedThresholds = null;
         Map<String, Double> originalThresholds = null;
-        
+
         //These are the measurement unit operators based on a desired unit,
         //passed in, and the String units associated with the threshold.
         DoubleUnaryOperator originalUnitConversionOperator = null;
         DoubleUnaryOperator calculatedUnitConversionOperator = null;
-       
-        //TODO We might want to add additional protections using fields
-        //in metadata to make sure the thresholdType and units make sense.
-        
+
         //Point the two maps and identify the unit operator appropriately.
         //Unified schema values takes precedence over all others.
-        if (getValues() != null && !getValues().getThresholdValues().isEmpty())
+        if ( getValues() != null && !getValues().getThresholdValues().isEmpty() )
         {
             originalThresholds = getValues().getThresholdValues();
-            originalUnitConversionOperator = desiredUnitMapper.getUnitMapper(MeasurementUnit.of(this.getMetadata().getUnits()).getUnit());
+            originalUnitConversionOperator =
+                    desiredUnitMapper.getUnitMapper( MeasurementUnit.of( this.getMetadata().getUnits() ).getUnit() );
         }
-        
+
         //When values is not used, then we are looking at NWS thresholds,
         //which come with stage, flow, and calculated flow options. Select
         //based on provided trheshold type.
-        else if (thresholdType.equals(WRDSThresholdType.STAGE))
+        else if ( thresholdType.equals( WRDSThresholdType.STAGE ) )
         {
-            if (getStage_values() != null)
+            if ( getStage_values() != null )
             {
                 originalThresholds = getStage_values().getThresholdValues();
-                originalUnitConversionOperator = desiredUnitMapper.getUnitMapper(MeasurementUnit.of(this.getMetadata().getStage_units()).getUnit());
+                originalUnitConversionOperator =
+                        desiredUnitMapper.getUnitMapper( MeasurementUnit.of( this.getMetadata().getStage_units() )
+                                                                        .getUnit() );
             }
         }
-        else 
+        else
         {
-            if (getFlow_values() != null)
+            if ( getFlow_values() != null )
             {
                 originalThresholds = getFlow_values().getThresholdValues();
-                originalUnitConversionOperator = desiredUnitMapper.getUnitMapper(MeasurementUnit.of(this.getMetadata().getFlow_units()).getUnit());
+                originalUnitConversionOperator =
+                        desiredUnitMapper.getUnitMapper( MeasurementUnit.of( this.getMetadata().getFlow_units() )
+                                                                        .getUnit() );
             }
-            
-            if (getCalculated)
+
+            if ( getCalculated )
             {
-                if (getCalc_flow_values() != null)
+                if ( getCalc_flow_values() != null )
                 {
                     calculatedThresholds = getCalc_flow_values().getThresholdValues();
-                    calculatedUnitConversionOperator = desiredUnitMapper.getUnitMapper(MeasurementUnit.of(this.getMetadata().getCalc_flow_units()).getUnit());
+                    calculatedUnitConversionOperator =
+                            desiredUnitMapper.getUnitMapper( MeasurementUnit.of( this.getMetadata()
+                                                                                     .getCalc_flow_units() )
+                                                                            .getUnit() );
                 }
             }
         }
-        
+
         //First, the original thresholds go into the map.
-        if (originalThresholds != null)
+        if ( originalThresholds != null )
         {
-            for (Entry<String, Double> threshold : originalThresholds.entrySet())
+            for ( Entry<String, Double> threshold : originalThresholds.entrySet() )
             {
-                if (threshold.getValue() != null)
+                if ( threshold.getValue() != null )
                 {
-                    double value = originalUnitConversionOperator.applyAsDouble(threshold.getValue());
-                    thresholdMap.put(threshold.getKey(),
-                        ThresholdOuter.of(
-                            OneOrTwoDoubles.of(value),
-                            thresholdOperator,
-                            dataType,
-                            threshold.getKey(),
-                            MeasurementUnit.of(desiredUnitMapper.getDesiredMeasurementUnitName())
-                        )
-                    );
+                    double value = originalUnitConversionOperator.applyAsDouble( threshold.getValue() );
+                    thresholdMap.put( threshold.getKey(),
+                                      ThresholdOuter.of(
+                                                         OneOrTwoDoubles.of( value ),
+                                                         thresholdOperator,
+                                                         dataType,
+                                                         threshold.getKey(),
+                                                         MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() ) ) );
                 }
             }
         }
-        
+
         //Then we overwrite the original with calculated.
-        if (calculatedThresholds != null)
+        if ( calculatedThresholds != null )
         {
-            for (Entry<String, Double> threshold : calculatedThresholds.entrySet())
+            for ( Entry<String, Double> threshold : calculatedThresholds.entrySet() )
             {
-                if (threshold.getValue() != null)
+                if ( threshold.getValue() != null )
                 {
-                    double value = calculatedUnitConversionOperator.applyAsDouble(threshold.getValue());
-                    thresholdMap.put(threshold.getKey(),
-                        ThresholdOuter.of(
-                            OneOrTwoDoubles.of(value),
-                            thresholdOperator,
-                            dataType,
-                            threshold.getKey(),
-                            MeasurementUnit.of(desiredUnitMapper.getDesiredMeasurementUnitName())
-                        )
-                    );
+                    double value = calculatedUnitConversionOperator.applyAsDouble( threshold.getValue() );
+                    thresholdMap.put( threshold.getKey(),
+                                      ThresholdOuter.of(
+                                                         OneOrTwoDoubles.of( value ),
+                                                         thresholdOperator,
+                                                         dataType,
+                                                         threshold.getKey(),
+                                                         MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() ) ) );
                 }
             }
         }
-        
-        return Map.of( location, new HashSet<>(thresholdMap.values()) );
+
+        return Map.of( location, new HashSet<>( thresholdMap.values() ) );
     }
 
 }
