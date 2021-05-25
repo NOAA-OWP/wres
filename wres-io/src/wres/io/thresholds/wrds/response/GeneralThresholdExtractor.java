@@ -163,25 +163,28 @@ public class GeneralThresholdExtractor
                                                   + ratingsProviders
                                                   + ". Choose one of these providers instead." );
         }
-        
-        
+
+
         Map<WrdsLocation, Set<ThresholdOuter>> resultsMap = new LinkedHashMap<>();
-        
-        for (GeneralThresholdDefinition definition : thresholdDefinitions)
+
+        for ( GeneralThresholdDefinition definition : thresholdDefinitions )
         {
-            if (definition.getThresholdProvider().equals( this.provider ) 
-                && (this.ratingProvider == null || definition.getRatingProvider().equals( this.ratingProvider )))
+            //If the user specifies a threshold provider then it must match that found in the threshold for it 
+            //to be used.  If the user specifies a rating curve provider, then that must match as well.
+            //If either is unspecified (i.e., null, then it is not used to determine if a threshold is used.
+            if ( ( ( this.provider == null ) || definition.getThresholdProvider().equals( this.provider ) )
+                 && ( this.ratingProvider == null || definition.getRatingProvider().equals( this.ratingProvider ) ) )
             {
                 Map<WrdsLocation, Set<ThresholdOuter>> singleResult = definition.getThresholds( this.thresholdType,
-                                                                                 this.thresholdOperator,
-                                                                                 this.sides,
-                                                                                 this.calculated,
-                                                                                 this.desiredUnitMapper);
+                                                                                                this.thresholdOperator,
+                                                                                                this.sides,
+                                                                                                this.calculated,
+                                                                                                this.desiredUnitMapper );
                 WrdsLocation singleLocation = singleResult.keySet().iterator().next();
                 Set<ThresholdOuter> singleOuter = singleResult.values().iterator().next();
-                
+
                 //Check for location already in map.  If so, add to existing set.  Otherwise, put new entry.
-                if (resultsMap.containsKey( singleLocation ))
+                if ( resultsMap.containsKey( singleLocation ) )
                 {
                     resultsMap.get( singleLocation ).addAll( singleOuter );
                 }
@@ -191,27 +194,8 @@ public class GeneralThresholdExtractor
                 }
             }
         }
-        
-        return resultsMap;
 
-//        return thresholdDefinitions.stream()
-//                                   .filter(
-//                                            ( GeneralThresholdDefinition definition ) -> definition.getThresholdProvider()
-//                                                                                            .equals( this.provider )
-//                                                                                  &&
-//                                                                                  ( this.ratingProvider == null
-//                                                                                    || definition.getRatingProvider()
-//                                                                                                 .equals( this.ratingProvider ) ) )
-//                                   .parallel()
-//                                   .map(
-//                                         definition -> definition.getThresholds(
-//                                                                                 this.thresholdType,
-//                                                                                 this.thresholdOperator,
-//                                                                                 this.sides,
-//                                                                                 this.calculated,
-//                                                                                 this.desiredUnitMapper ) )
-//                                   .flatMap( locationThresholds -> locationThresholds.entrySet().stream() )
-//                                   .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
+        return resultsMap;
     }
 
     /**

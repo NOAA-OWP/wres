@@ -20,8 +20,22 @@ import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class GeneralWRDSReaderTest {
+public class GeneralWRDSReaderTest 
+{
+    //The file used is created from this URL:
+    //
+    //https://***REMOVED***.***REMOVED***.***REMOVED***/api/location/v3.0/nws_threshold/nws_lid/PTSA1,MNTG1,BLOF1,CEDG1,SMAF1/
+    //
+    //executed on 5/20/2021 at 10:15am.
     private static final URI path = URI.create( "testinput/thresholds/wrds/thresholds_v3.json" );
+    
+    //The file used is created from this URL:
+    //
+    //https://***REMOVED***.***REMOVED***.***REMOVED***/api/location/v3.0/nwm_recurrence_flow/nws_lid/PTSA1,MNTG1,BLOF1,SMAF1,CEDG1/
+    //
+    //executed on 5/22/2021 in the afternoon.
+    private static final URI path2 = URI.create( "testinput/thresholds/wrds/recurrence_v3.json" );
+    
     private static final double EPSILON = 0.00001;
 
     private static WrdsLocation createFeature(final String featureId, final String usgsSiteCode, final String lid )
@@ -133,6 +147,23 @@ public class GeneralWRDSReaderTest {
 
     private static final MeasurementUnit units = MeasurementUnit.of( "CMS" );
 
+
+    private static final ThresholdsConfig normalRecurrenceConfig = new ThresholdsConfig(
+            ThresholdType.VALUE,
+            ThresholdDataType.LEFT,
+            new ThresholdsConfig.Source(
+                    path2,
+                    ThresholdFormat.WRDS,
+                    null,
+                    null,
+                    null,
+                    null,//null ratings provider.
+                    null,
+                    LeftOrRightOrBaseline.LEFT
+            ),
+            ThresholdOperator.GREATER_THAN
+    );
+    
     private static final ThresholdsConfig normalThresholdConfig = new ThresholdsConfig(
             ThresholdType.VALUE,
             ThresholdDataType.LEFT,
@@ -758,11 +789,6 @@ public class GeneralWRDSReaderTest {
     {
         GeneralWRDSReader reader = new GeneralWRDSReader( systemSettings );
         
-        //The file used is created from this URL:
-        //
-        //https://***REMOVED***.***REMOVED***.***REMOVED***/api/location/v3.0/nws_threshold/nws_lid/PTSA1,MNTG1,BLOF1,CEDG1,SMAF1/
-        //
-        //executed on 5/20/2021 at 10:15am.
         GeneralThresholdResponse response = reader.getResponse(path);
 
         Assert.assertEquals(10, response.getThresholds().size());
@@ -1110,5 +1136,105 @@ public class GeneralWRDSReaderTest {
         Assert.assertTrue(hasModerate);
         Assert.assertTrue(hasMajor);
         Assert.assertTrue(hasRecord);
+    }
+    
+    @Test
+    public void testReadRecurrenceFlows() throws IOException {
+        Map<WrdsLocation, Set<ThresholdOuter>> readThresholds = GeneralWRDSReader.readThresholds(
+                systemSettings,
+                normalRecurrenceConfig,
+                this.unitMapper,
+                DESIRED_FEATURES.stream().map(WrdsLocation::getNwsLid).collect(Collectors.toSet())
+        );
+
+        Assert.assertTrue(readThresholds.containsKey(PTSA1));
+        Assert.assertTrue(readThresholds.containsKey(MNTG1));
+        Assert.assertTrue(readThresholds.containsKey(BLOF1));
+        Assert.assertTrue(readThresholds.containsKey(SMAF1));
+        Assert.assertTrue(readThresholds.containsKey(CEDG1));
+
+        
+        Set<ThresholdOuter> blof1Thresholds = readThresholds.get(BLOF1);
+        Assert.assertEquals(6, blof1Thresholds.size());
+        
+        boolean has1_5 = false;
+        boolean has2_0 = false;
+        boolean has3_0 = false;
+        boolean has4_0 = false;
+        boolean has5_0 = false;
+        boolean has10_0 = false;
+
+        List<String> properThresholds = List.of(
+                "year_1_5",
+                "year_2_0",
+                "year_3_0",
+                "year_4_0",
+                "year_5_0",
+                "year_10_0"
+        );
+        
+        for (ThresholdOuter thresholdOuter : blof1Thresholds) {
+            String thresholdName = thresholdOuter.getThreshold().getName().toLowerCase();
+
+            Assert.assertTrue(properThresholds.contains(thresholdName));
+
+            switch (thresholdName) {
+                case "year_1_5":
+                    has1_5 = true;
+                    Assert.assertEquals(
+                            58864.26,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+                case "year_2_0":
+                    has2_0 = true;
+                    Assert.assertEquals(
+                            87362.48,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+                case "year_3_0":
+                    has3_0 = true;
+                    Assert.assertEquals(
+                            109539.05,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+                case "year_4_0":
+                    has4_0 = true;
+                    Assert.assertEquals(
+                            128454.64,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+                case "year_5_0":
+                    has5_0 = true;
+                    Assert.assertEquals(
+                            176406.6,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+                case "year_10_0":
+                    has10_0 = true;
+                    Assert.assertEquals(
+                            216831.58000000002,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+            }
+        }
+
+        Assert.assertTrue(has1_5);
+        Assert.assertTrue(has2_0);
+        Assert.assertTrue(has3_0);
+        Assert.assertTrue(has4_0);
+        Assert.assertTrue(has5_0);
+        Assert.assertTrue(has10_0);
     }
 }
