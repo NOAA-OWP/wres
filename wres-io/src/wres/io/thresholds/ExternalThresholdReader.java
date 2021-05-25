@@ -14,6 +14,7 @@ import wres.io.geography.wrds.WrdsLocation;
 import wres.io.retrieval.UnitMapper;
 import wres.io.thresholds.csv.CSVThresholdReader;
 import wres.io.thresholds.wrds.WRDSReader;
+import wres.io.thresholds.wrds.GeneralWRDSReader;
 import wres.system.SystemSettings;
 
 import org.slf4j.Logger;
@@ -168,12 +169,27 @@ public class ExternalThresholdReader {
                         identifyFeatureName = tuple -> tuple.getNameFor(tupleSide);
                     }
 
-                    Map<WrdsLocation, Set<ThresholdOuter>> wrdsThresholds = WRDSReader.readThresholds(
+                    //Naive toggle: use one of two versions depending on flag.
+                    boolean useVersion2API = false; 
+                    Map<WrdsLocation, Set<ThresholdOuter>> wrdsThresholds;
+                    if (useVersion2API)
+                    {
+                        wrdsThresholds = GeneralWRDSReader.readThresholds(
                             this.systemSettings,
                             thresholdsConfig,
                             this.desiredMeasurementUnitConverter,
                             this.features.stream().map(identifyFeatureName).collect(Collectors.toSet())
-                    );
+                        );
+                    }
+                    else
+                    {
+                        wrdsThresholds = WRDSReader.readThresholds(
+                            this.systemSettings,
+                            thresholdsConfig,
+                            this.desiredMeasurementUnitConverter,
+                            this.features.stream().map(identifyFeatureName).collect(Collectors.toSet())
+                        );
+                    }
 
                     // WRDS returns a series of identifiers that don't match to 'left' 'right', or 'baseline'.
                     // As a result, we have to look through the sources and find a consistent way to identify what id
