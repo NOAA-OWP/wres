@@ -291,9 +291,9 @@ project(':wres-datamodel')
         // The following four provide units of measure. If used in public
         // method signatures, they will be upgraded to api (not implementation).
         api 'javax.measure:unit-api:2.1.2'
-        implementation 'si.uom:si-units:2.0.1'
+        implementation 'si.uom:si-units:2.1'
         implementation 'tech.units:indriya:2.1.2'
-        implementation 'systems.uom:systems-common:2.0.2'
+        implementation 'systems.uom:systems-common:2.1'
 
         // JCIP annotations
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
@@ -364,7 +364,7 @@ project(':wres-io')
         compile 'com.squareup.okhttp3:okhttp:4.10.0-RC1'
 
         // Update vulnerable kotlin-stdlib that okhttp/okio uses
-        compile 'org.jetbrains.kotlin:kotlin-stdlib:1.5.0'
+        compile 'org.jetbrains.kotlin:kotlin-stdlib:1.5.10'
 
         // To accurately detect mime types of files.
         implementation 'org.apache.tika:tika-core:1.26'
@@ -478,7 +478,7 @@ project(':wres-statistics')
         // Automatically download and use the correct protobuf compiler
         protoc
         {
-            artifact = 'com.google.protobuf:protoc:3.17.0'
+            artifact = 'com.google.protobuf:protoc:3.17.1'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
@@ -577,7 +577,7 @@ project(':wres-statistics')
     dependencies
     {
         compile 'org.slf4j:slf4j-api:2.0.0-alpha1'
-        compile 'com.google.protobuf:protobuf-java:3.17.0'
+        compile 'com.google.protobuf:protobuf-java:3.17.1'
         compile project(':wres-config')
 
         // JMS API ( QPID client implements 1.1, but 1.1 is not available on maven )
@@ -745,7 +745,7 @@ project(':wres-config')
         jaxb 'commons-beanutils:commons-beanutils:1.9.4'
 
         // commons-io is transitive dependency of jaxb2-basics-annotate, has CVE
-        jaxb 'commons-io:commons-io:2.8.0'
+        jaxb 'commons-io:commons-io:2.9.0'
 
 
         // jaxb-xjc transitively includes bind-api and jaxb-core
@@ -854,7 +854,7 @@ project(':wres-messages')
         // Automatically download and use the correct protobuf compiler
         protoc
         {
-            artifact = 'com.google.protobuf:protoc:3.17.0'
+            artifact = 'com.google.protobuf:protoc:3.17.1'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
@@ -891,7 +891,7 @@ project(':wres-messages')
     dependencies
     {
         compile 'org.slf4j:slf4j-api:2.0.0-alpha1'
-        compile 'com.google.protobuf:protobuf-java:3.17.0'
+        compile 'com.google.protobuf:protobuf-java:3.17.1'
 
         testCompile 'junit:junit:4.13.2'
     }
@@ -991,16 +991,16 @@ project(':wres-tasker')
         compile 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
 
         // Server library to run a web server:
-        compile 'org.eclipse.jetty:jetty-server:11.0.2'
+        compile 'org.eclipse.jetty:jetty-server:11.0.3'
 
         // Support HTTP/2
-        compile 'org.eclipse.jetty.http2:http2-server:11.0.2'
+        compile 'org.eclipse.jetty.http2:http2-server:11.0.3'
 
         // Support ALPN
-        compile 'org.eclipse.jetty:jetty-alpn-java-server:11.0.2'
+        compile 'org.eclipse.jetty:jetty-alpn-java-server:11.0.3'
 
         // Servlet container library to run a web application with:
-        compile 'org.eclipse.jetty:jetty-webapp:11.0.2'
+        compile 'org.eclipse.jetty:jetty-webapp:11.0.3'
 
         // Needed at compile-time to reference ServletContainer.class and
         // DefaultServlet.class
