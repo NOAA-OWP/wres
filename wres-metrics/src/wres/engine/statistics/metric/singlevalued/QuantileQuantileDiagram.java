@@ -75,7 +75,7 @@ public class QuantileQuantileDiagram extends Diagram<Pool<Pair<Double, Double>>,
      * The default number of probabilities at which to compute the order statistics.
      */
 
-    private static final int DEFAULT_PROBABILITY_COUNT = 1000;
+    private static final int DEFAULT_PROBABILITY_COUNT = 100;
     
     /**
      * Logger.
