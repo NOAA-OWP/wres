@@ -47,6 +47,11 @@
             <source format="datacard" zoneOffset="CST" >data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
             <variable>QINE</variable>
             <transformation>persistence</transformation>
+            <existingTimeScale>
+                <function>mean</function>
+                <period>1</period>
+                <unit>seconds</unit>
+            </existingTimeScale>
         </baseline>
     </inputs>
 

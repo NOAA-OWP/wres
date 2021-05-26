@@ -284,9 +284,9 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
 
         // Apply any time offsets immediately, in order to simplify further evaluation,
         // which is then in the target time system
-        leftData = this.applyValidTimeOffset( leftData, this.leftOffset );
-        rightData = this.applyValidTimeOffset( rightData, this.rightOffset );
-        baselineData = this.applyValidTimeOffset( baselineData, this.baselineOffset );
+        leftData = this.applyValidTimeOffset( leftData, this.leftOffset, LeftOrRightOrBaseline.LEFT );
+        rightData = this.applyValidTimeOffset( rightData, this.rightOffset, LeftOrRightOrBaseline.RIGHT );
+        baselineData = this.applyValidTimeOffset( baselineData, this.baselineOffset, LeftOrRightOrBaseline.BASELINE );
 
         // Obtain the desired time scale. If this is unavailable, use the Least Common Scale.
         TimeScaleOuter desiredTimeScaleToUse =
@@ -875,11 +875,11 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
             // Log any warnings
             PoolSupplier.logScaleValidationWarnings( rightOrBaseline, upscaledRight.getValidationEvents() );
         }
-
+        
         // Transform the rescaled values, if required
         TimeSeries<L> scaledAndTransformedLeft = this.transform( scaledLeft, this.leftTransformer );
         TimeSeries<R> scaledAndTransformedRight = this.transformByEvent( scaledRight, rightOrBaselineTransformer );
-
+        
         // Create the pairs, if any
         TimeSeries<Pair<L, R>> pairs = this.getPairer()
                                            .pair( scaledAndTransformedLeft, scaledAndTransformedRight );
@@ -1646,10 +1646,13 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
      * @param <T> the time-series event value type
      * @param toTransform the list of time-series to transform
      * @param offset the offset to add
+     * @param lrb the side of data to help with logging
      * @return the adjusted time-series
      */
 
-    private <T> List<TimeSeries<T>> applyValidTimeOffset( List<TimeSeries<T>> toTransform, Duration offset )
+    private <T> List<TimeSeries<T>> applyValidTimeOffset( List<TimeSeries<T>> toTransform, 
+                                                          Duration offset, 
+                                                          LeftOrRightOrBaseline lrb )
     {
 
         List<TimeSeries<T>> transformed = toTransform;
@@ -1659,6 +1662,12 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
              && Objects.nonNull( offset )
              && !Duration.ZERO.equals( offset ) )
         {
+            // Log the time shift
+            if( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Applying a valid time offset of {} to {} time-series.", offset, lrb );
+            }
+            
             transformed = new ArrayList<>();
 
             for ( TimeSeries<T> nextSeries : toTransform )

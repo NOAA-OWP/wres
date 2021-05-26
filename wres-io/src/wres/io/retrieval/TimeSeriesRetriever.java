@@ -185,20 +185,36 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     abstract boolean isForecast();
 
-    protected Database getDatabase()
+    /**
+     * @return the database.
+     */
+
+    Database getDatabase()
     {
         return this.database;
     }
 
-    protected Features getFeaturesCache()
+    /**
+     * @return the features cache.
+     */
+
+    Features getFeaturesCache()
     {
         return this.featuresCache;
     }
+
+    /**
+     * @return the feature.
+     */
 
     FeatureKey getFeature()
     {
         return this.feature;
     }
+
+    /**
+     * @return the variable name.
+     */
 
     String getVariableName()
     {
@@ -686,7 +702,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * on its own time scale. The only exception is the function {@link TimeScaleFunction.UNKNOWN}, which can be
      * overridden.
      * 
-     * @param <S> the event value type
      * @param lastScale the last scale information retrieved
      * @param period the period of ther current time scale to be retrieved
      * @param functionString the function string for the current time scale to be retrieved
@@ -695,10 +710,10 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @throws DataAccessException if the current time scale is inconsistent with the last time scale
      */
 
-    <S> TimeScaleOuter checkAndGetLatestScale( TimeScaleOuter lastScale,
-                                               Duration period,
-                                               String functionString,
-                                               Instant validTime )
+    TimeScaleOuter checkAndGetLatestScale( TimeScaleOuter lastScale,
+                                           Duration period,
+                                           String functionString,
+                                           Instant validTime )
     {
 
         Duration periodToUse = null;
@@ -739,6 +754,23 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         if ( Objects.nonNull( periodToUse ) && Objects.nonNull( functionToUse ) )
         {
             returnMe = TimeScaleOuter.of( periodToUse, functionToUse );
+        }
+
+        // Consistent with any declaration? If not, this is exceptional: #92404
+        if ( Objects.nonNull( this.getDeclaredExistingTimeScale() )
+             && !this.getDeclaredExistingTimeScale().equalsOrInstantaneous( returnMe ) )
+        {
+            throw new DataAccessException( "The time scale information associated with a "
+                                           + this.getLeftOrRightOrBaseline()
+                                           + " event at '"
+                                           + validTime
+                                           + "' was declared as '"
+                                           + this.getDeclaredExistingTimeScale()
+                                           + "' but the time scale recorded in the time-series data is '"
+                                           + returnMe
+                                           + "', which is inconsistent. If the declaration is incorrect, it should be "
+                                           + "fixed. Otherwise, the time-series data was not ingested accurately and "
+                                           + "you should contact the WRES developers for support." );
         }
 
         if ( Objects.nonNull( lastScale ) && !lastScale.equals( returnMe ) )

@@ -77,7 +77,8 @@ import wres.system.SystemSettings;
 public class Validation
 {
 
-    private static final String NOT_APPEAR_TO_BE_VALID_PLEASE_USE_NUMERIC = "not appear to be valid. Please use numeric ";
+    private static final String NOT_APPEAR_TO_BE_VALID_PLEASE_USE_NUMERIC =
+            "not appear to be valid. Please use numeric ";
 
     private static final String THE_MONTH_AND_DAY_COMBINATION_DOES = " The month {} and day {} combination does ";
 
@@ -620,7 +621,7 @@ public class Validation
 
                 returnMe = false;
             }
-            
+
             if ( !Validation.isOneMetricsConfigInternallyConsistent( projectConfigPlus, next ) )
             {
                 returnMe = false;
@@ -2307,6 +2308,8 @@ public class Validation
             result = Validation.areDataSourcesValid( projectConfigPlus,
                                                      baseline )
                      && result;
+
+            result = Validation.areLeftAndBaselineConsistent( projectConfigPlus, left, baseline ) && result;
         }
 
         return result;
@@ -2387,7 +2390,7 @@ public class Validation
      * @param projectConfigPlus the evaluation project configuration
      * @param dataSourceConfig the dataSourceConfig being checked
      * @param source the source being checked
-     * @return
+     * @return true if valid, false otherwise
      */
     private static boolean isSourceValid( ProjectConfigPlus projectConfigPlus,
                                           DataSourceConfig dataSourceConfig,
@@ -2412,6 +2415,45 @@ public class Validation
         }
 
         return sourceValid;
+    }
+
+    /**
+     * Checks the consistency of the left and baseline declaration when the baseline is generated and uses the same
+     * source of data as the left.
+     * 
+     * 
+     * @param projectConfigPlus the evaluation project configuration
+     * @param leftConfig the left data declaration
+     * @param baselineConfig the baseline data declaration
+     */
+
+    private static boolean areLeftAndBaselineConsistent( ProjectConfigPlus projectConfigPlus,
+                                                         DataSourceConfig left,
+                                                         DataSourceConfig baseline )
+    {
+        Objects.requireNonNull( projectConfigPlus );
+        Objects.requireNonNull( left );
+        Objects.requireNonNull( baseline );
+
+        boolean valid = true;
+
+        // If there is a generated baseline that uses the same data as the left, then the time scales must be consistent
+        // See: #92480
+        if ( Objects.nonNull( baseline.getTransformation() ) && Objects.equals( left.getSource(), baseline.getSource() )
+             && !Objects.equals( left.getExistingTimeScale(), baseline.getExistingTimeScale() ) )
+        {
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE +
+                         " The baseline source is the same as the left source, but the existing time scales do not "
+                         + "match. Fix or remove the existing time scale of one or both of the left and baseline "
+                         + "sources so that they are consistent.",
+                         projectConfigPlus,
+                         baseline.sourceLocation().getLineNumber(),
+                         baseline.sourceLocation().getColumnNumber() );
+
+            valid = false;
+        }
+
+        return valid;
     }
 
     /**

@@ -128,7 +128,7 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
     {
         return new TimeScaleOuter( period, TimeScaleFunction.UNKNOWN );
     }
-    
+
     /**
      * Constructs a {@link TimeScaleOuter} from a {@link TimeScale}.
      * 
@@ -224,6 +224,11 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
     @Override
     public boolean equals( Object o )
     {
+        if ( o == this )
+        {
+            return true;
+        }
+
         if ( ! ( o instanceof TimeScaleOuter ) )
         {
             return false;
@@ -231,6 +236,24 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
         TimeScaleOuter in = (TimeScaleOuter) o;
 
         return in.getPeriod().equals( this.getPeriod() ) && in.getFunction() == this.getFunction();
+    }
+
+    /**
+     * A lenient equals that considers {@link #isInstantaneous()} as sufficient for equality, otherwise 
+     * {@link #equals(Object)}.
+     * 
+     * @param o the object to test for equality against this instance
+     * @return true if the input and existing time scale are instantaneous or content equal, otherwise false
+     */
+
+    public boolean equalsOrInstantaneous( Object o )
+    {
+        if ( o instanceof TimeScaleOuter && ( (TimeScaleOuter) o ).isInstantaneous() && this.isInstantaneous() )
+        {
+            return true;
+        }
+
+        return this.equals( o );
     }
 
     @Override
@@ -445,7 +468,7 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
                          .setFunction( wres.statistics.generated.TimeScale.TimeScaleFunction.valueOf( function.name() ) )
                          .build();
     }
-    
+
     /**
      * Hidden constructor.
      * 
@@ -461,5 +484,5 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
 
         this.timeScale = timeScale;
     }
-    
+
 }

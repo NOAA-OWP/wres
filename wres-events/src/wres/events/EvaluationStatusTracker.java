@@ -214,12 +214,6 @@ class EvaluationStatusTracker implements Closeable
     private final Timer subscriberInactivityTimer;
 
     /**
-     * Determines whether subscription offers from format writers are viable. 
-     */
-
-    private final SubscriberApprover subscriberApprover;
-
-    /**
      * Negotiates format subscribers.
      */
 
@@ -993,10 +987,9 @@ class EvaluationStatusTracker implements Closeable
         this.flowController = flowController;
         this.formatsRequired = formatsRequired;
         this.subscriberInactivityTimer = new Timer( "SubscriberInactivityTimer-1", true );
-        this.subscriberApprover = subscriberApprover;
         this.subscriberNegotiator = new SubscriberNegotiator( this.evaluation,
                                                               this.formatsRequired,
-                                                              this.subscriberApprover );
+                                                              subscriberApprover );
 
         // Non-durable subscribers until we can properly recover from broker/client failures to warrant durable ones
         this.durableSubscriber = false;
@@ -1158,12 +1151,12 @@ class EvaluationStatusTracker implements Closeable
     /**
      * @return true if the tracker is still alive, false otherwise
      */
-    
+
     private boolean isAlive()
     {
         return !this.isFailed() && !this.isClosed();
     }
-    
+
     /**
      * Accepts and routes an evaluation status message.
      * @param message the message
@@ -1223,7 +1216,7 @@ class EvaluationStatusTracker implements Closeable
     private void recover( String messageId, String correlationId, Exception exception )
     {
         // Only try to recover if the tracker hasn't already failed or been closed
-        if ( !this.isFailed() && ! this.isClosed() )
+        if ( !this.isFailed() && !this.isClosed() )
         {
             int retryCount = this.getNumberOfRetriesAttempted()
                                  .incrementAndGet(); // Counter starts at zero
