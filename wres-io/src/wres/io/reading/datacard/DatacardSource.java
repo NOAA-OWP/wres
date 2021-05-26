@@ -384,14 +384,15 @@ public class DatacardSource extends BasicSource
 
         FeatureKey location = new FeatureKey( featureName, featureDescription, null, null );
         TimeSeriesMetadata metadata = TimeSeriesMetadata.of(
-                Map.of( LATEST_OBSERVATION, values.lastKey() ),
-                TimeScaleOuter.of(),
-                variableName,
-                location,
-                unit );
-        TimeSeries<Double> timeSeries = transform( metadata,
-                                                   values,
-                                                   lineNumber );
+                                                             Map.of( LATEST_OBSERVATION, values.lastKey() ),
+                                                             // No time scale information: #92480 and #59536
+                                                             null,
+                                                             variableName,
+                                                             location,
+                                                             unit );
+        TimeSeries<Double> timeSeries = this.transform( metadata,
+                                                        values,
+                                                        lineNumber );
         TimeSeriesIngester ingester =
                 TimeSeriesIngester.of( this.getSystemSettings(),
                                        this.getDatabase(),

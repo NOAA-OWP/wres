@@ -13,7 +13,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.commons.math3.exception.MathArithmeticException;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 import wres.config.generated.DurationUnit;
@@ -33,12 +33,12 @@ public final class TimeScaleTest
      * Common instance for use in multiple tests.
      */
 
-    private static TimeScaleOuter timeScale;
+    private TimeScaleOuter timeScale;
 
-    @BeforeClass
-    public static void setupBeforeAllTests()
+    @Before
+    public void setupBeforeEachTest()
     {
-        timeScale = TimeScaleOuter.of( Duration.ofDays( 1 ), TimeScaleFunction.MEAN );
+        this.timeScale = TimeScaleOuter.of( Duration.ofDays( 1 ), TimeScaleFunction.MEAN );
     }
 
     /**
@@ -48,7 +48,7 @@ public final class TimeScaleTest
     @Test
     public void testGetPeriodReturnsExpectedPeriod()
     {
-        assertEquals( timeScale.getPeriod(), Duration.ofDays( 1 ) );
+        assertEquals( this.timeScale.getPeriod(), Duration.ofDays( 1 ) );
     }
 
     /**
@@ -58,7 +58,7 @@ public final class TimeScaleTest
     @Test
     public void testGetFunctionReturnsExpectedFunction()
     {
-        assertEquals( TimeScaleFunction.MEAN, timeScale.getFunction() );
+        assertEquals( TimeScaleFunction.MEAN, this.timeScale.getFunction() );
 
         assertEquals( TimeScaleFunction.UNKNOWN, TimeScaleOuter.of( Duration.ofSeconds( 1 ) ).getFunction() );
     }
@@ -107,34 +107,65 @@ public final class TimeScaleTest
     public void testEquals()
     {
         // Reflexive 
-        assertEquals( timeScale, timeScale );
+        assertEquals( this.timeScale, this.timeScale );
 
         // Symmetric
         TimeScaleOuter otherTimeScale = TimeScaleOuter.of( Duration.ofDays( 1 ), TimeScaleFunction.MEAN );
-        assertEquals( timeScale, otherTimeScale );
+        assertEquals( this.timeScale, otherTimeScale );
 
         // Transitive, noting that timeScale and otherTimeScale are equal above
         TimeScaleOuter oneMoreTimeScale = TimeScaleOuter.of( Duration.ofDays( 1 ), TimeScaleFunction.MEAN );
         assertEquals( otherTimeScale, oneMoreTimeScale );
-        assertEquals( timeScale, oneMoreTimeScale );
+        assertEquals( this.timeScale, oneMoreTimeScale );
 
         // Consistent
         for ( int i = 0; i < 100; i++ )
         {
-            assertTrue( timeScale.equals( otherTimeScale ) );
+            assertTrue( this.timeScale.equals( otherTimeScale ) );
         }
 
         // Object unequal to null
-        assertNotEquals( timeScale, null );
+        assertNotEquals( this.timeScale, null );
 
         // Unequal on period
         TimeScaleOuter unequalOnPeriod = TimeScaleOuter.of( Duration.ofDays( 3 ), TimeScaleFunction.MEAN );
-        assertNotEquals( timeScale, unequalOnPeriod );
+        assertNotEquals( this.timeScale, unequalOnPeriod );
 
         // Unequal on function
         TimeScaleOuter unequalOnFunction = TimeScaleOuter.of( Duration.ofDays( 1 ), TimeScaleFunction.MINIMUM );
-        assertNotEquals( timeScale, unequalOnFunction );
+        assertNotEquals( this.timeScale, unequalOnFunction );
     }
+    
+    @Test
+    public void testEqualsOrInstantaneous()
+    {  
+        // Reflexive 
+        assertTrue( TimeScaleOuter.of().equalsOrInstantaneous( TimeScaleOuter.of() ) );
+        
+        TimeScaleOuter aTimeScale = TimeScaleOuter.of( Duration.ofSeconds( 1 ), TimeScaleFunction.MEAN );
+      
+        // Symmetric for instantaneous
+        TimeScaleOuter otherTimeScale = TimeScaleOuter.of( Duration.ofMinutes( 1 ), TimeScaleFunction.MEAN );
+        assertTrue( aTimeScale.equalsOrInstantaneous( otherTimeScale ) );
+
+        // Transitive, noting that timeScale and otherTimeScale are equal above
+        TimeScaleOuter oneMoreTimeScale = TimeScaleOuter.of( Duration.ofMinutes( 1 ), TimeScaleFunction.MEAN );
+        assertTrue( otherTimeScale.equalsOrInstantaneous( oneMoreTimeScale ) );
+        assertTrue( aTimeScale.equalsOrInstantaneous( oneMoreTimeScale ) );
+
+        // Consistent
+        for ( int i = 0; i < 100; i++ )
+        {
+            assertTrue( aTimeScale.equalsOrInstantaneous( otherTimeScale ) );
+        }
+
+        // Object unequal to null
+        assertFalse( aTimeScale.equalsOrInstantaneous( null ) );
+
+        // Unequal on period
+        TimeScaleOuter unequalOnPeriod = TimeScaleOuter.of( Duration.ofDays( 3 ), TimeScaleFunction.MEAN );
+        assertFalse( aTimeScale.equalsOrInstantaneous( unequalOnPeriod ) );
+    }    
 
     /**
      * Tests the {@link TimeScaleOuter#hashCode()}.
@@ -146,12 +177,12 @@ public final class TimeScaleTest
         // Consistent with equals 
         TimeScaleOuter otherTimeScale = TimeScaleOuter.of( Duration.ofDays( 1 ), TimeScaleFunction.MEAN );
 
-        assertEquals( timeScale.hashCode(), otherTimeScale.hashCode() );
+        assertEquals( this.timeScale.hashCode(), otherTimeScale.hashCode() );
 
         // Repeatable within one execution context
         for ( int i = 0; i < 100; i++ )
         {
-            assertEquals( timeScale.hashCode(), otherTimeScale.hashCode() );
+            assertEquals( this.timeScale.hashCode(), otherTimeScale.hashCode() );
         }
     }
 
@@ -161,7 +192,7 @@ public final class TimeScaleTest
     @Test
     public void testToString()
     {
-        assertEquals( "[PT24H,MEAN]", timeScale.toString() );
+        assertEquals( "[PT24H,MEAN]", this.timeScale.toString() );
 
         assertEquals( "[INSTANTANEOUS]", TimeScaleOuter.of( Duration.ofSeconds( 1 ) ).toString() );
     }

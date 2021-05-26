@@ -173,7 +173,7 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
                                                + "valid pairs. Check that the declaration contains some pools whose "
                                                + "boundaries (e.g., earliest and latest issued times, earliest and "
                                                + "latest valid times and earliest and latest lead durations) are "
-                                               + "sufficiently broad to capture some pairs.",
+                                               + "sufficiently broad to capture some pairs at the desired time scale.",
                                                null );
         }
 
