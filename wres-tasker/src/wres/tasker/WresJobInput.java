@@ -77,16 +77,13 @@ public class WresJobInput
                            .build();
         }
 
-        if ( !jobState.equals( JobMetadata.JobState.AWAITING_DATA ) )
+        if ( !jobState.equals( JobMetadata.JobState.AWAITING_POSTS_OF_DATA ) )
         {
             return Response.status( Response.Status.BAD_REQUEST )
                            .entity( jobId + " is no longer awaiting data: "
                                     + jobState )
                            .build();
         }
-
-
-        // TODO: detect (or read given) content type of the data, add suffix.
 
         FileAttribute<Set<PosixFilePermission>> posixAttributes;
         Set<PosixFilePermission> permissions;
@@ -116,6 +113,7 @@ public class WresJobInput
 
         try
         {
+            // Content type detection is done in core WRES, not based on name.
             if ( Objects.nonNull( posixAttributes  ) )
             {
                 temp = Files.createTempFile( jobId + "_", "", posixAttributes );
@@ -188,11 +186,9 @@ public class WresJobInput
                                  boolean postInputDone )
     {
         // Round-about way of validating job id: look for job state
-        JobMetadata.JobState jobState = WresJob.getSharedJobResults()
-                                               .getJobState( jobId );
+        JobResults sharedJobResults = WresJob.getSharedJobResults();
+        JobMetadata.JobState jobState = sharedJobResults.getJobState( jobId );
 
-        // TODO: only allow posting inputs with job state of "AWAITING_DATA"
-        // (Once that job state is accurately reported)
         if ( jobState.equals( JobMetadata.JobState.NOT_FOUND ) )
         {
             return Response.status( Response.Status.NOT_FOUND )
@@ -200,7 +196,7 @@ public class WresJobInput
                            .build();
         }
 
-        if ( !jobState.equals( JobMetadata.JobState.AWAITING_DATA ) )
+        if ( !jobState.equals( JobMetadata.JobState.AWAITING_POSTS_OF_DATA ) )
         {
             return Response.status( Response.Status.BAD_REQUEST )
                            .entity( jobId + " is no longer awaiting data: "
@@ -216,11 +212,9 @@ public class WresJobInput
         }
 
         // Mark the job as no longer AWAITING_DATA
-        WresJob.getSharedJobResults()
-               .setPostInputDone( jobId );
+        sharedJobResults.setPostInputDone( jobId );
         LOGGER.debug( "Inputs have been fully posted." );
-        JobResults results = WresJob.getSharedJobResults();
-        byte[] jobMessageBytes = results.getJobMessage( jobId );
+        byte[] jobMessageBytes = sharedJobResults.getJobMessage( jobId );
         Job.job jobMessage;
 
         try
@@ -231,6 +225,7 @@ public class WresJobInput
         {
             LOGGER.warn( "Failed to parse job bytes from {}",
                          jobMessageBytes, ipbe );
+            sharedJobResults.setFailedBeforeInQueue( jobId );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity( "Failed to parse job bytes: "
                                     + ipbe.getMessage() )
@@ -238,9 +233,9 @@ public class WresJobInput
         }
 
         String declaration = jobMessage.getProjectConfig();
-        List<URI> leftUris = results.getLeftInputs( jobId );
-        List<URI> rightUris = results.getRightInputs( jobId );
-        List<URI> baselineUris = results.getBaselineInputs( jobId );
+        List<URI> leftUris = sharedJobResults.getLeftInputs( jobId );
+        List<URI> rightUris = sharedJobResults.getRightInputs( jobId );
+        List<URI> baselineUris = sharedJobResults.getBaselineInputs( jobId );
         List<DataSourceConfig.Source> leftDataset = new ArrayList<>( leftUris.size() );
         List<DataSourceConfig.Source> rightDataset = new ArrayList<>( rightUris.size() );
         List<DataSourceConfig.Source> baselineDataset = new ArrayList<>( baselineUris.size() );
@@ -292,6 +287,7 @@ public class WresJobInput
         {
             LOGGER.warn( "Failed to add inputs to posted declaration:{}{}",
                          declaration, "\n", e );
+            sharedJobResults.setFailedBeforeInQueue( jobId );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity( "Failed to add inputs to declaration: "
                                     + e.getMessage() )
@@ -308,17 +304,18 @@ public class WresJobInput
             // Send the new job.
             WresJob.sendDeclarationMessage( jobId, newJob.toByteArray() );
         }
-        catch( IOException | TimeoutException e )
+        catch ( IOException | TimeoutException e )
         {
             LOGGER.warn( "Failed to send declaration for job {}", jobId, e );
+            // Don't change the job state to a terminal state because it might
+            // succeed on the next attempt.
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
-                           .entity( "Failed to send declaration: "
+                           .entity( "Failed to send declaration, this could a be temporary condition, try again in a moment: "
                                     + e.getMessage() )
                            .build();
         }
 
-        WresJob.getSharedJobResults()
-               .setInQueue( jobId );
+        sharedJobResults.setInQueue( jobId );
 
         return Response.status( Response.Status.OK )
                        .build();
