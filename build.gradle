@@ -1165,6 +1165,8 @@ project(':wres-tasker')
     // the generated-by-resolve-task openapi.json inside the unzipped index.html
     task ( swaggerDocs, dependsOn: extractSwaggerUI, type: Copy )
     {
+        def settings = "url: \"openapi.json\",\nvalidatorUrl: null,";
+
         from ( fileTree( swaggerDocsBaseDir ) )
         {
             eachFile
@@ -1177,7 +1179,7 @@ project(':wres-tasker')
                     filter
                     {
                         String line ->
-                            line.contains( "url:" ) ? "url: \"openapi.json\"," : line
+                            line.contains( "url:" ) ? settings : line
                     }
 
                     // Doubt we need a download plugin, remove it.
