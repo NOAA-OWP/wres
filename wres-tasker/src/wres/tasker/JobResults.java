@@ -923,7 +923,7 @@ class JobResults
             throw new IllegalArgumentException( "Unable to find jobId " + jobId );
         }
 
-        metadata.setJobState( JobMetadata.JobState.AWAITING_DATA );
+        metadata.setJobState( JobMetadata.JobState.AWAITING_POSTS_OF_DATA );
     }
 
 
@@ -934,6 +934,7 @@ class JobResults
      * @throws IllegalArgumentException When job not found.
      * @throws IllegalStateException When illegal state transition is requested.
      */
+
     void setPostInputDone( String jobId )
     {
         JobMetadata metadata = jobMetadataById.get( jobId );
@@ -943,7 +944,26 @@ class JobResults
             throw new IllegalArgumentException( "Unable to find jobId " + jobId );
         }
 
-        metadata.setJobState( JobMetadata.JobState.NO_LONGER_AWAITING_DATA );
+        metadata.setJobState( JobMetadata.JobState.NO_MORE_POSTS_OF_DATA );
     }
 
+
+    /**
+     * Mark the job as failed before it made it into the queue.
+     * @param jobId The job to mark as failed.
+     * @throws IllegalArgumentException When job not found.
+     * @throws IllegalStateException When illegal state transition is requested.
+     */
+
+    void setFailedBeforeInQueue( String jobId )
+    {
+        JobMetadata metadata = jobMetadataById.get( jobId );
+
+        if ( metadata == null )
+        {
+            throw new IllegalArgumentException( "Unable to find jobId " + jobId );
+        }
+
+        metadata.setJobState( JobMetadata.JobState.FAILED_BEFORE_IN_QUEUE );
+    }
 }

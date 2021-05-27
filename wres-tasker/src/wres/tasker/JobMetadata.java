@@ -35,9 +35,11 @@ public class JobMetadata
         /** The job was created by tasker, but not yet sent anywhere */
         CREATED,
         /** For when data has yet to be posted */
-        AWAITING_DATA,
-        /** For when no more data can be posted, but job not yet submitted */
-        NO_LONGER_AWAITING_DATA,
+        AWAITING_POSTS_OF_DATA,
+        /** For when no more new posts of data, but job not yet submitted */
+        NO_MORE_POSTS_OF_DATA,
+        /** For when the job is done and was not queued. */
+        FAILED_BEFORE_IN_QUEUE,
         /** When the job has been submitted to the job queue */
         IN_QUEUE,
         /** When the job has been started by a worker */
@@ -252,7 +254,8 @@ public class JobMetadata
         else if ( this.jobState.equals( JobState.CREATED ) )
         {
             Set<JobState> createdToThese = Set.of( JobState.IN_QUEUE,
-                                                   JobState.AWAITING_DATA );
+                                                   JobState.AWAITING_POSTS_OF_DATA,
+                                                   JobState.FAILED_BEFORE_IN_QUEUE );
             if ( !createdToThese.contains( jobState ) )
             {
                 throw new IllegalStateException( CAN_ONLY_TRANSITION_FROM
@@ -260,22 +263,26 @@ public class JobMetadata
                                                  + createdToThese );
             }
         }
-        else if ( this.jobState.equals( JobState.AWAITING_DATA ) )
+        else if ( this.jobState.equals( JobState.AWAITING_POSTS_OF_DATA ) )
         {
-            if ( !jobState.equals( JobState.NO_LONGER_AWAITING_DATA ) )
+            Set<JobState> awaitingPostsToThese = Set.of( JobState.NO_MORE_POSTS_OF_DATA,
+                                                         JobState.FAILED_BEFORE_IN_QUEUE );
+            if ( !awaitingPostsToThese.contains( jobState ) )
             {
                 throw new IllegalStateException( CAN_ONLY_TRANSITION_FROM
-                                                 + JobState.AWAITING_DATA + TO
-                                                 + JobState.NO_LONGER_AWAITING_DATA );
+                                                 + JobState.AWAITING_POSTS_OF_DATA
+                                                 + TO + awaitingPostsToThese );
             }
         }
-        else if ( this.jobState.equals( JobState.NO_LONGER_AWAITING_DATA ) )
+        else if ( this.jobState.equals( JobState.NO_MORE_POSTS_OF_DATA ) )
         {
-            if ( !jobState.equals( JobState.IN_QUEUE ) )
+            Set<JobState> noMorePostsToThese = Set.of( JobState.IN_QUEUE,
+                                                       JobState.FAILED_BEFORE_IN_QUEUE );
+            if ( !noMorePostsToThese.contains( jobState ) )
             {
                 throw new IllegalStateException( CAN_ONLY_TRANSITION_FROM
-                                                 + JobState.NO_LONGER_AWAITING_DATA
-                                                 + TO + JobState.IN_QUEUE );
+                                                 + JobState.NO_MORE_POSTS_OF_DATA
+                                                 + TO + noMorePostsToThese );
             }
         }
         else if ( this.jobState.equals( JobState.IN_QUEUE ) )
