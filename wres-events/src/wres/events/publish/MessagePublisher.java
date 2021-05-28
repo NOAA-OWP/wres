@@ -177,6 +177,33 @@ public class MessagePublisher implements Closeable
     {
         return MessagePublisher.of( connectionFactory,
                                     destination,
+                                    null,
+                                    DeliveryMode.NON_PERSISTENT,
+                                    Message.DEFAULT_PRIORITY,
+                                    Message.DEFAULT_TIME_TO_LIVE );
+    }
+
+
+    /**
+     * Creates an instance with default settings and a {@link ConnectionExceptionListener}.
+     * 
+     * @param connectionFactory a broker connection factory
+     * @param destination the delivery destination
+     * @param listener a connection exception listener
+     * @throws JMSException if the JMS provider fails to create the connection due to some internal error
+     * @throws JMSSecurityException if client authentication fails
+     * @throws NullPointerException if the connectionFactory or destination is null
+     * @return an instance
+     */
+
+    public static MessagePublisher of( BrokerConnectionFactory connectionFactory,
+                                       Destination destination,
+                                       ExceptionListener listener )
+            throws JMSException
+    {
+        return MessagePublisher.of( connectionFactory,
+                                    destination,
+                                    listener,
                                     DeliveryMode.NON_PERSISTENT,
                                     Message.DEFAULT_PRIORITY,
                                     Message.DEFAULT_TIME_TO_LIVE );
@@ -187,6 +214,7 @@ public class MessagePublisher implements Closeable
      * 
      * @param connectionFactory a broker connection factory
      * @param destination the delivery destination
+     * @param listener an optional connection exception listener
      * @param deliveryMode the delivery mode
      * @param messagePriority the message priority
      * @param messageTimeToLive the message time to live
@@ -198,12 +226,18 @@ public class MessagePublisher implements Closeable
 
     public static MessagePublisher of( BrokerConnectionFactory connectionFactory,
                                        Destination destination,
+                                       ExceptionListener listener,
                                        int deliveryMode,
                                        int messagePriority,
                                        long messageTimeToLive )
             throws JMSException
     {
-        return new MessagePublisher( connectionFactory, destination, deliveryMode, messagePriority, messageTimeToLive );
+        return new MessagePublisher( connectionFactory,
+                                     destination,
+                                     listener,
+                                     deliveryMode,
+                                     messagePriority,
+                                     messageTimeToLive );
     }
 
     @Override
@@ -452,6 +486,7 @@ public class MessagePublisher implements Closeable
      * 
      * @param connectionFactory a broker connection factory
      * @param destination the delivery destination
+     * @param listener an optional connection exception listener
      * @param deliveryMode the delivery mode
      * @param messagePriority the message priority
      * @param messageTimeToLive the message time to live
@@ -462,6 +497,7 @@ public class MessagePublisher implements Closeable
 
     private MessagePublisher( BrokerConnectionFactory connectionFactory,
                               Destination destination,
+                              ExceptionListener listener,
                               int deliveryMode,
                               int messagePriority,
                               long messageTimeToLive )
@@ -483,7 +519,14 @@ public class MessagePublisher implements Closeable
         this.destination = destination;
 
         // Register a listener for exceptions
-        this.connection.setExceptionListener( new ConnectionExceptionListener( this.identifier ) );
+        if( Objects.nonNull( listener ) )
+        {
+            this.connection.setExceptionListener( listener );
+        }
+        else
+        {
+            this.connection.setExceptionListener( new ConnectionExceptionListener( this.identifier ) );
+        }
 
         // Client acknowledges messages processed
         this.session = this.connection.createSession( false, Session.CLIENT_ACKNOWLEDGE );

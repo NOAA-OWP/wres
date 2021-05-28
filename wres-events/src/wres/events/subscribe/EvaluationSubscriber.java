@@ -281,7 +281,7 @@ public class EvaluationSubscriber implements Closeable
     private final int maximumRetries;
 
     /**
-     * Creates an instance.
+     * Creates an instance without durable subscribers.
      * 
      * @param consumerFactory the consumer factory
      * @param executorService the executor
@@ -295,8 +295,28 @@ public class EvaluationSubscriber implements Closeable
                                            ExecutorService executorService,
                                            BrokerConnectionFactory broker )
     {
-        return new EvaluationSubscriber( consumerFactory, executorService, broker );
+        return new EvaluationSubscriber( consumerFactory, executorService, broker, false );
     }
+    
+    /**
+     * Creates an instance where the durability of the subscribers is supplied.
+     * 
+     * @param consumerFactory the consumer factory
+     * @param executorService the executor
+     * @param broker the broker connection factory
+     * @param durableSubscribers is true to create an instance whose corresponding broker nodes are durable
+     * @return a subscriber instance
+     * @throws NullPointerException if any input is null
+     * @throws UnrecoverableSubscriberException if the subscriber cannot be instantiated for any other reason
+     */
+
+    public static EvaluationSubscriber of( ConsumerFactory consumerFactory,
+                                           ExecutorService executorService,
+                                           BrokerConnectionFactory broker,
+                                           boolean durableSubscribers )
+    {
+        return new EvaluationSubscriber( consumerFactory, executorService, broker, durableSubscribers );
+    }    
 
     @Override
     public void close() throws IOException
@@ -1435,9 +1455,6 @@ public class EvaluationSubscriber implements Closeable
             @Override
             public void run()
             {
-                // Notify alive
-                subscriber.notifyAlive();
-
                 // If failed, close the subscriber, which also ends this timer task
                 if ( subscriber.isSubscriberFailed() )
                 {
@@ -1454,6 +1471,12 @@ public class EvaluationSubscriber implements Closeable
                         }
                     }
                 }
+                // Notify alive
+                else
+                {
+                    subscriber.notifyAlive();
+                }
+
             }
         };
 
@@ -1524,13 +1547,15 @@ public class EvaluationSubscriber implements Closeable
      * @param consumerFactory the consumer factory
      * @param executorService the executor
      * @param broker the broker connection factory
+     * @param durableSubscribers is true to create a subscriber whose corresponding broker nodes are durable
      * @throws NullPointerException if any input is null
      * @throws UnrecoverableSubscriberException if the subscriber cannot be instantiated for any other reason
      */
 
     private EvaluationSubscriber( ConsumerFactory consumerFactory,
                                   ExecutorService executorService,
-                                  BrokerConnectionFactory broker )
+                                  BrokerConnectionFactory broker,
+                                  boolean durableSubscribers )
     {
         Objects.requireNonNull( consumerFactory );
         Objects.requireNonNull( executorService );
@@ -1540,7 +1565,7 @@ public class EvaluationSubscriber implements Closeable
         this.executorService = executorService;
 
         // Non-durable subscribers until we can properly recover from broker/client failures to warrant durable ones
-        this.durableSubscribers = false;
+        this.durableSubscribers = durableSubscribers;
         this.logSubscriberPolicy( this.durableSubscribers );
 
         LOGGER.info( "Building a subscriber {} to listen for evaluation messages...",
@@ -1564,10 +1589,14 @@ public class EvaluationSubscriber implements Closeable
             this.statisticsConsumerConnection = broker.get();
             LOGGER.debug( "Created connection {} in subscriber {}.", this.statisticsConsumerConnection, this );
 
-            this.evaluationStatusPublisher = MessagePublisher.of( broker,
-                                                                  this.evaluationStatusTopic );
-
             // Register an exception listener for each connection
+            ConnectionExceptionListener publisherConnectionListener =
+                    new ConnectionExceptionListener( this, EvaluationEventUtilities.getUniqueId() );
+
+            this.evaluationStatusPublisher = MessagePublisher.of( broker,
+                                                                  this.evaluationStatusTopic,
+                                                                  publisherConnectionListener );
+
             ConnectionExceptionListener consumerConnectionListener =
                     new ConnectionExceptionListener( this, EvaluationEventUtilities.getUniqueId() );
             this.consumerConnection.setExceptionListener( consumerConnectionListener );
@@ -1576,8 +1605,8 @@ public class EvaluationSubscriber implements Closeable
             this.statisticsConsumerConnection.setExceptionListener( statisticsConsumerConnectionListener );
 
             // Client acknowledges
-            this.evaluationDescriptionSession =
-                    this.consumerConnection.createSession( false, Session.CLIENT_ACKNOWLEDGE );
+            this.evaluationDescriptionSession = this.consumerConnection.createSession( false,
+                                                                                       Session.CLIENT_ACKNOWLEDGE );
             this.statusSession = this.consumerConnection.createSession( false, Session.CLIENT_ACKNOWLEDGE );
             this.statisticsSession = this.statisticsConsumerConnection.createSession( false,
                                                                                       Session.CLIENT_ACKNOWLEDGE );

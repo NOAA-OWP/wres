@@ -35,6 +35,8 @@ import wres.config.generated.ProjectConfig;
 import wres.config.Validation;
 import wres.control.ProcessorHelper.Executors;
 import wres.eventsbroker.BrokerConnectionFactory;
+import wres.eventsbroker.embedded.CouldNotLoadBrokerConfigurationException;
+import wres.eventsbroker.embedded.CouldNotStartEmbeddedBrokerException;
 import wres.io.concurrency.Executor;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
@@ -69,7 +71,15 @@ public class Control implements Function<String[], ExecutionResult>,
         this.systemSettings = systemSettings;
         this.database = database;
         this.executor = executor;
-        this.brokerConnections = BrokerConnectionFactory.of( false );
+        
+        try
+        {
+            this.brokerConnections = BrokerConnectionFactory.of( false );
+        }
+        catch ( CouldNotStartEmbeddedBrokerException | CouldNotLoadBrokerConfigurationException e )
+        {
+            throw new WresProcessingException( "Failed to create a broker instance.", e );
+        }
     }
 
     private SystemSettings getSystemSettings()

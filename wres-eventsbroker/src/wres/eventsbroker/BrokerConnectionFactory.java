@@ -585,8 +585,12 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
 
         if ( systemProperties.containsKey( "wres.eventsBrokerPort" ) )
         {
+            Object port = systemProperties.get( "wres.eventsBrokerPort" );
+            
             propertyValue = propertyValue.replaceAll( ":+[a-zA-Z0-9.]++'",
-                                                      ":" + systemProperties.get( "wres.eventsBrokerPort" ) + "'" );
+                                                      ":" + port + "'" )
+                                         .replaceAll( ":+[a-zA-Z0-9.]++\\?",
+                                                      ":" + port + "?" );
             overriden = true;
         }
 
@@ -684,6 +688,11 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
         {
             stringDifference = stringDifference.substring( 0, stringDifference.indexOf( "&" ) );
         }
+        // If string difference ends with a query parameter, remove everything after it
+        if ( stringDifference.contains( "?" ) )
+        {
+            stringDifference = stringDifference.substring( 0, stringDifference.indexOf( "?" ) );
+        }
         String portString = stringDifference.replaceAll( "[^\\d]+", "" );
         int port = Integer.parseInt( portString );
 
@@ -701,6 +710,19 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
             LOGGER.debug( "Unable to bind an embedded broker to the configured port of {}. Choosing another port, "
                           + "which will be available from the broker instance after startup." );
 
+            // Close now
+            if ( Objects.nonNull( returnMe ) )
+            {
+                try
+                {
+                    returnMe.close();
+                }
+                catch ( IOException f )
+                {
+                    LOGGER.warn( "Unable to close an embedded broker instance.", f );
+                }
+            }
+            
             if ( !dynamicBindingAllowed )
             {
                 throw new CouldNotStartEmbeddedBrokerException( "Could not bind an embedded amqp broker to port "

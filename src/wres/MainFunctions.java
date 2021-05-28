@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ucar.nc2.dataset.NetcdfDataset;
+import ucar.nc2.dataset.NetcdfDatasets;
 import ucar.nc2.dt.GridCoordSystem;
 import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
@@ -207,7 +208,8 @@ final class MainFunctions
         String path = args[0];
         String variableName = args[1];
 
-        try ( NetcdfDataset dataset = NetcdfDataset.openDataset( path ); GridDataset grid = new GridDataset( dataset ) )
+        try ( NetcdfDataset dataset = NetcdfDatasets.openDataset( path );
+              GridDataset grid = new GridDataset( dataset ) )
         {
             GridDatatype variable = grid.findGridDatatype( variableName );
 

@@ -2,13 +2,13 @@
 FROM registry.access.redhat.com/ubi8/ubi:8.4-199
 
 RUN dnf install -y \
-    java-11-openjdk-headless-11.0.11.0.9-0.el8_3 \
-    unzip-6.0-43.el8 \
+    java-11-openjdk-headless-1:11.0.11.0.9-2.el8_4  \
+    unzip-6.0-44.el8 \
     fontconfig-2.13.1-3.el8 \
-    dejavu-fonts-common-2.35-6.el8 \
-    dejavu-sans-fonts-2.35-6.el8 \
-    procps-ng-3.3.15-3.el8_3.1 \
-    iproute-5.3.0-5.el8 \
+    dejavu-fonts-common-2.35-7.el8 \
+    dejavu-sans-fonts-2.35-7.el8 \
+    procps-ng-3.3.15-6.el8 \
+    iproute-5.9.0-4.el8 \
     && dnf clean all
 
 # Run the app as non-root, so create a non-root user.

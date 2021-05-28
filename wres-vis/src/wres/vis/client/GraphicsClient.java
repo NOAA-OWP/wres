@@ -477,7 +477,8 @@ class GraphicsClient
         {
             this.graphicsSubscriber = EvaluationSubscriber.of( this.consumerFactory,
                                                                this.getGraphicsExecutor(),
-                                                               broker );
+                                                               broker,
+                                                               false );
         }
         catch ( UnrecoverableSubscriberException e )
         {
