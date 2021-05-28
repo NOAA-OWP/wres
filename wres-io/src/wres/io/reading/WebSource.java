@@ -580,7 +580,7 @@ class WebSource implements Callable<List<IngestResult>>
         final int FEATURE_READ_COUNT;
         if ( this.isWrdsNwmSource( this.getDataSource() ) )
         {
-            FEATURE_READ_COUNT = 125;
+            FEATURE_READ_COUNT = 25;
         }
         else if ( this.isUsgsSource( this.getDataSource() ) )
         {
