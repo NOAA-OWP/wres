@@ -676,7 +676,7 @@ class EvaluationConsumer
      */
     private void close()
     {
-        if ( !this.isClosed() )
+        if ( !this.isClosed.getAndSet( true ) )
         {
             LOGGER.debug( "Consumer {} is closing evaluation {}.",
                           this.getClientId(),
@@ -728,9 +728,8 @@ class EvaluationConsumer
             }
             finally
             {
-                this.isClosed.set( true );
-
-                // Make the (potentially large) set of paths eligible for gc as the evaluation may hang around for a while.
+                // Make the (potentially large) set of paths eligible for gc as the evaluation may hang around for a 
+                // while.
                 this.pathsWritten.clear();
 
                 LOGGER.info( "Consumer {} closed evaluation {}{}.",

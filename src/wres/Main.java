@@ -1,5 +1,6 @@
 package wres;
 
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
@@ -61,7 +62,15 @@ public class Main {
 
         final String finalOperation = operation;
         Instant beganExecution = Instant.now();
+        
+        // Log any uncaught exceptions
+        UncaughtExceptionHandler handler = ( a, b ) -> {
+            String message = "The WRES encountered an uncaught exception in thread " + a + ".";
+            LOGGER.error( message, b );
+        };
 
+        Thread.setDefaultUncaughtExceptionHandler( handler );
+        
         SystemSettings systemSettings = SystemSettings.fromDefaultClasspathXmlFile();
         Database database = new Database( systemSettings );
         Executor executor = new Executor( systemSettings );

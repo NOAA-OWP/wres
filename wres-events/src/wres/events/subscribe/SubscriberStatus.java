@@ -36,10 +36,13 @@ public class SubscriberStatus
     private final AtomicReference<String> statisticsMessageId = new AtomicReference<>();
 
     /** The evaluations that failed.*/
-    private final Set<String> evaluationFailed = ConcurrentHashMap.newKeySet();
+    private final Set<String> failed = ConcurrentHashMap.newKeySet();
 
     /** The evaluations that have completed.*/
-    private final Set<String> evaluationComplete = ConcurrentHashMap.newKeySet();
+    private final Set<String> complete = ConcurrentHashMap.newKeySet();
+
+    /** The evaluations in progress.*/
+    private final Set<String> underway = ConcurrentHashMap.newKeySet();
 
     /** Is true if the subscriber has failed.*/
     private final AtomicBoolean isFailed = new AtomicBoolean();
@@ -50,6 +53,7 @@ public class SubscriberStatus
         String addSucceeded = "";
         String addFailed = "";
         String addComplete = "";
+        String addUnderway = "";
 
         if ( Objects.nonNull( this.evaluationId.get() ) && Objects.nonNull( this.statisticsMessageId.get() ) )
         {
@@ -60,25 +64,30 @@ public class SubscriberStatus
                            + ".";
         }
 
-        if ( !this.evaluationFailed.isEmpty() )
+        if ( !this.failed.isEmpty() )
         {
             addFailed =
-                    " Failed to consume one or more statistics messages for " + this.evaluationFailed.size()
+                    " Failed to consume one or more statistics messages for " + this.failed.size()
                         + " evaluations. "
                         + "The failed evaluation are "
-                        + this.evaluationFailed
+                        + this.failed
                         + ".";
         }
 
-        if ( !this.evaluationComplete.isEmpty() )
+        if ( !this.complete.isEmpty() )
         {
             addComplete = " Evaluation subscriber "
                           + this.clientId
                           + " completed "
-                          + this.evaluationComplete.size()
+                          + this.complete.size()
                           + " of the "
                           + this.evaluationCount.get()
                           + " evaluations that were started.";
+        }
+
+        if ( !this.underway.isEmpty() )
+        {
+            addUnderway = " The evaluations underway are " + this.underway + ".";
         }
 
         return "Evaluation subscriber "
@@ -90,7 +99,8 @@ public class SubscriberStatus
                + " evaluations."
                + addSucceeded
                + addFailed
-               + addComplete;
+               + addComplete
+               + addUnderway;
     }
 
     /**
@@ -107,7 +117,7 @@ public class SubscriberStatus
 
     public int getEvaluationFailedCount()
     {
-        return this.evaluationFailed.size();
+        return this.failed.size();
     }
 
     /**
@@ -144,7 +154,8 @@ public class SubscriberStatus
 
     void registerEvaluationCompleted( String evaluationId )
     {
-        this.evaluationComplete.add( evaluationId );
+        this.complete.add( evaluationId );
+        this.underway.remove( evaluationId );
     }
 
     /**
@@ -154,7 +165,8 @@ public class SubscriberStatus
 
     void registerEvaluationFailed( String evaluationId )
     {
-        this.evaluationFailed.add( evaluationId );
+        this.failed.add( evaluationId );
+        this.underway.remove( evaluationId );
     }
 
     /**
@@ -166,6 +178,7 @@ public class SubscriberStatus
     {
         this.evaluationCount.incrementAndGet();
         this.evaluationId.set( evaluationId );
+        this.underway.add( evaluationId );
     }
 
     /**
