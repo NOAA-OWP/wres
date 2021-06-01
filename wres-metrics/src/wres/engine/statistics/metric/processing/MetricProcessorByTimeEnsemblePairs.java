@@ -241,17 +241,20 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                                                                           ensembleMetrics );
 
             // Create a set of metrics for when no baseline is available, assuming there is at least one metric
-            if ( ensembleMetrics.length > 1 )
+            // But, first, remove the CRPSS, which requires a baseline
+            Set<MetricConstants> filteredMetrics = Arrays.stream( ensembleMetrics )
+                                                         .filter( next -> next != MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
+                                                         .collect( Collectors.toSet() );
+            if ( !filteredMetrics.isEmpty() )
             {
-                Set<MetricConstants> filteredMetrics = Arrays.stream( ensembleMetrics )
-                                                             .filter( next -> next != MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
-                                                             .collect( Collectors.toSet() );
-
                 MetricConstants[] filteredArray =
                         filteredMetrics.toArray( new MetricConstants[filteredMetrics.size()] );
 
                 this.ensembleScoreNoBaseline = MetricFactory.ofEnsembleScoreCollection( metricExecutor,
                                                                                         filteredArray );
+                
+                LOGGER.debug( "Created the ensemble scores for processing pairs without a baseline. {}", 
+                              this.ensembleScoreNoBaseline );
             }
             else
             {
