@@ -8,13 +8,19 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 
 import java.util.Objects;
 
+/**
+ * For WRDS Location API 2.0 and older, this corresponds directly to an element in
+ * the list of "locations".  For WRDS Location API 3.0 and later, this corresponds 
+ * to the "identifiers" WITHIN an element in the list of "locations".  
+ * @author Hank.Herr
+ *
+ */
 @JsonIgnoreProperties( ignoreUnknown = true )
 public class WrdsLocation
 {
     private final String nwmFeatureId;
     private final String usgsSiteCode;
     private final String nwsLid;
-    private final String huc;
 
     @JsonCreator( mode = JsonCreator.Mode.PROPERTIES )
     public WrdsLocation( @JsonProperty( "nwm_feature_id" )
@@ -22,14 +28,11 @@ public class WrdsLocation
                          @JsonProperty( "usgs_site_code" )
                          String usgsSiteCode,
                          @JsonProperty( "nws_lid" )
-                         String nwsLid,
-                         @JsonProperty( "huc" )
-                         String huc )
+                         String nwsLid)
     {
         this.nwmFeatureId = nwmFeatureId;
         this.usgsSiteCode = usgsSiteCode;
         this.nwsLid = nwsLid;
-        this.huc = huc;
     }
 
     public String getNwmFeatureId()
@@ -47,11 +50,6 @@ public class WrdsLocation
         return this.nwsLid;
     }
 
-    public String getHuc()
-    {
-        return this.huc;
-    }
-
     @Override
     public String toString()
     {
@@ -59,7 +57,6 @@ public class WrdsLocation
                 .append( "nwmFeatureId", nwmFeatureId )
                 .append( "usgsSiteCode", usgsSiteCode )
                 .append( "nwsLid", nwsLid )
-                .append( "huc", huc )
                 .toString();
     }
 
@@ -70,12 +67,11 @@ public class WrdsLocation
         WrdsLocation that = (WrdsLocation) o;
         return Objects.equals(nwmFeatureId, that.nwmFeatureId) &&
                 Objects.equals(usgsSiteCode, that.usgsSiteCode) &&
-                Objects.equals(nwsLid, that.nwsLid) &&
-                Objects.equals(huc, that.huc);
+                Objects.equals(nwsLid, that.nwsLid);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(nwmFeatureId, usgsSiteCode, nwsLid, huc);
+        return Objects.hash(nwmFeatureId, usgsSiteCode, nwsLid);
     }
 }

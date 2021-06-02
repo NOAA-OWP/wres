@@ -36,8 +36,7 @@ public class ThresholdDefinition implements Serializable {
         return new WrdsLocation(
                 this.metadata.getNwm_feature_id(),
                 this.metadata.getUsgs_site_code(),
-                this.metadata.getNws_lid(),
-                null
+                this.metadata.getNws_lid()
         );
     }
 
