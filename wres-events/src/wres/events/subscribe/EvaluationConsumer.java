@@ -42,11 +42,11 @@ import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 
 /**
- * <p>Consumer of messages for one evaluation. Receives messages and forwards them to underlying consumers, which 
+ * <p>Consumer of messages for one evaluation. Receives messages and forwards them to underlying format consumers, which 
  * serialize outputs. The serialization may happen per message or per message group. Where consumption happens per 
  * message group, the {@link EvaluationConsumer} manages the semantics associated with that, forwarding the messages to 
- * a caching consumer until the group has completed and then asking the consumer, finally, to serialize the completed 
- * group. 
+ * a caching consumer until the group has completed and then asking the consumer, finally, to serialize all messages 
+ * from the completed group. 
  * 
  * <p>Also notifies all listening clients of various stages within the lifecycle of an evaluation or exposes methods 
  * that allow a subscriber to drive that notification. In particular, on closure, notifies all listening clients whether 
@@ -249,8 +249,11 @@ class EvaluationConsumer
     }
 
     /**
-     * Marks an evaluation as failed unrecoverably after exhausting all attempts to recover the subscriber that 
-     * delivers messages to this consumer.
+     * Marks an evaluation as failed unrecoverably due to an error in this consumer or in the subscriber that wraps it
+     * (i.e., with an internal cause), as distinct from an evaluation that failed on production (i.e., with an external 
+     * cause).
+     * 
+     * @see #markEvaluationFailedOnProduction(EvaluationStatus)
      * @param exception an exception to notify in an evaluation status message
      * @throws JMSException if the failure cannot be notified
      */
@@ -273,33 +276,6 @@ class EvaluationConsumer
         }
         finally
         {
-            this.isFailed.set( true );
-            this.isComplete.set( true );
-            this.subscriberStatus.registerEvaluationFailed( this.getEvaluationId() );
-
-            // Close the consumer
-            this.close();
-        }
-    }
-
-    /**
-     * Marks an evaluation as failed for reasons outside the control of this consumer, such as a failure during message
-     * publication. In other words, the evaluation should be marked complete from the perspective of this consumer.
-     * 
-     * @param status the completion status notified to this consumer
-     * @throws JMSException if the failure cannot be notified
-     */
-
-    void markEvaluationFailedOnExternalAction( EvaluationStatus status ) throws JMSException
-    {
-        if ( !this.isClosed() )
-        {
-            LOGGER.debug( "Consumer {} has marked evaluation {} as failed unrecoverably. The failure was not caused by "
-                          + "this consumer. The failure was notified to this consumer as {}.",
-                          this.getClientId(),
-                          this.getEvaluationId(),
-                          status.getCompletionStatus() );
-
             this.isFailed.set( true );
             this.isComplete.set( true );
             this.subscriberStatus.registerEvaluationFailed( this.getEvaluationId() );
@@ -449,7 +425,7 @@ class EvaluationConsumer
                 break;
             case PUBLICATION_COMPLETE_REPORTED_FAILURE:
             case EVALUATION_COMPLETE_REPORTED_FAILURE:
-                this.markEvaluationFailedOnExternalAction( status );
+                this.markEvaluationFailedOnProduction( status );
                 break;
             default:
                 break;
@@ -512,6 +488,34 @@ class EvaluationConsumer
     boolean isFailed()
     {
         return this.isFailed.get();
+    }
+
+
+    /**
+     * Marks an evaluation as failed for reasons outside the control of this consumer, i.e., during production. In 
+     * other words, the evaluation should be marked complete from the perspective of this consumer.
+     * 
+     * @see #markEvaluationFailedOnConsumption(Exception)
+     * @param status the completion status notified to this consumer
+     */
+
+    private void markEvaluationFailedOnProduction( EvaluationStatus status )
+    {
+        if ( !this.isClosed() )
+        {
+            LOGGER.debug( "Consumer {} has marked evaluation {} as failed unrecoverably. The failure was not caused by "
+                          + "this consumer. The failure was notified to this consumer as {}.",
+                          this.getClientId(),
+                          this.getEvaluationId(),
+                          status.getCompletionStatus() );
+
+            this.isFailed.set( true );
+            this.isComplete.set( true );
+            this.subscriberStatus.registerEvaluationFailed( this.getEvaluationId() );
+
+            // Close the consumer
+            this.close();
+        }
     }
 
     /**

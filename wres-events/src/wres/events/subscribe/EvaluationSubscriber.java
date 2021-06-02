@@ -16,6 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
@@ -53,21 +54,28 @@ import wres.statistics.generated.Evaluation;
  * evaluation in progress, which is mapped against its unique evaluation identifier. The {@link EvaluationConsumer} 
  * consumes all of the messages related to one evaluation and the subscriber ensures that these messages are routed to 
  * the correct consumer. It also handles retries and other administrative tasks that satisfy the contract for a 
- * well-behaving subscriber. Specifically, a well-behaving subscriber:
+ * well-behaving subscriber. Specifically, a well-behaving subscriber (or one of its consumer instances, as applicable):
  * 
  * <ol>
  * <li>Notifies any listening clients with an {@link EvaluationStatus} message that contains
  * {@link CompletionStatus#READY_TO_CONSUME} and the formats fulfilled by the subscriber.</li>
- * <li>Notifies the {@link EvaluationConsumer} when an evaluation fails unrecoverably. The consumer then reports on the 
- * failure to all listening clients with a {@link CompletionStatus#CONSUMPTION_COMPLETE_REPORTED_FAILURE}.</li>
- * <li>Notifies the {@link EvaluationConsumer} of every open evaluation when the subscriber fails unrecoverably. Each 
- * consumer then reports on the failure to all listening clients with a
- * {@link CompletionStatus#CONSUMPTION_COMPLETE_REPORTED_FAILURE}. This notification is attempted, but cannot be 
- * guaranteed as the subscriber may be in a state that prevents such notification.</li>
+ * <li>Notifies any listening clients with an {@link EvaluationStatus} message that contains
+ * {@link CompletionStatus#CONSUMPTION_COMPLETE_REPORTED_SUCCESS} when an evaluation succeeds.</li>
+ * <li>Notifies any listening clients with an {@link EvaluationStatus} message that contains
+ * {@link CompletionStatus#CONSUMPTION_COMPLETE_REPORTED_FAILURE} when an evaluation fails.</li>
+ * <li>Notifies any listening clients with an {@link EvaluationStatus} message that contains
+ * {@link CompletionStatus#CONSUMPTION_COMPLETE_REPORTED_FAILURE} for each evaluation in progress when the subscriber
+ * itself fails. This notification is attempted, but cannot be guaranteed as the subscriber may be in a state that 
+ * prevents such notification.</li>
+ * <li>Periodically updates any listening clients with an {@link EvaluationStatus} message that contains
+ * {@link CompletionStatus#CONSUMPTION_ONGOING} to indicate that the subscriber is healthy/alive.</li>
  * </ol>
  * 
+ * <p>Optionally, a booking strategy may be implemented (see {@link #BOOKING_ENABLED}) whereby the subscriber only 
+ * accepts one evaluation at any one time and does not offer services until that evaluation has completed.
+ * 
  * <p>When an evaluation succeeds, the {@link EvaluationConsumer} reports on its success to all listening clients with 
- * a {@link CompletionStatus#CONSUMPTION_COMPLETE_REPORTED_SUCCESS}.  
+ * a {@link CompletionStatus#CONSUMPTION_COMPLETE_REPORTED_SUCCESS}.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -75,7 +83,6 @@ import wres.statistics.generated.Evaluation;
 @ThreadSafe
 public class EvaluationSubscriber implements Closeable
 {
-
     private static final String ENCOUNTERED_AN_EXCEPTION_THAT_WILL_STOP_THE_SUBSCRIBER =
             "encountered an exception that will stop the subscriber.";
 
@@ -101,6 +108,16 @@ public class EvaluationSubscriber implements Closeable
             "Subscriber {} has acknowledged (ACK-ed) a message from a {} queue with messageId {}, correlationId {} "
                                                                       + "and groupId {}.";
 
+    /** 
+     * Is true if the subscriber adopts a booking strategy, allowing one evaluation per subscriber at any one time, 
+     * false to allow unlimited evaluations per subscriber at once.
+     * 
+     * @see #book(String)
+     * @see #unbook(String)
+     */
+
+    private static final boolean BOOKING_ENABLED = true;
+
     /**
      * String representation of the {@link MessageProperty#CONSUMER_ID}.
      */
@@ -112,7 +129,6 @@ public class EvaluationSubscriber implements Closeable
      */
 
     private static final String GROUP_ID_STRING = MessageProperty.JMSX_GROUP_ID.toString();
-
 
     /**
      * The frequency with which to publish a subscriber-alive message in ms.
@@ -281,6 +297,12 @@ public class EvaluationSubscriber implements Closeable
     private final int maximumRetries;
 
     /**
+     * An atomic reference to an evaluation that has booked this subscriber or null if the subscriber is unbooked.
+     */
+
+    private final AtomicReference<String> booked;
+
+    /**
      * Creates an instance without durable subscribers.
      * 
      * @param consumerFactory the consumer factory
@@ -297,7 +319,7 @@ public class EvaluationSubscriber implements Closeable
     {
         return new EvaluationSubscriber( consumerFactory, executorService, broker, false );
     }
-    
+
     /**
      * Creates an instance where the durability of the subscribers is supplied.
      * 
@@ -316,7 +338,7 @@ public class EvaluationSubscriber implements Closeable
                                            boolean durableSubscribers )
     {
         return new EvaluationSubscriber( consumerFactory, executorService, broker, durableSubscribers );
-    }    
+    }
 
     @Override
     public void close() throws IOException
@@ -743,7 +765,8 @@ public class EvaluationSubscriber implements Closeable
     }
 
     /**
-     * Consumes an {@link EvaluationStatus} message.
+     * Consumes an {@link EvaluationStatus} message and returns the consumer used, else offers services if a consumer is 
+     * required.
      * 
      * @param statusEvent the evaluation status message
      * @param evaluationId the evaluation identifier
@@ -771,7 +794,14 @@ public class EvaluationSubscriber implements Closeable
             // Offer services if services are required
             this.offerServices( statusEvent, evaluationId );
         }
-        // Request for consumption, but only if the message is flagged for me
+        // An evaluation was started and this subscriber was booked to deliver it, but another subscriber won the work
+        else if ( completionStatus == CompletionStatus.EVALUATION_STARTED && evaluationId.equals( this.booked.get() )
+                  && !this.isThisMessageForMe( message ) )
+        {
+            // Free to offer services again
+            this.unbook( "another subscriber won evaluation " + evaluationId );
+        }
+        // Request for consumption and the message belongs to me
         else if ( this.isThisMessageForMe( message ) )
         {
             LOGGER.debug( SUBSCRIBER_HAS_CLAIMED_OWNERSHIP_OF_MESSAGE_FOR_EVALUATION,
@@ -820,6 +850,9 @@ public class EvaluationSubscriber implements Closeable
         if ( Objects.nonNull( consumer ) && consumer.isComplete() )
         {
             this.status.registerEvaluationCompleted( evaluationId );
+
+            // Unbook the subscriber if subscriber booking is in force
+            this.unbook( EvaluationSubscriber.EVALUATION + evaluationId + " completed" );
         }
     }
 
@@ -1210,6 +1243,9 @@ public class EvaluationSubscriber implements Closeable
                 EvaluationConsumer consumer = this.evaluations.get( evaluationId );
                 consumer.markEvaluationFailedOnConsumption( exception );
             }
+
+            // Unbook the subscriber if subscriber booking is in force
+            this.unbook( EvaluationSubscriber.EVALUATION + evaluationId + " failed" );
         }
         catch ( JMSException | UnrecoverableSubscriberException e )
         {
@@ -1355,11 +1391,14 @@ public class EvaluationSubscriber implements Closeable
     private void offerServices( EvaluationStatus status, String evaluationId )
     {
         // Only offer formats if the status message is non-specific or some required formats intersect the formats
-        // offered
+        // offered, i.e., if the subscriber can potentially fulfill the request
         Collection<Format> formatsOffered = this.getConsumerDescription()
                                                 .getFormatsList();
-        if ( status.getFormatsRequiredList().isEmpty()
-             || status.getFormatsRequiredList().stream().anyMatch( formatsOffered::contains ) )
+        boolean formatsIntersect = status.getFormatsRequiredList().isEmpty()
+                                   || status.getFormatsRequiredList().stream().anyMatch( formatsOffered::contains );
+
+        // Some formats to write and succeeded in booking the subscriber if booking is enabled
+        if ( formatsIntersect && this.book( evaluationId ) )
         {
             LOGGER.debug( "Subscriber {} is offering services for formats {}.", this.getClientId(), formatsOffered );
 
@@ -1372,6 +1411,59 @@ public class EvaluationSubscriber implements Closeable
                           evaluationId,
                           this.getClientId() );
         }
+    }
+
+    /**
+     * Attempts to "book" the subscriber and thereby prevent further offers for work. The subscriber is booked if there
+     * is no evaluation underway. Always returns true if {@link EvaluationSubscriber.BOOKING_ENABLED} is false.
+     * 
+     * @param evaluationId the evaluation identifier to use when booking the subscriber
+     * @return true if the subscriber was booked or booking is disabled, false otherwise
+     */
+
+    private boolean book( String evaluationId )
+    {
+        if ( EvaluationSubscriber.BOOKING_ENABLED )
+        {
+            boolean returnMe = this.booked.compareAndSet( null, evaluationId );
+
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Attempted to book subscriber {} with evaluation {}. Success?: {}",
+                              this.getClientId(),
+                              evaluationId,
+                              booked );
+            }
+
+            return returnMe;
+        }
+
+        // Booking always succeeds if disabled
+        return true;
+    }
+
+    /**
+     * <p>Unbooks the subscriber, allowing it to offer services. This method should be called when:
+     * 
+     * <ol>
+     * <li>The booked evaluation succeeds;</li>
+     * <li>The booked evaluation fails for any reason (e.g., timed out); or</li>
+     * <li>The offered evaluation is lost to another subscriber</li>
+     * </ol>.
+     * 
+     * @param reason the reason the evaluation was unbooked (to assist with logging)
+     */
+
+    private void unbook( String reason )
+    {
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Unbooking subscriber {} so that it is free to offer services. Unbooked because {}.",
+                          this.getClientId(),
+                          reason );
+        }
+
+        this.booked.set( null );
     }
 
     /**
@@ -1574,6 +1666,7 @@ public class EvaluationSubscriber implements Closeable
         this.status = new SubscriberStatus( this.getClientId() );
         this.timer = new Timer( true );
         this.maximumRetries = broker.getMaximumMessageRetries();
+        this.booked = new AtomicReference<>();
 
         try
         {

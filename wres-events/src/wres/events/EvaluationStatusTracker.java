@@ -747,12 +747,16 @@ class EvaluationStatusTracker implements Closeable
     /**
      * Attempts to negotiate a subscription for one of the formats required by this evaluation.
      * 
+     * @param evaluationId the evaluation identifier
      * @param message the message with the subscription information
      */
 
-    private void registerAnOfferToDeliverFormats( EvaluationStatus message )
+    private void registerAnOfferToDeliverFormats( String evaluationId, EvaluationStatus message )
     {
-        this.subscriberNegotiator.registerAnOfferToDeliverFormats( message );
+        if ( this.getEvaluationId().equals( evaluationId ) )
+        {
+            this.subscriberNegotiator.registerAnOfferToDeliverFormats( message );
+        }
     }
 
     /**
@@ -1109,7 +1113,7 @@ class EvaluationStatusTracker implements Closeable
                     EvaluationStatus statusMessage = EvaluationStatus.parseFrom( bufferedMessage.array() );
 
                     // Accept the message
-                    this.acceptStatusMessage( statusMessage );
+                    this.acceptStatusMessage( correlationId, statusMessage );
 
                     // Acknowledge, if the tracker is alive (check again in case the shutdown sequence started after
                     // entering this method)
@@ -1159,9 +1163,10 @@ class EvaluationStatusTracker implements Closeable
 
     /**
      * Accepts and routes an evaluation status message.
+     * @param evaluationId the evaluation identifier
      * @param message the message
      */
-    private void acceptStatusMessage( EvaluationStatus message )
+    private void acceptStatusMessage( String evaluationId, EvaluationStatus message )
     {
         Objects.requireNonNull( message );
         CompletionStatus status = message.getCompletionStatus();
@@ -1174,7 +1179,7 @@ class EvaluationStatusTracker implements Closeable
                 this.stopOnFailure( message );
                 break;
             case READY_TO_CONSUME:
-                this.registerAnOfferToDeliverFormats( message );
+                this.registerAnOfferToDeliverFormats( evaluationId, message );
                 break;
             case CONSUMPTION_COMPLETE_REPORTED_SUCCESS:
                 this.registerConsumptionCompleteReportedSuccess( message );
