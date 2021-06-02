@@ -26,7 +26,7 @@ public class WRDSReaderTest {
 
     private static WrdsLocation createFeature(final String featureId, final String usgsSiteCode, final String lid )
     {
-        return new WrdsLocation(featureId, usgsSiteCode, lid, null);
+        return new WrdsLocation(featureId, usgsSiteCode, lid);
     }
 
     private static final WrdsLocation PTSA1 = WRDSReaderTest.createFeature("2323396", "02372250","PTSA1");
