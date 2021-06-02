@@ -1286,11 +1286,9 @@ public class Evaluation implements Closeable
     }
 
     /**
-     * Looks for the presence of a group identifier and throws an exception when absent or when the group has already 
-     * been completed.
+     * Looks for the presence of a group identifier and throws an exception when the group has already been completed.
      * 
      * @param groupId a group identifier
-     * @throws NullPointerException if there are group subscriptions and the group identifier is null
      * @throws IllegalArgumentException if there are group subscriptions and the group has already been marked complete
      */
 

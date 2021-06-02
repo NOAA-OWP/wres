@@ -198,12 +198,59 @@ class EvaluationTest
             {              
             }
         };
+        
+        // Consumer factory implementation that simply adds the statistics to the above containers
+        ConsumerFactory consumerTwo = new ConsumerFactory()
+        {
+            @Override
+            public Function<Statistics, Set<Path>>
+                    getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            {
+                return statistics -> {
+                    if ( path.toString().contains( "evaluationOne" ) )
+                    {
+                        actualStatistics.add( statistics );
+                    }
+                    else
+                    {
+                        otherActualStatistics.add( statistics );
+                    }
+
+                    return Set.of();
+                };
+            }
+
+            @Override
+            public Function<Collection<Statistics>, Set<Path>>
+                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            {
+                return statistics -> Set.of();
+            }
+
+            @Override
+            public Consumer getConsumerDescription()
+            {
+                return Consumer.newBuilder()
+                               .setConsumerId( "anotherConsumer" )
+                               .addFormats( Format.PNG )
+                               .build();
+            }
+            
+            @Override
+            public void close()
+            {              
+            }
+        };
 
         // Create and start a broker and open an evaluation, closing on completion
         try ( EvaluationSubscriber subscriberOne =
                 EvaluationSubscriber.of( consumer,
                                          Executors.newSingleThreadExecutor(),
                                          EvaluationTest.connections );
+              EvaluationSubscriber subscriberTwo =
+                      EvaluationSubscriber.of( consumerTwo,
+                                               Executors.newSingleThreadExecutor(),
+                                               EvaluationTest.connections );
               Evaluation evaluationOne =
                       Evaluation.of( this.oneEvaluation,
                                      EvaluationTest.connections,
@@ -233,7 +280,7 @@ class EvaluationTest
             // Success
             evaluationTwo.markPublicationCompleteReportedSuccess();
 
-            // Wait for the evaluation to complete
+            // Wait for the evaluations to complete
             evaluationOne.await();
             evaluationTwo.await();
         }

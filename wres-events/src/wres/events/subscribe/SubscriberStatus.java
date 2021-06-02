@@ -29,6 +29,9 @@ public class SubscriberStatus
     /** The number of statistics blobs completed.*/
     private final AtomicInteger statisticsCount = new AtomicInteger();
 
+    /** The most evaluations underway at any one time.*/
+    private final AtomicInteger maxUnderwayCount = new AtomicInteger();
+
     /** The last evaluation started.*/
     private final AtomicReference<String> evaluationId = new AtomicReference<>();
 
@@ -54,6 +57,7 @@ public class SubscriberStatus
         String addFailed = "";
         String addComplete = "";
         String addUnderway = "";
+        String mostUnderway = "";
 
         if ( Objects.nonNull( this.evaluationId.get() ) && Objects.nonNull( this.statisticsMessageId.get() ) )
         {
@@ -85,9 +89,14 @@ public class SubscriberStatus
                           + " evaluations that were started.";
         }
 
+        if ( !this.failed.isEmpty() || !this.complete.isEmpty() )
+        {
+            mostUnderway = " The most evaluations underway at the same time was " + this.maxUnderwayCount.get() + ".";
+        }
+
         if ( !this.underway.isEmpty() )
         {
-            addUnderway = " The evaluations underway are " + this.underway + ".";
+            addUnderway = " The " + this.underway.size() + " evaluations underway are " + this.underway + ".";
         }
 
         return "Evaluation subscriber "
@@ -100,7 +109,8 @@ public class SubscriberStatus
                + addSucceeded
                + addFailed
                + addComplete
-               + addUnderway;
+               + addUnderway
+               + mostUnderway;
     }
 
     /**
@@ -179,6 +189,10 @@ public class SubscriberStatus
         this.evaluationCount.incrementAndGet();
         this.evaluationId.set( evaluationId );
         this.underway.add( evaluationId );
+
+        // Update the maximum underway
+        int maxCount = Math.max( this.maxUnderwayCount.get(), this.underway.size() );
+        this.maxUnderwayCount.set( maxCount );
     }
 
     /**

@@ -154,9 +154,17 @@ class SubscriberNegotiator
         // Wait for each format to receive an offer
         for ( Map.Entry<Format, TimedCountDownLatch> next : this.formatNegotiationLatches.entrySet() )
         {
-            LOGGER.debug( "Awaiting a format writer for {}.", next.getKey() );
+            Format format = next.getKey();
+            LOGGER.debug( "Awaiting a format writer for {}.", format );
             TimedCountDownLatch latch = next.getValue();
             latch.await( this.timeoutDuringNegotiation, this.timeoutDuringNegotiationUnits );
+
+            // Only continue to wait for other formats if negotiation succeeded for the current format
+            if ( latch.timedOut() )
+            {
+                LOGGER.debug( "Timed out awaiting format {}. The negotiation has failed.", format );
+                break;
+            }
         }
 
         timer.cancel();
