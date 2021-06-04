@@ -2,6 +2,8 @@ package wres.events.subscribe;
 
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -122,10 +124,17 @@ class EvaluationConsumer
     private Function<Statistics, Set<Path>> consumer;
 
     /**
-     * An elementary group consumer for message groups that provides the template for the {@link #groupConsumers}.
+     * An elementary group consumer for message groups that provides the template for the {@link #groupConsumers}. 
      */
 
     private Function<Collection<Statistics>, Set<Path>> groupConsumer;
+
+    /**
+     * The time at which progress was last recorded. Used to timeout an evaluation on lack of progress (a well-behaving
+     * publisher regularly publishes an {@link CompletionStatus#EVALUATION_ONGOING}).
+     */
+
+    private Instant timeSinceLastProgress;
 
     /**
      * A map of group consumers by group identifier.
@@ -208,7 +217,7 @@ class EvaluationConsumer
      * @param consumerFactory the consumer factory
      * @param evaluationStatusPublisher the evaluation status publisher
      * @param executorService the executor to do writing work (this instance is not responsible for closing)
-     * @param subscriberStatus subscriber status to update (e.g., if consumption fails here)
+     * @param subscriberStatus subscriber status to update (if consumption fails in this consumer)
      * @throws NullPointerException if any input is null
      */
 
@@ -242,6 +251,7 @@ class EvaluationConsumer
         this.consumersReady = new TimedCountDownLatch( 1 );
         this.subscriberStatus = subscriberStatus;
         this.groupConsumersLock = new ReentrantLock();
+        this.registerProgress();
 
         LOGGER.info( "Consumer {} opened evaluation {}, which is ready to consume messages.",
                      this.getClientId(),
@@ -250,8 +260,7 @@ class EvaluationConsumer
 
     /**
      * Marks an evaluation as failed unrecoverably due to an error in this consumer or in the subscriber that wraps it
-     * (i.e., with an internal cause), as distinct from an evaluation that failed on production (i.e., with an external 
-     * cause).
+     * (i.e., with an internal cause), as distinct from an evaluation that was notified to this consumer as failed.
      * 
      * @see #markEvaluationFailedOnProduction(EvaluationStatus)
      * @param exception an exception to notify in an evaluation status message
@@ -319,7 +328,7 @@ class EvaluationConsumer
                               groupId );
             }
 
-            this.consumersReady.await( CONSUMER_TIMEOUT, TimeUnit.MILLISECONDS );
+            this.consumersReady.await( EvaluationConsumer.CONSUMER_TIMEOUT, TimeUnit.MILLISECONDS );
 
             if ( this.consumersReady.timedOut() )
             {
@@ -349,6 +358,8 @@ class EvaluationConsumer
 
         // If consumption is complete, then close the consumer
         this.closeConsumerIfComplete();
+
+        this.registerProgress();
     }
 
     /**
@@ -392,6 +403,8 @@ class EvaluationConsumer
                          this.getEvaluationId(),
                          this.getClientId() );
         }
+
+        this.registerProgress();
     }
 
     /**
@@ -433,6 +446,8 @@ class EvaluationConsumer
 
         // If consumption is complete, then close the consumer
         this.closeConsumerIfComplete();
+
+        this.registerProgress();
     }
 
     /** 
@@ -490,6 +505,23 @@ class EvaluationConsumer
         return this.isFailed.get();
     }
 
+    /**
+     * @return the duration since progress was last recorded.
+     */
+
+    Duration getDurationSinceLastProgress()
+    {
+        return Duration.between( this.timeSinceLastProgress, Instant.now() );
+    }
+
+    /**
+     * @return the evaluation identifier.
+     */
+
+    String getEvaluationId()
+    {
+        return this.evaluationId;
+    }
 
     /**
      * Marks an evaluation as failed for reasons outside the control of this consumer, i.e., during production. In 
@@ -560,9 +592,12 @@ class EvaluationConsumer
                                          null,
                                          Collections.unmodifiableList( causeEvents ) );
 
-            LOGGER.warn( "Consumer {} has marked evaluation {} as failed unrecoverably.",
-                         this.getClientId(),
-                         this.getEvaluationId() );
+            String message = EvaluationConsumer.CONSUMER_STRING + this.getClientId()
+                             + " has marked evaluation "
+                             + this.getEvaluationId()
+                             + " as failed unrecoverably with cause:";
+
+            LOGGER.warn( message, cause );
         }
     }
 
@@ -881,15 +916,6 @@ class EvaluationConsumer
     }
 
     /**
-     * @return the evaluation identifier.
-     */
-
-    private String getEvaluationId()
-    {
-        return this.evaluationId;
-    }
-
-    /**
      * @return the consumer factory.
      */
 
@@ -1083,6 +1109,15 @@ class EvaluationConsumer
                 this.groupConsumersLock.unlock();
             }
         }
+    }
+
+    /**
+     * Registers progress.
+     */
+
+    private void registerProgress()
+    {
+        this.timeSinceLastProgress = Instant.now();
     }
 
     /**

@@ -3,6 +3,7 @@ package wres.events.subscribe;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -83,6 +84,8 @@ import wres.statistics.generated.Evaluation;
 @ThreadSafe
 public class EvaluationSubscriber implements Closeable
 {
+    private static final String SUBSCRIBER = "Subscriber ";
+
     private static final String ENCOUNTERED_AN_EXCEPTION_THAT_WILL_STOP_THE_SUBSCRIBER =
             "encountered an exception that will stop the subscriber.";
 
@@ -135,6 +138,13 @@ public class EvaluationSubscriber implements Closeable
      */
 
     private static final long NOTIFY_ALIVE_MILLISECONDS = 100_000;
+
+    /**
+     * Duration to wait before an evaluation is timed out on lack of progress by a publisher.  A well-behaving publisher 
+     * regularly publishes an {@link CompletionStatus#EVALUATION_ONGOING}.
+     */
+
+    private static final Duration EVALUATION_TIMEOUT = Duration.ofMinutes( 120 );
 
     /**
      * Is true to use durable subscribers, false for temporary subscribers, which are auto-deleted.
@@ -303,6 +313,12 @@ public class EvaluationSubscriber implements Closeable
     private final AtomicReference<String> booked;
 
     /**
+     * The identifier of an evaluation to serve when the subscriber can only serve one evaluation.
+     */
+
+    private final String evaluationToServe;
+
+    /**
      * Creates an instance without durable subscribers.
      * 
      * @param consumerFactory the consumer factory
@@ -317,7 +333,28 @@ public class EvaluationSubscriber implements Closeable
                                            ExecutorService executorService,
                                            BrokerConnectionFactory broker )
     {
-        return new EvaluationSubscriber( consumerFactory, executorService, broker, false );
+        return new EvaluationSubscriber( consumerFactory, executorService, broker, false, null );
+    }
+
+    /**
+     * Creates an instance without durable subscribers and a prescribed evaluation identifier. The subscriber will only
+     * offer to the identified evaluation and no others.
+     * 
+     * @param consumerFactory the consumer factory
+     * @param executorService the executor
+     * @param broker the broker connection factory
+     * @param evaluationToserve the unique identifier of the evaluation that should be served
+     * @return a subscriber instance
+     * @throws NullPointerException if any input is null
+     * @throws UnrecoverableSubscriberException if the subscriber cannot be instantiated for any other reason
+     */
+
+    public static EvaluationSubscriber of( ConsumerFactory consumerFactory,
+                                           ExecutorService executorService,
+                                           BrokerConnectionFactory broker,
+                                           String evaluationToserve )
+    {
+        return new EvaluationSubscriber( consumerFactory, executorService, broker, false, evaluationToserve );
     }
 
     /**
@@ -337,7 +374,7 @@ public class EvaluationSubscriber implements Closeable
                                            BrokerConnectionFactory broker,
                                            boolean durableSubscribers )
     {
-        return new EvaluationSubscriber( consumerFactory, executorService, broker, durableSubscribers );
+        return new EvaluationSubscriber( consumerFactory, executorService, broker, durableSubscribers, null );
     }
 
     @Override
@@ -435,16 +472,36 @@ public class EvaluationSubscriber implements Closeable
         Set<String> toSweep = new HashSet<>( this.evaluations.keySet() );
         for ( String nextEvaluation : toSweep )
         {
-            EvaluationConsumer nextValue = this.evaluations.get( nextEvaluation );
+            EvaluationConsumer nextConsumer = this.evaluations.get( nextEvaluation );
 
-            if ( nextValue.isClosed() && !nextValue.isFailed() )
+            // Evaluation completed
+            if ( nextConsumer.isClosed() )
             {
-                this.evaluations.remove( nextEvaluation );
-                this.retriesAttempted.remove( nextEvaluation );
+                // Evaluation succeeded
+                if ( !nextConsumer.isFailed() )
+                {
+                    this.evaluations.remove( nextEvaluation );
+                    this.retriesAttempted.remove( nextEvaluation );
+                }
 
+                // Record completions for logging
                 completed.add( nextEvaluation );
+
+                // Unbook the subscriber if booked
+                if ( this.isBooked() )
+                {
+                    this.unbook( nextEvaluation );
+                }
             }
-            else if ( nextValue.isFailed() )
+            // Evaluation is ongoing, but it has now timed out and should be stopped
+            else if ( this.hasTimedOut( nextConsumer ) )
+            {
+                // Flag timed out. It will be swept away on the next iteration
+                this.registerEvaluationTimedOut( nextConsumer );
+            }
+
+            // Record failures for logging
+            if ( nextConsumer.isFailed() )
             {
                 failed.add( nextEvaluation );
             }
@@ -791,7 +848,7 @@ public class EvaluationSubscriber implements Closeable
         // Request for a consumer?
         if ( completionStatus == CompletionStatus.CONSUMER_REQUIRED )
         {
-            // Offer services if services are required
+            // Offer services if possible
             this.offerServices( statusEvent, evaluationId );
         }
         // An evaluation was started and this subscriber was booked to deliver it, but another subscriber won the work
@@ -799,7 +856,7 @@ public class EvaluationSubscriber implements Closeable
                   && !this.isThisMessageForMe( message ) )
         {
             // Free to offer services again
-            this.unbook( "another subscriber won evaluation " + evaluationId );
+            this.unbook( evaluationId );
         }
         // Request for consumption and the message belongs to me
         else if ( this.isThisMessageForMe( message ) )
@@ -852,7 +909,7 @@ public class EvaluationSubscriber implements Closeable
             this.status.registerEvaluationCompleted( evaluationId );
 
             // Unbook the subscriber if subscriber booking is in force
-            this.unbook( EvaluationSubscriber.EVALUATION + evaluationId + " completed" );
+            this.unbook( evaluationId );
         }
     }
 
@@ -1243,13 +1300,10 @@ public class EvaluationSubscriber implements Closeable
                 EvaluationConsumer consumer = this.evaluations.get( evaluationId );
                 consumer.markEvaluationFailedOnConsumption( exception );
             }
-
-            // Unbook the subscriber if subscriber booking is in force
-            this.unbook( EvaluationSubscriber.EVALUATION + evaluationId + " failed" );
         }
         catch ( JMSException | UnrecoverableSubscriberException e )
         {
-            String message = "Subscriber " + this.getClientId()
+            String message = SUBSCRIBER + this.getClientId()
                              + " encountered an error while marking "
                              + EVALUATION
                              + evaluationId
@@ -1257,9 +1311,14 @@ public class EvaluationSubscriber implements Closeable
 
             LOGGER.error( message, e );
         }
+        finally
+        {
+            // Add to the list of failed evaluations
+            this.status.registerEvaluationFailed( evaluationId );
 
-        // Add to the list of failed evaluations
-        this.status.registerEvaluationFailed( evaluationId );
+            // Unbook the subscriber if subscriber booking is in force
+            this.unbook( evaluationId );
+        }
     }
 
     /**
@@ -1386,10 +1445,38 @@ public class EvaluationSubscriber implements Closeable
      * 
      * @param status the evaluation status message with the consumer request
      * @param evaluationId the identifier of the evaluation for which services should be offered
+     * @throws IllegalArgumentException of the status message is not a request for formats
      */
 
     private void offerServices( EvaluationStatus status, String evaluationId )
     {
+        CompletionStatus completionStatus = status.getCompletionStatus();
+
+        // Request for a consumer?
+        if ( completionStatus != CompletionStatus.CONSUMER_REQUIRED )
+        {
+            throw new IllegalArgumentException( "Cannot offer services without a request for services. "
+                                                + "Expected "
+                                                + CompletionStatus.CONSUMER_REQUIRED
+                                                + " but found "
+                                                + completionStatus
+                                                + "." );
+        }
+
+        // Was the subscriber built for a single evaluation? If so, do not offer
+        // TODO: remove this logic when all subscribers are in long-running processes, serving many evaluations
+        if ( Objects.nonNull( this.evaluationToServe ) && !evaluationId.equals( this.evaluationToServe ) )
+        {
+            LOGGER.debug( "Subscriber {} was notified of {} for evaluation {} but will not offer services for this "
+                          + "evaluation because the subscriber was built for a different evaluation, {}.",
+                          this.getClientId(),
+                          CompletionStatus.CONSUMER_REQUIRED,
+                          evaluationId,
+                          this.evaluationToServe );
+
+            return;
+        }
+
         // Only offer formats if the status message is non-specific or some required formats intersect the formats
         // offered, i.e., if the subscriber can potentially fulfill the request
         Collection<Format> formatsOffered = this.getConsumerDescription()
@@ -1414,9 +1501,19 @@ public class EvaluationSubscriber implements Closeable
     }
 
     /**
+     * @return true if the subscriber is booked, otherwise false
+     */
+
+    private boolean isBooked()
+    {
+        return EvaluationSubscriber.BOOKING_ENABLED && Objects.isNull( this.booked.get() );
+    }
+
+    /**
      * Attempts to "book" the subscriber and thereby prevent further offers for work. The subscriber is booked if there
      * is no evaluation underway. Always returns true if {@link EvaluationSubscriber.BOOKING_ENABLED} is false.
      * 
+     * @see #unbook(String)
      * @param evaluationId the evaluation identifier to use when booking the subscriber
      * @return true if the subscriber was booked or booking is disabled, false otherwise
      */
@@ -1425,6 +1522,8 @@ public class EvaluationSubscriber implements Closeable
     {
         if ( EvaluationSubscriber.BOOKING_ENABLED )
         {
+            // Set atomically
+            // Note that reference equality is used here and null == null
             boolean returnMe = this.booked.compareAndSet( null, evaluationId );
 
             if ( LOGGER.isDebugEnabled() )
@@ -1432,7 +1531,7 @@ public class EvaluationSubscriber implements Closeable
                 LOGGER.debug( "Attempted to book subscriber {} with evaluation {}. Success?: {}",
                               this.getClientId(),
                               evaluationId,
-                              booked );
+                              returnMe );
             }
 
             return returnMe;
@@ -1443,7 +1542,8 @@ public class EvaluationSubscriber implements Closeable
     }
 
     /**
-     * <p>Unbooks the subscriber, allowing it to offer services. This method should be called when:
+     * <p>Unbooks the subscriber if the specified evaluation identifier matches the identifier that was used to book the
+     * subscriber. Unbooking allows the subscriber to re-offer services. This method should be called when:
      * 
      * <ol>
      * <li>The booked evaluation succeeds;</li>
@@ -1451,19 +1551,35 @@ public class EvaluationSubscriber implements Closeable
      * <li>The offered evaluation is lost to another subscriber</li>
      * </ol>.
      * 
-     * @param reason the reason the evaluation was unbooked (to assist with logging)
+     * <p>The reason to provide the evaluation identifier is that unbooking should only happen once for the evaluation
+     * that booked the subscriber, just as booking should only happen once.
+     * 
+     * @see #book(String)
+     * @param evaluationId the evaluationId
      */
 
-    private void unbook( String reason )
+    private void unbook( String evaluationId )
     {
-        if ( LOGGER.isDebugEnabled() )
+        // Atomic reference compareAndSet uses identity equals, but content equals is needed
+        String existingReference = this.booked.get();
+        String referenceEquality = evaluationId;
+        if ( evaluationId.equals( existingReference ) )
         {
-            LOGGER.debug( "Unbooking subscriber {} so that it is free to offer services. Unbooked because {}.",
-                          this.getClientId(),
-                          reason );
+            referenceEquality = existingReference;
         }
 
-        this.booked.set( null );
+        // Set atomically
+        boolean unbooked = this.booked.compareAndSet( referenceEquality, null );
+
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Attempted to unbook subscriber {} with evaluation {}. Upon entry, the subscriber was booked "
+                          + "with evaluation {}. Success?: {}",
+                          this.getClientId(),
+                          referenceEquality,
+                          existingReference,
+                          unbooked );
+        }
     }
 
     /**
@@ -1512,7 +1628,7 @@ public class EvaluationSubscriber implements Closeable
         }
         catch ( EvaluationEventException e )
         {
-            throw new EvaluationEventException( "Subscriber "
+            throw new EvaluationEventException( SUBSCRIBER
                                                 + this.getClientId()
                                                 + " failed to publish an evaluation status message about "
                                                 + EVALUATION
@@ -1533,7 +1649,8 @@ public class EvaluationSubscriber implements Closeable
 
     /**
      * Notifies all clients that depend on this subscriber that it is still alive. The notification happens at a fixed
-     * time interval. Also closes a subscriber that is found to have failed.
+     * time interval of {@link EvaluationSubscriber#NOTIFY_ALIVE_MILLISECONDS}.. Also closes a subscriber that is found 
+     * to have failed.
      */
 
     private void checkAndNotifyStatusAtFixedInterval()
@@ -1634,12 +1751,58 @@ public class EvaluationSubscriber implements Closeable
     }
 
     /**
+     * @param evaluationConsumer the evaluation being consumed
+     * @return true if the evaluation has timed out in inactivity.
+     */
+
+    private boolean hasTimedOut( EvaluationConsumer evaluationConsumer )
+    {
+        return EvaluationSubscriber.EVALUATION_TIMEOUT.compareTo( evaluationConsumer.getDurationSinceLastProgress() ) < 0;
+    }
+
+    /**
+     * Registers an evaluation as timed out on inactivity.
+     * 
+     * @param evaluationConsumer the evaluation consumer
+     */
+
+    private void registerEvaluationTimedOut( EvaluationConsumer evaluationConsumer )
+    {
+        // Propagate the failure to listening clients
+        UnrecoverableEvaluationException exception =
+                new UnrecoverableEvaluationException( SUBSCRIBER + this.getClientId()
+                                                      + " has marked evaluation "
+                                                      + evaluationConsumer.getEvaluationId()
+                                                      + " as failed due to inactivity after "
+                                                      + EvaluationSubscriber.EVALUATION_TIMEOUT
+                                                      + "." );
+
+        try
+        {
+            // Evaluation is a consumption failure, because this subscriber decided to end it
+            // It will be swept away on the next iteration
+            evaluationConsumer.markEvaluationFailedOnConsumption( exception );
+        }
+        catch ( JMSException e )
+        {
+            LOGGER.warn( "Subscriber {} attempted to notify evaluation {} as timed out on inactivity, but "
+                         + "failed to send the notification.",
+                         this.getClientId(),
+                         evaluationConsumer.getEvaluationId() );
+        }
+
+        // Unbook the subscriber
+        this.unbook( evaluationConsumer.getEvaluationId() );
+    }
+
+    /**
      * Builds a subscriber.
      * 
      * @param consumerFactory the consumer factory
      * @param executorService the executor
      * @param broker the broker connection factory
      * @param durableSubscribers is true to create a subscriber whose corresponding broker nodes are durable
+     * @param evaluationToServe an optional identifier if an evaluation to serve with this subscriber
      * @throws NullPointerException if any input is null
      * @throws UnrecoverableSubscriberException if the subscriber cannot be instantiated for any other reason
      */
@@ -1647,7 +1810,8 @@ public class EvaluationSubscriber implements Closeable
     private EvaluationSubscriber( ConsumerFactory consumerFactory,
                                   ExecutorService executorService,
                                   BrokerConnectionFactory broker,
-                                  boolean durableSubscribers )
+                                  boolean durableSubscribers,
+                                  String evaluationToServe )
     {
         Objects.requireNonNull( consumerFactory );
         Objects.requireNonNull( executorService );
@@ -1667,6 +1831,7 @@ public class EvaluationSubscriber implements Closeable
         this.timer = new Timer( true );
         this.maximumRetries = broker.getMaximumMessageRetries();
         this.booked = new AtomicReference<>();
+        this.evaluationToServe = evaluationToServe;
 
         try
         {
