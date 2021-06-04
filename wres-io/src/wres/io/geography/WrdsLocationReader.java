@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import wres.io.geography.wrds.WrdsLocationRootDocument;
+import wres.io.geography.wrds.WrdsLocationRootDocumentV3;
 import wres.io.reading.PreIngestException;
 import wres.io.reading.wrds.ReadValueManager;
 import wres.io.utilities.WebClient;
@@ -43,6 +44,38 @@ public class WrdsLocationReader
      */
 
     public static WrdsLocationRootDocument read( URI uri )
+    {
+        byte[] rawResponseBytes = getRawResponseBytes(uri);
+        
+        try
+        {
+            return OBJECT_MAPPER.readValue( rawResponseBytes,
+                                            WrdsLocationRootDocument.class );
+        }
+        catch ( IOException ioe )
+        {
+            throw new PreIngestException( "Failed to parse document from "
+                                          + uri );
+        }
+    }
+
+    public static WrdsLocationRootDocumentV3 readV3( URI uri )
+    {
+        byte[] rawResponseBytes = getRawResponseBytes(uri);
+
+        try
+        {
+            return OBJECT_MAPPER.readValue( rawResponseBytes,
+                                            WrdsLocationRootDocumentV3.class );
+        }
+        catch ( IOException ioe )
+        {
+            throw new PreIngestException( "Failed to parse document from "
+                                          + uri );
+        }
+    }
+
+    private static byte[] getRawResponseBytes(URI uri)
     {
         Objects.requireNonNull( uri );
 
@@ -77,18 +110,10 @@ public class WrdsLocationReader
             LOGGER.debug( "Raw response, decoded as UTF-8: {}",
                           new String( rawResponseBytes, UTF_8 ) );
         }
-
-        try
-        {
-            return OBJECT_MAPPER.readValue( rawResponseBytes,
-                                            WrdsLocationRootDocument.class );
-        }
-        catch ( IOException ioe )
-        {
-            throw new PreIngestException( "Failed to parse document from "
-                                          + uri );
-        }
+        
+        return rawResponseBytes;
     }
+
 
     private static byte[] readFromWeb( URI uri )
     {

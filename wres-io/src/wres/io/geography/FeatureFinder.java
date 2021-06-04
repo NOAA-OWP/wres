@@ -26,6 +26,7 @@ import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.io.geography.wrds.WrdsLocationRootDocument;
+import wres.io.geography.wrds.WrdsLocationRootDocumentV3;
 import wres.io.reading.PreIngestException;
 
 /**
@@ -701,9 +702,21 @@ public class FeatureFinder
                                                   + "type or group value." );
             }
 
-            WrdsLocationRootDocument featureData = WrdsLocationReader.read( uri );
+            //Read the features from either V3 or older API.
+            List<WrdsLocation> wrdsLocations;
+            boolean useV3Reader = false;
+            if (useV3Reader)
+            {
+                WrdsLocationRootDocumentV3 featureData = WrdsLocationReader.readV3( uri );
+                wrdsLocations = featureData.getLocations();
+            }
+            else
+            {
+                WrdsLocationRootDocument featureData = WrdsLocationReader.read( uri );
+                wrdsLocations = featureData.getLocations();
+            }
 
-            for ( WrdsLocation wrdsLocation : featureData.getLocations() )
+            for ( WrdsLocation wrdsLocation : wrdsLocations )
             {
                 String leftName;
                 String rightName;
@@ -1039,9 +1052,21 @@ public class FeatureFinder
         URI uri = featureServiceBaseUri.resolve( fullPath )
                                        .normalize();
 
-        WrdsLocationRootDocument featureData = WrdsLocationReader.read( uri );
-        int countOfLocations = featureData.getLocations()
-                                          .size();
+        //Read features from either V3 or the older API.
+        List<WrdsLocation> wrdsLocations;
+        boolean useV3Reader = false;
+        if (useV3Reader)
+        {
+            WrdsLocationRootDocumentV3 featureData = WrdsLocationReader.readV3( uri );
+            wrdsLocations = featureData.getLocations();
+        }
+        else
+        {
+            WrdsLocationRootDocument featureData = WrdsLocationReader.read( uri );
+            wrdsLocations = featureData.getLocations();
+        }
+
+        int countOfLocations = wrdsLocations.size();
 
         if ( countOfLocations != featureNames.size() )
         {
@@ -1057,7 +1082,7 @@ public class FeatureFinder
         List<WrdsLocation> fromWasNullOrBlank = new ArrayList<>( 2 );
         List<WrdsLocation> toWasNullOrBlank = new ArrayList<>( 2 );
 
-        for ( WrdsLocation location : featureData.getLocations() )
+        for ( WrdsLocation location : wrdsLocations )
         {
             String original;
             String found;
