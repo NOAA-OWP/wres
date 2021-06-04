@@ -14,10 +14,13 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.geography.wrds.WrdsLocation;
+import wres.io.geography.wrds.version.WrdsLocationRootVersionDocument;
 import wres.io.reading.wrds.ReadValueManager;
 import wres.io.thresholds.exceptions.StreamIOException;
 import wres.io.thresholds.wrds.response.GeneralThresholdExtractor;
 import wres.io.thresholds.wrds.response.GeneralThresholdResponse;
+import wres.io.thresholds.wrds.response.ThresholdExtractor;
+import wres.io.thresholds.wrds.response.ThresholdResponse;
 import wres.io.utilities.WebClient;
 import wres.io.retrieval.UnitMapper;
 import wres.system.SystemSettings;
@@ -33,6 +36,12 @@ import java.net.URISyntaxException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * This test should be removed in the near future, once I've implemented fully the toggle that detects threshold
+ * version.
+ * @author Hank.Herr
+ *
+ */
 public final class GeneralWRDSReader
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WRDSReader.class );
@@ -146,6 +155,7 @@ public final class GeneralWRDSReader
                                         .map( thresholdResponse -> extract( thresholdResponse, threshold, unitMapper ) )
                                         .flatMap( featurePlusSetMap -> featurePlusSetMap.entrySet().stream() )
                                         .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
+            
         }
         catch ( StreamIOException streamReadingException )
         {
@@ -172,15 +182,16 @@ public final class GeneralWRDSReader
     }
 
     /**
-     * 
-     * @param response The response to parse.
-     * @param config The user declaration for the thresholds.
-     * @param desiredUnitMapper The target unit mapper.
-     * @return A map of WRDS feature to set of thresholds.
+     * @param responseBytes Array of bytes to parse.
+     * @param config The threshold configurations.
+     * @param desiredUnitMapper The desired units.
+     * @return A map of WRDS locations to thresholds, parsed using an appropriate version of the response.
+     * @throws StreamIOException
      */
-    protected static Map<WrdsLocation, Set<ThresholdOuter>> extract( GeneralThresholdResponse response,
+    protected static Map<WrdsLocation, Set<ThresholdOuter>> extract( byte[] responseBytes,
                                                                      ThresholdsConfig config,
                                                                      UnitMapper desiredUnitMapper )
+            throws StreamIOException
     {
         ThresholdsConfig.Source source = (ThresholdsConfig.Source) config.getCommaSeparatedValuesOrSource();
         ThresholdConstants.ThresholdDataType side = ThresholdConstants.ThresholdDataType.LEFT;
@@ -197,34 +208,84 @@ public final class GeneralWRDSReader
             operator = DataFactory.getThresholdOperator( config );
         }
 
-        GeneralThresholdExtractor extractor = new GeneralThresholdExtractor( response )
-                                                                                       .from( source.getProvider() )
-                                                                                       .operatesBy( operator )
-                                                                                       .onSide( side );
-
-        if ( source.getRatingProvider() != null )
+        try
         {
-            extractor.ratingFrom( source.getRatingProvider() );
-        }
+            WrdsLocationRootVersionDocument versionDoc = JSON_OBJECT_MAPPER.readValue( responseBytes, WrdsLocationRootVersionDocument.class );
+            
+            //Extract using V3 API reader.
+            if ( versionDoc.isDeploymentInfoPresent() )
+            {
+                GeneralThresholdResponse response =
+                        JSON_OBJECT_MAPPER.readValue( responseBytes, GeneralThresholdResponse.class );
+                GeneralThresholdExtractor extractor = new GeneralThresholdExtractor( response )
+                                                                                               .from( source.getProvider() )
+                                                                                               .operatesBy( operator )
+                                                                                               .onSide( side );
 
-        //Flow is the default if the parameterToMeasure is not specified.  Note that this 
-        //works for unified schema thresholds, such as recurrence flows, because the metadata
-        //does not specify the parameter, so that parameterToMeasure is ignored.
-        if ( ( source.getParameterToMeasure() != null )
-             && ( source.getParameterToMeasure().toLowerCase().equals( "stage" ) ) )
+                if ( source.getRatingProvider() != null )
+                {
+                    extractor.ratingFrom( source.getRatingProvider() );
+                }
+
+                //Flow is the default if the parameterToMeasure is not specified.  Note that this 
+                //works for unified schema thresholds, such as recurrence flows, because the metadata
+                //does not specify the parameter, so that parameterToMeasure is ignored.
+                if ( ( source.getParameterToMeasure() != null )
+                     && ( source.getParameterToMeasure().toLowerCase().equals( "stage" ) ) )
+                {
+                    extractor.readStage();
+                }
+                else
+                {
+                    extractor.readFlow();
+                }
+
+                extractor.convertTo( desiredUnitMapper );
+
+                return extractor.extract();
+            }
+            //Extract using V2 or older reader.
+            else //The deployment information is not available, implying its the older WRDS API.
+            {
+                ThresholdResponse response = JSON_OBJECT_MAPPER.readValue( responseBytes, ThresholdResponse.class );
+                ThresholdExtractor extractor = new ThresholdExtractor( response )
+                                                                                 .from( source.getProvider() )
+                                                                                 .operatesBy( operator )
+                                                                                 .onSide( side );
+
+                if ( source.getRatingProvider() != null )
+                {
+                    extractor.ratingFrom( source.getRatingProvider() );
+                }
+
+                //Flow is the default if the parameterToMeasure is not specified.  Note that this 
+                //works for unified schema thresholds, such as recurrence flows, because the metadata
+                //does not specify the parameter, so that parameterToMeasure is ignored.
+                if ( ( source.getParameterToMeasure() != null )
+                     && ( source.getParameterToMeasure().toLowerCase().equals( "stage" ) ) )
+                {
+                    extractor.readStage();
+                }
+                else
+                {
+                    extractor.readFlow();
+                }
+
+                extractor.convertTo( desiredUnitMapper );
+
+                return extractor.extract();
+            }
+        }
+        catch ( IOException ioe )
         {
-            extractor.readStage();
+            throw new StreamIOException( "Error encountered while requesting WRDS threshold data", ioe );
         }
-        else
-        {
-            extractor.readFlow();
-        }
-
-        extractor.convertTo( desiredUnitMapper );
-
-        return extractor.extract();
     }
 
+    /**
+     * @param features Features to group.
+     * @return The grouped features as a String.  
+     */
     protected static Set<String> groupLocations( Set<String> features )
     {
         Set<String> locationGroups = new HashSet<>();
@@ -252,14 +313,12 @@ public final class GeneralWRDSReader
         return locationGroups;
     }
 
+
     /**
-     * This either forwards the call to {@link #getRemoteResponse(URI)} if the URI
-     * starts with http or accesses the address as a file if not.
-     * @param address The URI from which to read.
-     * @return The response or null if problems occur access the URI.
-     * @throws StreamIOException If the URI call fails.
+     * This is protected to support testing.
+     * @return The response in byte[], where the URI can point to a file or a website.
      */
-    GeneralThresholdResponse getResponse( final URI address ) throws StreamIOException
+    protected byte[] getResponse( final URI address ) throws StreamIOException
     {
         LOGGER.debug( "Opening URI {}", address );
         try
@@ -280,7 +339,7 @@ public final class GeneralWRDSReader
                 try ( InputStream data = new FileInputStream( thresholdFile ) )
                 {
                     byte[] rawForecast = IOUtils.toByteArray( data );
-                    return JSON_OBJECT_MAPPER.readValue( rawForecast, GeneralThresholdResponse.class );
+                    return rawForecast;
                 }
             }
         }
@@ -290,13 +349,11 @@ public final class GeneralWRDSReader
         }
     }
 
+
     /**
-     * Uses Jackson to obtain the resposne for a given URI.
-     * @param inputAddress The URI
-     * @return The response or null if the code returned is in the 400s.
-     * @throws IOException If the URI call has issues.
+     * @return The response from the remote URI as bytes[].
      */
-    private static GeneralThresholdResponse getRemoteResponse( URI inputAddress ) throws IOException
+    private static byte[] getRemoteResponse( URI inputAddress ) throws IOException
     {
         try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( inputAddress ) )
         {
@@ -309,7 +366,7 @@ public final class GeneralWRDSReader
                 return null;
             }
 
-            return JSON_OBJECT_MAPPER.readValue( response.getResponse(), GeneralThresholdResponse.class );
+            return response.getResponse().readAllBytes();
         }
     }
 
