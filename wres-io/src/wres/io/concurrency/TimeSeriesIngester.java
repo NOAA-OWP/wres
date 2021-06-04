@@ -597,7 +597,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
     private long getFeatureId( FeatureKey featureKey ) throws SQLException
     {
         Features featuresCache = this.getFeaturesCache();
-        return featuresCache.getFeatureID( featureKey );
+        return featuresCache.getOrCreateFeatureId( featureKey );
     }
 
     private byte[] identifyTimeSeries( TimeSeries<?> timeSeries,

@@ -4,13 +4,12 @@ import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 
 import wres.config.generated.Polygon;
 import wres.config.generated.ProjectConfig;
@@ -28,126 +27,158 @@ import wres.util.NotImplementedException;
  * Caches details about Features
  * @author Christopher Tubbs
  */
-public class Features extends Cache<FeatureDetails, FeatureKey>
+public class Features
 {
     private static final int MAX_DETAILS = 5000;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Features.class);
-
-    private final Object detailLock = new Object();
-    private final Object keyLock = new Object();
     private final Database database;
+
+    private volatile boolean onlyReadFromDatabase = false;
+    private final Cache<Long,FeatureKey> keyToValue = Caffeine.newBuilder()
+                                                              .maximumSize( MAX_DETAILS )
+                                                              .build();
+    private final Cache<FeatureKey,Long> valueToKey = Caffeine.newBuilder()
+                                                              .maximumSize( MAX_DETAILS )
+                                                              .build();
 
     public Features( Database database )
     {
         this.database = database;
-        this.initializeDetails();
     }
 
-    @Override
-    protected Object getDetailLock()
+
+    /**
+     * Mark this instance as only being allowed to read from the database, in
+     * other words, not being allowed to add new features, but allowed to look
+     * for existing features. During ingest, read and create. During retrieval,
+     * read only.
+     */
+
+    public void setOnlyReadFromDatabase()
     {
-        return this.detailLock;
+        this.onlyReadFromDatabase = true;
     }
 
-    @Override
-    protected Object getKeyLock()
-    {
-        return this.keyLock;
-    }
-
-    @Override
-    protected Database getDatabase()
+    private Database getDatabase()
     {
         return this.database;
     }
 
 
-	/**
-	 * Returns the ID of a Feature from the global cache based on a full Feature specification
-	 * @param detail The full specification for a Feature
-	 * @return The ID for the specified feature
-	 * @throws SQLException Thrown if the ID could not be retrieved from the Database
-	 */
-    public Long getFeatureID( FeatureDetails detail )
-            throws SQLException
-	{
-	    LOGGER.trace("getFeatureID - args {}", detail);
-		return this.getID(detail);
-	}
-
-	public Long getFeatureID( FeatureKey key ) throws SQLException
+	public Long getOrCreateFeatureId( FeatureKey key ) throws SQLException
     {
-        LOGGER.trace( "getFeatureID with FeatureKey arg {}", key );
-        Long result;
-
-        synchronized ( this.keyLock )
+        if ( this.onlyReadFromDatabase )
         {
-            if ( !this.hasID( key ) )
-            {
-                LOGGER.trace( "getFeatureID with FeatureKey arg {} NOT in cache",
-                              key );
-                FeatureDetails featureDetails = new FeatureDetails( key );
-                this.addElement( featureDetails );
-                Long fakeResultForLRUPurposes = this.getID( key );
-                result = featureDetails.getId();
-            }
-            else
-            {
-                LOGGER.trace( "getFeatureID with FeatureKey arg {} FOUND in cache",
-                              key );
-                result = this.getID( key );
-            }
+            throw new IllegalStateException( "This instance now allows no new features, call another method!" );
         }
 
-        LOGGER.trace( "getFeatureId with FeatureKey arg {} returning result {}",
-                      key, result );
-        return result;
+        Long id = valueToKey.getIfPresent( key );
+
+        if ( id == null )
+        {
+            FeatureDetails featureDetails = new FeatureDetails( key );
+            featureDetails.save( this.getDatabase() );
+            id = featureDetails.getId();
+
+            if ( id == null )
+            {
+                throw new IllegalStateException( "Issue getting id from FeatureDetails" );
+            }
+
+            valueToKey.put( key, id );
+            keyToValue.put( id, key );
+        }
+
+        return id;
     }
 
+
     /**
-     * Given a db row id, find the FeatureDetails object for it.
+     * Given a db row id aka surrogate key, find the FeatureKey values for it.
      * Tries to find in the cache and if it is not there, reaches to the db.
+     * Also keeps in cache when found. This is a read-only-from-db operation.
      * @param featureId the db-instance-specific surrogate key for the feature
-     * @return the existing or new FeatureDetails
+     * @return the existing or new FeatureKey
      * @throws SQLException when communication with the database fails.
      */
 
-    public FeatureKey getFeatureKey( int featureId )
+    public FeatureKey getFeatureKey( long featureId )
             throws SQLException
     {
-        LOGGER.trace( "getFeatureKey called with {}", featureId );
-        for ( Map.Entry<FeatureKey,Long> cacheEntry :
-                this
-                        .getKeyIndex()
-                        .entrySet() )
+        FeatureKey value = keyToValue.getIfPresent( featureId );
+
+        if ( value == null )
         {
-            if ( cacheEntry.getValue() == featureId )
+            // Not found above, gotta find it.
+            Database database = this.getDatabase();
+            DataScripter dataScripter = new DataScripter( database );
+            dataScripter.addLine( "SELECT name, description, srid, wkt" );
+            dataScripter.addLine( "FROM wres.Feature" );
+            dataScripter.addLine( "WHERE feature_id = ?" );
+            dataScripter.addArgument( featureId );
+            dataScripter.setUseTransaction( false );
+            dataScripter.setMaxRows( 1 );
+            dataScripter.setHighPriority( true );
+
+            try ( DataProvider dataProvider = dataScripter.getData() )
             {
-                LOGGER.trace( "getFeatureKey found in cache id {}: {}",
-                              featureId, cacheEntry );
-                return cacheEntry.getKey();
+                String name = dataProvider.getString( "name" );
+                String description = dataProvider.getString( "description" );
+                Integer srid = dataProvider.getInt( "srid" );
+                String wkt = dataProvider.getString( "wkt" );
+                value = new FeatureKey( name, description, srid, wkt );
             }
+
+            keyToValue.put( featureId, value );
+            valueToKey.put( value, featureId );
         }
 
-        LOGGER.trace( "getFeatureKey is going to reach out to db for key {}",
-                      featureId );
-        // Not found above, gotta find it.
-        Database database = this.getDatabase();
-        DataScripter dataScripter = new DataScripter( database );
-        dataScripter.addLine( "SELECT name, description, srid, wkt" );
-        dataScripter.addLine( "FROM wres.Feature" );
-        dataScripter.addLine( "WHERE feature_id = ?" );
-        dataScripter.addArgument( featureId );
+        return value;
+    }
 
-        try ( DataProvider dataProvider = dataScripter.getData() )
+    /**
+     * Given a FeatureKey with values, find the db surrogate key for it.
+     * Tries to find in the cache and if it is not there, reaches to the db.
+     * Also keeps in cache when found. This is a read-only-from-db operation.
+     * @param featureKey the feature data
+     * @return the id of the feature
+     * @throws SQLException when communication with the database fails.
+     */
+
+    public Long getFeatureId( FeatureKey featureKey )
+            throws SQLException
+    {
+        Long id = valueToKey.getIfPresent( featureKey );
+
+        if ( id == null )
         {
-            String name = dataProvider.getString( "name" );
-            String description = dataProvider.getString( "description" );
-            Integer srid = dataProvider.getInt( "srid" );
-            String wkt = dataProvider.getString( "wkt" );
-            return new FeatureKey( name, description, srid, wkt );
+            // Not found above, gotta find it.
+            Database database = this.getDatabase();
+            DataScripter dataScripter = new DataScripter( database );
+            dataScripter.addLine( "SELECT feature_id" );
+            dataScripter.addLine( "FROM wres.Feature" );
+            dataScripter.addLine( "WHERE name = ?" );
+            dataScripter.addArgument( featureKey.getName() );
+            dataScripter.addTab().addLine( "AND description = ?" );
+            dataScripter.addArgument( featureKey.getDescription() );
+            dataScripter.addTab().addLine( "AND srid = ?" );
+            dataScripter.addArgument( featureKey.getSrid() );
+            dataScripter.addTab().addLine( "AND wkt = ?" );
+            dataScripter.addArgument( featureKey.getWkt() );
+            dataScripter.setUseTransaction( false );
+            dataScripter.setMaxRows( 1 );
+            dataScripter.setHighPriority( true );
+
+            try ( DataProvider dataProvider = dataScripter.getData() )
+            {
+                id = dataProvider.getLong( "feature_id" );
+            }
+
+            keyToValue.put( id, featureKey );
+            valueToKey.put( featureKey, id );
         }
+
+        return id;
     }
 
 
@@ -270,7 +301,6 @@ public class Features extends Cache<FeatureDetails, FeatureKey>
 
         try ( DataProvider dataProvider = scripter.getData() )
         {
-            LOGGER.info( "{}", dataProvider.getColumnNames() );
             while ( dataProvider.next() )
             {
                 double x = dataProvider.getDouble( "longitude" );
@@ -289,7 +319,6 @@ public class Features extends Cache<FeatureDetails, FeatureKey>
                 FeatureTuple featureTuple =
                         new FeatureTuple( featureKey, featureKey, featureKey );
                 featureTuples.add( featureTuple );
-                LOGGER.debug( "Added gridded feature: {}", featureKey );
             }
         }
 
@@ -372,73 +401,6 @@ public class Features extends Cache<FeatureDetails, FeatureKey>
                                                 + y );
         }
     }
-
-    @Override
-    public boolean hasID( FeatureKey key )
-    {
-        LOGGER.trace( "hasID( FeatureKey={} )", key );
-        synchronized ( this.getKeyLock() )
-        {
-            LOGGER.trace( "hasID( FeatureKey={} ) key.hasPrimaryKey() was false, matching on partial key...",
-                          key );
-
-            // Otherwise, scan the keys for a match on a partial key
-            boolean hasIt = false;
-
-            for ( FeatureKey featureKey : this.getKeyIndex().keySet() )
-            {
-                hasIt = featureKey.equals( key );
-                if ( hasIt )
-                {
-                    break;
-                }
-            }
-
-            LOGGER.trace( "hasID( FeatureKey={} ) key.hasPrimaryKey() was false, hasIt={}",
-                          key, hasIt );
-            return hasIt;
-        }
-    }
-
-    @Override
-    Long getID( FeatureKey key )
-    {
-        LOGGER.trace( "getID( FeatureKey={} )", key );
-        synchronized ( this.getKeyLock() )
-        {
-            LOGGER.trace( "getID( FeatureKey={} ) key.hasPrimaryKey() was false, matching on partial key...",
-                          key );
-            // Otherwise, scan the keys for a match on a partial key
-            Long id = null;
-            boolean foundIt = false;
-
-            for ( Map.Entry<FeatureKey, Long> keyId : this.getKeyIndex().entrySet() )
-            {
-                if ( keyId.getKey().equals( key ) )
-                {
-                    id = keyId.getValue();
-                    foundIt = true;
-                    break;
-                }
-            }
-
-            if ( foundIt && id == null )
-            {
-                LOGGER.debug( "The key of {} was found but the ID couldn't be retrieved.", key );
-            }
-
-            LOGGER.trace( "getID( FeatureKey={} ) key.hasPrimaryKey() was false, foundIt={}",
-                          key, foundIt );
-            return id;
-        }
-    }
-
-
-	@Override
-	protected int getMaxDetails() {
-		return MAX_DETAILS;
-	}
-
 
     /**
      * Get a comma separated description of a list of features.

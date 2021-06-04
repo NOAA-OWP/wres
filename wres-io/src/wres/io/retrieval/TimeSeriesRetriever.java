@@ -1545,7 +1545,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     {
         try
         {
-            return this.featuresCache.getFeatureID( this.getFeature() );
+            return this.featuresCache.getFeatureId( this.getFeature() );
         }
         catch ( SQLException se )
         {

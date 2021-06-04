@@ -369,6 +369,9 @@ project(':wres-io')
         // To accurately detect mime types of files.
         implementation 'org.apache.tika:tika-core:1.26'
 
+        // To cache
+        implementation 'com.github.ben-manes.caffeine:caffeine:3.0.2'
+
         // Because org.postgresql:postgresql uses JUL logging, bridge at runtime
         runtime 'org.slf4j:jul-to-slf4j:2.0.0-alpha1'
 
