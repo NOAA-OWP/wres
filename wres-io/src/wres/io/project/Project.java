@@ -125,6 +125,7 @@ public class Project
         this.hash = hash;
         this.variablesCache = new Variables( database );
         this.featuresCache = new Features( database );
+        this.featuresCache.setOnlyReadFromDatabase();
         this.ensemblesCache = new Ensembles( database );
     }
 

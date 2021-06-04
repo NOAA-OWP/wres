@@ -240,14 +240,16 @@ public class FeatureDetails extends CachedDetail<FeatureDetails, FeatureKey>
         if ( performedInsert )
         {
             this.id = script.getInsertedIds()
-                            .get( 0 )
-                            .intValue();
+                            .get( 0 );
         }
         else
         {
             DataScripter scriptWithId = new DataScripter( database );
             scriptWithId.setHighPriority( true );
-            scriptWithId.setUseTransaction( true );
+
+            // The insert has already happened, we are in the same thread, so
+            // there should be no need to serialize here, right?
+            scriptWithId.setUseTransaction( false );
             this.addSelect( scriptWithId );
 
             try ( DataProvider data = scriptWithId.getData() )
