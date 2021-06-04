@@ -170,26 +170,12 @@ public class ExternalThresholdReader {
                     }
 
                     //Naive toggle: use one of two versions depending on flag.
-                    boolean useVersion2API = false; 
-                    Map<WrdsLocation, Set<ThresholdOuter>> wrdsThresholds;
-                    if (useVersion2API)
-                    {
-                        wrdsThresholds = GeneralWRDSReader.readThresholds(
+                    Map<WrdsLocation, Set<ThresholdOuter>> wrdsThresholds = GeneralWRDSReader.readThresholds(
                             this.systemSettings,
                             thresholdsConfig,
                             this.desiredMeasurementUnitConverter,
                             this.features.stream().map(identifyFeatureName).collect(Collectors.toSet())
                         );
-                    }
-                    else
-                    {
-                        wrdsThresholds = WRDSReader.readThresholds(
-                            this.systemSettings,
-                            thresholdsConfig,
-                            this.desiredMeasurementUnitConverter,
-                            this.features.stream().map(identifyFeatureName).collect(Collectors.toSet())
-                        );
-                    }
 
                     // WRDS returns a series of identifiers that don't match to 'left' 'right', or 'baseline'.
                     // As a result, we have to look through the sources and find a consistent way to identify what id

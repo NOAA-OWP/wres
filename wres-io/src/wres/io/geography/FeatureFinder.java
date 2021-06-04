@@ -703,18 +703,7 @@ public class FeatureFinder
             }
 
             //Read the features from either V3 or older API.
-            List<WrdsLocation> wrdsLocations;
-            boolean useV3Reader = false;
-            if (useV3Reader)
-            {
-                WrdsLocationRootDocumentV3 featureData = WrdsLocationReader.readV3( uri );
-                wrdsLocations = featureData.getLocations();
-            }
-            else
-            {
-                WrdsLocationRootDocument featureData = WrdsLocationReader.read( uri );
-                wrdsLocations = featureData.getLocations();
-            }
+            List<WrdsLocation> wrdsLocations = WrdsLocationReader.read( uri );
 
             for ( WrdsLocation wrdsLocation : wrdsLocations )
             {
@@ -1053,19 +1042,7 @@ public class FeatureFinder
                                        .normalize();
 
         //Read features from either V3 or the older API.
-        List<WrdsLocation> wrdsLocations;
-        boolean useV3Reader = false;
-        if (useV3Reader)
-        {
-            WrdsLocationRootDocumentV3 featureData = WrdsLocationReader.readV3( uri );
-            wrdsLocations = featureData.getLocations();
-        }
-        else
-        {
-            WrdsLocationRootDocument featureData = WrdsLocationReader.read( uri );
-            wrdsLocations = featureData.getLocations();
-        }
-
+        List<WrdsLocation> wrdsLocations = WrdsLocationReader.read( uri );
         int countOfLocations = wrdsLocations.size();
 
         if ( countOfLocations != featureNames.size() )
