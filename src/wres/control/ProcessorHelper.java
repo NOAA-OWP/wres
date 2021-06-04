@@ -144,14 +144,18 @@ class ProcessorHelper
 
         try ( SharedWriters sharedWriters = ProcessorHelper.getSharedWriters( projectConfig,
                                                                               outputDirectory );
-              // Create a subscriber for the format writers that are within-process
+              // Create a subscriber for the format writers that are within-process. The subscriber is built for this
+              // evaluation only, and should not serve other evaluations, else there is a risk that short-running
+              // subscribers die without managing to serve the evaluations they promised to serve. This complexity 
+              // disappears when all subscribers are moved to separate, long-running, processes: #89868
               ConsumerFactory consumerFactory = new StatisticsConsumerFactory( consumerId,
                                                                                new HashSet<>( internalFormats ),
                                                                                netcdfWriters,
                                                                                projectConfig );
               EvaluationSubscriber formatsSubscriber = EvaluationSubscriber.of( consumerFactory,
                                                                                 executors.getProductExecutor(),
-                                                                                connections ); )
+                                                                                connections,
+                                                                                evaluationId ); )
         {
             // Restrict the subscribers for internally-delivered formats otherwise core clients may steal format writing
             // work from each other. This is expected insofar as all subscribers are par. However, core clients currently 
@@ -313,7 +317,8 @@ class ProcessorHelper
                                                     Executors executors,
                                                     SharedWriters sharedWriters,
                                                     List<NetcdfOutputWriter> netcdfWriters,
-                                                    Path outputDirectory ) throws IOException
+                                                    Path outputDirectory )
+            throws IOException
     {
         Evaluation evaluation = null;
 
@@ -494,7 +499,7 @@ class ProcessorHelper
         // Close an evaluation that failed
         finally
         {
-            if( Objects.nonNull( evaluation ) && evaluation.isFailed() )
+            if ( Objects.nonNull( evaluation ) && evaluation.isFailed() )
             {
                 evaluation.close();
             }
@@ -1003,11 +1008,11 @@ class ProcessorHelper
                                       Integer minimumSampleSize )
         {
             Objects.requireNonNull( thresholdsByMetric );
-            
+
             this.thresholdsByMetric = Collections.unmodifiableMap( thresholdsByMetric );
-            
+
             // Defaults to zero
-            if( Objects.isNull( minimumSampleSize ) )
+            if ( Objects.isNull( minimumSampleSize ) )
             {
                 LOGGER.debug( "Setting the minimum sample size to zero for metrics instance {}. ", this );
                 this.minimumSampleSize = 0;

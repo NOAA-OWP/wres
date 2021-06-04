@@ -12,6 +12,8 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,7 +38,6 @@ import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
-import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusMessageType;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Pairs;
 import wres.statistics.generated.Statistics;
@@ -80,23 +81,6 @@ import wres.statistics.generated.Statistics;
 public class Evaluation implements Closeable
 {
 
-    private static final String EVALUATION_STRING = "Evaluation ";
-
-    private static final String ENCOUNTERED_AN_ERROR = ", encountered an error: ";
-
-    private static final String WHILE_ATTEMPTING_TO_PUBLISH_A_MESSAGE_TO_EVALUATION = "While attempting to publish a "
-                                                                                      + "message to evaluation ";
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( Evaluation.class );
-
-    private static final String DISCOVERED_AN_EVALUATION_MESSAGE_WITH_MISSING_INFORMATION =
-            " discovered an evaluation message with missing information. ";
-
-    private static final String WHILE_PUBLISHING_TO_EVALUATION = "While publishing to evaluation ";
-
-    private static final String PUBLICATION_COMPLETE_ERROR = "Publication to this evaluation has been notified "
-                                                             + "complete and no further messages may be published.";
-
     /**
      * Default name for the queue on the amq.topic that accepts evaluation messages.
      */
@@ -120,6 +104,39 @@ public class Evaluation implements Closeable
      */
 
     static final String PAIRS_QUEUE = "pairs";
+
+    /** 
+     * Logger. 
+     */
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( Evaluation.class );
+
+    private static final String EVALUATION_STRING = "Evaluation ";
+
+    private static final String ENCOUNTERED_AN_ERROR = ", encountered an error: ";
+
+    private static final String WHILE_ATTEMPTING_TO_PUBLISH_A_MESSAGE_TO_EVALUATION = "While attempting to publish a "
+                                                                                      + "message to evaluation ";
+
+    private static final String DISCOVERED_AN_EVALUATION_MESSAGE_WITH_MISSING_INFORMATION =
+            " discovered an evaluation message with missing information. ";
+
+    private static final String WHILE_PUBLISHING_TO_EVALUATION = "While publishing to evaluation ";
+
+    private static final String PUBLICATION_COMPLETE_ERROR = "Publication to this evaluation has been notified "
+                                                             + "complete and no further messages may be published.";
+
+    /**
+     * The frequency with which to publish an evaluation-alive message in ms.
+     */
+
+    private static final long NOTIFY_ALIVE_MILLISECONDS = 100_000;
+
+    /**
+     * A status message indicating that the evaluation is ongoing.
+     */
+
+    private final EvaluationStatus statusOngoing;
 
     /**
      * A description of the evaluation.
@@ -229,6 +246,12 @@ public class Evaluation implements Closeable
      */
 
     private final ProducerFlowController flowController;
+
+    /**
+     * A timer task to publish information about the status of the evaluation.
+     */
+
+    private final Timer timer;
 
     /**
      * Returns the unique evaluation identifier.
@@ -424,13 +447,6 @@ public class Evaluation implements Closeable
 
             this.messageCount.getAndIncrement();
 
-            // Update the status
-            String message = "Published a new statistics message for evaluation " + this.getEvaluationId()
-                             + " with pool boundaries "
-                             + statistics.getPool();
-
-            this.notifyAlive( message, groupId );
-
             // Record group
             if ( Objects.nonNull( groupId ) )
             {
@@ -527,7 +543,7 @@ public class Evaluation implements Closeable
     public void markGroupPublicationCompleteReportedSuccess( String groupId )
     {
         Objects.requireNonNull( groupId );
-        
+
         AtomicInteger groupCount = new AtomicInteger( 0 );
 
         // Some messages published?
@@ -540,7 +556,8 @@ public class Evaluation implements Closeable
         else
         {
             LOGGER.warn( "Marking message group {} complete, but no statistics messages were published to this message "
-                    + "group.", groupId );
+                         + "group.",
+                         groupId );
         }
 
         CompletionStatus status = CompletionStatus.GROUP_PUBLICATION_COMPLETE;
@@ -643,7 +660,7 @@ public class Evaluation implements Closeable
         this.closeGracefully( this.evaluationStatusPublisher );
         this.closeGracefully( this.statisticsPublisher );
         this.closeGracefully( this.pairsPublisher );
-        
+
         // Close the tracker
         this.statusTracker.close();
 
@@ -997,7 +1014,7 @@ public class Evaluation implements Closeable
             this.queuesConstructed = new AtomicInteger();
         }
     }
-    
+
     /**
      * Returns the unique identifier of the client that is responsible for publishing the evaluation being tracked.
      * 
@@ -1106,36 +1123,18 @@ public class Evaluation implements Closeable
     }
 
     /**
-     * Notifies an existing evaluation as {@link CompletionStatus#EVALUATION_ONGOING} if it is, indeed, ongoing.
-     * 
-     * @param message the message to provide with the update
-     * @param groupId the message group identifier
+     * Notifies an existing evaluation as {@link CompletionStatus#EVALUATION_ONGOING}.
      */
 
-    private void notifyAlive( String message, String groupId )
+    private void notifyAlive()
     {
-        if ( this.isAlive() )
-        {
-            EvaluationStatus.Builder ongoing = EvaluationStatus.newBuilder()
-                                                               .setClientId( this.getClientId() )
-                                                               .setCompletionStatus( CompletionStatus.EVALUATION_ONGOING )
-                                                               .addStatusEvents( EvaluationStatusEvent.newBuilder()
-                                                                                                      .setEventType( StatusMessageType.INFO )
-                                                                                                      .setEventMessage( message ) );
-            if ( Objects.nonNull( groupId ) )
-            {
-                ongoing.setGroupId( groupId );
-            }
+        ByteBuffer status = ByteBuffer.wrap( this.statusOngoing.toByteArray() );
+        this.internalPublish( status,
+                              this.evaluationStatusPublisher,
+                              Evaluation.EVALUATION_STATUS_QUEUE,
+                              null );
 
-            ByteBuffer status = ByteBuffer.wrap( ongoing.build()
-                                                        .toByteArray() );
-            this.internalPublish( status,
-                                  this.evaluationStatusPublisher,
-                                  Evaluation.EVALUATION_STATUS_QUEUE,
-                                  groupId );
-
-            this.statusMessageCount.getAndIncrement();
-        }
+        this.statusMessageCount.getAndIncrement();
     }
 
     /**
@@ -1372,6 +1371,13 @@ public class Evaluation implements Closeable
         this.isStopped = new AtomicBoolean();
         this.isClosed = new AtomicBoolean();
         this.flowController = new ProducerFlowController( this );
+        this.statusOngoing = EvaluationStatus.newBuilder()
+                                             .setClientId( this.getClientId() )
+                                             .setCompletionStatus( CompletionStatus.EVALUATION_ONGOING )
+                                             .build();
+
+        // Timer running in a daemon thread
+        this.timer = new Timer( true );
 
         try
         {
@@ -1437,6 +1443,9 @@ public class Evaluation implements Closeable
 
         // Publish the evaluation description  and update the evaluation status
         this.internalPublish( this.evaluationDescription );
+
+        // Notify that the evaluation is alive
+        this.checkAndNotifyStatusAtFixedInterval( this, this.timer );
 
         LOGGER.info( "Finished creating evaluation {}, which negotiated these subscribers by output format type: {}.",
                      this.evaluationId,
@@ -1526,6 +1535,34 @@ public class Evaluation implements Closeable
         this.internalPublish( body, this.evaluationPublisher, Evaluation.EVALUATION_QUEUE, null );
 
         this.messageCount.getAndIncrement();
+    }
+
+    /**
+     * Notifies all clients that depend on this evaluation that it is still alive. The notification happens at a fixed
+     * time interval of {@link Evaluation#NOTIFY_ALIVE_MILLISECONDS}.
+     * 
+     * @param evaluation the evaluation
+     * @param timer the timer
+     */
+
+    private void checkAndNotifyStatusAtFixedInterval( Evaluation evaluation, Timer timer )
+    {
+        // Create a timer task to update any listening clients that the evaluation is alive in case of long-running 
+        // statistics tasks
+        TimerTask updater = new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                if ( evaluation.isAlive() )
+                {
+
+                    evaluation.notifyAlive();
+                }
+            }
+        };
+
+        timer.schedule( updater, 0, Evaluation.NOTIFY_ALIVE_MILLISECONDS );
     }
 
     /**
