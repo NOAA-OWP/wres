@@ -163,14 +163,16 @@ public class EnsembleRetrieverFactoryTest
         // Create the tables
         this.addTheDatabaseAndTables();
 
+        // Project depends on features cache. With ensemblesCache up here, NPE!
+        this.featuresCache = new Features( this.wresDatabase );
+
         // Add some data for testing
         this.addTwoForecastTimeSeriesEachWithFiveEventsToTheDatabase();
         this.addAnObservedTimeSeriesWithTenEventsToTheDatabase();
 
         // Create the caches/orms
-        this.featuresCache = new Features( this.wresDatabase );
         this.ensemblesCache = new Ensembles( this.wresDatabase );
-        
+
         // Create the retriever factory to test
         this.createEnsembleRetrieverFactory();
     }
@@ -511,6 +513,7 @@ public class EnsembleRetrieverFactoryTest
         Project project =
                 new Project( this.mockSystemSettings,
                              this.wresDatabase,
+                             this.featuresCache,
                              this.mockExecutor,
                              new ProjectConfig( null,
                                                 null,

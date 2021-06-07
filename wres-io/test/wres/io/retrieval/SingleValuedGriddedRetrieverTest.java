@@ -47,6 +47,7 @@ import wres.grid.client.Fetcher;
 import wres.grid.client.Request;
 import wres.grid.client.SingleValuedTimeSeriesResponse;
 import wres.grid.reading.GriddedReader;
+import wres.io.data.caching.Features;
 import wres.io.data.details.SourceDetails;
 import wres.io.project.Project;
 import wres.io.utilities.DataScripter;
@@ -247,6 +248,7 @@ public class SingleValuedGriddedRetrieverTest
         Project project =
                 new Project( this.mockSystemSettings,
                              this.wresDatabase,
+                             new Features( this.wresDatabase ),
                              this.mockExecutor,
                              new ProjectConfig( null, null, null, null, null, "test_gridded_project" ),
                              PROJECT_HASH );

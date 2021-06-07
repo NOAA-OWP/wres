@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.Features;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.PreIngestException;
@@ -36,6 +37,7 @@ public class Projects
 
     private static Pair<Project,Boolean> getProject( SystemSettings systemSettings,
                                                      Database database,
+                                                     Features featuresCache,
                                                      Executor executor,
                                                      ProjectConfig projectConfig,
                                                      String[] leftHashes,
@@ -45,6 +47,7 @@ public class Projects
     {
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( database );
+        Objects.requireNonNull( featuresCache );
         Objects.requireNonNull( executor );
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( leftHashes );
@@ -58,6 +61,7 @@ public class Projects
 
         Project details = new Project( systemSettings,
                                        database,
+                                       featuresCache,
                                        executor,
                                        projectConfig,
                                        identity );
@@ -84,6 +88,7 @@ public class Projects
      */
     public static Project getProjectFromIngest( SystemSettings systemSettings,
                                                 Database database,
+                                                Features featuresCache,
                                                 Executor executor,
                                                 ProjectConfig projectConfig,
                                                 List<IngestResult> ingestResults )
@@ -113,6 +118,7 @@ public class Projects
         // should leave space on heap for creating collections in the following.
         return Projects.getProjectFromIngestStepTwo( systemSettings,
                                                      database,
+                                                     featuresCache,
                                                      executor,
                                                      projectConfig,
                                                      leftIds,
@@ -123,6 +129,7 @@ public class Projects
 
     private static Project getProjectFromIngestStepTwo( SystemSettings systemSettings,
                                                         Database database,
+                                                        Features featuresCache,
                                                         Executor executor,
                                                         ProjectConfig projectConfig,
                                                         long[] leftIds,
@@ -231,6 +238,7 @@ public class Projects
         Pair<Project,Boolean> detailsResult =
                 Projects.getProject( systemSettings,
                                      database,
+                                     featuresCache,
                                      executor,
                                      projectConfig,
                                      leftHashes,

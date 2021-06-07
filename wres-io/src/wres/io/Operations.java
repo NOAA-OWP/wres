@@ -539,6 +539,7 @@ public final class Operations {
         {
             result = Projects.getProjectFromIngest( systemSettings,
                                                     database,
+                                                    featuresCache,
                                                     executor,
                                                     projectConfig,
                                                     safeToShareResults );

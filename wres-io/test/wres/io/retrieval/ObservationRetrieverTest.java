@@ -387,6 +387,7 @@ public class ObservationRetrieverTest
         Project project =
                 new Project( this.mockSystemSettings,
                              this.wresDatabase,
+                             this.featuresCache,
                              this.mockExecutor,
                              new ProjectConfig( null,
                                                 null,
