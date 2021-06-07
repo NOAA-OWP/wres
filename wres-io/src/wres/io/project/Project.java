@@ -109,6 +109,7 @@ public class Project
 
     public Project( SystemSettings systemSettings,
                     Database database,
+                    Features featuresCache,
                     Executor executor,
                     ProjectConfig projectConfig,
                     String hash )
@@ -124,7 +125,7 @@ public class Project
         this.projectConfig = projectConfig;
         this.hash = hash;
         this.variablesCache = new Variables( database );
-        this.featuresCache = new Features( database );
+        this.featuresCache = featuresCache;
         this.featuresCache.setOnlyReadFromDatabase();
         this.ensemblesCache = new Ensembles( database );
     }

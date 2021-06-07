@@ -157,14 +157,16 @@ public class EnsembleForecastRetrieverTest
         // Create the tables
         this.addTheDatabaseAndTables();
 
+        // Project depends on features cache. With ensemblesCache up here, NPE!
+        this.featuresCache = new Features( this.wresDatabase );
+
         // Add some data for testing
         this.addOneForecastTimeSeriesWithFiveEventsAndThreeMembersToTheDatabase();
 
         // Create the unit mapper
         this.unitMapper = UnitMapper.of( this.wresDatabase, UNITS );
-        
+
         // Create the orms
-        this.featuresCache = new Features( this.wresDatabase );
         this.ensemblesCache = new Ensembles( this.wresDatabase );
     }
 
@@ -413,6 +415,7 @@ public class EnsembleForecastRetrieverTest
         Project project =
                 new Project( this.mockSystemSettings,
                              this.wresDatabase,
+                             this.featuresCache,
                              this.mockExecutor,
                              new ProjectConfig( null,
                                                 null,

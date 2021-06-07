@@ -386,6 +386,7 @@ public class SingleValuedForecastRetrieverTest
         Project project =
                 new Project( this.mockSystemSettings,
                              this.wresDatabase,
+                             this.featuresCache,
                              this.mockExecutor,
                              new ProjectConfig( null,
                                                 null,

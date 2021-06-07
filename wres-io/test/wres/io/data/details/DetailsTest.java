@@ -21,6 +21,7 @@ import static org.junit.Assert.assertTrue;
 
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
+import wres.io.data.caching.Features;
 import wres.io.project.Project;
 import wres.io.utilities.TestDatabase;
 import wres.system.SystemSettings;
@@ -32,6 +33,7 @@ public class DetailsTest
     private HikariDataSource dataSource;
     private @Mock SystemSettings mockSystemSettings;
     private wres.io.utilities.Database wresDatabase;
+    private Features featureCache;
     private @Mock Executor mockExecutor;
     private Connection rawConnection;
     private Database liquibaseDatabase;
@@ -54,7 +56,8 @@ public class DetailsTest
 
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
         // Set up a liquibase database to run migrations against.
-        this.liquibaseDatabase = this.testDatabase.createNewLiquibaseDatabase( this.rawConnection );        
+        this.liquibaseDatabase = this.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
+        this.featureCache = new Features( this.wresDatabase );
     }
 
     @Test
@@ -87,6 +90,7 @@ public class DetailsTest
 
         Project project = new Project( this.mockSystemSettings,
                                        this.wresDatabase,
+                                       this.featureCache,
                                        this.mockExecutor,
                                        new ProjectConfig( null, null, null, null, null, null ),
                                                      "321" );
