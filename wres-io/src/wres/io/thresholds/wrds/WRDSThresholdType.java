@@ -1,4 +1,4 @@
-package wres.io.thresholds.wrds.response;
+package wres.io.thresholds.wrds;
 
 /**
  * The WRDS variable that a threshold applies to

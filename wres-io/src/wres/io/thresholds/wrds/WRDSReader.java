@@ -16,10 +16,10 @@ import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.io.reading.wrds.ReadValueManager;
 import wres.io.thresholds.exceptions.StreamIOException;
-import wres.io.thresholds.wrds.response.ThresholdExtractor;
+import wres.io.thresholds.wrds.v2.ThresholdExtractor;
+import wres.io.thresholds.wrds.v2.ThresholdResponse;
 import wres.io.utilities.WebClient;
 import wres.io.retrieval.UnitMapper;
-import wres.io.thresholds.wrds.response.ThresholdResponse;
 import wres.system.SystemSettings;
 
 import javax.net.ssl.SSLContext;

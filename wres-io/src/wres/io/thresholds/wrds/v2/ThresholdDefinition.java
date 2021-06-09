@@ -1,4 +1,4 @@
-package wres.io.thresholds.wrds.response;
+package wres.io.thresholds.wrds.v2;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import wres.datamodel.OneOrTwoDoubles;
@@ -7,6 +7,7 @@ import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.io.retrieval.UnitMapper;
+import wres.io.thresholds.wrds.WRDSThresholdType;
 
 import java.io.Serializable;
 import java.util.HashSet;

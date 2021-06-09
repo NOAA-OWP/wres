@@ -16,7 +16,8 @@ import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.io.retrieval.UnitMapper;
-import wres.io.thresholds.wrds.response.*;
+import wres.io.thresholds.wrds.v3.GeneralThresholdDefinition;
+import wres.io.thresholds.wrds.v3.GeneralThresholdResponse;
 import wres.system.SystemSettings;
 
 import java.io.IOException;
