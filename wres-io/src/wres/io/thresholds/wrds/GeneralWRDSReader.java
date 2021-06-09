@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
  */
 public final class GeneralWRDSReader
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( WRDSReader.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( GeneralWRDSReader.class );
     private static Pair<SSLContext, X509TrustManager> SSL_CONTEXT = ReadValueManager.getSslContextTrustingDodSigner();
     private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT, true );
     private static final ObjectMapper JSON_OBJECT_MAPPER =
