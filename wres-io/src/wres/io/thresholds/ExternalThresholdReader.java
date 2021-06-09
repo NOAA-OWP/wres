@@ -13,7 +13,6 @@ import wres.io.config.ConfigHelper;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.io.retrieval.UnitMapper;
 import wres.io.thresholds.csv.CSVThresholdReader;
-import wres.io.thresholds.wrds.WRDSReader;
 import wres.io.thresholds.wrds.GeneralWRDSReader;
 import wres.system.SystemSettings;
 

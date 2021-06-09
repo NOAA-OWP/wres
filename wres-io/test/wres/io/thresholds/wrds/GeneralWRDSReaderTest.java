@@ -217,7 +217,7 @@ public class GeneralWRDSReaderTest
     {
         Set<String> desiredFeatures =
                 DESIRED_FEATURES.stream().map( WrdsLocation::getNwsLid ).collect( Collectors.toSet() );
-        Set<String> groupedLocations = WRDSReader.groupLocations( desiredFeatures );
+        Set<String> groupedLocations = GeneralWRDSReader.groupLocations( desiredFeatures );
         Assert.assertEquals( groupedLocations.size(), 3 );
 
         StringJoiner firstGroupBuilder = new StringJoiner( "," );
@@ -227,17 +227,17 @@ public class GeneralWRDSReaderTest
 
         Iterator<String> desiredIterator = desiredFeatures.iterator();
 
-        for ( int i = 0; i < WRDSReader.LOCATION_REQUEST_COUNT; i++ )
+        for ( int i = 0; i < GeneralWRDSReader.LOCATION_REQUEST_COUNT; i++ )
         {
             firstGroupBuilder.add( desiredIterator.next() );
         }
 
-        for ( int i = 0; i < WRDSReader.LOCATION_REQUEST_COUNT; i++ )
+        for ( int i = 0; i < GeneralWRDSReader.LOCATION_REQUEST_COUNT; i++ )
         {
             secondGroupBuilder.add( desiredIterator.next() );
         }
 
-        for ( int i = 0; i < WRDSReader.LOCATION_REQUEST_COUNT && desiredIterator.hasNext(); i++ )
+        for ( int i = 0; i < GeneralWRDSReader.LOCATION_REQUEST_COUNT && desiredIterator.hasNext(); i++ )
         {
             thirdGroupBuilder.add( desiredIterator.next() );
         }
