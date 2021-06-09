@@ -25,8 +25,8 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.geography.wrds.WrdsLocation;
-import wres.io.geography.wrds.WrdsLocationRootDocument;
-import wres.io.geography.wrds.WrdsLocationRootDocumentV3;
+import wres.io.geography.wrds.v2.WrdsLocationRootDocument;
+import wres.io.geography.wrds.v3.WrdsLocationRootDocumentV3;
 import wres.io.reading.PreIngestException;
 
 /**

@@ -1,4 +1,4 @@
-package wres.io.thresholds.wrds.response;
+package wres.io.thresholds.wrds.v2;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
