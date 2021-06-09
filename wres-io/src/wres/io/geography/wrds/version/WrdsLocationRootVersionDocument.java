@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import wres.io.geography.wrds.WrdsLocationInformation;
+import wres.io.geography.wrds.v3.WrdsLocationInformation;
 
 /*
 Parse deployment and version information from JSON that starts like this: 

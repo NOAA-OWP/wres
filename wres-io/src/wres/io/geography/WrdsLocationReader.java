@@ -20,8 +20,8 @@ import org.slf4j.LoggerFactory;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import wres.io.geography.wrds.WrdsLocation;
-import wres.io.geography.wrds.WrdsLocationRootDocument;
-import wres.io.geography.wrds.WrdsLocationRootDocumentV3;
+import wres.io.geography.wrds.v2.WrdsLocationRootDocument;
+import wres.io.geography.wrds.v3.WrdsLocationRootDocumentV3;
 import wres.io.geography.wrds.version.WrdsLocationRootVersionDocument;
 import wres.io.reading.PreIngestException;
 import wres.io.reading.wrds.ReadValueManager;

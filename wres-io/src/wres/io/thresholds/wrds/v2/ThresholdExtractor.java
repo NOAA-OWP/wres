@@ -1,13 +1,13 @@
-package wres.io.thresholds.wrds.response;
+package wres.io.thresholds.wrds.v2;
 
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.io.retrieval.UnitMapper;
 import wres.io.thresholds.exceptions.NoThresholdsFoundException;
+import wres.io.thresholds.wrds.WRDSThresholdType;
 
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -16,14 +16,14 @@ import java.util.stream.Collectors;
 /**
  * Extracts a mapping between features and their thresholds from a WRDS formatted thresholds document
  */
-public class GeneralThresholdExtractor
+public class ThresholdExtractor
 {
     /**
      * Create an Extractor from the given response
      *
      * @param response The deserialized Thresholds document
      */
-    public GeneralThresholdExtractor( GeneralThresholdResponse response )
+    public ThresholdExtractor( ThresholdResponse response )
     {
         this.response = response;
     }
@@ -34,7 +34,7 @@ public class GeneralThresholdExtractor
      * @param provider The name of the provider, like 'NWS-NRLDB'
      * @return The updated extractor
      */
-    public GeneralThresholdExtractor from( String provider )
+    public ThresholdExtractor from( String provider )
     {
         this.provider = provider;
         return this;
@@ -46,7 +46,7 @@ public class GeneralThresholdExtractor
      * @param ratingProvider The name of the provider of the rating curve, like 'NRLDB'
      * @return The updated extractor
      */
-    public GeneralThresholdExtractor ratingFrom( String ratingProvider )
+    public ThresholdExtractor ratingFrom( String ratingProvider )
     {
         this.ratingProvider = ratingProvider;
         return this;
@@ -58,7 +58,7 @@ public class GeneralThresholdExtractor
      * @param side The side of the data that the threshold will apply to
      * @return The updated extractor
      */
-    public GeneralThresholdExtractor onSide( ThresholdConstants.ThresholdDataType side )
+    public ThresholdExtractor onSide( ThresholdConstants.ThresholdDataType side )
     {
         this.sides = side;
         return this;
@@ -70,7 +70,7 @@ public class GeneralThresholdExtractor
      * @param useCalculated Whether or not to use calculated thresholds
      * @return The updated extractor
      */
-    public GeneralThresholdExtractor useCalculatedValues( boolean useCalculated )
+    public ThresholdExtractor useCalculatedValues( boolean useCalculated )
     {
         this.calculated = useCalculated;
         return this;
@@ -82,7 +82,7 @@ public class GeneralThresholdExtractor
      * @param thresholdOperator The operator
      * @return The updated extractor
      */
-    public GeneralThresholdExtractor operatesBy( ThresholdConstants.Operator thresholdOperator )
+    public ThresholdExtractor operatesBy( ThresholdConstants.Operator thresholdOperator )
     {
         this.thresholdOperator = thresholdOperator;
         return this;
@@ -93,7 +93,7 @@ public class GeneralThresholdExtractor
      *
      * @return The updated extractor
      */
-    public GeneralThresholdExtractor readFlow()
+    public ThresholdExtractor readFlow()
     {
         this.thresholdType = WRDSThresholdType.FLOW;
         return this;
@@ -104,13 +104,13 @@ public class GeneralThresholdExtractor
      *
      * @return The updated extractor
      */
-    public GeneralThresholdExtractor readStage()
+    public ThresholdExtractor readStage()
     {
         this.thresholdType = WRDSThresholdType.STAGE;
         return this;
     }
 
-    public GeneralThresholdExtractor convertTo( UnitMapper mapper )
+    public ThresholdExtractor convertTo( UnitMapper mapper )
     {
         this.desiredUnitMapper = mapper;
         return this;
@@ -125,12 +125,12 @@ public class GeneralThresholdExtractor
     {
         Objects.requireNonNull( this.response, "A valid response was not passed to extract" );
 
-        Collection<GeneralThresholdDefinition> thresholdDefinitions = this.response.getThresholds();
+        Collection<ThresholdDefinition> thresholdDefinitions = this.response.getThresholds();
 
         // Check that the user-declared filters return one or more locations with thresholds
         Set<String> providers = thresholdDefinitions.stream()
                                                     .filter( next -> Objects.nonNull( next.getThresholdProvider() ) )
-                                                    .map( GeneralThresholdDefinition::getThresholdProvider )
+                                                    .map( ThresholdDefinition::getThresholdProvider )
                                                     .collect( Collectors.toUnmodifiableSet() );
 
         if ( Objects.nonNull( this.provider ) && !providers.contains( this.provider ) )
@@ -148,7 +148,7 @@ public class GeneralThresholdExtractor
 
         Set<String> ratingsProviders = thresholdDefinitions.stream()
                                                            .filter( next -> Objects.nonNull( next.getRatingProvider() ) )
-                                                           .map( GeneralThresholdDefinition::getRatingProvider )
+                                                           .map( ThresholdDefinition::getRatingProvider )
                                                            .collect( Collectors.toUnmodifiableSet() );
 
         if ( Objects.nonNull( this.ratingProvider ) && !ratingsProviders.contains( this.ratingProvider ) )
@@ -164,44 +164,30 @@ public class GeneralThresholdExtractor
                                                   + ". Choose one of these providers instead." );
         }
 
-
-        Map<WrdsLocation, Set<ThresholdOuter>> resultsMap = new LinkedHashMap<>();
-
-        for ( GeneralThresholdDefinition definition : thresholdDefinitions )
-        {
-            //If the user specifies a threshold provider then it must match that found in the threshold for it 
-            //to be used.  If the user specifies a rating curve provider, then that must match as well.
-            //If either is unspecified (i.e., null), then it is not used to determine if a threshold is used.
-            if ( ( ( this.provider == null ) || definition.getThresholdProvider().equals( this.provider ) )
-                 && ( this.ratingProvider == null || definition.getRatingProvider().equals( this.ratingProvider ) ) )
-            {
-                Map<WrdsLocation, Set<ThresholdOuter>> singleResult = definition.getThresholds( this.thresholdType,
-                                                                                                this.thresholdOperator,
-                                                                                                this.sides,
-                                                                                                this.calculated,
-                                                                                                this.desiredUnitMapper );
-                WrdsLocation singleLocation = singleResult.keySet().iterator().next();
-                Set<ThresholdOuter> singleOuter = singleResult.values().iterator().next();
-
-                //Check for location already in map.  If so, add to existing set.  Otherwise, put new entry.
-                if ( resultsMap.containsKey( singleLocation ) )
-                {
-                    resultsMap.get( singleLocation ).addAll( singleOuter );
-                }
-                else
-                {
-                    resultsMap.put( singleLocation, singleOuter );
-                }
-            }
-        }
-
-        return resultsMap;
+        return thresholdDefinitions.stream()
+                                   .filter(
+                                            ( ThresholdDefinition definition ) -> definition.getThresholdProvider()
+                                                                                            .equals( this.provider )
+                                                                                  &&
+                                                                                  ( this.ratingProvider == null
+                                                                                    || definition.getRatingProvider()
+                                                                                                 .equals( this.ratingProvider ) ) )
+                                   .parallel()
+                                   .map(
+                                         definition -> definition.getThresholds(
+                                                                                 this.thresholdType,
+                                                                                 this.thresholdOperator,
+                                                                                 this.sides,
+                                                                                 this.calculated,
+                                                                                 this.desiredUnitMapper ) )
+                                   .flatMap( locationThresholds -> locationThresholds.entrySet().stream() )
+                                   .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
     }
 
     /**
      * The Threshold data from WRDS
      */
-    private final GeneralThresholdResponse response;
+    private final ThresholdResponse response;
 
     /**
      * The publisher of the threshold data
