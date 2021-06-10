@@ -31,11 +31,15 @@ then
 	fileStatus=`/bin/stat $TESTINGJ | grep Change | cut -d'.' -f1 | gawk '{print($2,$3)}'`
 	lastHours=`/wres_share/releases/install_scripts/testDateTime.py "$fileStatus"`
 	echo "$TESTINGJ has created/changed at $lastHours ago at $fileStatus" 2>&1 | /usr/bin/tee --append $LOGFILE
-	if [ $lastHours -gt 0 ]
+	if [ $lastHours -gt 2 ]
 	then	# Since that testingJ.txt lock file last for more than a hour, remove it!
 		echo -n "System up time " 2>&1 | /usr/bin/tee --append $LOGFILE
 		/bin/uptime -s | /usr/bin/tee --append $LOGFILE
-		rm -v $TESTINGJ | /usr/bin/tee --append $LOGFILE
+		#rm -v $TESTINGJ | /usr/bin/tee --append $LOGFILE
+		echo "The test has been last for $lastHours hours, still unfinished yet" | /usr/bin/tee --append $LOGFILE
+		#/usr/bin/mailx -F -A WRES_Setting -s "The test has been last for $lastHours hours, still unfinished yet" -v WRES_GROUP <<< `ls -l $TESTINGJ`
+		/usr/bin/mailx -F -A WRES_Setting -s "The test has been last for $lastHours hours, still unfinished yet" -v WRES_GROUP <<< `echo $fileStatus`
+		exit
 	else
 		echo "There is a system test running, now" 2>&1 | /usr/bin/tee --append $LOGFILE
 		/usr/bin/find -P $TOPPWD -maxdepth 1 -name "JUnit_systestsLog_*" -mtime +1 -exec rm -v {} \;  2>&1 | /usr/bin/tee --append $LOGFILE
@@ -309,7 +313,7 @@ then
 	cd outputs
 	/usr/bin/pwd 2>&1 | /usr/bin/tee --append $LOGFILE	
 	# remove outout archive older than 1 days.
-	find -P . -maxdepth 1 -name "wres_evaluation_output_*" -mtime +1 -exec rm -rf {} \; 2>&1 | /usr/bin/tee --append $LOGFILE
+	find -P . -maxdepth 1 -name "wres_evaluation_*" -mtime +1 -exec rm -rf {} \; 2>&1 | /usr/bin/tee --append $LOGFILE
 else
 	ls -d outputs 2>&1 | /usr/bin/tee --append $LOGFILE
 fi
