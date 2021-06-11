@@ -50,7 +50,6 @@ import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
@@ -197,7 +196,7 @@ public class EnsembleRetrieverFactoryTest
                                        STREAMFLOW,
                                        FAKE_FEATURE,
                                        "CFS" );
-        TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
+        TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
         TimeSeries<Double> expectedSeries =
                 builder.setMetadata( expectedMetadata )
                        .addEvent( Event.of( Instant.parse( T2023_04_01T01_00_00Z ), 30.0 ) )
@@ -240,7 +239,7 @@ public class EnsembleRetrieverFactoryTest
                                        STREAMFLOW,
                                        FAKE_FEATURE,
                                        "CFS" );
-        TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
+        TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
         TimeSeries<Double> expectedSeries =
                 builder.setMetadata( expectedMetadata )
                        .addEvent( Event.of( Instant.parse( T2023_04_01T03_00_00Z ), 44.0 ) )
@@ -281,7 +280,7 @@ public class EnsembleRetrieverFactoryTest
                                        STREAMFLOW,
                                        FAKE_FEATURE,
                                        "CFS" );
-        TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<>();
+        TimeSeries.Builder<Ensemble> builder = new TimeSeries.Builder<>();
 
         Labels expectedLabels = Labels.of( "ENS123", "ENS456", "ENS567" );
 
@@ -326,7 +325,7 @@ public class EnsembleRetrieverFactoryTest
                                        STREAMFLOW,
                                        FAKE_FEATURE,
                                        "CFS" );
-        TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<>();
+        TimeSeries.Builder<Ensemble> builder = new TimeSeries.Builder<>();
 
         Labels expectedLabels = Labels.of( "ENS123", "ENS456", "ENS567" );
 

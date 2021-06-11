@@ -16,7 +16,7 @@ import org.junit.Test;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.pools.pairs.PairingException;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
+import wres.datamodel.time.TimeSeries.Builder;
 
 /**
  * Tests the {@link TimeSeriesPairerByExactTime}
@@ -315,7 +315,7 @@ public class TimeSeriesPairerByExactTimeTest
         // First of four
         TimeSeries<Pair<Double, Double>> firstActual = pairer.pair( first, first );
         TimeSeries<Pair<Double, Double>> firstExpected =
-                new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_17T15_00_00Z,
+                new Builder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_17T15_00_00Z,
                                                                                   Pair.of( 73.0, 73.0 ) ) )
                                                              .addEvent( Event.of( T2551_03_17T18_00_00Z,
                                                                                   Pair.of( 79.0, 79.0 ) ) )
@@ -346,7 +346,7 @@ public class TimeSeriesPairerByExactTimeTest
         TimeSeries<Pair<Double, Double>> secondActual = pairer.pair( second, second );
 
         TimeSeries<Pair<Double, Double>> secondExpected =
-                new TimeSeriesBuilder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_18T03_00_00Z,
+                new Builder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_18T03_00_00Z,
                                                                                   Pair.of( 131.0, 131.0 ) ) )
                                                              .addEvent( Event.of( T2551_03_18T06_00_00Z,
                                                                                   Pair.of( 137.0, 137.0 ) ) )
@@ -422,11 +422,11 @@ public class TimeSeriesPairerByExactTimeTest
 
         TimeSeriesMetadata metadataOne = getBoilerplateMetadataWithTimeScale( Duration.ofMinutes( 1 ) );
         TimeSeries<Object> seriesOne =
-                new TimeSeries.TimeSeriesBuilder<>().setMetadata( metadataOne ).build();
+                new TimeSeries.Builder<>().setMetadata( metadataOne ).build();
 
         TimeSeriesMetadata metadataTwo = getBoilerplateMetadataWithTimeScale( Duration.ofHours( 1 ) );
         TimeSeries<Object> seriesTwo =
-                new TimeSeries.TimeSeriesBuilder<>().setMetadata( metadataTwo ).build();
+                new TimeSeries.Builder<>().setMetadata( metadataTwo ).build();
 
         PairingException exception = assertThrows( PairingException.class,
                                                    () -> pairer.pair( seriesOne, seriesTwo ) );

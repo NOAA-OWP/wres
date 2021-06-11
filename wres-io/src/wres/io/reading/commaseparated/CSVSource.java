@@ -462,7 +462,7 @@ public class CSVSource extends BasicSource
                                                 + lineNumber );
         }
 
-        TimeSeries.TimeSeriesBuilder<Double> builder = new TimeSeries.TimeSeriesBuilder<>();
+        TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
         builder.setMetadata( metadata );
 
         for ( Map.Entry<Instant,Double> events : trace.entrySet() )
@@ -556,8 +556,8 @@ public class CSVSource extends BasicSource
             i++;
         }
 
-        wres.datamodel.time.TimeSeries.TimeSeriesBuilder<Ensemble> builder =
-                new wres.datamodel.time.TimeSeries.TimeSeriesBuilder<>();
+        wres.datamodel.time.TimeSeries.Builder<Ensemble> builder =
+                new wres.datamodel.time.TimeSeries.Builder<>();
 
         // Because the iteration is over a sorted map, assuming same order here.
         SortedSet<String> traceNamesSorted = new TreeSet<>( traces.keySet() );

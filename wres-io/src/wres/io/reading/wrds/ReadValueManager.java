@@ -321,8 +321,8 @@ public class ReadValueManager
         // sense that a timeseries is a sequence of values in time.
         this.validateTimeseries( dataPointsList );
 
-        TimeSeries.TimeSeriesBuilder<Double> timeSeriesBuilder =
-                new TimeSeries.TimeSeriesBuilder<Double>().setMetadata( metadata );
+        TimeSeries.Builder<Double> timeSeriesBuilder =
+                new TimeSeries.Builder<Double>().setMetadata( metadata );
 
         for (DataPoint dataPoint : dataPointsList)
         {

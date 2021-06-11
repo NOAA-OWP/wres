@@ -50,7 +50,6 @@ import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.data.caching.Features;
 import wres.io.data.details.EnsembleDetails;
@@ -69,9 +68,11 @@ import wres.system.SystemSettings;
 
 public class SingleValuedRetrieverFactoryTest
 {
-    @Mock private SystemSettings mockSystemSettings;
+    @Mock
+    private SystemSettings mockSystemSettings;
     private wres.io.utilities.Database wresDatabase;
-    @Mock private Executor mockExecutor;
+    @Mock
+    private Executor mockExecutor;
     private Features featuresCache;
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
@@ -177,7 +178,7 @@ public class SingleValuedRetrieverFactoryTest
                                        STREAMFLOW,
                                        FAKE_FEATURE,
                                        "CFS" );
-        TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
+        TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
         TimeSeries<Double> expectedSeries =
                 builder.setMetadata( expectedMetadata )
                        .addEvent( Event.of( Instant.parse( T2023_04_01T01_00_00Z ), 30.0 ) )
@@ -202,7 +203,7 @@ public class SingleValuedRetrieverFactoryTest
 
         // The time window to select events
         TimeWindowOuter timeWindow = TimeWindowOuter.of( Instant.parse( T2023_04_01T02_00_00Z ),
-                                               Instant.parse( T2023_04_01T07_00_00Z ) );
+                                                         Instant.parse( T2023_04_01T07_00_00Z ) );
 
         // Get the actual left series
         List<TimeSeries<Double>> actualCollection = this.factoryToTest.getLeftRetriever( timeWindow )
@@ -220,7 +221,7 @@ public class SingleValuedRetrieverFactoryTest
                                        STREAMFLOW,
                                        FAKE_FEATURE,
                                        "CFS" );
-        TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
+        TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
         TimeSeries<Double> expectedSeries =
                 builder.setMetadata( expectedMetadata )
                        .addEvent( Event.of( Instant.parse( T2023_04_01T03_00_00Z ), 44.0 ) )
@@ -240,9 +241,9 @@ public class SingleValuedRetrieverFactoryTest
 
         // The time window to select events
         TimeWindowOuter timeWindow = TimeWindowOuter.of( Instant.parse( "2023-03-31T11:00:00Z" ),
-                                               Instant.parse( T2023_04_01T00_00_00Z ),
-                                               Instant.parse( T2023_04_01T01_00_00Z ),
-                                               Instant.parse( T2023_04_01T04_00_00Z ) );
+                                                         Instant.parse( T2023_04_01T00_00_00Z ),
+                                                         Instant.parse( T2023_04_01T01_00_00Z ),
+                                                         Instant.parse( T2023_04_01T04_00_00Z ) );
 
         // Get the actual left series
         List<TimeSeries<Double>> actualCollection = this.factoryToTest.getRightRetriever( timeWindow )
@@ -261,7 +262,7 @@ public class SingleValuedRetrieverFactoryTest
                                        STREAMFLOW,
                                        FAKE_FEATURE,
                                        "CFS" );
-        TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
+        TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
         TimeSeries<Double> expectedSeries =
                 builder.setMetadata( expectedMetadata )
                        .addEvent( Event.of( Instant.parse( T2023_04_01T02_00_00Z ), 37.0 ) )
@@ -279,9 +280,9 @@ public class SingleValuedRetrieverFactoryTest
 
         // The time window to select events
         TimeWindowOuter timeWindow = TimeWindowOuter.of( Instant.parse( "2023-03-31T11:00:00Z" ),
-                                               Instant.parse( T2023_04_01T00_00_00Z ),
-                                               Instant.parse( T2023_04_01T01_00_00Z ),
-                                               Instant.parse( T2023_04_01T04_00_00Z ) );
+                                                         Instant.parse( T2023_04_01T00_00_00Z ),
+                                                         Instant.parse( T2023_04_01T01_00_00Z ),
+                                                         Instant.parse( T2023_04_01T04_00_00Z ) );
 
         // Get the actual left series
         List<TimeSeries<Double>> actualCollection = this.factoryToTest.getBaselineRetriever( timeWindow )
@@ -300,7 +301,7 @@ public class SingleValuedRetrieverFactoryTest
                                        STREAMFLOW,
                                        FAKE_FEATURE,
                                        "CFS" );
-        TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
+        TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
         TimeSeries<Double> expectedSeries =
                 builder.setMetadata( expectedMetadata )
                        .addEvent( Event.of( Instant.parse( T2023_04_01T02_00_00Z ), 37.0 ) )
@@ -431,7 +432,7 @@ public class SingleValuedRetrieverFactoryTest
         Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
         Mockito.when( project.getDatabase() ).thenReturn( this.wresDatabase );
         Mockito.when( project.getFeaturesCache() ).thenReturn( this.featuresCache );
-        
+
         // Create the factory instance
         UnitMapper unitMapper = UnitMapper.of( this.wresDatabase, CFS );
         this.factoryToTest = SingleValuedRetrieverFactory.of( project,

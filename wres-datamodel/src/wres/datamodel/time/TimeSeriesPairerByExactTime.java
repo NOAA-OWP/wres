@@ -3,16 +3,16 @@ package wres.datamodel.time;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Predicate;
 
-import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
+import wres.datamodel.time.TimeSeries.Builder;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -146,41 +146,36 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
                           right.hashCode(),
                           TimePairingType.REFERENCE_TIME_AND_VALID_TIME );
 
-            return new TimeSeriesBuilder<Pair<L, R>>().setMetadata( right.getMetadata() )
+            return new Builder<Pair<L, R>>().setMetadata( right.getMetadata() )
                                                       .build();
         }
 
-        Map<Instant, Event<L>> mapper = new TreeMap<>();
-
-        // Add the left by valid time
-        left.getEvents().forEach( next -> mapper.put( next.getTime(), next ) );
+        // Map the left admissible values by valid time
+        Map<Instant, Event<L>> mapper = new HashMap<>();
+        left.getEvents()
+            .stream()
+            .filter( next -> this.leftAdmissibleValue.test( next.getValue() ) )
+            .forEach( next -> mapper.put( next.getTime(), next ) );
 
         // The pairs
         SortedSet<Event<Pair<L, R>>> pairs = new TreeSet<>();
 
-        int leftInadmissible = 0;
+        int leftInadmissible = left.getEvents().size() - mapper.size();
         int rightInadmissible = 0;
 
         // Find the right with corresponding valid times to the left
         for ( Event<R> nextRight : right.getEvents() )
         {
-            // Right value admissible and right time present in map?
+            // Right value admissible?
             if ( this.rightAdmissibleValue.test( nextRight.getValue() ) )
             {
+                // Right valid time present in map?
                 if ( mapper.containsKey( nextRight.getTime() ) )
                 {
                     Event<L> nextLeft = mapper.get( nextRight.getTime() );
-
-                    // Left value admissible?
-                    if ( this.leftAdmissibleValue.test( nextLeft.getValue() ) )
-                    {
-                        pairs.add( Event.of( nextLeft.getTime(),
-                                             Pair.of( nextLeft.getValue(), nextRight.getValue() ) ) );
-                    }
-                    else
-                    {
-                        leftInadmissible++;
-                    }
+                    Pair<L, R> pair = Pair.of( nextLeft.getValue(), nextRight.getValue() );
+                    Event<Pair<L, R>> event = Event.of( nextLeft.getTime(), pair );
+                    pairs.add( event );
                 }
             }
             else
@@ -196,8 +191,8 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
                 new TimeSeriesMetadata.Builder( right.getMetadata() ).setReferenceTimes( referenceTimes )
                                                                      .build();
 
-        return new TimeSeriesBuilder<Pair<L, R>>().setMetadata( metadata )
-                                                  .addEvents( pairs )
+        return new Builder<Pair<L, R>>().setMetadata( metadata )
+                                                  .setEvents( pairs )
                                                   .build();
     }
 

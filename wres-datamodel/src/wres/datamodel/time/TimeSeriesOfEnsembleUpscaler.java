@@ -57,13 +57,13 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
     public RescaledTimeSeriesPlusValidation<Ensemble> upscale( TimeSeries<Ensemble> timeSeries,
                                                                TimeScaleOuter desiredTimeScale )
     {
-        return this.upscale( timeSeries, desiredTimeScale, Collections.emptySet() );
+        return this.upscale( timeSeries, desiredTimeScale, Collections.emptySortedSet() );
     }
 
     @Override
     public RescaledTimeSeriesPlusValidation<Ensemble> upscale( TimeSeries<Ensemble> timeSeries,
                                                                TimeScaleOuter desiredTimeScale,
-                                                               Set<Instant> endsAt )
+                                                               SortedSet<Instant> endsAt )
     {
         Objects.requireNonNull( desiredTimeScale );
 

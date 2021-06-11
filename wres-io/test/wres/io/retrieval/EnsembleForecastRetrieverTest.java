@@ -47,7 +47,6 @@ import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.details.EnsembleDetails;
@@ -203,7 +202,7 @@ public class EnsembleForecastRetrieverTest
                                        VARIABLE_NAME,
                                        FEATURE,
                                        this.unitMapper.getDesiredMeasurementUnitName() );
-        TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<>();
+        TimeSeries.Builder<Ensemble> builder = new TimeSeries.Builder<>();
 
         Labels expectedLabels = Labels.of( "123", "456", "567" );
 
@@ -261,7 +260,7 @@ public class EnsembleForecastRetrieverTest
                                        VARIABLE_NAME,
                                        FEATURE,
                                        this.unitMapper.getDesiredMeasurementUnitName() );
-        TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<>();
+        TimeSeries.Builder<Ensemble> builder = new TimeSeries.Builder<>();
 
         Labels expectedLabels = Labels.of( "567" );
 

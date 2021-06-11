@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.pools.pairs.CrossPairs;
 import wres.datamodel.pools.pairs.PairingException;
-import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
+import wres.datamodel.time.TimeSeries.Builder;
 
 /**
  * Supports cross-pairing of two sets of paired time-series {@link TimeSeries} by reference time and valid time. 
@@ -207,8 +207,8 @@ public class TimeSeriesCrossPairer<L, R>
             {
                 // Consider only valid times that are part of the next time-series
                 TimeSeries<Pair<L, R>> nextSeries =
-                        new TimeSeriesBuilder<Pair<L, R>>().setMetadata( nearest.getMetadata() )
-                                                           .addEvents( events )
+                        new Builder<Pair<L, R>>().setMetadata( nearest.getMetadata() )
+                                                           .setEvents( events )
                                                            .build();
 
                 returnMe.add( nextSeries );

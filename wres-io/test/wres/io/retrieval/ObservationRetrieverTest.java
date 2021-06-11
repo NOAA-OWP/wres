@@ -42,7 +42,6 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.data.caching.Features;
 import wres.io.data.details.EnsembleDetails;
@@ -169,7 +168,7 @@ public class ObservationRetrieverTest
                                        VARIABLE_NAME,
                                        FEATURE,
                                        "CFS" );
-        TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
+        TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
         TimeSeries<Double> expectedSeries =
                 builder.setMetadata( expectedMetadata )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ), 30.0 ) )
@@ -227,7 +226,7 @@ public class ObservationRetrieverTest
                                        VARIABLE_NAME,
                                        FEATURE,
                                        "CFS" );
-        TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
+        TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
         TimeSeries<Double> expectedSeries =
                 builder.setMetadata( expectedMetadata )
                        .addEvent( Event.of( Instant.parse( FIRST_TIME ), 44.0 ) )

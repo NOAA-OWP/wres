@@ -25,10 +25,9 @@ import java.util.stream.Collectors;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
+import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -185,7 +184,7 @@ public final class TimeSeriesSlicer
 
         Objects.requireNonNull( filter );
 
-        TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
+        TimeSeries.Builder<T> builder = new TimeSeries.Builder<>();
 
         builder.setMetadata( timeSeries.getMetadata() );
 
@@ -263,7 +262,7 @@ public final class TimeSeriesSlicer
                 new TimeSeriesMetadata.Builder( input.getMetadata() ).setReferenceTimes( notConsideredOrWithinBounds )
                                                                      .build();
 
-        TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
+        TimeSeries.Builder<T> builder = new TimeSeries.Builder<>();
         builder.setMetadata( metadata );
 
         // Some reference times existed and none were within the filter bounds?
@@ -325,7 +324,7 @@ public final class TimeSeriesSlicer
 
         Objects.requireNonNull( filter );
 
-        TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
+        TimeSeries.Builder<T> builder = new TimeSeries.Builder<>();
 
         builder.setMetadata( timeSeries.getMetadata() );
 
@@ -358,7 +357,7 @@ public final class TimeSeriesSlicer
 
 
     public static <T> Map<Instant, SortedSet<Event<T>>> groupEventsByInterval( SortedSet<Event<T>> events,
-                                                                               Set<Instant> endsAt,
+                                                                               SortedSet<Instant> endsAt,
                                                                                Duration period )
     {
         Objects.requireNonNull( events, NULL_INPUT_EXCEPTION );
@@ -373,11 +372,9 @@ public final class TimeSeriesSlicer
         List<Event<T>> listedEvents = new ArrayList<>( events );
         int eventCount = listedEvents.size();
 
-        SortedSet<Instant> ends = new TreeSet<>( endsAt );
-
         // Iterate the end times and group events whose times fall in (nextEnd-period,nextEnd]
         int startIndex = 0; // Position at which to start searching the listed events
-        for ( Instant nextEnd : ends )
+        for ( Instant nextEnd : endsAt )
         {
             // Lower bound exclusive
             Instant nextStart = nextEnd.minus( period );
@@ -542,8 +539,8 @@ public final class TimeSeriesSlicer
 
         if ( timeSeries.getEvents().isEmpty() )
         {
-            return List.of( new TimeSeriesBuilder<Double>().setMetadata( timeSeries.getMetadata() )
-                                                           .build() );
+            return List.of( new TimeSeries.Builder<Double>().setMetadata( timeSeries.getMetadata() )
+                                                            .build() );
         }
 
         Map<Object, SortedSet<Event<Double>>> withLabels = TimeSeriesSlicer.decomposeWithLabels( timeSeries );
@@ -551,9 +548,9 @@ public final class TimeSeriesSlicer
 
         for ( Map.Entry<Object, SortedSet<Event<Double>>> next : withLabels.entrySet() )
         {
-            TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
+            TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
             TimeSeries<Double> series = builder.setMetadata( timeSeries.getMetadata() )
-                                               .addEvents( next.getValue() )
+                                               .setEvents( next.getValue() )
                                                .build();
             returnMe.add( series );
         }
@@ -642,7 +639,7 @@ public final class TimeSeriesSlicer
 
         Objects.requireNonNull( mapper );
 
-        TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
+        TimeSeries.Builder<T> builder = new TimeSeries.Builder<>();
 
         builder.setMetadata( timeSeries.getMetadata() );
 
@@ -677,7 +674,7 @@ public final class TimeSeriesSlicer
 
         Objects.requireNonNull( mapper );
 
-        TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
+        TimeSeries.Builder<T> builder = new TimeSeries.Builder<>();
 
         builder.setMetadata( timeSeries.getMetadata() );
 
@@ -714,7 +711,7 @@ public final class TimeSeriesSlicer
 
         Objects.requireNonNull( transformer );
 
-        Builder<P, Q> builder = new Builder<>();
+        PoolOfPairs.Builder<P, Q> builder = new PoolOfPairs.Builder<>();
 
         builder.setClimatology( input.getClimatology() )
                .setMetadata( input.getMetadata() );
@@ -803,7 +800,7 @@ public final class TimeSeriesSlicer
 
         Objects.requireNonNull( condition );
 
-        Builder<L, R> builder = new Builder<>();
+        PoolOfPairs.Builder<L, R> builder = new PoolOfPairs.Builder<>();
 
         builder.setMetadata( input.getMetadata() );
 
@@ -864,7 +861,7 @@ public final class TimeSeriesSlicer
 
         Objects.requireNonNull( condition );
 
-        Builder<L, R> builder = new Builder<>();
+        PoolOfPairs.Builder<L, R> builder = new PoolOfPairs.Builder<>();
 
         builder.setMetadata( input.getMetadata() );
 
@@ -938,7 +935,7 @@ public final class TimeSeriesSlicer
             return collectedSeries.iterator().next();
         }
 
-        TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
+        TimeSeries.Builder<T> builder = new TimeSeries.Builder<>();
 
         for ( TimeSeries<T> next : collectedSeries )
         {
@@ -970,7 +967,7 @@ public final class TimeSeriesSlicer
         TimeSeriesSlicer.validateForZeroReferenceTimesAndCommonMetadata( collectedSeries );
 
         // The time-series builders
-        Collection<TimeSeriesBuilder<T>> builders = new ArrayList<>();
+        Collection<TimeSeries.Builder<T>> builders = new ArrayList<>();
 
         // Iterate through the series and their events. Add the events to the first builder that does not contain an
         // event at the same valid datetime. If all builders are exhausted, add a new one and place the event in that 
@@ -980,7 +977,7 @@ public final class TimeSeriesSlicer
             {
                 boolean added = false;
 
-                for ( TimeSeriesBuilder<T> nextBuilder : builders )
+                for ( TimeSeries.Builder<T> nextBuilder : builders )
                 {
                     // Does this builder already contain this valid time? No, so add it
                     if ( !nextBuilder.hasEventAtThisTime( nextEvent ) )
@@ -995,7 +992,7 @@ public final class TimeSeriesSlicer
                 // Event not added to any existing builders, so create a new one and add the event to that
                 if ( !added )
                 {
-                    TimeSeriesBuilder<T> newBuilder = new TimeSeriesBuilder<>();
+                    TimeSeries.Builder<T> newBuilder = new TimeSeries.Builder<>();
                     newBuilder.addEvent( nextEvent );
                     newBuilder.setMetadata( nextSeries.getMetadata() );
                     builders.add( newBuilder );
@@ -1004,7 +1001,7 @@ public final class TimeSeriesSlicer
         }
 
         return builders.stream()
-                       .map( TimeSeriesBuilder::build )
+                       .map( TimeSeries.Builder::build )
                        .collect( Collectors.toUnmodifiableList() );
     }
 
@@ -1021,11 +1018,11 @@ public final class TimeSeriesSlicer
     {
         Objects.requireNonNull( earliest );
         Objects.requireNonNull( latest );
-        
+
         return earliest.plus( Duration.between( earliest, latest )
                                       .dividedBy( 2 ) );
     }
-    
+
     /**
      * Throws an exception if any time-series has one or more reference times or metadata that is inconsistent with 
      * another time-series
@@ -1117,7 +1114,7 @@ public final class TimeSeriesSlicer
         Objects.requireNonNull( metadata );
         Objects.requireNonNull( labels );
 
-        TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<>();
+        TimeSeries.Builder<Ensemble> builder = new TimeSeries.Builder<>();
         builder.setMetadata( metadata );
 
         Labels labs = null;
@@ -1169,18 +1166,25 @@ public final class TimeSeriesSlicer
 
         if ( snipTo.getEvents().isEmpty() )
         {
-            LOGGER.trace( "While snipping series {} to series {} with lower buffer {} and upper buffer {}, no events "
-                          + "were discovered within the series to snip to. Returning the unsnipped series.",
-                          toSnip,
-                          snipTo,
-                          lowerBuffer,
-                          upperBuffer );
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "While snipping series {} to series {} with lower buffer {} and upper buffer {}, no events "
+                              + "were discovered within the series to snip to. Returning the unsnipped series.",
+                              toSnip,
+                              snipTo,
+                              lowerBuffer,
+                              upperBuffer );
+            }
 
             return toSnip;
         }
 
-        Instant lower = snipTo.getEvents().first().getTime();
-        Instant upper = snipTo.getEvents().last().getTime();
+        Instant lower = snipTo.getEvents()
+                              .first()
+                              .getTime();
+        Instant upper = snipTo.getEvents()
+                              .last()
+                              .getTime();
 
         // Adjust the lower bound
         if ( Objects.nonNull( lowerBuffer ) )
@@ -1194,21 +1198,34 @@ public final class TimeSeriesSlicer
             upper = upper.plus( upperBuffer );
         }
 
-        TimeSeriesBuilder<S> snippedSeries = new TimeSeriesBuilder<>();
+        TimeSeries.Builder<S> snippedSeries = new TimeSeries.Builder<>();
         snippedSeries.setMetadata( toSnip.getMetadata() );
-        for ( Event<S> next : toSnip.getEvents() )
+
+        // Iterate the tailset of events that starts with a valid time at the lower bound
+        Event<S> lowerBound = Event.of( lower, toSnip.getEvents().first().getValue() );
+        SortedSet<Event<S>> tailSet = toSnip.getEvents()
+                                            .tailSet( lowerBound );
+        for ( Event<S> next : tailSet )
         {
             Instant nextTime = next.getTime();
 
-            if ( nextTime.compareTo( lower ) >= 0 && nextTime.compareTo( upper ) <= 0 )
+            if ( nextTime.compareTo( lower ) >= 0 )
             {
-                snippedSeries.addEvent( next );
+                if ( nextTime.compareTo( upper ) <= 0 )
+                {
+                    snippedSeries.addEvent( next );
+                }
+                // Events are sorted, exploit this: #92522
+                else
+                {
+                    break;
+                }
             }
         }
 
         TimeSeries<S> snipped = snippedSeries.build();
 
-        if ( snipped.getEvents().isEmpty() )
+        if ( snipped.getEvents().isEmpty() && LOGGER.isTraceEnabled() )
         {
             LOGGER.trace( "While snipping series {} to series {} with lower buffer {} and upper buffer {}, no events "
                           + "were discovered within the series to snip that were within the bounds of the series to "
@@ -1242,7 +1259,7 @@ public final class TimeSeriesSlicer
         if ( !Duration.ZERO.equals( offset ) )
         {
             SortedSet<Event<T>> events = toTransform.getEvents();
-            TimeSeriesBuilder<T> timeTransformed = new TimeSeriesBuilder<>();
+            TimeSeries.Builder<T> timeTransformed = new TimeSeries.Builder<>();
             timeTransformed.setMetadata( toTransform.getMetadata() );
 
             for ( Event<T> next : events )

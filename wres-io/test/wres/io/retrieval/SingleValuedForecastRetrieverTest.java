@@ -43,7 +43,6 @@ import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.data.caching.Features;
 import wres.io.data.details.EnsembleDetails;
@@ -165,7 +164,7 @@ public class SingleValuedForecastRetrieverTest
                                        VARIABLE_NAME,
                                        FEATURE,
                                        "CFS" );
-        TimeSeriesBuilder<Double> builderOne = new TimeSeriesBuilder<>();
+        TimeSeries.Builder<Double> builderOne = new TimeSeries.Builder<>();
         TimeSeries<Double> expectedSeriesOne =
                 builderOne.setMetadata( expectedMetadata )
                           .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ), 30.0 ) )
@@ -186,7 +185,7 @@ public class SingleValuedForecastRetrieverTest
                                        VARIABLE_NAME,
                                        FEATURE,
                                        "CFS" );
-        TimeSeriesBuilder<Double> builderTwo = new TimeSeriesBuilder<>();
+        TimeSeries.Builder<Double> builderTwo = new TimeSeries.Builder<>();
         TimeSeries<Double> expectedSeriesTwo =
                 builderTwo.setMetadata( expectedMetadataTwo )
                           .addEvent( Event.of( Instant.parse( "2023-04-01T18:00:00Z" ), 65.0 ) )
@@ -244,7 +243,7 @@ public class SingleValuedForecastRetrieverTest
                                        VARIABLE_NAME,
                                        FEATURE,
                                        "CFS" );
-        TimeSeriesBuilder<Double> builderOne = new TimeSeriesBuilder<>();
+        TimeSeries.Builder<Double> builderOne = new TimeSeries.Builder<>();
         TimeSeries<Double> expectedSeriesOne =
                 builderOne.setMetadata( expectedMetadata )
                           .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 51.0 ) )
@@ -261,7 +260,7 @@ public class SingleValuedForecastRetrieverTest
                                        VARIABLE_NAME,
                                        FEATURE,
                                        "CFS" );
-        TimeSeriesBuilder<Double> builderTwo = new TimeSeriesBuilder<>();
+        TimeSeries.Builder<Double> builderTwo = new TimeSeries.Builder<>();
         TimeSeries<Double> expectedSeriesTwo =
                 builderTwo.setMetadata( expectedMetadataTwo )
                           .addEvent( Event.of( Instant.parse( T2023_04_01T19_00_00Z ), 72.0 ) )

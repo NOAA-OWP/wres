@@ -5,7 +5,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +24,7 @@ import wres.datamodel.scale.ScaleValidationEvent;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.ScaleValidationEvent.EventType;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
-import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
+import wres.datamodel.time.TimeSeries.Builder;
 
 /**
  * Helper class for supporting rescaling operations.
@@ -119,7 +118,6 @@ class RescalingHelper
 
     private static final String SEVEN_MEMBER_MESSAGE = "{}{}{}{}{}";
 
-
     /**
      * Conducts upscaling of a time-series.
      * 
@@ -134,7 +132,7 @@ class RescalingHelper
     static <T> RescaledTimeSeriesPlusValidation<T> upscale( TimeSeries<T> timeSeries,
                                                             Function<SortedSet<Event<T>>, T> upscaler,
                                                             TimeScaleOuter desiredTimeScale,
-                                                            Set<Instant> endsAt )
+                                                            SortedSet<Instant> endsAt )
     {
         Objects.requireNonNull( timeSeries );
 
@@ -148,10 +146,13 @@ class RescalingHelper
         // Empty time-series
         if ( timeSeries.getEvents().isEmpty() )
         {
-            LOGGER.trace( THREE_MEMBER_MESSAGE,
-                          "No upscaling required for time-series ",
-                          timeSeries.hashCode(),
-                          ": the time-series contained no events." );
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( THREE_MEMBER_MESSAGE,
+                              "No upscaling required for time-series ",
+                              timeSeries.hashCode(),
+                              ": the time-series contained no events." );
+            }
 
             return RescaledTimeSeriesPlusValidation.of( timeSeries, validationEvents );
         }
@@ -159,14 +160,16 @@ class RescalingHelper
         // Existing time scale missing and this was allowed during validation
         if ( !timeSeries.hasTimeScale() )
         {
-            LOGGER.trace( FIVE_MEMBER_MESSAGE,
-                          "Skipped upscaling time-series ",
-                          timeSeries.hashCode(),
-                          " to the desired time scale of ",
-                          desiredTimeScale,
-                          " because the existing time scale was missing. Assuming that the existing and desired scales "
-                                            + "are the same." );
-
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( FIVE_MEMBER_MESSAGE,
+                              "Skipped upscaling time-series ",
+                              timeSeries.hashCode(),
+                              " to the desired time scale of ",
+                              desiredTimeScale,
+                              " because the existing time scale was missing. Assuming that the existing and desired scales "
+                                                + "are the same." );
+            }
 
             return RescaledTimeSeriesPlusValidation.of( timeSeries, validationEvents );
         }
@@ -174,14 +177,17 @@ class RescalingHelper
         // Existing and desired are both instantaneous
         if ( timeSeries.getTimeScale().isInstantaneous() && desiredTimeScale.isInstantaneous() )
         {
-            LOGGER.trace( SEVEN_MEMBER_MESSAGE,
-                          "Skipped upscaling time-series ",
-                          timeSeries.hashCode(),
-                          " to the desired time scale of ",
-                          desiredTimeScale,
-                          " because the existing time scale is ",
-                          timeSeries.getTimeScale(),
-                          " and both are recognized as instantaneous." );
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( SEVEN_MEMBER_MESSAGE,
+                              "Skipped upscaling time-series ",
+                              timeSeries.hashCode(),
+                              " to the desired time scale of ",
+                              desiredTimeScale,
+                              " because the existing time scale is ",
+                              timeSeries.getTimeScale(),
+                              " and both are recognized as instantaneous." );
+            }
 
             return RescaledTimeSeriesPlusValidation.of( timeSeries, validationEvents );
         }
@@ -190,28 +196,58 @@ class RescalingHelper
         // The validation of the function happens above. For example, the existing could be UNKNOWN
         if ( desiredTimeScale.getPeriod().equals( timeSeries.getTimeScale().getPeriod() ) )
         {
-            LOGGER.trace( SEVEN_MEMBER_MESSAGE,
-                          "No upscaling required for time-series ",
-                          timeSeries.hashCode(),
-                          ": the existing time scale of ",
-                          timeSeries.getTimeScale(),
-                          " effectively matches the desired time scale of ",
-                          desiredTimeScale,
-                          "." );
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( SEVEN_MEMBER_MESSAGE,
+                              "No upscaling required for time-series ",
+                              timeSeries.hashCode(),
+                              ": the existing time scale of ",
+                              timeSeries.getTimeScale(),
+                              " effectively matches the desired time scale of ",
+                              desiredTimeScale,
+                              "." );
+            }
 
             TimeSeriesMetadata existingMetadata = timeSeries.getMetadata();
+
             // Create new series in case the function differs
             TimeSeriesMetadata metadata =
                     new TimeSeriesMetadata.Builder( existingMetadata ).setTimeScale( desiredTimeScale )
                                                                       .build();
 
-            TimeSeries<T> returnMe = new TimeSeriesBuilder<T>().setMetadata( metadata )
-                                                               .addEvents( timeSeries.getEvents() )
+            TimeSeries<T> returnMe = new Builder<T>().setMetadata( metadata )
+                                                               .setEvents( timeSeries.getEvents() )
                                                                .build();
 
             return RescaledTimeSeriesPlusValidation.of( returnMe, validationEvents );
         }
 
+        // True upscaling needed
+        return RescalingHelper.upscaleWithChangeOfPeriod( timeSeries,
+                                                          upscaler,
+                                                          desiredTimeScale,
+                                                          endsAt,
+                                                          validationEvents );
+    }
+
+    /**
+     * Conducts upscaling of a time-series.
+     * 
+     * @param <T> the type of event value to upscale
+     * @param timeSeries the time-series
+     * @param upscaler the function that upscales the event values
+     * @param desiredTimeScale the desired time scale
+     * @param endsAt the set of times at which upscaled values should end
+     * @param validationEvents the validation events
+     * @return the upscaled time-series and associated validation events
+     */
+
+    private static <T> RescaledTimeSeriesPlusValidation<T> upscaleWithChangeOfPeriod( TimeSeries<T> timeSeries,
+                                                                                      Function<SortedSet<Event<T>>, T> upscaler,
+                                                                                      TimeScaleOuter desiredTimeScale,
+                                                                                      SortedSet<Instant> endsAt,
+                                                                                      List<ScaleValidationEvent> validationEvents )
+    {
         // No times at which values should end, so start at the beginning
         if ( endsAt.isEmpty() )
         {
@@ -222,11 +258,12 @@ class RescalingHelper
         // particular valid time
         Duration period = desiredTimeScale.getPeriod();
 
+        // This grouping operation is expensive: see the notes attached to the method
         Map<Instant, SortedSet<Event<T>>> groups =
                 TimeSeriesSlicer.groupEventsByInterval( timeSeries.getEvents(), endsAt, period );
 
         // Process the groups whose events are evenly-spaced and have no missing values, otherwise skip and log
-        TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
+        Builder<T> builder = new Builder<>();
 
         // Create a mutable copy of the validation events to add more, as needed
         List<ScaleValidationEvent> mutableValidationEvents = new ArrayList<>( validationEvents );
@@ -250,7 +287,7 @@ class RescalingHelper
             }
         }
 
-        // Set the upscaled scale
+        // Set the larger scale
         TimeSeriesMetadata templateMetadata = timeSeries.getMetadata();
         TimeSeriesMetadata metadata = TimeSeriesMetadata.of( templateMetadata.getReferenceTimes(),
                                                              desiredTimeScale,
@@ -271,9 +308,10 @@ class RescalingHelper
      * @return the times at which upscaled intervals should end
      */
 
-    private static <T> Set<Instant> getEndTimesFromSeries( TimeSeries<T> timeSeries, TimeScaleOuter desiredTimeScale )
+    private static <T> SortedSet<Instant> getEndTimesFromSeries( TimeSeries<T> timeSeries, 
+                                                                 TimeScaleOuter desiredTimeScale )
     {
-        Set<Instant> endsAt = new HashSet<>();
+        SortedSet<Instant> endsAt = new TreeSet<>();
 
         Instant firstTime = timeSeries.getEvents().first().getTime();
         Instant lastTime = timeSeries.getEvents().last().getTime();
@@ -298,7 +336,7 @@ class RescalingHelper
             check = next; // Increment
         }
 
-        return Collections.unmodifiableSet( endsAt );
+        return Collections.unmodifiableSortedSet( endsAt );
     }
 
     /**
@@ -744,4 +782,11 @@ class RescalingHelper
         return DID_NOT_DETECT_AN_ATTEMPT_TO_ACCUMULATE;
     }
 
+    /**
+     * Do not construct.
+     */
+
+    private RescalingHelper()
+    {
+    }
 }

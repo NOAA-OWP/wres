@@ -30,7 +30,6 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.io.data.caching.Features;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
@@ -240,7 +239,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         try ( Connection connection = database.getConnection();
               DataProvider provider = scripter.buffer( connection ) )
         {
-            Map<Integer, TimeSeriesBuilder<S>> builders = new TreeMap<>();
+            Map<Integer, TimeSeries.Builder<S>> builders = new TreeMap<>();
 
             // Time-series are duplicated per common source in wres.ProjectSource, 
             // so re-duplicate here. See #56214-272
@@ -260,12 +259,12 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 }
                 seriesCounts.put( seriesId, seriesCount );
 
-                TimeSeriesBuilder<S> builder = builders.get( seriesId );
+                TimeSeries.Builder<S> builder = builders.get( seriesId );
 
                 // Start a new series when required                 
                 if ( Objects.isNull( builder ) )
                 {
-                    builder = new TimeSeriesBuilder<>();
+                    builder = new TimeSeries.Builder<>();
                     builders.put( seriesId, builder );
                 }
 
@@ -795,7 +794,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @throws DataAccessException if the event could not be added
      */
 
-    private <S> void addEventToTimeSeries( Event<S> event, TimeSeriesBuilder<S> builder )
+    private <S> void addEventToTimeSeries( Event<S> event, TimeSeries.Builder<S> builder )
     {
         try
         {
@@ -822,12 +821,12 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @return a stream of time-series
      */
 
-    private <S> Stream<TimeSeries<S>> composeWithDuplicates( Map<Integer, TimeSeriesBuilder<S>> builders,
+    private <S> Stream<TimeSeries<S>> composeWithDuplicates( Map<Integer, TimeSeries.Builder<S>> builders,
                                                              Map<Integer, Integer> seriesCounts )
     {
         List<TimeSeries<S>> streamMe = new ArrayList<>();
 
-        for ( Map.Entry<Integer, TimeSeriesBuilder<S>> nextSeries : builders.entrySet() )
+        for ( Map.Entry<Integer, TimeSeries.Builder<S>> nextSeries : builders.entrySet() )
         {
             int count = seriesCounts.get( nextSeries.getKey() );
             for ( int i = 0; i < count; i++ )

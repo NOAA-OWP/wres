@@ -1,11 +1,13 @@
 package wres.datamodel.time.generators;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
@@ -19,7 +21,7 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
+import wres.datamodel.time.TimeSeries.Builder;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
@@ -134,7 +136,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
         Optional<T> persist = this.getPersistence( template );
 
         TimeSeriesMetadata templateMetadata = template.getMetadata();
-        TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
+        Builder<T> builder = new Builder<>();
         builder.setMetadata( templateMetadata );
 
         // Persistence value available?
@@ -217,9 +219,11 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
                                                         + " and no temporal upscaler was supplied on construction." );
             }
 
+            SortedSet<Instant> endsAtSorted = new TreeSet<>();
+            endsAtSorted.add( endsAt );
             persistenceSeries = this.upscaler.upscale( persistenceSeries,
                                                        desiredTimeScale,
-                                                       Set.of( endsAt ) )
+                                                       Collections.unmodifiableSortedSet( endsAtSorted ) )
                                              .getTimeSeries();
         }
 

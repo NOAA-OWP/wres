@@ -492,7 +492,7 @@ public class DatacardSource extends BasicSource
                                                 + lineNumber );
         }
 
-        TimeSeries.TimeSeriesBuilder<Double> builder = new TimeSeries.TimeSeriesBuilder<>();
+        TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
         builder.setMetadata( metadata );
 
         for ( Map.Entry<Instant,Double> events : trace.entrySet() )

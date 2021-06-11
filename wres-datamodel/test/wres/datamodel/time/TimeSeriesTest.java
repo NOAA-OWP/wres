@@ -19,7 +19,7 @@ import org.junit.Test;
 import wres.datamodel.Ensemble;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
+import wres.datamodel.time.TimeSeries.Builder;
 
 /**
  * Tests the {@link TimeSeries}
@@ -65,7 +65,7 @@ public class TimeSeriesTest
 
         this.referenceTime = Instant.parse( "2123-12-01T00:00:00Z" );
 
-        TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
+        Builder<Double> builder = new Builder<>();
 
         Iterator<Event<Double>> iterator = events.iterator();
 
@@ -125,7 +125,7 @@ public class TimeSeriesTest
 
         // Consistent when invoked multiple times
         TimeSeries<Double> test =
-                new TimeSeriesBuilder<Double>().setMetadata( this.metadata )
+                new Builder<Double>().setMetadata( this.metadata )
                                                .addEvents( this.events )
                                                .build();
         TimeSeries.of( this.metadata,
@@ -148,7 +148,7 @@ public class TimeSeriesTest
 
         // Symmetric
         TimeSeries<Double> anotherTestSeries =
-                new TimeSeriesBuilder<Double>().setMetadata( this.metadata )
+                new Builder<Double>().setMetadata( this.metadata )
                                                .addEvents( this.events )
                                                .build();
 
@@ -156,7 +156,7 @@ public class TimeSeriesTest
 
         // Transitive
         TimeSeries<Double> oneMoreTestSeries =
-                new TimeSeriesBuilder<Double>().setMetadata( this.metadata )
+                new Builder<Double>().setMetadata( this.metadata )
                                                .addEvents( this.events )
                                                .build();
 
@@ -212,13 +212,13 @@ public class TimeSeriesTest
         assertNotEquals( unequalOnMultiple, this.testSeries );
 
         TimeSeries<Ensemble> theseEventValues =
-                new TimeSeriesBuilder<Ensemble>().setMetadata( this.metadata )
+                new Builder<Ensemble>().setMetadata( this.metadata )
                                                  .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ),
                                                                       Ensemble.of( 30.0, 65.0, 100.0 ) ) )
                                                  .build();
 
         TimeSeries<Ensemble> doNotEqualThese =
-                new TimeSeriesBuilder<Ensemble>().setMetadata( this.metadata )
+                new Builder<Ensemble>().setMetadata( this.metadata )
                                                  .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ),
                                                                       Ensemble.of( 30.0, 65.0, 93.0 ) ) )
                                                  .build();
@@ -243,7 +243,7 @@ public class TimeSeriesTest
     @Test
     public void testThatBuilderThrowsExpectedExceptionWhenAddingDuplicateTimes()
     {
-        TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
+        Builder<Double> builder = new Builder<>();
 
         builder.addEvent( Event.of( Instant.MIN, 1.0 ) );
 

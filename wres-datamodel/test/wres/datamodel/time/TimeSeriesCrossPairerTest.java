@@ -16,7 +16,7 @@ import wres.datamodel.FeatureKey;
 import wres.datamodel.pools.pairs.CrossPairs;
 import wres.datamodel.pools.pairs.PairingException;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
+import wres.datamodel.time.TimeSeries.Builder;
 import wres.datamodel.time.TimeSeriesCrossPairer.MatchMode;
 
 /**
@@ -75,7 +75,7 @@ public final class TimeSeriesCrossPairerTest
                                        KG_H );
 
         TimeSeries<Pair<Integer, Integer>> firstSeries =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( metadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( metadata )
                                                                .addEvent( first )
                                                                .addEvent( second )
                                                                .addEvent( third )
@@ -83,7 +83,7 @@ public final class TimeSeriesCrossPairerTest
                                                                .build();
 
         TimeSeries<Pair<Integer, Integer>> secondSeries =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( metadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( metadata )
                                                                .addEvent( sixth )
                                                                .addEvent( seventh )
                                                                .addEvent( eighth )
@@ -94,14 +94,14 @@ public final class TimeSeriesCrossPairerTest
                 this.instance.apply( List.of( firstSeries, firstSeries ), List.of( secondSeries, secondSeries ) );
 
         TimeSeries<Pair<Integer, Integer>> expectedSeriesMain =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( metadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( metadata )
                                                                .addEvent( first )
                                                                .addEvent( second )
                                                                .addEvent( third )
                                                                .build();
 
         TimeSeries<Pair<Integer, Integer>> expectedSeriesBase =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( metadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( metadata )
                                                                .addEvent( sixth )
                                                                .addEvent( seventh )
                                                                .addEvent( eighth )
@@ -128,7 +128,7 @@ public final class TimeSeriesCrossPairerTest
                                        GEORGIA,
                                        KG_H );
         TimeSeries<Pair<Integer, Integer>> firstSeries =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
                                                                .addEvent( first )
                                                                .build();
 
@@ -142,7 +142,7 @@ public final class TimeSeriesCrossPairerTest
                                        GEORGIA,
                                        KG_H );
         TimeSeries<Pair<Integer, Integer>> secondSeries =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
                                                                .addEvent( second )
                                                                .build();
 
@@ -151,7 +151,7 @@ public final class TimeSeriesCrossPairerTest
         TimeSeriesMetadata thirdMetadata = firstMetadata;
 
         TimeSeries<Pair<Integer, Integer>> thirdSeries =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( thirdMetadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( thirdMetadata )
                                                                .addEvent( third )
                                                                .build();
 
@@ -165,7 +165,7 @@ public final class TimeSeriesCrossPairerTest
                                        GEORGIA,
                                        KG_H );
         TimeSeries<Pair<Integer, Integer>> fourthSeries =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( fourthMetadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( fourthMetadata )
                                                                .addEvent( fourth )
                                                                .build();
 
@@ -190,7 +190,7 @@ public final class TimeSeriesCrossPairerTest
                                        GEORGIA,
                                        KG_H );
         TimeSeries<Pair<Integer, Integer>> firstSeries =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
                                                                .addEvent( first )
                                                                .build();
 
@@ -204,7 +204,7 @@ public final class TimeSeriesCrossPairerTest
                                        GEORGIA,
                                        KG_H );
         TimeSeries<Pair<Integer, Integer>> secondSeries =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
                                                                .addEvent( second )
                                                                .build();
 
@@ -231,7 +231,7 @@ public final class TimeSeriesCrossPairerTest
                                        GEORGIA,
                                        KG_H );
         TimeSeries<Pair<Integer, Integer>> firstSeries =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
                                                                .addEvent( first )
                                                                .build();
 
@@ -245,7 +245,7 @@ public final class TimeSeriesCrossPairerTest
                                        GEORGIA,
                                        KG_H );
         TimeSeries<Pair<Integer, Integer>> secondSeries =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
                                                                .addEvent( second )
                                                                .build();
 
@@ -272,7 +272,7 @@ public final class TimeSeriesCrossPairerTest
                                        GEORGIA,
                                        KG_H );
         TimeSeries<Pair<Integer, Integer>> firstSeries =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
                                                                .addEvent( first )
                                                                .build();
 
@@ -287,7 +287,7 @@ public final class TimeSeriesCrossPairerTest
                                        GEORGIA,
                                        KG_H );
         TimeSeries<Pair<Integer, Integer>> secondSeries =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
                                                                .addEvent( second )
                                                                .addEvent( third )
                                                                .build();
@@ -296,7 +296,7 @@ public final class TimeSeriesCrossPairerTest
                 this.instance.apply( List.of( firstSeries ), List.of( secondSeries ) );
 
         TimeSeries<Pair<Integer, Integer>> thirdSeries =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
                                                                .addEvent( second )
                                                                .build();
 
@@ -321,7 +321,7 @@ public final class TimeSeriesCrossPairerTest
                                        GEORGIA,
                                        KG_H );
         TimeSeries<Pair<Integer, Integer>> firstSeries =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
                                                                .addEvent( first )
                                                                .build();
 
@@ -335,7 +335,7 @@ public final class TimeSeriesCrossPairerTest
                                        GEORGIA,
                                        KG_H );
         TimeSeries<Pair<Integer, Integer>> secondSeries =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
                                                                .addEvent( second )
                                                                .build();
 
@@ -360,7 +360,7 @@ public final class TimeSeriesCrossPairerTest
                                        GEORGIA,
                                        KG_H );
         TimeSeries<Pair<Integer, Integer>> firstSeries =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
                                                                .addEvent( first )
                                                                .build();
 
@@ -373,7 +373,7 @@ public final class TimeSeriesCrossPairerTest
                                                                    KG_H );
 
         TimeSeries<Pair<Integer, Integer>> secondSeries =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
                                                                .addEvent( second )
                                                                .build();
 
@@ -399,7 +399,7 @@ public final class TimeSeriesCrossPairerTest
                                        GEORGIA,
                                        KG_H );
         TimeSeries<Pair<Integer, Integer>> firstSeries =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
                                                                .addEvent( first )
                                                                .build();
 
@@ -414,7 +414,7 @@ public final class TimeSeriesCrossPairerTest
                                        KG_H );
 
         TimeSeries<Pair<Integer, Integer>> secondSeries =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
                                                                .addEvent( second )
                                                                .build();
 
@@ -423,7 +423,7 @@ public final class TimeSeriesCrossPairerTest
         TimeSeriesMetadata thirdMetadata = firstMetadata;
 
         TimeSeries<Pair<Integer, Integer>> thirdSeries =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( thirdMetadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( thirdMetadata )
                                                                .addEvent( third )
                                                                .build();
 
@@ -438,7 +438,7 @@ public final class TimeSeriesCrossPairerTest
                                        KG_H );
 
         TimeSeries<Pair<Integer, Integer>> fourthSeries =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( fourthMetadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( fourthMetadata )
                                                                .addEvent( fourth )
                                                                .build();
 
@@ -456,7 +456,7 @@ public final class TimeSeriesCrossPairerTest
                                        KG_H );
 
         TimeSeries<Pair<Integer, Integer>> fifthSeries =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( fifthMetadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( fifthMetadata )
                                                                .addEvent( fifth )
                                                                .build();
 
@@ -472,7 +472,7 @@ public final class TimeSeriesCrossPairerTest
                                        KG_H );
 
         TimeSeries<Pair<Integer, Integer>> sixthSeries =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( sixthMetadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( sixthMetadata )
                                                                .addEvent( sixth )
                                                                .build();
 
@@ -500,7 +500,7 @@ public final class TimeSeriesCrossPairerTest
                                        KG_H );
 
         TimeSeries<Pair<Integer, Integer>> firstSeries =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
                                                                .addEvent( first )
                                                                .build();
 
@@ -515,7 +515,7 @@ public final class TimeSeriesCrossPairerTest
                                        KG_H );
 
         TimeSeries<Pair<Integer, Integer>> secondSeries =
-                new TimeSeriesBuilder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
                                                                .addEvent( second )
                                                                .build();
 
