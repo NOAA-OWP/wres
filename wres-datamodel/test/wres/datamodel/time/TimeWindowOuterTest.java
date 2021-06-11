@@ -281,27 +281,27 @@ public final class TimeWindowOuterTest
         TimeWindowOuter window = TimeWindowOuter.of( SECOND_TIME,
                                                      FIFTH_TIME,
                                                      Duration.ZERO );
-        
+
         TimeWindow expected = TimeWindow.newBuilder()
-                .setEarliestReferenceTime( Timestamp.newBuilder()
-                                                    .setSeconds( SECOND_TIME.getEpochSecond() ) )
-                .setLatestReferenceTime( Timestamp.newBuilder()
-                                                  .setSeconds( FIFTH_TIME.getEpochSecond() ) )
-                .setEarliestValidTime( Timestamp.newBuilder()
-                                                .setSeconds( Instant.MIN.getEpochSecond() )
-                                                .setNanos( Instant.MIN.getNano() ) )
-                .setLatestValidTime( Timestamp.newBuilder()
-                                              .setSeconds( Instant.MAX.getEpochSecond() )
-                                              .setNanos( Instant.MAX.getNano() ) )
-                .setEarliestLeadDuration( com.google.protobuf.Duration.newBuilder()
-                                                                      .setSeconds( 0 ) )
-                .setLatestLeadDuration( com.google.protobuf.Duration.newBuilder()
-                                                                    .setSeconds( 0 ) )
-                .build();
+                                        .setEarliestReferenceTime( Timestamp.newBuilder()
+                                                                            .setSeconds( SECOND_TIME.getEpochSecond() ) )
+                                        .setLatestReferenceTime( Timestamp.newBuilder()
+                                                                          .setSeconds( FIFTH_TIME.getEpochSecond() ) )
+                                        .setEarliestValidTime( Timestamp.newBuilder()
+                                                                        .setSeconds( Instant.MIN.getEpochSecond() )
+                                                                        .setNanos( Instant.MIN.getNano() ) )
+                                        .setLatestValidTime( Timestamp.newBuilder()
+                                                                      .setSeconds( Instant.MAX.getEpochSecond() )
+                                                                      .setNanos( Instant.MAX.getNano() ) )
+                                        .setEarliestLeadDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                              .setSeconds( 0 ) )
+                                        .setLatestLeadDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                            .setSeconds( 0 ) )
+                                        .build();
 
         assertEquals( expected, window.getTimeWindow() );
     }
-    
+
     /**
      * Constructs a {@link TimeWindowOuter} and tests for an exception when the earliest reference time is 
      * after the latest reference time.
@@ -592,6 +592,22 @@ public final class TimeWindowOuterTest
 
     }
 
+    @Test
+    public void testToBuilder()
+    {
+        TimeWindowOuter expected = TimeWindowOuter.of( SECOND_TIME,
+                                                       FIFTH_TIME,
+                                                       THIRD_TIME,
+                                                       FOURTH_TIME,
+                                                       Duration.ZERO,
+                                                       Duration.ofHours( 120 ) );
+
+        TimeWindowOuter actual = expected.toBuilder()
+                                         .build();
+
+        assertEquals( expected, actual );
+    }
+
     /**
      * Tests that {@link TimeWindowOuter#unionWith(TimeWindowOuter)} throws an {@link IllegalArgumentException} on empty input.
      */
@@ -614,10 +630,10 @@ public final class TimeWindowOuterTest
     @Test
     public void testUnionWithThrowsExceptionOnInputWithNull()
     {
-        
+
         Set<TimeWindowOuter> nullInput = new HashSet<>();
         nullInput.add( null );
-        
+
         IllegalArgumentException thrown =
                 assertThrows( IllegalArgumentException.class,
                               () -> TimeWindowOuter.unionOf( nullInput ) );
@@ -638,6 +654,5 @@ public final class TimeWindowOuterTest
 
         assertEquals( "Cannot determine the union of time windows for a null input.", thrown.getMessage() );
     }
-
 
 }

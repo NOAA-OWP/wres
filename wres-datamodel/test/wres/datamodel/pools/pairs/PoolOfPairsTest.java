@@ -20,12 +20,10 @@ import org.junit.Test;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
@@ -77,7 +75,7 @@ public final class PoolOfPairsTest
     {
         //Build a time-series with two basis times
         SortedSet<Event<Pair<Double, Double>>> values = new TreeSet<>();
-        Builder<Double, Double> b = new Builder<>();
+        PoolOfPairs.Builder<Double, Double> b = new PoolOfPairs.Builder<>();
 
         Instant basisTime = Instant.parse( FIRST_TIME );
         values.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 1.0, 1.0 ) ) );
@@ -117,7 +115,7 @@ public final class PoolOfPairsTest
                                                                       first );
 
         //Add the first time-series and then append a second and third
-        Builder<Double, Double> c = new Builder<>();
+        PoolOfPairs.Builder<Double, Double> c = new PoolOfPairs.Builder<>();
         c.addTimeSeries( firstSeries );
 
         second.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 4.0, 4.0 ) ) );
@@ -179,7 +177,7 @@ public final class PoolOfPairsTest
         first.add( Event.of( Instant.parse( FOURTH_TIME ), Pair.of( 3.0, 3.0 ) ) );
         final PoolMetadata meta = PoolMetadata.of();
         TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( firstBasisTime );
-        Builder<Double, Double> d = new Builder<>();
+        PoolOfPairs.Builder<Double, Double> d = new PoolOfPairs.Builder<>();
         TimeSeries<Pair<Double, Double>> firstSeries = TimeSeries.of( metadata,
                                                                       first );
         Pool<Pair<Double, Double>> ts =
@@ -198,7 +196,7 @@ public final class PoolOfPairsTest
     public void testToString()
     {
         SortedSet<Event<Pair<Double, Double>>> first = new TreeSet<>();
-        Builder<Double, Double> b = new Builder<>();
+        PoolOfPairs.Builder<Double, Double> b = new PoolOfPairs.Builder<>();
 
         Instant basisTime = Instant.parse( FIRST_TIME );
         PoolMetadata meta = PoolMetadata.of();
@@ -212,9 +210,9 @@ public final class PoolOfPairsTest
 
         TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( basisTime );
         TimeSeries<Pair<Double, Double>> firstSeries =
-                new TimeSeriesBuilder<Pair<Double, Double>>().setMetadata( metadata )
-                                                             .addEvents( first )
-                                                             .build();
+                new TimeSeries.Builder<Pair<Double, Double>>().setMetadata( metadata )
+                                                              .addEvents( first )
+                                                              .build();
 
 
         b.addTimeSeries( firstSeries ).setMetadata( meta );
@@ -250,9 +248,9 @@ public final class PoolOfPairsTest
 
         TimeSeriesMetadata secondMetadata = getBoilerplateMetadataWithT0( nextBasisTime );
         TimeSeries<Pair<Double, Double>> secondSeries =
-                new TimeSeriesBuilder<Pair<Double, Double>>().setMetadata( secondMetadata )
-                                                             .addEvents( second )
-                                                             .build();
+                new TimeSeries.Builder<Pair<Double, Double>>().setMetadata( secondMetadata )
+                                                              .addEvents( second )
+                                                              .build();
 
         b.addTimeSeries( secondSeries );
 
@@ -280,7 +278,7 @@ public final class PoolOfPairsTest
         SortedSet<Event<Pair<Double, Double>>> third = new TreeSet<>();
         SortedSet<Event<Pair<Double, Double>>> fourth = new TreeSet<>();
 
-        Builder<Double, Double> b = new Builder<>();
+        PoolOfPairs.Builder<Double, Double> b = new PoolOfPairs.Builder<>();
 
         Instant firstBasisTime = Instant.parse( FIRST_TIME );
         TimeSeriesMetadata firstMetadata = getBoilerplateMetadataWithT0( firstBasisTime );
@@ -356,7 +354,7 @@ public final class PoolOfPairsTest
     public void testIterateNonForecasts()
     {
         SortedSet<Event<Pair<Double, Double>>> data = new TreeSet<>();
-        Builder<Double, Double> b = new Builder<>();
+        PoolOfPairs.Builder<Double, Double> b = new PoolOfPairs.Builder<>();
 
         data.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 1.0, 1.0 ) ) );
         data.add( Event.of( Instant.parse( THIRD_TIME ), Pair.of( 2.0, 2.0 ) ) );
@@ -412,7 +410,7 @@ public final class PoolOfPairsTest
     {
         // Equal objects have the same hashcode
         SortedSet<Event<Pair<Double, Double>>> data = new TreeSet<>();
-        Builder<Double, Double> b = new Builder<>();
+        PoolOfPairs.Builder<Double, Double> b = new PoolOfPairs.Builder<>();
 
         data.add( Event.of( Instant.parse( SECOND_TIME ), Pair.of( 1.0, 1.0 ) ) );
         data.add( Event.of( Instant.parse( THIRD_TIME ), Pair.of( 2.0, 2.0 ) ) );

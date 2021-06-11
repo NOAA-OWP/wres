@@ -3,7 +3,6 @@ package wres.datamodel.time;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Objects;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.DoubleUnaryOperator;
@@ -60,19 +59,19 @@ public class TimeSeriesOfDoubleUpscaler implements TimeSeriesUpscaler<Double>
     public RescaledTimeSeriesPlusValidation<Double> upscale( TimeSeries<Double> timeSeries,
                                                              TimeScaleOuter desiredTimeScale )
     {
-        return this.upscale( timeSeries, desiredTimeScale, Collections.emptySet() );
+        return this.upscale( timeSeries, desiredTimeScale, Collections.emptySortedSet() );
     }
 
     @Override
     public RescaledTimeSeriesPlusValidation<Double> upscale( TimeSeries<Double> timeSeries,
                                                              TimeScaleOuter desiredTimeScale,
-                                                             Set<Instant> endsAt )
-    {
+                                                             SortedSet<Instant> endsAt )
+    {       
         Objects.requireNonNull( desiredTimeScale );
 
         TimeScaleFunction desiredFunction = desiredTimeScale.getFunction();
         ToDoubleFunction<SortedSet<Event<Double>>> upscaler = this.getUpscaler( desiredFunction );
-
+        
         return RescalingHelper.upscale( timeSeries, upscaler::applyAsDouble, desiredTimeScale, endsAt );
     }
 

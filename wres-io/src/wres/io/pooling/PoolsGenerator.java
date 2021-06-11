@@ -38,7 +38,6 @@ import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
@@ -869,7 +868,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
         List<TimeSeries<L>> climData = climatologySupplier.get()
                                                           .collect( Collectors.toList() );
 
-        TimeSeriesBuilder<L> builder = new TimeSeriesBuilder<>();
+        TimeSeries.Builder<L> builder = new TimeSeries.Builder<>();
 
         TimeSeriesMetadata existingMetadata = null;
 

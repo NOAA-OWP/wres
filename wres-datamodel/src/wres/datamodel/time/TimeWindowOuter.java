@@ -81,13 +81,7 @@ public final class TimeWindowOuter implements Comparable<TimeWindowOuter>
 
     public static TimeWindowOuter of()
     {
-        return new Builder().setEarliestReferenceTime( Instant.MIN )
-                            .setLatestReferenceTime( Instant.MAX )
-                            .setEarliestValidTime( Instant.MIN )
-                            .setLatestValidTime( Instant.MAX )
-                            .setEarliestLeadDuration( TimeWindowOuter.DURATION_MIN )
-                            .setLatestLeadDuration( TimeWindowOuter.DURATION_MAX )
-                            .build();
+        return new Builder().build();
     }
 
     /**
@@ -118,10 +112,6 @@ public final class TimeWindowOuter implements Comparable<TimeWindowOuter>
     {
         return new Builder().setEarliestValidTime( earliestValidTime )
                             .setLatestValidTime( latestValidTime )
-                            .setEarliestReferenceTime( Instant.MIN )
-                            .setLatestReferenceTime( Instant.MAX )
-                            .setEarliestLeadDuration( TimeWindowOuter.DURATION_MIN )
-                            .setLatestLeadDuration( TimeWindowOuter.DURATION_MAX )
                             .build();
     }
 
@@ -140,11 +130,7 @@ public final class TimeWindowOuter implements Comparable<TimeWindowOuter>
     public static TimeWindowOuter of( Duration earliestLead,
                                       Duration latestLead )
     {
-        return new Builder().setEarliestReferenceTime( Instant.MIN )
-                            .setLatestReferenceTime( Instant.MAX )
-                            .setEarliestValidTime( Instant.MIN )
-                            .setLatestValidTime( Instant.MAX )
-                            .setEarliestLeadDuration( earliestLead )
+        return new Builder().setEarliestLeadDuration( earliestLead )
                             .setLatestLeadDuration( latestLead )
                             .build();
     }
@@ -172,8 +158,6 @@ public final class TimeWindowOuter implements Comparable<TimeWindowOuter>
                             .setLatestReferenceTime( latestReferenceTime )
                             .setEarliestValidTime( earliestValidTime )
                             .setLatestValidTime( latestValidTime )
-                            .setEarliestLeadDuration( TimeWindowOuter.DURATION_MIN )
-                            .setLatestLeadDuration( TimeWindowOuter.DURATION_MAX )
                             .build();
     }
 
@@ -194,8 +178,6 @@ public final class TimeWindowOuter implements Comparable<TimeWindowOuter>
     {
         return new Builder().setEarliestReferenceTime( earliestReferenceTime )
                             .setLatestReferenceTime( latestReferenceTime )
-                            .setEarliestValidTime( Instant.MIN )
-                            .setLatestValidTime( Instant.MAX )
                             .setEarliestLeadDuration( lead )
                             .setLatestLeadDuration( lead )
                             .build();
@@ -222,8 +204,6 @@ public final class TimeWindowOuter implements Comparable<TimeWindowOuter>
     {
         return new Builder().setEarliestReferenceTime( earliestReferenceTime )
                             .setLatestReferenceTime( latestReferenceTime )
-                            .setEarliestValidTime( Instant.MIN )
-                            .setLatestValidTime( Instant.MAX )
                             .setEarliestLeadDuration( earliestLead )
                             .setLatestLeadDuration( latestLead )
                             .build();
@@ -325,6 +305,15 @@ public final class TimeWindowOuter implements Comparable<TimeWindowOuter>
         }
 
         return TimeWindowOuter.of( earliestR, latestR, earliestV, latestV, earliestL, latestL );
+    }
+
+    /**
+     * @return a builder with the same content as the current {@link TimeWindowOuter}.
+     */
+
+    public Builder toBuilder()
+    {
+        return new TimeWindowOuter.Builder( this.getTimeWindow() );
     }
 
     @Override
@@ -537,43 +526,37 @@ public final class TimeWindowOuter implements Comparable<TimeWindowOuter>
          * The earliest time associated with the time window.
          */
 
-        private Instant earliestReferenceTime;
+        private Instant earliestReferenceTime = Instant.MIN;
 
         /**
          * The latest time associated with the time window.
          */
 
-        private Instant latestReferenceTime;
+        private Instant latestReferenceTime = Instant.MAX;
 
         /**
          * The earliest valid time associated with the time window.
          */
 
-        private Instant earliestValidTime;
+        private Instant earliestValidTime = Instant.MIN;
 
         /**
          * The latest valid time associated with the time window.
          */
 
-        private Instant latestValidTime;
+        private Instant latestValidTime = Instant.MAX;
 
         /**
          * The earliest forecast lead time.
          */
 
-        private Duration earliestLead;
+        private Duration earliestLead = TimeWindowOuter.DURATION_MIN;
 
         /**
          * The latest forecast lead time. 
          */
 
-        private Duration latestLead;
-
-        /**
-         * An existing instance, supplied on construction.
-         */
-
-        private TimeWindow timeWindow;
+        private Duration latestLead = TimeWindowOuter.DURATION_MAX;
 
         /**
          * Sets the earliest reference time.
@@ -680,7 +663,18 @@ public final class TimeWindowOuter implements Comparable<TimeWindowOuter>
 
         public Builder( TimeWindow timeWindow )
         {
-            this.timeWindow = timeWindow;
+            this.earliestLead = Duration.ofSeconds( timeWindow.getEarliestLeadDuration().getSeconds(),
+                                                    timeWindow.getEarliestLeadDuration().getNanos() );
+            this.latestLead = Duration.ofSeconds( timeWindow.getLatestLeadDuration().getSeconds(),
+                                                  timeWindow.getLatestLeadDuration().getNanos() );
+            this.earliestReferenceTime = Instant.ofEpochSecond( timeWindow.getEarliestReferenceTime().getSeconds(),
+                                                                timeWindow.getEarliestReferenceTime().getNanos() );
+            this.latestReferenceTime = Instant.ofEpochSecond( timeWindow.getLatestReferenceTime().getSeconds(),
+                                                              timeWindow.getLatestReferenceTime().getNanos() );
+            this.earliestValidTime = Instant.ofEpochSecond( timeWindow.getEarliestValidTime().getSeconds(),
+                                                            timeWindow.getEarliestValidTime().getNanos() );
+            this.latestValidTime = Instant.ofEpochSecond( timeWindow.getLatestValidTime().getSeconds(),
+                                                          timeWindow.getLatestValidTime().getNanos() );
         }
     }
 
@@ -688,31 +682,20 @@ public final class TimeWindowOuter implements Comparable<TimeWindowOuter>
      * Hidden constructor.
      * 
      * @param builder the builder
-     * @throws IllegalArgumentException if the latestTime is before (i.e. smaller than) the earliestTime or the 
-     *            latestLeadTime is before (i.e. smaller than) the earliestLeadTime.  
+     * @throws IllegalArgumentException if a right (latest) bookend is earlier than a left (earliest) bookend.  
      * @throws NullPointerException if the earliestTime or latestTime are null
      */
 
     private TimeWindowOuter( Builder builder )
     {
         // Set then validate
-        TimeWindow innerTimeWindow = builder.timeWindow;
         Instant earliestReferenceTime = builder.earliestReferenceTime;
         Instant latestReferenceTime = builder.latestReferenceTime;
         Instant earliestValidTime = builder.earliestValidTime;
         Instant latestValidTime = builder.latestValidTime;
         Duration earliestLead = builder.earliestLead;
         Duration latestLead = builder.latestLead;
-        TimeWindow.Builder timeWindowBuilder = null;
-
-        if ( Objects.isNull( innerTimeWindow ) )
-        {
-            timeWindowBuilder = TimeWindow.newBuilder();
-        }
-        else
-        {
-            timeWindowBuilder = TimeWindow.newBuilder( innerTimeWindow );
-        }
+        TimeWindow.Builder timeWindowBuilder = TimeWindow.newBuilder();
 
         if ( Objects.nonNull( earliestReferenceTime ) )
         {

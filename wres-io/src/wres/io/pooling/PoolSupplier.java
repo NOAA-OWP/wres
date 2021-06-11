@@ -42,7 +42,6 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.RescaledTimeSeriesPlusValidation;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.TimeSeriesCrossPairer;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesPairer;
@@ -101,6 +100,13 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
      */
 
     private static final String WHILE_CONSTRUCTING_A_POOL_SUPPLIER_FOR = "While constructing a pool supplier for {}, ";
+
+    /**
+     * Set of reference times for observation-like time-series.
+     */
+
+    private static final Set<ReferenceTimeType> OBSERVATION_REFERENCE_TIME_TYPE =
+            Set.of( ReferenceTimeType.LATEST_OBSERVATION );
 
     /**
      * Climatological data source at the desired time scale.
@@ -256,6 +262,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
 
     private Pool<Pair<L, R>> createPool()
     {
+        LOGGER.debug( "Creating pool {}.", this.metadata );
+
         PoolOfPairs.Builder<L, R> builder = new PoolOfPairs.Builder<>();
 
         // Left data provided or is climatology the left data?
@@ -269,7 +277,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
             cStream = this.climatology.get();
         }
 
-        // Retrieve the data
         List<TimeSeries<L>> leftData = cStream.collect( Collectors.toList() );
         List<TimeSeries<R>> rightData = this.right.get()
                                                   .collect( Collectors.toList() );
@@ -797,9 +804,9 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
 
         Objects.requireNonNull( rightOrBaseline );
 
-        // Snip the left data to the right with a buffer on the lower bound, if required
+        // Snip the left data to the right with a buffer on the lower bound, if required. This greatly improves
+        // performance for a very long left series, which is quite typical
         Duration period = this.getPeriodFromTimeScale( desiredTimeScale );
-
         TimeSeries<L> scaledLeft = TimeSeriesSlicer.snip( left, rightOrBaseline, period, Duration.ZERO );
         TimeSeries<R> scaledRight = rightOrBaseline;
         boolean upscaleLeft = Objects.nonNull( desiredTimeScale ) && !desiredTimeScale.equals( left.getTimeScale() );
@@ -820,10 +827,11 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
             // Acquire the times from the right series at which left upscaled values should end
             SortedSet<Instant> endsAt = this.getEventValidTimes( rightOrBaseline );
 
-            RescaledTimeSeriesPlusValidation<L> upscaledLeft = this.getLeftUpscaler()
-                                                                   .upscale( left,
-                                                                             desiredTimeScale,
-                                                                             endsAt );
+            TimeSeriesUpscaler<L> leftUpscaler = this.getLeftUpscaler();
+            // #92892
+            RescaledTimeSeriesPlusValidation<L> upscaledLeft = leftUpscaler.upscale( scaledLeft,
+                                                                                     desiredTimeScale,
+                                                                                     endsAt );
 
             scaledLeft = upscaledLeft.getTimeSeries();
 
@@ -855,10 +863,10 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
             // Acquire the times from the left series at which right upscaled values should end
             SortedSet<Instant> endsAt = this.getEventValidTimes( scaledLeft );
 
-            RescaledTimeSeriesPlusValidation<R> upscaledRight = this.getRightUpscaler()
-                                                                    .upscale( rightOrBaseline,
-                                                                              desiredTimeScale,
-                                                                              endsAt );
+            TimeSeriesUpscaler<R> rightUpscaler = this.getRightUpscaler();
+            RescaledTimeSeriesPlusValidation<R> upscaledRight = rightUpscaler.upscale( rightOrBaseline,
+                                                                                       desiredTimeScale,
+                                                                                       endsAt );
 
             scaledRight = upscaledRight.getTimeSeries();
 
@@ -875,11 +883,11 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
             // Log any warnings
             PoolSupplier.logScaleValidationWarnings( rightOrBaseline, upscaledRight.getValidationEvents() );
         }
-        
+
         // Transform the rescaled values, if required
-        TimeSeries<L> scaledAndTransformedLeft = this.transform( scaledLeft, this.leftTransformer );
+        TimeSeries<L> scaledAndTransformedLeft = this.transform( scaledLeft, this.getLeftTransformer() );
         TimeSeries<R> scaledAndTransformedRight = this.transformByEvent( scaledRight, rightOrBaselineTransformer );
-        
+
         // Create the pairs, if any
         TimeSeries<Pair<L, R>> pairs = this.getPairer()
                                            .pair( scaledAndTransformedLeft, scaledAndTransformedRight );
@@ -1159,10 +1167,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
 
     private TimeSeriesUpscaler<L> getLeftUpscaler()
     {
-        Objects.requireNonNull( this.leftUpscaler,
-                                "Left upscaler was required, but not available, when creating pool "
-                                                   + this.metadata
-                                                   + "." );
+        Objects.requireNonNull( this.leftUpscaler );
 
         return this.leftUpscaler;
     }
@@ -1177,12 +1182,18 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
 
     private TimeSeriesUpscaler<R> getRightUpscaler()
     {
-        Objects.requireNonNull( this.rightUpscaler,
-                                "Right upscaler was required, but not available, when creating pool "
-                                                    + this.metadata
-                                                    + "." );
+        Objects.requireNonNull( this.rightUpscaler );
 
         return this.rightUpscaler;
+    }
+
+    /**
+     * @return the transformer for left-ish data
+     */
+
+    private UnaryOperator<L> getLeftTransformer()
+    {
+        return this.leftTransformer;
     }
 
     /**
@@ -1341,7 +1352,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
                 jump = period;
             }
 
-            TimeSeriesBuilder<Pair<L, R>> filteredSeries = new TimeSeriesBuilder<>();
+            TimeSeries.Builder<Pair<L, R>> filteredSeries = new TimeSeries.Builder<>();
             TimeSeriesMetadata localMetadata = toFilter.getMetadata();
             filteredSeries.setMetadata( localMetadata );
 
@@ -1570,13 +1581,25 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
             List<TimeSeries<T>> withoutReferenceTimes = new ArrayList<>();
             for ( TimeSeries<T> next : timeSeries )
             {
-                if ( !next.getReferenceTimes().isEmpty() )
+                Set<ReferenceTimeType> referenceTimes = next.getReferenceTimes()
+                                                            .keySet();
+
+                // One or more reference times that are not observation-like
+                if ( !referenceTimes.isEmpty()
+                     && !referenceTimes.equals( PoolSupplier.OBSERVATION_REFERENCE_TIME_TYPE ) )
                 {
                     returnMe.add( next );
                 }
                 else
                 {
-                    withoutReferenceTimes.add( next );
+                    // Remove any observation-like reference times
+                    TimeSeriesMetadata meta =
+                            new TimeSeriesMetadata.Builder( next.getMetadata() ).setReferenceTimes( Map.of() )
+                                                                                .build();
+
+                    TimeSeries<T> series = TimeSeries.of( meta, next.getEvents() );
+
+                    withoutReferenceTimes.add( series );
                 }
             }
 
@@ -1650,8 +1673,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
      * @return the adjusted time-series
      */
 
-    private <T> List<TimeSeries<T>> applyValidTimeOffset( List<TimeSeries<T>> toTransform, 
-                                                          Duration offset, 
+    private <T> List<TimeSeries<T>> applyValidTimeOffset( List<TimeSeries<T>> toTransform,
+                                                          Duration offset,
                                                           LeftOrRightOrBaseline lrb )
     {
 
@@ -1663,11 +1686,11 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
              && !Duration.ZERO.equals( offset ) )
         {
             // Log the time shift
-            if( LOGGER.isDebugEnabled() )
+            if ( LOGGER.isDebugEnabled() )
             {
                 LOGGER.debug( "Applying a valid time offset of {} to {} time-series.", offset, lrb );
             }
-            
+
             transformed = new ArrayList<>();
 
             for ( TimeSeries<T> nextSeries : toTransform )

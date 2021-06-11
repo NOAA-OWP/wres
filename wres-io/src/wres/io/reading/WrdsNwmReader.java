@@ -41,7 +41,7 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
+import wres.datamodel.time.TimeSeries.Builder;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.concurrency.TimeSeriesIngester;
 import wres.io.config.ConfigHelper;
@@ -458,7 +458,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                                                  variableName,
                                                                  feature,
                                                                  measurementUnit );
-            timeSeries = new TimeSeriesBuilder<Double>().addEvents( Collections.unmodifiableSortedSet( events ) )
+            timeSeries = new Builder<Double>().addEvents( Collections.unmodifiableSortedSet( events ) )
                                                         .setMetadata( metadata )
                                                         .build();
         }
@@ -534,7 +534,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                                                  variableName,
                                                                  feature,
                                                                  measurementUnit );
-            TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<Ensemble>().setMetadata( metadata );
+            Builder<Ensemble> builder = new Builder<Ensemble>().setMetadata( metadata );
 
             for ( Map.Entry<Instant, double[]> row : primitiveData.entrySet() )
             {

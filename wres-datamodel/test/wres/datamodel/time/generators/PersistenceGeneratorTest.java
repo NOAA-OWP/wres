@@ -18,7 +18,7 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesOfDoubleUpscaler;
-import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
+import wres.datamodel.time.TimeSeries.Builder;
 
 /**
  * Tests the {@link PersistenceGenerator}.
@@ -170,7 +170,7 @@ public class PersistenceGeneratorTest
                                                              FAKE2,
                                                              CMS );
         TimeSeries<Double> observations =
-                new TimeSeriesBuilder<Double>().addEvent( Event.of( T2551_03_17T00_00_00Z, 313.0 ) )
+                new Builder<Double>().addEvent( Event.of( T2551_03_17T00_00_00Z, 313.0 ) )
                                                .addEvent( Event.of( T2551_03_17T01_00_00Z, 317.0 ) )
                                                .addEvent( Event.of( T2551_03_17T02_00_00Z, 331.0 ) )
                                                .addEvent( Event.of( T2551_03_17T03_00_00Z, 347.0 ) )
@@ -268,7 +268,7 @@ public class PersistenceGeneratorTest
                                                                 CMS );
         // Forecast: 25510317T12_FAKE2_forecast.xml
         this.forecastOne =
-                new TimeSeriesBuilder<Double>().addEvent( Event.of( T2551_03_17T15_00_00Z, 73.0 ) )
+                new Builder<Double>().addEvent( Event.of( T2551_03_17T15_00_00Z, 73.0 ) )
                                                .addEvent( Event.of( T2551_03_17T18_00_00Z, 79.0 ) )
                                                .addEvent( Event.of( T2551_03_17T21_00_00Z, 83.0 ) )
                                                .addEvent( Event.of( T2551_03_18T00_00_00Z, 89.0 ) )
@@ -290,7 +290,7 @@ public class PersistenceGeneratorTest
                                                                 CMS );
         // Forecast: 25510318T00_FAKE2_forecast.xml
         this.forecastTwo =
-                new TimeSeriesBuilder<Double>().addEvent( Event.of( T2551_03_18T03_00_00Z, 131.0 ) )
+                new Builder<Double>().addEvent( Event.of( T2551_03_18T03_00_00Z, 131.0 ) )
                                                .addEvent( Event.of( T2551_03_18T06_00_00Z, 137.0 ) )
                                                .addEvent( Event.of( T2551_03_18T09_00_00Z, 139.0 ) )
                                                .addEvent( Event.of( T2551_03_18T12_00_00Z, 149.0 ) )
@@ -312,7 +312,7 @@ public class PersistenceGeneratorTest
                                                                   CMS );
         // Forecast: 25510318T12_FAKE2_forecast.xml
         this.forecastThree =
-                new TimeSeriesBuilder<Double>().addEvent( Event.of( T2551_03_18T15_00_00Z, 191.0 ) )
+                new Builder<Double>().addEvent( Event.of( T2551_03_18T15_00_00Z, 191.0 ) )
                                                .addEvent( Event.of( T2551_03_18T18_00_00Z, 193.0 ) )
                                                .addEvent( Event.of( T2551_03_18T21_00_00Z, 197.0 ) )
                                                .addEvent( Event.of( T2551_03_19T00_00_00Z, 199.0 ) )
@@ -334,7 +334,7 @@ public class PersistenceGeneratorTest
                                                                  CMS );
         // Forecast: 25510319T00_FAKE2_forecast.xml
         this.forecastFour =
-                new TimeSeriesBuilder<Double>().addEvent( Event.of( T2551_03_19T03_00_00Z, 251.0 ) )
+                new Builder<Double>().addEvent( Event.of( T2551_03_19T03_00_00Z, 251.0 ) )
                                                .addEvent( Event.of( T2551_03_19T06_00_00Z, 257.0 ) )
                                                .addEvent( Event.of( T2551_03_19T09_00_00Z, 263.0 ) )
                                                .addEvent( Event.of( T2551_03_19T12_00_00Z, 269.0 ) )
@@ -376,7 +376,7 @@ public class PersistenceGeneratorTest
                                                              FAKE2,
                                                              CMS );
         TimeSeries<Double> expected =
-                new TimeSeriesBuilder<Double>().addEvent( Event.of( T2551_03_17T15_00_00Z, 383.6666666666667 ) )
+                new Builder<Double>().addEvent( Event.of( T2551_03_17T15_00_00Z, 383.6666666666667 ) )
                                                .addEvent( Event.of( T2551_03_17T18_00_00Z, 383.6666666666667 ) )
                                                .addEvent( Event.of( T2551_03_17T21_00_00Z, 383.6666666666667 ) )
                                                .addEvent( Event.of( T2551_03_18T00_00_00Z, 383.6666666666667 ) )
@@ -412,7 +412,7 @@ public class PersistenceGeneratorTest
                                                              FAKE2,
                                                              CMS );
         TimeSeries<Double> expected =
-                new TimeSeriesBuilder<Double>().addEvent( Event.of( T2551_03_18T03_00_00Z, 455.6666666666667 ) )
+                new Builder<Double>().addEvent( Event.of( T2551_03_18T03_00_00Z, 455.6666666666667 ) )
                                                .addEvent( Event.of( T2551_03_18T06_00_00Z, 455.6666666666667 ) )
                                                .addEvent( Event.of( T2551_03_18T09_00_00Z, 455.6666666666667 ) )
                                                .addEvent( Event.of( T2551_03_18T12_00_00Z, 455.6666666666667 ) )
@@ -448,7 +448,7 @@ public class PersistenceGeneratorTest
                                                              FAKE2,
                                                              CMS );
         TimeSeries<Double> expected =
-                new TimeSeriesBuilder<Double>().addEvent( Event.of( T2551_03_18T15_00_00Z, 537.0 ) )
+                new Builder<Double>().addEvent( Event.of( T2551_03_18T15_00_00Z, 537.0 ) )
                                                .addEvent( Event.of( T2551_03_18T18_00_00Z, 537.0 ) )
                                                .addEvent( Event.of( T2551_03_18T21_00_00Z, 537.0 ) )
                                                .addEvent( Event.of( T2551_03_19T00_00_00Z, 537.0 ) )
@@ -484,7 +484,7 @@ public class PersistenceGeneratorTest
                                                              FAKE2,
                                                              CMS );
         TimeSeries<Double> expected =
-                new TimeSeriesBuilder<Double>().addEvent( Event.of( T2551_03_19T03_00_00Z, 612.3333333333334 ) )
+                new Builder<Double>().addEvent( Event.of( T2551_03_19T03_00_00Z, 612.3333333333334 ) )
                                                .addEvent( Event.of( T2551_03_19T06_00_00Z, 612.3333333333334 ) )
                                                .addEvent( Event.of( T2551_03_19T09_00_00Z, 612.3333333333334 ) )
                                                .addEvent( Event.of( T2551_03_19T12_00_00Z, 612.3333333333334 ) )

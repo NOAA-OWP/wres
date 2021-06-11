@@ -7,7 +7,7 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
+import wres.datamodel.time.TimeSeries.Builder;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.grid.client.Request;
 import wres.grid.client.SingleValuedTimeSeriesResponse;
@@ -224,8 +224,8 @@ public class GriddedReader
         // Add the time-series
         for ( Map.Entry<Instant, SortedSet<Event<T>>> nextEntry : eventsByReferenceTime.entrySet() )
         {
-            TimeSeriesBuilder<T> builder =
-                    new TimeSeriesBuilder<T>().addEvents( nextEntry.getValue() );
+            Builder<T> builder =
+                    new Builder<T>().addEvents( nextEntry.getValue() );
             Map<ReferenceTimeType,Instant> referenceTimes = Collections.emptyMap();
 
             // Add the reference time for forecasts

@@ -4,9 +4,9 @@ import static org.junit.Assert.assertEquals;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -15,7 +15,7 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
-import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
+import wres.datamodel.time.TimeSeries.Builder;
 
 /**
  * Tests the {@link TimeSeriesOfEnsembleUpscaler}
@@ -75,7 +75,7 @@ public class TimeSeriesOfEnsembleUpscalerTest
         TimeSeriesMetadata existingMetadata =
                 getBoilerplateMetadataWithT0AndTimeScale( referenceTime,
                                                           existingScale );
-        TimeSeries<Ensemble> forecast = new TimeSeriesBuilder<Ensemble>().addEvent( one )
+        TimeSeries<Ensemble> forecast = new Builder<Ensemble>().addEvent( one )
                                                                          .addEvent( two )
                                                                          .addEvent( three )
                                                                          .addEvent( four )
@@ -83,7 +83,7 @@ public class TimeSeriesOfEnsembleUpscalerTest
                                                                          .build();
 
         // Upscaled forecasts must end at these times
-        Set<Instant> endsAt = new HashSet<>();
+        SortedSet<Instant> endsAt = new TreeSet<>();
         endsAt.add( second );
         endsAt.add( fourth );
 
@@ -99,7 +99,7 @@ public class TimeSeriesOfEnsembleUpscalerTest
                 getBoilerplateMetadataWithT0AndTimeScale( referenceTime,
                                                           desiredTimeScale );
         TimeSeries<Ensemble> expectedForecast =
-                new TimeSeriesBuilder<Ensemble>().addEvent( Event.of( second, expectedOne ) )
+                new Builder<Ensemble>().addEvent( Event.of( second, expectedOne ) )
                                                  .addEvent( Event.of( fourth, expectedTwo ) )
                                                  .setMetadata( expectedMetadata )
                                                  .build();

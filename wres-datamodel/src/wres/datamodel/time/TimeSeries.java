@@ -7,6 +7,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -79,9 +80,9 @@ public class TimeSeries<T>
         Objects.requireNonNull( timeSeriesMetadata );
         Objects.requireNonNull( events );
 
-        return new TimeSeriesBuilder<T>().setMetadata( timeSeriesMetadata )
-                                         .addEvents( events )
-                                         .build();
+        return new Builder<T>().setMetadata( timeSeriesMetadata )
+                               .setEvents( events )
+                               .build();
     }
 
     /**
@@ -176,7 +177,7 @@ public class TimeSeries<T>
      * 
      * @param builder the builder
      */
-    private TimeSeries( TimeSeriesBuilder<T> builder )
+    private TimeSeries( Builder<T> builder )
     {
 
         // Set then validate
@@ -218,13 +219,13 @@ public class TimeSeries<T>
      * @param <T> the type of data
      */
 
-    public static class TimeSeriesBuilder<T>
+    public static class Builder<T>
     {
         /**
          * Events with a prescribed comparator based on event time.
          */
 
-        private final SortedSet<Event<T>> events =
+        private SortedSet<Event<T>> events =
                 new TreeSet<>( ( e1, e2 ) -> e1.getTime().compareTo( e2.getTime() ) );
 
         /**
@@ -238,12 +239,47 @@ public class TimeSeries<T>
          * 
          * @param events the events
          * @return the builder
-         * @throws IllegalArgumentException if the time-series already contains an event at the prescribed time
+         * @throws NullPointerException if the input is null
+         * @throws IllegalArgumentException if the time-series contains more than one event at the same time
          */
 
-        public TimeSeriesBuilder<T> addEvents( Set<Event<T>> events )
+        public Builder<T> addEvents( SortedSet<Event<T>> events )
         {
-            events.stream().forEach( this::addEvent );
+            Objects.requireNonNull( events );
+
+            events.forEach( this::addEvent );
+
+            return this;
+        }
+
+        /**
+         * Sets the events for the time-series. This method should be preferred when setting all events at once and is
+         * much more performant than {@link #addEvents(SortedSet)} for a large time-series.  
+         * 
+         * @param events the events
+         * @return the builder
+         * @throws NullPointerException if the input is null
+         * @throws IllegalArgumentException if the time-series contains more than one event at the same time
+         */
+
+        public Builder<T> setEvents( SortedSet<Event<T>> events )
+        {
+            Objects.requireNonNull( events );
+
+            Set<Instant> instants = events.stream()
+                                          .map( Event::getTime )
+                                          .collect( Collectors.toSet() );
+
+            int duplicates = events.size() - instants.size();
+
+            if ( duplicates > 0 )
+            {
+                throw new IllegalArgumentException( "The events contained " + duplicates
+                                                    + " duplicates by valid time, "
+                                                    + "which is not allowed." );
+            }
+
+            this.events = events;
 
             return this;
         }
@@ -253,12 +289,15 @@ public class TimeSeries<T>
          * 
          * @param event the event
          * @return the builder
+         * @throws NullPointerException if the input is null
          * @throws IllegalArgumentException if the time-series already contains an event at the prescribed time
          */
 
-        public TimeSeriesBuilder<T> addEvent( Event<T> event )
+        public Builder<T> addEvent( Event<T> event )
         {
-            if ( this.events.contains( event ) )
+            Objects.requireNonNull( event );
+
+            if ( this.hasEventAtThisTime( event ) )
             {
                 throw new IllegalArgumentException( "Attempted to add an event at the same valid datetime as an "
                                                     + "existing event, which is not allowed. The duplicate event "
@@ -279,7 +318,7 @@ public class TimeSeries<T>
          * @return the builder
          */
 
-        public TimeSeriesBuilder<T> setMetadata( TimeSeriesMetadata metadata )
+        public Builder<T> setMetadata( TimeSeriesMetadata metadata )
         {
             this.metadata = metadata;
 
