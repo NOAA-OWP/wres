@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.ensemble;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +41,8 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * Uses the procedure outlined in Hersbach, H. (2000) Decomposition of the Continuous Ranked Probability Score for
  * Ensemble Prediction Systems. <i>Weather and Forecasting</i>, <b>15</b>(5) pp. 559-570. When the inputs contain
  * ensemble forecasts with a varying number of ensemble members, the pairs are split into groups with an equal number of
- * members, and a weighed average CRPS is computed across the groups, based on the fraction of pairs in each group.
+ * ensemble members, and the per-forecast CRPS is computed for each group separately. The average CRPS is then computed
+ * from the per-forecast CRPS values.
  * </p>
  * 
  * @author james.brown@hydrosolved.com
@@ -122,16 +124,19 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
                       s.getMetadata() );
 
         //Slice the data into groups with an equal number of ensemble members
-        Map<Integer, List<Pair<Double, Ensemble>>> sliced =
+        Map<Integer, List<Pair<Double, Ensemble>>> grouped =
                 Slicer.filterByRightSize( s.getRawData() );
 
         //CRPS, currently without decomposition
         //TODO: implement the decomposition
         double[] crps = new double[1];
-        sliced.values().forEach( pairs -> {
-            double increment = this.getSumCRPS( pairs )[0];
-            crps[0] += increment;
-        } );
+        for ( Map.Entry<Integer, List<Pair<Double, Ensemble>>> nextGroup : grouped.entrySet() )
+        {
+            int count = nextGroup.getKey();
+            List<Pair<Double, Ensemble>> pairs = nextGroup.getValue();
+            double[] crpsSum = this.getSumCRPS( pairs, count );
+            crps[0] += crpsSum[0]; // Main score in index 0
+        }
 
         if ( !Double.isFinite( crps[0] ) )
         {
@@ -221,33 +226,40 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
      * TODO: implement the decomposition
      * 
      * @param pairs the pairs
+     * @param memberCount the number of ensemble members
      * @return the mean CRPS, with decomposition if required
      */
 
-    private double[] getSumCRPS( final List<Pair<Double, Ensemble>> pairs )
+    private double[] getSumCRPS( List<Pair<Double, Ensemble>> pairs, int memberCount )
     {
-        //Number of ensemble members
-        int members = pairs.get( 0 ).getRight().size();
-
         double totCRPS = 0.0;
 
-        //Iterate through the member positions and determine the mean alpha and beta      
-        BiConsumer<double[], Incrementer> summer = sumAlphaBeta();
-        for ( int i = 0; i < members + 1; i++ )
+        // Form the sorted pairs: #93061
+        List<double[]> sortedPairs = new ArrayList<>();
+        for ( Pair<Double, Ensemble> nextPair : pairs )
         {
-            Incrementer incrementer = new Incrementer( i, members );
-            for ( Pair<Double, Ensemble> nextPair : pairs )
+            //Combine and sort forecast
+            double[] sorted = new double[memberCount + 1];
+            sorted[0] = nextPair.getLeft();
+            System.arraycopy( nextPair.getRight().getMembers(), 0, sorted, 1, memberCount );
+            Arrays.sort( sorted, 1, memberCount + 1 );
+            sortedPairs.add( sorted );
+        }
+
+        //Iterate through the member positions and determine the mean alpha and beta      
+        BiConsumer<double[], Incrementer> summer = ContinuousRankedProbabilityScore.sumAlphaBeta();
+        for ( int i = 0; i < memberCount + 1; i++ )
+        {
+            Incrementer incrementer = new Incrementer( i, memberCount );
+            for ( double[] nextSorted : sortedPairs )
             {
-                //Combine and sort forecast
-                double[] sorted = new double[members + 1];
-                sorted[0] = nextPair.getLeft();
-                System.arraycopy( nextPair.getRight().getMembers(), 0, sorted, 1, members );
-                Arrays.sort( sorted, 1, members + 1 );
                 //Increment
-                summer.accept( sorted, incrementer );
+                summer.accept( nextSorted, incrementer );
             }
+
             totCRPS += incrementer.totCRPS;
         }
+
         return new double[] { totCRPS };
     }
 
