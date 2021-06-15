@@ -38,7 +38,8 @@ then
 		#rm -v $TESTINGJ | /usr/bin/tee --append $LOGFILE
 		echo "The test has been last for $lastHours hours, still unfinished yet" | /usr/bin/tee --append $LOGFILE
 		#/usr/bin/mailx -F -A WRES_Setting -s "The test has been last for $lastHours hours, still unfinished yet" -v WRES_GROUP <<< `ls -l $TESTINGJ`
-		/usr/bin/mailx -F -A WRES_Setting -s "The test has been last for $lastHours hours, still unfinished yet" -v WRES_GROUP <<< `echo $fileStatus`
+		#/usr/bin/mailx -F -A WRES_Setting -s "The test has been last for $lastHours hours, still unfinished yet" -v WRES_GROUP <<< `echo $fileStatus`
+		/usr/bin/mailx -F -A WRES_Setting -s "The test has been last for $lastHours hours, still unfinished yet" -v WRES_GROUP <<< `cat $TESTINGJ`
 		exit
 	else
 		echo "There is a system test running, now" 2>&1 | /usr/bin/tee --append $LOGFILE
@@ -68,10 +69,11 @@ then
 		echo "Remove that blank line at top" 2>&1 | /usr/bin/tee --append $LOGFILE
 		/usr/bin/sed  -i '1d' $PENDINGQUEUEJ 2>&1 | /usr/bin/tee --append $LOGFILE
 		rm -v $TESTINGJ 2>&1 | /usr/bin/tee --append $LOGFILE
-        	/usr/bin/find -P $TOPPWD -maxdepth 1 -name "JUnit_systestsLog_*" -mtime +1 -exec rm -v {} \;  2>&1 | /usr/bin/tee --append $LOGFILE
+        /usr/bin/find -P $TOPPWD -maxdepth 1 -name "JUnit_systestsLog_*" -mtime +1 -exec rm -v {} \;  2>&1 | /usr/bin/tee --append $LOGFILE
 		exit
 	else
 		echo "WRES_REVISION = $WRES_REVISION; REVISION = $REVISION" 2>&1 | /usr/bin/tee --append $LOGFILE
+		echo $WRES_REVISION >> $TESTINGJ
 	fi
 fi
 
@@ -183,6 +185,8 @@ else
 	GRAPHICS_REVISION=`head -1 /wres_share/releases/pendingQueueJ_wres-vis.txt | /usr/bin/sed -e s/wres-vis-//`
 	WRESVIS_REVISION=`head -1 /wres_share/releases/pendingQueueJ_wres-vis.txt`
 	echo "WRESVIS_REVISION = $WRESVIS_REVISION, GRAPHICS_REVISION = $GRAPHICS_REVISION" 2>&1 | /usr/bin/tee --append $LOGFILE
+	echo $WRESVIS_REVISION >> $TESTINGJ
+	ls -l $TESTINGJ >> $TESTINGJ
 
 	echo "./gradlew cleanTest test -PversionToTest=$REVISION -PgraphicsVersionToTest=$GRAPHICS_REVISION -PwresZipDirectory=$wresZipDirectory -PwresGraphicsZipDirectory=$wresGraphicsZipDirectory -PtestJvmSystemProperties=\"-Dwres.useSSL=true -Dwres.username=$WRES_DB_USERNAMEJ -Dwres.url=$WRES_DB_HOSTNAMEJ -Dwres.databaseName=$WRES_DB_NAMEJ -Dwres.dataDirectory=/wres_share/testing -Dwres.logLevel=$WRES_LOG_LEVELJ -Djava.io.tmpdir=./outputs\ -Dwres.eventsBrokerAddress=localhost -Dwres.eventsBrokerPort=5673 -Dwres.externalGraphics=true" --tests=\"SystemTestSuite\" --$WRES_LOG_LEVELJ" 2>&1 | /usr/bin/tee --append $LOGFILE"
 	./gradlew cleanTest test -PversionToTest=$REVISION -PgraphicsVersionToTest=$GRAPHICS_REVISION -PwresZipDirectory=$wresZipDirectory -PwresGraphicsZipDirectory=$wresGraphicsZipDirectory -PtestJvmSystemProperties="-Dwres.useSSL=true -Dwres.username=$WRES_DB_USERNAMEJ -Dwres.url=$WRES_DB_HOSTNAMEJ -Dwres.databaseName=$WRES_DB_NAMEJ -Dwres.dataDirectory=. -Dwres.systemTestingSeed=2389187312693262 -Djava.io.tmpdir=./outputs -Dwres.eventsBrokerAddress=localhost -Dwres.eventsBrokerPort=5673 -Dwres.externalGraphics=true" --tests="SystemTestSuite" --$WRES_LOG_LEVELJ 2>&1 | /usr/bin/tee --append $LOGFILE
