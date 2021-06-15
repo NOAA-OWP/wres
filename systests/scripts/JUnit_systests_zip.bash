@@ -32,9 +32,10 @@ then
 	lastHours=`/wres_share/releases/install_scripts/testDateTime.py "$fileStatus"`
 	echo "$TESTINGJ has created/changed at $lastHours ago at $fileStatus" 2>&1 | /usr/bin/tee --append $LOGFILE
 	if [ $lastHours -gt 2 ]
-	then	# Since that testingJ.txt lock file last for more than a hour, remove it!
+	then	# that testingJ.txt lock file had lasted for more than a hour, let's notice the developers by email 
 		echo -n "System up time " 2>&1 | /usr/bin/tee --append $LOGFILE
 		/bin/uptime -s | /usr/bin/tee --append $LOGFILE
+		# do not remove the lock file, let someone decide when to kill the previous test 
 		#rm -v $TESTINGJ | /usr/bin/tee --append $LOGFILE
 		echo "The test has been last for $lastHours hours, still unfinished yet" | /usr/bin/tee --append $LOGFILE
 		#/usr/bin/mailx -F -A WRES_Setting -s "The test has been last for $lastHours hours, still unfinished yet" -v WRES_GROUP <<< `ls -l $TESTINGJ`
