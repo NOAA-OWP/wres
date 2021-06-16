@@ -24,7 +24,6 @@ import wres.datamodel.scale.ScaleValidationEvent;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.ScaleValidationEvent.EventType;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
-import wres.datamodel.time.TimeSeries.Builder;
 
 /**
  * Helper class for supporting rescaling operations.
@@ -215,9 +214,9 @@ class RescalingHelper
                     new TimeSeriesMetadata.Builder( existingMetadata ).setTimeScale( desiredTimeScale )
                                                                       .build();
 
-            TimeSeries<T> returnMe = new Builder<T>().setMetadata( metadata )
-                                                               .setEvents( timeSeries.getEvents() )
-                                                               .build();
+            TimeSeries<T> returnMe = new TimeSeries.Builder<T>().setMetadata( metadata )
+                                                                .setEvents( timeSeries.getEvents() )
+                                                                .build();
 
             return RescaledTimeSeriesPlusValidation.of( returnMe, validationEvents );
         }
@@ -263,7 +262,7 @@ class RescalingHelper
                 TimeSeriesSlicer.groupEventsByInterval( timeSeries.getEvents(), endsAt, period );
 
         // Process the groups whose events are evenly-spaced and have no missing values, otherwise skip and log
-        Builder<T> builder = new Builder<>();
+        TimeSeries.Builder<T> builder = new TimeSeries.Builder<>();
 
         // Create a mutable copy of the validation events to add more, as needed
         List<ScaleValidationEvent> mutableValidationEvents = new ArrayList<>( validationEvents );
@@ -308,7 +307,7 @@ class RescalingHelper
      * @return the times at which upscaled intervals should end
      */
 
-    private static <T> SortedSet<Instant> getEndTimesFromSeries( TimeSeries<T> timeSeries, 
+    private static <T> SortedSet<Instant> getEndTimesFromSeries( TimeSeries<T> timeSeries,
                                                                  TimeScaleOuter desiredTimeScale )
     {
         SortedSet<Instant> endsAt = new TreeSet<>();
@@ -365,7 +364,7 @@ class RescalingHelper
             message.add( "Encountered "
                          + errors.size()
                          + " errors while attempting to upscale time-series "
-                         + timeSeries
+                         + timeSeries.getMetadata() // #93180
                          + ": " );
 
             errors.stream().forEach( e -> message.add( spacer + spacer + e.toString() ) );

@@ -384,7 +384,7 @@ public class EvaluationSubscriber implements Closeable
 
         this.isClosing.set( true );
 
-        // Log an error if there are open evaluations
+        // Log a warning if there are open evaluations
         if ( this.hasOpenEvaluations() )
         {
             Set<String> open = this.evaluations.entrySet()
