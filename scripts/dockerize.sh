@@ -120,7 +120,7 @@ worker_shim_file=wres-worker-${wres_worker_shim_version}.zip
 tasker_file=wres-tasker-${wres_tasker_version}.zip
 vis_file=wres-vis-${wres_vis_version}.zip
 
-jenkins_workspace=https://***REMOVED***/jenkins/job/Verify_OWP_WRES/ws
+jenkins_workspace=https://vlab.***REMOVED***/jenkins/job/Verify_OWP_WRES/ws
 core_url=$jenkins_workspace/build/distributions/$wres_core_file
 worker_url=$jenkins_workspace/wres-worker/build/distributions/$worker_shim_file
 tasker_url=$jenkins_workspace/wres-tasker/build/distributions/$tasker_file
