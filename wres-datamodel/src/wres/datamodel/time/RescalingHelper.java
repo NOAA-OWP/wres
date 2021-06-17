@@ -149,11 +149,19 @@ class RescalingHelper
             {
                 LOGGER.trace( THREE_MEMBER_MESSAGE,
                               "No upscaling required for time-series ",
-                              timeSeries.hashCode(),
+                              timeSeries.getMetadata(),
                               ": the time-series contained no events." );
             }
 
-            return RescaledTimeSeriesPlusValidation.of( timeSeries, validationEvents );
+            // Return an empty time-series with the desired time-scale: #93194
+            TimeSeriesMetadata metadata =
+                    new TimeSeriesMetadata.Builder( timeSeries.getMetadata() ).setTimeScale( desiredTimeScale )
+                                                                              .build();
+
+            TimeSeries<T> scaledEmpty = new TimeSeries.Builder<T>().setMetadata( metadata )
+                                                                   .build();
+
+            return RescaledTimeSeriesPlusValidation.of( scaledEmpty, validationEvents );
         }
 
         // Existing time scale missing and this was allowed during validation
@@ -163,14 +171,23 @@ class RescalingHelper
             {
                 LOGGER.trace( FIVE_MEMBER_MESSAGE,
                               "Skipped upscaling time-series ",
-                              timeSeries.hashCode(),
+                              timeSeries.getMetadata(),
                               " to the desired time scale of ",
                               desiredTimeScale,
-                              " because the existing time scale was missing. Assuming that the existing and desired scales "
-                                                + "are the same." );
+                              " because the existing time scale was missing. Assuming that the existing and desired "
+                                                + "scales are the same." );
             }
 
-            return RescaledTimeSeriesPlusValidation.of( timeSeries, validationEvents );
+            // Return a time-series with the desired time-scale: #93194
+            TimeSeriesMetadata metadata =
+                    new TimeSeriesMetadata.Builder( timeSeries.getMetadata() ).setTimeScale( desiredTimeScale )
+                                                                              .build();
+
+            TimeSeries<T> scaledSeries = new TimeSeries.Builder<T>().setMetadata( metadata )
+                                                                    .setEvents( timeSeries.getEvents() )
+                                                                    .build();
+
+            return RescaledTimeSeriesPlusValidation.of( scaledSeries, validationEvents );
         }
 
         // Existing and desired are both instantaneous
@@ -180,7 +197,7 @@ class RescalingHelper
             {
                 LOGGER.trace( SEVEN_MEMBER_MESSAGE,
                               "Skipped upscaling time-series ",
-                              timeSeries.hashCode(),
+                              timeSeries.getMetadata(),
                               " to the desired time scale of ",
                               desiredTimeScale,
                               " because the existing time scale is ",
@@ -199,7 +216,7 @@ class RescalingHelper
             {
                 LOGGER.trace( SEVEN_MEMBER_MESSAGE,
                               "No upscaling required for time-series ",
-                              timeSeries.hashCode(),
+                              timeSeries.getMetadata(),
                               ": the existing time scale of ",
                               timeSeries.getTimeScale(),
                               " effectively matches the desired time scale of ",

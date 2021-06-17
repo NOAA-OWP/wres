@@ -1230,8 +1230,8 @@ public final class TimeSeriesSlicer
             LOGGER.trace( "While snipping series {} to series {} with lower buffer {} and upper buffer {}, no events "
                           + "were discovered within the series to snip that were within the bounds of the series to "
                           + "snip to.",
-                          toSnip,
-                          snipTo,
+                          toSnip.getMetadata(),
+                          snipTo.getMetadata(),
                           lowerBuffer,
                           upperBuffer );
         }
