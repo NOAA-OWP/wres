@@ -209,7 +209,7 @@ public class TimeSeries<T>
         {
             LOGGER.trace( "No time-scale information was provided in builder {} for time-series {}.",
                           builder,
-                          this );
+                          this.getMetadata() );
         }
     }
 
