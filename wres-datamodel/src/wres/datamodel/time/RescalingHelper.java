@@ -663,10 +663,10 @@ class RescalingHelper
      * follows:
      * 
      * <ol>
-     * <li>If the {@link TimeScaleOuter#getPeriod()} match and the {@link TimeScaleOuter#getFunction()} do not match and the 
+     * <li>If the {@link TimeScaleOuter#getPeriod()} match and the {@link TimeScaleOuter#getFunction()} do not match and 
      * the existingTimeScale is {@link TimeScaleFunction#UNKNOWN}, returns a {@link ScaleValidationEvent} that is 
-     * a {@link EventType#WARN}, which assumes, leniently, that the desiredTimeScale can be achieved.</li>
-     * <li>If the {@link TimeScaleOuter#getPeriod()} match and the {@link TimeScaleOuter#getFunction()} do not match and the 
+     * a {@link EventType#DEBUG}, which assumes, leniently, that the desiredTimeScale can be achieved.</li>
+     * <li>If the {@link TimeScaleOuter#getPeriod()} match and the {@link TimeScaleOuter#getFunction()} do not match and 
      * the existingTimeScale is not a {@link TimeScaleFunction#UNKNOWN}, returns a {@link ScaleValidationEvent} that is 
      * a {@link EventType#ERROR}.</li>
      * <li>Otherwise, returns a {@link ScaleValidationEvent} that is a {@link EventType#PASS}.</li>
@@ -694,7 +694,7 @@ class RescalingHelper
                                                            TimeScaleFunction.UNKNOWN,
                                                            desiredTimeScale.getFunction() );
 
-                    return ScaleValidationEvent.warn( message );
+                    return ScaleValidationEvent.debug( message ); // #87288, #93220
                 }
             }
             else
@@ -753,7 +753,7 @@ class RescalingHelper
      * <ol>
      * <li>If the desired function is a {@link TimeScaleFunction#TOTAL} and the existing function is a
      * {@link TimeScaleFunction#UNKNOWN}, returns a {@link ScaleValidationEvent} that is
-     * a {@link EventType#WARN}, which assumes, leniently, that the existing function is a 
+     * a {@link EventType#DEBUG}, which assumes, leniently, that the existing function is a 
      * {@link TimeScaleFunction#TOTAL}.</li>
      * <li>If the desired function is a {@link TimeScaleFunction#TOTAL} and the existing function is not
      * {@link TimeScaleFunction#UNKNOWN}, returns a {@link ScaleValidationEvent} that is
@@ -779,7 +779,7 @@ class RescalingHelper
                                               TimeScaleFunction.UNKNOWN,
                                               TimeScaleFunction.TOTAL );
 
-                return ScaleValidationEvent.warn( message );
+                return ScaleValidationEvent.debug( message ); // #87288, #93220
             }
             else
             {
