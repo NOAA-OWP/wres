@@ -180,10 +180,6 @@ subprojects
 
     jar
     {
-        // toward reproducible builds:
-        preserveFileTimestamps = false
-        reproducibleFileOrder = true
-
         // version number should be included
         manifest
         {
@@ -198,7 +194,7 @@ subprojects
         withSourcesJar()
     }
 
-    // Attempt reproducible zips and tars
+    // Make bit-for-bit reproducible jars, zips, and tars.
     tasks.withType( AbstractArchiveTask )
     {
         preserveFileTimestamps = false
@@ -1650,10 +1646,6 @@ startScripts
 
 jar
 {
-    // toward reproducible builds:
-    preserveFileTimestamps = false
-    reproducibleFileOrder = true
-
     // version number should be included
     manifest
     {
@@ -1668,7 +1660,7 @@ java
     withSourcesJar()
 }
 
-// Attempt reproducible zips and tars
+// Make bit-for-bit reproducible jars, zips, and tars.
 tasks.withType( AbstractArchiveTask )
 {
     preserveFileTimestamps = false
