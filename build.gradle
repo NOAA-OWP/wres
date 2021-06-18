@@ -197,6 +197,13 @@ subprojects
         withJavadocJar()
         withSourcesJar()
     }
+
+    // Attempt reproducible zips and tars
+    tasks.withType( AbstractArchiveTask )
+    {
+        preserveFileTimestamps = false
+        reproducibleFileOrder = true
+    }
 }
 
 project(':wres-util')
@@ -1659,6 +1666,13 @@ java
 {
     withJavadocJar()
     withSourcesJar()
+}
+
+// Attempt reproducible zips and tars
+tasks.withType( AbstractArchiveTask )
+{
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
 }
 
 defaultTasks 'installDist', 'test', 'javadoc', 'jacocorootreport'
