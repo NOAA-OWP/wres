@@ -669,7 +669,7 @@ project(':wres-vis')
         compile files('../libs/external/ohdcommonchps.jar')
         
         // SVG graphics from JFreeChart instances
-        compile group: 'org.jfree', name: 'jfreesvg', version: '3.4'
+        compile group: 'org.jfree', name: 'jfreesvg', version: '3.4.1'
         
         testCompile 'junit:junit:4.13.2'
 
