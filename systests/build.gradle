@@ -68,3 +68,10 @@ distributions
         }
     }
 }
+
+// Attempt reproducible zips and tars
+tasks.withType( AbstractArchiveTask )
+{
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
