@@ -10,7 +10,7 @@ networks:
                   gateway: 172.19.254.193
 services:
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210618-99644d4"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210621-c2523ed"
         restart: always
         depends_on:
             eventsbroker:
@@ -53,7 +53,7 @@ services:
          - 5673
         ports:
          - 15673:15673
-        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20210618-99644d4"
+        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20210621-3b55093"
         restart: always
         volumes:
          # For heap-dump files
@@ -76,7 +76,7 @@ services:
         depends_on:
             eventsbroker:
                 condition: service_started
-        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20210618-99644d4"
+        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20210621-3b55093"
         restart: always
         volumes:
          # To write graphics outputs
