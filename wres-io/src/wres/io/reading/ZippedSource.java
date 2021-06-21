@@ -209,13 +209,14 @@ public class ZippedSource extends BasicSource {
     private List<IngestResult> issue( DataSource dataSource )
     {
         List<IngestResult> result;
+        String nameInside = "";
 
         try ( FileInputStream fileStream = new FileInputStream( this.getAbsoluteFilename() );
               GzipCompressorInputStream decompressedFileStream = new GzipCompressorInputStream( fileStream );
               BufferedInputStream bufferedStream = new BufferedInputStream( decompressedFileStream ) )
         {
-            String nameInside = decompressedFileStream.getMetaData()
-                                                      .getFilename();
+            nameInside = decompressedFileStream.getMetaData()
+                                               .getFilename();
             URI mashupUri = URI.create( this.getFilename() + "/" + nameInside );
             DataSource.DataDisposition disposition = DataSource.detectFormat( bufferedStream,
                                                                               mashupUri );
@@ -261,10 +262,16 @@ public class ZippedSource extends BasicSource {
                 result = ingestSaver.call();
             }
         }
-        catch ( IOException ioe )
+        catch ( IOException | RuntimeException e )
         {
-            throw new PreIngestException( "Failed to process a gzipped source from "
-                                          + this.getDataSource() );
+            if ( nameInside == null )
+            {
+                nameInside = "";
+            }
+
+            throw new PreIngestException( "Failed to process a gzipped source from '"
+                                          + this.getDataSource() + "': '"
+                                          + nameInside );
         }
 
         LOGGER.debug("Finished parsing '{}'", this.getFilename());

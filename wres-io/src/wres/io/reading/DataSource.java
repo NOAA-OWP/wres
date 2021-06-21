@@ -468,7 +468,13 @@ public class DataSource
                                           .toLowerCase();
         LOGGER.debug( "For data labeled {}, mediaType={}, subtype={}",
                       uri, mediaType, subtype );
-        if ( subtype.equals( "xml" ) )
+
+        if ( firstBytes.length < 4 )
+        {
+            LOGGER.warn( "Found document with only {} bytes: '{}'",
+                         firstBytes.length, uri );
+        }
+        else if ( subtype.equals( "xml" ) )
         {
             Charset xmlCharset = DataSource.getXmlCharsetFromBom( firstBytes );
             String start = new String( firstBytes, xmlCharset );
