@@ -55,7 +55,7 @@ echo "<uploads type=\"array\">" >> $outputFile
 # get JUnitLog token
 if [ -f ${JUnitLog_FILENAME_BaseZip} ]
 then
-	curl -H 'X-Redmine***REMOVED***: ***REMOVED***' --data-binary "@${JUnitLog_FILENAME_BaseZip}" -H "Content-Type: application/octet-stream" -X POST https://***REMOVED***/redmine/uploads.xml?filename=${JUnitLog_FILENAME_BaseZip} -o ${JUnitLog_FILENAME_BaseZip}.xml -v
+	curl -H 'X-Redmine***REMOVED***: ***REMOVED***' --data-binary "@${JUnitLog_FILENAME_BaseZip}" -H "Content-Type: application/octet-stream" -X POST https://vlab.***REMOVED***/redmine/uploads.xml?filename=${JUnitLog_FILENAME_BaseZip} -o ${JUnitLog_FILENAME_BaseZip}.xml -v
 
 	if [ -s ${JUnitLog_FILENAME_BaseZip}.xml ]
 	then
@@ -66,7 +66,7 @@ fi
 # get graphicsLog token
 if [ -f ${graphicsLog_FILENAME_BaseZip} ]
 then
-	curl -H 'X-Redmine***REMOVED***: ***REMOVED***' --data-binary "@${graphicsLog_FILENAME_BaseZip}" -H "Content-Type: application/octet-stream" -X POST https://***REMOVED***/redmine/uploads.xml?filename=${graphicsLog_FILENAME_BaseZip} -o ${graphicsLog_FILENAME_BaseZip}.xml -v
+	curl -H 'X-Redmine***REMOVED***: ***REMOVED***' --data-binary "@${graphicsLog_FILENAME_BaseZip}" -H "Content-Type: application/octet-stream" -X POST https://vlab.***REMOVED***/redmine/uploads.xml?filename=${graphicsLog_FILENAME_BaseZip} -o ${graphicsLog_FILENAME_BaseZip}.xml -v
 
 	if [ -s ${graphicsLog_FILENAME_BaseZip}.xml ]
 	then
@@ -80,7 +80,7 @@ echo "</issue>" >> $outputFile
 cat $outputFile
 
 #exit
-/usr/bin/curl -v -x '' -H 'X-Redmine***REMOVED***: ***REMOVED***' https://***REMOVED***/redmine/issues/89538.xml -X PUT -H 'Content-Type: application/xml' -d "@${outputFile}"
+/usr/bin/curl -v -x '' -H 'X-Redmine***REMOVED***: ***REMOVED***' https://vlab.***REMOVED***/redmine/issues/89538.xml -X PUT -H 'Content-Type: application/xml' -d "@${outputFile}"
 
 
 #ls -l ${JUnitLog_FILENAME_Base} ${graphicsLog_FILENAME_Base}
