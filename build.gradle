@@ -180,10 +180,6 @@ subprojects
 
     jar
     {
-        // toward reproducible builds:
-        preserveFileTimestamps = false
-        reproducibleFileOrder = true
-
         // version number should be included
         manifest
         {
@@ -196,6 +192,13 @@ subprojects
     {
         withJavadocJar()
         withSourcesJar()
+    }
+
+    // Make bit-for-bit reproducible jars, zips, and tars.
+    tasks.withType( AbstractArchiveTask )
+    {
+        preserveFileTimestamps = false
+        reproducibleFileOrder = true
     }
 }
 
@@ -1643,10 +1646,6 @@ startScripts
 
 jar
 {
-    // toward reproducible builds:
-    preserveFileTimestamps = false
-    reproducibleFileOrder = true
-
     // version number should be included
     manifest
     {
@@ -1659,6 +1658,13 @@ java
 {
     withJavadocJar()
     withSourcesJar()
+}
+
+// Make bit-for-bit reproducible jars, zips, and tars.
+tasks.withType( AbstractArchiveTask )
+{
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
 }
 
 defaultTasks 'installDist', 'test', 'javadoc', 'jacocorootreport'

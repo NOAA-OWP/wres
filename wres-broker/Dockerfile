@@ -1,5 +1,8 @@
 FROM rabbitmq:3.8.17-management-alpine
 
+RUN apk add --no-cache musl=1.2.2-r1 \
+    musl-utils=1.2.2-r1
+
 # Wish we could do the following, but busybox does not support long gids:
 #RUN addgroup -g 1370800073 wres && adduser -D -u 498 -g 1370800073 wres_docker
 
