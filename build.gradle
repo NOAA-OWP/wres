@@ -1041,10 +1041,10 @@ project(':wres-tasker')
         testCompile 'org.bouncycastle:bcprov-jdk15on:1.69'
 
         // To test against an embedded AMQP broker
-        testCompile 'org.apache.qpid:qpid-broker-core:8.0.4'
+        testCompile 'org.apache.qpid:qpid-broker-core:8.0.5'
         // Provides support for both 0-8 and 0-9-1
-        testCompile 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:8.0.4'
-        testCompile 'org.apache.qpid:qpid-broker-plugins-memory-store:8.0.4'
+        testCompile 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:8.0.5'
+        testCompile 'org.apache.qpid:qpid-broker-plugins-memory-store:8.0.5'
 
         // To generate swagger's openapi.json at build time.
         docGen 'io.swagger.core.v3:swagger-jaxrs2-jakarta:2.1.9'
@@ -1209,17 +1209,17 @@ project(':wres-eventsbroker')
         compile group: 'javax.jms', name: 'javax.jms-api', version: '2.0.1'
         
         // QPID broker
-        compile 'org.apache.qpid:qpid-broker-core:8.0.4'
+        compile 'org.apache.qpid:qpid-broker-core:8.0.5'
 
         // QPID broker support for AMQP 0.8 and 0.9.1 (not 1.0)
-        compile 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:8.0.4'
+        compile 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:8.0.5'
 
         // QPID embedded (aka in-memory) broker support
-        compile 'org.apache.qpid:qpid-broker-plugins-memory-store:8.0.4'
+        compile 'org.apache.qpid:qpid-broker-plugins-memory-store:8.0.5'
 
         // https://mvnrepository.com/artifact/org.apache.qpid/qpid-broker-plugins-management-http
         // Adds too much bloat for the value at test time with an embedded broker
-        //compile group: 'org.apache.qpid', name: 'qpid-broker-plugins-management-http', version: '8.0.4'
+        //compile group: 'org.apache.qpid', name: 'qpid-broker-plugins-management-http', version: '8.0.5'
 
         // QPID JMS client for AMQP 0.X (not 1.0). JMS 1.1 support only
         compile group: 'org.apache.qpid', name: 'qpid-client', version: '6.4.0'
