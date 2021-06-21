@@ -6,7 +6,7 @@
 #
 # Arguments: First argument is a config file (any name), add a line with
 #	user = firstName.lastName:passwd
-#	Where the login ID and passwd are from https://***REMOVED***
+#	Where the login ID and passwd are from https://vlab.***REMOVED***
 #		Second argument is whether install the recent built, with value yes or no(default).
 #
 # Required Files: searchBuildNumber.py, searchRevisionNumber.py and searchBuiltRecent.py
@@ -48,9 +48,10 @@ then
 	doSystests=no
 	exit
 fi
-if [ -f /wres_share/releases/install_scripts/testing.txt -o -f /wres_share/releases/install_scripts/testing700.txt ]
+
+if [ -f /wres_share/releases/install_scripts/testingJ.txt -o -f /wres_share/releases/install_scripts/testing700.txt ]
 then
-	ls -l /wres_share/releases/install_scripts/testing.txt >> $LOGFILE 2>&1
+	ls -l /wres_share/releases/install_scripts/testingJ.txt >> $LOGFILE 2>&1
 	ls -l /wres_share/releases/install_scripts/testing700.txt >> $LOGFILE700 2>&1
         echo "There is a system test running, now" >> $LOGFILE 2>&1
         echo "There is a system test running, now" >> $LOGFILE700 2>&1
@@ -92,8 +93,7 @@ then
 fi
 
 # Step 1, get the built number from built history
-#$CURL --config $CONFIGFILE --verbos  https://***REMOVED***/jenkins/job/Verify_OWP_WRES/ --output "build_history.html" 
-$CURL --config $CONFIGFILE --silent  https://***REMOVED***/jenkins/job/Verify_OWP_WRES/ --output "build_history.html" 
+$CURL --config $CONFIGFILE --silent  https://vlab.***REMOVED***/jenkins/job/Verify_OWP_WRES/ --output "build_history.html" 
 
 if [ ! -s build_history.html ] # if download unsuccessful
 then
@@ -116,8 +116,7 @@ then
 fi
 
 # Step 2, get the revision number
-#$CURL --config $CONFIGFILE --verbos  https://***REMOVED***/jenkins/job/Verify_OWP_WRES/$builtNumber/ --output "build_revision.html" 
-$CURL --config $CONFIGFILE --silent  https://***REMOVED***/jenkins/job/Verify_OWP_WRES/$builtNumber/ --output "build_revision.html" 
+$CURL --config $CONFIGFILE --silent  https://vlab.***REMOVED***/jenkins/job/Verify_OWP_WRES/$builtNumber/ --output "build_revision.html" 
 
 if [ ! -s build_revision.html ] # if this file is unsuccessed downlowd.
 then
@@ -143,7 +142,7 @@ then
 	rm -v build_recent.html >> $LOGFILE 2>&1
 fi 
 
-LATEST_URLSITE=https://***REMOVED***/jenkins/job/Verify_OWP_WRES/ws/build/distributions/
+LATEST_URLSITE=https://vlab.***REMOVED***/jenkins/job/Verify_OWP_WRES/ws/build/distributions/
 
 # Get this page and output to build_recent.html
 #$CURL --config $CONFIGFILE --verbos  $URLSITE --output "build_recent.html" 
@@ -161,7 +160,7 @@ if [ -f systests_recent.html ]
 then
 	rm -v systests_recent.html >> $LOGFILE 2>&1
 fi
-SYSTESTS_URLSITE=https://***REMOVED***/jenkins/job/Verify_OWP_WRES/ws/systests/build/distributions/
+SYSTESTS_URLSITE=https://vlab.***REMOVED***/jenkins/job/Verify_OWP_WRES/ws/systests/build/distributions/
 $CURL --config $CONFIGFILE --silent  $SYSTESTS_URLSITE --output "systests_recent.html" 
 if [ ! -s systests_recent.html ] # if download unsuccessful
 then

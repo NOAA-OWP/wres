@@ -34,7 +34,7 @@ then
 	then
 		rm -v build_recent_wres-vis.html 2>&1 | /bin/tee -a $LOGFILE
 	fi
-	$CURL --config $CONFIGFILE --silent  https://***REMOVED***/jenkins/job/Verify_OWP_WRES/ws/wres-vis/build/distributions/ --output "build_recent_wres-vis.html"
+	$CURL --config $CONFIGFILE --silent  https://vlab.***REMOVED***/jenkins/job/Verify_OWP_WRES/ws/wres-vis/build/distributions/ --output "build_recent_wres-vis.html"
 	if [ -f build_recent_wres-vis.html ]
 	then
 		LATEST_ZIPFILE=`$PYTHON_SCRIPT_DIR/searchInstallBuild_wres-vis.py build_recent_wres-vis.html | grep Data | grep $sub_revision | gawk '{print ($2)}' | tr -d "')"`	
@@ -43,7 +43,7 @@ then
 	if [ -n "$LATEST_ZIPFILE" ]
 	then
         	echo "Please wait .... currently is downloading the $wresvisZipFile file" 2>&1 | /bin/tee -a $LOGFILE
-        	$CURL --config $CONFIGFILE --silent --remote-name https://***REMOVED***/jenkins/job/Verify_OWP_WRES/ws/wres-vis/build/distributions/$LATEST_ZIPFILE
+        	$CURL --config $CONFIGFILE --silent --remote-name https://vlab.***REMOVED***/jenkins/job/Verify_OWP_WRES/ws/wres-vis/build/distributions/$LATEST_ZIPFILE
 		ls -l $LATEST_ZIPFILE 2>&1 | /bin/tee -a $LOGFILE
 		if [ -s $LATEST_ZIPFILE ] # file exist and  size greater than 0
 		then
