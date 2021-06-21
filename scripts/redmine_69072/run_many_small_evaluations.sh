@@ -4,12 +4,12 @@
 # This tests the ability of the broker and tasker to handle many evaluations.
 # Intended to be run from a directory one level deeper than wres/scripts.
 
-env_suffix=-dev
+host=$1
 
-echo "We are using the $env_suffix environment in this program."
+echo "We are using the $host environment in this program."
 
-count_simultaneous=2
-count_total=10
+count_simultaneous=10
+count_total=50
 
 if [ $count_total -lt $count_simultaneous ]
 then
@@ -21,7 +21,7 @@ actual_max=$(( count_simultaneous + count_total ))
 echo "We will run ${count_simultaneous} evaluations simultaneously, a total of ${count_total} to ${actual_max}."
 read -n1 -r -p "Please ctrl-c if that is not correct, any key otherwise..." key
 
-wres_ca_file=../cacerts/wres_ca_x509_cert.pem
+wres_ca_file=../cacerts/dod_root_ca_3_expires_2029-12.pem
 
 if [ -f $wres_ca_file ]
 then
@@ -41,7 +41,7 @@ for (( i=1; i<=$count_simultaneous; i++ ))
 do
     job_number=$(( job_number + 1 ))
     echo "Submitting job number $job_number"
-    post_result=$( curl -i -s --cacert $wres_ca_file --data "projectConfig=NA&verb=ingest" https://***REMOVED***wres${env_suffix}.***REMOVED***.***REMOVED***/job | tr -d '\r' )
+    post_result=$( curl -i -s --cacert $wres_ca_file --data "projectConfig=NA&verb=ingest" https://${host}/job | tr -d '\r' )
     post_exit_code=$?
     echo "The exit code of curl was $post_exit_code"
     post_result_http_code=$( echo -n "$post_result" | grep HTTP | tail -n 1 | cut -d' ' -f2 )
@@ -97,7 +97,7 @@ do
 
 	    job_number=$(( $job_number + 1 ))
 	    echo "Submitting job number $job_number"
-	    post_result=$( curl -i -s --cacert $wres_ca_file --data "projectConfig=NA&verb=ingest" https://***REMOVED***wres${env_suffix}.***REMOVED***.***REMOVED***/job | tr -d '\r' )
+	    post_result=$( curl -i -s --cacert $wres_ca_file --data "projectConfig=NA&verb=ingest" https://${host}/job | tr -d '\r' )
 	    post_exit_code=$?
 	    echo "The exit code of curl was $post_exit_code"
 	    post_result_http_code=$( echo -n "$post_result" | grep HTTP | tail -n 1 | cut -d' ' -f2 )
