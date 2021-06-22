@@ -769,8 +769,8 @@ public class Validation
                            result.set( false );
                            LOGGER.warn( "In file {}, a metric named {} was requested, but is not allowed. "
                                         + "Verification diagrams are not currently supported in "
-                                        + "combination with leadTimesPoolingWindow. Please remove either "
-                                        + "the {} or the leadTimesPoolingWindow.",
+                                        + "combination with issuedDatesPoolingWindow. Please remove either "
+                                        + "the {} or the issuedDatesPoolingWindow.",
                                         projectConfigPlus.getOrigin(),
                                         nextMetric.getName(),
                                         nextMetric.getName() );
