@@ -761,19 +761,35 @@ public class Validation
                        MetricConstants checkMe = MetricConfigHelper.from( nextMetric.getName() );
 
                        // Check that the named metric is consistent with any pooling window configuration
-                       if ( projectConfigPlus.getProjectConfig().getPair().getIssuedDatesPoolingWindow() != null
-                            && checkMe != null
-                            && ! ( checkMe.isInGroup( StatisticType.DOUBLE_SCORE )
-                                   || checkMe.isInGroup( StatisticType.DURATION_SCORE ) ) )
+                       if ( checkMe != null && ! ( checkMe.isInGroup( StatisticType.DOUBLE_SCORE )
+                                                   || checkMe.isInGroup( StatisticType.DURATION_SCORE ) ) )
                        {
-                           result.set( false );
-                           LOGGER.warn( "In file {}, a metric named {} was requested, but is not allowed. "
-                                        + "Verification diagrams are not currently supported in "
-                                        + "combination with issuedDatesPoolingWindow. Please remove either "
-                                        + "the {} or the issuedDatesPoolingWindow.",
-                                        projectConfigPlus.getOrigin(),
-                                        nextMetric.getName(),
-                                        nextMetric.getName() );
+
+                           // Issued dates pooling window
+                           if ( projectConfigPlus.getProjectConfig().getPair().getIssuedDatesPoolingWindow() != null )
+                           {
+                               result.set( false );
+                               LOGGER.warn( "In file {}, a metric named {} was requested, but is not allowed. "
+                                            + "Verification diagrams are not currently supported in "
+                                            + "combination with issuedDatesPoolingWindow. Please remove either "
+                                            + "the {} or the issuedDatesPoolingWindow.",
+                                            projectConfigPlus.getOrigin(),
+                                            nextMetric.getName(),
+                                            nextMetric.getName() );
+                           }
+
+                           // Valid dates pooling window
+                           if ( projectConfigPlus.getProjectConfig().getPair().getValidDatesPoolingWindow() != null )
+                           {
+                               result.set( false );
+                               LOGGER.warn( "In file {}, a metric named {} was requested, but is not allowed. "
+                                            + "Verification diagrams are not currently supported in "
+                                            + "combination with validDatesPoolingWindow. Please remove either "
+                                            + "the {} or the validDatesPoolingWindow.",
+                                            projectConfigPlus.getOrigin(),
+                                            nextMetric.getName(),
+                                            nextMetric.getName() );
+                           }
                        }
 
                        // Check that the CRPS has an explicit baseline
@@ -934,24 +950,22 @@ public class Validation
             }
         }
         // Other (single-valued) types
-        else if ( !categorical.isEmpty() )
+        else if ( !categorical.isEmpty() && !eventThresholds )
         {
-            if ( !eventThresholds )
-            {
-                isValid = false;
+            isValid = false;
 
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " The categorical metrics {} require event thresholds to obtain categorical pairs "
-                             + "from the continuous numerical pairs, but no event thresholds were supplied. Add "
-                             + "some thresholds of type {} or {} to the metrics declaration or remove these metrics "
-                             + "before proceeding.",
-                             projectConfigPlus.getOrigin(),
-                             metricsConfig.sourceLocation().getLineNumber(),
-                             metricsConfig.sourceLocation().getColumnNumber(),
-                             categorical,
-                             ThresholdType.VALUE,
-                             ThresholdType.PROBABILITY );
-            }
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                         + " The categorical metrics {} require event thresholds to obtain categorical pairs "
+                         + "from the continuous numerical pairs, but no event thresholds were supplied. Add "
+                         + "some thresholds of type {} or {} to the metrics declaration or remove these metrics "
+                         + "before proceeding.",
+                         projectConfigPlus.getOrigin(),
+                         metricsConfig.sourceLocation().getLineNumber(),
+                         metricsConfig.sourceLocation().getColumnNumber(),
+                         categorical,
+                         ThresholdType.VALUE,
+                         ThresholdType.PROBABILITY );
+
         }
 
         return isValid;
@@ -2568,20 +2582,18 @@ public class Validation
         Objects.requireNonNull( projectConfigPlus, NON_NULL );
         Objects.requireNonNull( source, NON_NULL );
 
-        if ( source.getZoneOffset() != null )
+        if ( source.getZoneOffset() != null && LOGGER.isWarnEnabled() )
         {
-            if ( LOGGER.isWarnEnabled() )
-            {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + "The zoneOffset attribute is only applied to "
-                             + "datacard data. If there are no datacard data "
-                             + "in this evaluation the time zone offset will "
-                             + "come from the data itself and the value in the "
-                             + "attribute will be ignored.",
-                             projectConfigPlus.getOrigin(),
-                             source.sourceLocation().getLineNumber(),
-                             source.sourceLocation().getColumnNumber() );
-            }
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                         + "The zoneOffset attribute is only applied to "
+                         + "datacard data. If there are no datacard data "
+                         + "in this evaluation the time zone offset will "
+                         + "come from the data itself and the value in the "
+                         + "attribute will be ignored.",
+                         projectConfigPlus.getOrigin(),
+                         source.sourceLocation().getLineNumber(),
+                         source.sourceLocation().getColumnNumber() );
+
         }
 
         return true;
