@@ -686,7 +686,7 @@ public class DataSource
         else if ( Byte.toUnsignedInt( bytes[0] ) == 0xFF
                   && Byte.toUnsignedInt( bytes[1] ) == 0xFE )
         {
-            return StandardCharsets.UTF_16BE;
+            return StandardCharsets.UTF_16LE;
         }
 
         return StandardCharsets.UTF_8;
