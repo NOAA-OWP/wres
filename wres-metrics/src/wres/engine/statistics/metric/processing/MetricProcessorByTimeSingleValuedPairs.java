@@ -360,22 +360,19 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                         .filterByType( ThresholdGroup.PROBABILITY,
                                                                        ThresholdGroup.VALUE );
 
-        // Find the union across metrics
+        // Find the union across metrics and filter out non-unique thresholds
         Set<ThresholdOuter> union = filtered.union();
-
-        double[] sorted = this.getSortedClimatology( input, union );
+        union = super.getUniqueThresholdsWithQuantiles( input, union );
 
         // Iterate the thresholds
         for ( ThresholdOuter threshold : union )
         {
-
-            ThresholdOuter useMe = this.addQuantilesToThreshold( threshold, sorted );
-            OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( useMe );
+            OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( threshold );
 
             //Define a mapper to convert the single-valued pairs to dichotomous pairs
             Function<Pair<Double, Double>, Pair<Boolean, Boolean>> mapper =
-                    pair -> Pair.of( useMe.test( pair.getLeft() ),
-                                     useMe.test( pair.getRight() ) );
+                    pair -> Pair.of( threshold.test( pair.getLeft() ),
+                                     threshold.test( pair.getRight() ) );
             //Transform the pairs
             Pool<Pair<Boolean, Boolean>> transformed = Slicer.transform( input, mapper );
 
@@ -420,25 +417,22 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                         .filterByType( ThresholdGroup.PROBABILITY,
                                                                        ThresholdGroup.VALUE );
 
-        // Find the union across metrics
+        // Find the union across metrics and filter out non-unique thresholds
         Set<ThresholdOuter> union = filtered.union();
-
-        double[] sorted = getSortedClimatology( input, union );
+        union = super.getUniqueThresholdsWithQuantiles( input, union );
 
         // Iterate the thresholds
         for ( ThresholdOuter threshold : union )
         {
-            // Add quantiles to threshold
-            ThresholdOuter useMe = this.addQuantilesToThreshold( threshold, sorted );
-            OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( useMe );
+            OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( threshold );
 
             Pool<Pair<Double, Double>> pairs;
 
             // Filter the data if required
-            if ( useMe.isFinite() )
+            if ( threshold.isFinite() )
             {
                 Predicate<TimeSeries<Pair<Double, Double>>> filter =
-                        MetricProcessorByTime.getFilterForTimeSeriesOfSingleValuedPairs( useMe );
+                        MetricProcessorByTime.getFilterForTimeSeriesOfSingleValuedPairs( threshold );
 
                 pairs = TimeSeriesSlicer.filterPerSeries( input, filter, null );
             }

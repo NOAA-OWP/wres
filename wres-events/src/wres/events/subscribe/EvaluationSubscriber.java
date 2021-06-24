@@ -1887,7 +1887,7 @@ public class EvaluationSubscriber implements Closeable
 
             this.statisticsConsumer.setMessageListener( this.getStatisticsListener() );
 
-            // An LRU cache that removes old evaluations that succeeded
+            // A cache of evaluations whose completed evaluations are swept away
             this.evaluations = new ConcurrentHashMap<>();
             this.retriesAttempted = new ConcurrentHashMap<>();
 

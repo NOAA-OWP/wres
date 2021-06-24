@@ -342,17 +342,14 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
                                                         .filterByType( ThresholdGroup.PROBABILITY,
                                                                        ThresholdGroup.VALUE );
 
-        // Find the union across metrics
+        // Find the union across metrics and filter out non-unique thresholds
         Set<ThresholdOuter> union = filtered.union();
-
-        double[] sorted = super.getSortedClimatology( input, union );
+        union = super.getUniqueThresholdsWithQuantiles( input, union );
 
         // Iterate the thresholds
         for ( ThresholdOuter threshold : union )
         {
-            // Add the quantiles to the threshold
-            ThresholdOuter useMe = super.addQuantilesToThreshold( threshold, sorted );
-            OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( useMe );
+            OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( threshold );
 
             // Add the threshold to the metadata, in order to fully qualify the pairs
             PoolMetadata baselineMeta = null;
@@ -370,9 +367,10 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
                                                       .build();
 
             // Filter the data if required
-            if ( useMe.isFinite() )
+            if ( threshold.isFinite() )
             {
-                Predicate<Pair<Double, Double>> filter = MetricProcessorByTime.getFilterForSingleValuedPairs( useMe );
+                Predicate<Pair<Double, Double>> filter =
+                        MetricProcessorByTime.getFilterForSingleValuedPairs( threshold );
 
                 pairs = Slicer.filter( pairs, filter, null );
 

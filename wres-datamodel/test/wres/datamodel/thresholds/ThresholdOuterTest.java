@@ -19,7 +19,7 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
  * 
  * @author james.brown@hydrosolved.com
  */
-public final class ThresholdTest
+public final class ThresholdOuterTest
 {
 
     private static final String THRESHOLD_LABEL = "a threshold";
@@ -31,16 +31,13 @@ public final class ThresholdTest
     @Test
     public void testHashCode()
     {
-
         // One threshold
         ThresholdOuter first = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                             .setCondition( Operator.GREATER_EQUAL )
                                             .setDataType( ThresholdDataType.LEFT )
-                                            .setDataType( ThresholdDataType.LEFT )
                                             .build();
         ThresholdOuter second = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                              .setCondition( Operator.GREATER_EQUAL )
-                                             .setDataType( ThresholdDataType.LEFT )
                                              .setDataType( ThresholdDataType.LEFT )
                                              .build();
 
@@ -51,12 +48,10 @@ public final class ThresholdTest
                 new Builder().setProbabilities( OneOrTwoDoubles.of( 0.0 ) )
                              .setCondition( Operator.GREATER_EQUAL )
                              .setDataType( ThresholdDataType.LEFT )
-                             .setDataType( ThresholdDataType.LEFT )
                              .build();
         ThresholdOuter fourth =
                 new Builder().setProbabilities( OneOrTwoDoubles.of( 0.0 ) )
                              .setCondition( Operator.GREATER_EQUAL )
-                             .setDataType( ThresholdDataType.LEFT )
                              .setDataType( ThresholdDataType.LEFT )
                              .build();
 
@@ -68,13 +63,11 @@ public final class ThresholdTest
                              .setProbabilities( OneOrTwoDoubles.of( 0.0 ) )
                              .setCondition( Operator.GREATER_EQUAL )
                              .setDataType( ThresholdDataType.LEFT )
-                             .setDataType( ThresholdDataType.LEFT )
                              .build();
         ThresholdOuter sixth =
                 new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                              .setProbabilities( OneOrTwoDoubles.of( 0.0 ) )
                              .setCondition( Operator.GREATER_EQUAL )
-                             .setDataType( ThresholdDataType.LEFT )
                              .setDataType( ThresholdDataType.LEFT )
                              .build();
 
@@ -873,6 +866,27 @@ public final class ThresholdTest
 
         assertFalse( infiniteUpperProb.isFinite() );
 
+    }
+
+    @Test
+    public void testBuildFromExistingThreshold()
+    {
+        ThresholdOuter first = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
+                                            .setProbabilities( OneOrTwoDoubles.of( 0.3 ) )
+                                            .setCondition( Operator.GREATER_EQUAL )
+                                            .setDataType( ThresholdDataType.LEFT )
+                                            .build();
+
+        ThresholdOuter actual = new Builder( first.getThreshold() ).setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
+                                                                   .build();
+
+        ThresholdOuter expected = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
+                                               .setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
+                                               .setCondition( Operator.GREATER_EQUAL )
+                                               .setDataType( ThresholdDataType.LEFT )
+                                               .build();
+
+        assertEquals( expected, actual );
     }
 
     @Test

@@ -252,8 +252,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
 
                 this.ensembleScoreNoBaseline = MetricFactory.ofEnsembleScoreCollection( metricExecutor,
                                                                                         filteredArray );
-                
-                LOGGER.debug( "Created the ensemble scores for processing pairs without a baseline. {}", 
+
+                LOGGER.debug( "Created the ensemble scores for processing pairs without a baseline. {}",
                               this.ensembleScoreNoBaseline );
             }
             else
@@ -472,17 +472,14 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                                                         .filterByType( ThresholdGroup.PROBABILITY,
                                                                        ThresholdGroup.VALUE );
 
-        // Find the union across metrics
+        // Find the union across metrics and filter out non-unique thresholds
         Set<ThresholdOuter> union = filtered.union();
-
-        double[] sorted = super.getSortedClimatology( input, union );
+        union = super.getUniqueThresholdsWithQuantiles( input, union );
 
         // Iterate the thresholds
         for ( ThresholdOuter threshold : union )
         {
-            // Add quantiles to threshold
-            ThresholdOuter useMe = super.addQuantilesToThreshold( threshold, sorted );
-            OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( useMe );
+            OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( threshold );
 
             // Add the threshold to the metadata, in order to fully qualify the pairs
             PoolMetadata baselineMeta = null;
@@ -497,7 +494,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
             if ( threshold.isFinite() )
             {
                 Predicate<Pair<Double, Ensemble>> filter =
-                        MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( useMe );
+                        MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( threshold );
 
                 pairs = Slicer.filter( pairs, filter, null );
             }
@@ -620,22 +617,18 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                                                         .filterByType( ThresholdGroup.PROBABILITY,
                                                                        ThresholdGroup.VALUE );
 
-        // Find the union across metrics
+        // Find the union across metrics and filter out non-unique thresholds
         Set<ThresholdOuter> union = filtered.union();
-
-        double[] sorted = getSortedClimatology( input, union );
+        union = super.getUniqueThresholdsWithQuantiles( input, union );
 
         // Iterate the thresholds
         for ( ThresholdOuter threshold : union )
         {
-            // Add quantiles to threshold
-            ThresholdOuter useMe = this.addQuantilesToThreshold( threshold, sorted );
-            OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( useMe );
+            OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( threshold );
 
             // Transform the pairs
             Function<Pair<Double, Ensemble>, Pair<Probability, Probability>> transformer =
-                    pair -> Slicer.toDiscreteProbabilityPair( pair,
-                                                              useMe );
+                    pair -> Slicer.toDiscreteProbabilityPair( pair, threshold );
 
             Pool<Pair<Probability, Probability>> transformed = Slicer.transform( input, transformer );
 
@@ -807,22 +800,18 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         // Find the thresholds filtered by inner type
         ThresholdsByMetric filteredByInner = filtered.filterByType( ThresholdGroup.PROBABILITY_CLASSIFIER );
 
-        // Find the union across metrics
+        // Find the union across metrics and filter out non-unique thresholds
         Set<ThresholdOuter> union = filteredByOuter.union();
-
-        double[] sorted = getSortedClimatology( input, union );
+        union = super.getUniqueThresholdsWithQuantiles( input, union );
 
         // Iterate the thresholds
-        for ( ThresholdOuter threshold : union )
+        for ( ThresholdOuter outerThreshold : union )
         {
-            // Add quantiles to threshold
-            ThresholdOuter outerThreshold = addQuantilesToThreshold( threshold, sorted );
 
             // Transform the pairs to probabilities first
             // Transform the pairs
             Function<Pair<Double, Ensemble>, Pair<Probability, Probability>> transformer =
-                    pair -> Slicer.toDiscreteProbabilityPair( pair,
-                                                              outerThreshold );
+                    pair -> Slicer.toDiscreteProbabilityPair( pair, outerThreshold );
 
             Pool<Pair<Probability, Probability>> transformed = Slicer.transform( input, transformer );
 

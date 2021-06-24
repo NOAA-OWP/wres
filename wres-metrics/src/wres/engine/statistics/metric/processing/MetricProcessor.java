@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.DoublePredicate;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -279,7 +280,7 @@ public abstract class MetricProcessor<S extends Pool<?>>
                || this.hasMetrics( SampleDataGroup.MULTICATEGORY )
                || this.hasMetrics( SampleDataGroup.DICHOTOMOUS );
     }
-    
+
     /**
      * Returns the metrics to process.
      * 
@@ -349,7 +350,7 @@ public abstract class MetricProcessor<S extends Pool<?>>
         Objects.requireNonNull( thresholdExecutor, "Specify a non-null threshold executor service." );
 
         Objects.requireNonNull( metricExecutor, "Specify a non-null metric executor service." );
-        
+
         Objects.requireNonNull( metrics, "Specify a non-null collection of metrics to process." );
 
         this.metrics = metrics;
@@ -498,6 +499,23 @@ public abstract class MetricProcessor<S extends Pool<?>>
     }
 
     /**
+     * Adds quantiles to the input thresholds and filters out any thresholds that differ by probability values only.
+     * @param input the pool
+     * @param thresholds the thresholds
+     * @return the filtered quantile thresholds
+     */
+
+    Set<ThresholdOuter> getUniqueThresholdsWithQuantiles( Pool<?> pool, Set<ThresholdOuter> thresholds )
+    {
+        // Find the union across metrics and filter out non-unique thresholds
+        double[] sorted = this.getSortedClimatology( pool, thresholds );
+        Set<ThresholdOuter> returnMe = thresholds.stream()
+                                                 .map( next -> this.addQuantilesToThreshold( next, sorted ) )
+                                                 .collect( Collectors.toUnmodifiableSet() );
+        return Slicer.filter( returnMe );
+    }
+
+    /**
      * <p>Helper that inspects the {@link Pool#getClimatology()} and returns a sorted set of values when the 
      * following two conditions are both met, otherwise <code>null</code>:
      * 
@@ -512,7 +530,7 @@ public abstract class MetricProcessor<S extends Pool<?>>
      * @return a sorted array of values or null
      */
 
-    double[] getSortedClimatology( Pool<?> input, Set<ThresholdOuter> thresholds )
+    private double[] getSortedClimatology( Pool<?> input, Set<ThresholdOuter> thresholds )
     {
         double[] sorted = null;
         if ( this.hasProbabilityThreshold( thresholds ) && input.hasClimatology() )
@@ -534,7 +552,7 @@ public abstract class MetricProcessor<S extends Pool<?>>
      * @throws MetricCalculationException if the sorted array is null and quantiles are required
      */
 
-    ThresholdOuter addQuantilesToThreshold( ThresholdOuter threshold, double[] sorted )
+    private ThresholdOuter addQuantilesToThreshold( ThresholdOuter threshold, double[] sorted )
     {
         if ( threshold.getType() != ThresholdType.PROBABILITY_ONLY )
         {
