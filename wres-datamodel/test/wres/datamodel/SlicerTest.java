@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -25,6 +26,7 @@ import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.BasicPool;
+import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
@@ -62,7 +64,7 @@ public final class SlicerTest
         double[] expected = new double[] { 0, 0, 1, 1, 0, 1 };
 
         assertTrue( Arrays.equals( Slicer.getLeftSide( BasicPool.of( values,
-                                                                           PoolMetadata.of() ) ),
+                                                                     PoolMetadata.of() ) ),
                                    expected ) );
     }
 
@@ -79,7 +81,7 @@ public final class SlicerTest
 
         double[] expected = new double[] { 3.0 / 5.0, 1.0 / 5.0, 2.0 / 5.0, 3.0 / 5.0, 0.0 / 5.0, 1.0 / 5.0 };
         assertTrue( Arrays.equals( Slicer.getRightSide( BasicPool.of( values,
-                                                                            PoolMetadata.of() ) ),
+                                                                      PoolMetadata.of() ) ),
                                    expected ) );
     }
 
@@ -188,10 +190,10 @@ public final class SlicerTest
 
         Pool<Pair<Boolean, Boolean>> expectedNoBase = BasicPool.of( expectedValues, meta );
         Pool<Pair<Boolean, Boolean>> expectedBase = BasicPool.of( expectedValues,
-                                                                              meta,
-                                                                              expectedValues,
-                                                                              meta,
-                                                                              null );
+                                                                  meta,
+                                                                  expectedValues,
+                                                                  meta,
+                                                                  null );
 
         //Test without baseline
         Pool<Pair<Boolean, Boolean>> actualNoBase =
@@ -536,16 +538,16 @@ public final class SlicerTest
         List<DoubleScoreStatisticOuter> listOfOutputs =
                 Arrays.asList( DoubleScoreStatisticOuter.of( one,
                                                              PoolMetadata.of( metadata,
-                                                                                windowOne,
-                                                                                thresholdOne ) ),
+                                                                              windowOne,
+                                                                              thresholdOne ) ),
                                DoubleScoreStatisticOuter.of( two,
                                                              PoolMetadata.of( metadata,
-                                                                                windowTwo,
-                                                                                thresholdTwo ) ),
+                                                                              windowTwo,
+                                                                              thresholdTwo ) ),
                                DoubleScoreStatisticOuter.of( three,
                                                              PoolMetadata.of( metadata,
-                                                                                windowThree,
-                                                                                thresholdThree ) ) );
+                                                                              windowThree,
+                                                                              thresholdThree ) ) );
 
         // Filter by the first lead time and the last lead time and threshold
         Predicate<DoubleScoreStatisticOuter> filter = meta -> meta.getMetadata().getTimeWindow().equals( windowOne )
@@ -561,12 +563,12 @@ public final class SlicerTest
         List<DoubleScoreStatisticOuter> expectedOutput =
                 Arrays.asList( DoubleScoreStatisticOuter.of( one,
                                                              PoolMetadata.of( metadata,
-                                                                                windowOne,
-                                                                                thresholdOne ) ),
+                                                                              windowOne,
+                                                                              thresholdOne ) ),
                                DoubleScoreStatisticOuter.of( three,
                                                              PoolMetadata.of( metadata,
-                                                                                windowThree,
-                                                                                thresholdThree ) ) );
+                                                                              windowThree,
+                                                                              thresholdThree ) ) );
 
         assertEquals( actualOutput, expectedOutput );
     }
@@ -630,16 +632,16 @@ public final class SlicerTest
         List<DoubleScoreStatisticOuter> listOfOutputs =
                 Arrays.asList( DoubleScoreStatisticOuter.of( one,
                                                              PoolMetadata.of( metadata,
-                                                                                windowOne,
-                                                                                thresholdOne ) ),
+                                                                              windowOne,
+                                                                              thresholdOne ) ),
                                DoubleScoreStatisticOuter.of( two,
                                                              PoolMetadata.of( metadata,
-                                                                                windowTwo,
-                                                                                thresholdTwo ) ),
+                                                                              windowTwo,
+                                                                              thresholdTwo ) ),
                                DoubleScoreStatisticOuter.of( three,
                                                              PoolMetadata.of( metadata,
-                                                                                windowThree,
-                                                                                thresholdThree ) ) );
+                                                                              windowThree,
+                                                                              thresholdThree ) ) );
 
         // Discover the metrics available
         Set<MetricConstants> actualOutputOne =
@@ -756,16 +758,16 @@ public final class SlicerTest
         List<DoubleScoreStatisticOuter> unorderedStatistics =
                 List.of( DoubleScoreStatisticOuter.of( three,
                                                        PoolMetadata.of( metadata,
-                                                                          windowThree,
-                                                                          thresholdThree ) ),
+                                                                        windowThree,
+                                                                        thresholdThree ) ),
                          DoubleScoreStatisticOuter.of( one,
                                                        PoolMetadata.of( metadata,
-                                                                          windowOne,
-                                                                          thresholdOne ) ),
+                                                                        windowOne,
+                                                                        thresholdOne ) ),
                          DoubleScoreStatisticOuter.of( two,
                                                        PoolMetadata.of( metadata,
-                                                                          windowTwo,
-                                                                          thresholdTwo ) ) );
+                                                                        windowTwo,
+                                                                        thresholdTwo ) ) );
 
         List<DoubleScoreStatisticOuter> actual = Slicer.sortByTimeWindowAndThreshold( unorderedStatistics );
 
@@ -790,13 +792,107 @@ public final class SlicerTest
     }
 
     @Test
+    public void testFilterByThresholdValuesAndNames()
+    {
+        // Same values, different probabilities
+        Set<ThresholdOuter> input = new HashSet<>();
+        ThresholdOuter first = new ThresholdOuter.Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
+                                                           .setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
+                                                           .setCondition( Operator.GREATER_EQUAL )
+                                                           .setDataType( ThresholdDataType.LEFT )
+                                                           .build();
+        ThresholdOuter second = new ThresholdOuter.Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
+                                                            .setProbabilities( OneOrTwoDoubles.of( 0.3 ) )
+                                                            .setCondition( Operator.GREATER_EQUAL )
+                                                            .setDataType( ThresholdDataType.LEFT )
+                                                            .build();
+
+        input.add( first );
+        input.add( second );
+
+        Set<ThresholdOuter> actual = Slicer.filter( Collections.unmodifiableSet( input ) );
+        Set<ThresholdOuter> expected = Set.of( second );
+
+        assertEquals( expected, actual );
+
+        // Same values with different units and different probabilities
+        Set<ThresholdOuter> anotherInput = new HashSet<>();
+        ThresholdOuter anotherFirst = new ThresholdOuter.Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
+                                                                  .setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
+                                                                  .setUnits( MeasurementUnit.of( "UNIT" ) )
+                                                                  .setCondition( Operator.GREATER_EQUAL )
+                                                                  .setDataType( ThresholdDataType.LEFT )
+                                                                  .build();
+        ThresholdOuter anotherSecond = new ThresholdOuter.Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
+                                                                   .setProbabilities( OneOrTwoDoubles.of( 0.3 ) )
+                                                                   .setUnits( MeasurementUnit.of( "OTHER_UNIT" ) )
+                                                                   .setCondition( Operator.GREATER_EQUAL )
+                                                                   .setDataType( ThresholdDataType.LEFT )
+                                                                   .build();
+
+        anotherInput.add( anotherFirst );
+        anotherInput.add( anotherSecond );
+
+        Set<ThresholdOuter> anotherActual = Slicer.filter( Collections.unmodifiableSet( anotherInput ) );
+        Set<ThresholdOuter> anotherExpected = Set.of( anotherFirst, anotherSecond );
+
+        assertEquals( anotherExpected, anotherActual );
+
+        // Same values with same units and different probabilities and names
+        Set<ThresholdOuter> yetAnotherInput = new HashSet<>();
+        ThresholdOuter yetAnotherFirst = new ThresholdOuter.Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
+                                                                     .setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
+                                                                     .setUnits( MeasurementUnit.of( "UNIT" ) )
+                                                                     .setCondition( Operator.GREATER_EQUAL )
+                                                                     .setDataType( ThresholdDataType.LEFT )
+                                                                     .setLabel( "name" )
+                                                                     .build();
+        ThresholdOuter yetAnotherSecond = new ThresholdOuter.Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
+                                                                      .setProbabilities( OneOrTwoDoubles.of( 0.3 ) )
+                                                                      .setUnits( MeasurementUnit.of( "UNIT" ) )
+                                                                      .setCondition( Operator.GREATER_EQUAL )
+                                                                      .setDataType( ThresholdDataType.LEFT )
+                                                                      .setLabel( "anotherName" )
+                                                                      .build();
+
+        yetAnotherInput.add( yetAnotherFirst );
+        yetAnotherInput.add( yetAnotherSecond );
+
+        Set<ThresholdOuter> yetAnotherActual = Slicer.filter( Collections.unmodifiableSet( yetAnotherInput ) );
+        Set<ThresholdOuter> yetAnotherExpected = Set.of( yetAnotherFirst, yetAnotherSecond );
+
+        assertEquals( yetAnotherExpected, yetAnotherActual );
+
+        // No values with different probabilities
+        Set<ThresholdOuter> oneMoreInput = new HashSet<>();
+        ThresholdOuter oneMoreFirst = new ThresholdOuter.Builder().setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
+                                                                  .setUnits( MeasurementUnit.of( "UNIT" ) )
+                                                                  .setCondition( Operator.GREATER_EQUAL )
+                                                                  .setDataType( ThresholdDataType.LEFT )
+                                                                  .build();
+        ThresholdOuter oneMoreSecond = new ThresholdOuter.Builder().setProbabilities( OneOrTwoDoubles.of( 0.3 ) )
+                                                                   .setUnits( MeasurementUnit.of( "UNIT" ) )
+                                                                   .setCondition( Operator.GREATER_EQUAL )
+                                                                   .setDataType( ThresholdDataType.LEFT )
+                                                                   .build();
+
+        oneMoreInput.add( oneMoreFirst );
+        oneMoreInput.add( oneMoreSecond );
+
+        Set<ThresholdOuter> oneMoreActual = Slicer.filter( Collections.unmodifiableSet( oneMoreInput ) );
+        Set<ThresholdOuter> oneMoreExpected = Set.of( oneMoreFirst, oneMoreSecond );
+
+        assertEquals( oneMoreExpected, oneMoreActual );
+    }
+
+    @Test
     public void testFilterEnsembleThrowsIllegalArgumentExceptionWhenLabelsAreMissing()
     {
         assertThrows( IllegalArgumentException.class,
                       () -> Slicer.filter( Ensemble.of( 1.0 ),
                                            "aLabel" ) );
     }
-    
+
     @Test
     public void testFilterThrowsNullPointerExceptionWhenEnsembleIsNull()
     {
@@ -804,7 +900,7 @@ public final class SlicerTest
                       () -> Slicer.filter( null,
                                            "aLabel" ) );
     }
-    
+
     @Test
     public void testFilterThrowsNullPointerExceptionWhenLabelsIsNull()
     {

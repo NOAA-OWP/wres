@@ -10,7 +10,9 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.BiFunction;
 import java.util.function.DoublePredicate;
@@ -261,45 +263,48 @@ public final class Slicer
     public static UnaryOperator<Pair<Double, Ensemble>> leftAndEachOfRight( DoublePredicate predicate )
     {
         return pair -> {
+
+            // Left fails condition
+            if ( !predicate.test( pair.getLeft() ) )
+            {
+                return null;
+            }
+
             Pair<Double, Ensemble> returnMe = null;
 
-            //Left meets condition
-            if ( predicate.test( pair.getLeft() ) )
+            Ensemble ensemble = pair.getRight();
+            double[] members = ensemble.getMembers();
+            Labels labels = ensemble.getLabels();
+            String[] labelValues = labels.getLabels();
+            List<Double> filteredMembers = new ArrayList<>();
+            List<String> filteredLabels = new ArrayList<>();
+
+            // Iterate and filter the members and corresponding labels
+            for ( int i = 0; i < members.length; i++ )
             {
-                Ensemble ensemble = pair.getRight();
-                double[] members = ensemble.getMembers();
-                Labels labels = ensemble.getLabels();
-                String[] labelValues = labels.getLabels();
-                List<Double> filteredMembers = new ArrayList<>();
-                List<String> filteredLabels = new ArrayList<>();
-
-                // Iterate and filter the members and corresponding labels
-                for ( int i = 0; i < members.length; i++ )
+                if ( predicate.test( members[i] ) )
                 {
-                    if ( predicate.test( members[i] ) )
-                    {
-                        filteredMembers.add( members[i] );
+                    filteredMembers.add( members[i] );
 
-                        if ( labels.hasLabels() )
-                        {
-                            filteredLabels.add( labelValues[i] );
-                        }
+                    if ( labels.hasLabels() )
+                    {
+                        filteredLabels.add( labelValues[i] );
                     }
                 }
+            }
 
-                // Unbox
-                double[] filteredMemberArray = filteredMembers.stream()
-                                                              .mapToDouble( Double::doubleValue )
-                                                              .toArray();
+            // Unbox
+            double[] filteredMemberArray = filteredMembers.stream()
+                                                          .mapToDouble( Double::doubleValue )
+                                                          .toArray();
 
-                String[] filteredLabelArray = filteredLabels.toArray( new String[filteredLabels.size()] );
+            String[] filteredLabelArray = filteredLabels.toArray( new String[filteredLabels.size()] );
 
-                //One or more of right meets condition
-                if ( filteredMemberArray.length > 0 )
-                {
-                    Labels fLabels = Labels.of( filteredLabelArray );
-                    returnMe = Pair.of( pair.getLeft(), Ensemble.of( filteredMemberArray, fLabels ) );
-                }
+            //One or more of right meets condition
+            if ( filteredMemberArray.length > 0 )
+            {
+                Labels fLabels = Labels.of( filteredLabelArray );
+                returnMe = Pair.of( pair.getLeft(), Ensemble.of( filteredMemberArray, fLabels ) );
             }
 
             return returnMe;
@@ -533,6 +538,60 @@ public final class Slicer
         return outputs.stream()
                       .filter( next -> metricIdentifier == next.getMetricName() )
                       .collect( Collectors.toUnmodifiableList() );
+    }
+
+    /**
+     * Filters thresholds that are equal except for their probabilities. The purpose of this method is to de-duplicate 
+     * thresholds that were generated from climatological probabilities and whose quantiles are unknown at declaration 
+     * time. For example, with precipitation and other mixed probability distributions, many probabilities will map to 
+     * the same (zero) quantiles and including these duplicates is wasteful. Among the equal thresholds, retains the
+     * one with the largest probability value.
+     * 
+     * @param thresholds the thresholds to de-duplicate
+     * @return the thresholds whose real values and/or names are different
+     */
+
+    public static Set<ThresholdOuter> filter( Set<ThresholdOuter> thresholds )
+    {
+        Objects.requireNonNull( thresholds );
+
+        // Remove the probabilities from all thresholds and then group the original thresholds by these new thresholds
+        // Finally, pick the largest threshold from each group      
+        Map<ThresholdOuter, SortedSet<ThresholdOuter>> mappedThresholds = new TreeMap<>();
+
+        for ( ThresholdOuter next : thresholds )
+        {
+            // Has value thresholds?
+            if ( next.hasValues() )
+            {
+                ThresholdOuter noProbs =
+                        new ThresholdOuter.Builder( next.getThreshold() ).setProbabilities( null )
+                                                                         .build();
+
+                if ( mappedThresholds.containsKey( noProbs ) )
+                {
+                    mappedThresholds.get( noProbs ).add( next );
+                }
+                else
+                {
+                    SortedSet<ThresholdOuter> nextGroup = new TreeSet<>();
+                    nextGroup.add( next );
+                    mappedThresholds.put( noProbs, nextGroup );
+                }
+            }
+            // Only probabilities, so allow without filtering
+            else
+            {
+                SortedSet<ThresholdOuter> nextGroup = new TreeSet<>();
+                nextGroup.add( next );
+                mappedThresholds.put( next, nextGroup );
+            }
+        }
+
+        return mappedThresholds.entrySet()
+                               .stream()
+                               .map( next -> next.getValue().last() )
+                               .collect( Collectors.toUnmodifiableSet() );
     }
 
     /**
