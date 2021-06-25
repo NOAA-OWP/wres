@@ -236,11 +236,11 @@ public class Control implements Function<String[], ExecutionResult>,
 
         // Name our queues in order to easily monitor them
         BlockingQueue<Runnable> featureQueue =new ArrayBlockingQueue<>( innerSystemSettings
-                                                                                .getMaximumFeatureThreads() + 20 );
-        BlockingQueue<Runnable> pairQueue = new ArrayBlockingQueue<>( innerSystemSettings.getMaximumPairThreads() + 20 );
+                                                                                .getMaximumFeatureThreads() + 20000 );
+        BlockingQueue<Runnable> pairQueue = new ArrayBlockingQueue<>( innerSystemSettings.getMaximumPairThreads() + 20000 );
         BlockingQueue<Runnable> thresholdQueue = new LinkedBlockingQueue<>();
-        BlockingQueue<Runnable> metricQueue = new ArrayBlockingQueue<>( innerSystemSettings.getMaximumMetricThreads() + 20 );
-        BlockingQueue<Runnable> productQueue = new ArrayBlockingQueue<>( innerSystemSettings.getMaximumProductThreads() + 20 );
+        BlockingQueue<Runnable> metricQueue = new ArrayBlockingQueue<>( innerSystemSettings.getMaximumMetricThreads() + 20000 );
+        BlockingQueue<Runnable> productQueue = new ArrayBlockingQueue<>( innerSystemSettings.getMaximumProductThreads() + 20000 );
 
         // Processes features
         ThreadPoolExecutor featureExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumFeatureThreads(),
