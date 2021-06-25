@@ -65,6 +65,9 @@ final class DatabaseSettings
 	// The query timeout needs to be in seconds and we're setting the default for 5 hours (arbitrarily large)
 	private int queryTimeout = 60 * 60 * 5;
 
+    // Get-connection timeout is in milliseconds. Default to default query timeout.
+    private int connectionTimeoutMs = queryTimeout * 1000;
+
 	/**
 	 * Creates the mapping between the names of databases to the name of the classes that may connect to them
 	 * @return Map of database names to class names
@@ -436,7 +439,7 @@ final class DatabaseSettings
         poolConfig.setDataSourceClassName( className );
         int maxSize = this.maxPoolSize;
         poolConfig.setMaximumPoolSize( maxSize );
-        poolConfig.setConnectionTimeout( 0 );
+        poolConfig.setConnectionTimeout( connectionTimeoutMs );
         return new HikariDataSource( poolConfig );
 	}
 
@@ -450,7 +453,7 @@ final class DatabaseSettings
         poolConfig.setDataSourceClassName( className );
         int maxSize = 5;
         poolConfig.setMaximumPoolSize( maxSize );
-        poolConfig.setConnectionTimeout( 0 );
+        poolConfig.setConnectionTimeout( connectionTimeoutMs );
         return new HikariDataSource( poolConfig );
 	}
 
@@ -686,6 +689,9 @@ final class DatabaseSettings
                         case "query_timeout":
                             queryTimeout = Integer.parseInt( value );
                             break;
+                        case "connectionTimeoutMs":
+                            connectionTimeoutMs = Integer.parseInt( value );
+                            break;
                         case "use_ssl":
                             setUseSSL( Boolean.parseBoolean( value ) );
                             break;
@@ -851,6 +857,12 @@ final class DatabaseSettings
         if (timeoutOverride != null)
         {
             this.queryTimeout = Integer.parseInt( timeoutOverride );
+        }
+
+        String connectionTimeoutMsOverride = System.getProperty( "wres.databaseConnectionTimeoutMs" );
+        if ( connectionTimeoutMsOverride != null )
+        {
+            this.connectionTimeoutMs = Integer.parseInt( connectionTimeoutMsOverride );
         }
 
 		// Intended order of passphrase precedence:
