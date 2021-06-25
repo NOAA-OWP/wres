@@ -8,6 +8,12 @@ networks:
             config:
                 - subnet: 172.19.254.192/26
                   gateway: 172.19.254.193
+volumes:
+    home:
+        driver_opts:
+            type: "nfs"
+            o: "ro,relatime,vers=4.1,rsize=1048576,wsize=1048576,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,local_lock=none,addr=${NFS_HOME_DIR_IP_ADDRESS}"
+            device: "${NFS_HOME_DIR_DEVICE}"
 services:
     persister:
         image: "${DOCKER_REGISTRY}/wres/wres-redis:20210621-3b55093"
@@ -75,7 +81,7 @@ services:
         healthcheck:
             start_period: 5m
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210621-c2523ed"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210625-d3da1c7"
         restart: always
         depends_on:
             broker:
@@ -85,8 +91,8 @@ services:
         volumes:
          # To write user output data:
          - /mnt/wres_share/evaluations:/mnt/wres_share/evaluations
-         # To read user input data:
-         - /home:/home:ro
+         # To read user input using read-only nfs mount above:
+         - home:/home:ro
          # To read user input data written by tasker:
          - /mnt/wres_share/input_data:/mnt/wres_share/input_data:ro
          # To read test input data:
@@ -143,7 +149,7 @@ services:
         depends_on:
             eventsbroker:
                 condition: service_started
-        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20210621-3b55093"
+        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20210624-3a95154"
         restart: always
         volumes:
          # To write graphics outputs
