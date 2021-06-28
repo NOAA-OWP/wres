@@ -39,6 +39,9 @@ import wres.events.Evaluation;
 import wres.io.concurrency.Pipelines;
 import wres.io.pooling.PoolFactory;
 import wres.io.project.Project;
+import wres.io.retrieval.EnsembleRetrieverFactory;
+import wres.io.retrieval.RetrieverFactory;
+import wres.io.retrieval.SingleValuedRetrieverFactory;
 import wres.io.retrieval.UnitMapper;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
 import wres.statistics.generated.Statistics;
@@ -168,11 +171,18 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         // Pairs that contain ensemble forecasts
         if ( type == DatasourceType.ENSEMBLE_FORECASTS )
         {
+
+            // Create a feature-shaped retriever factory to support retrieval for this project
+            RetrieverFactory<Double, Ensemble> retrieverFactory = EnsembleRetrieverFactory.of( this.project,
+                                                                                               this.feature,
+                                                                                               this.unitMapper );
+
             List<Supplier<Pool<Pair<Double, Ensemble>>>> pools =
                     PoolFactory.getEnsemblePools( this.evaluation,
                                                   this.project,
                                                   this.feature,
-                                                  this.unitMapper );
+                                                  this.unitMapper,
+                                                  retrieverFactory );
 
             // Stand-up the pair writers
             PairsWriter<Double, Ensemble> pairsWriter = null;
@@ -200,11 +210,17 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         // All other types
         else
         {
+            // Create a feature-shaped retriever factory to support retrieval for this project
+            RetrieverFactory<Double, Double> retrieverFactory = SingleValuedRetrieverFactory.of( this.project,
+                                                                                                 this.feature,
+                                                                                                 this.unitMapper );
+
             List<Supplier<Pool<Pair<Double, Double>>>> pools =
                     PoolFactory.getSingleValuedPools( this.evaluation,
                                                       this.project,
                                                       this.feature,
-                                                      this.unitMapper );
+                                                      this.unitMapper,
+                                                      retrieverFactory );
 
             // Stand-up the pair writers
             PairsWriter<Double, Double> pairsWriter = null;

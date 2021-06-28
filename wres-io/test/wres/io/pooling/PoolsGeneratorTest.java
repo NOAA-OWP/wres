@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
@@ -31,6 +32,9 @@ import wres.datamodel.pools.Pool;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.project.Project;
+import wres.io.retrieval.EnsembleRetrieverFactory;
+import wres.io.retrieval.RetrieverFactory;
+import wres.io.retrieval.SingleValuedRetrieverFactory;
 import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.Database;
 import wres.statistics.generated.Evaluation;
@@ -145,12 +149,18 @@ public class PoolsGeneratorTest
         Mockito.when( mockEvaluation.getEvaluationDescription() )
                .thenReturn( evaluationDescription );
 
+        // Mock a feature-shaped retriever factory
+        RetrieverFactory<Double, Double> retrieverFactory = Mockito.mock( SingleValuedRetrieverFactory.class );
+        Mockito.when( retrieverFactory.getLeftRetriever( Mockito.any() ) ).thenReturn( () -> Stream.of() );
+        Mockito.when( retrieverFactory.getRightRetriever( Mockito.any() ) ).thenReturn( () -> Stream.of() );
+
         // Create the actual output
         List<Supplier<Pool<Pair<Double, Double>>>> actual =
                 PoolFactory.getSingleValuedPools( mockEvaluation,
                                                   project,
                                                   new FeatureTuple( feature, feature, null ),
-                                                  this.unitMapper );
+                                                  this.unitMapper,
+                                                  retrieverFactory );
 
         // Assert expected number of suppliers
         assertEquals( 18, actual.size() );
@@ -248,12 +258,18 @@ public class PoolsGeneratorTest
         Mockito.when( mockEvaluation.getEvaluationDescription() )
                .thenReturn( evaluationDescription );
 
+        // Mock a feature-shaped retriever factory
+        RetrieverFactory<Double, Ensemble> retrieverFactory = Mockito.mock( EnsembleRetrieverFactory.class );
+        Mockito.when( retrieverFactory.getLeftRetriever( Mockito.any() ) ).thenReturn( () -> Stream.of() );
+        Mockito.when( retrieverFactory.getRightRetriever( Mockito.any() ) ).thenReturn( () -> Stream.of() );
+
         // Create the actual output
         List<Supplier<Pool<Pair<Double, Ensemble>>>> actual =
                 PoolFactory.getEnsemblePools( mockEvaluation,
                                               project,
                                               new FeatureTuple( feature, feature, null ),
-                                              this.unitMapper );
+                                              this.unitMapper,
+                                              retrieverFactory );
 
         // Assert expected number of suppliers
         assertEquals( 18, actual.size() );

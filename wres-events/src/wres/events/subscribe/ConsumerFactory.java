@@ -28,7 +28,6 @@ import wres.statistics.generated.Statistics;
  * feature. In other words, consumption is deferred until all statistics are available.</li>
  * </ol>
  * 
- * 
  * <p>A consumer is supplied at evaluation time based on an {@link Evaluation} description. Consumers are supplied at 
  * evaluation time because the consumers may depend on the evaluation description, either to determine consumers 
  * required or to use the description of the evaluation to qualify the statistics consumed.
@@ -145,7 +144,7 @@ public interface ConsumerFactory extends Closeable
         {
             throw new ConsumerException( "Encountered an error in subscriber " + consumerId
                                          + " while attempting to create a temporary "
-                                         + "directory for the graphics from evaluation "
+                                         + "directory for evaluation "
                                          + evaluationId
                                          + ".",
                                          e );
