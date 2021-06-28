@@ -50,9 +50,7 @@ import wres.datamodel.time.generators.PersistenceGenerator;
 import wres.events.Evaluation;
 import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
-import wres.io.retrieval.EnsembleRetrieverFactory;
 import wres.io.retrieval.RetrieverFactory;
-import wres.io.retrieval.SingleValuedRetrieverFactory;
 import wres.io.retrieval.UnitMapper;
 
 /**
@@ -90,8 +88,9 @@ public class PoolFactory
      * @param project the project for which pools are required
      * @param feature the feature for which pools are required
      * @param unitMapper the mapper to convert measurement units
+     * @param retrieverFactory the retriever factory
      * @return a list of suppliers that supply pools of pairs
-     * @throws NullPointerException if any required input is null
+     * @throws NullPointerException if any input is null
      * @throws IllegalArgumentException if the project is not consistent with the generation of pools for single-valued
      *            data
      */
@@ -99,12 +98,14 @@ public class PoolFactory
     public static List<Supplier<Pool<Pair<Double, Double>>>> getSingleValuedPools( Evaluation evaluation,
                                                                                    Project project,
                                                                                    FeatureTuple feature,
-                                                                                   UnitMapper unitMapper )
+                                                                                   UnitMapper unitMapper,
+                                                                                   RetrieverFactory<Double, Double> retrieverFactory )
     {
         Objects.requireNonNull( evaluation, "Cannot create pools from a null evaluation." );
         Objects.requireNonNull( project, "Cannot create pools from a null project." );
         Objects.requireNonNull( unitMapper, "Cannot create pools without a measurement unit mapper." );
         Objects.requireNonNull( unitMapper, "Cannot create pools without a feature description." );
+        Objects.requireNonNull( retrieverFactory, "Cannot create pools without a retriever factory." );
 
         // Validate the project declaration for the required data type
         // TODO: do not rely on the declared type. Detect the type instead
@@ -123,11 +124,6 @@ public class PoolFactory
 
         // Get the times scale
         TimeScaleOuter desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
-
-        // Create a feature-shaped retriever factory to support retrieval for this project
-        RetrieverFactory<Double, Double> retrieverFactory = SingleValuedRetrieverFactory.of( project,
-                                                                                             feature,
-                                                                                             unitMapper );
 
         // Create a default pairer for finite left and right values
         TimePairingType timePairingType = PoolFactory.getTimePairingTypeFromInputsConfig( inputsConfig );
@@ -212,6 +208,7 @@ public class PoolFactory
      * @param project the project for which pools are required
      * @param feature the feature for which pools are required
      * @param unitMapper the mapper to convert measurement units
+     * @param retrieverFactory the retriever factory
      * @return a list of suppliers that supply pools of pairs
      * @throws NullPointerException if the input is null
      * @throws IllegalArgumentException if the project is not consistent with the generation of pools for single-valued
@@ -221,12 +218,14 @@ public class PoolFactory
     public static List<Supplier<Pool<Pair<Double, Ensemble>>>> getEnsemblePools( Evaluation evaluation,
                                                                                  Project project,
                                                                                  FeatureTuple feature,
-                                                                                 UnitMapper unitMapper )
+                                                                                 UnitMapper unitMapper,
+                                                                                 RetrieverFactory<Double, Ensemble> retrieverFactory )
     {
         Objects.requireNonNull( evaluation, "Cannot create pools from a null evaluation." );
         Objects.requireNonNull( project, "Cannot create pools from a null project." );
         Objects.requireNonNull( unitMapper, "Cannot create pools without a measurement unit mapper." );
         Objects.requireNonNull( unitMapper, "Cannot create pools without a feature description." );
+        Objects.requireNonNull( retrieverFactory, "Cannot create pools without a retriever factory." );
 
         // Validate the project declaration for the required data type
         // TODO: do not rely on the declared type. Detect the type instead
@@ -244,11 +243,6 @@ public class PoolFactory
 
         // Get the times scale
         TimeScaleOuter desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
-
-        // Create a feature-shaped retriever factory to support retrieval for this project
-        RetrieverFactory<Double, Ensemble> retrieverFactory = EnsembleRetrieverFactory.of( project,
-                                                                                           feature,
-                                                                                           unitMapper );
 
         // Create a default pairer for finite left values and one or more finite right values
         TimePairingType timePairingType = PoolFactory.getTimePairingTypeFromInputsConfig( inputsConfig );

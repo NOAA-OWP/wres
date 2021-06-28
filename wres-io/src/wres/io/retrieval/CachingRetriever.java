@@ -1,14 +1,16 @@
 package wres.io.retrieval;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import net.jcip.annotations.Immutable;
+
 /**
- * <p>Adds a wrapper to a {@link Supplier} that supplies a {@link Stream} of retrieved data. This allow the retrieved 
- * data to be cached locally for re-use. On the second and further calls, the cached data is returned. Use this
- * wrapper to re-use data across pools.
+ * <p>Adds a wrapper to a {@link Supplier} that supplies a {@link Stream} of retrieved data. This allows the retrieved 
+ * data to be cached locally for re-use. The data is acquired eagerly, on construction.
  * 
  * <p><b>Implementation notes:</b>
  * 
@@ -17,40 +19,20 @@ import java.util.stream.Stream;
  * @author james.brown@hydrosolved.com
  * @param <T> the type of data to retrieve
  */
-
+@Immutable
 public class CachingRetriever<T> implements Supplier<Stream<T>>
 {
 
-    /**
-     * Status of the cache. If <code>true</code>, the cache is available, <code>false</code> otherwise.
-     */
-
-    private boolean hasCache;
-
-    /**
-     * Lock object.
-     */
-
-    private final Object lock;
-
-    /**
-     * Retriever.
-     */
-
-    private final Supplier<Stream<T>> retriever;
-
-    /**
-     * Cache of data.
-     */
-
-    private List<T> cache;
+    /** Cache of data.*/
+    private final List<T> cache;
 
     /**
      * Provides an instance.
      * 
      * @param <T> the type of data to retrieve
      * @param retriever the retriever
-     * @return the supplier
+     * @return a caching retriever
+     * @throws NullPointerException if the retriever is null
      */
 
     public static <T> CachingRetriever<T> of( Supplier<Stream<T>> retriever )
@@ -61,52 +43,22 @@ public class CachingRetriever<T> implements Supplier<Stream<T>>
     @Override
     public Stream<T> get()
     {
-        // Has cache?
-        if ( !this.hasCache )
-        {
-            // Lock, in order to prepare cache
-            synchronized ( this.lock )
-            {
-                // Check again, in case multiple threads 
-                // found false on first check before sync
-                if ( !this.hasCache )
-                {
-                    this.cache = this.getRetriever()
-                                     .get()
-                                     .collect( Collectors.toUnmodifiableList() );
-                    
-                    // Cache now available
-                    this.hasCache = true;
-                }
-            }
-        }
-
-        // Return the cache
         return this.cache.stream();
-    }
-
-    /**
-     * Returns the retriever.
-     * 
-     * @return the retriever
-     */
-
-    private Supplier<Stream<T>> getRetriever()
-    {
-        return this.retriever;
     }
 
     /**
      * Hidden constructor.
      * 
      * @param retriever the retriever
+     * @throws NullPointerException if the retriever is null
      */
 
     private CachingRetriever( Supplier<Stream<T>> retriever )
     {
-        this.hasCache = false;
-        this.lock = new Object();
-        this.retriever = retriever;
+        Objects.requireNonNull( retriever );
+
+        this.cache = retriever.get()
+                              .collect( Collectors.toUnmodifiableList() );
     }
 
 }

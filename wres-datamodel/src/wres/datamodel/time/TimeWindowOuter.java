@@ -43,7 +43,7 @@ import wres.statistics.generated.TimeWindow;
  * @author james.brown@hydrosolved.com
  */
 
-public final class TimeWindowOuter implements Comparable<TimeWindowOuter>
+public class TimeWindowOuter implements Comparable<TimeWindowOuter>
 {
 
     /**
