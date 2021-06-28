@@ -2,6 +2,7 @@ package wres.worker;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -104,14 +105,18 @@ class JobReceiver extends DefaultConsumer
                 PosixFilePermissions.asFileAttribute( permissions );
 
         String jobIdString = "wres_job_" + jobId;
-        
+        String tempDir = System.getProperty( "java.io.tmpdir" );
+        outputPath = Paths.get( tempDir, jobIdString );
+
         try
         {
-            String tempDir = System.getProperty( "java.io.tmpdir" );
-            Path jobDir = Paths.get( tempDir, jobIdString );
-            outputPath = Files.createDirectory( jobDir, fileAttribute );
-            
+            Files.createDirectory( outputPath, fileAttribute );
             LOGGER.debug( "Created job directory {}.", outputPath );
+        }
+        catch ( FileAlreadyExistsException faee )
+        {
+            LOGGER.warn( "Job directory {} already existed indicating another process started working here.",
+                         outputPath, faee );
         }
         catch ( IOException ioe )
         {
