@@ -131,6 +131,15 @@ public class SubscriberStatus
     }
 
     /**
+     * @return the number of evaluations completed.
+     */
+
+    public int getEvaluationCompletedCount()
+    {
+        return this.complete.size();
+    }
+    
+    /**
      * @return the statistics count.
      */
     public int getStatisticsCount()

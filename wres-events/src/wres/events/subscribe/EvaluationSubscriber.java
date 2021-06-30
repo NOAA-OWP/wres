@@ -13,12 +13,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.jms.BytesMessage;
@@ -35,6 +34,8 @@ import javax.naming.NamingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 import net.jcip.annotations.ThreadSafe;
@@ -84,6 +85,10 @@ import wres.statistics.generated.Evaluation;
 @ThreadSafe
 public class EvaluationSubscriber implements Closeable
 {
+    private static final String SUBSCRIBER_REJECTED_MESSAGE = "Subscriber {} rejected message {} from the {} queue.";
+
+    private static final String SUBSCRIBER_ACCEPTED_MESSAGE = "Subscriber {} accepted message {} on the {} queue.";
+
     private static final String SUBSCRIBER = "Subscriber ";
 
     private static final String ENCOUNTERED_AN_EXCEPTION_THAT_WILL_STOP_THE_SUBSCRIBER =
@@ -255,26 +260,19 @@ public class EvaluationSubscriber implements Closeable
      * The evaluations by unique id.
      */
 
-    private final Map<String, EvaluationConsumer> evaluations;
+    private final Cache<String, EvaluationConsumer> evaluations;
 
     /**
      * Actual number of retries attempted per evaluation.
      */
 
-    private final Map<String, AtomicInteger> retriesAttempted;
+    private final Cache<String, AtomicInteger> retriesAttempted;
 
     /**
      * An executor service for writing work.
      */
 
     private final ExecutorService executorService;
-
-    /**
-     * A lock that guards the evaluations. This is needed to sweep evaluations that have been completed, otherwise
-     * the map will grow infinitely.
-     */
-
-    private final ReentrantLock evaluationsLock = new ReentrantLock();
 
     /**
      * Is <code>true</code> is the subscriber has failed unrecoverably.
@@ -387,7 +385,8 @@ public class EvaluationSubscriber implements Closeable
         // Log a warning if there are open evaluations
         if ( this.hasOpenEvaluations() )
         {
-            Set<String> open = this.evaluations.entrySet()
+            Set<String> open = this.evaluations.asMap()
+                                               .entrySet()
                                                .stream()
                                                .filter( next -> !next.getValue().isComplete() )
                                                .map( Map.Entry::getKey )
@@ -455,55 +454,41 @@ public class EvaluationSubscriber implements Closeable
     }
 
     /**
-     * Maintenance task that removes closed evaluations from the cache that succeeded and retains failed evaluations.
+     * Maintenance task for completed evaluations.
      */
 
     public void sweep()
     {
-        // Lock for sweeping
-        this.getEvaluationsLock()
-            .lock();
-
-        // Find the evaluations to sweep
         Set<String> completed = new HashSet<>();
         Set<String> failed = new HashSet<>();
 
-        // Create an independent set to sweep as this is a mutating loop
-        Set<String> toSweep = new HashSet<>( this.evaluations.keySet() );
-        for ( String nextEvaluation : toSweep )
+        // Iterate the evaluations
+        Map<String, EvaluationConsumer> cache = this.evaluations.asMap();
+        for ( EvaluationConsumer nextEvaluation : cache.values() )
         {
-            EvaluationConsumer nextConsumer = this.evaluations.get( nextEvaluation );
-
             // Evaluation completed
-            if ( nextConsumer.isClosed() )
+            if ( nextEvaluation.isClosed() )
             {
-                // Evaluation succeeded
-                if ( !nextConsumer.isFailed() )
-                {
-                    this.evaluations.remove( nextEvaluation );
-                    this.retriesAttempted.remove( nextEvaluation );
-                }
-
                 // Record completions for logging
-                completed.add( nextEvaluation );
+                completed.add( nextEvaluation.getEvaluationId() );
 
                 // Unbook the subscriber if booked
                 if ( this.isBooked() )
                 {
-                    this.unbook( nextEvaluation );
+                    this.unbook( nextEvaluation.getEvaluationId() );
                 }
             }
             // Evaluation is ongoing, but it has now timed out and should be stopped
-            else if ( this.hasTimedOut( nextConsumer ) )
+            else if ( this.hasTimedOut( nextEvaluation ) )
             {
                 // Flag timed out. It will be swept away on the next iteration
-                this.registerEvaluationTimedOut( nextConsumer );
+                this.registerEvaluationTimedOut( nextEvaluation );
             }
 
             // Record failures for logging
-            if ( nextConsumer.isFailed() )
+            if ( nextEvaluation.isFailed() )
             {
-                failed.add( nextEvaluation );
+                failed.add( nextEvaluation.getEvaluationId() );
             }
         }
 
@@ -514,13 +499,10 @@ public class EvaluationSubscriber implements Closeable
                           this.getClientId(),
                           completed.size(),
                           completed,
-                          this.evaluations.size(),
+                          cache.size(),
                           failed.size(),
                           failed );
         }
-
-        this.getEvaluationsLock()
-            .unlock();
     }
 
     /**
@@ -604,7 +586,7 @@ public class EvaluationSubscriber implements Closeable
     private boolean hasOpenEvaluations()
     {
         // Iterate the evaluations
-        for ( Map.Entry<String, EvaluationConsumer> next : this.evaluations.entrySet() )
+        for ( Map.Entry<String, EvaluationConsumer> next : this.evaluations.asMap().entrySet() )
         {
             if ( !next.getValue().isComplete() )
             {
@@ -853,13 +835,13 @@ public class EvaluationSubscriber implements Closeable
         }
         // An evaluation was started and this subscriber was booked to deliver it, but another subscriber won the work
         else if ( completionStatus == CompletionStatus.EVALUATION_STARTED && evaluationId.equals( this.booked.get() )
-                  && !this.isThisMessageForMe( message ) )
+                  && !this.isThisMessageForMe( message, QueueType.EVALUATION_STATUS_QUEUE ) )
         {
             // Free to offer services again
             this.unbook( evaluationId );
         }
         // Request for consumption and the message belongs to me
-        else if ( this.isThisMessageForMe( message ) )
+        else if ( this.isThisMessageForMe( message, QueueType.EVALUATION_STATUS_QUEUE ) )
         {
             LOGGER.debug( SUBSCRIBER_HAS_CLAIMED_OWNERSHIP_OF_MESSAGE_FOR_EVALUATION,
                           this.getClientId(),
@@ -934,6 +916,7 @@ public class EvaluationSubscriber implements Closeable
 
                 if ( this.shouldIForwardThisMessageForConsumption( message, QueueType.EVALUATION_QUEUE ) )
                 {
+
                     jobId = message.getStringProperty( MessageProperty.EVALUATION_JOB_ID.toString() );
 
                     LOGGER.debug( SUBSCRIBER_HAS_CLAIMED_OWNERSHIP_OF_MESSAGE_FOR_EVALUATION,
@@ -1075,12 +1058,12 @@ public class EvaluationSubscriber implements Closeable
         if ( queueType == QueueType.EVALUATION_QUEUE )
         {
             // Accept messages intended for this subscriber
-            return this.isThisMessageForMe( message );
+            return this.isThisMessageForMe( message, QueueType.EVALUATION_QUEUE );
         }
         else if ( queueType == QueueType.STATISTICS_QUEUE )
         {
             // Accept messages intended for this subscriber
-            return this.isThisMessageForMe( message );
+            return this.isThisMessageForMe( message, QueueType.STATISTICS_QUEUE );
         }
         else if ( queueType == QueueType.EVALUATION_STATUS_QUEUE )
         {
@@ -1179,21 +1162,9 @@ public class EvaluationSubscriber implements Closeable
 
     private boolean isEvaluationFailed( String evaluationId )
     {
-        // Wait for any mutation of the evaluations to complete
-        try
-        {
-            this.getEvaluationsLock().lock();
+        EvaluationConsumer evaluation = this.evaluations.getIfPresent( evaluationId );
 
-            // Check the cache of failed evaluations as well as the cache of ongoing evaluations, which may contain
-            // failed evaluations that have not yet been swept away.
-            return this.evaluations.containsKey( evaluationId )
-                   && this.evaluations.get( evaluationId )
-                                      .isFailed();
-        }
-        finally
-        {
-            this.getEvaluationsLock().unlock();
-        }
+        return Objects.nonNull( evaluation ) && evaluation.isFailed();
     }
 
     /**
@@ -1272,15 +1243,7 @@ public class EvaluationSubscriber implements Closeable
     private AtomicInteger getNumberOfRetriesAttempted( String evaluationId )
     {
         // Add the retry count if none tried
-        AtomicInteger retries = new AtomicInteger();
-        AtomicInteger existingRetries = this.retriesAttempted.putIfAbsent( evaluationId, retries );
-
-        if ( Objects.nonNull( existingRetries ) )
-        {
-            return existingRetries;
-        }
-
-        return retries;
+        return this.retriesAttempted.get( evaluationId, other -> new AtomicInteger() );
     }
 
     /**
@@ -1295,9 +1258,10 @@ public class EvaluationSubscriber implements Closeable
         // Close the consumer
         try
         {
-            if ( this.evaluations.containsKey( evaluationId ) )
+            EvaluationConsumer consumer = this.evaluations.getIfPresent( evaluationId );
+
+            if ( Objects.nonNull( consumer ) )
             {
-                EvaluationConsumer consumer = this.evaluations.get( evaluationId );
                 consumer.markEvaluationFailedOnConsumption( exception );
             }
         }
@@ -1344,11 +1308,9 @@ public class EvaluationSubscriber implements Closeable
             LOGGER.error( message, exception );
 
             // Attempt to mark all open evaluations as failed
-            this.getEvaluationsLock().lock();
-
             try
             {
-                for ( EvaluationConsumer nextEvaluation : this.evaluations.values() )
+                for ( EvaluationConsumer nextEvaluation : this.evaluations.asMap().values() )
                 {
                     if ( !nextEvaluation.isComplete() )
                     {
@@ -1362,11 +1324,6 @@ public class EvaluationSubscriber implements Closeable
                 LOGGER.error( "While closing subscriber {}, failed to close some of the evaluations associated with "
                               + "it.",
                               this.getClientId() );
-            }
-            finally
-            {
-                this.getEvaluationsLock()
-                    .unlock();
             }
 
             throw exception;
@@ -1394,41 +1351,21 @@ public class EvaluationSubscriber implements Closeable
                                 "Cannot request an evaluation consumer for an evaluation with a "
                                               + "missing identifier." );
 
-        this.getEvaluationsLock()
-            .lock();
+        // Function that creates a new evaluation
+        Function<String, EvaluationConsumer> creator = name -> {
+            EvaluationConsumer consumer = new EvaluationConsumer( evaluationId,
+                                                                  this.getConsumerDescription(),
+                                                                  this.consumerFactory,
+                                                                  this.evaluationStatusPublisher,
+                                                                  this.getExecutor(),
+                                                                  this.status );
 
-        try
-        {
-            // Exists already?
-            if ( !this.evaluations.containsKey( evaluationId ) )
-            {
-                EvaluationConsumer consumer = new EvaluationConsumer( evaluationId,
-                                                                      this.getConsumerDescription(),
-                                                                      this.consumerFactory,
-                                                                      this.evaluationStatusPublisher,
-                                                                      this.getExecutor(),
-                                                                      this.status );
-                this.evaluations.put( evaluationId, consumer );
+            this.status.registerEvaluationStarted( evaluationId );
 
-                this.status.registerEvaluationStarted( evaluationId );
-            }
+            return consumer;
+        };
 
-            return this.evaluations.get( evaluationId );
-        }
-        finally
-        {
-            this.getEvaluationsLock()
-                .unlock();
-        }
-    }
-
-    /**
-     * @return the evaluations lock
-     */
-
-    private ReentrantLock getEvaluationsLock()
-    {
-        return this.evaluationsLock;
+        return this.evaluations.get( evaluationId, creator );
     }
 
     /**
@@ -1585,11 +1522,12 @@ public class EvaluationSubscriber implements Closeable
     /**
      * Returns <code>true</code> if the message is contracted by this subscriber, otherwise <code>false</code>. 
      * @param message the message
+     * @param queueType the queue type
      * @return true if the message is contracted, false if not
      * @throws JMSException if the ownership cannot be determined for any reason
      */
 
-    private boolean isThisMessageForMe( Message message ) throws JMSException
+    private boolean isThisMessageForMe( Message message, QueueType queueType ) throws JMSException
     {
         for ( String nextFormat : this.formatStrings )
         {
@@ -1598,8 +1536,21 @@ public class EvaluationSubscriber implements Closeable
             if ( Objects.nonNull( subscriberId ) && this.getClientId()
                                                         .equals( subscriberId ) )
             {
+                if ( LOGGER.isDebugEnabled() )
+                {
+                    LOGGER.debug( SUBSCRIBER_ACCEPTED_MESSAGE,
+                                  this.getClientId(),
+                                  message.getJMSMessageID(),
+                                  queueType );
+                }
+
                 return true;
             }
+        }
+
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( SUBSCRIBER_REJECTED_MESSAGE, this.getClientId(), message.getJMSMessageID(), queueType );
         }
 
         return false;
@@ -1701,7 +1652,7 @@ public class EvaluationSubscriber implements Closeable
     private void notifyAlive()
     {
         // Iterate the evaluations
-        for ( Map.Entry<String, EvaluationConsumer> next : this.evaluations.entrySet() )
+        for ( Map.Entry<String, EvaluationConsumer> next : this.evaluations.asMap().entrySet() )
         {
             // Consider only open evaluations
             if ( !next.getValue().isComplete() )
@@ -1887,9 +1838,14 @@ public class EvaluationSubscriber implements Closeable
 
             this.statisticsConsumer.setMessageListener( this.getStatisticsListener() );
 
-            // A cache of evaluations whose completed evaluations are swept away
-            this.evaluations = new ConcurrentHashMap<>();
-            this.retriesAttempted = new ConcurrentHashMap<>();
+            // A finite cache of evaluations that persist after they are closed, in order to mop-up any late arriving 
+            // messages (for evaluations that succeeded, these are non-essential evaluation status messages only)
+            this.evaluations = Caffeine.newBuilder()
+                                       .maximumSize( 100 )
+                                       .build();
+            this.retriesAttempted = Caffeine.newBuilder()
+                                            .maximumSize( 100 )
+                                            .build();
 
             this.consumerIsAlive = EvaluationStatus.newBuilder()
                                                    .setCompletionStatus( CompletionStatus.CONSUMPTION_ONGOING )
