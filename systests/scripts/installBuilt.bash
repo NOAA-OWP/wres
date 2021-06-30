@@ -253,7 +253,8 @@ then
 		doSystests=yes
 		# TODO
 		# Check wres-vis graphics zip file
-		/wres_share/releases/install_scripts/checkGraphicsZip.bash ~/mytoken $LATEST_ZIPFILE $LOGFILE
+		#/wres_share/releases/install_scripts/checkGraphicsZip.bash ~/mytoken $LATEST_ZIPFILE $LOGFILE
+		/wres_share/releases/install_scripts/checkGraphicsZip.bash -c ~/mytoken -l $LOGFILE
 	fi
 fi
 
