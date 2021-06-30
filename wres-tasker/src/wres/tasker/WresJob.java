@@ -24,6 +24,8 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.redisson.Redisson;
+import org.redisson.api.RLiveObject;
+import org.redisson.api.RLiveObjectService;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 import org.slf4j.Logger;
@@ -65,6 +67,9 @@ public class WresJob
             "wres.tasker.skipQueueLengthCheck";
     private static final int DEFAULT_REDIS_PORT = 6379;
     private static final RedissonClient REDISSON_CLIENT;
+    private static String REDIS_HOST = null;
+    private static int REDIS_PORT = DEFAULT_REDIS_PORT;
+
 
     /**
      * The count of evaluations combined with the maximum length below (which
@@ -94,24 +99,22 @@ public class WresJob
         CONNECTION_FACTORY.useSslProtocol( sslContext );
 
         Config redissonConfig = new Config();
-        String redisHost = null;
-        int redisPort = DEFAULT_REDIS_PORT;
         String specifiedRedisHost = System.getProperty( REDIS_HOST_SYSTEM_PROPERTY_NAME );
         String specifiedRedisPortRaw = System.getProperty( REDIS_PORT_SYSTEM_PROPERTY_NAME );
 
         if ( Objects.nonNull( specifiedRedisHost ) )
         {
-            redisHost = specifiedRedisHost;
+            REDIS_HOST = specifiedRedisHost;
         }
 
         if ( Objects.nonNull( specifiedRedisPortRaw ) )
         {
-            redisPort = Integer.parseInt( specifiedRedisPortRaw );
+            REDIS_PORT = Integer.parseInt( specifiedRedisPortRaw );
         }
 
-        if ( Objects.nonNull( redisHost ) )
+        if ( Objects.nonNull( REDIS_HOST ) )
         {
-            String redisAddress = "redis://" + redisHost + ":" + redisPort;
+            String redisAddress = "redis://" + REDIS_HOST + ":" + REDIS_PORT;
             LOGGER.info( "Redis host specified: {}, using redis at {}",
                          specifiedRedisHost, redisAddress );
             redissonConfig.useSingleServer()
@@ -165,7 +168,26 @@ public class WresJob
                                              e );
         }
 
-        // TODO add test for connectivity to redis via redisson
+        if ( REDISSON_CLIENT != null)
+        {
+            try
+            {
+                RLiveObjectService liveObjectService = REDISSON_CLIENT.getLiveObjectService();
+                RLiveObject liveObject = liveObjectService.asLiveObject( "ping" );
+                Object idRaw = liveObject.getLiveObjectId();
+                String id = idRaw.toString();
+                liveObject.deleteAsync();
+                LOGGER.info( "Successfully used live object service via {}:{}, got id {}",
+                             REDIS_HOST, REDIS_PORT, id );
+            }
+            catch ( RuntimeException re )
+            {
+                throw new ConnectivityException( "redis",
+                                                 REDIS_HOST,
+                                                 REDIS_PORT,
+                                                 re );
+            }
+        }
 
         return "Up";
     }
