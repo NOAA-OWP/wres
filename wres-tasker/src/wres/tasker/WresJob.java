@@ -118,7 +118,13 @@ public class WresJob
             LOGGER.info( "Redis host specified: {}, using redis at {}",
                          specifiedRedisHost, redisAddress );
             redissonConfig.useSingleServer()
-                          .setAddress( redisAddress );
+                          .setAddress( redisAddress )
+                          // Triple the default timeout to 9 seconds:
+                          .setTimeout( 9000 )
+                          // Triple the retry attempts to 9:
+                          .setRetryAttempts( 9 )
+                          // Triple the retry interval to 4.5 seconds:
+                          .setRetryInterval( 4500 );
 
             // The reasoning here is any server thread can cause access of an
             // object in redis (e.g. output, stdout, etc), regardless of whether
@@ -128,7 +134,7 @@ public class WresJob
             // forget to update docker memory limits to account for the stack
             // space required per thread here.
             redissonConfig.setNettyThreads( Tasker.MAX_SERVER_THREADS
-                                            + MAXIMUM_EVALUATION_COUNT * 4 );
+                                            + MAXIMUM_EVALUATION_COUNT * 7 );
             REDISSON_CLIENT = Redisson.create( redissonConfig );
         }
         else
