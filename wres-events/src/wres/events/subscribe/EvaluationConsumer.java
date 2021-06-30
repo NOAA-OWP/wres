@@ -767,9 +767,10 @@ class EvaluationConsumer
             }
             finally
             {
-                // Make the (potentially large) set of paths eligible for gc as the evaluation may hang around for a 
-                // while.
+                // An evaluation consumer may hang around for a while (e.g., to mop-up late arriving status messages)
+                // so make the most expensive states eligible for gc
                 this.pathsWritten.clear();
+                this.groupConsumers.clear();
 
                 LOGGER.info( "Consumer {} closed evaluation {}{}.",
                              this.getClientId(),

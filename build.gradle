@@ -1239,6 +1239,9 @@ project(':wres-events')
         // JCIP annotations
         compile group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
+        // Cache
+        implementation 'com.github.ben-manes.caffeine:caffeine:3.0.2'
+
         runtime 'ch.qos.logback:logback-classic:1.3.0-alpha5'
 
         // JMS API ( QPID client implements 1.1, but 1.1 is not available on maven )

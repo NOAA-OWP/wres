@@ -375,9 +375,9 @@ public class Evaluation implements Closeable
 
     public void publish( Pairs pairs )
     {
-        this.validateRequestToPublish();
-
         Objects.requireNonNull( pairs );
+        
+        this.validateRequestToPublish();
 
         ByteBuffer body = ByteBuffer.wrap( pairs.toByteArray() );
 
@@ -391,13 +391,15 @@ public class Evaluation implements Closeable
      * 
      * @param status the status message
      * @param groupId an optional group identifier to identify grouped status messages (required if group subscribers)
-     * @throws NullPointerException if the message is null or the groupId is null when there are group subscriptions
+     * @throws NullPointerException if the message is null
      * @throws IllegalStateException if the publication of messages to this evaluation has been notified complete
      * @throws IllegalArgumentException if the group has already been marked complete
      */
 
     public void publish( EvaluationStatus status, String groupId )
     {
+        Objects.requireNonNull( status );
+        
         this.validateRequestToPublish();
 
         this.validateStatusMessage( status, groupId );
@@ -599,7 +601,7 @@ public class Evaluation implements Closeable
     @Override
     public String toString()
     {
-        return "Evaluation with unique identifier: " + evaluationId;
+        return "Evaluation with unique identifier: " + this.getEvaluationId();
     }
 
     /**
