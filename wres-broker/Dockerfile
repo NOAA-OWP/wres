@@ -1,4 +1,4 @@
-FROM rabbitmq:3.8.17-management-alpine
+FROM rabbitmq:3.8.18-management-alpine
 
 RUN apk add --no-cache musl=1.2.2-r1 \
     musl-utils=1.2.2-r1
