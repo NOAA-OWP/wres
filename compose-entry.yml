@@ -16,7 +16,7 @@ volumes:
             device: "${NFS_HOME_DIR_DEVICE}"
 services:
     persister:
-        image: "${DOCKER_REGISTRY}/wres/wres-redis:20210621-3b55093"
+        image: "${DOCKER_REGISTRY}/wres/wres-redis:20210630-6cb747f"
         restart: always
         volumes:
          # For the job data
@@ -33,7 +33,7 @@ services:
     tasker:
         ports:
          - "443:8443"
-        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20210621-3b55093"
+        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20210701-ddad6fc"
         restart: always
         depends_on:
             broker:
@@ -54,7 +54,7 @@ services:
          - JAVA_OPTS=-Dwres.broker=broker -Dwres.redisHost=persister -Dwres.environment=${WRES_ENV_SUFFIX} -Djava.io.tmpdir=/mnt/wres_share/input_data -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/tasker -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/tasker/java_pid%p.hprof /mnt/wres_share/heap_dumps/tasker/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/tasker/java_pid%p_`hostname`.hprof'
         # Tasker JVM should have 340m max heap specified at launch
         # The total limit includes stack space which depends on Thread count
-        mem_limit: 1240m
+        mem_limit: 1390m
         cap_drop:
          - ALL
         read_only: true
@@ -64,7 +64,7 @@ services:
         ports:
          - "5671:5671"
          - "15671:15671"
-        image: "${DOCKER_REGISTRY}/wres/wres-broker:20210621-3b55093"
+        image: "${DOCKER_REGISTRY}/wres/wres-broker:20210701-5c8b861"
         restart: always
         volumes:
          # For certificates and keys that correspond to them:
@@ -81,7 +81,7 @@ services:
         healthcheck:
             start_period: 5m
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210628-3547276"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210701-5c8b861"
         restart: always
         depends_on:
             broker:
@@ -126,7 +126,7 @@ services:
          - 5673
         ports:
          - 15673:15673
-        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20210621-3b55093"
+        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20210701-ddad6fc"
         restart: always
         volumes:
          # For heap-dump files
@@ -149,7 +149,7 @@ services:
         depends_on:
             eventsbroker:
                 condition: service_started
-        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20210628-096827d"
+        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20210701-ddad6fc"
         restart: always
         volumes:
          # To write graphics outputs
