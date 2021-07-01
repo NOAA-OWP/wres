@@ -5,6 +5,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Objects;
 import java.util.StringJoiner;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLContext;
 
@@ -449,9 +452,10 @@ public class WresJob
             // end up dropping on the floor, that is why this is called prior
             // to even publishing the job at all. JobResults is a bag-o-state.
 
-            JOB_RESULTS.watchForJobFeedback( jobId,
-                                             jobStatusExchange );
-
+            CountDownLatch latch = JOB_RESULTS.watchForJobFeedback( jobId,
+                                                                    jobStatusExchange );
+            // Block until the last listener is ready and then publish the job.
+            latch.await();
             channel.basicPublish( "",
                                   SEND_QUEUE_NAME,
                                   properties,
@@ -461,6 +465,12 @@ public class WresJob
                          SEND_QUEUE_NAME, properties );
             LOGGER.debug( "I sent this message to queue '{}' with properties '{}': {}.",
                           SEND_QUEUE_NAME, properties, message );
+        }
+        catch ( InterruptedException ie )
+        {
+            LOGGER.warn( "Interrupted while waiting for job feedback watchers to bind.",
+                         ie );
+            Thread.currentThread().interrupt();
         }
     }
 

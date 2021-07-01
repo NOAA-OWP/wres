@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
@@ -37,17 +38,24 @@ class JobOutputWatcher implements Runnable
      */
     private final JobMetadata jobMetadata;
 
+    /**
+     * A latch to count down once this is actually watching.
+     */
+    private final CountDownLatch countDownLatch;
 
     JobOutputWatcher( Connection connection,
                       String jobStatusExchangeName,
-                      JobMetadata jobMetadata )
+                      JobMetadata jobMetadata,
+                      CountDownLatch countDownLatch )
     {
         Objects.requireNonNull( connection );
         Objects.requireNonNull( jobStatusExchangeName );
         Objects.requireNonNull( jobMetadata );
+        Objects.requireNonNull( countDownLatch );
         this.connection = connection;
         this.jobStatusExchangeName = jobStatusExchangeName;
         this.jobMetadata = jobMetadata;
+        this.countDownLatch = countDownLatch;
     }
 
     private Connection getConnection()
@@ -68,6 +76,11 @@ class JobOutputWatcher implements Runnable
     private JobMetadata getJobMetadata()
     {
         return this.jobMetadata;
+    }
+
+    private CountDownLatch getCountDownLatch()
+    {
+        return this.countDownLatch;
     }
 
     @Override
@@ -96,7 +109,7 @@ class JobOutputWatcher implements Runnable
             channel.basicConsume( queueName,
                                   true,
                                   jobOutputConsumer );
-
+            this.getCountDownLatch().countDown();
             JobMessageHelper.waitForAllMessages( queueName,
                                                  this.getJobId(),
                                                  jobOutputQueue,

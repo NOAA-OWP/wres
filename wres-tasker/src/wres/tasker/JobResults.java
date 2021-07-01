@@ -22,9 +22,9 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
@@ -184,15 +184,20 @@ class JobResults
         private final String jobStatusExchangeName;
         private final JobMetadata jobMetadata;
 
+        /** Latch to report that watching/binding/listening has begun */
+        private final CountDownLatch countDownLatch;
+
         /**
          * @param connection shared connection
          * @param jobStatusExchangeName the exchange name to look in
          * @param jobMetadata the job to look for and where to put results.
+         * @param countDownLatch A latch to countdown when actually listening.
          */
 
         JobResultWatcher( Connection connection,
                           String jobStatusExchangeName,
-                          JobMetadata jobMetadata )
+                          JobMetadata jobMetadata,
+                          CountDownLatch countDownLatch )
         {
             Objects.requireNonNull( connection );
             Objects.requireNonNull( jobStatusExchangeName );
@@ -200,6 +205,7 @@ class JobResults
             this.connection = connection;
             this.jobStatusExchangeName = jobStatusExchangeName;
             this.jobMetadata = jobMetadata;
+            this.countDownLatch = countDownLatch;
             LOGGER.debug( "Instantiated {}", this );
         }
 
@@ -223,6 +229,10 @@ class JobResults
             return this.jobMetadata;
         }
 
+        private CountDownLatch getCountDownLatch()
+        {
+            return this.countDownLatch;
+        }
 
         /**
          * Watch for the job exit code message. After one is seen:
@@ -263,6 +273,9 @@ class JobResults
                 String consumerTag = channel.basicConsume( queueName,
                                                            true,
                                                            jobResultConsumer );
+
+                // Signal to other threads that we are now watching.
+                this.getCountDownLatch().countDown();
                 LOGGER.debug( "consumerTag: {}", consumerTag );
 
                 // There is a race condition between basicConsume above being
@@ -379,26 +392,31 @@ class JobResults
         private final String jobStatusExchangeName;
         private final JobMetadata jobMetadata;
         private final WhichStream whichStream;
+        private final CountDownLatch countDownLatch;
 
         /**
          * @param connection shared connection
          * @param jobStatusExchangeName the exchange name to look in
          * @param jobMetadata the job to look for and where to put results
          * @param whichStream Which of the two standard streams this is.
+         * @param countDownLatch A latch to countdown when actually listening.
          */
         StandardStreamWatcher( Connection connection,
                                String jobStatusExchangeName,
                                JobMetadata jobMetadata,
-                               WhichStream whichStream )
+                               WhichStream whichStream,
+                               CountDownLatch countDownLatch )
         {
             Objects.requireNonNull( connection );
             Objects.requireNonNull( jobStatusExchangeName );
             Objects.requireNonNull( jobMetadata );
             Objects.requireNonNull( whichStream );
+            Objects.requireNonNull( countDownLatch );
             this.connection = connection;
             this.jobStatusExchangeName = jobStatusExchangeName;
             this.jobMetadata = jobMetadata;
             this.whichStream = whichStream;
+            this.countDownLatch = countDownLatch;
             LOGGER.debug( "Instantiated {}", this );
         }
 
@@ -420,6 +438,11 @@ class JobResults
         private WhichStream getWhichStream()
         {
             return this.whichStream;
+        }
+
+        private CountDownLatch getCountDownLatch()
+        {
+            return this.countDownLatch;
         }
 
         /**
@@ -455,7 +478,8 @@ class JobResults
                 channel.basicConsume( queueName,
                                       true,
                                       jobStandardStreamConsumer );
-
+                // Signal that we are now watching.
+                this.getCountDownLatch().countDown();
                 JobMessageHelper.waitForAllMessages( queueName,
                                                      this.getJobId(),
                                                      oneLineOfOutput,
@@ -577,14 +601,14 @@ class JobResults
      *
      * @param jobId The job id (already registered)
      * @param jobStatusExchangeName the exchange name for job results
-     * @return Future exit code
+     * @return A countdown latch which when at 0 indicates all watching began.
      * @throws IOException when connecting to broker fails
      * @throws TimeoutException when connecting to broker fails
      * @throws IllegalStateException when the job id is not found.
      */
 
-    Future<Integer> watchForJobFeedback( String jobId,
-                                         String jobStatusExchangeName )
+    CountDownLatch watchForJobFeedback( String jobId,
+                                        String jobStatusExchangeName )
             throws IOException, TimeoutException
     {
         JobMetadata jobMetadata = this.jobMetadataById.get( jobId );
@@ -594,36 +618,43 @@ class JobResults
             throw new IllegalStateException( "Job " + jobId + " not found." );
         }
 
+        CountDownLatch countDownLatch = new CountDownLatch( 5 );
         JobResultWatcher jobResultWatcher = new JobResultWatcher( this.getConnection(),
                                                                   jobStatusExchangeName,
-                                                                  jobMetadata );
+                                                                  jobMetadata,
+                                                                  countDownLatch );
         StandardStreamWatcher stdoutWatcher = new StandardStreamWatcher( this.getConnection(),
                                                                          jobStatusExchangeName,
                                                                          jobMetadata,
-                                                                         WhichStream.STDOUT );
+                                                                         WhichStream.STDOUT,
+                                                                         countDownLatch );
         StandardStreamWatcher stderrWatcher = new StandardStreamWatcher( this.getConnection(),
                                                                          jobStatusExchangeName,
                                                                          jobMetadata,
-                                                                         WhichStream.STDERR );
+                                                                         WhichStream.STDERR,
+                                                                         countDownLatch );
 
         // Watch for worker reports on job status to help mark the transition
         // from JobState IN_QUEUE to IN_PROGRESS
         JobStatusWatcher jobStatusWatcher = new JobStatusWatcher( this.getConnection(),
                                                                   jobStatusExchangeName,
-                                                                  jobMetadata );
+                                                                  jobMetadata,
+                                                                  countDownLatch );
 
         // Share the output locations, allows service endpoint to find files.
         // Not relying on inner classes, so need to pass the shared location to
         // the watcher in order for watcher to know where to put messages.
         JobOutputWatcher jobOutputWatcher = new JobOutputWatcher( this.getConnection(),
                                                                   jobStatusExchangeName,
-                                                                  jobMetadata );
+                                                                  jobMetadata,
+                                                                  countDownLatch );
 
         EXECUTOR.submit( stdoutWatcher );
         EXECUTOR.submit( stderrWatcher );
         EXECUTOR.submit( jobOutputWatcher );
         EXECUTOR.submit( jobStatusWatcher );
-        return EXECUTOR.submit( jobResultWatcher );
+        EXECUTOR.submit( jobResultWatcher );
+        return countDownLatch;
     }
 
     /**
@@ -890,9 +921,11 @@ class JobResults
 
     /**
      * Mark the job as being in the queue, transition state to IN_QUEUE
+     *
+     * Tolerates an illegal transition because of known race condition where the
+     * job might have finished before we mark it as being IN_QUEUE.
      * @param jobId The job to mark as being IN_QUEUE.
      * @throws IllegalArgumentException When job not found.
-     * @throws IllegalStateException When illegal state transition is requested.
      */
     void setInQueue( String jobId )
     {
@@ -903,7 +936,23 @@ class JobResults
             throw new IllegalArgumentException( "Unable to find jobId " + jobId );
         }
 
-        metadata.setJobState( JobMetadata.JobState.IN_QUEUE );
+        try
+        {
+            metadata.setJobState( JobMetadata.JobState.IN_QUEUE );
+        }
+        catch ( IllegalStateException ise )
+        {
+            if ( ise.getMessage()
+                    .contains( JobMetadata.CAN_ONLY_TRANSITION_FROM ) )
+            {
+                LOGGER.warn( "Job may have finished very quickly, already in a newer/later state:", ise );
+            }
+            else
+            {
+                // Rethrow if this is some other IllegalStateException.
+                throw ise;
+            }
+        }
     }
 
 

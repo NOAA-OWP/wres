@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 public class JobMetadata
 {
     protected static final Logger LOGGER = LoggerFactory.getLogger( JobMetadata.class );
-    private static final String CAN_ONLY_TRANSITION_FROM = "Can only transition from ";
+    static final String CAN_ONLY_TRANSITION_FROM = "Can only transition from ";
     private static final String TO = " to ";
 
     /** Descriptions of the state of a WRES evaluation job */
@@ -51,6 +51,11 @@ public class JobMetadata
         /** For use by other classes when no JobMetadata exists */
         NOT_FOUND
     }
+
+    static final List<JobState> COMPLETED_STATES = List.of(
+            JobState.COMPLETED_REPORTED_SUCCESS,
+            JobState.COMPLETED_REPORTED_FAILURE,
+            JobState.FAILED_BEFORE_IN_QUEUE );
 
     @RId
     private String id;
