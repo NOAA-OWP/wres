@@ -164,7 +164,7 @@ public class WresJob
      */
 
     @REntity
-    private static final class DummyLiveObject
+    private static class DummyLiveObject
     {
         @RId
         private String id;
