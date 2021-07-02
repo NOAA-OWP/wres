@@ -33,7 +33,7 @@ services:
     tasker:
         ports:
          - "443:8443"
-        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20210702-bd220c6"
+        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20210702-7dd1a09"
         restart: always
         depends_on:
             broker:
@@ -81,7 +81,7 @@ services:
         healthcheck:
             start_period: 5m
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210702-bd220c6"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210702-7dd1a09"
         restart: always
         depends_on:
             broker:
