@@ -167,7 +167,12 @@ public class WresJob
     private static final class DummyLiveObject
     {
         @RId
-        private String id = "dummyLiveObject";
+        private String id;
+
+        public DummyLiveObject( String id )
+        {
+            this.id = id;
+        }
 
         public String getId()
         {
@@ -201,16 +206,18 @@ public class WresJob
                                              e );
         }
 
-        if ( REDISSON_CLIENT != null)
+        if ( REDISSON_CLIENT != null )
         {
+            String dummyId = "dummyObjectId" + System.currentTimeMillis();
+
             try
             {
                 RLiveObjectService liveObjectService = REDISSON_CLIENT.getLiveObjectService();
-                DummyLiveObject dummyLiveObject = new DummyLiveObject();
-                RLiveObject liveObject = liveObjectService.asLiveObject( dummyLiveObject );
-                Object idRaw = liveObject.getLiveObjectId();
+                DummyLiveObject dummyLiveObject = new DummyLiveObject( dummyId );
+                DummyLiveObject liveObject = liveObjectService.attach( dummyLiveObject );
+                Object idRaw = liveObject.getId();
                 String id = idRaw.toString();
-                liveObject.deleteAsync();
+                liveObjectService.delete( liveObject );
                 LOGGER.info( "Successfully used live object service via {}:{}, got id {}",
                              REDIS_HOST, REDIS_PORT, id );
             }
