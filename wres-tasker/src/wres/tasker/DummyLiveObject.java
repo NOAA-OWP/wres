@@ -18,6 +18,11 @@ public class DummyLiveObject
         this.id = id;
     }
 
+    public DummyLiveObject()
+    {
+        // Left for Redisson (subclass?) to fill in.
+    }
+
     public String getId()
     {
         return this.id;
