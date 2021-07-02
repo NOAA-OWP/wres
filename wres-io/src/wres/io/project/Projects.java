@@ -25,6 +25,7 @@ import wres.io.reading.PreIngestException;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
+import wres.io.utilities.NoDataException;
 import wres.system.SystemSettings;
 
 /**
@@ -106,12 +107,17 @@ public class Projects
 
         if ( leftCount < 1 || rightCount < 1 )
         {
-            throw new IllegalStateException( "At least one source for left and "
-                                             + "one source for right must be "
-                                             + "linked, but left had "
-                                             + leftCount + " sources and right "
-                                             + "had " + rightCount
-                                             + " sources." );
+            throw new NoDataException( "When examining the ingested data, discovered insufficient data sources to "
+                                       + "proceed. At least one data source is required for the left side of the "
+                                       + "evaluation and one data source for the right side, but the left side had "
+                                       + leftCount
+                                       + " sources and the right side had "
+                                       + rightCount
+                                       + " sources. There were "
+                                       + baselineIds.length
+                                       + " baseline sources. Please check that all intended data sources were declared "
+                                       + "and that all declared data sources were ingested correctly. For example, "
+                                       + "were some data sources skipped because the format was unrecognized?" );
         }
 
         // Permit the List<IngestResult> to be garbage collected here, which

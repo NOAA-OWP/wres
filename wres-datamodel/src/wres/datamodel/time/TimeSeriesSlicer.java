@@ -760,7 +760,7 @@ public final class TimeSeriesSlicer
 
         int validYear = zoned.getYear();
 
-        // Add a year if the valid monthday is after the prescribed monthday
+        // Add a year if the valid monthday is on or after the prescribed monthday
         MonthDay validMonthDay = MonthDay.of( zoned.getMonthValue(), zoned.getDayOfMonth() );
 
         // Non-calendar year, then year starts on-or-after
