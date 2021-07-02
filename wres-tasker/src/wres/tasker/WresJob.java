@@ -30,6 +30,8 @@ import org.redisson.Redisson;
 import org.redisson.api.RLiveObject;
 import org.redisson.api.RLiveObjectService;
 import org.redisson.api.RedissonClient;
+import org.redisson.api.annotation.REntity;
+import org.redisson.api.annotation.RId;
 import org.redisson.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -156,6 +158,28 @@ public class WresJob
     /** Guards connection */
     private static final Object CONNECTION_LOCK = new Object();
 
+
+    /**
+     * A dummy redisson class to test redisson live object service availability.
+     */
+
+    @REntity
+    private static final class DummyLiveObject
+    {
+        @RId
+        private String id = "dummyLiveObject";
+
+        public String getId()
+        {
+            return this.id;
+        }
+
+        public void setId( String id )
+        {
+            this.id = id;
+        }
+    }
+
     @GET
     @Produces( MediaType.TEXT_PLAIN )
     public String getWresJob()
@@ -182,7 +206,8 @@ public class WresJob
             try
             {
                 RLiveObjectService liveObjectService = REDISSON_CLIENT.getLiveObjectService();
-                RLiveObject liveObject = liveObjectService.asLiveObject( "ping" );
+                DummyLiveObject dummyLiveObject = new DummyLiveObject();
+                RLiveObject liveObject = liveObjectService.asLiveObject( dummyLiveObject );
                 Object idRaw = liveObject.getLiveObjectId();
                 String id = idRaw.toString();
                 liveObject.deleteAsync();
