@@ -1024,12 +1024,12 @@ class EvaluationStatusTracker implements Closeable
 
             this.connection.setExceptionListener( new ConnectionExceptionListener( this ) );
             this.session = connection.createSession( false, Session.CLIENT_ACKNOWLEDGE );
-            Topic topic = (Topic) broker.getDestination( Evaluation.EVALUATION_STATUS_QUEUE );
+            Topic topic = (Topic) broker.getDestination( QueueType.EVALUATION_STATUS_QUEUE.toString() );
 
             // Only consider messages that belong to this evaluation. Even when negotiating subscribers, offers should
             // refer to the specific evaluation that requested one or more format writers
             String selector = MessageProperty.JMS_CORRELATION_ID + "='" + this.getEvaluationId() + "'";
-            this.subscriberName = Evaluation.EVALUATION_STATUS_QUEUE + "-HOUSEKEEPING-evaluation-status-tracker-"
+            this.subscriberName = QueueType.EVALUATION_STATUS_QUEUE + "-HOUSEKEEPING-evaluation-status-tracker-"
                                   + this.getEvaluationId()
                                   + "-"
                                   + this.getTrackerId();
