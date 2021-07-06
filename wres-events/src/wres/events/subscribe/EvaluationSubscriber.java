@@ -16,7 +16,6 @@ import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -41,6 +40,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import net.jcip.annotations.ThreadSafe;
 import wres.events.EvaluationEventException;
 import wres.events.EvaluationEventUtilities;
+import wres.events.QueueType;
 import wres.events.publish.MessagePublisher;
 import wres.events.publish.MessagePublisher.MessageProperty;
 import wres.eventsbroker.BrokerConnectionFactory;
@@ -73,7 +73,7 @@ import wres.statistics.generated.Evaluation;
  * {@link CompletionStatus#CONSUMPTION_ONGOING} to indicate that the subscriber is healthy/alive.</li>
  * </ol>
  * 
- * <p>Optionally, a booking strategy may be implemented (see {@link #BOOKING_ENABLED}) whereby the subscriber only 
+ * <p>Optionally, a booking strategy may be implemented (see {@link #subscriberOfferer}) whereby the subscriber only 
  * accepts one evaluation at any one time and does not offer services until that evaluation has completed.
  * 
  * <p>When an evaluation succeeds, the {@link EvaluationConsumer} reports on its success to all listening clients with 
@@ -116,16 +116,6 @@ public class EvaluationSubscriber implements Closeable
             "Subscriber {} has acknowledged (ACK-ed) a message from a {} queue with messageId {}, correlationId {} "
                                                                       + "and groupId {}.";
 
-    /** 
-     * Is true if the subscriber adopts a booking strategy, allowing one evaluation per subscriber at any one time, 
-     * false to allow unlimited evaluations per subscriber at once.
-     * 
-     * @see #book(String)
-     * @see #unbook(String)
-     */
-
-    private static final boolean BOOKING_ENABLED = true;
-
     /**
      * String representation of the {@link MessageProperty#CONSUMER_ID}.
      */
@@ -165,11 +155,10 @@ public class EvaluationSubscriber implements Closeable
     private final EvaluationStatus consumerIsAlive;
 
     /**
-     * Re-usable status message that contains a service offer from this subscriber with the completion status 
-     * {@link CompletionStatus#READY_TO_CONSUME}.
+     * Manages the offering of services.
      */
 
-    private final EvaluationStatus serviceOffer;
+    private final SubscriberOfferer subscriberOfferer;
 
     /**
      * The formats supported as strings.
@@ -303,18 +292,6 @@ public class EvaluationSubscriber implements Closeable
      */
 
     private final int maximumRetries;
-
-    /**
-     * An atomic reference to an evaluation that has booked this subscriber or null if the subscriber is unbooked.
-     */
-
-    private final AtomicReference<String> booked;
-
-    /**
-     * The identifier of an evaluation to serve when the subscriber can only serve one evaluation.
-     */
-
-    private final String evaluationToServe;
 
     /**
      * Creates an instance without durable subscribers.
@@ -473,9 +450,10 @@ public class EvaluationSubscriber implements Closeable
                 completed.add( nextEvaluation.getEvaluationId() );
 
                 // Unbook the subscriber if booked
-                if ( this.isBooked() )
+                if ( this.getSubscriberOfferer().isBooked() )
                 {
-                    this.unbook( nextEvaluation.getEvaluationId() );
+                    this.getSubscriberOfferer()
+                        .unbook( nextEvaluation.getEvaluationId() );
                 }
             }
             // Evaluation is ongoing, but it has now timed out and should be stopped
@@ -831,14 +809,17 @@ public class EvaluationSubscriber implements Closeable
         if ( completionStatus == CompletionStatus.CONSUMER_REQUIRED )
         {
             // Offer services if possible
-            this.offerServices( statusEvent, evaluationId );
+            this.getSubscriberOfferer()
+                .offerServices( statusEvent, evaluationId );
         }
         // An evaluation was started and this subscriber was booked to deliver it, but another subscriber won the work
-        else if ( completionStatus == CompletionStatus.EVALUATION_STARTED && evaluationId.equals( this.booked.get() )
+        else if ( completionStatus == CompletionStatus.EVALUATION_STARTED
+                  && this.getSubscriberOfferer().isBookedWith( evaluationId )
                   && !this.isThisMessageForMe( message, QueueType.EVALUATION_STATUS_QUEUE ) )
         {
             // Free to offer services again
-            this.unbook( evaluationId );
+            this.getSubscriberOfferer()
+                .unbook( evaluationId );
         }
         // Request for consumption and the message belongs to me
         else if ( this.isThisMessageForMe( message, QueueType.EVALUATION_STATUS_QUEUE ) )
@@ -891,7 +872,8 @@ public class EvaluationSubscriber implements Closeable
             this.status.registerEvaluationCompleted( evaluationId );
 
             // Unbook the subscriber if subscriber booking is in force
-            this.unbook( evaluationId );
+            this.getSubscriberOfferer()
+                .unbook( evaluationId );
         }
     }
 
@@ -1281,7 +1263,7 @@ public class EvaluationSubscriber implements Closeable
             this.status.registerEvaluationFailed( evaluationId );
 
             // Unbook the subscriber if subscriber booking is in force
-            this.unbook( evaluationId );
+            this.getSubscriberOfferer().unbook( evaluationId );
         }
     }
 
@@ -1378,145 +1360,12 @@ public class EvaluationSubscriber implements Closeable
     }
 
     /**
-     * Offers services.
-     * 
-     * @param status the evaluation status message with the consumer request
-     * @param evaluationId the identifier of the evaluation for which services should be offered
-     * @throws IllegalArgumentException of the status message is not a request for formats
+     * @return the subscriber offerer that offers services
      */
 
-    private void offerServices( EvaluationStatus status, String evaluationId )
+    private SubscriberOfferer getSubscriberOfferer()
     {
-        CompletionStatus completionStatus = status.getCompletionStatus();
-
-        // Request for a consumer?
-        if ( completionStatus != CompletionStatus.CONSUMER_REQUIRED )
-        {
-            throw new IllegalArgumentException( "Cannot offer services without a request for services. "
-                                                + "Expected "
-                                                + CompletionStatus.CONSUMER_REQUIRED
-                                                + " but found "
-                                                + completionStatus
-                                                + "." );
-        }
-
-        // Was the subscriber built for a single evaluation? If so, do not offer
-        // TODO: remove this logic when all subscribers are in long-running processes, serving many evaluations
-        if ( Objects.nonNull( this.evaluationToServe ) && !evaluationId.equals( this.evaluationToServe ) )
-        {
-            LOGGER.debug( "Subscriber {} was notified of {} for evaluation {} but will not offer services for this "
-                          + "evaluation because the subscriber was built for a different evaluation, {}.",
-                          this.getClientId(),
-                          CompletionStatus.CONSUMER_REQUIRED,
-                          evaluationId,
-                          this.evaluationToServe );
-
-            return;
-        }
-
-        // Only offer formats if the status message is non-specific or some required formats intersect the formats
-        // offered, i.e., if the subscriber can potentially fulfill the request
-        Collection<Format> formatsOffered = this.getConsumerDescription()
-                                                .getFormatsList();
-        boolean formatsIntersect = status.getFormatsRequiredList().isEmpty()
-                                   || status.getFormatsRequiredList().stream().anyMatch( formatsOffered::contains );
-
-        // Some formats to write and succeeded in booking the subscriber if booking is enabled
-        if ( formatsIntersect && this.book( evaluationId ) )
-        {
-            LOGGER.debug( "Subscriber {} is offering services for formats {}.", this.getClientId(), formatsOffered );
-
-            this.publishStatusMessage( evaluationId, this.serviceOffer );
-        }
-        else
-        {
-            LOGGER.debug( "Received a request from evaluation {} for a consumer, but subscriber {} could not fulfill "
-                          + "the contract.",
-                          evaluationId,
-                          this.getClientId() );
-        }
-    }
-
-    /**
-     * @return true if the subscriber is booked, otherwise false
-     */
-
-    private boolean isBooked()
-    {
-        return EvaluationSubscriber.BOOKING_ENABLED && Objects.isNull( this.booked.get() );
-    }
-
-    /**
-     * Attempts to "book" the subscriber and thereby prevent further offers for work. The subscriber is booked if there
-     * is no evaluation underway. Always returns true if {@link EvaluationSubscriber.BOOKING_ENABLED} is false.
-     * 
-     * @see #unbook(String)
-     * @param evaluationId the evaluation identifier to use when booking the subscriber
-     * @return true if the subscriber was booked or booking is disabled, false otherwise
-     */
-
-    private boolean book( String evaluationId )
-    {
-        if ( EvaluationSubscriber.BOOKING_ENABLED )
-        {
-            // Set atomically
-            // Note that reference equality is used here and null == null
-            boolean returnMe = this.booked.compareAndSet( null, evaluationId );
-
-            if ( LOGGER.isDebugEnabled() )
-            {
-                LOGGER.debug( "Attempted to book subscriber {} with evaluation {}. Success?: {}",
-                              this.getClientId(),
-                              evaluationId,
-                              returnMe );
-            }
-
-            return returnMe;
-        }
-
-        // Booking always succeeds if disabled
-        return true;
-    }
-
-    /**
-     * <p>Unbooks the subscriber if the specified evaluation identifier matches the identifier that was used to book the
-     * subscriber. Unbooking allows the subscriber to re-offer services. This method should be called when:
-     * 
-     * <ol>
-     * <li>The booked evaluation succeeds;</li>
-     * <li>The booked evaluation fails for any reason (e.g., timed out); or</li>
-     * <li>The offered evaluation is lost to another subscriber</li>
-     * </ol>.
-     * 
-     * <p>The reason to provide the evaluation identifier is that unbooking should only happen once for the evaluation
-     * that booked the subscriber, just as booking should only happen once.
-     * 
-     * @see #book(String)
-     * @param evaluationId the evaluationId
-     */
-
-    private void unbook( String evaluationId )
-    {
-        // Atomic reference compareAndSet uses identity equals, but content equals is needed
-        String existingReference = this.booked.get();
-        String referenceEquality = evaluationId;
-        if ( evaluationId.equals( existingReference ) )
-        {
-            referenceEquality = existingReference;
-        }
-
-        // Set atomically
-        boolean unbooked = this.booked.compareAndSet( referenceEquality, null );
-
-        if ( LOGGER.isDebugEnabled() )
-        {
-            LOGGER.debug( "Attempted to unbook subscriber {} with evaluation {}. Upon entry, the subscriber was booked "
-                          + "with evaluation {}. Success?: {}",
-                          this.getClientId(),
-                          referenceEquality,
-                          existingReference,
-                          unbooked );
-        }
+        return this.subscriberOfferer;
     }
 
     /**
@@ -1743,7 +1592,8 @@ public class EvaluationSubscriber implements Closeable
         }
 
         // Unbook the subscriber
-        this.unbook( evaluationConsumer.getEvaluationId() );
+        this.getSubscriberOfferer()
+            .unbook( evaluationConsumer.getEvaluationId() );
     }
 
     /**
@@ -1781,8 +1631,24 @@ public class EvaluationSubscriber implements Closeable
         this.status = new SubscriberStatus( this.getClientId() );
         this.timer = new Timer( true );
         this.maximumRetries = broker.getMaximumMessageRetries();
-        this.booked = new AtomicReference<>();
-        this.evaluationToServe = evaluationToServe;
+
+        // Create the subscriber offerer to offer format writing services
+        EvaluationStatus serviceOffer = EvaluationStatus.newBuilder()
+                                                        .setCompletionStatus( CompletionStatus.READY_TO_CONSUME )
+                                                        .setConsumer( this.getConsumerDescription() )
+                                                        .setClientId( this.getClientId() )
+                                                        .build();
+
+        Set<Format> formatsOffered = this.getConsumerDescription()
+                                         .getFormatsList()
+                                         .stream()
+                                         .collect( Collectors.toUnmodifiableSet() );
+
+        this.subscriberOfferer =
+                new SubscriberOfferer( evaluationToServe,
+                                       evaluationId -> this.publishStatusMessage( evaluationId, serviceOffer ),
+                                       formatsOffered,
+                                       this.getClientId() );
 
         try
         {
@@ -1841,10 +1707,10 @@ public class EvaluationSubscriber implements Closeable
             // A finite cache of evaluations that persist after they are closed, in order to mop-up any late arriving 
             // messages (for evaluations that succeeded, these are non-essential evaluation status messages only)
             this.evaluations = Caffeine.newBuilder()
-                                       .maximumSize( 100 )
+                                       .maximumSize( 50 )
                                        .build();
             this.retriesAttempted = Caffeine.newBuilder()
-                                            .maximumSize( 100 )
+                                            .maximumSize( 50 )
                                             .build();
 
             this.consumerIsAlive = EvaluationStatus.newBuilder()
@@ -1853,17 +1719,9 @@ public class EvaluationSubscriber implements Closeable
                                                    .setClientId( this.getClientId() )
                                                    .build();
 
-            this.serviceOffer = EvaluationStatus.newBuilder()
-                                                .setCompletionStatus( CompletionStatus.READY_TO_CONSUME )
-                                                .setConsumer( this.getConsumerDescription() )
-                                                .setClientId( this.getClientId() )
-                                                .build();
-
-            this.formatStrings = this.getConsumerDescription()
-                                     .getFormatsList()
-                                     .stream()
-                                     .map( Format::toString )
-                                     .collect( Collectors.toSet() );
+            this.formatStrings = formatsOffered.stream()
+                                               .map( Format::toString )
+                                               .collect( Collectors.toSet() );
 
             this.isFailedUnrecoverably = new AtomicBoolean();
             this.isClosing = new AtomicBoolean();
@@ -1960,50 +1818,6 @@ public class EvaluationSubscriber implements Closeable
 
             this.subscriber = subscriber;
             this.connectionId = connectionId;
-        }
-    }
-
-    /**
-     * Enumeration of queue types on the broker.
-     */
-
-    private enum QueueType
-    {
-        /**
-         * Default name for the queue on the amq.topic that accepts evaluation status messages.
-         */
-
-        EVALUATION_STATUS_QUEUE,
-
-        /**
-         * Default name for the queue on the amq.topic that accepts evaluation status messages.
-         */
-
-        EVALUATION_QUEUE,
-
-        /**
-         * Default name for the queue on the amq.topic that accepts evaluation status messages.
-         */
-
-        STATISTICS_QUEUE;
-
-        /**
-         * @return a string representation.
-         */
-        @Override
-        public String toString()
-        {
-            switch ( this )
-            {
-                case EVALUATION_STATUS_QUEUE:
-                    return "status";
-                case EVALUATION_QUEUE:
-                    return "evaluation";
-                case STATISTICS_QUEUE:
-                    return "statistics";
-                default:
-                    throw new IllegalArgumentException( "Unknown queue '" + this + "'." );
-            }
         }
     }
 

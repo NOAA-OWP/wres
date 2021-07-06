@@ -85,25 +85,25 @@ public class Evaluation implements Closeable
      * Default name for the queue on the amq.topic that accepts evaluation messages.
      */
 
-    static final String EVALUATION_QUEUE = "evaluation";
+    private static final String EVALUATION_QUEUE = QueueType.EVALUATION_QUEUE.toString();
 
     /**
      * Default name for the queue on the amq.topic that accepts evaluation status messages.
      */
 
-    static final String EVALUATION_STATUS_QUEUE = "status";
+    private static final String EVALUATION_STATUS_QUEUE = QueueType.EVALUATION_STATUS_QUEUE.toString();
 
     /**
      * Default name for the queue on the amq.topic that accepts statistics messages.
      */
 
-    static final String STATISTICS_QUEUE = "statistics";
+    private static final String STATISTICS_QUEUE = QueueType.STATISTICS_QUEUE.toString();
 
     /**
      * Default name for the queue on the amq.topic that accepts pairs messages.
      */
 
-    static final String PAIRS_QUEUE = "pairs";
+    private static final String PAIRS_QUEUE = QueueType.PAIRS_QUEUE.toString();
 
     /** 
      * Logger. 
@@ -376,7 +376,7 @@ public class Evaluation implements Closeable
     public void publish( Pairs pairs )
     {
         Objects.requireNonNull( pairs );
-        
+
         this.validateRequestToPublish();
 
         ByteBuffer body = ByteBuffer.wrap( pairs.toByteArray() );
@@ -399,7 +399,7 @@ public class Evaluation implements Closeable
     public void publish( EvaluationStatus status, String groupId )
     {
         Objects.requireNonNull( status );
-        
+
         this.validateRequestToPublish();
 
         this.validateStatusMessage( status, groupId );
