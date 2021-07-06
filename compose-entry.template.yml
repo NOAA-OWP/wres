@@ -113,7 +113,7 @@ services:
          # administrator to run the migration(s) during or after deployment.
          # Write heap dumps to the root of the volume above.
          # Override the broker address and port in the binding URL of the event.properties.
-         - INNER_JAVA_OPTS=-Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Dwres.externalGraphics=true -Djava.io.tmpdir=/mnt/wres_share/evaluations -Dwres.databaseHost=${WRES_DB_FQDN} -Dwres.databaseName=wres8 -Dwres.username=wres_user8 -Dwres.attemptToMigrate=false -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/wres -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/wres/java_pid%p.hprof /mnt/wres_share/heap_dumps/wres/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/wres/java_pid%p_`hostname`.hprof'
+         - INNER_JAVA_OPTS=-Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Dwres.externalGraphics=true -Djava.io.tmpdir=/mnt/wres_share/evaluations -Dwres.databaseHost=${WRES_DB_FQDN} -Dwres.databaseName=wres8 -Dwres.username=wres_user8 -Dwres.attemptToMigrate=false -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/wres -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/wres/java_pid%p.hprof /mnt/wres_share/heap_dumps/wres/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/wres/java_pid%p_`hostname`.hprof' -XX:StartFlightRecording=maxsize=128m,dumponexit=true,filename=/mnt/wres_share/heap_dumps/wres/`date +%Y%m%dT%H%M%S.%NZ --utc`.jfr
         # Shim JVM should have 32m max heap, core JVM should have 1680m max heap
         mem_limit: 2814m
         cap_drop:
