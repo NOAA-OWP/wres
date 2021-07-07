@@ -116,8 +116,8 @@ public class Features
             dataScripter.addLine( "FROM wres.Feature" );
             dataScripter.addLine( "WHERE feature_id = ?" );
             dataScripter.addArgument( featureId );
-            dataScripter.setUseTransaction( false );
             dataScripter.setMaxRows( 1 );
+            dataScripter.setUseTransaction( false );
             dataScripter.setHighPriority( true );
 
             try ( DataProvider dataProvider = dataScripter.getData() )
@@ -165,8 +165,8 @@ public class Features
             dataScripter.addArgument( featureKey.getSrid() );
             dataScripter.addTab().addLine( "AND wkt = ?" );
             dataScripter.addArgument( featureKey.getWkt() );
-            dataScripter.setUseTransaction( false );
             dataScripter.setMaxRows( 1 );
+            dataScripter.setUseTransaction( false );
             dataScripter.setHighPriority( true );
 
             try ( DataProvider dataProvider = dataScripter.getData() )

@@ -64,6 +64,8 @@ public class DataSourcesTest
                .thenReturn( this.dataSource );
         Mockito.when( this.mockSystemSettings.getHighPriorityConnectionPool() )
                .thenReturn( this.dataSource );
+        Mockito.when( this.mockSystemSettings.getDatabaseType() )
+               .thenReturn( "h2" );
 
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
         LOGGER.debug( "'@Before' ended" );
