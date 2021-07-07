@@ -100,11 +100,24 @@ public class DataScripter extends ScriptBuilder
         this.sqlStatesToRetry.add( "23505" );
     }
 
+
+    /**
+     * Sets jdbc maximum rows AND adds a LIMIT clause if supported by database.
+     * Order matters, expect this to put a LIMIT clause into your statement at
+     * the position you call this method.
+     * @param maxRows The maximum rows to fetch.
+     */
+
     public void setMaxRows( int maxRows )
     {
         if ( maxRows <= 0 )
         {
             throw new IllegalArgumentException( "Expected > 0, got " + maxRows );
+        }
+
+        if ( this.database.supportsLimit() )
+        {
+            this.addLine( "LIMIT " + maxRows );
         }
 
         this.maxRows = maxRows;

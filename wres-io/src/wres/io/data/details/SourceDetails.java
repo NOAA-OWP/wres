@@ -210,6 +210,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
             scriptWithId.addLine( "FROM wres.Source" );
             scriptWithId.addLine( "WHERE hash = ? " );
             scriptWithId.addArgument( this.hash );
+            scriptWithId.setMaxRows( 1 );
 
             try ( DataProvider data = scriptWithId.getData() )
             {

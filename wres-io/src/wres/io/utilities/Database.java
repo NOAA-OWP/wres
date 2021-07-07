@@ -1198,14 +1198,14 @@ public class Database {
 
     private boolean supportsAnalyze()
     {
-        List<String> dbsWithAnalyze = List.of( "h2", "postgresql" );
+        Set<String> dbsWithAnalyze = Set.of( "h2", "postgresql" );
         String type = this.getType();
         return dbsWithAnalyze.contains( type );
     }
 
     private boolean supportsUserFunction()
     {
-        List<String> dbsWithUserFunction = List.of( "h2", "mariadb" );
+        Set<String> dbsWithUserFunction = Set.of( "h2", "mariadb" );
         String type = this.getType();
         return dbsWithUserFunction.contains( type );
     }
@@ -1214,5 +1214,13 @@ public class Database {
     {
         return this.getType()
                    .equals( "postgresql" );
+    }
+
+    boolean supportsLimit()
+    {
+        Set<String> dbsWithLimit = Set.of( "postgresql", "h2", "mariadb",
+                                           "sqlite", "mysql" );
+        String type = this.getType();
+        return dbsWithLimit.contains( type );
     }
 }

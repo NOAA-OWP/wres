@@ -53,6 +53,8 @@ public class DetailsTest
                .thenReturn( this.dataSource );
         Mockito.when( mockSystemSettings.getHighPriorityConnectionPool() )
                .thenReturn( this.dataSource );
+        Mockito.when( this.mockSystemSettings.getDatabaseType() )
+               .thenReturn( "h2" );
 
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
         // Set up a liquibase database to run migrations against.
