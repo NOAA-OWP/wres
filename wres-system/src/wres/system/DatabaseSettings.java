@@ -141,6 +141,10 @@ final class DatabaseSettings
             mariadbProperties.put( "trustServerCertificate", "true" );
         }
 
+        // Use server-side prepared statements eagerly
+        postgresqlProperties.put( "prepareThreshold", "2" );
+        mariadbProperties.put( "useServerPrepStmts", "true" );
+
         postgresqlProperties.putAll( commonProperties );
         mapping.put("postgresql", postgresqlProperties );
 
