@@ -15,7 +15,7 @@ LOGFILE=$TOPPWD/JUnit_systestsLog_${TIMESTAMP}.txt
 TESTINGJ=/wres_share/releases/install_scripts/testingJ.txt
 PENDINGQUEUEJ=/wres_share/releases/pendingQueueJ.txt
 wresGraphicsZipDirectory=/wres_share/releases/archive/graphics
-#WRES_GROUP=Raymond.Chui@***REMOVED***,Hank.Herr@***REMOVED***,james.d.brown@***REMOVED***,jesse.bickel@***REMOVED***,christopher.tubbs@***REMOVED***,travis.quarterman@***REMOVED***,arthur.raney@***REMOVED***
+#WRES_GROUP=Raymond.Chui@***REMOVED***,Hank.Herr@***REMOVED***,james.d.brown@***REMOVED***,jesse.bickel@***REMOVED***,christopher.tubbs@***REMOVED***,travis.quarterman@***REMOVED***
 export JAVA_HOME=/usr/lib/jvm/java-11-openjdk
 #/usr/bin/touch $LOGFILE
 if [ -f /wres_share/releases/systests/installing ]
