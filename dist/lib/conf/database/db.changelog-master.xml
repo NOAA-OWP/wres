@@ -64,4 +64,5 @@
     <include file="add_measurementunit_degc.xml" relativeToChangelogFile="true" />
     <include file="add_distance_conversions.xml" relativeToChangelogFile="true" />
     <include file="add_measurementunit_degf.xml" relativeToChangelogFile="true" />
+    <include file="update_flow_conversions.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>

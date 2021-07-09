@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.4.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="wres.UnitConversion - fixes CFS to CMS unit conversions" author="James Brown">
+        <comment>Fixing CFS to CMS unit conversions - see issue #93024</comment>
+        <sql>
+            UPDATE WRES.UNITCONVERSION U
+            SET FACTOR = N.FACTOR
+            FROM
+              (SELECT 1 / 35.3146662127 AS FACTOR,
+                      FROM_UNIT,
+                      TO_UNIT
+               FROM
+                 (SELECT U.measurementunit_id AS FROM_UNIT,
+                         C.measurementunit_id AS TO_UNIT
+                  FROM wres.MeasurementUnit U
+                  CROSS JOIN
+                    (SELECT measurementunit_id
+                     FROM wres.MeasurementUnit
+                     WHERE unit_name IN ('CMSD',
+                                         'CMS',
+                                         'm3 s-1',
+                                         'm3/s',
+                                         'm3/sec') ) C
+                  WHERE U.unit_name IN ('CFSD',
+                                        'CFS',
+                                        'ft3/s') ) AS CP
+               WHERE EXISTS
+                   (SELECT 1
+                    FROM WRES.UNITCONVERSION UC
+                    WHERE UC.FROM_UNIT = CP.FROM_UNIT
+                      AND UC.TO_UNIT = CP.TO_UNIT ) ) N
+            WHERE U.FROM_UNIT = N.FROM_UNIT
+              AND U.TO_UNIT = N.TO_UNIT;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.UnitConversion - fixes CMS to CFS unit conversions" author="James Brown">
+        <comment>Fixing CMS to CFS unit conversions - see issue #93024</comment>
+        <sql>
+            UPDATE WRES.UNITCONVERSION U
+            SET FACTOR = N.FACTOR
+            FROM
+              (SELECT 35.3146662127 AS FACTOR,
+                      FROM_UNIT,
+                      TO_UNIT
+               FROM
+                 (SELECT U.measurementunit_id AS FROM_UNIT,
+                         C.measurementunit_id AS TO_UNIT
+                  FROM wres.MeasurementUnit U
+                  CROSS JOIN
+                    (SELECT measurementunit_id
+                     FROM wres.MeasurementUnit
+                     WHERE unit_name IN ('CFSD',
+                                        'CFS',
+                                        'ft3/s') ) C
+                  WHERE U.unit_name IN ('CMSD',
+                                         'CMS',
+                                         'm3 s-1',
+                                         'm3/s',
+                                         'm3/sec') ) AS CP
+               WHERE EXISTS
+                   (SELECT 1
+                    FROM WRES.UNITCONVERSION UC
+                    WHERE UC.FROM_UNIT = CP.FROM_UNIT
+                      AND UC.TO_UNIT = CP.TO_UNIT ) ) N
+            WHERE U.FROM_UNIT = N.FROM_UNIT
+              AND U.TO_UNIT = N.TO_UNIT;
+        </sql>
+    </changeSet>
+</databaseChangeLog>
