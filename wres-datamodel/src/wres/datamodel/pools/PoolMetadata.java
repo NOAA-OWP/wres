@@ -4,10 +4,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageUtilities;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -180,8 +182,8 @@ public class PoolMetadata implements Comparable<PoolMetadata>
      */
 
     public static PoolMetadata of( PoolMetadata input,
-                                     TimeWindowOuter timeWindow,
-                                     TimeScaleOuter timeScale )
+                                   TimeWindowOuter timeWindow,
+                                   TimeScaleOuter timeScale )
     {
         Objects.requireNonNull( input );
 
@@ -214,8 +216,8 @@ public class PoolMetadata implements Comparable<PoolMetadata>
      */
 
     public static PoolMetadata of( PoolMetadata input,
-                                     TimeWindowOuter timeWindow,
-                                     OneOrTwoThresholds thresholds )
+                                   TimeWindowOuter timeWindow,
+                                   OneOrTwoThresholds thresholds )
     {
         Objects.requireNonNull( input );
 
@@ -277,7 +279,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
             if ( !next.equalsWithoutTimeWindowOrThresholds( test ) )
             {
                 throw new PoolMetadataException( "Only the time window and thresholds can differ when finding the "
-                                                   + "union of metadata." );
+                                                 + "union of metadata." );
             }
             if ( next.hasTimeWindow() )
             {
@@ -336,7 +338,13 @@ public class PoolMetadata implements Comparable<PoolMetadata>
         // Use a limited subset of the most important/useful descriptors
         Evaluation evaluation = this.getEvaluation();
         Pool pool = this.getPool();
-        
+
+        // Pretty print the feature tuples
+        List<FeatureTuple> featureTuples = pool.getGeometryTuplesList()
+                                               .stream()
+                                               .map( next -> new FeatureTuple( next ) )
+                                               .collect( Collectors.toList() );
+
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
                                                                             .append( "leftDataName",
                                                                                      evaluation.getLeftDataName() )
@@ -352,8 +360,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
                                                                                      evaluation.getBaselineVariableName() )
                                                                             .append( "isBaselinePool",
                                                                                      pool.getIsBaselinePool() )
-                                                                            .append( "geometryTuples",
-                                                                                     pool.getGeometryTuplesList() )
+                                                                            .append( "featureTuples", featureTuples )
                                                                             .append( "timeWindow",
                                                                                      this.getTimeWindow() )
                                                                             .append( "thresholds",
@@ -505,7 +512,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
         }
 
         return outer;
-    } 
+    }
 
     /**
      * Returns the evaluation description.

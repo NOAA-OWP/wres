@@ -209,18 +209,24 @@ public class WebClient
         }
 
         LOGGER.debug( "getFromWeb {}", uri );
-
+        
+        WebClientEvent monitorEvent = WebClientEvent.of( uri ); // Monitor with JFR
+        
         try
         {
             Request request = new Request.Builder()
                     .url( uri.toURL() )
                     .header( "Accept-Encoding", "gzip" )
                     .build();
+
+            monitorEvent.begin();
+            
             Instant start = Instant.now();
             Response httpResponse = tryRequest( request );
 
             boolean retry = true;
             long sleepMillis = 1000;
+            int retryCount = 0;
 
             while ( retry )
             {
@@ -244,6 +250,7 @@ public class WebClient
 
                     // Exponential backoff to be nice to the server.
                     sleepMillis *= 2;
+                    retryCount++;
                 }
                 else
                 {
@@ -253,12 +260,18 @@ public class WebClient
 
             Instant end = Instant.now();
             Duration duration = Duration.between( start, end );
+            
+            monitorEvent.end();  // End, not commit
 
             if ( Objects.nonNull( httpResponse )
                  && Objects.nonNull( httpResponse.body() ) )
             {
                 int httpStatus = httpResponse.code();
 
+                monitorEvent.setHttpResponseCode( httpStatus );
+                monitorEvent.setRetryCount( retryCount );
+                monitorEvent.commit();
+                
                 if ( httpStatus >= 200 && httpStatus < 300 )
                 {
                     LOGGER.debug( "Successfully got InputStream from {} in {}",
