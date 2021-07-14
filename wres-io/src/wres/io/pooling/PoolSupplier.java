@@ -49,6 +49,7 @@ import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
+import wres.io.pooling.RescalingEvent.RescalingType;
 import wres.io.retrieval.DataAccessException;
 import wres.io.retrieval.NoSuchUnitConversionException;
 import wres.config.generated.DesiredTimeScaleConfig;
@@ -263,11 +264,17 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
     private Pool<Pair<L, R>> createPool()
     {
         LOGGER.debug( "Creating pool {}.", this.metadata );
+        PoolCreationEvent poolMonitor = PoolCreationEvent.of( this.metadata ); // Monitor
+        poolMonitor.begin();
 
         PoolOfPairs.Builder<L, R> builder = new PoolOfPairs.Builder<>();
 
         // Left data provided or is climatology the left data?
         Stream<TimeSeries<L>> cStream;
+
+        RetrievalEvent leftEvent = RetrievalEvent.of( LeftOrRightOrBaseline.LEFT, this.metadata ); // Monitor
+        leftEvent.begin();
+
         if ( Objects.nonNull( this.left ) )
         {
             cStream = this.left.get();
@@ -277,16 +284,26 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
             cStream = this.climatology.get();
         }
 
+        leftEvent.commit();
+
         List<TimeSeries<L>> leftData = cStream.collect( Collectors.toList() );
+
+        RetrievalEvent rightEvent = RetrievalEvent.of( LeftOrRightOrBaseline.RIGHT, this.metadata ); // Monitor
+        rightEvent.begin();
         List<TimeSeries<R>> rightData = this.right.get()
                                                   .collect( Collectors.toList() );
+        rightEvent.commit();
+
         List<TimeSeries<R>> baselineData = null;
 
         // Baseline that is not generated?
         if ( this.hasBaseline() && Objects.isNull( this.baselineGenerator ) )
         {
+            RetrievalEvent baselineEvent = RetrievalEvent.of( LeftOrRightOrBaseline.BASELINE, // Monitor
+                                                              this.baselineMetadata );
             baselineData = this.baseline.get()
                                         .collect( Collectors.toList() );
+            baselineEvent.commit();
         }
 
         // Apply any time offsets immediately, in order to simplify further evaluation,
@@ -322,7 +339,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
                                                                    this.getRightTransformer(),
                                                                    desiredTimeScaleToUse,
                                                                    pairedFrequency,
-                                                                   false,
+                                                                   LeftOrRightOrBaseline.RIGHT,
                                                                    sampleMetadata.getTimeWindow() );
 
         // Create the baseline pairs
@@ -348,7 +365,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
                                                                        this.getBaselineTransformer(),
                                                                        desiredTimeScaleToUse,
                                                                        pairedFrequency,
-                                                                       true,
+                                                                       LeftOrRightOrBaseline.BASELINE,
                                                                        baselineSampleMetadata.getTimeWindow() );
 
             // Cross-pair?
@@ -377,6 +394,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
         LOGGER.debug( "Finished creating pool {}, which contains {} pairs.",
                       this.metadata,
                       returnMe.getRawData().size() );
+
+        poolMonitor.commit();
 
         return returnMe;
     }
@@ -709,7 +728,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
      * @param rightOrBaseline the right or baseline data
      * @param desiredTimeScale the desired time scale
      * @param frequency the frequency with which to create pairs at the desired time scale
-     * @param isBaseline is true if the pool is a baseline pool (helps with logging)
+     * @param orientation the orientation of the non-left data, one of {@link LeftOrRightOrBaseline#RIGHT} or 
+     *            {@link LeftOrRightOrBaseline#BASELINE}
      * @param timeWindow the time window to snip the pairs
      * @return the pairs
      * @throws RescalingException if the pool data could not be rescaled
@@ -723,7 +743,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
                                                       UnaryOperator<Event<R>> rightOrBaselineTransformer,
                                                       TimeScaleOuter desiredTimeScale,
                                                       Duration frequency,
-                                                      boolean isBaseline,
+                                                      LeftOrRightOrBaseline orientation,
                                                       TimeWindowOuter timeWindow )
     {
         Objects.requireNonNull( left );
@@ -742,7 +762,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
                                                                        rightOrBaselineTransformer,
                                                                        desiredTimeScale,
                                                                        frequency,
-                                                                       timeWindow );
+                                                                       timeWindow,
+                                                                       orientation );
 
                 if ( !pairs.getEvents().isEmpty() )
                 {
@@ -762,20 +783,18 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
         {
             PoolMetadata metaToReport = this.metadata;
 
-            String clarify = "";
-
-            if ( isBaseline )
+            if ( orientation == LeftOrRightOrBaseline.BASELINE )
             {
                 metaToReport = this.baselineMetadata;
-                clarify = "baseline ";
             }
 
-            LOGGER.debug( "While creating {}pool {}, discovered {} left time-series and {} right time-series from "
+            LOGGER.debug( "While creating pool {}, discovered {} {} time-series and {} {} time-series from "
                           + "which to create pairs. Created {} paired time-series from these inputs.",
-                          clarify,
                           metaToReport,
                           left.size(),
+                          LeftOrRightOrBaseline.LEFT,
                           rightOrBaseline.size(),
+                          orientation,
                           returnMe.size() );
         }
 
@@ -790,6 +809,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
      * @param desiredTimeScale the desired time scale
      * @param frequency the frequency with which to create pairs at the desired time scale
      * @param timeWindow the time window to snip the pairs
+     * @param orientation the orientation of the non-left data, one of {@link LeftOrRightOrBaseline#RIGHT} or 
+     *            {@link LeftOrRightOrBaseline#BASELINE}
      * @return a paired time-series
      * @throws NullPointerException if the left, rightOrBaseline or timeWindow is null
      */
@@ -799,7 +820,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
                                                       UnaryOperator<Event<R>> rightOrBaselineTransformer,
                                                       TimeScaleOuter desiredTimeScale,
                                                       Duration frequency,
-                                                      TimeWindowOuter timeWindow )
+                                                      TimeWindowOuter timeWindow,
+                                                      LeftOrRightOrBaseline orientation )
     {
         Objects.requireNonNull( left );
         Objects.requireNonNull( rightOrBaseline );
@@ -817,9 +839,16 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
         // Upscale left?
         if ( upscaleLeft )
         {
+            RescalingEvent rescalingMonitor = RescalingEvent.of( RescalingType.UPSCALED, // Monitor
+                                                                 LeftOrRightOrBaseline.LEFT,
+                                                                 left.getMetadata() );
+
+            rescalingMonitor.begin();
+
             if ( LOGGER.isTraceEnabled() )
             {
-                LOGGER.trace( "Upscaling left time-series {} from {} to {}.",
+                LOGGER.trace( "Upscaling {} time-series {} from {} to {}.",
+                              LeftOrRightOrBaseline.LEFT,
                               left.hashCode(),
                               left.getTimeScale(),
                               desiredTimeScale );
@@ -838,8 +867,9 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
 
             if ( LOGGER.isTraceEnabled() )
             {
-                LOGGER.trace( "Finished upscaling left time-series {} from {} to {}, which produced a "
+                LOGGER.trace( "Finished upscaling {} time-series {} from {} to {}, which produced a "
                               + "new time-series, {}.",
+                              LeftOrRightOrBaseline.LEFT,
                               left.hashCode(),
                               left.getTimeScale(),
                               desiredTimeScale,
@@ -848,14 +878,23 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
 
             // Log any warnings
             PoolSupplier.logScaleValidationWarnings( left, upscaledLeft.getValidationEvents() );
+
+            rescalingMonitor.commit();
         }
 
         // Upscale right?
         if ( upscaleRight )
         {
+            RescalingEvent rescalingMonitor = RescalingEvent.of( RescalingType.UPSCALED, // Monitor
+                                                                 orientation,
+                                                                 rightOrBaseline.getMetadata() );
+
+            rescalingMonitor.begin();
+
             if ( LOGGER.isTraceEnabled() )
             {
-                LOGGER.trace( "Upscaling right time-series {} from {} to {}.",
+                LOGGER.trace( "Upscaling {} time-series {} from {} to {}.",
+                              orientation,
                               rightOrBaseline.hashCode(),
                               rightOrBaseline.getTimeScale(),
                               desiredTimeScale );
@@ -873,8 +912,9 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
 
             if ( LOGGER.isTraceEnabled() )
             {
-                LOGGER.trace( "Finished upscaling right time-series {} from {} to {}, which produced a "
+                LOGGER.trace( "Finished upscaling {} time-series {} from {} to {}, which produced a "
                               + "new time-series, {}.",
+                              orientation,
                               rightOrBaseline.hashCode(),
                               rightOrBaseline.getTimeScale(),
                               desiredTimeScale,
@@ -883,6 +923,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
 
             // Log any warnings
             PoolSupplier.logScaleValidationWarnings( rightOrBaseline, upscaledRight.getValidationEvents() );
+
+            rescalingMonitor.commit();
         }
 
         // Transform the rescaled values, if required
@@ -913,11 +955,13 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
         // Log the pairing 
         if ( LOGGER.isTraceEnabled() )
         {
-            LOGGER.trace( "While pairing left time-series {}, "
+            LOGGER.trace( "While pairing {} time-series {}, "
                           + "which contained {} values, "
-                          + "with right time-series {},"
+                          + "with {} time-series {},"
                           + " which contained {} values: "
                           + "created {} pairs at the desired time scale of {}.",
+                          LeftOrRightOrBaseline.LEFT,
+                          orientation,
                           scaledAndTransformedLeft.hashCode(),
                           scaledAndTransformedLeft.getEvents().size(),
                           scaledAndTransformedRight.hashCode(),
@@ -1470,7 +1514,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
         // It is debatable whether the first step away from the reference time should use the period or the frequency.
         // The period is chosen here.
         Instant nextSequenceTime = referenceTime.plus( period );
-        
+
         // Iterate the regular sequence until the end
         while ( nextSequenceTime.compareTo( lastTime ) <= 0 )
         {
