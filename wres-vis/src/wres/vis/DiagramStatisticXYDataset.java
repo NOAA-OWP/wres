@@ -15,7 +15,6 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
-import wres.util.TimeHelper;
 
 /**
  * The {@link XYDataset} for use in building a chart that plots a {@link DiagramStatisticOuter}.
@@ -179,10 +178,10 @@ class DiagramStatisticXYDataset
         // One threshold and one or more time windows: label by time window
         else if ( thresholds.size() == 1 )
         {
-            return Long.toString( TimeHelper.durationToLongUnits( diagram.getMetadata()
-                                                                         .getTimeWindow()
-                                                                         .getLatestLeadDuration(),
-                                                                  this.durationUnits ) )
+            return Long.toString( GraphicsUtils.durationToLongUnits( diagram.getMetadata()
+                                                                        .getTimeWindow()
+                                                                        .getLatestLeadDuration(),
+                                                                 this.durationUnits ) )
                    + ", " + qualifier;
         }
         else

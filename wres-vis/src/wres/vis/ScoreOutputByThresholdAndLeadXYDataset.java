@@ -12,7 +12,6 @@ import wres.datamodel.Slicer;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.util.TimeHelper;
 
 /**
  * An {@link AbstractXYDataset} that wraps a {@link List} which contains a set of
@@ -59,8 +58,8 @@ class ScoreOutputByThresholdAndLeadXYDataset extends
         for ( final TimeWindowOuter lead : timeWindows )
         {
             setOverrideLegendName( seriesIndex,
-                                   Long.toString( TimeHelper.durationToLongUnits( lead.getLatestLeadDuration(),
-                                                                                  this.durationUnits ) ) );
+                                   Long.toString( GraphicsUtils.durationToLongUnits( lead.getLatestLeadDuration(),
+                                                                                 this.durationUnits ) ) );
             seriesIndex++;
         }
     }

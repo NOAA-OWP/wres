@@ -7,7 +7,6 @@ import java.util.Objects;
 import org.jfree.data.xy.XYDataset;
 
 import wres.datamodel.statistics.BoxplotStatisticOuter;
-import wres.util.TimeHelper;
 
 /**
  * The {@link XYDataset} for use in building a box plot by lead duration.
@@ -44,12 +43,12 @@ class BoxPlotDiagramByLeadXYDataset extends BoxPlotDiagramXYDataset
     public Number getX( final int series, final int item )
     {
         // Time in prescribed units for the specified item number of the single dataset        
-        return TimeHelper.durationToLongUnits( this.getPlotData()
-                                                   .get( item )
-                                                   .getMetadata()
-                                                   .getTimeWindow()
-                                                   .getLatestLeadDuration(),
-                                               this.durationUnits );
+        return GraphicsUtils.durationToLongUnits( this.getPlotData()
+                                                  .get( item )
+                                                  .getMetadata()
+                                                  .getTimeWindow()
+                                                  .getLatestLeadDuration(),
+                                              this.durationUnits );
     }
 
 }

@@ -2,6 +2,8 @@ package wres.vis;
 
 import java.awt.Color;
 import java.awt.Paint;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 
 import org.jfree.chart.plot.DefaultDrawingSupplier;
@@ -11,16 +13,8 @@ import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.parameters.DataSourceDrawingParameters;
 import ohd.hseb.hefs.utils.gui.tools.ColorTools;
 
-class WRESTools
+class GraphicsUtils
 {
-
-    /**
-     * Hiding constructor.
-     */
-    private WRESTools()
-    {
-        
-    }
     
     /**
      * Uses, as a starting point, {@link DefaultDrawingSupplier#DEFAULT_PAINT_SEQUENCE}.  If that array of colors is no smaller than
@@ -67,5 +61,49 @@ class WRESTools
         final String[] p = ChartConstants.SHAPE_NAMES;
         ChartTools.applyRotatingShapeSchemeToSeries( p, parameters );
     }
+    
+    /**
+     * Retrieves the specified number of time units from the input duration. Accepted units include:
+     * 
+     * <ol>
+     * <li>{@link ChronoUnit#DAYS}</li>
+     * <li>{@link ChronoUnit#HOURS}</li>
+     * <li>{@link ChronoUnit#MINUTES}</li>
+     * <li>{@link ChronoUnit#SECONDS}</li>
+     * <li>{@link ChronoUnit#MILLIS}</li>
+     * </ol>
+     *  
+     * @param duration Retrieves the duration
+     * @param durationUnits the time units required
+     * @return The length of the duration in terms of the project's lead resolution
+     * @throws IllegalArgumentException if the durationUnits is not one of the accepted units
+     */
+    static long durationToLongUnits( Duration duration, ChronoUnit durationUnits )
+    {
+        switch ( durationUnits )
+        {
+            case DAYS:
+                return duration.toDays();
+            case HOURS:
+                return duration.toHours();
+            case MINUTES:
+                return duration.toMinutes();
+            case SECONDS:
+                return duration.getSeconds();
+            case MILLIS:
+                return duration.toMillis();
+            default:
+                throw new IllegalArgumentException( "The input time units '" + durationUnits
+                                                    + "' are not supported "
+                                                    + "in this context." );
+        }
+    }
+    
+    /**
+     * Hiding constructor.
+     */
+    private GraphicsUtils()
+    {
+    }    
 
 }
