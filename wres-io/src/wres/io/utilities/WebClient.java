@@ -568,8 +568,14 @@ public class WebClient
 
         // Integer division on purpose.
         int medianIndex = timings.length / 2;
-        long medianTiming = timings[medianIndex];
-
+        long medianTiming = 0; 
+        
+        // #77007
+        if( timings.length > 0 )
+        {
+            medianTiming = timings[medianIndex];
+        }
+        
         String slowestMessage = "slowest response was " + Duration.ofNanos( max );
 
         if ( Objects.nonNull( slowest ) )
