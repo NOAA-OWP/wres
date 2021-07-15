@@ -19,6 +19,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +31,6 @@ import wres.events.subscribe.EvaluationSubscriber;
 import wres.events.subscribe.SubscriberStatus;
 import wres.events.subscribe.UnrecoverableSubscriberException;
 import wres.eventsbroker.BrokerConnectionFactory;
-import wres.util.Strings;
 
 /**
  * A long-running graphics client that encapsulates one graphics subscriber, which consumes statistics and writes them 
@@ -123,12 +123,13 @@ class GraphicsClient
     {
         // Print version information
         String processName = ManagementFactory.getRuntimeMXBean().getName();
-        String processId = Strings.extractWord( processName, "\\d+(?=@)" );
+        String processId = StringUtils.substringBefore( processName, "@" );
 
         MDC.put( "pid", processId );
 
         if ( LOGGER.isInfoEnabled() )
         {
+            LOGGER.info( "Process: {}", processId );
             LOGGER.info( GraphicsClient.VERSION.getDescription() );
             LOGGER.info( GraphicsClient.VERSION.getVerboseRuntimeDescription() );
         }

@@ -46,7 +46,7 @@ public class WRESArgumentProcessorTest
     @Test( expected = Test.None.class /* no exception expected */ )
     public void testConstructionDoesNotThrowIOOBExceptionWhenInputIsEmpty()
     {
-        new WRESArgumentProcessor( BoxplotStatisticOuter.of( BoxplotStatistic.newBuilder()
+        new ArgumentProcessor( BoxplotStatisticOuter.of( BoxplotStatistic.newBuilder()
                                                                              .setMetric( BoxplotMetric.newBuilder()
                                                                                                       .setName( MetricName.BOX_PLOT_OF_ERRORS ) )
                                                                              .build(),
@@ -61,8 +61,8 @@ public class WRESArgumentProcessorTest
     @Test
     public void testConstructionProducesExpectedProbabilitiesWhenInputIsEmpty()
     {
-        WRESArgumentProcessor processor =
-                new WRESArgumentProcessor( BoxplotStatisticOuter.of( BoxplotStatistic.newBuilder()
+        ArgumentProcessor processor =
+                new ArgumentProcessor( BoxplotStatisticOuter.of( BoxplotStatistic.newBuilder()
                                                                                      .setMetric( BoxplotMetric.newBuilder()
                                                                                                               .setName( MetricName.BOX_PLOT_OF_ERRORS ) )
                                                                                      .build(),
@@ -98,8 +98,8 @@ public class WRESArgumentProcessorTest
                                                 .addStatistics( box )
                                                 .build();
 
-        WRESArgumentProcessor processor =
-                new WRESArgumentProcessor( BoxplotStatisticOuter.of( aBox, this.meta ),
+        ArgumentProcessor processor =
+                new ArgumentProcessor( BoxplotStatisticOuter.of( aBox, this.meta ),
                                            ChronoUnit.SECONDS );
 
         String probs = processor.getArgument( "probabilities" ).getValue();

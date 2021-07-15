@@ -309,13 +309,13 @@ public abstract class ChartEngineFactory
      * @param hasRepeatedComponents is true for diagrams that have repeated components, false otherwise
      * @return the argument processor
      */
-    private static WRESArgumentProcessor constructDiagramArguments( Object inputKeyInstance,
+    private static ArgumentProcessor constructDiagramArguments( Object inputKeyInstance,
                                                                     List<DiagramStatisticOuter> inputSlice,
                                                                     ChartType usedPlotType,
                                                                     ChronoUnit durationUnits,
                                                                     boolean hasRepeatedComponents )
     {
-        WRESArgumentProcessor args = new WRESArgumentProcessor( inputSlice.get( 0 ).getMetricName(),
+        ArgumentProcessor args = new ArgumentProcessor( inputSlice.get( 0 ).getMetricName(),
                                                                 null,
                                                                 null,
                                                                 inputSlice,
@@ -367,7 +367,7 @@ public abstract class ChartEngineFactory
 
         final List<DiagramStatisticOuter> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
-        WRESArgumentProcessor arguments =
+        ArgumentProcessor arguments =
                 constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits, false );
 
         dataSources.add( XYChartDataSourceFactory.ofVerificationDiagram( 0,
@@ -436,7 +436,7 @@ public abstract class ChartEngineFactory
 
         final List<DiagramStatisticOuter> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
-        WRESArgumentProcessor arguments =
+        ArgumentProcessor arguments =
                 constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits, false );
 
         dataSources.add( XYChartDataSourceFactory.ofVerificationDiagram( 0,
@@ -494,7 +494,7 @@ public abstract class ChartEngineFactory
 
         final List<DiagramStatisticOuter> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
-        WRESArgumentProcessor arguments =
+        ArgumentProcessor arguments =
                 constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits, false );
 
         DefaultXYChartDataSource dataSource = XYChartDataSourceFactory.ofVerificationDiagram( 0,
@@ -554,7 +554,7 @@ public abstract class ChartEngineFactory
 
         final List<DiagramStatisticOuter> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
-        WRESArgumentProcessor arguments =
+        ArgumentProcessor arguments =
                 constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits, true );
 
         XYChartDataSource dataSource = XYChartDataSourceFactory.ofVerificationDiagram( 0,
@@ -614,7 +614,7 @@ public abstract class ChartEngineFactory
 
         final List<DiagramStatisticOuter> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
-        WRESArgumentProcessor arguments =
+        ArgumentProcessor arguments =
                 constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits, false );
 
         Supplier<XYDataset> dataSupplier = () -> new RankHistogramXYDataset( inputSlice,
@@ -768,7 +768,7 @@ public abstract class ChartEngineFactory
                     throws ChartEngineException, WRESVisXMLReadingException
     {
         final List<XYChartDataSource> dataSources = new ArrayList<>();
-        WRESArgumentProcessor arguments = null;
+        ArgumentProcessor arguments = null;
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
 
@@ -788,7 +788,7 @@ public abstract class ChartEngineFactory
                                                 + "." );
         }
 
-        arguments = new WRESArgumentProcessor( input.get( 0 ), durationUnits );
+        arguments = new ArgumentProcessor( input.get( 0 ), durationUnits );
 
         //Add the data source
         dataSources.add( XYChartDataSourceFactory.ofBoxPlotOutput( 0, input, null, durationUnits ) );
@@ -1000,7 +1000,7 @@ public abstract class ChartEngineFactory
         }
 
         //Setup the default arguments.
-        final WRESArgumentProcessor arguments = new WRESArgumentProcessor( metricName,
+        final ArgumentProcessor arguments = new ArgumentProcessor( metricName,
                                                                            metricComponentName,
                                                                            metricUnits,
                                                                            input,
@@ -1095,7 +1095,7 @@ public abstract class ChartEngineFactory
         }
 
         //Setup the default arguments.
-        final WRESArgumentProcessor arguments = new WRESArgumentProcessor( metricName,
+        final ArgumentProcessor arguments = new ArgumentProcessor( metricName,
                                                                            null,
                                                                            durationUnits.toString(),
                                                                            input,
@@ -1164,7 +1164,7 @@ public abstract class ChartEngineFactory
         }
 
         //Setup the default arguments.
-        final WRESArgumentProcessor arguments = new WRESArgumentProcessor( metricName,
+        final ArgumentProcessor arguments = new ArgumentProcessor( metricName,
                                                                            null,
                                                                            durationUnits.toString(),
                                                                            input,
@@ -1234,8 +1234,8 @@ public abstract class ChartEngineFactory
         final DefaultXYChartDataSource source = XYChartDataSourceFactory.ofSingleValuedPairs( 0, input );
 
         //Setup the arguments.
-        final WRESArgumentProcessor arguments =
-                new WRESArgumentProcessor( input.getMetadata(),
+        final ArgumentProcessor arguments =
+                new ArgumentProcessor( input.getMetadata(),
                                            input.getMetadata().getMeasurementUnit().toString(),
                                            durationUnits );
 

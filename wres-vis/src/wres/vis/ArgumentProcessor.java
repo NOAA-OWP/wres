@@ -30,7 +30,6 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
-import wres.util.TimeHelper;
 import wres.vis.ChartEngineFactory.ChartType;
 
 /**
@@ -39,7 +38,7 @@ import wres.vis.ChartEngineFactory.ChartType;
  * 
  * @author Hank.Herr
  */
-class WRESArgumentProcessor extends DefaultArgumentsProcessor
+class ArgumentProcessor extends DefaultArgumentsProcessor
 {
     private static final String THRESHOLD = "Threshold ";
     private static final String VARIABLE_NAME = "variableName";
@@ -47,7 +46,7 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
     private static final String LEGEND_UNITS_TEXT = "legendUnitsText";
     private static final String DIAGRAM_INSTANCE_DESCRIPTION = "diagramInstanceDescription";
     private static final String SPECIFY_NON_NULL_DURATION_UNITS = "Specify non-null duration units.";
-    private static final Logger LOGGER = LoggerFactory.getLogger( WRESArgumentProcessor.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( ArgumentProcessor.class );
     private static final String EARLIEST_DATE_TO_TEXT = "earliestDateToText";
     private static final String LATEST_DATE_TO_TEXT = "latestDateToText";
     private static final String POOLING_WINDOW = "dataPoolingWindow";
@@ -76,7 +75,7 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param durationUnits the time units for durations
      * @throws NullPointerException if either input is null
      */
-    WRESArgumentProcessor( final PoolMetadata meta, String metricUnits, final ChronoUnit durationUnits )
+    ArgumentProcessor( final PoolMetadata meta, String metricUnits, final ChronoUnit durationUnits )
     {
         super();
 
@@ -107,7 +106,7 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param durationUnits the time units for durations
      * @throws NullPointerException if either input is null
      */
-    WRESArgumentProcessor( final BoxplotStatisticOuter displayPlotInput, final ChronoUnit durationUnits )
+    ArgumentProcessor( final BoxplotStatisticOuter displayPlotInput, final ChronoUnit durationUnits )
     {
         super();
 
@@ -130,9 +129,9 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
         recordWindowingArguments( meta.getTimeWindow() );
 
-        String durationString = Long.toString( TimeHelper.durationToLongUnits( meta.getTimeWindow()
-                                                                                   .getLatestLeadDuration(),
-                                                                               this.getDurationUnits() ) )
+        String durationString = Long.toString( GraphicsUtils.durationToLongUnits( meta.getTimeWindow()
+                                                                                  .getLatestLeadDuration(),
+                                                                              this.getDurationUnits() ) )
                                 + " "
                                 + this.getDurationUnits().name().toUpperCase();
 
@@ -184,7 +183,7 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param durationUnits the time units for durations
      * @throws NullPointerException if the displayedPlotInput or the durationUnits are null
      */
-    <T extends Statistic<?>> WRESArgumentProcessor( final MetricConstants metricName,
+    <T extends Statistic<?>> ArgumentProcessor( final MetricConstants metricName,
                                                     final MetricConstants metricComponentName,
                                                     final String metricUnits,
                                                     final List<T> displayedPlotInput,
@@ -384,11 +383,11 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
             earliestInstant = timeWindow.getEarliestReferenceTime();
             latestInstant = timeWindow.getLatestReferenceTime();
             addArgument( "earliestLeadTime",
-                         Long.toString( TimeHelper.durationToLongUnits( timeWindow.getEarliestLeadDuration(),
-                                                                        this.getDurationUnits() ) ) );
+                         Long.toString( GraphicsUtils.durationToLongUnits( timeWindow.getEarliestLeadDuration(),
+                                                                       this.getDurationUnits() ) ) );
             addArgument( "latestLeadTime",
-                         Long.toString( TimeHelper.durationToLongUnits( timeWindow.getLatestLeadDuration(),
-                                                                        this.getDurationUnits() ) ) );
+                         Long.toString( GraphicsUtils.durationToLongUnits( timeWindow.getLatestLeadDuration(),
+                                                                       this.getDurationUnits() ) ) );
 
             // Jbr: Qualify the reference time with "evaluation period" in code rather than the graphics template
             // This allows for the time window to be ommited when unconstrained. See #46772.
@@ -442,10 +441,10 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
         if ( plotTimeWindow != null )
         {
             String durationString =
-                    TimeHelper.durationToLongUnits( plotTimeWindow.getLatestLeadDuration(), this.getDurationUnits() )
+                    GraphicsUtils.durationToLongUnits( plotTimeWindow.getLatestLeadDuration(), this.getDurationUnits() )
                                     + " "
                                     + this.getDurationUnits().name().toUpperCase();
-            if( hasRepeatedComponents )
+            if ( hasRepeatedComponents )
             {
                 addArgument( DIAGRAM_INSTANCE_DESCRIPTION,
                              "at Lead Time " + durationString + " and for Threshold All Data" );
@@ -627,9 +626,9 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
             else
             {
                 String period =
-                        Long.toString( TimeHelper.durationToLongUnits( meta.getTimeScale()
-                                                                           .getPeriod(),
-                                                                       this.getDurationUnits() ) )
+                        Long.toString( GraphicsUtils.durationToLongUnits( meta.getTimeScale()
+                                                                          .getPeriod(),
+                                                                      this.getDurationUnits() ) )
                                 + " "
                                 + this.getDurationUnits().name().toUpperCase();
 

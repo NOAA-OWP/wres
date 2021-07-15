@@ -43,7 +43,6 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
-import wres.util.TimeHelper;
 
 /**
  * Used to produce {@link XYChartDataSource} instances for use in constructing charts.  
@@ -886,14 +885,14 @@ abstract class XYChartDataSourceFactory
             // Zero-width interval
             if ( earliest.equals( latest ) )
             {
-                key = key + Long.toString( TimeHelper.durationToLongUnits( latest, durationUnits ) ) + ", ";
+                key = key + Long.toString( GraphicsUtils.durationToLongUnits( latest, durationUnits ) ) + ", ";
             }
             else
             {
                 key = key + "("
-                      + TimeHelper.durationToLongUnits( earliest, durationUnits )
+                      + GraphicsUtils.durationToLongUnits( earliest, durationUnits )
                       + ","
-                      + TimeHelper.durationToLongUnits( latest, durationUnits )
+                      + GraphicsUtils.durationToLongUnits( latest, durationUnits )
                       + "], ";
             }
         }
@@ -979,8 +978,8 @@ abstract class XYChartDataSourceFactory
         }
 
         //Apply looping color and shape scheme.
-        WRESTools.applyDefaultJFreeChartColorSequence( source.getDefaultFullySpecifiedDataSourceDrawingParameters() );
-        WRESTools.applyDefaultJFreeChartShapeSequence( source.getDefaultFullySpecifiedDataSourceDrawingParameters() );
+        GraphicsUtils.applyDefaultJFreeChartColorSequence( source.getDefaultFullySpecifiedDataSourceDrawingParameters() );
+        GraphicsUtils.applyDefaultJFreeChartShapeSequence( source.getDefaultFullySpecifiedDataSourceDrawingParameters() );
     }
 
     /**

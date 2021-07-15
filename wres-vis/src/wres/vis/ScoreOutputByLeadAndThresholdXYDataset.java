@@ -12,7 +12,6 @@ import wres.datamodel.Slicer;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.util.TimeHelper;
 
 /**
  * An {@link AbstractXYDataset} that wraps a {@link List} which contains a set of
@@ -93,13 +92,13 @@ class ScoreOutputByLeadAndThresholdXYDataset extends
     @Override
     public Number getX( final int series, final int item )
     {
-        return TimeHelper.durationToLongUnits( this.getPlotData()
-                                                   .get( series )
-                                                   .get( item )
-                                                   .getMetadata()
-                                                   .getTimeWindow()
-                                                   .getLatestLeadDuration(),
-                                               this.durationUnits );
+        return GraphicsUtils.durationToLongUnits( this.getPlotData()
+                                                  .get( series )
+                                                  .get( item )
+                                                  .getMetadata()
+                                                  .getTimeWindow()
+                                                  .getLatestLeadDuration(),
+                                              this.durationUnits );
     }
 
     @Override
