@@ -21,14 +21,15 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.ExecutionResult;
 import wres.config.ProjectConfigPlus;
-import wres.control.Control;
+import wres.control.Evaluator;
 import wres.control.InternalWresException;
 import wres.control.UserInputException;
+import wres.eventsbroker.BrokerConnectionFactory;
 import wres.io.concurrency.Executor;
 import wres.io.utilities.Database;
 import wres.system.SystemSettings;
-
 
 /**
  * Accepts projects in the body of http request and executes them.
@@ -63,10 +64,14 @@ public class ProjectService
     {
         long projectId;
 
-        try ( Control control = new Control( SYSTEM_SETTINGS,
-                                             DATABASE,
-                                             EXECUTOR ) )
+        // TODO: abstract out the connection factory, really only need one per ProjectService
+        try( BrokerConnectionFactory broker = BrokerConnectionFactory.of( false ) )
         {
+            Evaluator evaluator = new Evaluator( ProjectService.SYSTEM_SETTINGS,
+                                                 ProjectService.DATABASE,
+                                                 ProjectService.EXECUTOR,
+                                                 broker );
+                    
             ProjectConfigPlus projectPlus =
                     ProjectConfigPlus.from( rawProjectConfig,
                                             "a web request" );
@@ -76,8 +81,8 @@ public class ProjectService
             // on StackOverflow question id 5827023.
             projectId = RANDOM.nextLong() & Long.MAX_VALUE;
 
-            control.accept( projectPlus );
-            Set<java.nio.file.Path> outputPaths = control.get();
+            ExecutionResult result = evaluator.evaluate( projectPlus );
+            Set<java.nio.file.Path> outputPaths = result.getResources();
             OUTPUTS.put( projectId, outputPaths );
         }
         catch ( IOException | UserInputException e )

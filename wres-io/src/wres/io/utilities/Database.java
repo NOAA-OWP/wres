@@ -34,7 +34,7 @@ import org.postgresql.copy.CopyIn;
 import org.postgresql.copy.CopyManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import com.google.common.collect.Range;
 import static java.time.ZoneOffset.UTC;
 
 import wres.io.concurrency.WRESCallable;
@@ -1064,29 +1064,37 @@ public class Database {
      * Logs information about the execution of the WRES into the database for
      * aid in remote debugging.
      * Moved from {@link wres.io.Operations} 2021-03-15, see history there.
-     * @param arguments The arguments used to run the WRES
+     * @param arguments The arguments used to run the WRES, at least two
      * @param projectName the project name
-     * @param start The instant at which the WRES began execution
-     * @param end The instant at which the WRES finished execution (excluding this)
+     * @param hash the hash of the project datasets
+     * @param executionInterval The instants at which the WRES began and ended execution, not null
      * @param failed Whether or not the execution failed
      * @param error Any error that caused the WRES to crash
-     * @param version The top-level version of WRES (module versions vary)
+     * @param version The top-level version of WRES (module versions vary), not null
+     * @throws NullPointerException if any required input is null
+     * @throws IllegalArgumentException if there are zero arguments
      */
     public void logExecution( String[] arguments,
                               String projectName,
-                              Instant start,
-                              Instant end,
+                              String hash,
+                              Range<Instant> executionInterval,
                               boolean failed,
                               String error,
                               String version )
     {
         Objects.requireNonNull( arguments );
         Objects.requireNonNull( version );
+        Objects.requireNonNull( executionInterval );
 
+        if( arguments.length < 1 )
+        {
+            throw new IllegalArgumentException( "Cannot log an execution with zero arguments." );
+        }
+        
         try
         {
-            LocalDateTime startedAtZulu = LocalDateTime.ofInstant( start, UTC );
-            LocalDateTime endedAtZulu = LocalDateTime.ofInstant( end, UTC );
+            LocalDateTime startedAtZulu = LocalDateTime.ofInstant( executionInterval.lowerEndpoint(), UTC );
+            LocalDateTime endedAtZulu = LocalDateTime.ofInstant( executionInterval.upperEndpoint(), UTC );
 
             // For any arguments that happen to be regular files, read the
             // contents of the first file into the "project" field. Maybe there
@@ -1094,12 +1102,10 @@ public class Database {
             // common case of a single file in the args.
             String project = "";
 
-            List<String> commandsAcceptingFiles = Arrays.asList( "execute",
-                                                                 "ingest" );
-
             // The two operations that might perform a project related operation are 'execute' and 'ingest';
             // these are the only cases where we might be interested in a project configuration
-            if ( commandsAcceptingFiles.contains( arguments[0].toLowerCase() ) )
+            String testArg = arguments[0].toLowerCase();
+            if ( "execute".equals( testArg ) || "ingest".equals( testArg ) ) 
             {
 
                 // Go ahead and assign the second argument as the project;
@@ -1129,6 +1135,7 @@ public class Database {
             script.addTab().addLine("system_version,");
             script.addTab().addLine("project,");
             script.addTab().addLine( "project_name," );
+            script.addTab().addLine("hash,");
             script.addTab().addLine("username,");
             script.addTab().addLine("address,");
             script.addTab().addLine("start_time,");
@@ -1137,6 +1144,7 @@ public class Database {
             script.addTab().addLine("error");
             script.addLine(")");
             script.addLine("VALUES (");
+            script.addTab().addLine("?,");
             script.addTab().addLine("?,");
             script.addTab().addLine("?,");
             script.addTab().addLine("?,");
@@ -1168,6 +1176,7 @@ public class Database {
                     version,
                     project,
                     projectName,
+                    hash,
                     System.getProperty( "user.name" ),
                     // Let server find and report network address
                     startedAtZulu,

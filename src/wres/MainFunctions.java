@@ -23,9 +23,10 @@ import ucar.nc2.dt.grid.GridDataset;
 import wres.config.ProjectConfigPlus;
 import wres.config.Validation;
 import wres.config.generated.ProjectConfig;
-import wres.control.Control;
+import wres.control.Evaluator;
 import wres.control.InternalWresException;
 import wres.control.UserInputException;
+import wres.eventsbroker.BrokerConnectionFactory;
 import wres.io.Operations;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
@@ -125,12 +126,12 @@ final class MainFunctions
 
     private static ExecutionResult execute( SharedResources sharedResources )
     {
-        try ( Control control = new Control( sharedResources.getSystemSettings(),
+        Evaluator evaluator = new Evaluator( sharedResources.getSystemSettings(),
                                              sharedResources.getDatabase(),
-                                             sharedResources.getExecutor() ); )
-        {
-            return control.apply( sharedResources.getArguments() );
-        }
+                                             sharedResources.getExecutor(),
+                                             sharedResources.getBrokerConnectionFactory() );
+
+        return evaluator.evaluate( sharedResources.getArguments() );
     }
 
     /**
@@ -434,21 +435,26 @@ final class MainFunctions
         private final SystemSettings systemSettings;
         private final Database database;
         private final Executor executor;
+        private final BrokerConnectionFactory brokerConnectionFactory;
         private final String[] arguments;
 
         public SharedResources( SystemSettings systemSettings,
                                 Database database,
                                 Executor executor,
+                                BrokerConnectionFactory brokerConnectionFactory,
                                 String[] arguments )
         {
             Objects.requireNonNull( systemSettings );
             Objects.requireNonNull( database );
             Objects.requireNonNull( executor );
             Objects.requireNonNull( arguments );
+            Objects.requireNonNull( brokerConnectionFactory );
+            
             this.systemSettings = systemSettings;
             this.database = database;
             this.executor = executor;
             this.arguments = arguments;
+            this.brokerConnectionFactory = brokerConnectionFactory;
         }
 
         public SystemSettings getSystemSettings()
@@ -469,6 +475,11 @@ final class MainFunctions
         public String[] getArguments()
         {
             return this.arguments;
+        }
+        
+        public BrokerConnectionFactory getBrokerConnectionFactory()
+        {
+            return this.brokerConnectionFactory;
         }
     }
 }

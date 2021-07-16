@@ -17,7 +17,6 @@ import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.control.Control;
 public class Scenario302
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( Scenario302.class );
