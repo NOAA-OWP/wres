@@ -19,6 +19,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +27,7 @@ import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.ProjectConfigs;
 import wres.config.generated.*;
-import wres.control.Control.DatabaseServices;
+import wres.control.Evaluator.DatabaseServices;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.thresholds.ThresholdsByMetric;
@@ -73,8 +74,7 @@ class ProcessorHelper
     private static final String CLIENT_ID = EvaluationEventUtilities.getUniqueId();
 
     /**
-     * Processes a {@link ProjectConfigPlus} using a prescribed {@link ExecutorService} for each of the pairs, 
-     * thresholds and metrics.
+     * Processes an evaluation.
      *
      * Assumes that a shared lock for evaluation has already been obtained.
      * @param systemSettings the system settings
@@ -82,18 +82,18 @@ class ProcessorHelper
      * @param projectConfigPlus the project configuration
      * @param executors the executors
      * @param connections broker connections
-     * @return the paths to which outputs were written
+     * @return the resources written and the hash of the project data
      * @throws WresProcessingException if the evaluation processing fails
      * @throws ProjectConfigException if the declaration is incorrect
      * @throws NullPointerException if any input is null
      * @throws IOException if the creation of outputs fails
      */
 
-    static Set<Path> processEvaluation( SystemSettings systemSettings,
-                                        DatabaseServices databaseServices,
-                                        ProjectConfigPlus projectConfigPlus,
-                                        Executors executors,
-                                        BrokerConnectionFactory connections )
+    static Pair<Set<Path>, String> processEvaluation( SystemSettings systemSettings,
+                                                      DatabaseServices databaseServices,
+                                                      ProjectConfigPlus projectConfigPlus,
+                                                      Executors executors,
+                                                      BrokerConnectionFactory connections )
             throws IOException
     {
         Objects.requireNonNull( systemSettings );
@@ -102,7 +102,8 @@ class ProcessorHelper
         Objects.requireNonNull( executors );
         Objects.requireNonNull( connections );
 
-        Set<Path> returnMe = new TreeSet<>();
+        Set<Path> resources = new TreeSet<>();
+        String projectHash = null;
 
         // Get a unique evaluation identifier
         String evaluationId = EvaluationEventUtilities.getUniqueId();
@@ -175,13 +176,15 @@ class ProcessorHelper
                                                                          connections );
 
             // Open an evaluation, to be closed on completion or stopped on exception
-            evaluation = ProcessorHelper.processProjectConfig( evaluationDetails,
-                                                               systemSettings,
-                                                               databaseServices,
-                                                               executors,
-                                                               sharedWriters,
-                                                               netcdfWriters,
-                                                               outputDirectory );
+            Pair<Evaluation, String> evaluationAndProjectHash = ProcessorHelper.processProjectConfig( evaluationDetails,
+                                                                                                      systemSettings,
+                                                                                                      databaseServices,
+                                                                                                      executors,
+                                                                                                      sharedWriters,
+                                                                                                      netcdfWriters,
+                                                                                                      outputDirectory );
+            evaluation = evaluationAndProjectHash.getLeft();
+            projectHash = evaluationAndProjectHash.getRight();
 
             // Wait for the evaluation to conclude
             evaluation.await();
@@ -205,14 +208,14 @@ class ProcessorHelper
             // Add the paths written by shared writers
             if ( sharedWriters.hasSharedSampleWriters() )
             {
-                returnMe.addAll( sharedWriters.getSampleDataWriters().get() );
+                resources.addAll( sharedWriters.getSampleDataWriters().get() );
             }
             if ( sharedWriters.hasSharedBaselineSampleWriters() )
             {
-                returnMe.addAll( sharedWriters.getBaselineSampleDataWriters().get() );
+                resources.addAll( sharedWriters.getBaselineSampleDataWriters().get() );
             }
 
-            return Collections.unmodifiableSet( returnMe );
+            return Pair.of( Collections.unmodifiableSet( resources ), projectHash );
         }
         // Allow a user-error to be distinguished separately
         catch ( ProjectConfigException userError )
@@ -273,7 +276,7 @@ class ProcessorHelper
             // Add the paths written by external subscribers
             if ( Objects.nonNull( evaluation ) )
             {
-                returnMe.addAll( evaluation.getPathsWrittenBySubscribers() );
+                resources.addAll( evaluation.getPathsWrittenBySubscribers() );
             }
 
             // Clean-up an empty output directory: #67088
@@ -290,7 +293,7 @@ class ProcessorHelper
                 }
             }
 
-            LOGGER.info( "Wrote the following output: {}", returnMe );
+            LOGGER.info( "Wrote the following output: {}", resources );
         }
     }
 
@@ -307,21 +310,21 @@ class ProcessorHelper
      * @param sharedWriters for writing
      * @param outputDirectory the output directory
      * @throws WresProcessingException if the processing failed for any reason
-     * @return the evaluation
+     * @return the evaluation and the hash of the project data
      * @throws IOException if an attempt was made to close the evaluation and it failed
      */
 
-    private static Evaluation processProjectConfig( EvaluationDetails evaluationDetails,
-                                                    SystemSettings systemSettings,
-                                                    DatabaseServices databaseServices,
-                                                    Executors executors,
-                                                    SharedWriters sharedWriters,
-                                                    List<NetcdfOutputWriter> netcdfWriters,
-                                                    Path outputDirectory )
+    private static Pair<Evaluation, String> processProjectConfig( EvaluationDetails evaluationDetails,
+                                                                  SystemSettings systemSettings,
+                                                                  DatabaseServices databaseServices,
+                                                                  Executors executors,
+                                                                  SharedWriters sharedWriters,
+                                                                  List<NetcdfOutputWriter> netcdfWriters,
+                                                                  Path outputDirectory )
             throws IOException
     {
         Evaluation evaluation = null;
-
+        String projectHash = null;
         try
         {
             ProjectConfigPlus projectConfigPlus = evaluationDetails.getProjectConfigPlus();
@@ -343,6 +346,7 @@ class ProcessorHelper
                                                  executors.getIoExecutor(),
                                                  featurefulProjectConfig,
                                                  databaseServices.getDatabaseLockManager() );
+            projectHash = project.getHash();
 
             // Get a unit mapper for the declared or analyzed measurement units
             String desiredMeasurementUnit = project.getMeasurementUnit();
@@ -482,7 +486,7 @@ class ProcessorHelper
             featureReport.report();
 
             // Return an evaluation that was opened
-            return evaluation;
+            return Pair.of( evaluation, projectHash );
         }
         catch ( IOException | SQLException | RuntimeException internalError )
         {

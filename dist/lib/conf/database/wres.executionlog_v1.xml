@@ -161,6 +161,21 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="ExecutionLog - Add hash column"
+               author="James Brown">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="ExecutionLog" schemaName="wres" />
+            <not>
+                <columnExists columnName="hash" tableName="ExecutionLog"
+                              schemaName="wres" />
+            </not>
+        </preConditions>
+        <addColumn tableName="ExecutionLog" schemaName="wres">
+            <column name="hash" type="varchar"
+                    remarks="The top hash (md5) of the left, right and baseline datasets."/>
+        </addColumn>
+    </changeSet>
+
     <changeSet id="ExecutionLog - Extract project_name from prior postgres data"
                author="Jesse Bickel"
                dbms="postgresql">
@@ -177,7 +192,7 @@
     </changeSet>
 
     <changeSet id="ExecutionLog - Add view to wres schema v1.3"
-               author="Jesse Bickel">
+               author="Jesse Bickel, James Brown">
         <preConditions onFail="MARK_RAN">
             <tableExists tableName="ExecutionLog" schemaName="wres" />
             <columnExists tableName="ExecutionLog" columnName="failed"
@@ -194,6 +209,8 @@
                           schemaName="wres" />
             <columnExists tableName="ExecutionLog" columnName="log_id"
                           schemaName="wres" />
+            <columnExists tableName="ExecutionLog" columnName="hash"
+                          schemaName="wres" />
         </preConditions>
         <createView viewName="ProjectExecutions" schemaName="wres" replaceIfExists="true">
             SELECT CASE
@@ -207,7 +224,8 @@
             start_time,
             end_time - start_time as run_time,
             error,
-            log_id
+            log_id,
+            hash
             FROM wres.ExecutionLog
             WHERE arguments LIKE 'execute%'
             ORDER BY start_time;

@@ -26,7 +26,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.ExecutionResult;
-import wres.control.Control;
+import wres.control.Evaluator;
+import wres.eventsbroker.BrokerConnectionFactory;
 import wres.io.concurrency.Executor;
 import wres.io.utilities.Database;
 import wres.system.SystemSettings;
@@ -90,11 +91,14 @@ public class ScenarioHelper
         String args[] = { config.toString() };
         Set<Path> paths = Collections.emptySet();
 
-        try ( Control wresEvaluation = new Control( SYSTEM_SETTINGS,
-                                                    DATABASE,
-                                                    EXECUTOR ) )
+        try ( BrokerConnectionFactory brokerConnectionFactory = BrokerConnectionFactory.of( false ) )
         {
-            ExecutionResult result = wresEvaluation.apply( args );
+            Evaluator wresEvaluation = new Evaluator( SYSTEM_SETTINGS,
+                                                      DATABASE,
+                                                      EXECUTOR,
+                                                      brokerConnectionFactory );
+            
+            ExecutionResult result = wresEvaluation.evaluate( args );
 
             if ( result.failed() )
             {
@@ -102,7 +106,11 @@ public class ScenarioHelper
                                             result.getException() );
             }
 
-            paths = wresEvaluation.get();
+            paths = result.getResources();
+        }
+        catch( IOException e )
+        {
+            LOGGER.warn( "Failed to close a broker connection factory.", e );
         }
 
         return paths;
@@ -111,8 +119,8 @@ public class ScenarioHelper
 
     /**
      * Checks for output validity from WRES and fails if not.  This is used in conjunction
-     * with {@link #assertOutputsMatchBenchmarks(ScenarioInformation, Control)}.
-     * @param@ completedEvaluation The {@link Control} that executed the evaluation.
+     * with {@link #assertOutputsMatchBenchmarks(ScenarioInformation, Evaluator)}.
+     * @param@ completedEvaluation The {@link Evaluator} that executed the evaluation.
      */
     private static void assertWRESOutputValid( ScenarioInformation scenarioInfo,
                                                Set<Path> initialOutputSet )
@@ -127,7 +135,7 @@ public class ScenarioHelper
                 Path secondPath = paths.next();
                 if ( !firstPath.getParent().equals( secondPath.getParent() ) )
                 {
-                    fail( "Not all outputs of WRES Control.applyAsInt were written to the same directory.  "
+                    fail( "Not all outputs of WRES Evaluator.evaluate were written to the same directory.  "
                           + "That is not allowed in system testing." );
                 }
             }
@@ -145,7 +153,7 @@ public class ScenarioHelper
     {
         LOGGER.info( "Asserting that outputs match benchmarks for {}...", scenarioInfo.getName() );
         
-        //Assert the output as being valid and then get the output from the provided Control if so.
+        //Assert the output as being valid and then get the output from the provided Evaluator if so.
         assertWRESOutputValid( scenarioInfo, initialOutputSet );
 
         //Create the directory listing... Temporarily removed for due to sorting issues.

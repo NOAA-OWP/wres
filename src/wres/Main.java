@@ -1,5 +1,6 @@
 package wres;
 
+import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.time.Duration;
 import java.time.Instant;
@@ -13,10 +14,13 @@ import org.slf4j.MDC;
 
 import wres.control.InternalWresException;
 import wres.control.UserInputException;
+import wres.eventsbroker.BrokerConnectionFactory;
 import wres.io.concurrency.Executor;
 import wres.io.utilities.Database;
 import wres.system.SystemSettings;
 import wres.util.Collections;
+
+import com.google.common.collect.Range;
 
 /**
  * @author Christopher Tubbs
@@ -95,16 +99,17 @@ public class Main {
             LOGGER.warn( "Failed to find the process id" );
         }
 
-        MainFunctions.SharedResources sharedResources =
-                new MainFunctions.SharedResources( systemSettings,
-                                                   database,
-                                                   executor,
-                                                   cutArgs );
-
         ExecutionResult result = null;
 
-        try
+        try( BrokerConnectionFactory brokerConnectionFactory = BrokerConnectionFactory.of( false ) )
         {
+            MainFunctions.SharedResources sharedResources =
+                    new MainFunctions.SharedResources( systemSettings,
+                                                       database,
+                                                       executor,
+                                                       brokerConnectionFactory,
+                                                       cutArgs );
+            
             result = MainFunctions.call( operation, sharedResources );
             Instant endedExecution = Instant.now();
             String exception = null;
@@ -118,8 +123,8 @@ public class Main {
                            .logExecution(
                                      args,
                                      result.getName(),
-                                     beganExecution,
-                                     endedExecution,
+                                     result.getHash(),
+                                     Range.open( beganExecution, endedExecution ),
                                      result.failed(),
                                      exception,
                                      Main.getVersion() );
@@ -130,6 +135,10 @@ public class Main {
                                  + "' completed unsuccessfully";
                 LOGGER.error( message, result.getException() );
             }
+        }
+        catch ( IOException e )
+        {
+            LOGGER.warn( "Failed to close broker connections." );
         }
         finally
         {
@@ -177,7 +186,6 @@ public class Main {
     {
         return version.getVerboseRuntimeDescription();
     }
-
 
     /**
      * Print some hints to stdout about log files.

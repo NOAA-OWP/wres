@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory;
 
 import static org.junit.Assert.assertEquals;
 
-import wres.control.Control;
 public class Scenario001
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( Scenario001.class );
