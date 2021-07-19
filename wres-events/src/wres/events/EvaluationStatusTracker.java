@@ -500,7 +500,10 @@ class EvaluationStatusTracker implements Closeable
         this.negotiatedSubscriberLatches.forEach( ( a, b ) -> b.countDown() );
         this.subscriberNegotiator.stopNegotiation();
 
-        // Stop the evaluation, which also stops flow control
+        // Stop the flow controller for the current thread if the lock is held by this thread
+        this.flowController.stop();
+        
+        // Stop the evaluation
         this.getEvaluation()
             .stop( null );
 
