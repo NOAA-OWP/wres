@@ -109,6 +109,9 @@
             <xs:enumeration value="nwm_short_range_no_da_channel_rt_puertorico" />
             <xs:enumeration value="nwm_medium_range_ensemble_channel_rt_conus" />
             <xs:enumeration value="nwm_medium_range_deterministic_channel_rt_conus" />
+            <xs:enumeration value="nwm_medium_range_ensemble_channel_rt_conus_hourly" />
+            <xs:enumeration value="nwm_medium_range_deterministic_channel_rt_conus_hourly" />
+            <xs:enumeration value="nwm_medium_range_no_da_deterministic_channel_rt_conus" />
             <xs:enumeration value="nwm_analysis_assim_channel_rt_conus" />
             <xs:enumeration value="nwm_analysis_assim_no_da_channel_rt_conus" />
             <xs:enumeration value="nwm_analysis_assim_extend_channel_rt_conus" />

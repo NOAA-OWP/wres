@@ -102,6 +102,18 @@ class NWMProfiles
         {
             return NWMProfiles.getMediumRangeDeterministicChannelRtConus();
         }
+        else if ( shortHand.equals( InterfaceShortHand.NWM_MEDIUM_RANGE_ENSEMBLE_CHANNEL_RT_CONUS_HOURLY ) )
+        {
+            return NWMProfiles.getMediumRangeEnsembleChannelRtConusHourly();
+        }
+        else if ( shortHand.equals( InterfaceShortHand.NWM_MEDIUM_RANGE_DETERMINISTIC_CHANNEL_RT_CONUS_HOURLY ) )
+        {
+            return NWMProfiles.getMediumRangeDeterministicChannelRtConusHourly();
+        }
+        else if ( shortHand.equals( InterfaceShortHand.NWM_MEDIUM_RANGE_NO_DA_DETERMINISTIC_CHANNEL_RT_CONUS ) )
+        {
+            return NWMProfiles.getMediumRangeNoDaDeterministicChannelRtConus();
+        }
         else if ( shortHand.equals( InterfaceShortHand.NWM_ANALYSIS_ASSIM_CHANNEL_RT_CONUS ) )
         {
             return NWMProfiles.getAnalysisAssimChannelRtConus();
@@ -207,6 +219,54 @@ class NWMProfiles
                                "conus",
                                Duration.ofHours( 6 ),
                                true,
+                               Duration.ZERO );
+    }
+
+    private static NWMProfile getMediumRangeEnsembleChannelRtConusHourly()
+    {
+        return new NWMProfile( 68*3,
+                               7,
+                               Duration.ofHours( 1 ),
+                               true,
+                               "medium_range",
+                               "channel_rt",
+                               NWMProfile.TimeLabel.f,
+                               "medium_range",
+                               "conus",
+                               Duration.ofHours( 6 ),
+                               true,
+                               Duration.ZERO );
+    }
+
+    private static NWMProfile getMediumRangeDeterministicChannelRtConusHourly()
+    {
+        return new NWMProfile( 80*3,
+                               1,
+                               Duration.ofHours( 1 ),
+                               true,
+                               "medium_range",
+                               "channel_rt",
+                               NWMProfile.TimeLabel.f,
+                               "medium_range",
+                               "conus",
+                               Duration.ofHours( 6 ),
+                               true,
+                               Duration.ZERO );
+    }
+
+    private static NWMProfile getMediumRangeNoDaDeterministicChannelRtConus()
+    {
+        return new NWMProfile( 80,
+                               1,
+                               Duration.ofHours( 3 ),
+                               true,
+                               "medium_range_no_da",
+                               "channel_rt",
+                               NWMProfile.TimeLabel.f,
+                               "medium_range_no_da",
+                               "conus",
+                               Duration.ofHours( 6 ),
+                               false,
                                Duration.ZERO );
     }
 
