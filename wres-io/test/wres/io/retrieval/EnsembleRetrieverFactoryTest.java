@@ -84,7 +84,7 @@ public class EnsembleRetrieverFactoryTest
      * A project_id for testing;
      */
 
-    private static final Integer PROJECT_ID = 1;
+    private static final long PROJECT_ID = 1;
 
 
     /**

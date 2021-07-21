@@ -33,7 +33,7 @@ public class Variables
      * @return A list of all of the names of variables in forecasts that may be evaluated for the project
      * @throws SQLException Thrown if an error was encountered while communicating with the database
      */
-    public List<String> getAvailableVariables( final Integer projectID,
+    public List<String> getAvailableVariables( final long projectID,
                                                final String projectMember )
             throws SQLException
     {
@@ -61,7 +61,7 @@ public class Variables
 	 * @return Whether or not there is any forecast data for the variable within the project
 	 * @throws SQLException Thrown if a database operation fails
 	 */
-    public boolean isValid( final Integer projectID,
+    public boolean isValid( final long projectID,
                             final String projectMember,
                             final String variableName )
             throws SQLException

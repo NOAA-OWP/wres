@@ -385,7 +385,7 @@ public class Projects
         String queryStart = "SELECT source_id, hash "
                             + "FROM wres.Source "
                             + "WHERE source_id in ";
-        StringJoiner idJoiner = new StringJoiner( ",", "(", ");" );
+        StringJoiner idJoiner = new StringJoiner( ",", "(", ")" );
 
         for ( int i = 0; i < ids.size(); i++ )
         {
@@ -399,6 +399,8 @@ public class Projects
         {
             script.addArgument( id );
         }
+
+        script.setMaxRows( ids.size() );
 
         try ( DataProvider dataProvider = script.getData() )
         {

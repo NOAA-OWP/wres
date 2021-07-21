@@ -74,8 +74,8 @@ public class Project
      */
     private final Object featureLock = new Object();
 
-    private Integer projectId = null;
-    
+    private long projectId;
+
     /**
      * The measurement unit, which is the declared unit, if available, else the most commonly occurring unit among the 
      * project sources, with a preference for the mostly commonly occurring right-sided source unit. See 
@@ -732,7 +732,7 @@ public class Project
         return this.getBaseline() != null;
     }
 
-    public Integer getId()
+    public long getId()
     {
         return this.projectId;
     }
@@ -774,8 +774,7 @@ public class Project
         if ( this.performedInsert )
         {
             this.projectId = saveScript.getInsertedIds()
-                                       .get( 0 )
-                                       .intValue();
+                                       .get( 0 );
         }
         else
         {
@@ -785,12 +784,13 @@ public class Project
             scriptWithId.setUseTransaction( false );
             scriptWithId.addLine( "SELECT project_id" );
             scriptWithId.addLine( "FROM wres.Project P" );
-            scriptWithId.addLine( "WHERE P.hash = ?;" );
+            scriptWithId.addLine( "WHERE P.hash = ?" );
             scriptWithId.addArgument( this.getHash() );
+            scriptWithId.setMaxRows( 1 );
 
             try ( DataProvider data = scriptWithId.getData() )
             {
-                this.projectId = data.getInt( PROJECT_ID );
+                this.projectId = data.getLong( PROJECT_ID );
             }
         }
 

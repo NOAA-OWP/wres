@@ -29,7 +29,7 @@ final class ProjectScriptGenerator
      */
 
     static DataScripter createIntersectingFeaturesScript( Database database,
-                                                          int projectId,
+                                                          long projectId,
                                                           List<Feature> featureDeclarations,
                                                           boolean hasBaseline )
     {
@@ -151,6 +151,7 @@ final class ProjectScriptGenerator
         return script;
     }
 
+
     /**
      * Creates a script that retrieves the mostly commonly occurring measurement unit among all sources for each side of
      * data (left, right or baseline) and then selects the right or left or baseline among them as the representative
@@ -162,12 +163,12 @@ final class ProjectScriptGenerator
      */
 
     static DataScripter createUnitScript( Database database,
-                                          int projectId )
+                                          long projectId )
     {
         DataScripter script = new DataScripter( database );
 
-        script.addLine( "/* For a given project, select the most common measurement unit (by source)" );
-        script.addLine( "   for the right-ish sources. All time-series have units. */" );
+        /* For a given project, select the most common measurement unit (by source)" );
+           for the right-ish sources. All time-series have units. */
         script.addLine( "SELECT MU.unit_name," );
         script.addTab().addLine( "T.measurementunit_id," );
         script.addTab().addLine( "PS.member" );
@@ -176,17 +177,19 @@ final class ProjectScriptGenerator
         script.addTab( 2 ).addLine( "ON PS.source_id = T.source_id" );
         script.addTab().addLine( "INNER JOIN wres.MeasurementUnit MU" );
         script.addTab( 2 ).addLine( "ON MU.measurementunit_id = T.measurementunit_id" );
-        script.addLine( "WHERE PS.project_id=", projectId );
+        script.addLine( "WHERE PS.project_id = ?" );
+        script.addArgument( projectId );
         script.addTab().addLine( "AND PS.member='right'" );
         script.addLine( "GROUP BY T.measurementunit_id," );
         script.addTab().addLine( "PS.member," );
         script.addTab().addLine( "MU.unit_name" );
         script.addLine( "ORDER BY COUNT( T.measurementunit_id ) DESC" );
-        script.addLine( "LIMIT 1;" );
+        script.setMaxRows( 1 );
 
         return script;
     }
-    
+
+
     /**
      * Returns a script that checks whether the condition on the ensemble name is valid.
      *  
@@ -199,7 +202,7 @@ final class ProjectScriptGenerator
 
     static DataScripter getIsValidEnsembleCondition( Database database,
                                                      String ensembleName,
-                                                     int projectId,
+                                                     long projectId,
                                                      boolean exclude )
     {
         Objects.requireNonNull( database );
@@ -212,10 +215,8 @@ final class ProjectScriptGenerator
             condition = "!=";
         }
 
-        String validName = "'" + ProjectScriptGenerator.validateStringForSql( ensembleName ) + "'";
-
-        script.addLine( "/* For a given project, determine whether an ensemble condition will select" );
-        script.addLine( "   some time-series data. */" );
+        /* For a given project, determine whether an ensemble condition will select
+           some time-series data. */
         script.addLine( "SELECT EXISTS (" );
         script.addTab().addLine( "SELECT 1" );
         script.addTab().addLine( "FROM wres.Ensemble E" );
@@ -223,13 +224,16 @@ final class ProjectScriptGenerator
         script.addTab( 2 ).addLine( "ON TS.ensemble_id = E.ensemble_id" );
         script.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
         script.addTab( 2 ).addLine( "ON PS.source_id = TS.source_id" );
-        script.addTab().addLine( "WHERE PS.project_id = ", projectId );
-        script.addTab( 2 ).addLine( "AND E.ensemble_name ", condition, validName );
+        script.addTab().addLine( "WHERE PS.project_id = ?" );
+        script.addArgument( projectId );
+        script.addTab( 2 ).addLine( "AND E.ensemble_name ", condition, " ?" );
+        script.addArgument( ensembleName );
         script.addLine( ");" );
 
         return script;
     }
-    
+
+
     /**
      * Returns a temporary table name. Can't use the current time in millis as
      * sole seed because the collision to avoid would be when this method runs
@@ -238,7 +242,7 @@ final class ProjectScriptGenerator
      * @return A temporary table name.
      */
 
-    private static String generateTempTableName( int projectId,
+    private static String generateTempTableName( long projectId,
                                                  List<Feature> features )
     {
         Random random = new Random( Instant.now()

@@ -27,6 +27,7 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
+
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindowOuter;
@@ -111,7 +112,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * The <code>wres.Project.project_id</code>.
      */
 
-    private final Integer projectId;
+    private final long projectId;
 
     /**
      * The feature.
@@ -224,7 +225,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * Creates one or more {@link TimeSeries} from a script that retrieves time-series data.
      * 
      * @param <S> the time-series data type
-     * @param script the script
+     * @param scripter the scripter
      * @param mapper a function that retrieves a time-series value from a prescribed column in a {@link DataProvider}
      * @return the time-series
      * @throws NullPointerException if either input is null
@@ -239,17 +240,17 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         try ( Connection connection = database.getConnection();
               DataProvider provider = scripter.buffer( connection ) )
         {
-            Map<Integer, TimeSeries.Builder<S>> builders = new TreeMap<>();
+            Map<Long, TimeSeries.Builder<S>> builders = new TreeMap<>();
 
             // Time-series are duplicated per common source in wres.ProjectSource, 
             // so re-duplicate here. See #56214-272
-            Map<Integer, Integer> seriesCounts = new HashMap<>();
+            Map<Long, Integer> seriesCounts = new HashMap<>();
 
             TimeScaleOuter lastScale = null; // Record of last scale
 
             while ( provider.next() )
             {
-                int seriesId = provider.getInt( "series_id" );
+                long seriesId = provider.getLong( "series_id" );
                 int seriesCount = 1;
 
                 // Records occurrences?
@@ -443,10 +444,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     void addProjectFeatureVariableAndMemberConstraints( DataScripter script, int tabsIn )
     {
         // Project identifier
-        if ( Objects.nonNull( this.getProjectId() ) )
-        {
-            this.addWhereOrAndClause( script, tabsIn, "PS.project_id = ?", this.getProjectId() );
-        }
+        this.addWhereOrAndClause( script, tabsIn, "PS.project_id = ?", this.getProjectId() );
 
         // Variable name
         if ( Objects.nonNull( this.getVariableName() ) )
@@ -515,7 +513,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @return the <code>wres.Project.project_id</code>
      */
 
-    Integer getProjectId()
+    long getProjectId()
     {
         return this.projectId;
     }
@@ -638,7 +636,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     void validateForMultiSeriesRetrieval()
     {
         // Check for constraints
-        if ( Objects.isNull( this.getProjectId() ) )
+        if ( this.getProjectId() <= 0 )
         {
             throw new DataAccessException( "There is no projectId associated with this Data Access Object: "
                                            + "cannot determine the time-series identifiers without a projectID." );
@@ -821,12 +819,12 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @return a stream of time-series
      */
 
-    private <S> Stream<TimeSeries<S>> composeWithDuplicates( Map<Integer, TimeSeries.Builder<S>> builders,
-                                                             Map<Integer, Integer> seriesCounts )
+    private <S> Stream<TimeSeries<S>> composeWithDuplicates( Map<Long, TimeSeries.Builder<S>> builders,
+                                                             Map<Long, Integer> seriesCounts )
     {
         List<TimeSeries<S>> streamMe = new ArrayList<>();
 
-        for ( Map.Entry<Integer, TimeSeries.Builder<S>> nextSeries : builders.entrySet() )
+        for ( Map.Entry<Long, TimeSeries.Builder<S>> nextSeries : builders.entrySet() )
         {
             int count = seriesCounts.get( nextSeries.getKey() );
             for ( int i = 0; i < count; i++ )
@@ -1223,7 +1221,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * The <code>wres.Project.project_id</code>.
          */
 
-        private Integer projectId;
+        private long projectId;
 
         /**
          * Variable name.
@@ -1298,7 +1296,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * @return the builder
          */
 
-        TimeSeriesRetrieverBuilder<S> setProjectId( int projectId )
+        TimeSeriesRetrieverBuilder<S> setProjectId( long projectId )
         {
             this.projectId = projectId;
             return this;

@@ -122,6 +122,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, String>
             scriptWithId.addLine( "FROM wres.Ensemble" );
             scriptWithId.addLine( "WHERE ensemble_name = ?" );
             scriptWithId.addArgument( this.ensembleName );
+            scriptWithId.setMaxRows( 1 );
 
             try ( DataProvider data = scriptWithId.getData() )
             {
