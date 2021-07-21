@@ -24,10 +24,10 @@ RUN apk add tar && \
 
 #############
 # Final image
-FROM registry.access.redhat.com/ubi8/ubi:8.4-206
+FROM registry.access.redhat.com/ubi8/ubi:8.4-206.1626828523
 
 RUN dnf install -y \
-    java-11-openjdk-headless-1:11.0.11.0.9-2.el8_4  \
+    java-11-openjdk-headless-1:11.0.12.0.7-0.el8_4 \
     procps-ng-3.3.15-6.el8 \
     iproute-5.9.0-4.el8 \
     && dnf clean all
