@@ -131,7 +131,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
                 notFoundInCache.setLead( data.getInt( "lead" ) );
                 notFoundInCache.setOutputTime( data.getString( "output_time" ) );
                 notFoundInCache.setSourcePath( URI.create( data.getString( "path" ) ) );
-                notFoundInCache.setID( data.getInt( "source_id" ) );
+                notFoundInCache.setID( data.getLong( "source_id" ) );
                 notFoundInCache.setIsPointData( data.getBoolean( "is_point_data" ) );
 
                 this.addElement( notFoundInCache );
@@ -208,7 +208,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
                     sourceDetails.setLead( data.getInt( "lead" ) );
                     sourceDetails.setOutputTime( data.getString( "output_time" ) );
                     sourceDetails.setSourcePath( URI.create( data.getString( "path" ) ) );
-                    sourceDetails.setID( data.getInt( "source_id" ) );
+                    sourceDetails.setID( data.getLong( "source_id" ) );
                     sourceDetails.setIsPointData( data.getBoolean( "is_point_data" ) );
 
                     this.addElement( sourceDetails );
@@ -293,35 +293,5 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 	protected int getMaxDetails() {
 		return MAX_DETAILS;
 	}
-
-	private void initialize( Database database )
-    {
-        try
-        {
-            DataScripter script = new DataScripter( database );
-
-            script.addLine("SELECT source_id,");
-            script.addTab().addLine("path,");
-            script.addTab().addLine("CAST(output_time AS TEXT) AS output_time,");
-            script.addTab().addLine("hash,");
-            script.addTab().addLine("is_point_data");
-            script.addLine("FROM wres.Source");
-            script.addLine("LIMIT ", MAX_DETAILS, ";");
-
-            try (DataProvider sources = script.getData())
-            {
-                this.populate( sources );
-            }
-            
-            LOGGER.debug( "Finished populating the DataSource details." );
-        }
-        catch (SQLException error)
-        {
-            // Failure to pre-populate cache should not affect primary outputs.
-            LOGGER.warn( "An error was encountered when trying to populate the Source cache.",
-                         error );
-        }
-    }
-
 
 }

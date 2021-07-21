@@ -86,6 +86,11 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	 */
 	protected abstract int getMaxDetails();
 
+	/**
+	 * @param <T> the type of detail
+	 * @param id the identifier key
+	 * @return the mapped value
+	 */
 	T get ( long id )
 	{
 		return this.getDetails().get(id);

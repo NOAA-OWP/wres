@@ -225,7 +225,7 @@ final class ProjectScriptGenerator
         script.addTab( 2 ).addLine( "ON PS.source_id = TS.source_id" );
         script.addTab().addLine( "WHERE PS.project_id = ", projectId );
         script.addTab( 2 ).addLine( "AND E.ensemble_name ", condition, validName );
-        script.addLine( ")" );
+        script.addLine( ");" );
 
         return script;
     }
