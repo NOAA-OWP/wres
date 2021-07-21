@@ -131,7 +131,7 @@ public class PoolsGeneratorTest
         // Mock the sufficient elements of Project
         Project project = Mockito.mock( Project.class );
         Mockito.when( project.getProjectConfig() ).thenReturn( projectConfig );
-        Mockito.when( project.getId() ).thenReturn( 12345 );
+        Mockito.when( project.getId() ).thenReturn( 12345L );
         Mockito.when( project.getLeftVariableName() ).thenReturn( "DISCHARGE" );
         Mockito.when( project.getRightVariableName() ).thenReturn( STREAMFLOW );
         Mockito.when( project.getBaselineVariableName() ).thenReturn( null );
@@ -239,7 +239,7 @@ public class PoolsGeneratorTest
         // Mock the sufficient elements of Project
         Project project = Mockito.mock( Project.class );
         Mockito.when( project.getProjectConfig() ).thenReturn( projectConfig );
-        Mockito.when( project.getId() ).thenReturn( 12345 );
+        Mockito.when( project.getId() ).thenReturn( 12345L );
         Mockito.when( project.getLeftVariableName() ).thenReturn( "DISCHARGE" );
         Mockito.when( project.getRightVariableName() ).thenReturn( STREAMFLOW );
         Mockito.when( project.getBaselineVariableName() ).thenReturn( null );

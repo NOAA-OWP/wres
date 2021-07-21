@@ -116,7 +116,7 @@ public class PoolFactory
         DataSourceConfig baselineConfig = inputsConfig.getBaseline();
         PoolFactory.validateRequestedPoolsAgainstDeclaration( inputsConfig, false );
 
-        int projectId = project.getId();
+        long projectId = project.getId();
 
         LOGGER.debug( "Creating pool suppliers for project '{}' and feature '{}'.",
                       projectId,
@@ -235,7 +235,7 @@ public class PoolFactory
         Inputs inputsConfig = projectConfig.getInputs();
         PoolFactory.validateRequestedPoolsAgainstDeclaration( inputsConfig, true );
 
-        int projectId = project.getId();
+        long projectId = project.getId();
 
         LOGGER.debug( "Creating pool suppliers for project '{}' and feature '{}'.",
                       projectId,

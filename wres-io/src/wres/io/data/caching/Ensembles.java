@@ -60,7 +60,7 @@ public class Ensembles extends Cache<EnsembleDetails, String> {
         while (data.next()) {
             detail = new EnsembleDetails();
             detail.setEnsembleName(data.getString("ensemble_name"));
-            detail.setID(data.getInt("ensemble_id"));
+            detail.setID( data.getLong( "ensemble_id" ) );
             this.add( detail );
         }
     }

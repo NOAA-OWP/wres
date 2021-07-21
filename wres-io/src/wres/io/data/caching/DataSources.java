@@ -68,7 +68,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
             detail.setSourcePath( URI.create( data.getString( "path" ) ) );
             detail.setHash( data.getString( "hash" ) );
             detail.setIsPointData( data.getBoolean( "is_point_data" ) );
-            detail.setID( data.getInt( "source_id" ) );
+            detail.setID( data.getLong( "source_id" ) );
 
             this.getKeyIndex().put( detail.getKey(), detail.getId() );
             this.getDetails().put( detail.getId(), detail );
@@ -117,8 +117,9 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         script.setHighPriority( true );
         script.addLine( "SELECT source_id, path, output_time::text, lead, hash, is_point_data" );
         script.addLine( "FROM wres.Source" );
-        script.addLine( "WHERE source_id = ?;" );
+        script.addLine( "WHERE source_id = ?" );
         script.addArgument( id );
+        script.setMaxRows( 1 );
 
         SourceDetails notFoundInCache = null;
 
@@ -195,9 +196,9 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 
             script.addLine("SELECT source_id, path, output_time::text, lead, hash, is_point_data");
             script.addLine("FROM wres.Source");
-            script.addLine("WHERE hash = ?;");
-
+            script.addLine("WHERE hash = ?");
             script.addArgument( hash );
+            script.setMaxRows( 1 );
 
             try (DataProvider data = script.getData())
             {
@@ -239,7 +240,9 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
             DataScripter script = new DataScripter( database );
             script.addLine("SELECT source_id, path, output_time::text, lead, hash, is_point_data");
             script.addLine("FROM wres.Source");
-            script.addLine("WHERE hash = '", hash, "';");
+            script.addLine( "WHERE hash = ?" );
+            script.addArgument( hash );
+            script.setMaxRows( 1 );
 
             try (DataProvider data = script.getData())
             {

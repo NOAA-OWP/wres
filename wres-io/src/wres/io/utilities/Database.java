@@ -56,6 +56,31 @@ public class Database {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Database.class);
 
+    /**
+     * Database types supporting "analyze".
+     */
+
+    private static final Set<String> DBMS_WITH_ANALYZE = Set.of( "postgresql",
+                                                                 "h2" );
+
+    /**
+     * Database types having a "user" function.
+     */
+
+    private static final Set<String> DBMS_WITH_USER_FUNCTION = Set.of( "h2",
+                                                                       "mariadb",
+                                                                       "mysql" );
+
+    /**
+     * Database types supporting "limit" clauses.
+     */
+
+    private static final Set<String> DBMS_WITH_LIMIT = Set.of( "postgresql",
+                                                               "h2",
+                                                               "mariadb",
+                                                               "sqlite",
+                                                               "mysql" );
+
 	/**
 	 * The standard priority set of connections to the database
 	 */
@@ -1207,16 +1232,14 @@ public class Database {
 
     private boolean supportsAnalyze()
     {
-        Set<String> dbsWithAnalyze = Set.of( "h2", "postgresql" );
         String type = this.getType();
-        return dbsWithAnalyze.contains( type );
+        return DBMS_WITH_ANALYZE.contains( type );
     }
 
     private boolean supportsUserFunction()
     {
-        Set<String> dbsWithUserFunction = Set.of( "h2", "mariadb" );
         String type = this.getType();
-        return dbsWithUserFunction.contains( type );
+        return DBMS_WITH_USER_FUNCTION.contains( type );
     }
 
     private boolean supportsTruncateCascade()
@@ -1227,9 +1250,7 @@ public class Database {
 
     boolean supportsLimit()
     {
-        Set<String> dbsWithLimit = Set.of( "postgresql", "h2", "mariadb",
-                                           "sqlite", "mysql" );
         String type = this.getType();
-        return dbsWithLimit.contains( type );
+        return DBMS_WITH_LIMIT.contains( type );
     }
 }
