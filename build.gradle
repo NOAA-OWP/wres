@@ -257,7 +257,7 @@ project(':wres-system')
         runtimeOnly 'com.mattbertolini:liquibase-slf4j:4.0.0'
 
         // connection pooling:
-        compile 'com.zaxxer:HikariCP:4.0.3'
+        compile 'com.zaxxer:HikariCP:5.0.0'
 
         // Because org.postgresql:postgresql uses JUL logging, bridge it, here
         // at compile time because we need to expose a class to JUL.
@@ -355,7 +355,7 @@ project(':wres-io')
         implementation 'com.h2database:h2:1.4.200'
 
         // connection pooling:
-        compile 'com.zaxxer:HikariCP:4.0.3'
+        compile 'com.zaxxer:HikariCP:5.0.0'
 
         // wres.io.utilities uses javax.json.* imports
         compile 'org.glassfish:javax.json:1.1.4'
@@ -370,7 +370,7 @@ project(':wres-io')
         compile 'org.jetbrains.kotlin:kotlin-stdlib:1.5.21'
 
         // To accurately detect mime types of files.
-        implementation 'org.apache.tika:tika-core:1.26'
+        implementation 'org.apache.tika:tika-core:1.27'
 
         // To cache
         implementation 'com.github.ben-manes.caffeine:caffeine:3.0.3'
@@ -1018,10 +1018,10 @@ project(':wres-tasker')
         compile 'com.github.ben-manes.caffeine:caffeine:3.0.3'
 
         // To accurately detect mime types of files.
-        compile 'org.apache.tika:tika-core:1.26'
+        compile 'org.apache.tika:tika-core:1.27'
 
         // To persist job metadata while keeping it relatively fast
-        implementation 'org.redisson:redisson:3.15.6'
+        implementation 'org.redisson:redisson:3.16.0'
 
         // For ToStringBuilder
         compile 'org.apache.commons:commons-lang3:3.12.0'
