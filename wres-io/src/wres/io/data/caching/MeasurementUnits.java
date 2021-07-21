@@ -2,12 +2,7 @@ package wres.io.data.caching;
 
 import java.sql.SQLException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import wres.io.data.details.MeasurementDetails;
-import wres.io.utilities.DataProvider;
-import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 
 /**
@@ -17,8 +12,6 @@ import wres.io.utilities.Database;
 public class MeasurementUnits extends Cache<MeasurementDetails, String>
 {
     private static final int MAX_DETAILS = 100;
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(MeasurementUnits.class);
 
     private final Object detailLock = new Object();
     private final Object keyLock = new Object();
@@ -45,17 +38,6 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String>
     protected Object getKeyLock()
     {
         return this.keyLock;
-    }
-
-    private void populate(DataProvider data)
-    {
-        while (data.next())
-        {
-            if (!data.isNull( "unit_name" ))
-            {
-                this.getKeyIndex().put( data.getString( "unit_name" ), data.getLong( "measurementunit_id" ) );
-            }
-        }
     }
 
 
@@ -89,32 +71,4 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String>
 		return MAX_DETAILS;
 	}
 	
-	/**
-	 * Loads all pre-existing data into the instance cache
-	 */
-    private synchronized void initialize()
-	{
-        try
-        {
-            Database database = this.getDatabase();
-            DataScripter script = new DataScripter( database );
-            script.setHighPriority( true );
-
-            script.addLine("SELECT measurementunit_id, unit_name");
-            script.addLine("FROM wres.MeasurementUnit");
-            script.add("LIMIT ", MAX_DETAILS, ";");
-
-            try (DataProvider data = script.getData())
-            {
-                this.populate( data );
-            }
-            LOGGER.debug( "Finished populating the MeasurementUnit details." );
-        }
-        catch (SQLException error)
-        {
-            // Failure to pre-populate cache should not affect primary outputs.
-            LOGGER.warn( "An error was encountered when trying to populate the Measurement cache.",
-                         error );
-        }
-	}
 }

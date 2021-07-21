@@ -1,13 +1,11 @@
 package wres.io.data.caching;
 
 import java.sql.SQLException;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.TreeMultiset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,22 +52,6 @@ public class Ensembles extends Cache<EnsembleDetails, String> {
 	{
 		return this.keyLock;
 	}
-
-    public Collection<EnsembleDetails> getEnsembleDetails(final Collection<Integer> ensembleIDs)
-    {
-        TreeMultiset<EnsembleDetails> ensembleDetails = TreeMultiset.create();
-
-        for (Integer id : ensembleIDs)
-        {
-            if ( this.getDetails()
-                     .containsKey( id ))
-            {
-                ensembleDetails.add( this.get( id ));
-            }
-        }
-
-        return ensembleDetails;
-    }
 
 	private void populate(DataProvider data)
     {
