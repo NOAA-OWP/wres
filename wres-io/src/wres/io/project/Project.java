@@ -5,12 +5,15 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.time.MonthDay;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,6 +23,8 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.DurationBoundsType;
 import wres.config.generated.DurationUnit;
+import wres.config.generated.EnsembleCondition;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.FeatureTuple;
@@ -205,14 +210,17 @@ public class Project
 
                     String member = dataProvider.getString( "member" );
 
-                    LOGGER.debug( "Determined the measurement unit by analyzing the project sources. The analyzed "
-                                  + "measurement unit is {} and corresponds to the most commonly occurring unit among "
-                                  + "time-series from {} sources. The script used to discover the measurement unit "
-                                  + "was: {}{}",
-                                  this.measurementUnit,
-                                  member,
-                                  System.lineSeparator(),
-                                  scripter );
+                    if ( LOGGER.isDebugEnabled() )
+                    {
+                        LOGGER.debug( "Determined the measurement unit by analyzing the project sources. The analyzed "
+                                      + "measurement unit is {} and corresponds to the most commonly occurring unit among "
+                                      + "time-series from {} sources. The script used to discover the measurement unit "
+                                      + "was: {}{}",
+                                      this.measurementUnit,
+                                      member,
+                                      System.lineSeparator(),
+                                      scripter );
+                    }
                 }
             }
         }
@@ -230,7 +238,7 @@ public class Project
     public void prepareForExecution() throws SQLException
     {
         LOGGER.trace( "prepareForExecution() entered" );
-        Database database = this.getDatabase();
+        Database db = this.getDatabase();
 
         // Check for features that potentially have intersecting values.
         // The query in getIntersectingFeatures checks that there is some
@@ -238,7 +246,7 @@ public class Project
         synchronized ( this.featureLock )
         {
             LOGGER.debug( "Features so far: {}", this.features );
-            this.features = this.getIntersectingFeatures( database );
+            this.features = this.getIntersectingFeatures( db );
             LOGGER.debug( "Features after getting intersecting features: {}",
                           this.features );
         }
@@ -248,8 +256,101 @@ public class Project
             throw new NoDataException( "No features had data on both the left and the right for the variables "
                                        + "specified." );
         }
+        
+        // Validate any ensemble conditions
+        this.validateEnsembleConditions();
+    }
+    
+    /**
+     * Checks that the union of ensemble conditions will select some data, otherwise throws an exception.
+     * 
+     * @throws NoDataException if the conditions select no data
+     * @throws SQLException if one or more ensemble conditions could not be evaluated
+     */
+    
+    private void validateEnsembleConditions() throws SQLException
+    {
+        DataSourceConfig left = this.getProjectConfig().getInputs().getLeft();
+        DataSourceConfig right = this.getProjectConfig().getInputs().getRight();
+        DataSourceConfig baseline = this.getProjectConfig().getInputs().getBaseline();
+     
+        // Show all errors at once rather than drip-feeding
+        List<String> failed = new ArrayList<>();
+        List<String> failedLeft = this.getInvalidEnsembleConditions( LeftOrRightOrBaseline.LEFT, left );
+        List<String> failedRight = this.getInvalidEnsembleConditions( LeftOrRightOrBaseline.RIGHT, right );
+        List<String> failedBaseline = this.getInvalidEnsembleConditions( LeftOrRightOrBaseline.BASELINE, baseline );
+        
+        failed.addAll( failedLeft );
+        failed.addAll( failedRight );
+        failed.addAll( failedBaseline );
+        
+        if ( !failed.isEmpty() )
+        {
+            throw new NoDataException( "Of the filters that were defined for ensemble names, "
+                                       + failed.size()
+                                       + " of those filters did not select any data. Fix the declared filters to "
+                                       + "ensure that each filter selects some data. The invalid filters are: "
+                                       + failed
+                                       + "." );
+        }
     }
 
+    /**
+     * Checks for any invalid ensemble conditions and returns a string representation of the invalid conditions.
+     * 
+     * @param lrb the orientation of the source
+     * @param config the source configuration whose ensemble conditions should be validated
+     * @return a string representation of the invalid conditions 
+     * @throws SQLException if one or more ensemble conditions could not be evaluated
+     */
+
+    private List<String> getInvalidEnsembleConditions( LeftOrRightOrBaseline lrb,
+                                                       DataSourceConfig config )
+            throws SQLException
+    {
+        List<String> failed = new ArrayList<>();
+
+        if ( Objects.nonNull( config ) && !config.getEnsemble().isEmpty() )
+        {
+            List<EnsembleCondition> conditions = config.getEnsemble();
+            for ( EnsembleCondition condition : conditions )
+            {
+                DataScripter script = ProjectScriptGenerator.getIsValidEnsembleCondition( this.getDatabase(),
+                                                                                          condition.getName(),
+                                                                                          this.getId(),
+                                                                                          condition.isExclude() );
+
+                LOGGER.debug( "getIsValidEnsembleCondition will run: {}", script );
+
+                try ( Connection connection = database.getConnection();
+                      DataProvider dataProvider = script.buffer( connection ) )
+                {
+                    while ( dataProvider.next() )
+                    {
+                        boolean dataExists = dataProvider.getBoolean( "exists" );
+
+                        if ( !dataExists )
+                        {
+                            ToStringBuilder builder =
+                                    new ToStringBuilder( condition,
+                                                         ToStringStyle.SHORT_PREFIX_STYLE ).append( "orientation", lrb )
+                                                                                           .append( "name",
+                                                                                                    condition.getName() )
+                                                                                           .append( "exclude",
+                                                                                                    condition.isExclude() );
+
+                            failed.add( builder.toString() );
+                        }
+                    }
+                }
+
+                LOGGER.debug( "getIntersectingFeatures finished run: {}", script );
+            }
+        }
+
+        return Collections.unmodifiableList( failed );
+    }
+    
     /**
      * Get a set of features for this project with intersecting data.
      * Does not check if the data is pairable, simply checks that there is data
@@ -262,14 +363,14 @@ public class Project
             throws SQLException
     {
         Set<FeatureTuple> intersectingFeatures;
-        Features featuresCache = this.getFeaturesCache();
+        Features fCache = this.getFeaturesCache();
 
         // Gridded features? #74266
         // Yes
         if ( this.usesGriddedData( this.getRight() ) )
         {
             LOGGER.debug( "Getting details of intersecting features for gridded data." );
-            intersectingFeatures = featuresCache.getGriddedDetails( this );
+            intersectingFeatures = fCache.getGriddedDetails( this );
         }
         // No
         else
@@ -297,10 +398,10 @@ public class Project
                 {
                     int leftId = dataProvider.getInt( "left_id" );
                     FeatureKey leftKey =
-                            featuresCache.getFeatureKey( leftId );
+                            fCache.getFeatureKey( leftId );
                     int rightId = dataProvider.getInt( "right_id" );
                     FeatureKey rightKey =
-                            featuresCache.getFeatureKey( rightId );
+                            fCache.getFeatureKey( rightId );
                     FeatureKey baselineKey = null;
 
                     // Baseline column will only be there when baseline exists.
@@ -314,7 +415,7 @@ public class Project
                         if ( baselineId > 0 )
                         {
                             baselineKey =
-                                    featuresCache.getFeatureKey( baselineId );
+                                    fCache.getFeatureKey( baselineId );
                         }
                     }
 
@@ -346,14 +447,14 @@ public class Project
      */
     public Set<FeatureTuple> getFeatures() throws SQLException
     {
-        Database database = this.getDatabase();
+        Database db = this.getDatabase();
 
         synchronized ( this.featureLock )
         {
             if ( this.features == null )
             {
                 LOGGER.debug( "getFeatures(): no features found, populating." );
-                this.features = this.getIntersectingFeatures( database );
+                this.features = this.getIntersectingFeatures( db );
             }
         }
 
@@ -543,8 +644,8 @@ public class Project
 
         if ( usesGriddedData == null )
         {
-            Database database = this.getDatabase();
-            DataScripter script = new DataScripter( database );
+            Database db = this.getDatabase();
+            DataScripter script = new DataScripter( db );
             script.addLine( SELECT_1 );
             script.addLine( "FROM wres.ProjectSource PS" );
             script.addLine( "INNER JOIN wres.Source S" );
@@ -638,8 +739,8 @@ public class Project
 
     private DataScripter getInsertSelectStatement()
     {
-        Database database = this.getDatabase();
-        DataScripter script = new DataScripter( database );
+        Database db = this.getDatabase();
+        DataScripter script = new DataScripter( db );
         script.setUseTransaction( true );
 
         script.retryOnSerializationFailure();
@@ -678,8 +779,8 @@ public class Project
         }
         else
         {
-            Database database = this.getDatabase();
-            DataScripter scriptWithId = new DataScripter( database );
+            Database db = this.getDatabase();
+            DataScripter scriptWithId = new DataScripter( db );
             scriptWithId.setHighPriority( true );
             scriptWithId.setUseTransaction( false );
             scriptWithId.addLine( "SELECT project_id" );

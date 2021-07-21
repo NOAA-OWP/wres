@@ -188,6 +188,49 @@ final class ProjectScriptGenerator
     }
     
     /**
+     * Returns a script that checks whether the condition on the ensemble name is valid.
+     *  
+     * @param database the database, not null
+     * @param ensembleName the ensemble name
+     * @param projectId the project id
+     * @param exclude is true if the ensemble name should be excluded, false to include
+     * @return a scripter that checks ensemble condition validity
+     */
+
+    static DataScripter getIsValidEnsembleCondition( Database database,
+                                                     String ensembleName,
+                                                     int projectId,
+                                                     boolean exclude )
+    {
+        Objects.requireNonNull( database );
+
+        DataScripter script = new DataScripter( database );
+
+        String condition = "=";
+        if ( exclude )
+        {
+            condition = "!=";
+        }
+
+        String validName = "'" + ProjectScriptGenerator.validateStringForSql( ensembleName ) + "'";
+
+        script.addLine( "/* For a given project, determine whether an ensemble condition will select" );
+        script.addLine( "   some time-series data. */" );
+        script.addLine( "SELECT EXISTS (" );
+        script.addTab().addLine( "SELECT 1" );
+        script.addTab().addLine( "FROM wres.Ensemble E" );
+        script.addTab().addLine( "INNER JOIN wres.TimeSeries TS" );
+        script.addTab( 2 ).addLine( "ON TS.ensemble_id = E.ensemble_id" );
+        script.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
+        script.addTab( 2 ).addLine( "ON PS.source_id = TS.source_id" );
+        script.addTab().addLine( "WHERE PS.project_id = ", projectId );
+        script.addTab( 2 ).addLine( "AND E.ensemble_name ", condition, validName );
+        script.addLine( ")" );
+
+        return script;
+    }
+    
+    /**
      * Returns a temporary table name. Can't use the current time in millis as
      * sole seed because the collision to avoid would be when this method runs
      * at the same millisecond-on-the-clock. Try to avoid collision by using
