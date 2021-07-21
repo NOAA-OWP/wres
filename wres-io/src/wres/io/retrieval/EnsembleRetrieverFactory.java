@@ -1,7 +1,7 @@
 package wres.io.retrieval;
 
-import java.sql.SQLException;
 import java.time.MonthDay;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -48,18 +48,6 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
      */
 
     private static final Logger LOGGER = LoggerFactory.getLogger( EnsembleRetrieverFactory.class );
-
-    /**
-     * Message about features, re-used several times.
-     */
-
-    private static final String FEATURE_MESSAGE = ", feature ";
-
-    /**
-     * Message about time windows, re-used several times.
-     */
-
-    private static final String AND_TIME_WINDOW_MESSAGE = " and time window ";
 
     /**
      * The project.
@@ -151,43 +139,30 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
                       this.project.getId(),
                       this.feature.getRight(),
                       timeWindow );
-        try
-        {
-            // Obtain any ensemble member constraints
-            Set<Long> ensembleIdsToInclude =
-                    this.getEnsembleMembersToFilter( LeftOrRightOrBaseline.RIGHT, true );
-            Set<Long> ensembleIdsToExclude =
-                    this.getEnsembleMembersToFilter( LeftOrRightOrBaseline.RIGHT, false );
 
-            return this.getRightRetrieverBuilder( this.rightConfig.getType() )
-                       .setEnsembleIdsToInclude( ensembleIdsToInclude )
-                       .setEnsembleIdsToExclude( ensembleIdsToExclude )
-                       .setEnsemblesCache( this.getEnsemblesCache() )
-                       .setDatabase( this.getDatabase() )
-                       .setFeaturesCache( this.getFeaturesCache() )
-                       .setProjectId( this.project.getId() )
-                       .setFeature( this.feature.getRight() )
-                       .setVariableName( this.project.getRightVariableName() )
-                       .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.RIGHT )
-                       .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( rightConfig ) )
-                       .setDesiredTimeScale( this.desiredTimeScale )
-                       .setUnitMapper( this.unitMapper )
-                       .setSeasonStart( this.seasonStart )
-                       .setSeasonEnd( this.seasonEnd )
-                       .setTimeWindow( timeWindow )
-                       .build();
-        }
-        catch ( SQLException e )
-        {
-            throw new DataAccessException( "While creating a retriever of right data for project "
-                                           + this.project.getId()
-                                           + FEATURE_MESSAGE
-                                           + this.feature.getRight().toString()
-                                           + AND_TIME_WINDOW_MESSAGE
-                                           + timeWindow
-                                           + ":",
-                                           e );
-        }
+        // Obtain any ensemble member constraints
+        Set<Long> ensembleIdsToInclude =
+                this.getEnsembleMembersToFilter( LeftOrRightOrBaseline.RIGHT, true );
+        Set<Long> ensembleIdsToExclude =
+                this.getEnsembleMembersToFilter( LeftOrRightOrBaseline.RIGHT, false );
+
+        return this.getRightRetrieverBuilder( this.rightConfig.getType() )
+                   .setEnsembleIdsToInclude( ensembleIdsToInclude )
+                   .setEnsembleIdsToExclude( ensembleIdsToExclude )
+                   .setEnsemblesCache( this.getEnsemblesCache() )
+                   .setDatabase( this.getDatabase() )
+                   .setFeaturesCache( this.getFeaturesCache() )
+                   .setProjectId( this.project.getId() )
+                   .setFeature( this.feature.getRight() )
+                   .setVariableName( this.project.getRightVariableName() )
+                   .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.RIGHT )
+                   .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( rightConfig ) )
+                   .setDesiredTimeScale( this.desiredTimeScale )
+                   .setUnitMapper( this.unitMapper )
+                   .setSeasonStart( this.seasonStart )
+                   .setSeasonEnd( this.seasonEnd )
+                   .setTimeWindow( timeWindow )
+                   .build();
     }
 
     @Override
@@ -199,7 +174,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     @Override
     public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( TimeWindowOuter timeWindow )
     {
-        Supplier<Stream<TimeSeries<Ensemble>>> baseline = null;
+        Supplier<Stream<TimeSeries<Ensemble>>> baseline = () -> Stream.of();
 
         if ( this.hasBaseline() )
         {
@@ -207,43 +182,30 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
                           this.project.getId(),
                           this.feature.getBaseline(),
                           timeWindow );
-            try
-            {
-                // Obtain any ensemble member constraints
-                Set<Long> ensembleIdsToInclude =
-                        this.getEnsembleMembersToFilter( LeftOrRightOrBaseline.BASELINE, true );
-                Set<Long> ensembleIdsToExclude =
-                        this.getEnsembleMembersToFilter( LeftOrRightOrBaseline.BASELINE, false );
 
-                baseline = this.getRightRetrieverBuilder( this.baselineConfig.getType() )
-                               .setEnsembleIdsToInclude( ensembleIdsToInclude )
-                               .setEnsembleIdsToExclude( ensembleIdsToExclude )
-                               .setEnsemblesCache( this.getEnsemblesCache() )
-                               .setDatabase( this.getDatabase() )
-                               .setFeaturesCache( this.getFeaturesCache() )
-                               .setProjectId( this.project.getId() )
-                               .setFeature( this.feature.getBaseline() )
-                               .setVariableName( this.project.getBaselineVariableName() )
-                               .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.BASELINE )
-                               .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( baselineConfig ) )
-                               .setDesiredTimeScale( this.desiredTimeScale )
-                               .setUnitMapper( this.unitMapper )
-                               .setSeasonStart( this.seasonStart )
-                               .setSeasonEnd( this.seasonEnd )
-                               .setTimeWindow( timeWindow )
-                               .build();
-            }
-            catch ( SQLException e )
-            {
-                throw new DataAccessException( "While creating a retriever of right data for project "
-                                               + this.project.getId()
-                                               + FEATURE_MESSAGE
-                                               + this.feature.getRight().toString()
-                                               + AND_TIME_WINDOW_MESSAGE
-                                               + timeWindow
-                                               + ":",
-                                               e );
-            }
+            // Obtain any ensemble member constraints
+            Set<Long> ensembleIdsToInclude =
+                    this.getEnsembleMembersToFilter( LeftOrRightOrBaseline.BASELINE, true );
+            Set<Long> ensembleIdsToExclude =
+                    this.getEnsembleMembersToFilter( LeftOrRightOrBaseline.BASELINE, false );
+
+            baseline = this.getRightRetrieverBuilder( this.baselineConfig.getType() )
+                           .setEnsembleIdsToInclude( ensembleIdsToInclude )
+                           .setEnsembleIdsToExclude( ensembleIdsToExclude )
+                           .setEnsemblesCache( this.getEnsemblesCache() )
+                           .setDatabase( this.getDatabase() )
+                           .setFeaturesCache( this.getFeaturesCache() )
+                           .setProjectId( this.project.getId() )
+                           .setFeature( this.feature.getBaseline() )
+                           .setVariableName( this.project.getBaselineVariableName() )
+                           .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.BASELINE )
+                           .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( baselineConfig ) )
+                           .setDesiredTimeScale( this.desiredTimeScale )
+                           .setUnitMapper( this.unitMapper )
+                           .setSeasonStart( this.seasonStart )
+                           .setSeasonEnd( this.seasonEnd )
+                           .setTimeWindow( timeWindow )
+                           .build();
         }
 
         return baseline;
@@ -343,17 +305,18 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     /**
      * Returns a set of <code>ensemble_id</code> that should be included or excluded. The empty set should be 
      * interpreted as no constraints existing and, hence, that all possible <code>ensemble_id</code> should be included.
+     * Including nothing is exceptional. Excluding everything is not exceptional at this stage, but should be 
+     * exceptional downstream.
      * 
      * @param dataType the data type
      * @param include is true to search for constraints to include, false to exclude
-     * @return the members to include
-     * @throws SQLException if the ensemble identifiers could not be retrieved
+     * @return the members to include or execlude
      * @throws NullPointerException if the dataType is null
-     * @throws IllegalArgumentException if the dataType declaration is invalid
+     * @throws IllegalArgumentException if the dataType declaration is invalid or one or more constraints were present 
+     *            but not recognized
      */
 
     private Set<Long> getEnsembleMembersToFilter( LeftOrRightOrBaseline dataType, boolean include )
-            throws SQLException
     {
         Objects.requireNonNull( dataType );
 
@@ -380,13 +343,33 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
         {
             List<EnsembleCondition> conditions = config.getEnsemble();
             Ensembles ensemblesCache = this.getEnsemblesCache();
+            List<String> failed = new ArrayList<>();
 
             for ( EnsembleCondition condition : conditions )
             {
                 if ( condition.isExclude() != include )
                 {
-                    returnMe.addAll( ensemblesCache.getEnsembleIDs( condition ) );
+                    List<Long> filtered = ensemblesCache.getEnsembleIDs( condition );
+                    returnMe.addAll( filtered );
+                    if ( filtered.isEmpty() && include ) // Do not allow "include nothing"
+                    {
+                        failed.add( condition.getName() );
+                    }
                 }
+            }
+
+            if ( !failed.isEmpty() )
+            {
+                throw new IllegalArgumentException( "Of the filters that were defined for ensemble names, "
+                                                    + failed.size()
+                                                    + " of those filters contained an ensemble name that was not "
+                                                    + "present anywhere in the dataset and the filter asked for the "
+                                                    + "name to be included. Inclusive filters can only be defined "
+                                                    + "for ensemble names that exist. Fix the declared filters to "
+                                                    + "reference names that exist. The ensemble names that do not "
+                                                    + "exist are: "
+                                                    + failed
+                                                    + "." );
             }
         }
 
