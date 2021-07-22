@@ -780,9 +780,9 @@ public class Query
      */
     private Statement createStatement(final Connection connection) throws SQLException
     {
-        // All system-wide database connection settings should be added here
         Statement statement = connection.createStatement();
-        statement.setQueryTimeout( systemSettings.getQueryTimeout() );
+        // In versions prior to 5.12, a timeout was set here, but now it is set
+        // on the session/connection. See DatabaseSettings and issue #94484.
 
         if ( this.maxRows > 0 )
         {
@@ -806,10 +806,10 @@ public class Query
      */
     private PreparedStatement prepareStatement(final Connection connection) throws SQLException
     {
-        // All system-wide database connection settings should be added here
         PreparedStatement statement = connection.prepareStatement( this.script,
                                                                    RETURN_GENERATED_KEYS );
-        statement.setQueryTimeout( systemSettings.getQueryTimeout() );
+        // In versions prior to 5.12, a timeout was set here, but now it is set
+        // on the session/connection. See DatabaseSettings and issue #94484.
 
         if ( this.maxRows > 0 )
         {
