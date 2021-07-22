@@ -5,6 +5,7 @@ RUN dnf install -y \
     unzip-6.0-45.el8_4 \
     procps-ng-3.3.15-6.el8 \
     iproute-5.9.0-4.el8 \
+    hostname-3.20-6.el8.x86_64 \
     && dnf clean all
 
 # See comments in main/worker/root wres Dockerfile
