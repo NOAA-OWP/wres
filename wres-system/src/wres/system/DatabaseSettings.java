@@ -100,15 +100,19 @@ final class DatabaseSettings
         }
 
         Properties postgresqlProperties = new Properties();
+        Properties h2Properties = new Properties();
         Properties mariadbProperties = new Properties();
+        Properties mysqlProperties = new Properties();
 
         postgresqlProperties.put( "ssl", Boolean.toString( this.shouldUseSSL() ) );
         mariadbProperties.put( "useSSL", Boolean.toString( this.shouldUseSSL() ) );
+        mysqlProperties.put( "useSSL", Boolean.toString( this.shouldUseSSL() ) );
 
         if ( Objects.nonNull( this.getHost() ) )
         {
             postgresqlProperties.put( "serverName", this.getHost() );
             mariadbProperties.put( "host", this.getHost() );
+            mysqlProperties.put( "host", this.getHost() );
         }
 
         if ( Objects.nonNull( this.getDatabaseName() ) )
@@ -120,18 +124,22 @@ final class DatabaseSettings
         {
             postgresqlProperties.put( "portNumber", this.getPort() );
             mariadbProperties.put( "port", this.getPort() );
+            mysqlProperties.put( "port", this.getPort() );
         }
 
         if ( this.shouldValidateSSL() )
         {
             postgresqlProperties.put( "sslfactory", "wres.system.PgSSLSocketFactory" );
             mariadbProperties.put( "verifyServerCertificate", "true" );
+            mysqlProperties.put( "verifyServerCertificate", "true" );
 
             if ( Objects.nonNull( this.getCertificateFileToTrust() ) )
             {
                 postgresqlProperties.put( "sslfactoryarg",
                                           this.getCertificateFileToTrust() );
                 mariadbProperties.put( "serverSslCert",
+                                       this.getCertificateFileToTrust() );
+                mysqlProperties.put( "serverSslCert",
                                      this.getCertificateFileToTrust() );
             }
         }
@@ -139,11 +147,38 @@ final class DatabaseSettings
         {
             postgresqlProperties.put("sslfactory", "org.postgresql.ssl.NonValidatingFactory");
             mariadbProperties.put( "trustServerCertificate", "true" );
+            mysqlProperties.put( "trustServerCertificate", "true" );
         }
 
         // Use server-side prepared statements eagerly
         postgresqlProperties.put( "prepareThreshold", "2" );
         mariadbProperties.put( "useServerPrepStmts", "true" );
+        mysqlProperties.put( "useServerPrepStmts", "true" );
+
+        if ( this.getQueryTimeout() > 0 )
+        {
+            // Postgresql has opportunity for multiple settings in 'options'.
+            String pgStatementTimeout = "-c statement_timeout="
+                                        + this.getQueryTimeout() + "s";
+            String pgOptions = postgresqlProperties.getProperty( "options" );
+            if ( pgOptions == null )
+            {
+                pgOptions = pgStatementTimeout;
+            }
+            else
+            {
+                pgOptions = pgOptions + " " + pgStatementTimeout;
+            }
+
+            postgresqlProperties.put( "options", pgOptions );
+            mariadbProperties.put( "max_statement_time", this.getQueryTimeout() );
+
+            // MySQL and H2 use milliseconds, not seconds.
+            mysqlProperties.put( "max_statement_time",
+                                 this.getQueryTimeout() * 1000 );
+            h2Properties.put( "maxQueryTimeout",
+                              this.getQueryTimeout() * 1000 );
+        }
 
         postgresqlProperties.putAll( commonProperties );
         mapping.put("postgresql", postgresqlProperties );
@@ -151,10 +186,9 @@ final class DatabaseSettings
         mariadbProperties.putAll( commonProperties );
         mapping.put( "mariadb", mariadbProperties );
 
-        // MariaDB and MySQL share a lineage and use the same jdbc driver.
-        mapping.put( "mysql", mariadbProperties );
+        mysqlProperties.putAll( commonProperties );
+        mapping.put( "mysql", mysqlProperties );
 
-        Properties h2Properties = new Properties();
         h2Properties.putAll( commonProperties );
 
         if ( Objects.nonNull( this.getJdbcUrl() ) )
