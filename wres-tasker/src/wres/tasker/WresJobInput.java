@@ -288,6 +288,8 @@ public class WresJobInput
         {
             LOGGER.warn( "Failed to add inputs to posted declaration:{}{}",
                          declaration, "\n", e );
+            sharedJobResults.setFailedBeforeInQueue( jobId );
+            sharedJobResults.deleteInputs( jobId );
             return Response.status( Response.Status.BAD_REQUEST )
                            .entity( "Failed to add inputs to declaration due "
                                     + "to a problem with the declaration: "
@@ -301,6 +303,8 @@ public class WresJobInput
         {
             LOGGER.warn( "Failed to add inputs to posted declaration:{}{}",
                          declaration, "\n", e );
+            sharedJobResults.setFailedBeforeInQueue( jobId );
+            sharedJobResults.deleteInputs( jobId );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity( "Failed to add inputs to declaration: "
                                     + e.getMessage()
@@ -308,11 +312,6 @@ public class WresJobInput
                                     + " so you will need to start over with "
                                     + "posting the declaration and inputs." )
                            .build();
-        }
-        finally
-        {
-            sharedJobResults.setFailedBeforeInQueue( jobId );
-            sharedJobResults.deleteInputs( jobId );
         }
 
         // Replace the original declaration with the one having inputs.
