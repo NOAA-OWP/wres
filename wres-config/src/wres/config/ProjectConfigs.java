@@ -352,6 +352,7 @@ public class ProjectConfigs
      * @throws JAXBException on failure to transform to the returned declaration
      * @throws IllegalArgumentException When adding baseline when no baseline.
      * @throws UnsupportedOperationException When code does not support side.
+     * @throws ProjectConfigException When a required section is missing.
      */
 
     public static String addSources( String rawDeclaration,
@@ -408,6 +409,7 @@ public class ProjectConfigs
      * @return A new declaration based on the original with the source added.
      * @throws IllegalArgumentException When adding baseline when no baseline.
      * @throws UnsupportedOperationException When code does not support side.
+     * @throws ProjectConfigException When required section is missing.
      */
 
     public static ProjectConfig addSources( ProjectConfig oldDeclaration,
@@ -417,6 +419,29 @@ public class ProjectConfigs
     {
         Objects.requireNonNull( leftSources );
         Objects.requireNonNull( rightSources );
+
+        if ( oldDeclaration.getInputs() == null )
+        {
+            throw new ProjectConfigException( oldDeclaration,
+                                              "No <inputs> section found within"
+                                              + " the <project> declaration!" );
+        }
+
+        if ( oldDeclaration.getInputs()
+                           .getLeft() == null )
+        {
+            throw new ProjectConfigException( oldDeclaration.getInputs(),
+                                              "No <left> section found within "
+                                              + "the <inputs> declaration!" );
+        }
+
+        if ( oldDeclaration.getInputs()
+                           .getRight() == null )
+        {
+            throw new ProjectConfigException( oldDeclaration.getInputs(),
+                                              "No <right> section found within "
+                                              + "the <inputs> declaration!" );
+        }
 
         if ( baselineSources != null
              && !baselineSources.isEmpty()

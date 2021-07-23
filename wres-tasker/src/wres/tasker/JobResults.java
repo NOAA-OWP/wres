@@ -320,50 +320,7 @@ class JobResults
 
             LOGGER.debug( "Shared metadata after setting job state: {}",
                           jobMetadata );
-
-            // When there are posted input data related to this job, remove them
-            for ( URI uri : sharedData.getLeftInputs() )
-            {
-                try
-                {
-                    Path pathToDelete = Paths.get( uri );
-                    Files.deleteIfExists( pathToDelete );
-                }
-                catch ( IOException ioe )
-                {
-                    LOGGER.warn( "Failed to delete left data for job {} at {}",
-                                 jobId, uri, ioe );
-                }
-            }
-
-            for ( URI uri : sharedData.getRightInputs() )
-            {
-                try
-                {
-                    Path pathToDelete = Paths.get( uri );
-                    Files.deleteIfExists( pathToDelete );
-                }
-                catch ( IOException ioe )
-                {
-                    LOGGER.warn( "Failed to delete right data for job {} at {}",
-                                 jobId, uri, ioe );
-                }
-            }
-
-            for ( URI uri : sharedData.getBaselineInputs() )
-            {
-                try
-                {
-                    Path pathToDelete = Paths.get( uri );
-                    Files.deleteIfExists( pathToDelete );
-                }
-                catch ( IOException ioe )
-                {
-                    LOGGER.warn( "Failed to delete baseline data for job {} at {}",
-                                 jobId, uri, ioe );
-                }
-            }
-
+            JobResults.deleteInputs( jobMetadata );
             return resultValue;
         }
 
@@ -916,6 +873,73 @@ class JobResults
         {
             throw new UnsupportedOperationException( "Unsupported side " + side );
         }
+    }
+
+    /**
+     * Delete any posted data associated with the given job metadata.
+     * This one is static such that it can be called by JobResultWatcher.
+     * @param sharedData the JobMetadata associated for the job.
+     */
+
+    private static void deleteInputs( JobMetadata sharedData )
+    {
+        String jobId = sharedData.getId();
+
+        // When there are posted input data related to this job, remove them
+        for ( URI uri : sharedData.getLeftInputs() )
+        {
+            try
+            {
+                Path pathToDelete = Paths.get( uri );
+                Files.deleteIfExists( pathToDelete );
+            }
+            catch ( IOException ioe )
+            {
+                LOGGER.warn( "Failed to delete left data for job {} at {}",
+                             jobId, uri, ioe );
+            }
+        }
+
+        for ( URI uri : sharedData.getRightInputs() )
+        {
+            try
+            {
+                Path pathToDelete = Paths.get( uri );
+                Files.deleteIfExists( pathToDelete );
+            }
+            catch ( IOException ioe )
+            {
+                LOGGER.warn( "Failed to delete right data for job {} at {}",
+                             jobId, uri, ioe );
+            }
+        }
+
+        for ( URI uri : sharedData.getBaselineInputs() )
+        {
+            try
+            {
+                Path pathToDelete = Paths.get( uri );
+                Files.deleteIfExists( pathToDelete );
+            }
+            catch ( IOException ioe )
+            {
+                LOGGER.warn( "Failed to delete baseline data for job {} at {}",
+                             jobId, uri, ioe );
+            }
+        }
+    }
+
+
+    /**
+     * Delete inputs associated with the given job id. This instance method
+     * is here so that it can be called from WresJobInput.
+     * @param jobId The job id.
+     */
+
+    void deleteInputs( String jobId )
+    {
+        JobMetadata sharedMetadata = jobMetadataById.get( jobId );
+        JobResults.deleteInputs( sharedMetadata );
     }
 
 
