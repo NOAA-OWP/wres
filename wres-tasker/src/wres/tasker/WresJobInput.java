@@ -34,6 +34,7 @@ import static jakarta.ws.rs.core.MediaType.MULTIPART_FORM_DATA;
 import static jakarta.ws.rs.core.MediaType.TEXT_PLAIN;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
+import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigs;
 import wres.config.generated.DataSourceConfig;
 import wres.messages.generated.Job;
@@ -283,15 +284,35 @@ public class WresJobInput
             LOGGER.debug( "Created new project declaration:\n{}",
                           newDeclaration );
         }
-        catch ( JAXBException | IOException e )
+        catch ( ProjectConfigException | JAXBException e )
         {
             LOGGER.warn( "Failed to add inputs to posted declaration:{}{}",
                          declaration, "\n", e );
-            sharedJobResults.setFailedBeforeInQueue( jobId );
+            return Response.status( Response.Status.BAD_REQUEST )
+                           .entity( "Failed to add inputs to declaration due "
+                                    + "to a problem with the declaration: "
+                                    + e.getMessage()
+                                    + "\nThis job has reached terminal state"
+                                    + " so you will need to start over with "
+                                    + "posting the declaration and inputs." )
+                           .build();
+        }
+        catch ( IOException | RuntimeException e )
+        {
+            LOGGER.warn( "Failed to add inputs to posted declaration:{}{}",
+                         declaration, "\n", e );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity( "Failed to add inputs to declaration: "
-                                    + e.getMessage() )
+                                    + e.getMessage()
+                                    + "\nThis job has reached terminal state"
+                                    + " so you will need to start over with "
+                                    + "posting the declaration and inputs." )
                            .build();
+        }
+        finally
+        {
+            sharedJobResults.setFailedBeforeInQueue( jobId );
+            sharedJobResults.deleteInputs( jobId );
         }
 
         // Replace the original declaration with the one having inputs.
