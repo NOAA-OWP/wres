@@ -17,6 +17,12 @@ class GraphicsUtils
 {
     
     /**
+     * The colors to use.
+     */
+    
+    private final Color[] colors;
+    
+    /**
      * Uses, as a starting point, {@link DefaultDrawingSupplier#DEFAULT_PAINT_SEQUENCE}.  If that array of colors is no smaller than
      * than the number of series, then it just applies each color to the corresponding series in the provided parameters.
      * Otherwise, it calls {@link ColorTools#buildColorPalette(int, Color...)} to build a list BASED on that list in order to 
@@ -24,32 +30,21 @@ class GraphicsUtils
      * 
      * @param parameters The parameters to which the rotating colors scheme will be applied.
      */
-    static void applyDefaultJFreeChartColorSequence( final DataSourceDrawingParameters parameters )
+    void applyDefaultJFreeChartColorSequence( final DataSourceDrawingParameters parameters )
     {
-        //Build a list of colors from the JFreeChart defaults and strip out the yellow shades. 
-        //Those shades do not show up well on white
-        final Paint[] p = DefaultDrawingSupplier.DEFAULT_PAINT_SEQUENCE;
-        final ArrayList<Color> baseColors = new ArrayList<>();
-        for ( int i = 0; i < p.length; i++ )
-        {
-            if ( ( (Color) p[i] ).getRed() != 255 || ( (Color) p[i] ).getGreen() != 255 )
-            {
-                baseColors.add( (Color) p[i] );
-            }
-        }
-
+        Color[] innerColors = this.getColors();
+        
         //Now we are ready to apply the palette.  Note that, if there are not enough colors in the JFreeChart
-        //palette after stripping out the yellows, then this the ColorTools method will be used with blue,
+        //palette after stripping out the yellows, then the ColorTools method will be used with blue,
         //green, and red.
         final int seriesCount = parameters.getSeriesParametersCount();
-        Color[] colorsToApply = baseColors.toArray( new Color[] {} );
-        if ( baseColors.size() < seriesCount )
+        if ( innerColors.length < seriesCount )
         {
-            colorsToApply = ColorTools.buildColorPalette( seriesCount, Color.BLUE, Color.GREEN, Color.RED );
-        }
-        ChartTools.applyRotatingColorSchemeToSeries( colorsToApply, parameters );
+            innerColors = ColorTools.buildColorPalette( seriesCount, Color.BLUE, Color.GREEN, Color.RED );
+        }  
+        
+        ChartTools.applyRotatingColorSchemeToSeries( innerColors, parameters );
     }
-
 
     /**
      * @param parameters The parameters to which the rotating shape scheme will be applied.
@@ -58,8 +53,7 @@ class GraphicsUtils
     {
         //Build a list of colors from the JFreeChart defaults and strip out the yellow shades. 
         //Those shades do not show up well on white
-        final String[] p = ChartConstants.SHAPE_NAMES;
-        ChartTools.applyRotatingShapeSchemeToSeries( p, parameters );
+        ChartTools.applyRotatingShapeSchemeToSeries( ChartConstants.SHAPE_NAMES, parameters );
     }
     
     /**
@@ -100,10 +94,32 @@ class GraphicsUtils
     }
     
     /**
-     * Hiding constructor.
+     * @return the colors
      */
-    private GraphicsUtils()
+    
+    private Color[] getColors()
     {
+        return this.colors;
+    }
+    
+    /**
+     * Constructs and instance.
+     */
+    GraphicsUtils()
+    {
+        //Build a list of colors from the JFreeChart defaults and strip out the yellow shades. 
+        //Those shades do not show up well on white
+        final Paint[] p = DefaultDrawingSupplier.DEFAULT_PAINT_SEQUENCE;
+        final ArrayList<Color> baseColors = new ArrayList<>();
+        for ( int i = 0; i < p.length; i++ )
+        {
+            if ( ( (Color) p[i] ).getRed() != 255 || ( (Color) p[i] ).getGreen() != 255 )
+            {
+                baseColors.add( (Color) p[i] );
+            }
+        }
+
+        this.colors = baseColors.toArray( new Color[] {} );  
     }    
 
 }

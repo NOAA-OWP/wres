@@ -47,8 +47,8 @@ import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
  * <p>Consumer of messages for one evaluation. Receives messages and forwards them to underlying format consumers, which 
  * serialize outputs. The serialization may happen per message or per message group. Where consumption happens per 
  * message group, the {@link EvaluationConsumer} manages the semantics associated with that, forwarding the messages to 
- * a caching consumer until the group has completed and then asking the consumer, finally, to serialize all messages 
- * from the completed group. 
+ * a caching consumer, which caches the statistics messages until all expected messages have arrived and then writes 
+ * them. 
  * 
  * <p>Also notifies all listening clients of various stages within the lifecycle of an evaluation or exposes methods 
  * that allow a subscriber to drive that notification. In particular, on closure, notifies all listening clients whether 

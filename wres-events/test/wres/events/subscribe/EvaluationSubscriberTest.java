@@ -115,9 +115,6 @@ class EvaluationSubscriberTest
                 // Wait
             }
 
-            // Attempt to sweep away the failed evaluation, which should remain
-            subscriber.sweep();
-
             // Publish another statistics message, which should not cause an evaluation to be recreated
             statsPublisher.publish( statsBytes, Collections.unmodifiableMap( properties ) );
 
@@ -208,9 +205,6 @@ class EvaluationSubscriberTest
             {
                 // Wait
             }
-
-            // Attempt to sweep away the successful evaluation
-            subscriber.sweep();
 
             // Publish a status message, which should not cause the same evaluation to be recreated
             statusPublisher.publish( statsBytes, Collections.unmodifiableMap( properties ) );

@@ -431,59 +431,6 @@ public class EvaluationSubscriber implements Closeable
     }
 
     /**
-     * Maintenance task for completed evaluations.
-     */
-
-    public void sweep()
-    {
-        Set<String> completed = new HashSet<>();
-        Set<String> failed = new HashSet<>();
-
-        // Iterate the evaluations
-        Map<String, EvaluationConsumer> cache = this.evaluations.asMap();
-        for ( EvaluationConsumer nextEvaluation : cache.values() )
-        {
-            // Evaluation completed
-            if ( nextEvaluation.isClosed() )
-            {
-                // Record completions for logging
-                completed.add( nextEvaluation.getEvaluationId() );
-
-                // Unbook the subscriber if booked
-                if ( this.getSubscriberOfferer().isBooked() )
-                {
-                    this.getSubscriberOfferer()
-                        .unbook( nextEvaluation.getEvaluationId() );
-                }
-            }
-            // Evaluation is ongoing, but it has now timed out and should be stopped
-            else if ( this.hasTimedOut( nextEvaluation ) )
-            {
-                // Flag timed out. It will be swept away on the next iteration
-                this.registerEvaluationTimedOut( nextEvaluation );
-            }
-
-            // Record failures for logging
-            if ( nextEvaluation.isFailed() )
-            {
-                failed.add( nextEvaluation.getEvaluationId() );
-            }
-        }
-
-        if ( LOGGER.isDebugEnabled() )
-        {
-            LOGGER.debug( "The sweeper for subscriber {} swept away {} closed evaluations: {}. There are {} "
-                          + "evaluations remaining of which {} are marked failed unrecoverably: {}.",
-                          this.getClientId(),
-                          completed.size(),
-                          completed,
-                          cache.size(),
-                          failed.size(),
-                          failed );
-        }
-    }
-
-    /**
      * @return the subscriber identifier.
      */
 
@@ -500,6 +447,36 @@ public class EvaluationSubscriber implements Closeable
     public SubscriberStatus getSubscriberStatus()
     {
         return this.status;
+    }
+
+    /**
+     * Maintenance task that checks for timed-out evaluations and evaluations that have completed, but are still 
+     * booking the subscriber.
+     */
+
+    private void sweep()
+    {
+        // Iterate the evaluations
+        Map<String, EvaluationConsumer> cache = this.evaluations.asMap();
+        for ( EvaluationConsumer nextEvaluation : cache.values() )
+        {
+            // Evaluation completed
+            if ( nextEvaluation.isClosed() )
+            {
+                // Unbook the subscriber if booked
+                if ( this.getSubscriberOfferer().isBooked() )
+                {
+                    this.getSubscriberOfferer()
+                        .unbook( nextEvaluation.getEvaluationId() );
+                }
+            }
+            // Evaluation is ongoing, but it has now timed out and should be stopped
+            else if ( this.hasTimedOut( nextEvaluation ) )
+            {
+                // Flag timed out.
+                this.registerEvaluationTimedOut( nextEvaluation );
+            }
+        }
     }
 
     /**
@@ -978,7 +955,6 @@ public class EvaluationSubscriber implements Closeable
 
     private boolean shouldIForwardThisMessageForConsumption( Message message, QueueType queueType ) throws JMSException
     {
-
         String messageId = message.getJMSMessageID();
         String correlationId = message.getJMSCorrelationID();
         String consumerId = message.getStringProperty( EvaluationSubscriber.CONSUMER_ID_STRING );
@@ -1480,9 +1456,10 @@ public class EvaluationSubscriber implements Closeable
                         }
                     }
                 }
-                // Notify alive
+                // Perform maintenance and notify alive
                 else
                 {
+                    subscriber.sweep();
                     subscriber.notifyAlive();
                 }
 
@@ -1620,10 +1597,7 @@ public class EvaluationSubscriber implements Closeable
 
         this.consumerFactory = consumerFactory;
         this.executorService = executorService;
-
-        // Non-durable subscribers until we can properly recover from broker/client failures to warrant durable ones
         this.durableSubscribers = durableSubscribers;
-        this.logSubscriberPolicy( this.durableSubscribers );
 
         LOGGER.info( "Building a subscriber {} to listen for evaluation messages...",
                      this.getClientId() );
@@ -1753,23 +1727,6 @@ public class EvaluationSubscriber implements Closeable
     }
 
     /**
-     * Logs the subscriber policy.
-     * 
-     * @param durable is true to use durable subscribers, false for temporary subscribers
-     */
-
-    private void logSubscriberPolicy( boolean durableSubscribers )
-    {
-        if ( durableSubscribers && LOGGER.isWarnEnabled() )
-        {
-            LOGGER.warn( "Subscriber {} is using durable queues. These queues are not auto-deleted and may be "
-                         + "abandoned under some circumstances, which requires them to be deleted, otherwise they will "
-                         + "continue to receive and enqueue messages.",
-                         this.getClientId() );
-        }
-    }
-
-    /**
      * Listen for failures on a connection.
      */
 
@@ -1802,7 +1759,7 @@ public class EvaluationSubscriber implements Closeable
                 }
                 catch ( UnrecoverableSubscriberException e )
                 {
-                    // Do nothing as the exception is rethrown.
+                    // Do nothing as the exception is rethrown always.
                 }
             }
         }
