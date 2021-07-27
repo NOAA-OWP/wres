@@ -286,8 +286,8 @@ public class WresJobInput
         }
         catch ( ProjectConfigException | JAXBException e )
         {
-            LOGGER.warn( "Failed to add inputs to posted declaration:{}{}",
-                         declaration, "\n", e );
+            LOGGER.warn( "Failed to add inputs to posted declaration for job {}:{}{}",
+                         jobId, declaration,"\n", e );
             sharedJobResults.setFailedBeforeInQueue( jobId );
             sharedJobResults.deleteInputs( jobId );
             return Response.status( Response.Status.BAD_REQUEST )
@@ -301,8 +301,8 @@ public class WresJobInput
         }
         catch ( IOException | RuntimeException e )
         {
-            LOGGER.warn( "Failed to add inputs to posted declaration:{}{}",
-                         declaration, "\n", e );
+            LOGGER.warn( "Failed to add inputs to posted declaration for job {}:{}{}",
+                         jobId, declaration, "\n", e );
             sharedJobResults.setFailedBeforeInQueue( jobId );
             sharedJobResults.deleteInputs( jobId );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )

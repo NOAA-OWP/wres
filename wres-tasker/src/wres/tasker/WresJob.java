@@ -89,6 +89,11 @@ public class WresJob
      */
     private static final int MAXIMUM_PROJECT_DECLARATION_LENGTH = 2_500_000;
 
+    /**
+     * A smaller-than-minimum number of bytes expected in a project declaration.
+     */
+    private static final int MINIMUM_PROJECT_DECLARATION_LENGTH = 100;
+
     static
     {
         // Determine the actual broker name, whether from -D or default
@@ -247,6 +252,17 @@ public class WresJob
                                        + MAXIMUM_PROJECT_DECLARATION_LENGTH
                                        + ", please find a way to shrink the "
                                        + " project declaration and re-send." );
+        }
+        else if ( lengthOfProjectDeclaration < MINIMUM_PROJECT_DECLARATION_LENGTH )
+        {
+            LOGGER.warn( "Received a project declaration of length {} (smaller than {}).",
+                         lengthOfProjectDeclaration, MINIMUM_PROJECT_DECLARATION_LENGTH );
+            return WresJob.badRequest( "The project declaration has "
+                                       + lengthOfProjectDeclaration
+                                       + " characters, which too small. Please "
+                                       + "double-check that you set the form "
+                                       + "parameter 'projectConfig' correctly "
+                                       + "and re-send." );
         }
 
         // Default to execute per tradition and majority case.
