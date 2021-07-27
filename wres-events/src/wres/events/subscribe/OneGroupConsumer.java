@@ -22,14 +22,13 @@ import net.jcip.annotations.ThreadSafe;
 
 /**
  * <p>An abstraction for grouped consumption of messages. This consumer will cache messages until the expected group has 
- * been assembled and will then propagate the grouped messages to the inner consumer on request.
+ * been assembled and will then propagate the grouped messages to the inner consumer.
  * 
- * <p>This consumer is intended to consume one group only. Upon attempting to re-use the consumer, after calling 
- * {@link #acceptGroup()}, an exception will be thrown.
+ * <p>This consumer is intended to consume one group only. Upon attempting to re-use the consumer, an exception will be 
+ * thrown.
  * 
- * <p>Consumes messages by unique message identifier. A message with a given identifier is mapped. As such, this 
- * consumer is "retry friendly". Retries will replace an already mapped message, but will not duplicate messages by
- * identifier.
+ * <p>Consumes messages by unique message identifier. A message with a given identifier is mapped to its corresponding
+ * message body. As such, this consumer is "retry friendly". A retry will replace an already mapped message.
  * 
  * @param <T> the type of message to be consumed
  * @author james.brown@hydrosolved.com

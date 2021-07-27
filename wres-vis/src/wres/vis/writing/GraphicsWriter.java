@@ -123,6 +123,9 @@ abstract class GraphicsWriter
             // Adjust the chart engine
             GraphicsWriter.prepareChartEngineForWriting( engine );
 
+            // Create the chart
+            JFreeChart chart = engine.buildChart();
+            
             // Default is png
             if ( outputs.hasPng() )
             {
@@ -139,7 +142,7 @@ abstract class GraphicsWriter
                     File outputImageFile = resolvedPath.toFile();
 
                     // #58735-18
-                    ChartUtilities.saveChartAsPNG( outputImageFile, engine.buildChart(), width, height );
+                    ChartUtilities.saveChartAsPNG( outputImageFile, chart, width, height );
                 }
             }
             if ( outputs.hasSvg() )
@@ -155,9 +158,6 @@ abstract class GraphicsWriter
                     returnMe.add( resolvedPath );
 
                     File outputImageFile = resolvedPath.toFile();
-
-                    // Create the chart
-                    JFreeChart chart = engine.buildChart();
 
                     // Create the svg string
                     SVGGraphics2D svg2d = new SVGGraphics2D( width, height );

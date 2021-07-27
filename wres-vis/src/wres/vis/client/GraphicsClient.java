@@ -282,18 +282,14 @@ class GraphicsClient
 
         // The status is mutable and is updated by the subscriber
         SubscriberStatus status = this.getSubscriberStatus();
-        EvaluationSubscriber subscriber = this.getGraphicsSubscriber();
         GraphicsClient client = this;
 
         // Create a timer task to log the server status
-        TimerTask sweeper = new TimerTask()
+        TimerTask updater = new TimerTask()
         {
             @Override
             public void run()
             {
-                // Sweep any complete evaluations
-                subscriber.sweep();
-
                 // Log status
                 LOGGER.info( "{}", status );
             }
@@ -316,7 +312,7 @@ class GraphicsClient
             }
         };
 
-        this.timer.schedule( sweeper, 0, GraphicsClient.STATUS_UPDATE_MILLISECONDS );
+        this.timer.schedule( updater, 0, GraphicsClient.STATUS_UPDATE_MILLISECONDS );
         this.timer.schedule( healthChecker, 0, GraphicsClient.HEALTH_CHECK_MILLISECONDS );
     }
 

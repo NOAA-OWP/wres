@@ -49,9 +49,15 @@ import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
  * @author Hank.Herr
  *
  */
-abstract class XYChartDataSourceFactory
+class XYChartDataSourceFactory
 {
 
+    /**
+     * Graphics utilities.
+     */
+    
+    private static final GraphicsUtils GRAPHICS_UTILS = new GraphicsUtils();
+    
     private static final String METRIC_SHORT_NAME_METRIC_COMPONENT_NAME_SUFFIX_OUTPUT_UNITS_LABEL_SUFFIX =
             "@metricShortName@@metricComponentNameSuffix@@outputUnitsLabelSuffix@";
     /**
@@ -978,7 +984,7 @@ abstract class XYChartDataSourceFactory
         }
 
         //Apply looping color and shape scheme.
-        GraphicsUtils.applyDefaultJFreeChartColorSequence( source.getDefaultFullySpecifiedDataSourceDrawingParameters() );
+        XYChartDataSourceFactory.GRAPHICS_UTILS.applyDefaultJFreeChartColorSequence( source.getDefaultFullySpecifiedDataSourceDrawingParameters() );
         GraphicsUtils.applyDefaultJFreeChartShapeSequence( source.getDefaultFullySpecifiedDataSourceDrawingParameters() );
     }
 

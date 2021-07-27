@@ -19,7 +19,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 
 @Name( "wres.io.pooling.RescalingEvent" )
 @Label( "Rescaling Event" )
-@Category( { "Java Application", "Water Resources Evaluation Service", "Core client", "Pooling", "Rescaling" } )
+@Category( { "Java Application", "Water Resources Evaluation Service", "Core", "Pooling", "Rescaling" } )
 @Threshold( "5000 ms" )
 class RescalingEvent extends Event
 {

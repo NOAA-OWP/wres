@@ -18,7 +18,7 @@ import jdk.jfr.Threshold;
 
 @Name( "wres.io.utilities.WebClientEvent" )
 @Label( "Web Resource Event" )
-@Category( { "Java Application", "Water Resources Evaluation Service", "Core client", "Reading" } )
+@Category( { "Java Application", "Water Resources Evaluation Service", "Core", "Reading" } )
 @Threshold( "10000 ms" )
 class WebClientEvent extends Event
 {
