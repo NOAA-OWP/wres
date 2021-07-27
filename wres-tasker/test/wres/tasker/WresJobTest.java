@@ -81,6 +81,8 @@ public class WresJobTest
             "TLS_DHE_RSA_WITH_AES_256_CBC_SHA256"
     };
 
+    private static final String FAKE_DECLARATION = "<?xml version='1.0' encoding='UTF-8'?><project><inputs><left></left><right></right></inputs><pair></pair><metrics></metrics><outputs></outputs></project>";
+
     @BeforeClass
     public static void setup() throws IOException, NoSuchAlgorithmException,
             OperatorCreationException, CertificateException, KeyStoreException
@@ -239,12 +241,20 @@ public class WresJobTest
     }
 
     @Test
-    public void testInternalServerError()
+    public void testBadRequestDueToShortDeclaration()
     {
         System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
         WresJob wresJob = new WresJob();
-        // This line could be brittle due to looking up a particular user:
-        Response response = wresJob.postWresJob( "fake", "hank", null, false );
+        Response response = wresJob.postWresJob( "too short a declaration", null, null, false );
+        assertEquals( "Expected a 400 bad request.", 400, response.getStatus() );
+    }
+
+    @Test
+    public void testInternalServerErrorDueToNoBrokerConnectivity()
+    {
+        System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
+        WresJob wresJob = new WresJob();
+        Response response = wresJob.postWresJob( FAKE_DECLARATION, null, null, false );
         assertEquals( "Expected a 500 Internal Server Error.", 500, response.getStatus() );
     }
 
@@ -255,7 +265,7 @@ public class WresJobTest
         EmbeddedBroker embeddedBroker = new EmbeddedBroker();
         embeddedBroker.start();
         WresJob wresJob = new WresJob();
-        Response response = wresJob.postWresJob( "fake", "hank", null, false );
+        Response response = wresJob.postWresJob( FAKE_DECLARATION, null, null, false );
         assertEquals( "Expected a 201 Created.", 201, response.getStatus() );
         WresJob.shutdownNow();
         embeddedBroker.shutdown();
