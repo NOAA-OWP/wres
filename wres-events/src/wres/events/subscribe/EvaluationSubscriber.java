@@ -1310,6 +1310,9 @@ public class EvaluationSubscriber implements Closeable
                                               + "missing identifier." );
 
         // Function that creates a new evaluation
+        // TODO: handle the situation whereby construction throws an exception because this will fail to notify the
+        // contracted producer, which cannot then fail an evaluation in a timely way. A probable solution is to abstract 
+        // notification of failure from the EvaluationConsumer, else to add a notification here.
         Function<String, EvaluationConsumer> creator = name -> {
             EvaluationConsumer consumer = new EvaluationConsumer( evaluationId,
                                                                   this.getConsumerDescription(),

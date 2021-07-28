@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -37,7 +38,9 @@ import wres.events.TimedCountDownLatch;
 import wres.events.publish.MessagePublisher;
 import wres.events.publish.MessagePublisher.MessageProperty;
 import wres.statistics.generated.Evaluation;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Consumer;
+import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
@@ -210,6 +213,12 @@ class EvaluationConsumer
     private final SubscriberStatus subscriberStatus;
 
     /**
+     * Monitors the evaluation.
+     */
+
+    private final EvaluationConsumptionEvent monitor;
+
+    /**
      * Builds a consumer.
      * 
      * @param evaluationId the evaluation identifier
@@ -252,6 +261,8 @@ class EvaluationConsumer
         this.subscriberStatus = subscriberStatus;
         this.groupConsumersLock = new ReentrantLock();
         this.registerProgress();
+        this.monitor = EvaluationConsumptionEvent.of( evaluationId );
+        this.getMonitor().begin(); // Begin monitoring
 
         LOGGER.info( "Consumer {} opened evaluation {}, which is ready to consume messages.",
                      this.getClientId(),
@@ -392,6 +403,14 @@ class EvaluationConsumer
 
             // Record consumption
             this.consumed.incrementAndGet();
+
+            // Set the formats on the monitor, which is the intersection of the declared formats and the formats this
+            // consumer can handle
+            Set<Format> declaredFormats = MessageUtilities.getDeclaredFormats( evaluationDescription.getOutputs() );
+            Set<Format> formats = new TreeSet<>( declaredFormats );
+            formats.retainAll( this.getConsumerDescription().getFormatsList() );
+            this.getMonitor()
+                .setFormats( Collections.unmodifiableSet( formats ) );
 
             // If consumption is complete, then close the consumer
             this.closeConsumerIfComplete();
@@ -767,7 +786,12 @@ class EvaluationConsumer
             }
             finally
             {
-                // An evaluation consumer may hang around for a while (e.g., to mop-up late arriving status messages)
+                // Add monitoring attributes
+                this.getMonitor().setResources( this.getPathsWritten() );
+                this.getMonitor().complete(); // Copies incremented state to final state
+                this.getMonitor().commit();
+
+                // An evaluation consumer may hang around for a while, in order to mop-up late arriving status messages
                 // so make the most expensive states eligible for gc
                 this.pathsWritten.clear();
                 this.groupConsumers.clear();
@@ -1052,6 +1076,7 @@ class EvaluationConsumer
 
         // Record consumption
         this.consumed.incrementAndGet();
+        this.getMonitor().addStatistics( statistics );
 
         if ( LOGGER.isDebugEnabled() )
         {
@@ -1165,6 +1190,15 @@ class EvaluationConsumer
     private String getClientId()
     {
         return this.consumerDescription.getConsumerId();
+    }
+
+    /**
+     * @return the monitor
+     */
+
+    private EvaluationConsumptionEvent getMonitor()
+    {
+        return this.monitor;
     }
 
 }
