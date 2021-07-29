@@ -93,6 +93,11 @@ subprojects
 
     // Each module does not need a version update unless code in it has changed.
     def gitCommit = grgit.log(paths: [project.name, 'build.gradle'], maxCommits:1).find()
+
+    // Default version string for new module with no history
+    String currentDate = OffsetDateTime.now( ZoneOffset.UTC ).format('yyyyMMdd' )
+    def version = currentDate + '-0000000'
+
     // Null check in case there is a new module with no history
     if( gitCommit != null )
     {
@@ -100,12 +105,6 @@ subprojects
         def gitCommitDate = gitCommit.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
 
         version = gitCommitDate.format('yyyyMMdd') + '-' + gitCommitId[0..6]
-    }
-    // Default version string for new module with no history
-    else
-    {
-        String currentDate = OffsetDateTime.now( ZoneOffset.UTC ).format('yyyyMMdd' )
-        version = currentDate + '-0000000'
     }
 
     // Whenever there are local changes, flag the version with a "-dev" suffix.
@@ -194,9 +193,11 @@ subprojects
         withSourcesJar()
     }
 
-    // Make bit-for-bit reproducible jars, zips, and tars.
     tasks.withType( AbstractArchiveTask )
     {
+        archiveVersion = version
+
+        // Make bit-for-bit reproducible jars, zips, and tars.
         preserveFileTimestamps = false
         reproducibleFileOrder = true
     }
@@ -1464,7 +1465,7 @@ def gitCommitId = gitCommit.id
 def gitCommitDate = gitCommit.getDate()
 def gitIsClean = grgit.status().isClean()
 
-version = gitCommitDate.format('yyyyMMdd') + '-' + gitCommitId[0..6]
+def version = gitCommitDate.format('yyyyMMdd') + '-' + gitCommitId[0..6]
 if (!gitIsClean)
 {
     version = version + '-dev'
@@ -1668,9 +1669,10 @@ java
     withSourcesJar()
 }
 
-// Make bit-for-bit reproducible jars, zips, and tars.
 tasks.withType( AbstractArchiveTask )
 {
+    archiveVersion = version
+    // Make bit-for-bit reproducible jars, zips, and tars.
     preserveFileTimestamps = false
     reproducibleFileOrder = true
 }
