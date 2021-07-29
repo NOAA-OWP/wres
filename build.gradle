@@ -96,7 +96,7 @@ subprojects
 
     // Default version string for new module with no history
     String currentDate = OffsetDateTime.now( ZoneOffset.UTC ).format('yyyyMMdd' )
-    def version = currentDate + '-0000000'
+    version = currentDate + '-0000000'
 
     // Null check in case there is a new module with no history
     if( gitCommit != null )
@@ -183,7 +183,7 @@ subprojects
         manifest
         {
             attributes("Implementation-Title": "Water Resources Evaluation Service",
-                       "Implementation-Version": version)
+                        "Implementation-Version": archiveVersion )
         }
     }
 
@@ -195,7 +195,7 @@ subprojects
 
     tasks.withType( AbstractArchiveTask )
     {
-        archiveVersion = version
+        archiveVersion = project.version
 
         // Make bit-for-bit reproducible jars, zips, and tars.
         preserveFileTimestamps = false
@@ -1465,7 +1465,7 @@ def gitCommitId = gitCommit.id
 def gitCommitDate = gitCommit.getDate()
 def gitIsClean = grgit.status().isClean()
 
-def version = gitCommitDate.format('yyyyMMdd') + '-' + gitCommitId[0..6]
+version = gitCommitDate.format('yyyyMMdd') + '-' + gitCommitId[0..6]
 if (!gitIsClean)
 {
     version = version + '-dev'
@@ -1659,7 +1659,7 @@ jar
     manifest
     {
         attributes("Implementation-Title": "Water Resources Evaluation Service",
-                   "Implementation-Version": version)
+                    "Implementation-Version": archiveVersion )
     }
 }
 
@@ -1671,7 +1671,8 @@ java
 
 tasks.withType( AbstractArchiveTask )
 {
-    archiveVersion = version
+    archiveVersion = project.version
+
     // Make bit-for-bit reproducible jars, zips, and tars.
     preserveFileTimestamps = false
     reproducibleFileOrder = true
