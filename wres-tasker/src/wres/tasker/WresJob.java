@@ -4,10 +4,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLContext;
 
@@ -27,11 +26,8 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.redisson.Redisson;
-import org.redisson.api.RLiveObject;
 import org.redisson.api.RLiveObjectService;
 import org.redisson.api.RedissonClient;
-import org.redisson.api.annotation.REntity;
-import org.redisson.api.annotation.RId;
 import org.redisson.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -238,33 +234,6 @@ public class WresJob
                                  @DefaultValue( "false" )
                                  boolean postInput )
     {
-        int lengthOfProjectDeclaration = projectConfig.length();
-
-        // Limit project config to less than 1.6 million characters
-        if ( lengthOfProjectDeclaration > MAXIMUM_PROJECT_DECLARATION_LENGTH )
-        {
-            String projectConfigFirstChars = projectConfig.substring( 0, 1000 );
-            LOGGER.warn( "Received a project declaration of length {} starting with {}",
-                         lengthOfProjectDeclaration, projectConfigFirstChars );
-            return WresJob.badRequest( "The project declaration has "
-                                       + lengthOfProjectDeclaration
-                                       + " characters, which is more than "
-                                       + MAXIMUM_PROJECT_DECLARATION_LENGTH
-                                       + ", please find a way to shrink the "
-                                       + " project declaration and re-send." );
-        }
-        else if ( lengthOfProjectDeclaration < MINIMUM_PROJECT_DECLARATION_LENGTH )
-        {
-            LOGGER.warn( "Received a project declaration of length {} (smaller than {}).",
-                         lengthOfProjectDeclaration, MINIMUM_PROJECT_DECLARATION_LENGTH );
-            return WresJob.badRequest( "The project declaration has "
-                                       + lengthOfProjectDeclaration
-                                       + " characters, which too small. Please "
-                                       + "double-check that you set the form "
-                                       + "parameter 'projectConfig' correctly "
-                                       + "and re-send." );
-        }
-
         // Default to execute per tradition and majority case.
         Verb actualVerb = null;
 
@@ -285,15 +254,58 @@ public class WresJob
 
             if ( actualVerb == null )
             {
-                return WresJob.badRequest( "Verb '"
-                                         + verb
-                                         + "' not available." );
+                return WresJob.badRequest( "Verb '" + verb
+                                           + "' not available." );
             }
         }
         else
         {
             // Default to "execute"
             actualVerb = Verb.EXECUTE;
+        }
+
+        Set<Verb> verbsNeedingDeclaration = Set.of( Verb.EXECUTE,
+                                                    Verb.INGEST,
+                                                    Verb.VALIDATE );
+
+        boolean usingDeclaration = verbsNeedingDeclaration.contains( actualVerb );
+
+        if ( usingDeclaration )
+        {
+            int lengthOfProjectDeclaration = projectConfig.length();
+
+            // Limit project config to less than 1.6 million characters
+            if ( lengthOfProjectDeclaration
+                 > MAXIMUM_PROJECT_DECLARATION_LENGTH )
+            {
+                String projectConfigFirstChars =
+                        projectConfig.substring( 0, 1000 );
+                LOGGER.warn(
+                        "Received a project declaration of length {} starting with {}",
+                        lengthOfProjectDeclaration,
+                        projectConfigFirstChars );
+                return WresJob.badRequest( "The project declaration has "
+                                           + lengthOfProjectDeclaration
+                                           + " characters, which is more than "
+                                           + MAXIMUM_PROJECT_DECLARATION_LENGTH
+                                           + ", please find a way to shrink the"
+                                           + " project declaration and re-send." );
+            }
+            else if ( lengthOfProjectDeclaration
+                      < MINIMUM_PROJECT_DECLARATION_LENGTH )
+            {
+                LOGGER.warn(
+                        "Received a project declaration of length {} (smaller than {}).",
+                        lengthOfProjectDeclaration,
+                        MINIMUM_PROJECT_DECLARATION_LENGTH );
+                return WresJob.badRequest( "The project declaration has "
+                                           + lengthOfProjectDeclaration
+                                           + " characters, which too small. "
+                                           + "Please double-check that you set "
+                                           + "the form parameter "
+                                           + "'projectConfig' correctly and "
+                                           + "re-send." );
+            }
         }
 
         // Before registering a new job, see if there are already too many.
@@ -328,10 +340,23 @@ public class WresJob
             return WresJob.internalServerError();
         }
 
-        Job.job jobMessage = Job.job.newBuilder()
-                                    .setProjectConfig( projectConfig )
-                                    .setVerb( actualVerb )
-                                    .build();
+        Job.job jobMessage;
+
+        if ( usingDeclaration )
+        {
+            jobMessage = Job.job.newBuilder()
+                                .setProjectConfig( projectConfig )
+                                .setVerb( actualVerb )
+                                .build();
+        }
+        else
+        {
+            // Skip the declaration entirely, it's not needed and was not
+            // validated.
+            jobMessage = Job.job.newBuilder()
+                                .setVerb( actualVerb )
+                                .build();
+        }
 
         // If the caller wishes to post input data: parameter postInput=true
         if ( postInput )
