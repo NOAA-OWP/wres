@@ -625,7 +625,7 @@ public class EvaluationSubscriber implements Closeable
                                                         groupId );
                 }
 
-                // Acknowledge and flag success locally
+                // Acknowledge and then attempt to register complete
                 message.acknowledge();
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_FOR_EVALUATION,
@@ -715,12 +715,16 @@ public class EvaluationSubscriber implements Closeable
                     // Register with the status monitor
                     this.status.registerStatistics( messageId );
 
+                    // Acknowledge first, then attempt to register complete
+                    message.acknowledge();
+                    
                     // Register complete if complete
                     this.registerEvaluationCompleteIfConsumptionComplete( consumer, correlationId );
                 }
-
-                // Acknowledge and flag success locally
-                message.acknowledge();
+                else
+                {
+                    message.acknowledge();
+                }
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_FOR_EVALUATION,
                               this.getClientId(),
@@ -839,6 +843,7 @@ public class EvaluationSubscriber implements Closeable
      * 
      * @param consumer the consumer
      * @param evaluationId the evaluation identifier
+     * @throws EvaluationEventException if the evaluation could not be notified as successful
      */
 
     private void registerEvaluationCompleteIfConsumptionComplete( EvaluationConsumer consumer, String evaluationId )
@@ -846,11 +851,18 @@ public class EvaluationSubscriber implements Closeable
         // Complete?
         if ( Objects.nonNull( consumer ) && consumer.isComplete() )
         {
+            // Update the subscriber status
             this.status.registerEvaluationCompleted( evaluationId );
 
             // Unbook the subscriber if subscriber booking is in force
             this.getSubscriberOfferer()
                 .unbook( evaluationId );
+            
+            // Publish success
+            if( consumer.getCompletionStatus() != CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE )
+            {
+                consumer.markEvaluationSucceeded();
+            }
         }
     }
 
@@ -900,13 +912,17 @@ public class EvaluationSubscriber implements Closeable
 
                     consumer.acceptEvaluationMessage( evaluation, messageId, jobId );
 
+                    // Acknowledge first, then attempt to register complete
+                    message.acknowledge();
+                    
                     // Register complete if complete
                     this.registerEvaluationCompleteIfConsumptionComplete( consumer, correlationId );
                 }
-
-                // Acknowledge and flag success locally
-                message.acknowledge();
-
+                else
+                {
+                    message.acknowledge();
+                }
+                
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_FOR_EVALUATION,
                               this.getClientId(),
                               QueueType.EVALUATION_QUEUE,
@@ -1122,7 +1138,8 @@ public class EvaluationSubscriber implements Closeable
     {
         EvaluationConsumer evaluation = this.evaluations.getIfPresent( evaluationId );
 
-        return Objects.nonNull( evaluation ) && evaluation.isFailed();
+        return Objects.nonNull( evaluation )
+               && evaluation.getCompletionStatus() == CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE;
     }
 
     /**

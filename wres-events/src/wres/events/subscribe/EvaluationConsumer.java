@@ -21,6 +21,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -177,16 +178,20 @@ class EvaluationConsumer
     private final ExecutorService executorService;
 
     /**
-     * Is <code>true</code> if the evaluation has failed, otherwise <code>false</code>.
+     * The state of the consumer, which is one of {@link CompletionStatus#READY_TO_CONSUME}, 
+     * {@link CompletionStatus#CONSUMPTION_ONGOING}, 
+     * {@link CompletionStatus#CONSUMPTION_COMPLETE_REPORTED_SUCCESS} or 
+     * {@link CompletionStatus#CONSUMPTION_COMPLETE_REPORTED_FAILURE}. It is wrapped in an {@link AtomicReference} for
+     * thread-safe mutation.
      */
 
-    private final AtomicBoolean isFailed;
+    private final AtomicReference<CompletionStatus> completionStatus;
 
     /**
      * Is <code>true</code> if the evaluation failure has been notified, otherwise <code>false</code>.
      */
 
-    private final AtomicBoolean isFailureNotified;
+    private final AtomicBoolean isNotified;
 
     /**
      * A set of paths written.
@@ -250,8 +255,7 @@ class EvaluationConsumer
         this.hasEvaluationDescriptionArrived = new AtomicBoolean();
         this.areConsumersReady = new AtomicBoolean();
         this.isClosed = new AtomicBoolean();
-        this.isFailed = new AtomicBoolean();
-        this.isFailureNotified = new AtomicBoolean();
+        this.isNotified = new AtomicBoolean();
         this.groupConsumers = new ConcurrentHashMap<>();
         this.executorService = executorService;
         this.consumerDescription = consumerDescription;
@@ -260,6 +264,7 @@ class EvaluationConsumer
         this.consumersReady = new TimedCountDownLatch( 1 );
         this.subscriberStatus = subscriberStatus;
         this.groupConsumersLock = new ReentrantLock();
+        this.completionStatus = new AtomicReference<>( CompletionStatus.READY_TO_CONSUME );
         this.registerProgress();
         this.monitor = EvaluationConsumptionEvent.of( evaluationId );
         this.getMonitor().begin(); // Begin monitoring
@@ -296,12 +301,43 @@ class EvaluationConsumer
         }
         finally
         {
-            this.isFailed.set( true );
             this.isComplete.set( true );
+            this.completionStatus.set( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE );
             this.subscriberStatus.registerEvaluationFailed( this.getEvaluationId() );
 
             // Close the consumer
             this.close();
+        }
+    }
+
+    /**
+     * Notifies and publishes success. It is the responsibility of a subscriber to trigger this notification because 
+     * the subscriber controls the messaging semantics, such as ACKnowledging an incoming message and handling retries.
+     * 
+     * @see #isComplete()
+     * @see #isFailed()
+     * @throws EvaluationEventException if the notification fails for any reason
+     */
+
+    void markEvaluationSucceeded()
+    {
+        if ( !this.isNotified.getAndSet( true ) )
+        {
+            try
+            {
+                this.publishCompletionState( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS,
+                                             null,
+                                             List.of() );
+            }
+            finally
+            {
+                this.isComplete.set( true );
+                this.completionStatus.set( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS );
+                this.subscriberStatus.registerEvaluationCompleted( this.getEvaluationId() );
+
+                // Close the consumer
+                this.close();
+            }
         }
     }
 
@@ -367,9 +403,6 @@ class EvaluationConsumer
         // Accept inner
         this.acceptStatisticsMessageInner( statistics, groupId, messageId );
 
-        // If consumption is complete, then close the consumer
-        this.closeConsumerIfComplete();
-
         this.registerProgress();
     }
 
@@ -411,9 +444,6 @@ class EvaluationConsumer
             formats.retainAll( this.getConsumerDescription().getFormatsList() );
             this.getMonitor()
                 .setFormats( Collections.unmodifiableSet( formats ) );
-
-            // If consumption is complete, then close the consumer
-            this.closeConsumerIfComplete();
         }
         else if ( LOGGER.isWarnEnabled() )
         {
@@ -424,6 +454,9 @@ class EvaluationConsumer
         }
 
         this.registerProgress();
+
+        // Update the consumer state
+        this.completionStatus.set( CompletionStatus.CONSUMPTION_ONGOING );
     }
 
     /**
@@ -462,9 +495,6 @@ class EvaluationConsumer
             default:
                 break;
         }
-
-        // If consumption is complete, then close the consumer
-        this.closeConsumerIfComplete();
 
         this.registerProgress();
     }
@@ -517,11 +547,11 @@ class EvaluationConsumer
     }
 
     /**
-     * @return true if the evaluation failed, otherwise false
+     * @return the completion status
      */
-    boolean isFailed()
+    CompletionStatus getCompletionStatus()
     {
-        return this.isFailed.get();
+        return this.completionStatus.get();
     }
 
     /**
@@ -560,7 +590,7 @@ class EvaluationConsumer
                           this.getEvaluationId(),
                           status.getCompletionStatus() );
 
-            this.isFailed.set( true );
+            this.completionStatus.set( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE );
             this.isComplete.set( true );
             this.subscriberStatus.registerEvaluationFailed( this.getEvaluationId() );
 
@@ -579,7 +609,7 @@ class EvaluationConsumer
 
     private void notifyFailure( Exception cause )
     {
-        if ( !this.isFailureNotified.getAndSet( true ) )
+        if ( !this.isNotified.getAndSet( true ) )
         {
             // Notify any incomplete groups
             for ( OneGroupConsumer<Statistics> next : this.groupConsumers.values() )
@@ -591,8 +621,8 @@ class EvaluationConsumer
                                                  next.getGroupId(),
                                                  List.of() );
 
-                    LOGGER.debug( "Consumer {} registered consumption as forcibly completed (failed) for group {} of "
-                                  + "evaluation {}.",
+                    LOGGER.debug( "Consumer {} registered consumption as forcibly completed (failed) for group {} "
+                                  + "of evaluation {}.",
                                   this.consumerDescription.getConsumerId(),
                                   next.getGroupId(),
                                   this.getEvaluationId() );
@@ -621,19 +651,6 @@ class EvaluationConsumer
     }
 
     /**
-     * Notifies successful completion of the evaluation.
-     * 
-     * @throws EvaluationEventException if the notification fails for any reason
-     */
-
-    private void notifySuccess()
-    {
-        this.publishCompletionState( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS,
-                                     null,
-                                     List.of() );
-    }
-
-    /**
      * Marks an evaluation timed-out on awaiting an evaluation description message and, therefore, failed. Adds no-op
      * consumers to consume any messages that arrive after the timeout.
      * @throws JMSException if the failure cannot be notified
@@ -658,8 +675,9 @@ class EvaluationConsumer
     /**
      * Publishes the completion status of a message group or the overall consumer.
      * 
-     * @param completionStatus the completion status
-     * @param events evaluation status events
+     * @param completionStatus the completion status, not null
+     * @param groupId the groupId, possibly null
+     * @param events evaluation status events, not null
      * @throws NullPointerException if the input is null
      * @throws EvaluationEventException if the status could not be published
      */
@@ -716,20 +734,6 @@ class EvaluationConsumer
     }
 
     /**
-     * Checks whether consumption is complete and, if so, closes the consumer.
-     * @throws EvaluationEventException if the completion state could not be notified
-     */
-
-    private void closeConsumerIfComplete()
-    {
-        // Complete? Then close.
-        if ( this.isComplete() )
-        {
-            this.close();
-        }
-    }
-
-    /**
      * Closes the evaluation on completion.
      */
     private void close()
@@ -753,7 +757,7 @@ class EvaluationConsumer
                 boolean incomplete = !this.isComplete();
 
                 // Marked failed?
-                if ( this.isFailed() )
+                if ( this.getCompletionStatus() == CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE )
                 {
                     this.notifyFailure( null );
                     append = ", which completed unsuccessfully";
@@ -780,7 +784,6 @@ class EvaluationConsumer
                 }
                 else
                 {
-                    this.notifySuccess();
                     append = ", which completed successfully";
                 }
             }
@@ -791,10 +794,9 @@ class EvaluationConsumer
                 this.getMonitor().complete(); // Copies incremented state to final state
                 this.getMonitor().commit();
 
-                // An evaluation consumer may hang around for a while, in order to mop-up late arriving status messages
-                // so make the most expensive states eligible for gc
-                this.pathsWritten.clear();
-                this.groupConsumers.clear();
+                // Now the evaluation is really over, minimize the state as it may hang around for a while to mop-up 
+                // late arriving evaluation status messages
+                this.squash();
 
                 LOGGER.info( "Consumer {} closed evaluation {}{}.",
                              this.getClientId(),
@@ -804,6 +806,16 @@ class EvaluationConsumer
 
             // This instance is not responsible for closing the executor service.
         }
+    }
+
+    /**
+     * Minimizes expensive state, allowing the evaluation to hang around and mop-up late arriving messages.
+     */
+
+    private void squash()
+    {
+        this.pathsWritten.clear();
+        this.groupConsumers.clear();
     }
 
     /**
@@ -891,9 +903,6 @@ class EvaluationConsumer
                       this.getClientId(),
                       this.getEvaluationId(),
                       this.expected.get() );
-
-        // If consumption is complete, then close the consumer
-        this.closeConsumerIfComplete();
     }
 
     /**
