@@ -53,7 +53,7 @@ public class TestDatabase
     }
 
     /**
-     * Create a new ComboPooledDataSource that uses this instance's name.
+     * Create a new data source that uses this instance's name.
      *
      * The idea is to isolate tests from one another by using separate database
      * instances, one way to do that is to use a different database name.

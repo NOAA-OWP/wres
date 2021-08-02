@@ -66,9 +66,11 @@ public class SingleValuedForecastRetrieverTest
     private static final String T2023_04_01T00_00_00Z = "2023-04-01T00:00:00Z";
     private static final String VARIABLE_NAME = "V";
     private static final FeatureKey FEATURE = FeatureKey.of( "F" );
-    @Mock private SystemSettings mockSystemSettings;
+    @Mock
+    private SystemSettings mockSystemSettings;
     private wres.io.utilities.Database wresDatabase;
-    @Mock private Executor mockExecutor;
+    @Mock
+    private Executor mockExecutor;
     private Features featuresCache;
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
@@ -85,11 +87,11 @@ public class SingleValuedForecastRetrieverTest
      */
 
     private static final String UNITS = "CFS";
-    
+
     /**
      * The unit mapper.
      */
-    
+
     private UnitMapper unitMapper;
 
     @BeforeClass
@@ -119,6 +121,8 @@ public class SingleValuedForecastRetrieverTest
                .thenReturn( this.dataSource );
         Mockito.when( this.mockSystemSettings.getDatabaseType() )
                .thenReturn( "h2" );
+        Mockito.when( this.mockSystemSettings.getMaximumPoolSize() )
+               .thenReturn( 10 );
 
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
         this.featuresCache = new Features( this.wresDatabase );
@@ -199,7 +203,7 @@ public class SingleValuedForecastRetrieverTest
 
         // Actual series equals expected series
         assertEquals( expectedSeriesTwo, actualSeriesTwo );
-    }   
+    }
 
     @Test
     public void testRetrievalOfTwoForecastTimeSeriesWithinTimeWindow()
@@ -212,7 +216,8 @@ public class SingleValuedForecastRetrieverTest
         Duration leadStart = Duration.ofHours( 1 );
         Duration leadEnd = Duration.ofHours( 4 );
 
-        TimeWindowOuter timeWindow = TimeWindowOuter.of( referenceStart, referenceEnd, validStart, validEnd, leadStart, leadEnd );
+        TimeWindowOuter timeWindow =
+                TimeWindowOuter.of( referenceStart, referenceEnd, validStart, validEnd, leadStart, leadEnd );
 
         // Build the retriever
         Retriever<TimeSeries<Double>> forecastRetriever =
@@ -288,11 +293,11 @@ public class SingleValuedForecastRetrieverTest
 
         // Get the time-series
         List<Long> identifiers = forecastRetriever.getAllIdentifiers().boxed().collect( Collectors.toList() );
-        
+
         // Actual number of time-series equals expected number
         assertEquals( 2, identifiers.size() );
     }
-    
+
     @Test
     public void testGetRetrievalOfTimeSeriesByIdentifierReturnsTwoTimeSeries()
     {
@@ -312,8 +317,8 @@ public class SingleValuedForecastRetrieverTest
 
         // Actual number of time-series equals expected number
         assertEquals( 2, forecastRetriever.get( identifiers ).count() );
-    }    
-    
+    }
+
     @After
     public void tearDown() throws SQLException
     {

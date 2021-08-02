@@ -65,9 +65,11 @@ import wres.system.SystemSettings;
 public class SingleValuedGriddedRetrieverTest
 {
 
-    @Mock private SystemSettings mockSystemSettings;
+    @Mock
+    private SystemSettings mockSystemSettings;
     private wres.io.utilities.Database wresDatabase;
-    @Mock private Executor mockExecutor;
+    @Mock
+    private Executor mockExecutor;
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
     private Connection rawConnection;
@@ -75,7 +77,7 @@ public class SingleValuedGriddedRetrieverTest
     /**
      * A feature for testing.
      */
-    private static final FeatureKey FEATURE = new FeatureKey( "POINT( 1 2 )", null, 4326, "POINT( 1 2 )"  );
+    private static final FeatureKey FEATURE = new FeatureKey( "POINT( 1 2 )", null, 4326, "POINT( 1 2 )" );
 
     /**
      * A variable name for testing.
@@ -122,6 +124,8 @@ public class SingleValuedGriddedRetrieverTest
                .thenReturn( this.dataSource );
         Mockito.when( this.mockSystemSettings.getDatabaseType() )
                .thenReturn( "h2" );
+        Mockito.when( this.mockSystemSettings.getMaximumPoolSize() )
+               .thenReturn( 10 );
 
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
 
@@ -153,7 +157,8 @@ public class SingleValuedGriddedRetrieverTest
         Duration leadStart = Duration.ofHours( 0 );
         Duration leadEnd = Duration.ofHours( 5 );
 
-        TimeWindowOuter timeWindow = TimeWindowOuter.of( referenceStart, referenceEnd, validStart, validEnd, leadStart, leadEnd );
+        TimeWindowOuter timeWindow =
+                TimeWindowOuter.of( referenceStart, referenceEnd, validStart, validEnd, leadStart, leadEnd );
 
         FeatureTuple featureTuple = new FeatureTuple( FEATURE, FEATURE, FEATURE );
         // Build the retriever

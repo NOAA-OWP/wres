@@ -27,7 +27,6 @@ import wres.datamodel.pools.PoolMetadata;
 @Name( "wres.io.pooling.PoolCreationEvent" )
 @Label( "Pool Creation Event" )
 @Category( { "Java Application", "Water Resources Evaluation Service", "Core", "Pooling" } )
-@Threshold( "10000 ms" )
 class PoolCreationEvent extends Event
 {
     @Label( "Pool Description" )

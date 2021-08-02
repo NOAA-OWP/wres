@@ -32,7 +32,8 @@ import wres.system.SystemSettings;
 
 public class UnitMapperTest
 {
-    @Mock private SystemSettings mockSystemSettings;
+    @Mock
+    private SystemSettings mockSystemSettings;
     private wres.io.utilities.Database wresDatabase;
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
@@ -64,12 +65,14 @@ public class UnitMapperTest
                .thenReturn( this.dataSource );
         Mockito.when( this.mockSystemSettings.getDatabaseType() )
                .thenReturn( "h2" );
+        Mockito.when( this.mockSystemSettings.getMaximumPoolSize() )
+               .thenReturn( 10 );
 
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
 
         // Create the tables
         this.addTheDatabaseAndTables();
-    }    
+    }
 
     @Test
     public void testConversionOfCFSToCMS() throws SQLException
@@ -88,11 +91,11 @@ public class UnitMapperTest
 
         // 1.0 CFS = 35.3147 CMS. Check with delta 5 d.p.
         assertEquals( 1.0, converter.applyAsDouble( 35.3147 ), 0.00001 );
-        
+
         // Test via unit name
         DoubleUnaryOperator namedConverter = mapper.getUnitMapper( units );
         assertEquals( 1.0, namedConverter.applyAsDouble( 35.3147 ), 0.00001 );
-        
+
         // Test via unit name in different case
         DoubleUnaryOperator namedConverterLowerCase = mapper.getUnitMapper( "cfs" );
         assertEquals( 1.0, namedConverterLowerCase.applyAsDouble( 35.3147 ), 0.00001 );
@@ -102,7 +105,7 @@ public class UnitMapperTest
     public void testIdentityConversionOfCMSToCMS() throws SQLException
     {
         // Create the unit mapper for CMS
-        UnitMapper mapper = UnitMapper.of( this.wresDatabase,"CMS" );
+        UnitMapper mapper = UnitMapper.of( this.wresDatabase, "CMS" );
 
         // Obtain the measurement units for CMS
         MeasurementDetails measurement = new MeasurementDetails();
@@ -113,22 +116,22 @@ public class UnitMapperTest
 
         DoubleUnaryOperator converter = mapper.getUnitMapper( measurementUnitId );
         assertEquals( 1.0, converter.applyAsDouble( 1.0 ), 0.00001 );
-        
+
         // Test via unit name
         DoubleUnaryOperator namedConverter = mapper.getUnitMapper( units );
-        assertEquals( 1.0, namedConverter.applyAsDouble( 1.0 ), 0.00001 );              
-    }    
-    
+        assertEquals( 1.0, namedConverter.applyAsDouble( 1.0 ), 0.00001 );
+    }
+
     @Test
     public void constructWithBlankUnitThrowsExpectedException()
     {
         assertThrows( NoSuchUnitConversionException.class,
                       () -> UnitMapper.of( this.wresDatabase, "" ) );
-        
+
         assertThrows( NoSuchUnitConversionException.class,
                       () -> UnitMapper.of( this.wresDatabase, "   " ) );
     }
-    
+
     @After
     public void tearDown() throws SQLException
     {
@@ -154,13 +157,13 @@ public class UnitMapperTest
 
         this.testDatabase.createMeasurementUnitTable( liquibaseDatabase );
         this.testDatabase.createUnitConversionTable( liquibaseDatabase );
-    }   
-    
+    }
+
     /**
      * Drops the schema, cascading to all tables.
      * @throws SQLException if any tables or the schema failed to drop
      */
-    
+
     private void dropTheTablesAndSchema() throws SQLException
     {
         this.testDatabase.dropWresSchema( this.rawConnection );
