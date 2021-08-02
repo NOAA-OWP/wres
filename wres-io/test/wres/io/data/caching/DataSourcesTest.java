@@ -49,7 +49,7 @@ public class DataSourcesTest
     public void beforeEachTest() throws Exception
     {
         LOGGER.debug( "'@Before' started" );
-        MockitoAnnotations.initMocks(  this );
+        MockitoAnnotations.openMocks(  this );
         this.testDatabase = new TestDatabase( "DataSourcesTest"
                                               + RANDOM.nextLong() );
         this.dataSource = this.testDatabase.getNewHikariDataSource();
@@ -66,6 +66,8 @@ public class DataSourcesTest
                .thenReturn( this.dataSource );
         Mockito.when( this.mockSystemSettings.getDatabaseType() )
                .thenReturn( "h2" );
+        Mockito.when( this.mockSystemSettings.getMaximumPoolSize() )
+               .thenReturn( 10 );
 
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
         LOGGER.debug( "'@Before' ended" );

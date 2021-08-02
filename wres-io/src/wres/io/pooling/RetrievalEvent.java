@@ -20,7 +20,6 @@ import wres.datamodel.pools.PoolMetadata;
 @Name( "wres.io.pooling.RetrievalEvent" )
 @Label( "Retrieval Event" )
 @Category( { "Java Application", "Water Resources Evaluation Service", "Core", "Pooling", "Retrieval" } )
-@Threshold( "10000 ms" )
 class RetrievalEvent extends Event
 {
     @Label( "Orientation" )

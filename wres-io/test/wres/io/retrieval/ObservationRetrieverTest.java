@@ -66,9 +66,11 @@ public class ObservationRetrieverTest
     private static final FeatureKey FEATURE = FeatureKey.of( "FEAT" );
     private static final String VARIABLE_NAME = "VAR";
 
-    @Mock private SystemSettings mockSystemSettings;
+    @Mock
+    private SystemSettings mockSystemSettings;
     private wres.io.utilities.Database wresDatabase;
-    @Mock private Executor mockExecutor;
+    @Mock
+    private Executor mockExecutor;
     private Features featuresCache;
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
@@ -123,7 +125,9 @@ public class ObservationRetrieverTest
                .thenReturn( this.dataSource );
         Mockito.when( this.mockSystemSettings.getDatabaseType() )
                .thenReturn( "h2" );
-
+        Mockito.when( this.mockSystemSettings.getMaximumPoolSize() )
+               .thenReturn( 10 );
+        
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
         this.featuresCache = new Features( this.wresDatabase );
 

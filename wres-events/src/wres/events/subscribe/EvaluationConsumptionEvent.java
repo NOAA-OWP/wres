@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import jdk.jfr.Category;
+import jdk.jfr.DataAmount;
 import jdk.jfr.Description;
 import jdk.jfr.Event;
 import jdk.jfr.Label;
@@ -45,6 +46,7 @@ class EvaluationConsumptionEvent extends Event
 
     @Label( "Statistics Message Size (Total Bytes)" )
     @Description( "The total size of all statistics messages received in bytes." )
+    @DataAmount( DataAmount.BYTES )
     private long statisticsMessageBytes;
 
     @Label( "Resource Count" )
@@ -52,6 +54,7 @@ class EvaluationConsumptionEvent extends Event
     private int resourceCount;
 
     @Label( "Resource Size (Total Bytes, Estimated)" )
+    @DataAmount( DataAmount.BYTES )
     @Description( "The estimated size in storage of all resources created by this evaluation." )
     private long resourceBytes;
 

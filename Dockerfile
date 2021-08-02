@@ -21,7 +21,8 @@ WORKDIR /opt
 COPY ./build/distributions/wres-${version}.zip .
 RUN unzip wres-${version}.zip \
     && rm wres-${version}.zip \
-    && ln -s /opt/wres-${version}/bin/wres /usr/bin/wres
+    && ln -s /opt/wres-${version}/bin/wres /usr/bin/wres \
+    && cp /opt/wres-${version}/lib/conf/wres_jfr.jfc /usr/lib/jvm/jre/lib/jfr
 
 # WRES above is a one-run-one-database, one-run-one-evaluation, use light shim:
 ARG worker_version

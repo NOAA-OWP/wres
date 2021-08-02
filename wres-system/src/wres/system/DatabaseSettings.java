@@ -12,6 +12,8 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.TreeMap;
 import java.util.function.Supplier;
+
+import javax.sql.DataSource;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
@@ -56,6 +58,7 @@ final class DatabaseSettings
 	private String databaseType = "postgresql";
 	private String certificateFileToTrust;
 	private int maxPoolSize = 10;
+	private int maxHighPriorityPoolSize = 5;
 	private int maxIdleTime = 30;
 	private boolean attemptToMigrate = true;
 
@@ -467,7 +470,7 @@ final class DatabaseSettings
                                             this.getConnectionProperties() );
 	}
 
-    HikariDataSource createDatasource()
+    DataSource createDatasource()
 	{
         HikariConfig poolConfig = new HikariConfig();
         Properties properties = this.getConnectionProperties();
@@ -481,7 +484,7 @@ final class DatabaseSettings
         return new HikariDataSource( poolConfig );
 	}
 
-    HikariDataSource createHighPriorityDataSource()
+    DataSource createHighPriorityDataSource()
     {
         HikariConfig poolConfig = new HikariConfig();
         Properties properties = this.getConnectionProperties();
@@ -489,7 +492,7 @@ final class DatabaseSettings
         String type = this.getDatabaseType();
         String className = DRIVER_MAPPING.get( type );
         poolConfig.setDataSourceClassName( className );
-        int maxSize = 5;
+        int maxSize = this.maxHighPriorityPoolSize;
         poolConfig.setMaximumPoolSize( maxSize );
         poolConfig.setConnectionTimeout( connectionTimeoutMs );
         return new HikariDataSource( poolConfig );
@@ -814,7 +817,23 @@ final class DatabaseSettings
     {
         return this.queryTimeout;
     }
+	
+	/**
+	 * @return the connection pool size
+	 */
+	int getMaxPoolSize()
+	{
+	    return this.maxPoolSize;
+	}
 
+	/**
+	 * @return the high priority connection pool size
+	 */
+	int getMaxHighPriorityPoolSize()
+	{
+	    return this.maxHighPriorityPoolSize;
+	}
+	
     @Override
     public String toString()
     {

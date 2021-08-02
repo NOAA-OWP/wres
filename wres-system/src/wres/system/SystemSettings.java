@@ -7,15 +7,17 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+import javax.sql.DataSource;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
-import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.github.marschall.jfr.jdbc.JfrDataSource;
 
 import wres.system.xml.XMLHelper;
 import wres.system.xml.XMLReader;
@@ -462,18 +464,39 @@ public class SystemSettings extends XMLReader
     {
         return this.dataDirectory;
     }
+    
+    /**
+     * @return the connection pool size
+     */
+    public int getMaximumPoolSize()
+    {
+        return this.databaseConfiguration.getMaxPoolSize();
+    }
 
+    /**
+     * @return the high priority connection pool size
+     */
+    public int getMaximumHighPriorityPoolSize()
+    {
+        return this.databaseConfiguration.getMaxHighPriorityPoolSize();
+    }
+    
 	/**
 	 * @return A new instance of a connection pool that is built for the system wide configuration
 	 */
-    public HikariDataSource getConnectionPool()
+    public DataSource getConnectionPool()
     {
-        return this.databaseConfiguration.createDatasource();
+        DataSource inner = this.databaseConfiguration.createDatasource();
+        return new JfrDataSource( inner );  // Monitor JDBC traffic with JFR: #61680
     }
 
-    public HikariDataSource getHighPriorityConnectionPool()
+    /**
+     * @return a high-priority connection pool
+     */
+    public DataSource getHighPriorityConnectionPool()
     {
-        return this.databaseConfiguration.createHighPriorityDataSource();
+        DataSource inner = this.databaseConfiguration.createHighPriorityDataSource();
+        return new JfrDataSource( inner ); // Monitor JDBC traffic with JFR: #61680
     }
 
     /**

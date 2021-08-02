@@ -1,5 +1,6 @@
 package wres.io.utilities;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -28,13 +29,16 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import com.zaxxer.hikari.HikariDataSource;
+import javax.sql.DataSource;
+
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyIn;
 import org.postgresql.copy.CopyManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.google.common.collect.Range;
+import com.zaxxer.hikari.HikariDataSource;
+
 import static java.time.ZoneOffset.UTC;
 
 import wres.io.concurrency.WRESCallable;
@@ -84,15 +88,15 @@ public class Database {
 	/**
 	 * The standard priority set of connections to the database
 	 */
-    private final HikariDataSource connectionPool;
+    private final DataSource connectionPool;
 
 	/**
 	 * A higher priority set of connections to the database used for operations
 	 * that absolutely need to operate within the database with little to no
 	 * competition for resources. Should be used sparingly
 	 */
-    private final HikariDataSource highPriorityConnectionPool;
-
+    private final DataSource highPriorityConnectionPool;
+    
 	/**
 	 * A separate thread executor used to schedule database communication
 	 * outside of other threads
@@ -173,12 +177,12 @@ public class Database {
 	{
 		// Ensures that all created threads will be labeled "Database Thread"
 		ThreadFactory factory = runnable -> new Thread(runnable, "Database Thread");
-        ThreadPoolExecutor executor = new ThreadPoolExecutor( connectionPool.getMaximumPoolSize(),
-                                                              connectionPool.getMaximumPoolSize(),
+        ThreadPoolExecutor executor = new ThreadPoolExecutor( this.getSystemSettings().getMaximumPoolSize(),
+                                                              this.getSystemSettings().getMaximumPoolSize(),
                                                               systemSettings.poolObjectLifespan(),
                                                               TimeUnit.MILLISECONDS,
                                                               new ArrayBlockingQueue<>(
-                                                                      connectionPool
+                                                                      this.getSystemSettings()
                                                                               .getMaximumPoolSize() * 5),
                                                               factory
 		);
@@ -298,11 +302,8 @@ public class Database {
             while (!sqlTasks.isTerminated());
         }
 
-		// Close out our database connection pools
-        connectionPool.close();
-        highPriorityConnectionPool.close();
+        this.closePools();
 	}
-
 
     /**
      * Shuts down after all tasks have completed, or after timeout is reached,
@@ -327,15 +328,12 @@ public class Database {
             LOGGER.warn( "Database forceShutdown interrupted.", ie );
             List<Runnable> abandonedDbTasks = sqlTasks.shutdownNow();
             abandoned.addAll( abandonedDbTasks );
-            connectionPool.close();
-            highPriorityConnectionPool.close();
             Thread.currentThread().interrupt();
         }
 
         List<Runnable> abandonedMore = sqlTasks.shutdownNow();
         abandoned.addAll( abandonedMore );
-        connectionPool.close();
-        highPriorityConnectionPool.close();
+        this.closePools();
         return abandoned;
     }
 
@@ -378,32 +376,44 @@ public class Database {
         return this.getConnection();
     }
 
-	/**
-	 * Returns the connection to the connection pool.
-	 * @param connection The connection to return
-	 */
-	private static void returnConnection( Connection connection )
-	{
-	    if (connection != null) {
-	        // The implementation of the C3P0 Connection option returns the
-            // connection to the pool when "close"d. Despite seeming
-            // unneccessary, extra logic may be needed if the implementation
-            // changes (for instance, extra logic must be present if C3PO is not
-            // used) or for further diagnostic purposes
-	        try
-            {
-                connection.close();
-            }
-            catch( SQLException se )
-            {
-                // Exception on close should not affect primary outputs.
-               LOGGER.warn( "A connection could not be returned to the "
-                            + "connection pool properly.",
-                             se );
-            }
-	    }
-	}
+    /**
+     * Closes the connection pools if they are {@link HikariDataSource}. Ideally, whatever created it should close it,
+     * so should probably abstract this to {@link SystemSettings}, but leaving it here for now. Ideally, it should not 
+     * be necessary at all. See #61680. 
+     */
 
+    private void closePools()
+    {
+        LOGGER.info( "Closing database connection pools." );
+
+        // Close out our database connection pools
+        try
+        {
+            if ( this.connectionPool.isWrapperFor( HikariDataSource.class ) )
+            {
+                this.connectionPool.unwrap( HikariDataSource.class )
+                                   .close();
+            }
+        }
+        catch ( SQLException e )
+        {
+            LOGGER.warn( "Unable to close the connection pool." );
+        }
+
+        try
+        {
+            if ( this.highPriorityConnectionPool.isWrapperFor( HikariDataSource.class ) )
+            {
+                this.highPriorityConnectionPool.unwrap( HikariDataSource.class )
+                                               .close();
+            }
+        }
+        catch ( SQLException e )
+        {
+            LOGGER.warn( "Unable to close the high priority connection pool." );
+        }
+    }
+	
     /**
      * Returns a high priority connection to the connection pool
      * @param connection The connection to return
@@ -948,7 +958,7 @@ public class Database {
      * @param isHighPriority Whether or not the query should be run on a high priority connection
      * @return The record for the scheduled task
      */
-    Future issue(final Query query, final boolean isHighPriority)
+    Future<?> issue(final Query query, final boolean isHighPriority)
     {
         Database database = this;
         WRESRunnable queryToIssue = new WRESRunnable() {
@@ -1048,15 +1058,6 @@ public class Database {
 			throw new SQLException( message, e );
 		}
 	}
-
-    /**
-     * @return A reference to the standard connection pool
-     */
-    HikariDataSource getPool()
-    {
-        return this.connectionPool;
-    }
-
 
     /**
      * For system-level monitoring information, return the number of tasks in

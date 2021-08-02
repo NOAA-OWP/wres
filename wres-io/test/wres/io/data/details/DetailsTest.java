@@ -41,7 +41,7 @@ public class DetailsTest
     @Before
     public void setup() throws Exception
     {
-        MockitoAnnotations.initMocks( this );
+        MockitoAnnotations.openMocks( this );
         this.testDatabase = new TestDatabase( "DetailsTest" + random.nextLong() );
         this.rawConnection = DriverManager.getConnection( this.testDatabase.getJdbcString() );
         this.dataSource = this.testDatabase.getNewHikariDataSource();
@@ -55,6 +55,8 @@ public class DetailsTest
                .thenReturn( this.dataSource );
         Mockito.when( this.mockSystemSettings.getDatabaseType() )
                .thenReturn( "h2" );
+        Mockito.when( this.mockSystemSettings.getMaximumPoolSize() )
+               .thenReturn( 10 );
 
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
         // Set up a liquibase database to run migrations against.
