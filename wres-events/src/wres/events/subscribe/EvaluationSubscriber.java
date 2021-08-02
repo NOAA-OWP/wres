@@ -603,7 +603,7 @@ public class EvaluationSubscriber implements Closeable
                 groupId = message.getStringProperty( EvaluationSubscriber.GROUP_ID_STRING );
                 EvaluationConsumer consumer = null;
 
-                // Ignore status messages about consumers, including this one
+                // Ignore status messages about consumers
                 if ( this.shouldIForwardThisMessageForConsumption( message, QueueType.EVALUATION_STATUS_QUEUE ) )
                 {
                     int messageLength = (int) receivedBytes.getBodyLength();
@@ -1041,9 +1041,7 @@ public class EvaluationSubscriber implements Closeable
         }
         else if ( queueType == QueueType.EVALUATION_STATUS_QUEUE )
         {
-            // Ignore messages from subscribers/consumers, including this one. This is for status messages from 
-            // publishers only. But accept messages that are not flagged for this subscriber because a subscriber must
-            // be negotiated in the first instance.
+            // Ignore messages from subscribers/consumers. This is for status messages from publishers only.
             return Objects.isNull( consumerId );
         }
         else
@@ -1521,12 +1519,13 @@ public class EvaluationSubscriber implements Closeable
     private MessageConsumer getMessageConsumer( Session session, Topic topic, String name )
             throws JMSException
     {
+        // Do not consume messages published on this connection, i.e., noLocal=true
         if ( this.areSubscribersDurable() )
         {
-            return session.createDurableSubscriber( topic, name, null, false );
+            return session.createDurableSubscriber( topic, name, null, true );
         }
 
-        return session.createConsumer( topic, null );
+        return session.createConsumer( topic, null, true );
     }
 
     /**

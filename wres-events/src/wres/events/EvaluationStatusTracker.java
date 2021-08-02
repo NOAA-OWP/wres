@@ -1068,13 +1068,14 @@ class EvaluationStatusTracker implements Closeable
     private MessageConsumer getMessageConsumer( Topic topic, String name, String selector, boolean durableSubscriber )
             throws JMSException
     {
+        // Do not consume messages published on this connection, i.e., noLocal=true
         if ( durableSubscriber )
         {
-            return this.session.createDurableSubscriber( topic, name, selector, false );
+            return this.session.createDurableSubscriber( topic, name, selector, true );
         }
         else
         {
-            return this.session.createConsumer( topic, selector, false );
+            return this.session.createConsumer( topic, selector, true );
         }
     }
 
