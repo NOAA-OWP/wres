@@ -137,7 +137,7 @@ class EvaluationEvent extends Event
 
     /**
      * Sets the hash of the evaluation data.
-     * @param hash, the hash, not null
+     * @param hash, the data hash
      */
 
     void setDataHash( String hash )
@@ -188,7 +188,7 @@ class EvaluationEvent extends Event
      * 
      * @param pool a pool
      * @param traceCount an estimate of the number of traces in the pool for left/right data
-     * @param traceCount and estimate of the number of traces in the pool for left/baseline data
+     * @param traceCountBaseline an estimate of the number of traces in the pool for left/baseline data
      */
 
     <L, R> void registerPool( Pool<Pair<L, R>> pool, long traceCount, long traceCountBaseline )
