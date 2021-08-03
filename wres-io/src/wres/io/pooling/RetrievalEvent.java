@@ -7,7 +7,6 @@ import jdk.jfr.Description;
 import jdk.jfr.Event;
 import jdk.jfr.Label;
 import jdk.jfr.Name;
-import jdk.jfr.Threshold;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.pools.PoolMetadata;
 
