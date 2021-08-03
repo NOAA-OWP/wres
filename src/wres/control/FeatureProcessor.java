@@ -12,6 +12,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.function.ToIntFunction;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -21,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DatasourceType;
 import wres.config.generated.ProjectConfig;
+import wres.control.ProcessorHelper.EvaluationDetails;
 import wres.control.ProcessorHelper.Executors;
 import wres.control.ProcessorHelper.MetricsAndThresholds;
 import wres.control.ProcessorHelper.SharedWriters;
@@ -110,43 +112,53 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
     private final String errorMessage;
 
     /**
+     * Monitor.
+     */
+    
+    private final EvaluationEvent monitor;
+    
+    /**
      * Build a processor. 
      * 
-     * @param evaluation a description of the evaluation
+     * @param evaluationDetails the evaluation details
      * @param feature the feature to process
-     * @param resolvedProject the resolved project
-     * @param project the project to use
      * @param unitMapper the unit mapper
      * @param executors the executors for pairs, thresholds, and metrics
      * @param sharedWriters shared writers
      * @throws NullPointerException if any required input is null
      */
 
-    FeatureProcessor( Evaluation evaluation,
+    FeatureProcessor( EvaluationDetails evaluationDetails,
                       FeatureTuple feature,
-                      ResolvedProject resolvedProject,
-                      Project project,
                       UnitMapper unitMapper,
                       Executors executors,
                       SharedWriters sharedWriters )
     {
+        Project localProject = evaluationDetails.getProject();
+        ResolvedProject localResolvedProject = evaluationDetails.getResolvedProject();
+        Evaluation localEvaluation = evaluationDetails.getEvaluation();
+        EvaluationEvent localMonitor = evaluationDetails.getMonitor();
+        
         Objects.requireNonNull( feature );
-        Objects.requireNonNull( resolvedProject );
+        Objects.requireNonNull( localProject );
+        Objects.requireNonNull( localResolvedProject );
         Objects.requireNonNull( unitMapper );
         Objects.requireNonNull( executors );
         Objects.requireNonNull( sharedWriters );
-        Objects.requireNonNull( evaluation );
+        Objects.requireNonNull( localEvaluation );
+        Objects.requireNonNull( localMonitor );
 
         this.feature = feature;
-        this.resolvedProject = resolvedProject;
-        this.project = project;
+        this.resolvedProject = localResolvedProject;
+        this.project = localProject;
         this.unitMapper = unitMapper;
         this.executors = executors;
         this.sharedWriters = sharedWriters;
-        this.evaluation = evaluation;
+        this.evaluation = localEvaluation;
+        this.monitor = localMonitor;
 
         // Error message
-        errorMessage = "While processing feature " + feature;
+        this.errorMessage = "While processing feature " + feature;
     }
 
     @Override
@@ -183,6 +195,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                                   this.feature,
                                                   this.unitMapper,
                                                   retrieverFactory );
+            this.monitor.setPoolCount( pools.size() );
 
             // Stand-up the pair writers
             PairsWriter<Double, Ensemble> pairsWriter = null;
@@ -205,7 +218,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                         processors,
                                         pools,
                                         pairsWriter,
-                                        basePairsWriter );
+                                        basePairsWriter,
+                                        this.getEnsembleTraceCountEstimator() );
         }
         // All other types
         else
@@ -221,6 +235,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                                       this.feature,
                                                       this.unitMapper,
                                                       retrieverFactory );
+            this.monitor.setPoolCount( pools.size() );
 
             // Stand-up the pair writers
             PairsWriter<Double, Double> pairsWriter = null;
@@ -237,13 +252,14 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             List<MetricProcessor<Pool<Pair<Double, Double>>>> processors =
                     this.getSingleValuedProcessors( projectConfig,
                                                     metrics );
-
+            
             return this.processFeature( this.evaluation,
                                         projectConfig,
                                         processors,
                                         pools,
                                         pairsWriter,
-                                        basePairsWriter );
+                                        basePairsWriter,
+                                        this.getSingleValuedTraceCountEstimator() ); // Two traces per pool
         }
     }
 
@@ -258,6 +274,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @param pools the data pools
      * @param pairsWriter the pairs writer
      * @param basePairsWriter the baseline pairs writer
+     * @param traceCountEstimator estimates the trace count in a pool
      * @return a processing result
      */
 
@@ -266,7 +283,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                                            List<MetricProcessor<Pool<Pair<L, R>>>> processors,
                                                            List<Supplier<Pool<Pair<L, R>>>> pools,
                                                            PairsWriter<L, R> pairsWriter,
-                                                           PairsWriter<L, R> basePairsWriter )
+                                                           PairsWriter<L, R> basePairsWriter,
+                                                           ToIntFunction<Pool<Pair<L,R>>> traceCountEstimator )
     {
         // Queue the various tasks by time window (time window is the pooling dimension for metric calculation here)
         List<CompletableFuture<Void>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
@@ -290,7 +308,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                      // Write the baseline pairs, as needed
                                      .thenApply( this.getPairWritingTask( true, basePairsWriter, projectConfig ) )
                                      // Compute the statistics
-                                     .thenApply( this.getStatisticsProcessingTask( processors, projectConfig ) )
+                                     .thenApply( this.getStatisticsProcessingTask( processors, projectConfig, traceCountEstimator ) )
                                      // Publish the statistics for awaiting format consumers
                                      .thenAcceptAsync( statistics -> {
 
@@ -489,12 +507,14 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @param <R> the right data type
      * @param processors the metric processors
      * @param projectConfig the project declaration
+     * @param traceCountEstimator a function that estimates trace count, in order to help with monitoring
      * @return a function that consumes a pool and produces one blob of statistics for each processor
      */
 
     private <L, R> Function<Pool<Pair<L, R>>, List<StatisticsForProject>>
             getStatisticsProcessingTask( List<MetricProcessor<Pool<Pair<L, R>>>> processors,
-                                         ProjectConfig projectConfig )
+                                         ProjectConfig projectConfig,
+                                         ToIntFunction<Pool<Pair<L,R>>> traceCountEstimator )
     {
         return pool -> {
             Objects.requireNonNull( pool );
@@ -528,19 +548,27 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                            .setMinimumSampleSize( processor.getMetrics().getMinimumSampleSize() );
 
                     // Compute separate statistics for the baseline?
-                    if ( pool.hasBaseline() && projectConfig.getInputs().getBaseline().isSeparateMetrics() )
+                    int baselineTraceCount = 0;
+                    if ( pool.hasBaseline() )
                     {
                         Pool<Pair<L, R>> baseline = pool.getBaselineData();
+                        
+                        if ( projectConfig.getInputs().getBaseline().isSeparateMetrics() )
+                        {
+                            LOGGER.debug( "Computing separate statistics for the baseline pairs associated with pool {}.",
+                                          baseline.getMetadata() );
 
-                        LOGGER.debug( "Computing separate statistics for the baseline pairs associated with pool {}.",
-                                      baseline.getMetadata() );
-
-                        StatisticsForProject baselineStatistics = processor.apply( baseline );
-                        builder.addStatistics( baselineStatistics );
+                            StatisticsForProject baselineStatistics = processor.apply( baseline );
+                            builder.addStatistics( baselineStatistics );
+                        }
+                        
+                        baselineTraceCount = traceCountEstimator.applyAsInt( baseline );
                     }
 
                     StatisticsForProject nextStatistics = builder.build();
                     returnMe.add( nextStatistics );
+                    
+                    this.monitor.registerPool( pool, traceCountEstimator.applyAsInt( pool ), baselineTraceCount );
                 }
             }
             catch ( InterruptedException e )
@@ -621,6 +649,24 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         }
 
         return Collections.unmodifiableList( metrics );
+    }
+
+    /**
+     * @return a function that estimates the number of traces in a pool of single-valued time-series
+     */
+
+    private ToIntFunction<Pool<Pair<Double, Double>>> getSingleValuedTraceCountEstimator()
+    {
+        return pool -> 2 * pool.get().size();
+    }
+
+    /**
+     * @return a function that estimates the number of traces in a pool of ensemble time-series
+     */
+
+    private ToIntFunction<Pool<Pair<Double, Ensemble>>> getEnsembleTraceCountEstimator()
+    {
+        return pool -> pool.get().size() * ( pool.getRawData().get( 0 ).getRight().size() + 1 );
     }
 
 }

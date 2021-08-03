@@ -91,6 +91,10 @@ public class Evaluator
 
     public ExecutionResult evaluate( final String[] args )
     {
+        // Create a record of failure, but only commit if a failure actually occurs
+        EvaluationEvent failure = EvaluationEvent.of();
+        failure.begin();
+        
         if ( args.length != 1 )
         {
             String message = "Please correct project configuration file name and "
@@ -98,6 +102,8 @@ public class Evaluator
                              + "bin/wres.bat execute c:/path/to/config1.xml ";
             LOGGER.error( message );
             UserInputException e = new UserInputException( message );
+            failure.setFailed( e );
+            failure.commit();
             return ExecutionResult.failure( e ); // Or return 400 - Bad Request (see #41467)
         }
 
@@ -120,6 +126,8 @@ public class Evaluator
                 String message = "Failed to unmarshal project configuration from command line argument.";
                 LOGGER.error( message, ioe );
                 UserInputException e = new UserInputException( message, ioe );
+                failure.setFailed( e );
+                failure.commit();
                 return ExecutionResult.failure( e );
             }
         }
@@ -138,6 +146,8 @@ public class Evaluator
                                  + configPath.toString();
                 LOGGER.error( message, ioe );
                 UserInputException e = new UserInputException( message, ioe );
+                failure.setFailed( e );
+                failure.commit();
                 return ExecutionResult.failure( e );
             }
         }
@@ -166,6 +176,9 @@ public class Evaluator
                              + projectConfigPlus;
             LOGGER.error( message );
             UserInputException e = new UserInputException( message );
+            failure.setDeclaration( projectConfigPlus.getRawConfig() );
+            failure.setFailed( e );
+            failure.commit();
             return ExecutionResult.failure( e );
         }
 
@@ -177,10 +190,17 @@ public class Evaluator
      * Runs a WRES project.
      * @param projectConfigPlus the project configuration to run
      * @return the result of the execution
+     * @throws NullPointerException if the projectConfigPlus is null
      */
 
     public ExecutionResult evaluate( ProjectConfigPlus projectConfigPlus )
     {
+        Objects.requireNonNull( projectConfigPlus );
+        
+        EvaluationEvent monitor = EvaluationEvent.of();
+        monitor.setDeclaration( projectConfigPlus.getRawConfig() );
+        monitor.begin();
+        
         // Build a processing pipeline
         // Essential to use a separate thread pool for thresholds and metrics as ArrayBlockingQueue operates a FIFO 
         // policy. If dependent tasks (thresholds) are queued ahead of independent ones (metrics) in the same pool, 
@@ -305,9 +325,12 @@ public class Evaluator
                                                                                                   databaseServices,
                                                                                                   projectConfigPlus,
                                                                                                   executors,
-                                                                                                  this.getBrokerConnectionFactory() );
+                                                                                                  this.getBrokerConnectionFactory(),
+                                                                                                  monitor );
             pathsWrittenTo.addAll( innerPathsAndProjectHash.getLeft() );
             projectHash = innerPathsAndProjectHash.getRight();
+            monitor.setDataHash( projectHash );
+            monitor.setResources( pathsWrittenTo );
 
             lockManager.unlockShared( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
         }
@@ -315,6 +338,8 @@ public class Evaluator
         {
             String message = "Please correct the project configuration.";
             UserInputException userInputException = new UserInputException( message, userException );
+            monitor.setFailed( userInputException );
+            monitor.commit();
             return ExecutionResult.failure( projectConfigPlus.getProjectConfig().getName(),
                                             userInputException );
         }
@@ -322,6 +347,8 @@ public class Evaluator
         {
             String message = "Could not complete project execution";
             InternalWresException internalWresException = new InternalWresException( message, internalException );
+            monitor.setFailed( internalWresException );
+            monitor.commit();
             return ExecutionResult.failure( projectConfigPlus.getProjectConfig().getName(),
                                             internalWresException );
         }
@@ -337,6 +364,8 @@ public class Evaluator
             lockManager.shutdown();
         }
 
+        monitor.setSucceeded();
+        monitor.commit();
         return ExecutionResult.success( projectConfigPlus.getProjectConfig()
                                                          .getName(),
                                         projectHash,

@@ -82,6 +82,7 @@ class ProcessorHelper
      * @param projectConfigPlus the project configuration
      * @param executors the executors
      * @param connections broker connections
+     * @param monitor an event that monitors the life cycle of the evaluation, not null
      * @return the resources written and the hash of the project data
      * @throws WresProcessingException if the evaluation processing fails
      * @throws ProjectConfigException if the declaration is incorrect
@@ -93,7 +94,8 @@ class ProcessorHelper
                                                       DatabaseServices databaseServices,
                                                       ProjectConfigPlus projectConfigPlus,
                                                       Executors executors,
-                                                      BrokerConnectionFactory connections )
+                                                      BrokerConnectionFactory connections,
+                                                      EvaluationEvent monitor )
             throws IOException
     {
         Objects.requireNonNull( systemSettings );
@@ -101,12 +103,14 @@ class ProcessorHelper
         Objects.requireNonNull( projectConfigPlus );
         Objects.requireNonNull( executors );
         Objects.requireNonNull( connections );
+        Objects.requireNonNull( monitor );
 
         Set<Path> resources = new TreeSet<>();
         String projectHash = null;
 
         // Get a unique evaluation identifier
         String evaluationId = EvaluationEventUtilities.getUniqueId();
+        monitor.setEvaluationId( evaluationId );
 
         // Create output directory
         Path outputDirectory = ProcessorHelper.createTempOutputDirectory( evaluationId );
@@ -173,7 +177,8 @@ class ProcessorHelper
                                                                          evaluationDescription,
                                                                          evaluationId,
                                                                          subscriberApprover,
-                                                                         connections );
+                                                                         connections,
+                                                                         monitor );
 
             // Open an evaluation, to be closed on completion or stopped on exception
             Pair<Evaluation, String> evaluationAndProjectHash = ProcessorHelper.processProjectConfig( evaluationDetails,
@@ -346,6 +351,7 @@ class ProcessorHelper
                                                  executors.getIoExecutor(),
                                                  featurefulProjectConfig,
                                                  databaseServices.getDatabaseLockManager() );
+            evaluationDetails.setProject( project );
             projectHash = project.getHash();
 
             // Get a unit mapper for the declared or analyzed measurement units
@@ -368,6 +374,7 @@ class ProcessorHelper
                                         ProcessorHelper.CLIENT_ID,
                                         evaluationDetails.getEvaluationId(),
                                         evaluationDetails.getSubscriberApprover() );
+            evaluationDetails.setEvaluation( evaluation );
 
             Operations.prepareForExecution( project );
 
@@ -441,7 +448,8 @@ class ProcessorHelper
                                                                   projectIdentifier,
                                                                   metricsAndThresholds,
                                                                   outputDirectory );
-
+            evaluationDetails.setResolvedProject( resolvedProject );
+            
             // Tasks for features
             List<CompletableFuture<Void>> featureTasks = new ArrayList<>();
 
@@ -457,10 +465,8 @@ class ProcessorHelper
             // Create one task per feature
             for ( FeatureTuple feature : decomposedFeatures )
             {
-                Supplier<FeatureProcessingResult> featureProcessor = new FeatureProcessor( evaluation,
+                Supplier<FeatureProcessingResult> featureProcessor = new FeatureProcessor( evaluationDetails,
                                                                                            feature,
-                                                                                           resolvedProject,
-                                                                                           project,
                                                                                            unitMapper,
                                                                                            executors,
                                                                                            sharedWriters );
@@ -1121,7 +1127,7 @@ class ProcessorHelper
      * Small value class to collect together variables needed to instantiate an evaluation.
      */
 
-    private static class EvaluationDetails
+    static class EvaluationDetails
     {
         /** Project configuration. */
         private final ProjectConfigPlus projectConfigPlus;
@@ -1133,11 +1139,19 @@ class ProcessorHelper
         private final SubscriberApprover subscriberApprover;
         /** Broker connections. */
         private final BrokerConnectionFactory connections;
-
+        /** Monitor. */
+        private final EvaluationEvent monitor;
+        /** The project, possibly null. */
+        private Project project;
+        /** The resolved project, possibly null. */
+        private ResolvedProject resolvedProject;
+        /** The messaging component of an evaluation, possibly null. */
+        private Evaluation evaluation;
+        
         /**
          * @return the project configuration
          */
-        private ProjectConfigPlus getProjectConfigPlus()
+        ProjectConfigPlus getProjectConfigPlus()
         {
             return projectConfigPlus;
         }
@@ -1145,7 +1159,7 @@ class ProcessorHelper
         /**
          * @return the evaluation description
          */
-        private wres.statistics.generated.Evaluation getEvaluationDescription()
+        wres.statistics.generated.Evaluation getEvaluationDescription()
         {
             return evaluationDescription;
         }
@@ -1153,7 +1167,7 @@ class ProcessorHelper
         /**
          * @return the evaluation identifier
          */
-        private String getEvaluationId()
+        String getEvaluationId()
         {
             return evaluationId;
         }
@@ -1161,7 +1175,7 @@ class ProcessorHelper
         /**
          * @return the subscriber approver
          */
-        private SubscriberApprover getSubscriberApprover()
+        SubscriberApprover getSubscriberApprover()
         {
             return subscriberApprover;
         }
@@ -1169,11 +1183,86 @@ class ProcessorHelper
         /**
          * @return the broker connection factory
          */
-        private BrokerConnectionFactory getBrokerConnections()
+        BrokerConnectionFactory getBrokerConnections()
         {
             return connections;
         }
+        
+        /**
+         * @return the monitor
+         */
 
+        EvaluationEvent getMonitor()
+        {
+            return this.monitor;
+        }
+        
+        /**
+         * @return the project, possibly null
+         */
+
+        Project getProject()
+        {
+            return this.project;
+        }
+        
+        /**
+         * @return the resolvedProject, possibly null
+         */
+
+        ResolvedProject getResolvedProject()
+        {
+            return this.resolvedProject;
+        }
+        
+        /**
+         * @return the evaluation, possibly null
+         */
+
+        Evaluation getEvaluation()
+        {
+            return this.evaluation;
+        }
+        
+        /**
+         * Set the project, not null.
+         * @param project the project
+         * @throws NullPointerException if the project is null
+         */
+
+        void setProject( Project project )
+        {
+            Objects.requireNonNull( project );
+            
+            this.project = project;
+        }
+        
+        /**
+         * Set the resolved project, not null.
+         * @param resolvedProject the resolved project
+         * @throws NullPointerException if the resolvedProject is null
+         */
+
+        void setResolvedProject( ResolvedProject resolvedProject )
+        {
+            Objects.requireNonNull( resolvedProject );
+            
+            this.resolvedProject = resolvedProject;
+        }
+        
+        /**
+         * Set the evaluation, not null.
+         * @param evaluation the evaluation
+         * @throws NullPointerException if the evaluation is null
+         */
+
+        void setEvaluation( Evaluation evaluation )
+        {
+            Objects.requireNonNull( evaluation );
+            
+            this.evaluation = evaluation;
+        }
+        
         /**
          * Builds an instance.
          * 
@@ -1184,17 +1273,19 @@ class ProcessorHelper
          * @param connections the broker connections
          */
 
-        private EvaluationDetails( ProjectConfigPlus projectConfigPlus,
-                                   wres.statistics.generated.Evaluation evaluationDescription,
-                                   String evaluationId,
-                                   SubscriberApprover subscriberApprover,
-                                   BrokerConnectionFactory connections )
+        EvaluationDetails( ProjectConfigPlus projectConfigPlus,
+                           wres.statistics.generated.Evaluation evaluationDescription,
+                           String evaluationId,
+                           SubscriberApprover subscriberApprover,
+                           BrokerConnectionFactory connections,
+                           EvaluationEvent monitor )
         {
             this.projectConfigPlus = projectConfigPlus;
             this.evaluationDescription = evaluationDescription;
             this.evaluationId = evaluationId;
             this.subscriberApprover = subscriberApprover;
             this.connections = connections;
+            this.monitor = monitor;
         }
     }
 
