@@ -7,7 +7,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import jdk.jfr.Category;
@@ -33,14 +32,10 @@ class EvaluationEvent extends Event
     @Description( "The unique identifier of the evaluation." )
     private String evaluationId;
 
-    @Label( "Hash of the evaluation data" )
-    @Description( "The MD5 checksum or top hash of the evaluation data, including all left, right and baseline "
+    @Label( "Data Hash" )
+    @Description( "The MD5 checksum or top hash of the time-series data, including all left, right and baseline "
                   + "datasets." )
     private String hash;
-
-    @Label( "Evaluation Declaration" )
-    @Description( "The declaration provided to the Water Resources Evaluation Service." )
-    private String declaration;
 
     @Label( "Pool Count" )
     @Description( "The number of pools in the evaluation." )
@@ -78,10 +73,6 @@ class EvaluationEvent extends Event
     @Label( "Succeeded" )
     @Description( "Is true if the evaluation succeeded, false if the evaluation failed." )
     private boolean succeeded;
-
-    @Label( "Error" )
-    @Description( "The evaluation failed with this error." )
-    private String error;
 
     /** Internal/incremental state of {@link #seriesCount} for left/right data during an evaluation. */
     private final AtomicLong seriesCountRightInternal;
@@ -121,16 +112,6 @@ class EvaluationEvent extends Event
     }
 
     /**
-     * Sets the evaluation declaration.
-     * @param declaration, the evaluation declaration string
-     */
-
-    void setDeclaration( String declaration )
-    {
-        this.declaration = declaration;
-    }
-
-    /**
      * Flags that the evaluation succeeded.
      */
     void setSucceeded()
@@ -146,13 +127,8 @@ class EvaluationEvent extends Event
      * @param error, the error
      */
 
-    void setFailed( Exception error )
+    void setFailed()
     {
-        if ( Objects.nonNull( error ) )
-        {
-            this.error = ExceptionUtils.getStackTrace( error );
-        }
-
         this.succeeded = false;
 
         // Register incremental state

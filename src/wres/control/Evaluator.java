@@ -102,7 +102,7 @@ public class Evaluator
                              + "bin/wres.bat execute c:/path/to/config1.xml ";
             LOGGER.error( message );
             UserInputException e = new UserInputException( message );
-            failure.setFailed( e );
+            failure.setFailed();
             failure.commit();
             return ExecutionResult.failure( e ); // Or return 400 - Bad Request (see #41467)
         }
@@ -126,7 +126,7 @@ public class Evaluator
                 String message = "Failed to unmarshal project configuration from command line argument.";
                 LOGGER.error( message, ioe );
                 UserInputException e = new UserInputException( message, ioe );
-                failure.setFailed( e );
+                failure.setFailed();
                 failure.commit();
                 return ExecutionResult.failure( e );
             }
@@ -146,7 +146,7 @@ public class Evaluator
                                  + configPath.toString();
                 LOGGER.error( message, ioe );
                 UserInputException e = new UserInputException( message, ioe );
-                failure.setFailed( e );
+                failure.setFailed();
                 failure.commit();
                 return ExecutionResult.failure( e );
             }
@@ -176,8 +176,7 @@ public class Evaluator
                              + projectConfigPlus;
             LOGGER.error( message );
             UserInputException e = new UserInputException( message );
-            failure.setDeclaration( projectConfigPlus.getRawConfig() );
-            failure.setFailed( e );
+            failure.setFailed();
             failure.commit();
             return ExecutionResult.failure( e );
         }
@@ -198,7 +197,6 @@ public class Evaluator
         Objects.requireNonNull( projectConfigPlus );
         
         EvaluationEvent monitor = EvaluationEvent.of();
-        monitor.setDeclaration( projectConfigPlus.getRawConfig() );
         monitor.begin();
         
         // Build a processing pipeline
@@ -338,7 +336,7 @@ public class Evaluator
         {
             String message = "Please correct the project configuration.";
             UserInputException userInputException = new UserInputException( message, userException );
-            monitor.setFailed( userInputException );
+            monitor.setFailed();
             monitor.commit();
             return ExecutionResult.failure( projectConfigPlus.getProjectConfig().getName(),
                                             userInputException );
@@ -347,7 +345,7 @@ public class Evaluator
         {
             String message = "Could not complete project execution";
             InternalWresException internalWresException = new InternalWresException( message, internalException );
-            monitor.setFailed( internalWresException );
+            monitor.setFailed();
             monitor.commit();
             return ExecutionResult.failure( projectConfigPlus.getProjectConfig().getName(),
                                             internalWresException );
