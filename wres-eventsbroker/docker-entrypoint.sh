@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# For any files not written using the default umask, make them group-writable on exit
+# Trap and proxy signals
 trap stop TERM INT
 
 start() {

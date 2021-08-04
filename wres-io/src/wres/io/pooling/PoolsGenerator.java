@@ -505,10 +505,8 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
 
         // Get a left-ish retriever for every pool in order to promote re-use across pools via caching. May consider
         // doing this for other sides of data in future, but left-ish data is the priority because this is very 
-        // often re-used
-        Map<TimeWindowOuter, Supplier<Stream<TimeSeries<L>>>> leftRetrievers = this.getLeftRetrievers( timeWindows,
-                                                                                                       inputsConfig.getLeft()
-                                                                                                                   .getType() );
+        // often re-used. Only need this collection if there isn't a climatological source that spans all pools
+        Map<TimeWindowOuter, Supplier<Stream<TimeSeries<L>>>> leftRetrievers = new HashMap<>();
 
         // Create the time windows, iterate over them and create the retrievers 
         try
@@ -535,6 +533,13 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
                                                                this.getClimateAdmissibleValue() );
 
                 builder.setClimatology( climatologyAtScale, this.getClimateMapper() );
+            }
+            // No climatology, so populate the collection of per-pool left-ish retrievers
+            else
+            {
+                leftRetrievers = this.getLeftRetrievers( timeWindows,
+                                                         inputsConfig.getLeft()
+                                                                     .getType() );
             }
 
             List<PoolSupplier<L, R>> returnMe = new ArrayList<>();
