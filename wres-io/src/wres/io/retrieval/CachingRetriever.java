@@ -12,10 +12,6 @@ import net.jcip.annotations.Immutable;
  * <p>Adds a wrapper to a {@link Supplier} that supplies a {@link Stream} of retrieved data. This allows the retrieved 
  * data to be cached locally for re-use. The data is acquired eagerly, on construction.
  * 
- * <p><b>Implementation notes:</b>
- * 
- * <p>This implementation is thread-safe.
- * 
  * @author james.brown@hydrosolved.com
  * @param <T> the type of data to retrieve
  */
