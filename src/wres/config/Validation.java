@@ -2091,9 +2091,74 @@ public class Validation
     {
         boolean valid = true;
 
-        valid = Validation.isIssuedDatesPoolingWindowValid( projectConfigPlus, pairConfig );
+        valid = Validation.areDateTimeIntervalsValid( projectConfigPlus, pairConfig );
+        
+        valid = valid && Validation.isIssuedDatesPoolingWindowValid( projectConfigPlus, pairConfig );
 
         valid = valid && Validation.isLeadTimesPoolingWindowValid( projectConfigPlus, pairConfig );
+
+        return valid;
+    }
+    
+    /**
+     * Checks the internal consistency of the issued and valid time intervals.
+     * 
+     * @param projectConfigPlus the project declaration, which helps with messaging
+     * @param pairConfig the pair configuration
+     * @return true if the issued and valid time intervals are valid, otherwise false
+     */
+
+    private static boolean areDateTimeIntervalsValid( ProjectConfigPlus projectConfigPlus, PairConfig pairConfig )
+    {
+        boolean valid = true;
+
+        // Valid dates
+        DateCondition validDates = pairConfig.getDates();
+        if ( Objects.nonNull( validDates ) && Objects.nonNull( validDates.getEarliest() )
+             && Objects.nonNull( validDates.getLatest() ) )
+        {
+            Instant earliest = Instant.parse( validDates.getEarliest() );
+            Instant latest = Instant.parse( validDates.getLatest() );
+
+            if ( earliest.isAfter( latest ) )
+            {
+                valid = false;
+
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " The earliest valid datetime cannot be later the latest valid datetime, but the "
+                             + "earliest valid datetime is {} and the latest valid datetime is {}. Please correct "
+                             + "this declaration and try again.",
+                             projectConfigPlus.getOrigin(),
+                             validDates.sourceLocation().getLineNumber(),
+                             validDates.sourceLocation().getColumnNumber(),
+                             earliest,
+                             latest );
+            }
+        }
+        
+        // Issued dates
+        DateCondition issuedDates = pairConfig.getIssuedDates();
+        if ( Objects.nonNull( issuedDates ) && Objects.nonNull( issuedDates.getEarliest() )
+             && Objects.nonNull( issuedDates.getLatest() ) )
+        {
+            Instant earliest = Instant.parse( issuedDates.getEarliest() );
+            Instant latest = Instant.parse( issuedDates.getLatest() );
+
+            if ( earliest.isAfter( latest ) )
+            {
+                valid = false;
+
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " The earliest issued datetime cannot be later than the latest issued datetime, but the "
+                             + "earliest issued datetime is {} and the latest issued datetime is {}. Please correct "
+                             + "this declaration and try again.",
+                             projectConfigPlus.getOrigin(),
+                             issuedDates.sourceLocation().getLineNumber(),
+                             issuedDates.sourceLocation().getColumnNumber(),
+                             earliest,
+                             latest );
+            }
+        }
 
         return valid;
     }
