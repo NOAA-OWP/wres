@@ -310,7 +310,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
                     // Execute
                     Future<List<DurationScoreStatisticOuter>> addMe =
-                            CompletableFuture.supplyAsync( supplier, thresholdExecutor );
+                            CompletableFuture.supplyAsync( supplier, this.thresholdExecutor );
 
                     // Add the future result to the store
                     addFutures.addDurationScoreOutput( addMe );

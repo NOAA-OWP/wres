@@ -17,7 +17,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -98,7 +98,13 @@ public class Validation
                                                                                 + "latest=\"2019-01-01T00:00:00Z\" />) when using a web API as a "
                                                                                 + "source for forecasts (see source near line {} and column {}";
 
-
+    private static final String REMOVE_MEMBER_BY_VALID_YEAR = " Discovered a {} source with <removeMemberByValidYear>. "
+                                                              + "This option has been marked deprecated for removal in "
+                                                              + "a future version of the software. It is recommended "
+                                                              + "that you find an alternative to this option because "
+                                                              + "it may be removed from the software without further "
+                                                              + "warning.";
+    
     private Validation()
     {
         // prevent construction.
@@ -403,7 +409,7 @@ public class Validation
         boolean isValid = true;
 
         // Create a map of destination types and counts
-        Map<DestinationType, Integer> destinationsByType = new HashMap<>();
+        Map<DestinationType, Integer> destinationsByType = new EnumMap<>( DestinationType.class );
         for ( DestinationConfig destination : destinations )
         {
             DestinationType nextType = destination.getType();
@@ -2295,6 +2301,34 @@ public class Validation
         DataSourceConfig left = projectConfig.getInputs().getLeft();
         DataSourceConfig right = projectConfig.getInputs().getRight();
         DataSourceConfig baseline = projectConfig.getInputs().getBaseline();
+        
+        // Warn that removing an ensemble member by valid year is deprecated. Warn for each side of data.
+        if ( Objects.nonNull( left.getRemoveMemberByValidYear() ) )
+        {
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE + REMOVE_MEMBER_BY_VALID_YEAR,
+                         projectConfigPlus,
+                         left.sourceLocation().getLineNumber(),
+                         left.sourceLocation().getColumnNumber(),
+                         LeftOrRightOrBaseline.LEFT );
+        }
+
+        if ( Objects.nonNull( right.getRemoveMemberByValidYear() ) )
+        {
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE + REMOVE_MEMBER_BY_VALID_YEAR,
+                         projectConfigPlus,
+                         right.sourceLocation().getLineNumber(),
+                         right.sourceLocation().getColumnNumber(),
+                         LeftOrRightOrBaseline.RIGHT );
+        }
+
+        if ( Objects.nonNull( baseline ) && Objects.nonNull( baseline.getRemoveMemberByValidYear() ) )
+        {
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE + REMOVE_MEMBER_BY_VALID_YEAR,
+                         projectConfigPlus,
+                         baseline.sourceLocation().getLineNumber(),
+                         baseline.sourceLocation().getColumnNumber(),
+                         LeftOrRightOrBaseline.BASELINE );
+        }
 
         // #72042
         if ( left.getType() == DatasourceType.ENSEMBLE_FORECASTS &&

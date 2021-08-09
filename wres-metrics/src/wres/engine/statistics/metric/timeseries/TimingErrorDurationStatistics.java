@@ -71,7 +71,6 @@ public class TimingErrorDurationStatistics
         return new TimingErrorDurationStatistics( identifier, statistics );
     }
 
-
     @Override
     public DurationScoreStatisticOuter apply( DurationDiagramStatisticOuter pairs )
     {

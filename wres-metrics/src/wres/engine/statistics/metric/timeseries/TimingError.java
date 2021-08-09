@@ -26,7 +26,7 @@ public abstract class TimingError implements Metric<Pool<Pair<Double,Double>>, D
     @Override
     public String toString()
     {
-        return getMetricName().toString();
+        return this.getMetricName().toString();
     }
 
     @Override
