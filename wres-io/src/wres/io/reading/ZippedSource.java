@@ -271,7 +271,7 @@ public class ZippedSource extends BasicSource {
 
             throw new PreIngestException( "Failed to process a gzipped source from '"
                                           + this.getDataSource() + "': '"
-                                          + nameInside );
+                                          + nameInside, e );
         }
 
         LOGGER.debug("Finished parsing '{}'", this.getFilename());

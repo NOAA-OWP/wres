@@ -595,6 +595,7 @@ public class Database {
                                  + delimiter + "'";
 
         final byte[] NULL = "\\N".getBytes( StandardCharsets.UTF_8 );
+        CopyIn copyIn = null;
 
         try ( Connection connection = this.getConnection() )
 		{
@@ -605,7 +606,7 @@ public class Database {
             CopyManager manager = pgConnection.getCopyAPI();
 
 			// Use the manager to stream the data through to the database
-            CopyIn copyIn = manager.copyIn( copy_definition );
+            copyIn = manager.copyIn( copy_definition );
             byte[] valueDelimiterBytes = delimiter.getBytes( StandardCharsets.UTF_8 );
             byte[] valueRowDelimiterBytes = "\n".getBytes( StandardCharsets.UTF_8 );
 
@@ -649,6 +650,21 @@ public class Database {
                 int subStringMax = Math.min( allValues.length(), 5000 );
                 LOGGER.debug( "Data could not be copied to the database:{}{}...",
                               copy_definition, allValues.substring( 0, subStringMax ) );
+            }
+
+            // From https://www.postgresql.org/message-id/8D1E8D0DC762E82-1320-C263%40webmail-vm124.sysops.aol.com
+            // Quoting Brett Wooldridge, author of HikariCP, "call cancelCopy()"
+            if ( copyIn != null )
+            {
+                try
+                {
+                    copyIn.cancelCopy();
+                }
+                catch ( SQLException se )
+                {
+                    LOGGER.warn( "Failed to cancel copy operation on table {}",
+                                 tableName, se );
+                }
             }
 
             throw new IngestException( "Data could not be copied to the database.",
