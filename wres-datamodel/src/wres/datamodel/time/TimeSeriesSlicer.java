@@ -748,8 +748,10 @@ public final class TimeSeriesSlicer
      * @param startOfYear the start monthday of the year
      * @return the filtered event
      * @throws NullPointerException if any input is null
+     * @deprecated for removal because this function is not needed, #93728 
      */
 
+    @Deprecated( since = "5.12", forRemoval = true )
     public static Event<Ensemble> filter( Event<Ensemble> event, MonthDay startOfYear )
     {
         Objects.requireNonNull( event );

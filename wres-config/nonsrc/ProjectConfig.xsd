@@ -355,6 +355,7 @@
             </xs:element>
             <xs:element name="existingTimeScale" type="timeScale" minOccurs="0" maxOccurs="1"/>
             <xs:element name="urlParameter" type="urlParameterType" minOccurs="0" maxOccurs="unbounded" />
+            <!-- This option is marked deprecated for removal as of WRES version 5.12. See #93972. -->
             <xs:element name="removeMemberByValidYear" type="removeMemberByValidYear" minOccurs="0" maxOccurs="1"/>
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
