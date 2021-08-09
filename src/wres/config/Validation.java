@@ -2093,8 +2093,10 @@ public class Validation
 
         valid = Validation.areDateTimeIntervalsValid( projectConfigPlus, pairConfig );
         
+        valid = valid && Validation.isValidDatesPoolingWindowValid( projectConfigPlus, pairConfig );
+        
         valid = valid && Validation.isIssuedDatesPoolingWindowValid( projectConfigPlus, pairConfig );
-
+        
         valid = valid && Validation.isLeadTimesPoolingWindowValid( projectConfigPlus, pairConfig );
 
         return valid;
@@ -2164,6 +2166,112 @@ public class Validation
     }
 
     /**
+     * Checks the valid dates pooling windows for consistency with other declaration, as well as internal consistency.
+     * 
+     * @param projectConfigPlus the project declaration, which helps with messaging
+     * @param pairConfig the pair configuration
+     * @return true if the valid dates pooling windows are undefined or valid, otherwise false
+     */
+
+    private static boolean isValidDatesPoolingWindowValid( ProjectConfigPlus projectConfigPlus, PairConfig pairConfig )
+    {
+        boolean valid = true;
+
+        // Validate any validDatesPoolingWindow
+        if ( Objects.nonNull( pairConfig.getValidDatesPoolingWindow() ) )
+        {
+            PoolingWindowConfig validDatesPoolingConfig = pairConfig.getValidDatesPoolingWindow();
+
+            String validBoiler = " Error when evaluating the declaration for valid dates "
+                                 + "pooling windows:";
+
+            // Check that the valid dates are defined
+            if ( Objects.isNull( pairConfig.getDates() ) )
+            {
+                valid = false;
+
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + "{} the earliest and latest valid dates are required, but were not found. Please add "
+                             + "these dates and try again.",
+                             projectConfigPlus.getOrigin(),
+                             pairConfig.sourceLocation().getLineNumber(),
+                             pairConfig.sourceLocation().getColumnNumber(),
+                             validBoiler );
+            }
+            else
+            {
+                // Check for the minimum
+                if ( Objects.isNull( pairConfig.getDates().getEarliest() ) )
+                {
+                    valid = false;
+
+                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                 + "{} the earliest valid date is required, but was not found. Please add this date "
+                                 + "and try again.",
+                                 projectConfigPlus.getOrigin(),
+                                 pairConfig.getDates().sourceLocation().getLineNumber(),
+                                 pairConfig.getDates().sourceLocation().getColumnNumber(),
+                                 validBoiler );
+                }
+
+                // Check for the maximum
+                if ( Objects.isNull( pairConfig.getDates().getLatest() ) )
+                {
+                    valid = false;
+
+                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                 + "{} the latest valid date is required, but was not found. Please add this date and"
+                                 + "try again.",
+                                 projectConfigPlus.getOrigin(),
+                                 pairConfig.getDates().sourceLocation().getLineNumber(),
+                                 pairConfig.getDates().sourceLocation().getColumnNumber(),
+                                 validBoiler );
+                }
+
+                // Both are present, check that they can produce a time window
+                if ( Objects.nonNull( pairConfig.getDates().getEarliest() )
+                     && Objects.nonNull( pairConfig.getDates().getLatest() ) )
+                {
+                    // Create the elements necessary to increment the windows
+                    ChronoUnit periodUnits = ChronoUnit.valueOf( validDatesPoolingConfig.getUnit()
+                                                                                        .toString()
+                                                                                        .toUpperCase() );
+                    // Period associated with the validDatesPoolingWindow
+                    Duration period = Duration.of( validDatesPoolingConfig.getPeriod(), periodUnits );
+
+                    Instant start = Instant.parse( pairConfig.getDates().getEarliest() );
+                    Instant end = Instant.parse( pairConfig.getDates().getLatest() );
+
+                    if ( start.plus( period ).isAfter( end ) )
+                    {
+                        valid = false;
+
+                        LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                     + " Could not generate any valid time pools because the earliest valid time ({}) "
+                                     + "plus the period associated with the validDatesPoolingWindow ({}) is later than "
+                                     + "the latest valid time ({}). There must be at least one pool per evaluation "
+                                     + "and, for a pool to be valid, its rightmost valid time must be earlier than the "
+                                     + "latest valid time.",
+                                     projectConfigPlus.getOrigin(),
+                                     pairConfig.getDates().sourceLocation().getLineNumber(),
+                                     pairConfig.getDates().sourceLocation().getColumnNumber(),
+                                     start,
+                                     period,
+                                     end );
+                    }
+                }
+            }
+
+            // Validate the contents
+            valid = valid
+                    && Validation.isPoolingWindowValid( projectConfigPlus, validDatesPoolingConfig, "valid dates" );
+
+        }
+
+        return valid;
+    }
+    
+    /**
      * Checks for issued dates pooling windows and validates for consistency with other
      * declaration, as well as internal consistency.
      * 
@@ -2190,8 +2298,8 @@ public class Validation
                 valid = false;
 
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + "{} the minimum and maximum issued dates "
-                             + "are required, but were not found.",
+                             + "{} the earliest and latest issued dates are required, but were not found. Please add "
+                             + "these dates and try again.",
                              projectConfigPlus.getOrigin(),
                              pairConfig.sourceLocation().getLineNumber(),
                              pairConfig.sourceLocation().getColumnNumber(),
@@ -2205,7 +2313,8 @@ public class Validation
                     valid = false;
 
                     LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + "{} the minimum issued date was not found but is required.",
+                                 + "{} the earliest issued date is required, but was not found. Please add this date "
+                                 + "and try again.",
                                  projectConfigPlus.getOrigin(),
                                  pairConfig.getIssuedDates().sourceLocation().getLineNumber(),
                                  pairConfig.getIssuedDates().sourceLocation().getColumnNumber(),
@@ -2218,11 +2327,45 @@ public class Validation
                     valid = false;
 
                     LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + "{} the maximum issued date was not found but is required.",
+                                 + "{} the latest issued date is required, but was not found. Please add this date and "
+                                 + "try again.",
                                  projectConfigPlus.getOrigin(),
                                  pairConfig.getIssuedDates().sourceLocation().getLineNumber(),
                                  pairConfig.getIssuedDates().sourceLocation().getColumnNumber(),
                                  issuedBoiler );
+                }
+                
+                // Both are present, check that they can produce a time window
+                if ( Objects.nonNull( pairConfig.getIssuedDates().getEarliest() )
+                     && Objects.nonNull( pairConfig.getIssuedDates().getLatest() ) )
+                {
+                    // Create the elements necessary to increment the windows
+                    ChronoUnit periodUnits = ChronoUnit.valueOf( issuedDatesPoolingConfig.getUnit()
+                                                                                        .toString()
+                                                                                        .toUpperCase() );
+                    // Period associated with the issuedDatesPoolingWindow
+                    Duration period = Duration.of( issuedDatesPoolingConfig.getPeriod(), periodUnits );
+
+                    Instant start = Instant.parse( pairConfig.getIssuedDates().getEarliest() );
+                    Instant end = Instant.parse( pairConfig.getIssuedDates().getLatest() );
+
+                    if ( start.plus( period ).isAfter( end ) )
+                    {
+                        valid = false;
+
+                        LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                     + " Could not generate any issued time pools because the earliest issued time "
+                                     + "({}) plus the period associated with the issuedDatesPoolingWindow ({}) is "
+                                     + "later than the latest issued time ({}). There must be at least one pool per "
+                                     + "evaluation and, for a pool to be valid, its rightmost issued time must be "
+                                     + "earlier than the latest issued time.",
+                                     projectConfigPlus.getOrigin(),
+                                     pairConfig.getIssuedDates().sourceLocation().getLineNumber(),
+                                     pairConfig.getIssuedDates().sourceLocation().getColumnNumber(),
+                                     start,
+                                     period,
+                                     end );
+                    }
                 }
             }
 
@@ -2233,7 +2376,7 @@ public class Validation
         }
 
         return valid;
-    }
+    }    
 
     /**
      * Checks for lead times pooling windows and validates for consistency with other
@@ -2262,8 +2405,8 @@ public class Validation
                 valid = false;
 
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + "{} the minimum and maximum lead times "
-                             + "are required but were not found.",
+                             + "{} the minimum and maximum lead durations are required but were not found. Please add "
+                             + "these durations and try again.",
                              projectConfigPlus.getOrigin(),
                              pairConfig.sourceLocation().getLineNumber(),
                              pairConfig.sourceLocation().getColumnNumber(),
@@ -2277,7 +2420,8 @@ public class Validation
                     valid = false;
 
                     LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + "{} the minimum lead time was not found but is required.",
+                                 + "{} the minimum lead duration is required, but was not found. Please add this "
+                                 + "duration and try again.",
                                  projectConfigPlus.getOrigin(),
                                  pairConfig.getLeadHours().sourceLocation().getLineNumber(),
                                  pairConfig.getLeadHours().sourceLocation().getColumnNumber(),
@@ -2290,11 +2434,45 @@ public class Validation
                     valid = false;
 
                     LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + "{} the maximum lead time was not found but is required.",
+                                 + "{} the maximum lead duration is required, but was not found. Please add this "
+                                 + "duration and try again.",
                                  projectConfigPlus.getOrigin(),
                                  pairConfig.getLeadHours().sourceLocation().getLineNumber(),
                                  pairConfig.getLeadHours().sourceLocation().getColumnNumber(),
                                  leadBoiler );
+                }
+                
+                // Both are present, check that they can produce a time window
+                if ( Objects.nonNull( pairConfig.getLeadHours().getMinimum() )
+                     && Objects.nonNull( pairConfig.getLeadHours().getMaximum() ) )
+                {
+                    // Create the elements necessary to increment the windows
+                    ChronoUnit periodUnits = ChronoUnit.valueOf( leadTimesPoolingConfig.getUnit()
+                                                                                        .toString()
+                                                                                        .toUpperCase() );
+                    // Period associated with the leadTimesPoolingWindow
+                    Duration period = Duration.of( leadTimesPoolingConfig.getPeriod(), periodUnits );
+
+                    Duration start = Duration.ofHours( pairConfig.getLeadHours().getMinimum() );
+                    Duration end = Duration.ofHours( pairConfig.getLeadHours().getMaximum() );
+
+                    if ( start.plus( period ).compareTo( end ) > 0 )
+                    {
+                        valid = false;
+
+                        LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                     + " Could not generate any lead duration pools because the minimum lead duration "
+                                     + "({}) plus the period associated with the leadTimesPoolingWindow ({}) is later "
+                                     + "than the maximum lead duration ({}). There must be at least one pool per "
+                                     + "evaluation and, for a pool to be valid, its rightmost lead duration must be "
+                                     + "smaller than the maximum lead duration.",
+                                     projectConfigPlus.getOrigin(),
+                                     pairConfig.getIssuedDates().sourceLocation().getLineNumber(),
+                                     pairConfig.getIssuedDates().sourceLocation().getColumnNumber(),
+                                     start,
+                                     period,
+                                     end );
+                    }
                 }
             }
 
