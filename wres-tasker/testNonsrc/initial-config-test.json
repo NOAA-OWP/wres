@@ -14,8 +14,8 @@
         {
             "name": "wres-keystore-localhost",
             "type": "NonJavaKeyStore",
-            "privateKeyUrl": "${wres.secrets_dir}/***REMOVED***wres-broker-localhost_server_private_rsa_key.pem",
-            "certificateUrl": "${wres.secrets_dir}/***REMOVED***wres-broker-localhost_server_x509_cert.pem",
+            "privateKeyUrl": "${java.io.tmpdir}/wres-broker-localhost_server_private_rsa_key.pem",
+            "certificateUrl": "${java.io.tmpdir}/wres-broker-localhost_server_x509_cert.pem",
             "password": "wres-broker-passphrase"
         }
     ],
@@ -24,7 +24,7 @@
         {
             "name": "wres-truststore",
             "type": "NonJavaTrustStore",
-            "certificatesUrl": "${wres.secrets_dir}/***REMOVED***wres-broker-localhost_server_x509_cert.pem"
+            "certificatesUrl": "${java.io.tmpdir}/wres-broker-localhost_server_x509_cert.pem"
         }
     ],
     "ports":

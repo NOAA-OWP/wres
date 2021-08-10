@@ -56,8 +56,8 @@ public class WresJobTest
 {
     private static Path tempDir;
     private static final String P12_FILE_NAME = "wres-tasker_client_private_key_and_x509_cert.p12";
-    private static final String SERVER_CERT_FILE_NAME = "***REMOVED***wres-broker-localhost_server_x509_cert.pem";
-    private static final String SERVER_KEY_FILE_NAME = "***REMOVED***wres-broker-localhost_server_private_rsa_key.pem";
+    private static final String SERVER_CERT_FILE_NAME = "wres-broker-localhost_server_x509_cert.pem";
+    private static final String SERVER_KEY_FILE_NAME = "wres-broker-localhost_server_private_rsa_key.pem";
     private static final String TRUST_STORE_FILE_NAME = "trustedCertificates-localhost.jks";
 
     private static final String[] APPROVED_CIPHERS = {
@@ -209,7 +209,7 @@ public class WresJobTest
 
         // Must at least set up the trustStore property before class because
         // we statically load the trust files (maybe need to change that?)
-        System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
+        System.setProperty( "java.io.tmpdir", WresJobTest.tempDir.toString() );
         Path trustPath = Paths.get( WresJobTest.tempDir.toString(), TRUST_STORE_FILE_NAME );
         System.setProperty( "wres.trustStore", trustPath.toString() );
 
@@ -224,9 +224,6 @@ public class WresJobTest
 
         System.setProperty( CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST,
                             approvedCiphersJoiner.toString() );
-
-        System.setProperty( Environment.SYSTEM_PROPERTY_NAMING_WRES_ENVIRONMENT,
-                            "-dev" );
 
         // This class does not test redis integration.
     }
