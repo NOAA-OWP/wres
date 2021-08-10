@@ -57,7 +57,7 @@ public class WRDSSourceTest
     private static final String WRDS_NO_FORECASTS_BODY = "{\"status\": 400, \"message\": \"No forecasts are available at station GSVT2 per the provided parameters.\"}";
     private static final String INVALID_AHPS_BODY = "{\n"
         +"  \"header\": {\n"
-        +"  \"schema\": \"http://***REMOVED***.***REMOVED***.***REMOVED***/api/schemas/v1/forecasts/streamflow/ahps/nwsLocations/nwsLid/schema.json\",\n"
+        +"  \"schema\": \"http://redacted/api/schemas/v1/forecasts/streamflow/ahps/nwsLocations/nwsLid/schema.json\",\n"
         +"  \"request\":{\n"
         +"    \"params\": {\n"
         +"      \"asProvided\": {\n"
@@ -1986,7 +1986,7 @@ public class WRDSSourceTest
     private static final String VALID_AHPS_BODY =
             "{\n"
             + "  \"header\": {\n"
-            + "  \"schema\": \"http://***REMOVED***.***REMOVED***.***REMOVED***/api/schemas/v1/forecasts/streamflow/ahps/nwsLocations/nwsLid/schema.json\",\n"
+            + "  \"schema\": \"http://redacted/api/schemas/v1/forecasts/streamflow/ahps/nwsLocations/nwsLid/schema.json\",\n"
             + "  \"request\":{\n"
             + "    \"params\": {\n"
             + "      \"asProvided\": {\n"

@@ -13,7 +13,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
- * Parse relevant portions of a a document similar to
+ * Parse relevant portions of a document similar to
  * {
  *     "_metrics": {
  *         "location_count": 1,
@@ -21,7 +21,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
  *         "total_request_time": 0.11055397987365723
  *     },
  *     "_warnings": [],
- *     "_documentation": "***REMOVED***.***REMOVED***.***REMOVED***/docs/stage/location/swagger/",
+ *     "_documentation": "redacted/docs/stage/location/swagger/",
  *     "locations": [
  *         {
  *             "nwm_feature_id": "18384141",

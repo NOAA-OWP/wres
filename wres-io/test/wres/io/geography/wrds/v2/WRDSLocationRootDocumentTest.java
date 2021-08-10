@@ -23,7 +23,7 @@ public class WRDSLocationRootDocumentTest
             "        \"total_request_time\": 17.214682817459106\r\n" + 
             "    },\r\n" + 
             "    \"_warnings\": [],\r\n" + 
-            "    \"_documentation\": \"***REMOVED***.***REMOVED***.***REMOVED***/docs/prod/v2/location/swagger/\",\r\n" + 
+            "    \"_documentation\": \"redacted/docs/prod/v2/location/swagger/\",\r\n" +
             "    \"locations\": [\r\n" + 
             "        {\r\n" + 
             "            \"nwm_feature_id\": \"23320100\",\r\n" + 

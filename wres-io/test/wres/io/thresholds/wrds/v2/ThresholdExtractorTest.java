@@ -121,7 +121,7 @@ class ThresholdExtractorTest
         Map<String, Double> metrics = new HashMap<>();
         metrics.put( "threshold_count", 1.0 );
         thresholdResponse.set_metrics( metrics );
-        thresholdResponse.set_documentation( "***REMOVED***-dev.***REMOVED***.***REMOVED***/docs/dev/v2/location/swagger/" );
+        thresholdResponse.set_documentation( "redacted/docs/dev/v2/location/swagger/" );
 
         this.extractor = new ThresholdExtractor( thresholdResponse );
 

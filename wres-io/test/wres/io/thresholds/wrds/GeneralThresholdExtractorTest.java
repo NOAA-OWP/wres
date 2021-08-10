@@ -41,7 +41,7 @@ public class GeneralThresholdExtractorTest
 {
     //The file used is created from this URL:
     //
-    //https://***REMOVED***.***REMOVED***.***REMOVED***/api/location/v3.0/nwm_recurrence_flow/nws_lid/PTSA1,MNTG1,BLOF1,SMAF1,CEDG1/
+    //https://redacted/api/location/v3.0/nwm_recurrence_flow/nws_lid/PTSA1,MNTG1,BLOF1,SMAF1,CEDG1/
     //
     //executed on 5/22/2021 in the afternoon.
     private static final URI path2 = URI.create( "testinput/thresholds/wrds/recurrence_v3.json" );

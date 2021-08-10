@@ -12,11 +12,11 @@
 TODAY=`date -u "+%Y%m%d"` # get date in GMT time
 
 WHATDATES=$TODAY # use -w option to override this
-DStore_Site="http://***REMOVED***dstore.***REMOVED***.***REMOVED***" # for now this is fixed
+DStore_Site=$DSTORE_URL
 DATAVERSION=2.0
 DATATYPES= # this is requiured by -t option
 DESTINATION_DIR=/mnt/wres_share/nwmData # use -d option to override this 
-DESTINATION_HOST=***REMOVED***wres-dev02.***REMOVED***.***REMOVED*** # use -h option to override this 
+DESTINATION_HOST=localhost # use -h option to override this
 REMOTE_USER=$USER # use -u option to override this 
 CURRENTDIR=$PWD
 SCRIPT_DIR=$PWD # use -s option to override this 

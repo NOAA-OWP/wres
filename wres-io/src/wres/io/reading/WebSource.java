@@ -1086,7 +1086,7 @@ class WebSource implements Callable<List<IngestResult>>
      * Specific to WRDS AHPS API, get URI for given issued date range and feature
      *
      * <p>Expecting a wrds URI like this:
-     * http://***REMOVED***.***REMOVED***.***REMOVED***/api/v1/forecasts/streamflow/ahps</p>
+     * http://redacted/api/v1/forecasts/streamflow/ahps</p>
      * @param issuedRange the range of issued dates (from left to right)
      * @param nwsLocationId The feature for which to get data.
      * @return a URI suitable to get the data from WRDS API

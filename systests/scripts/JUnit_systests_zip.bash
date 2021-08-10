@@ -160,7 +160,7 @@ else
 	fi
 	
 #	On 2020-02-13 a day before the Valentine's Day we got
-#	java.io.IOException: The given database URL ('***REMOVED***wresdb-dev01.***REMOVED***.***REMOVED***') is not accessible. error
+#	java.io.IOException: The given database URL ... is not accessible. error
 #	So, we need to test the DB connection before run scenario tests
 
 	/bin/psql --host $WRES_DB_HOSTNAMEJ --dbname $WRES_DB_NAMEJ --username $WRES_DB_USERNAMEJ --list --output testDBConnection.txt 2> testDBError.txt
