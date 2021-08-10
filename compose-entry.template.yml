@@ -50,8 +50,8 @@ services:
          # To write heap dump files:
          - /mnt/wres_share/heap_dumps/tasker:/mnt/wres_share/heap_dumps/tasker
         environment:
-         # Make sure to pass through WRES_ENV_SUFFIX to tasker at runtime
-         - JAVA_OPTS=-Dwres.broker=broker -Dwres.redisHost=persister -Dwres.environment=${WRES_ENV_SUFFIX} -Djava.io.tmpdir=/mnt/wres_share/input_data -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/tasker -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/tasker/java_pid%p.hprof /mnt/wres_share/heap_dumps/tasker/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/tasker/java_pid%p_`hostname`.hprof'
+         # Make sure to pass through WRES_TASKER_SERVER_P12 to tasker at runtime
+         - JAVA_OPTS=-Dwres.broker=broker -Dwres.redisHost=persister -Dwres.taskerPathToServerP12=${WRES_TASKER_SERVER_P12} -Djava.io.tmpdir=/mnt/wres_share/input_data -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/tasker -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/tasker/java_pid%p.hprof /mnt/wres_share/heap_dumps/tasker/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/tasker/java_pid%p_`hostname`.hprof'
         # Tasker JVM should have 340m max heap specified at launch
         # The total limit includes stack space which depends on Thread count
         mem_limit: 1390m

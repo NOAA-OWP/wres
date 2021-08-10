@@ -21,8 +21,6 @@ import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.messages.BrokerHelper;
-
 public class Tasker
 {
     private static final String DH_PARAM_SECURITY_PROPERTY_NAME =
@@ -61,6 +59,24 @@ public class Tasker
                               + "a7a2ffa0630e7ed6a0971e15877c3e"
                               + "2da9b86dc042d01c4fce3efcda0a30"
                               + "89d3bb0a4fe7d14900b3,2}" );
+    }
+
+    public static final String PATH_TO_SERVER_P12_PNAME = "wres.taskerPathToServerP12";
+    private static final String PATH_TO_SERVER_P12;
+
+    static
+    {
+        String serverP12 = System.getProperty( PATH_TO_SERVER_P12_PNAME );
+
+        if ( serverP12 != null )
+        {
+            PATH_TO_SERVER_P12 = serverP12;
+        }
+        else
+        {
+
+            PATH_TO_SERVER_P12 = "wres-tasker_server_private_key_and_x509_cert.p12";
+        }
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger( Tasker.class );
@@ -148,7 +164,8 @@ public class Tasker
         alpn.setDefaultProtocol( httpOneOne.getProtocol() );
 
         // Use TLS
-        SslContextFactory.Server contextFactory = Tasker.getSslContextFactory();
+        SslContextFactory.Server contextFactory = Tasker.getSslContextFactory(
+                PATH_TO_SERVER_P12 );
         httpConfig.addCustomizer( new SecureRequestCustomizer() );
         SslConnectionFactory tlsConnectionFactory =
                 new SslConnectionFactory( contextFactory, alpn.getProtocol() );
@@ -199,16 +216,12 @@ public class Tasker
         }
     }
 
-    private static SslContextFactory.Server getSslContextFactory()
+    private static SslContextFactory.Server getSslContextFactory( String pathToP12 )
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        String ourServerCertificateFilename = BrokerHelper.getSecretsDir()
-                                              + "/***REMOVED***wres"
-                                              + Environment.getEnvironmentSuffix()
-                                              + "_server_private_key_and_x509_cert.p12";
         sslContextFactory.setKeyStoreType( "PKCS12" );
         sslContextFactory.setKeyStorePassword( "wres-web-passphrase" );
-        sslContextFactory.setKeyStorePath( ourServerCertificateFilename );
+        sslContextFactory.setKeyStorePath( pathToP12 );
         return sslContextFactory;
     }
 }
