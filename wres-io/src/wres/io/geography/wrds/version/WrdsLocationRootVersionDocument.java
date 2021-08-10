@@ -23,10 +23,10 @@ Parse deployment and version information from JSON that starts like this:
     },
     "_warnings": [],
     "_documentation": {
-        "swagger URL": "http://***REMOVED***.***REMOVED***.***REMOVED***/docs/location/v3.0/swagger/"
+        "swagger URL": "http://redactedv/docs/location/v3.0/swagger/"
     },
     "deployment": {
-        "api_url": "https://***REMOVED***.***REMOVED***.***REMOVED***/api/location/v3.0/metadata/nws_lid/OGCN2/",
+        "api_url": "https://redacted/api/location/v3.0/metadata/nws_lid/OGCN2/",
         "stack": "prod",
         "version": "v3.1.0"
     },...

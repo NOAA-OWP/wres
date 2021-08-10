@@ -5,10 +5,10 @@
     },
     "_warnings": [],
     "_documentation": {
-        "swagger URL": "***REMOVED***.***REMOVED***.***REMOVED***/docs/location/v3.0/swagger/"
+        "swagger URL": "redacted/docs/location/v3.0/swagger/"
     },
     "deployment": {
-        "api_url": "https://***REMOVED***.***REMOVED***.***REMOVED***/api/location/v3.0/nws_threshold/nws_lid/PTSA1,MNTG1,BLOF1,CEDG1,SMAF1/",
+        "api_url": "https://redacted/api/location/v3.0/nws_threshold/nws_lid/PTSA1,MNTG1,BLOF1,CEDG1,SMAF1/",
         "stack": "prod",
         "version": "v3.1.0"
     },

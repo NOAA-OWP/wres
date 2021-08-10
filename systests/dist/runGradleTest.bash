@@ -50,7 +50,7 @@ multipleTest=`echo $multipleTest | tr [a-z] [A-Z]`
 # export TESTS_DIR=~/wres_testing/wres/systests
 # export WRES_LOG_LEVEL=info
 # export WRES_DB_USERNAME=
-# export WRES_DB_HOSTNAME=***REMOVED***wresdb-dev01.***REMOVED***.***REMOVED***
+# export WRES_DB_HOSTNAME=
 
 echo "built_number = $built_number, series = $series, debug = $debug"
 #exit

@@ -24,7 +24,7 @@ public class WRDSLocationRootVersionDocumentTest
             "        \"total_request_time\": 17.214682817459106\r\n" + 
             "    },\r\n" + 
             "    \"_warnings\": [],\r\n" + 
-            "    \"_documentation\": \"***REMOVED***.***REMOVED***.***REMOVED***/docs/prod/v2/location/swagger/\",\r\n" + 
+            "    \"_documentation\": \"redacted/docs/prod/v2/location/swagger/\",\r\n" +
             "    \"locations\": [\r\n" + 
             "        {\r\n" + 
             "            \"nwm_feature_id\": \"23320100\",\r\n" + 
@@ -86,10 +86,10 @@ public class WRDSLocationRootVersionDocumentTest
             "    },\r\n" + 
             "    \"_warnings\": [],\r\n" + 
             "    \"_documentation\": {\r\n" + 
-            "        \"swagger URL\": \"http://***REMOVED***.***REMOVED***.***REMOVED***/docs/location/v3.0/swagger/\"\r\n" + 
+            "        \"swagger URL\": \"http://redacted/docs/location/v3.0/swagger/\"\r\n" +
             "    },\r\n" + 
             "    \"deployment\": {\r\n" + 
-            "        \"api_url\": \"https://***REMOVED***.***REMOVED***.***REMOVED***/api/location/v3.0/metadata/nws_lid/OGCN2/\",\r\n" + 
+            "        \"api_url\": \"https://redacted/api/location/v3.0/metadata/nws_lid/OGCN2/\",\r\n" +
             "        \"stack\": \"prod\",\r\n" + 
             "        \"version\": \"v3.1.0\"\r\n" + 
             "    },\r\n" + 

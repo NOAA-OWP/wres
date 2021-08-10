@@ -24,10 +24,10 @@ Parse relevant portions of a a document similar to this (which is generated when
     },
     "_warnings": [],
     "_documentation": {
-        "swagger URL": "http://***REMOVED***.***REMOVED***.***REMOVED***/docs/location/v3.0/swagger/"
+        "swagger URL": "http://redacted/docs/location/v3.0/swagger/"
     },
     "deployment": {
-        "api_url": "https://***REMOVED***.***REMOVED***.***REMOVED***/api/location/v3.0/metadata/nws_lid/OGCN2/?identifiers=true",
+        "api_url": "https://redacted/api/location/v3.0/metadata/nws_lid/OGCN2/?identifiers=true",
         "stack": "prod",
         "version": "v3.1.0"
     },
@@ -78,10 +78,10 @@ OR this when "?identiers=true" is NOT included at the end, resulting in full out
     },
     "_warnings": [],
     "_documentation": {
-        "swagger URL": "http://***REMOVED***.***REMOVED***.***REMOVED***/docs/location/v3.0/swagger/"
+        "swagger URL": "http://redacted/docs/location/v3.0/swagger/"
     },
     "deployment": {
-        "api_url": "https://***REMOVED***.***REMOVED***.***REMOVED***/api/location/v3.0/metadata/nws_lid/OGCN2/",
+        "api_url": "https://redacted/api/location/v3.0/metadata/nws_lid/OGCN2/",
         "stack": "prod",
         "version": "v3.1.0"
     },

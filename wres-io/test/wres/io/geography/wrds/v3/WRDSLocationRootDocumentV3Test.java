@@ -25,10 +25,10 @@ public class WRDSLocationRootDocumentV3Test
             "    },\r\n" + 
             "    \"_warnings\": [],\r\n" + 
             "    \"_documentation\": {\r\n" + 
-            "        \"swagger URL\": \"http://***REMOVED***.***REMOVED***.***REMOVED***/docs/location/v3.0/swagger/\"\r\n" + 
+            "        \"swagger URL\": \"http://redacted/docs/location/v3.0/swagger/\"\r\n" +
             "    },\r\n" + 
             "    \"deployment\": {\r\n" + 
-            "        \"api_url\": \"https://***REMOVED***.***REMOVED***.***REMOVED***/api/location/v3.0/metadata/nws_lid/OGCN2/\",\r\n" + 
+            "        \"api_url\": \"https://redacted/api/location/v3.0/metadata/nws_lid/OGCN2/\",\r\n" +
             "        \"stack\": \"prod\",\r\n" + 
             "        \"version\": \"v3.1.0\"\r\n" + 
             "    },\r\n" + 
@@ -145,10 +145,10 @@ public class WRDSLocationRootDocumentV3Test
             "    },\r\n" + 
             "    \"_warnings\": [],\r\n" + 
             "    \"_documentation\": {\r\n" + 
-            "        \"swagger URL\": \"http://***REMOVED***.***REMOVED***.***REMOVED***/docs/location/v3.0/swagger/\"\r\n" + 
+            "        \"swagger URL\": \"http://redacted/docs/location/v3.0/swagger/\"\r\n" +
             "    },\r\n" + 
             "    \"deployment\": {\r\n" + 
-            "        \"api_url\": \"https://***REMOVED***.***REMOVED***.***REMOVED***/api/location/v3.0/metadata/nws_lid/OGCN2/?identifiers=true\",\r\n" + 
+            "        \"api_url\": \"https://redacted/api/location/v3.0/metadata/nws_lid/OGCN2/?identifiers=true\",\r\n" +
             "        \"stack\": \"prod\",\r\n" + 
             "        \"version\": \"v3.1.0\"\r\n" + 
             "    },\r\n" + 

@@ -6,13 +6,18 @@
 #
 # Arguments: First argument is a config file (any name), add a line with
 #	user = firstName.lastName:passwd
-#	Where the login ID and passwd are from https://vlab.***REMOVED***
+#	Where the login ID and passwd are for Jenkins
 #		Second argument is whether install the recent built, with value yes or no(default).
 #
 # Required Files: searchBuildNumber.py, searchRevisionNumber.py and searchBuiltRecent.py
 # Output Files: build_history.html, build_revision.html, build_recent.html and revisionFile.txt
 #		screenCapture.txt under your ~/wres_testing/wres/systests directory
 # Download File: wres-yyyymmdd-subRevision.zip
+
+# Set these when calling:
+# $JOB_URL is also required, could become a command-line argument
+# $SMTP_HOST is required only for email, could become a command-line argument
+# $EMAIL_ADDRESSES is required only for email, could become command-line arg
 
 if [ $# -lt 1 ]
 then
@@ -93,7 +98,7 @@ then
 fi
 
 # Step 1, get the built number from built history
-$CURL --config $CONFIGFILE --silent  https://vlab.***REMOVED***/jenkins/job/Verify_OWP_WRES/ --output "build_history.html" 
+$CURL --config $CONFIGFILE --silent  $JOB_URL --output "build_history.html"
 
 if [ ! -s build_history.html ] # if download unsuccessful
 then
@@ -116,7 +121,7 @@ then
 fi
 
 # Step 2, get the revision number
-$CURL --config $CONFIGFILE --silent  https://vlab.***REMOVED***/jenkins/job/Verify_OWP_WRES/$builtNumber/ --output "build_revision.html" 
+$CURL --config $CONFIGFILE --silent  $JOB_URL/$builtNumber/ --output "build_revision.html"
 
 if [ ! -s build_revision.html ] # if this file is unsuccessed downlowd.
 then
@@ -142,7 +147,7 @@ then
 	rm -v build_recent.html >> $LOGFILE 2>&1
 fi 
 
-LATEST_URLSITE=https://vlab.***REMOVED***/jenkins/job/Verify_OWP_WRES/ws/build/distributions/
+LATEST_URLSITE=$JOB_URL/ws/build/distributions/
 
 # Get this page and output to build_recent.html
 #$CURL --config $CONFIGFILE --verbos  $URLSITE --output "build_recent.html" 
@@ -160,7 +165,7 @@ if [ -f systests_recent.html ]
 then
 	rm -v systests_recent.html >> $LOGFILE 2>&1
 fi
-SYSTESTS_URLSITE=https://vlab.***REMOVED***/jenkins/job/Verify_OWP_WRES/ws/systests/build/distributions/
+SYSTESTS_URLSITE=$JOB_URL/ws/systests/build/distributions/
 $CURL --config $CONFIGFILE --silent  $SYSTESTS_URLSITE --output "systests_recent.html" 
 if [ ! -s systests_recent.html ] # if download unsuccessful
 then
@@ -337,13 +342,13 @@ then
 #				wresSysTestResults=`ls -t wresSysTestResults_"$today"*.txt | head -1`
 #				/usr/bin/zip "$wresSysTestResults".zip $wresSysTestResults >> $LOGFILE 2>&1
 #
-#				/usr/bin/mailx -F -S smtp=140.90.91.135 -s "systests results from $latest_noZip FAILED" -a "$wresSysTestResults".zip Raymond.Chui@***REMOVED***,Hank.Herr@***REMOVED***,james.d.brown@***REMOVED***,jesse.bickel@***REMOVED***,christopher.tubbs@***REMOVED*** < systests_screenCatch_$latest_noZip.txt 
+#				/usr/bin/mailx -F -S smtp=$SMTP_HOST -s "systests results from $latest_noZip FAILED" -a "$wresSysTestResults".zip $EMAIL_ADDRESSES < systests_screenCatch_$latest_noZip.txt
 #				echo "Email out $wresSysTestResults.zip and systests_screenCatch_$latest_noZip.txt" >> $LOGFILE 2>&1
 #			elif [ ! -s systests_Results_$latest_noZip.txt ] # there are no diff nor FAIL found in this test
 #			then # file is not exist or empty size
 #				echo "No diff, FAILS, FATAL, ERROR, Abort  found in this test." >> $LOGFILE 2>&1
 #				grep -A2 PROCESSING systests_screenCatch_$latest_noZip.txt > systests_Results_$latest_noZip.txt
-#				/usr/bin/mailx -F -S smtp=140.90.91.135 -s "systests results from $latest_noZip PASSED" Raymond.Chui@***REMOVED***,Hank.Herr@***REMOVED***,james.d.brown@***REMOVED***,jesse.bickel@***REMOVED***,christopher.tubbs@***REMOVED*** < systests_Results_$latest_noZip.txt
+#				/usr/bin/mailx -F -S smtp=$SMTP_HOST -s "systests results from $latest_noZip PASSED" $EMAIL_ADDRESSES < systests_Results_$latest_noZip.txt
 #				rm -v systests_Results_$latest_noZip.txt >> $LOGFILE 2>&1
 #			fi
 #
@@ -354,13 +359,13 @@ then
 #                                wresSysTestResults_700=`ls -t wresSysTestResults_700_"$today"*.txt | head -1`
 #                                /usr/bin/zip "$wresSysTestResults_700".zip $wresSysTestResults_700 >> $LOGFILE700 2>&1
 #
-#                                /usr/bin/mailx -F -S smtp=140.90.91.135 -s "systests results from $latest_noZip for 700 FAILED" -a "$wresSysTestResults_700".zip Raymond.Chui@***REMOVED***,Hank.Herr@***REMOVED***,james.d.brown@***REMOVED***,jesse.bickel@***REMOVED***,christopher.tubbs@***REMOVED*** < systests_screenCatch_700_$latest_noZip.txt
+#                                /usr/bin/mailx -F -S smtp=$SMTP_HOST -s "systests results from $latest_noZip for 700 FAILED" -a "$wresSysTestResults_700".zip $EMAIL_ADDRESSES < systests_screenCatch_700_$latest_noZip.txt
 #                                echo "Email out $wresSysTestResults_700.zip and systests_screenCatch_700_$latest_noZip.txt" >> $LOGFILE700 2>&1
 #                        elif [ ! -s systests_Results_700_$latest_noZip.txt ] # there are no diff nor FAIL found in this test
 #                        then # file is not exist or empty size
 #                                echo "No diff, FAILS, FATAL, ERROR, Abort  found in this test." >> $LOGFILE700 2>&1
 #				grep -A2 PROCESSING systests_screenCatch_700_$latest_noZip.txt > systests_Results_700_$latest_noZip.txt
-#				/usr/bin/mailx -F -S smtp=140.90.91.135 -s "systests results from $latest_noZip for 700 PASSED" Raymond.Chui@***REMOVED***,Hank.Herr@***REMOVED***,james.d.brown@***REMOVED***,jesse.bickel@***REMOVED***,christopher.tubbs@***REMOVED*** < systests_Results_700_$latest_noZip.txt
+#				/usr/bin/mailx -F -S smtp=$SMTP_HOST -s "systests results from $latest_noZip for 700 PASSED" $EMAIL_ADDRESSES < systests_Results_700_$latest_noZip.txt
 #                                rm -v systests_Results_700_$latest_noZip.txt >> $LOGFILE700 2>&1
 #                        fi
 #
