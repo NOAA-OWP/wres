@@ -17,6 +17,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigs;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DestinationConfig;
@@ -48,6 +49,20 @@ import wres.util.CalculationException;
  */
 public class Project
 {
+    private static final String DATA_SOURCES_TO_DISAMBIGUATE = " data sources to disambiguate.";
+
+    private static final String NAME_FOR_THE = "name for the ";
+
+    private static final String POSSIBILITIES_PLEASE_DECLARE_AN_EXPLICIT_VARIABLE =
+            "possibilities. Please declare an explicit variable ";
+
+    private static final String NAME_FROM_THE_DATA_FAILED_TO_IDENTIFY_ANY =
+            "name from the data, failed to identify any ";
+
+    private static final String VARIABLE = " variable ";
+
+    private static final String WHILE_ATTEMPTING_TO_DETECT_THE = "While attempting to detect the ";
+
     private static final String SELECT_1 = "SELECT 1";
 
     private static final String PROJECT_ID = "project_id";
@@ -81,9 +96,9 @@ public class Project
      * project sources, with a preference for the mostly commonly occurring right-sided source unit. See 
      * {@link ProjectScriptGenerator#createUnitScript(Database, int)}.
      */
-    
+
     private String measurementUnit = null;
-    
+
     private final ProjectConfig projectConfig;
     private final SystemSettings systemSettings;
     private final Database database;
@@ -112,6 +127,15 @@ public class Project
     private Boolean rightUsesGriddedData = null;
     private Boolean baselineUsesGriddedData = null;
 
+    /** The left-ish variable to evaluate. */
+    private String leftVariable;
+
+    /** The right-ish variable to evaluate. */
+    private String rightVariable;
+
+    /** The baseline-ish variable to evaluate. */
+    private String baselineVariable;
+
     public Project( SystemSettings systemSettings,
                     Database database,
                     Features featuresCache,
@@ -139,6 +163,7 @@ public class Project
     {
         return this.systemSettings;
     }
+
     public Database getDatabase()
     {
         return this.database;
@@ -256,34 +281,37 @@ public class Project
             throw new NoDataException( "No features had data on both the left and the right for the variables "
                                        + "specified." );
         }
-        
+
         // Validate any ensemble conditions
         this.validateEnsembleConditions();
+
+        // Determine and set the variables to evaluate
+        this.setVariablesToEvaluate();
     }
-    
+
     /**
      * Checks that the union of ensemble conditions will select some data, otherwise throws an exception.
      * 
      * @throws NoDataException if the conditions select no data
      * @throws SQLException if one or more ensemble conditions could not be evaluated
      */
-    
+
     private void validateEnsembleConditions() throws SQLException
     {
         DataSourceConfig left = this.getProjectConfig().getInputs().getLeft();
         DataSourceConfig right = this.getProjectConfig().getInputs().getRight();
         DataSourceConfig baseline = this.getProjectConfig().getInputs().getBaseline();
-     
+
         // Show all errors at once rather than drip-feeding
         List<String> failed = new ArrayList<>();
         List<String> failedLeft = this.getInvalidEnsembleConditions( LeftOrRightOrBaseline.LEFT, left );
         List<String> failedRight = this.getInvalidEnsembleConditions( LeftOrRightOrBaseline.RIGHT, right );
         List<String> failedBaseline = this.getInvalidEnsembleConditions( LeftOrRightOrBaseline.BASELINE, baseline );
-        
+
         failed.addAll( failedLeft );
         failed.addAll( failedRight );
         failed.addAll( failedBaseline );
-        
+
         if ( !failed.isEmpty() )
         {
             throw new NoDataException( "Of the filters that were defined for ensemble names, "
@@ -293,6 +321,251 @@ public class Project
                                        + failed
                                        + "." );
         }
+    }
+
+    /**
+     * Sets the variables to evaluate. Begins by looking at the declaration. If it cannot find a declared variable for 
+     * any particular left/right/baseline context, it looks at the data instead. If there is more than one possible 
+     * name and it does not exactly match the name identified for the other side of the pairing, then an exception is 
+     * thrown because declaration is require to disambiguate. Otherwise, it chooses the single variable name and warns 
+     * about the assumption made when using the data to disambiguate.
+     * 
+     * @throws SQLException if the variable information could not be determined from the data
+     */
+
+    private void setVariablesToEvaluate() throws SQLException
+    {
+        // The set of possibilities to validate
+        Set<String> leftNames = new HashSet<>();
+        Set<String> rightNames = new HashSet<>();
+        Set<String> baselineNames = new HashSet<>();
+
+        // Left declared?
+        if ( Objects.nonNull( this.getLeft().getVariable() ) )
+        {
+            String name = this.getLeft().getVariable().getValue();
+            leftNames.add( name );
+        }
+        // No, look at data
+        else
+        {
+            Set<String> names = this.getVariableNameByInspectingData( LeftOrRightOrBaseline.LEFT );
+            leftNames.addAll( names );
+        }
+
+        // Right declared?
+        if ( Objects.nonNull( this.getRight().getVariable() ) )
+        {
+            String name = this.getRight().getVariable().getValue();
+            rightNames.add( name );
+        }
+        // No, look at data
+        else
+        {
+            Set<String> names = this.getVariableNameByInspectingData( LeftOrRightOrBaseline.RIGHT );
+            rightNames.addAll( names );
+        }
+
+        // Baseline declared?
+        if ( this.hasBaseline() )
+        {
+            if ( Objects.nonNull( this.getBaseline().getVariable() ) )
+            {
+                String name = this.getBaseline().getVariable().getValue();
+                baselineNames.add( name );
+            }
+            // No, look at data
+            else
+            {
+                Set<String> names = this.getVariableNameByInspectingData( LeftOrRightOrBaseline.BASELINE );
+                baselineNames.addAll( names );
+            }
+        }
+
+        this.setVariableNames( Collections.unmodifiableSet( leftNames ),
+                               Collections.unmodifiableSet( rightNames ),
+                               Collections.unmodifiableSet( baselineNames ) );
+    }
+
+    /**
+     * Attempts to set the variable names from a set of left, right and baseline names.
+     * @param left the possible left variable names
+     * @param right the possible right variable names
+     * @param baseline the possible baseline variable names
+     */
+
+    private void setVariableNames( Set<String> left, Set<String> right, Set<String> baseline )
+    {
+        // Could not determine variable name
+        if ( left.isEmpty() )
+        {
+            throw new ProjectConfigException( this.getLeft(),
+                                              WHILE_ATTEMPTING_TO_DETECT_THE + LeftOrRightOrBaseline.LEFT
+                                                              + VARIABLE
+                                                              + NAME_FROM_THE_DATA_FAILED_TO_IDENTIFY_ANY
+                                                              + POSSIBILITIES_PLEASE_DECLARE_AN_EXPLICIT_VARIABLE
+                                                              + NAME_FOR_THE
+                                                              + LeftOrRightOrBaseline.LEFT
+                                                              + DATA_SOURCES_TO_DISAMBIGUATE );
+        }
+        // Can determine the left name uniquely
+        else if ( left.size() == 1 )
+        {
+            this.leftVariable = left.iterator().next();
+        }
+        // More than one left, so intersect with right, which must produce a single name
+        else
+        {
+            this.leftVariable = this.getVariableName( left, right, LeftOrRightOrBaseline.LEFT, this.getLeft() );
+        }
+
+        // Can determine the right name uniquely
+        if ( right.isEmpty() )
+        {
+            throw new ProjectConfigException( this.getLeft(),
+                                              WHILE_ATTEMPTING_TO_DETECT_THE + LeftOrRightOrBaseline.RIGHT
+                                                              + VARIABLE
+                                                              + NAME_FROM_THE_DATA_FAILED_TO_IDENTIFY_ANY
+                                                              + POSSIBILITIES_PLEASE_DECLARE_AN_EXPLICIT_VARIABLE
+                                                              + NAME_FOR_THE
+                                                              + LeftOrRightOrBaseline.RIGHT
+                                                              + DATA_SOURCES_TO_DISAMBIGUATE );
+        }
+        else if ( right.size() == 1 )
+        {
+            this.rightVariable = right.iterator().next();
+        }
+        // More than one right, so intersect with left, which must produce a single name
+        else
+        {
+            this.rightVariable = this.getVariableName( right, left, LeftOrRightOrBaseline.RIGHT, this.getRight() );
+        }
+
+        if ( this.hasBaseline() )
+        {
+            // Can determine the baseline name uniquely
+            if ( baseline.isEmpty() )
+            {
+                throw new ProjectConfigException( this.getLeft(),
+                                                  WHILE_ATTEMPTING_TO_DETECT_THE + LeftOrRightOrBaseline.BASELINE
+                                                                  + VARIABLE
+                                                                  + NAME_FROM_THE_DATA_FAILED_TO_IDENTIFY_ANY
+                                                                  + POSSIBILITIES_PLEASE_DECLARE_AN_EXPLICIT_VARIABLE
+                                                                  + NAME_FOR_THE
+                                                                  + LeftOrRightOrBaseline.BASELINE
+                                                                  + DATA_SOURCES_TO_DISAMBIGUATE );
+            }
+            else if ( baseline.size() == 1 )
+            {
+                this.baselineVariable = baseline.iterator().next();
+            }
+            // More than one baseline, so intersect with left, which must produce a single name
+            else
+            {
+                this.baselineVariable = this.getVariableName( baseline,
+                                                              left,
+                                                              LeftOrRightOrBaseline.BASELINE,
+                                                              this.getBaseline() );
+            }
+        }
+
+        this.validateVariableNames();
+    }
+
+    /**
+     * Validates the variable names and emits a warning if assumptions have been made by the software.
+     */
+    
+    private void validateVariableNames()
+    {
+        // Warn if the names were not declared and are different
+        if ( ( Objects.isNull( this.getDeclaredLeftVariableName() )
+               || Objects.isNull( this.getDeclaredRightVariableName() ) )
+             && !this.getLeftVariableName().equals( this.getRightVariableName() )
+             && LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "The LEFT and RIGHT variable names were auto-detected, but the detected variable names do not "
+                         + "match. The LEFT name is {} and the RIGHT name is {}. Proceeding to pair and evaluate these "
+                         + "variables. If this is unexpected behavior, please add explicit variable declaration for "
+                         + "both the LEFT and RIGHT data and try again.",
+                         this.getLeftVariableName(),
+                         this.getRightVariableName() );
+        }
+
+        if ( this.hasBaseline() && ( Objects.isNull( this.getDeclaredLeftVariableName() )
+                                     || Objects.isNull( this.getDeclaredBaselineVariableName() ) )
+             && !this.getLeftVariableName().equals( this.getBaselineVariableName() )
+             && LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "The LEFT and BASELINE variable names were auto-detected, but the detected variable names do "
+                         + "not match. The LEFT name is {} and the BASELINE name is {}. Proceeding to pair and "
+                         + "evaluate these variables. If this is unexpected behavior, please add explicit variable "
+                         + "declaration for both the LEFT and BASELINE data and try again.",
+                         this.getLeftVariableName(),
+                         this.getRightVariableName() );
+        }
+    }
+    
+    /**
+     * Returns a unique variable name that appears in both sets of options or throws an exception indicating that 
+     * further declaration is needed to disambiguate.
+     * @param subjectSide the set of possible names for the subject
+     * @param otherSide the set of possible names to search for a match
+     * @param subject the subject of the variable detection
+     * @param context the configuration for the subject to help with clarifying an error
+     * @return the variable name of the subject
+     */
+
+    private String getVariableName( Set<String> subjectSide,
+                                    Set<String> otherSide,
+                                    LeftOrRightOrBaseline subject,
+                                    DataSourceConfig context )
+    {
+        Set<String> intersection = new HashSet<>();
+        intersection.addAll( subjectSide );
+        intersection.retainAll( otherSide );
+
+        if ( intersection.size() == 1 )
+        {
+            return intersection.iterator().next();
+        }
+        else
+        {
+            throw new ProjectConfigException( context,
+                                              WHILE_ATTEMPTING_TO_DETECT_THE + subject
+                                                       + VARIABLE
+                                                       + "name from "
+                                                       + subjectSide
+                                                       + ", failed to identify a corresponding name among "
+                                                       + otherSide
+                                                       + " to support pairing. Please declare an explicit variable "
+                                                       + NAME_FOR_THE
+                                                       + context
+                                                       + DATA_SOURCES_TO_DISAMBIGUATE );
+        }
+    }
+
+    /**
+     * Determines the possible variable names by inspecting the data.
+     * 
+     * @param lrb the context
+     * @return the possible variable names
+     * @throws SQLException if the variable information could not be determined from the data
+     * @throws ProjectConfigException if declaration is required to disambiguate the variable name
+     */
+
+    private Set<String> getVariableNameByInspectingData( LeftOrRightOrBaseline lrb ) throws SQLException
+    {
+        DataScripter script = ProjectScriptGenerator.createVariablesScript( this.getDatabase(), this.getId(), lrb );
+        Set<String> names = new HashSet<>();
+        try ( DataProvider provider = script.getData() )
+        {
+            provider.next();
+            String nextName = provider.getString( "variable_name" );
+            names.add( nextName );
+        }
+
+        return names;
     }
 
     /**
@@ -350,7 +623,7 @@ public class Project
 
         return Collections.unmodifiableList( failed );
     }
-    
+
     /**
      * Get a set of features for this project with intersecting data.
      * Does not check if the data is pairable, simply checks that there is data
@@ -485,37 +758,113 @@ public class Project
         return this.projectConfig.getInputs().getBaseline();
     }
 
-
     /**
-     * @return The name of the left variable
+     * @see #getDeclaredLeftVariableName()
+     * @return The name of the left variable or null if determined from the data and the data has yet to be inspected
      */
     public String getLeftVariableName()
     {
-        return this.getLeft().getVariable().getValue();
+        if( Objects.isNull( this.leftVariable ) )
+        {
+            return this.getDeclaredLeftVariableName();
+        }
+        
+        return this.leftVariable;
     }
 
+    /**
+     * @see #getLeftVariableName()
+     * @return The declared left variable name or null if undeclared
+     */
+    public String getDeclaredLeftVariableName()
+    {
+        if ( Objects.nonNull( this.getLeft().getVariable() ) )
+        {
+            return this.getLeft().getVariable().getValue();
+        }
+
+        return null;
+    }
 
     /**
-     * @return The name of the right variable
+     * @return The name of the right variable or null if determined from the data and the data has yet to be inspected
      */
     public String getRightVariableName()
     {
-        return this.getRight().getVariable().getValue();
+        if( Objects.isNull( this.rightVariable ) )
+        {
+            return this.getDeclaredRightVariableName();
+        }
+        
+        return this.rightVariable;
     }
 
     /**
-     * @return The name of the baseline variable
+     * @see #getRightVariableName()
+     * @return The declared right variable name or null if undeclared
+     */
+    public String getDeclaredRightVariableName()
+    {
+        if ( Objects.nonNull( this.getRight().getVariable() ) )
+        {
+            return this.getRight().getVariable().getValue();
+        }
+
+        return null;
+    }
+
+    /**
+     * @return The name of the baseline variable or null if determined from the data and the data has yet to be 
+     *            inspected
      */
     public String getBaselineVariableName()
     {
-        String name = null;
-        if ( this.hasBaseline() )
+        if( Objects.isNull( this.baselineVariable ) )
         {
-            name = this.getBaseline().getVariable().getValue();
+            return this.getDeclaredBaselineVariableName();
         }
-        return name;
+        
+        return this.baselineVariable;
     }
 
+    /**
+     * @see #getBaselineVariableName()
+     * @return The declared baseline variable name or null if undeclared
+     */
+    public String getDeclaredBaselineVariableName()
+    {
+        if ( this.hasBaseline() && Objects.nonNull( this.getBaseline().getVariable() ) )
+        {
+            return this.getBaseline().getVariable().getValue();
+        }
+
+        return null;
+    }
+
+    /**
+     * @param lrb The side of data for which the variable is required
+     * @return The name of the variable for the specified side of data
+     * @throws NullPointerException if the lrb is null
+     */
+
+    public String getVariableName( LeftOrRightOrBaseline lrb )
+    {
+        Objects.requireNonNull( lrb );
+
+        switch ( lrb )
+        {
+            case LEFT:
+                return this.getLeftVariableName();
+            case RIGHT:
+                return this.getRightVariableName();
+            case BASELINE:
+                return this.getBaselineVariableName();
+            default:
+                throw new UnsupportedOperationException( "Unexpected context '" + lrb
+                                                         + "': expected LEFT or "
+                                                         + "RIGHT or BASELINE." );
+        }
+    }
 
     /**
      * Returns the earliest analysis duration associated with the project or <code>null</code>.

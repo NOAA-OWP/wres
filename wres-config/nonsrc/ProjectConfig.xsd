@@ -321,7 +321,7 @@
                     </xs:simpleContent>
                 </xs:complexType>
             </xs:element>
-            <xs:element name="variable">
+            <xs:element name="variable" minOccurs="0" maxOccurs="1">
                 <xs:complexType>
                     <xs:annotation>
                         <xs:documentation>Declares the variable to be evaluated

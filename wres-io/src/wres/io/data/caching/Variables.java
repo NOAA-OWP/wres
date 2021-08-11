@@ -60,12 +60,16 @@ public class Variables
 	 * @param variableName The variable
 	 * @return Whether or not there is any forecast data for the variable within the project
 	 * @throws SQLException Thrown if a database operation fails
+	 * @throws NullPointerException If any nullable input is null
 	 */
     public boolean isValid( final long projectID,
                             final String projectMember,
                             final String variableName )
             throws SQLException
 	{
+        Objects.requireNonNull( projectMember );
+        Objects.requireNonNull( variableName );
+        
         Database database = this.getDatabase();
         DataScripter script = new DataScripter( database );
         script.addLine( "SELECT 1" );

@@ -46,6 +46,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DateCondition;
 import wres.config.generated.InterfaceShortHand;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.UrlParameter;
 import wres.io.concurrency.IngestSaver;
@@ -155,6 +156,22 @@ class WebSource implements Callable<List<IngestResult>>
                                                 + " does not appear to be a web source." );
         }
 
+        // Could be an NPE, but the data source is not null and the nullity of the variable is an effect, not a cause
+        if ( Objects.isNull( this.dataSource.getVariable() ) )
+        {
+            LeftOrRightOrBaseline lrb = ConfigHelper.getLeftOrRightOrBaseline( this.projectConfig,
+                                                                               this.dataSource.getContext() );
+
+            throw new IllegalArgumentException( "A variable must be declared for a web source but no "
+                                                + "variable was found for the "
+                                                + lrb
+                                                + " web source with URI: "
+                                                + this.dataSource.getUri()
+                                                + ". Please declare a variable for all "
+                                                + lrb
+                                                + " web sources." );
+        }
+        
         ThreadFactory webClientFactory = new BasicThreadFactory.Builder()
                 .namingPattern( "WebSource Ingest" )
                 .build();

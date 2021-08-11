@@ -7,6 +7,7 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -88,34 +89,32 @@ public final class Operations {
                                   + "gridded data or not.", e);
         }
 
+        // Validate the variable declaration against the data, when the declaration is present
         if ( isVector )
         {
             leftTimeSeriesValid = executor.submit(
-                    () -> variables.isValid( project.getId(),
-                                             Project.LEFT_MEMBER,
-                                             project.getLeftVariableName()
-                    )
-            );
+                                                   () -> Objects.isNull( project.getDeclaredLeftVariableName() )
+                                                         || variables.isValid( project.getId(),
+                                                                               Project.LEFT_MEMBER,
+                                                                               project.getDeclaredLeftVariableName() ) );
         }
 
         if ( isVector )
         {
             rightTimeSeriesValid = executor.submit(
-                    () -> variables.isValid( project.getId(),
-                                             Project.RIGHT_MEMBER,
-                                             project.getRightVariableName()
-                    )
-            );
+                                                    () -> Objects.isNull( project.getDeclaredRightVariableName() )
+                                                          || variables.isValid( project.getId(),
+                                                                                Project.RIGHT_MEMBER,
+                                                                                project.getDeclaredRightVariableName() ) );
         }
 
         if ( isVector && project.getBaseline() != null )
         {
             baselineTimeSeriesValid = executor.submit(
-                    () -> variables.isValid( project.getId(),
-                                             Project.BASELINE_MEMBER,
-                                             project.getBaselineVariableName()
-                    )
-            );
+                                                       () -> Objects.isNull( project.getDeclaredBaselineVariableName() )
+                                                             || variables.isValid( project.getId(),
+                                                                                   Project.BASELINE_MEMBER,
+                                                                                   project.getDeclaredBaselineVariableName() ) );
         }
 
         try
@@ -180,8 +179,14 @@ public final class Operations {
         }
         catch ( ExecutionException e )
         {
+            String value = null;
+            if( Objects.nonNull( project.getLeft().getVariable() ) )
+            {
+                value = project.getLeft().getVariable().getValue();
+            }
+            
             throw new IOException( "An error occurred while determining whether '"
-                                   + project.getLeft().getVariable().getValue()
+                                   + value
                                    + "' is a valid variable for left side evaluation.",
                                    e );
         }

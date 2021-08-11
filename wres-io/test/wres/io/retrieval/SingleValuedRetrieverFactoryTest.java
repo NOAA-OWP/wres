@@ -429,9 +429,7 @@ public class SingleValuedRetrieverFactoryTest
         Mockito.when( project.getProjectConfig() ).thenReturn( projectConfig );
         Mockito.when( project.getId() ).thenReturn( PROJECT_ID );
         Mockito.when( project.getFeatures() ).thenReturn( allFeatures );
-        Mockito.when( project.getLeftVariableName() ).thenReturn( STREAMFLOW );
-        Mockito.when( project.getRightVariableName() ).thenReturn( STREAMFLOW );
-        Mockito.when( project.getBaselineVariableName() ).thenReturn( STREAMFLOW );
+        Mockito.when( project.getVariableName( Mockito.any( LeftOrRightOrBaseline.class ) ) ).thenReturn( STREAMFLOW );
         Mockito.when( project.hasBaseline() ).thenReturn( true );
         Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
         Mockito.when( project.getDatabase() ).thenReturn( this.wresDatabase );

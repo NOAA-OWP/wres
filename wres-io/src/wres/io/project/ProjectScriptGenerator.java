@@ -7,6 +7,7 @@ import java.util.Random;
 import java.util.StringJoiner;
 
 import wres.config.generated.Feature;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 
@@ -189,6 +190,37 @@ final class ProjectScriptGenerator
         return script;
     }
 
+    /**
+     * Creates a script that retrieves the distinct varaible names for a given side of data.
+     * 
+     * @param database The database, not null
+     * @param projectId The project identifier
+     * @param lrb The side of data, not null
+     * @return the script
+     * @throws NullPointerException if any nullable input is null
+     */
+    
+    static DataScripter createVariablesScript( Database database,
+                                               long projectId,
+                                               LeftOrRightOrBaseline lrb )
+    {
+        Objects.requireNonNull( database );
+        Objects.requireNonNull( lrb );
+        
+        DataScripter script = new DataScripter( database );
+        
+        script.addLine( "SELECT DISTINCT TS.variable_name" );
+        script.addLine( "FROM wres.TimeSeries TS" );
+        script.addLine( "INNER JOIN wres.ProjectSource PS ON" );
+        script.addTab().addLine( "PS.source_id = TS.source_id" );
+        script.addLine( "WHERE PS.project_id = ?" );
+        script.addArgument( projectId );
+        script.addTab().addLine( "AND PS.member = ?" );
+        script.addArgument( lrb.toString().toLowerCase() );
+        script.setMaxRows( 2 ); // Adds jdbc limit plus sql LIMIT if supported
+        
+        return script;
+    }  
 
     /**
      * Returns a script that checks whether the condition on the ensemble name is valid.

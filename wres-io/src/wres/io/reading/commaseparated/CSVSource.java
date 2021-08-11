@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import static wres.datamodel.time.ReferenceTimeType.LATEST_OBSERVATION;
 import static wres.datamodel.time.ReferenceTimeType.UNKNOWN;
 
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
@@ -41,6 +42,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.concurrency.TimeSeriesIngester;
+import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
@@ -200,12 +202,17 @@ public class CSVSource extends BasicSource
 
     List<IngestResult> saveTimeSeries() throws IOException
     {
-        DataProvider data =  DataProvider.fromCSV( this.getFilename(), DELIMITER );
+        DataProvider data = DataProvider.fromCSV( this.getFilename(), DELIMITER );
         parseTimeSeries( data );
 
-        if ( !this.unconfiguredVariableNames.isEmpty() )
+        if ( !this.unconfiguredVariableNames.isEmpty() && LOGGER.isWarnEnabled() )
         {
-            LOGGER.warn( "The following variable names were encountered in forecast csv data source from {} that were not configured in the project: {}",
+            LeftOrRightOrBaseline lrb = ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(),
+                                                                               this.getDataSourceConfig() );
+
+            LOGGER.warn( "The following variable names were encountered in a {} forecast csv data source with URI {} "
+                         + "that were not declared in the project: {}",
+                         lrb,
                          this.getFilename(),
                          this.unconfiguredVariableNames );
         }
@@ -343,7 +350,7 @@ public class CSVSource extends BasicSource
             lastEnsembleName = ensembleName;
         }
 
-        if ( Objects.nonNull( lastTimeSeriesMetadata) )
+        if ( Objects.nonNull( lastTimeSeriesMetadata ) )
         {
             // After reading all data, save the last timeseries.
             TimeSeries<?> timeSeries =
@@ -355,9 +362,10 @@ public class CSVSource extends BasicSource
         }
         else if ( LOGGER.isWarnEnabled() )
         {
-                LOGGER.warn( "Did not find data to build a timeseries in {}, so data may not have been ingested from this source.",
-                             this.getDataSource()
-                                 .getUri() );
+            LOGGER.warn( "Did not find data to build a timeseries in {}, so data may not have been ingested from this "
+                         + "source.",
+                         this.getDataSource()
+                             .getUri() );
         }
 
         this.completeIngest();
@@ -683,8 +691,10 @@ public class CSVSource extends BasicSource
             errorJoiner.add("The provided csv is missing valid 'variable_name' data.");
             valid = false;
         }
-        else if (!dataProvider.getString( "variable_name" )
-                              .equalsIgnoreCase( this.getDataSourceConfig().getVariable().getValue() ))
+        // Only validate if the variable name is declared: #95012
+        else if ( Objects.isNull( this.getDataSourceConfig().getVariable() )
+                  || !dataProvider.getString( "variable_name" )
+                                  .equalsIgnoreCase( this.getDataSourceConfig().getVariable().getValue() ) )
         {
             String foundVariable = dataProvider.getString( "variable_name" );
             this.unconfiguredVariableNames.add( foundVariable );

@@ -76,6 +76,15 @@ import wres.system.SystemSettings;
 
 public class Validation
 {
+    private static final String THIS_EVALUATION_APPEARS_TO_CONTAIN_GRIDDED_DATA = " This evaluation appears to contain "
+                                                                                  + "gridded data because it declares a "
+                                                                                  + "<gridSelection>. For gridded "
+                                                                                  + "evaluations, the variable must be "
+                                                                                  + "declared explicitly. No "
+                                                                                  + "<variable> declaration was "
+                                                                                  + "discovered for the {} data. "
+                                                                                  + "Please add this declaration and "
+                                                                                  + "try again.";
 
     private static final String NOT_APPEAR_TO_BE_VALID_PLEASE_USE_NUMERIC =
             "not appear to be valid. Please use numeric ";
@@ -274,6 +283,8 @@ public class Validation
             noFeatureDeclaration = true;
         }
 
+        boolean isValid = true;
+        
         if ( Objects.nonNull( firstSourceThatRequiresFeatures )
              && noFeatureDeclaration )
         {
@@ -290,10 +301,72 @@ public class Validation
                                                             .getColumnNumber() );
             }
 
-            return false;
+            isValid = false;
         }
 
-        return true;
+        return isValid && Validation.hasVariablesIfGridded( projectConfigPlus );
+    }
+    
+    /**
+     * @param projectConfigPlus the declaration
+     * @return true if the declaration is valid (is not gridded or has variables declared if gridded), otherwise false
+     */
+
+    private static boolean hasVariablesIfGridded( ProjectConfigPlus projectConfigPlus )
+    {
+        PairConfig pairConfig = projectConfigPlus.getProjectConfig().getPair();
+
+        if ( pairConfig.getGridSelection().isEmpty() )
+        {
+            return true;
+        }
+
+        Inputs inputsConfig = projectConfigPlus.getProjectConfig().getInputs();
+
+        boolean isValid = true;
+        if ( Objects.isNull( inputsConfig.getLeft().getVariable() ) )
+        {
+            isValid = false;
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + THIS_EVALUATION_APPEARS_TO_CONTAIN_GRIDDED_DATA,
+                             projectConfigPlus.getOrigin(),
+                             inputsConfig.getLeft().sourceLocation().getLineNumber(),
+                             inputsConfig.getLeft().sourceLocation().getColumnNumber(),
+                             LeftOrRightOrBaseline.LEFT );
+            }
+        }
+        if ( Objects.isNull( inputsConfig.getRight().getVariable() ) )
+        {
+            isValid = false;
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + THIS_EVALUATION_APPEARS_TO_CONTAIN_GRIDDED_DATA,
+                             projectConfigPlus.getOrigin(),
+                             inputsConfig.getRight().sourceLocation().getLineNumber(),
+                             inputsConfig.getRight().sourceLocation().getColumnNumber(),
+                             LeftOrRightOrBaseline.RIGHT );
+            }
+        }
+
+        if ( Objects.nonNull( inputsConfig.getBaseline() )
+             && Objects.isNull( inputsConfig.getBaseline().getVariable() ) )
+        {
+            isValid = false;
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + THIS_EVALUATION_APPEARS_TO_CONTAIN_GRIDDED_DATA,
+                             projectConfigPlus.getOrigin(),
+                             inputsConfig.getBaseline().sourceLocation().getLineNumber(),
+                             inputsConfig.getBaseline().sourceLocation().getColumnNumber(),
+                             LeftOrRightOrBaseline.BASELINE );
+            }
+        }
+
+        return isValid;
     }
 
     private static boolean requiresFeatureOrFeatureService( DataSourceConfig.Source source )

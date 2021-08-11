@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DatasourceType;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.FeatureKey;
@@ -171,6 +172,22 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                         + "You probably want 'ensemble forecasts' type or to "
                         + "change the source URI to point to another type." );
             }
+        }
+        
+        // Could be an NPE, but the data source is not null and the nullity of the variable is an effect, not a cause
+        if ( Objects.isNull( this.dataSource.getVariable() ) )
+        {
+            LeftOrRightOrBaseline lrb = ConfigHelper.getLeftOrRightOrBaseline( this.projectConfig, 
+                                                                               this.dataSource.getContext() );
+            
+            throw new IllegalArgumentException( "A variable must be declared for a WRDS NWM source but no "
+                                                + "variable was found for the "
+                                                + lrb
+                                                + " WRDS NWM source with URI: "
+                                                + this.dataSource.getUri()
+                                                + ". Please declare a variable for all "
+                                                + lrb
+                                                + " WRDS NWM sources." );
         }
 
         // See comments in wres.io.reading.WebSource for info on below approach.

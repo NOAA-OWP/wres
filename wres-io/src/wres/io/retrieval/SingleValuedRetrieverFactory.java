@@ -140,8 +140,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever()
     {
-        return this.get( this.getProject().getProjectConfig(),
-                         this.leftConfig,
+        return this.get( this.leftConfig,
                          null,
                          this.featureString );
     }
@@ -149,8 +148,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( TimeWindowOuter timeWindow )
     {
-        return this.get( this.getProject().getProjectConfig(),
-                         this.leftConfig,
+        return this.get( this.leftConfig,
                          timeWindow,
                          this.featureString );
     }
@@ -158,8 +156,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getRightRetriever( TimeWindowOuter timeWindow )
     {
-        return this.get( this.getProject().getProjectConfig(),
-                         this.rightConfig,
+        return this.get( this.rightConfig,
                          timeWindow,
                          this.featureString );
     }
@@ -167,8 +164,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever()
     {
-        return this.get( this.getProject().getProjectConfig(),
-                         this.baselineConfig,
+        return this.get( this.baselineConfig,
                          null,
                          this.featureString );
     }    
@@ -176,8 +172,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( TimeWindowOuter timeWindow )
     {
-        return this.get( this.getProject().getProjectConfig(),
-                         this.baselineConfig,
+        return this.get( this.baselineConfig,
                          timeWindow,
                          this.featureString );
     }
@@ -185,20 +180,20 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     /**
      * Returns a supplier of time-series.
      * 
-     * @param projectConfig the project declaration
      * @param dataSourceConfig the data source configuration
      * @param timeWindow the time window
      * @param featureName the feature name
      * @return the supplier
      */
 
-    private Supplier<Stream<TimeSeries<Double>>> get( ProjectConfig projectConfig,
-                                                      DataSourceConfig dataSourceConfig,
+    private Supplier<Stream<TimeSeries<Double>>> get( DataSourceConfig dataSourceConfig,
                                                       TimeWindowOuter timeWindow,
                                                       String featureName )
     {
-        Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( dataSourceConfig );
+        ProjectConfig projectConfig = this.getProject()
+                                          .getProjectConfig();
+        
         LeftOrRightOrBaseline leftOrRightOrBaseline =
                 ConfigHelper.getLeftOrRightOrBaseline( projectConfig,
                                                        dataSourceConfig );
@@ -210,8 +205,8 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
         TimeSeriesRetrieverBuilder<Double> builder;
 
         boolean isConfiguredAsForecast = ConfigHelper.isForecast( dataSourceConfig );
-        String variableName = dataSourceConfig.getVariable()
-                                              .getValue();
+        String variableName = this.getProject()
+                                  .getVariableName( leftOrRightOrBaseline );
         TimeScaleOuter declaredExistingTimeScale =
                 this.getDeclaredExistingTimeScale( dataSourceConfig );
 

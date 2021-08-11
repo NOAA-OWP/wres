@@ -163,14 +163,14 @@ public class SingleValuedGriddedRetrieverTest
         FeatureTuple featureTuple = new FeatureTuple( FEATURE, FEATURE, FEATURE );
         // Build the retriever
         Retriever<TimeSeries<Double>> retriever =
-                new SingleValuedGriddedRetriever.Builder().setVariableName( SingleValuedGriddedRetrieverTest.VARIABLE_NAME )
-                                                          .setFeatures( List.of( featureTuple ) )
+                new SingleValuedGriddedRetriever.Builder().setFeatures( List.of( featureTuple ) )
                                                           .setIsForecast( true )
                                                           .setProjectId( PROJECT_ID )
                                                           .setLeftOrRightOrBaseline( SingleValuedGriddedRetrieverTest.LRB )
                                                           .setUnitMapper( mapper )
                                                           .setTimeWindow( timeWindow )
                                                           .setDatabase( this.wresDatabase )
+                                                          .setVariableName( SingleValuedGriddedRetrieverTest.VARIABLE_NAME )                                                          
                                                           .build();
 
         // Return a fake response from wres.grid, as only interested in the request here
