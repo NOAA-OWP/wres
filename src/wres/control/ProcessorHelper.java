@@ -351,6 +351,11 @@ class ProcessorHelper
                                                  executors.getIoExecutor(),
                                                  featurefulProjectConfig,
                                                  databaseServices.getDatabaseLockManager() );
+            
+            LOGGER.debug( "Finished ingest for project {}...", projectConfigPlus );
+            
+            Operations.prepareForExecution( project );
+            
             evaluationDetails.setProject( project );
             projectHash = project.getHash();
 
@@ -358,11 +363,19 @@ class ProcessorHelper
             String desiredMeasurementUnit = project.getMeasurementUnit();
             UnitMapper unitMapper = UnitMapper.of( databaseServices.getDatabase(), desiredMeasurementUnit );
 
-            // Update the evaluation description with any analyzed units
+            // Update the evaluation description with any analyzed units and variable names
+            String baselineName = "";
+            if ( project.hasBaseline() )
+            {
+                baselineName = project.getBaselineVariableName();
+            }
             wres.statistics.generated.Evaluation evaluationDescription =
                     evaluationDetails.getEvaluationDescription()
                                      .toBuilder()
                                      .setMeasurementUnit( desiredMeasurementUnit )
+                                     .setLeftVariableName( project.getLeftVariableName() )
+                                     .setRightVariableName( project.getRightVariableName() )
+                                     .setBaselineVariableName( baselineName )
                                      .build();
 
             // Build the evaluation. In future, there may be a desire to build the evaluation prior to ingest, in order 
@@ -375,10 +388,6 @@ class ProcessorHelper
                                         evaluationDetails.getEvaluationId(),
                                         evaluationDetails.getSubscriberApprover() );
             evaluationDetails.setEvaluation( evaluation );
-
-            Operations.prepareForExecution( project );
-
-            LOGGER.debug( "Finished ingest for project {}...", projectConfigPlus );
 
             ProgressMonitor.setShowStepDescription( false );
 

@@ -67,12 +67,6 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
     private final DataScripter script;
 
     /**
-     * The variable name.
-     */
-
-    private final String variableName;
-
-    /**
      * The features.
      */
 
@@ -110,12 +104,6 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
         private List<FeatureTuple> features;
 
         /**
-         * The variable name.
-         */
-
-        private String variableName;
-
-        /**
          * Is <code>true</code> to retrieve a forecast type, <code>false</code> for a non-forecast type. 
          */
 
@@ -144,19 +132,6 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
         Builder setFeatures( List<FeatureTuple> features )
         {
             this.features = features;
-            return this;
-        }
-
-        /**
-         * Sets the variable name.
-         * 
-         * @param variableName the variable name
-         * @return the builder
-         */
-
-        Builder setVariableName( String variableName )
-        {
-            this.variableName = variableName;
             return this;
         }
 
@@ -316,17 +291,6 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
     }
 
     /**
-     * Returns the variable name.
-     *
-     * @return the variable name
-     */
-    @Override
-    protected String getVariableName()
-    {
-        return this.variableName;
-    }
-
-    /**
      * Returns the features.
      *
      * @return the features
@@ -386,7 +350,6 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
         super( builder, "S.output_time", "S.lead" );
 
         this.features = builder.features;
-        this.variableName = builder.variableName;
         this.isForecast = builder.isForecast;
 
         // Validate
@@ -398,8 +361,6 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
             throw new NullPointerException( CANNOT_BUILD_A_TIME_SERIES_RETRIEVER_WITHOUT_A + "list of features." );
         }
 
-        Objects.requireNonNull( this.getVariableName(),
-                                CANNOT_BUILD_A_TIME_SERIES_RETRIEVER_WITHOUT_A + "variable name." );
         Objects.requireNonNull( this.getLeftOrRightOrBaseline(),
                                 CANNOT_BUILD_A_TIME_SERIES_RETRIEVER_WITHOUT_A
                                                                  + "member type (left or right or baseline)." );

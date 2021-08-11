@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import static wres.io.reading.DataSource.DataDisposition.COMPLEX;
 
 import wres.config.generated.InterfaceShortHand;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.TimeSeries;
 import wres.io.concurrency.TimeSeriesIngester;
@@ -138,6 +139,23 @@ public class NWMReader implements Callable<List<IngestResult>>
         Objects.requireNonNull( dataSource.getSource() );
         Objects.requireNonNull( dataSource.getSource().getInterface() );
         Objects.requireNonNull( dataSource.getSource().getValue() );
+        Objects.requireNonNull( dataSource.getContext() );
+        
+        // Could be an NPE, but the data source is not null and the nullity of the variable is an effect, not a cause
+        if ( Objects.isNull( dataSource.getVariable() ) )
+        {
+            LeftOrRightOrBaseline lrb = ConfigHelper.getLeftOrRightOrBaseline( projectConfig,
+                                                                               dataSource.getContext() );
+            
+            throw new IllegalArgumentException( "A variable must be declared for an NWM source but no "
+                                                + "variable was found for the "
+                                                + lrb
+                                                + " NWM source with URI: "
+                                                + dataSource.getUri()
+                                                + ". Please declare a variable for all "
+                                                + lrb
+                                                + " NWM sources." );
+        }
 
         this.systemSettings = systemSettings;
         this.database = database;

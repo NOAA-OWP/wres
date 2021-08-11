@@ -1470,6 +1470,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         String validationStart = "Cannot build a time-series retriever without a ";
         Objects.requireNonNull( this.database, "database instance." );
         Objects.requireNonNull( this.getTimeColumnName(), validationStart + "time column name." );
+        Objects.requireNonNull( this.variableName, validationStart + "variable name." );
 
         Objects.requireNonNull( this.getMeasurementUnitMapper(), validationStart + "measurement unit mapper." );
 

@@ -476,6 +476,7 @@ public class EnsembleRetrieverFactoryTest
         Mockito.when( project.getLeftVariableName() ).thenReturn( STREAMFLOW );
         Mockito.when( project.getRightVariableName() ).thenReturn( STREAMFLOW );
         Mockito.when( project.getBaselineVariableName() ).thenReturn( STREAMFLOW );
+        Mockito.when( project.getVariableName( Mockito.any() ) ).thenReturn( STREAMFLOW );
         Mockito.when( project.hasBaseline() ).thenReturn( true );
         Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
         Mockito.when( project.getDatabase() ).thenReturn( this.wresDatabase );
