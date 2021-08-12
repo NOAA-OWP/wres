@@ -252,10 +252,7 @@
                         The text value of the element specifies an individual file to read
                         (full path); a directory to process (it is scanned recursively and
                         all files read unless the pattern is set; see below); or a URL (if
-                        the format is an API).  For USGS NWIS, leave the text blank since
-                        the API URL is known by WRES.  For WRDS AHPS Forecast API specify
-                        its URL as the text:
-                        "http://***REMOVED***.***REMOVED***.***REMOVED***/api/v1/forecasts/streamflow/ahps").
+                        the format is an API).
                     </xs:documentation>
                 </xs:annotation>
                 <xs:complexType>

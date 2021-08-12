@@ -33,6 +33,7 @@
 #
 # Depends on versions.sh script
 #
+# Requires a JOB_URL to be set (avoids environment-specific stuff in the repo)
 
 #=============================================================
 # Identify default versions!
@@ -120,7 +121,7 @@ worker_shim_file=wres-worker-${wres_worker_shim_version}.zip
 tasker_file=wres-tasker-${wres_tasker_version}.zip
 vis_file=wres-vis-${wres_vis_version}.zip
 
-jenkins_workspace=https://vlab.***REMOVED***/jenkins/job/Verify_OWP_WRES/ws
+jenkins_workspace=$JOB_URL/ws
 core_url=$jenkins_workspace/build/distributions/$wres_core_file
 worker_url=$jenkins_workspace/wres-worker/build/distributions/$worker_shim_file
 tasker_url=$jenkins_workspace/wres-tasker/build/distributions/$tasker_file
@@ -185,7 +186,7 @@ then
     echo ""
     echo "The above URLs are only valid if your .zip files are the latest artifact.  To pull down old artifacts, identify the Jenkins build number associated with the VLab GIT revision and modify the \"ws\" in the url to be \"<build number>/artifact\".  For example,"
     echo ""
-    echo "https://***REMOVED***/jenkins/job/Verify_OWP_WRES/3686/artifact/wres-vis/build/distributions/wres-vis-20210225-713c981.zip"
+    echo "$JOB_URL/3686/artifact/wres-vis/build/distributions/wres-vis-20210225-713c981.zip"
     echo ""
     echo "After they have completely finished downloading and have been completely copied into the local directories, re-run this script."
     exit 3

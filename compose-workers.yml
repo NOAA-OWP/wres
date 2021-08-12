@@ -39,7 +39,7 @@ services:
          # For logs (inside container, avoid writing to read-only /home)
          - /container_home
         environment:
-         - JAVA_OPTS=-Dwres.broker=***REMOVED***wres-broker${WRES_ENV_SUFFIX} -Djava.io.tmpdir=/mnt/wres_share/evaluations -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/worker-shim/java_pid%p.hprof /mnt/wres_share/heap_dumps/worker-shim/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/worker-shim/java_pid%p_`hostname`.hprof'
+         - JAVA_OPTS=-Dwres.broker=${WRES_BROKER_HOST} -Djava.io.tmpdir=/mnt/wres_share/evaluations -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/worker-shim/java_pid%p.hprof /mnt/wres_share/heap_dumps/worker-shim/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/worker-shim/java_pid%p_`hostname`.hprof'
          - PGPASSFILE=/wres_secrets/.pgpass
          # Use caller-specified db hostname from env var WRES_DB_FQDN.
          # Do not auto-liquibase-migrate on each evaluation. This requires an
