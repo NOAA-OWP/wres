@@ -338,6 +338,17 @@ public class GriddedReader
             {
                 GridDatatype variable = gridDataset.findGridDatatype( variableName );
 
+                // #95028, couldn't find the declared variable
+                if ( Objects.isNull( variable ) )
+                {
+                    throw new IOException( "Unable to read the gridded dataset from " + this.path
+                                           + " because the "
+                                           + "declared variable name "
+                                           + variableName
+                                           + " was not discovered inside the dataset. Please "
+                                           + "correct the declared variable name or the source and try again." );
+                }
+                
                 // Returns XY from YX parameters
                 int[] xIndexYIndex = variable.getCoordinateSystem().findXYindexFromLatLon( point.getY(), point.getX(), null );
 
