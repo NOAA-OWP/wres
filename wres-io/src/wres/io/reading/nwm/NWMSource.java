@@ -194,9 +194,11 @@ public class NWMSource extends BasicSource
         else
         {
             throw new IOException( "The NetCDF file at '" +
-                                   this.getFilename() +
-                                   "' did not contain the " +
-                                   "requested variable.");
+                                   this.getFilename()
+                                   + "' did not contain the "
+                                   + "requested variable, "
+                                   + this.getSpecifiedVariableName()
+                                   + "." );
         }
 	}
 
