@@ -149,7 +149,15 @@ public class FeatureTuple implements Comparable<FeatureTuple>
 
     public String toStringShort()
     {
-        StringJoiner joiner = new StringJoiner( "-" );
+        String separator = "-";
+        
+        // Other sides likely to use similar naming convention, such as coordinate pairs, which may be negative, '-'
+        if( Objects.nonNull( this.getLeft().getName() ) && this.getLeft().getName().contains( "-" ) )
+        {
+            separator = ", ";
+        }
+        
+        StringJoiner joiner = new StringJoiner( separator );
 
         joiner.add( this.getLeftName() ).add( this.getRightName() );
 
@@ -187,7 +195,6 @@ public class FeatureTuple implements Comparable<FeatureTuple>
                    .getName();
     }
 
-
     /**
      * Get the name of the baseline feature.
      *
@@ -205,7 +212,6 @@ public class FeatureTuple implements Comparable<FeatureTuple>
         return this.getBaseline()
                    .getName();
     }
-
 
     /**
      * Get the name of the feature based on the left/right/baseline given.

@@ -25,8 +25,9 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class ExternalThresholdReader {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ExternalThresholdReader.class);
+public class ExternalThresholdReader
+{
+    private static final Logger LOGGER = LoggerFactory.getLogger( ExternalThresholdReader.class );
 
     private final SystemSettings systemSettings;
     private final ProjectConfig projectConfig;
@@ -36,6 +37,7 @@ public class ExternalThresholdReader {
     private final ThresholdBuilderCollection sharedBuilders;
     private final Set<FeatureTuple> recognizedFeatures = new HashSet<>();
     private final MeasurementUnit desiredMeasurementUnit;
+    private final Set<String> unrecognizedFeatures = new TreeSet<>(); // Ordered
 
     public ExternalThresholdReader(
                                     final SystemSettings systemSettings,
@@ -51,7 +53,7 @@ public class ExternalThresholdReader {
         Objects.requireNonNull( features );
         Objects.requireNonNull( desiredMeasurementUnitConverter );
         Objects.requireNonNull( builders );
-        
+
         this.systemSettings = systemSettings;
         this.projectConfig = projectConfig;
         this.metricsConfig = metricsConfig;
@@ -63,15 +65,17 @@ public class ExternalThresholdReader {
     }
 
     public void read()
-    {       
-        Set<MetricConstants> metrics = DataFactory.getMetricsFromMetricsConfig( this.metricsConfig, 
+    {
+        Set<MetricConstants> metrics = DataFactory.getMetricsFromMetricsConfig( this.metricsConfig,
                                                                                 this.projectConfig );
-        
+
         for ( ThresholdsConfig thresholdsConfig : this.getThresholds( this.metricsConfig ) )
         {
             Set<FeatureTuple> readFeatures = this.readThreshold( thresholdsConfig, metrics );
             this.recognizedFeatures.addAll( readFeatures );
         }
+
+        this.validate();
     }
 
     public Set<FeatureTuple> getRecognizedFeatures()
@@ -79,12 +83,20 @@ public class ExternalThresholdReader {
         return Collections.unmodifiableSet( this.recognizedFeatures );
     }
 
-    private Set<ThresholdsConfig> getThresholds(MetricsConfig metrics) {
+    private Set<String> getUnrecognizedFeatureNames()
+    {
+        return Collections.unmodifiableSet( this.unrecognizedFeatures );
+    }
+
+    private Set<ThresholdsConfig> getThresholds( MetricsConfig metrics )
+    {
         Set<ThresholdsConfig> thresholdsWithSources = new HashSet<>();
 
-        for (ThresholdsConfig thresholdsConfig : metrics.getThresholds()) {
-            if (thresholdsConfig.getCommaSeparatedValuesOrSource() instanceof ThresholdsConfig.Source) {
-                thresholdsWithSources.add(thresholdsConfig);
+        for ( ThresholdsConfig thresholdsConfig : metrics.getThresholds() )
+        {
+            if ( thresholdsConfig.getCommaSeparatedValuesOrSource() instanceof ThresholdsConfig.Source )
+            {
+                thresholdsWithSources.add( thresholdsConfig );
             }
         }
 
@@ -106,13 +118,13 @@ public class ExternalThresholdReader {
 
         Objects.requireNonNull( metrics, "Specify non-null metrics." );
 
-        ThresholdsConfig.Source source = (ThresholdsConfig.Source)thresholdsConfig.getCommaSeparatedValuesOrSource();
+        ThresholdsConfig.Source source = (ThresholdsConfig.Source) thresholdsConfig.getCommaSeparatedValuesOrSource();
         LeftOrRightOrBaseline tupleSide = source.getFeatureNameFrom();
 
-        DataSourceConfig dataSourceConfig = ProjectConfigs.getDataSourceBySide( this.projectConfig, tupleSide);
-        FeatureDimension featureDimension = ConfigHelper.getConcreteFeatureDimension(dataSourceConfig);
+        DataSourceConfig dataSourceConfig = ProjectConfigs.getDataSourceBySide( this.projectConfig, tupleSide );
+        FeatureDimension featureDimension = ConfigHelper.getConcreteFeatureDimension( dataSourceConfig );
 
-        Set<FeatureTuple> recognizedFeatures = new HashSet<>();
+        Set<FeatureTuple> recognized = new HashSet<>();
 
         // Threshold type: default to probability
         final ThresholdConstants.ThresholdGroup thresholdGroup;
@@ -120,7 +132,8 @@ public class ExternalThresholdReader {
         {
             thresholdGroup = DataFactory.getThresholdGroup( thresholdsConfig.getType() );
         }
-        else {
+        else
+        {
             thresholdGroup = ThresholdConstants.ThresholdGroup.PROBABILITY;
         }
 
@@ -136,14 +149,14 @@ public class ExternalThresholdReader {
             BiPredicate<String, String> equalityCheck = String::equals;
 
             // Produce mappings between the identifiers for data that may be linked to the features to their thresholds
-            switch (format) {
+            switch ( format )
+            {
                 case CSV:
                     readThresholds = CSVThresholdReader.readThresholds(
-                            this.systemSettings,
-                            thresholdsConfig,
-                            this.getSourceMeasurementUnit(thresholdsConfig),
-                            this.desiredMeasurementUnitConverter
-                    );
+                                                                        this.systemSettings,
+                                                                        thresholdsConfig,
+                                                                        this.getSourceMeasurementUnit( thresholdsConfig ),
+                                                                        this.desiredMeasurementUnitConverter );
                     break;
                 case WRDS:
                     final Function<FeatureTuple, String> identifyFeatureName;
@@ -151,35 +164,38 @@ public class ExternalThresholdReader {
                     // Only 5 character handbook-5 ids are supported, so we need to ensure that feature names that
                     // are passed are 5 characters long, at most, when passing to the reader if the user indicates
                     // that it uses NWS LIDs
-                    if (featureDimension == FeatureDimension.NWS_LID) {
-                        identifyFeatureName = tuple ->
-                                tuple.getNameFor(tupleSide)
-                                        .substring(
-                                                0,
-                                                Math.min(tuple.getNameFor(tupleSide).length(), 5)
-                                        );
+                    if ( featureDimension == FeatureDimension.NWS_LID )
+                    {
+                        identifyFeatureName = tuple -> tuple.getNameFor( tupleSide )
+                                                            .substring(
+                                                                        0,
+                                                                        Math.min( tuple.getNameFor( tupleSide )
+                                                                                       .length(),
+                                                                                  5 ) );
 
                         // We want to mimic the five character equality check later on as well
-                        equalityCheck = (first, second) ->
-                                first != null
-                                        && first.substring(0, Math.min(first.length(), 5)).equals(second);
+                        equalityCheck = ( first, second ) -> first != null
+                                                             && first.substring( 0, Math.min( first.length(), 5 ) )
+                                                                     .equals( second );
                     }
-                    else {
-                        identifyFeatureName = tuple -> tuple.getNameFor(tupleSide);
+                    else
+                    {
+                        identifyFeatureName = tuple -> tuple.getNameFor( tupleSide );
                     }
 
                     //Naive toggle: use one of two versions depending on flag.
                     Map<WrdsLocation, Set<ThresholdOuter>> wrdsThresholds = GeneralWRDSReader.readThresholds(
-                            this.systemSettings,
-                            thresholdsConfig,
-                            this.desiredMeasurementUnitConverter,
-                            this.features.stream().map(identifyFeatureName).collect(Collectors.toSet())
-                        );
+                                                                                                              this.systemSettings,
+                                                                                                              thresholdsConfig,
+                                                                                                              this.desiredMeasurementUnitConverter,
+                                                                                                              this.features.stream()
+                                                                                                                           .map( identifyFeatureName )
+                                                                                                                           .collect( Collectors.toSet() ) );
 
                     // WRDS returns a series of identifiers that don't match to 'left' 'right', or 'baseline'.
                     // As a result, we have to look through the sources and find a consistent way to identify what id
                     // from WRDS matches with what ID from our tuples
-                    final Function<WrdsLocation, String> extractLocationName = this.getFeatureIdentifier(tupleSide);
+                    final Function<WrdsLocation, String> extractLocationName = this.getFeatureIdentifier( tupleSide );
 
                     /*
                      *  In english:
@@ -188,18 +204,17 @@ public class ExternalThresholdReader {
                      *  value to a string created by applying the created extraction function to the key
                      */
                     readThresholds = wrdsThresholds.entrySet()
-                            .parallelStream()
-                            .collect(
-                                    Collectors.toUnmodifiableMap(
-                                            entry -> extractLocationName.apply(entry.getKey()), Map.Entry::getValue
-                                    )
-                            );
+                                                   .parallelStream()
+                                                   .collect(
+                                                             Collectors.toUnmodifiableMap(
+                                                                                           entry -> extractLocationName.apply( entry.getKey() ),
+                                                                                           Map.Entry::getValue ) );
                     break;
                 default:
                     String message = "The threshold format of " + format.toString() + " is not supported.";
-                    throw new IllegalArgumentException(message);
+                    throw new IllegalArgumentException( message );
             }
-            
+
             final BiPredicate<String, String> finalEqualityCheck = equalityCheck;
 
             // Now that we have mappings between location identifiers and their thresholds,
@@ -211,35 +226,38 @@ public class ExternalThresholdReader {
                 // Try to find one of our configured features whose side matches what we were able to pluck out
                 // from our threshold requests
                 Optional<FeatureTuple> possibleFeature = this.features.stream()
-                        .filter(tuple -> finalEqualityCheck.test(tuple.getNameFor(tupleSide), locationIdentifier))
-                        .findFirst();
+                                                                      .filter( tuple -> finalEqualityCheck.test( tuple.getNameFor( tupleSide ),
+                                                                                                                 locationIdentifier ) )
+                                                                      .findFirst();
 
                 // If none were found, just move on. This might happen in the case where a CSV returns a mountain of
                 // thresholds yet we only want a few
-                if (possibleFeature.isEmpty())
+                if ( possibleFeature.isEmpty() )
                 {
+                    this.unrecognizedFeatures.add( locationIdentifier );
                     continue;
                 }
 
                 // Now that we know we have a match, add the feature to the list of features we know can be evaluated
                 FeatureTuple feature = possibleFeature.get();
-                recognizedFeatures.add( feature );
+                recognized.add( feature );
 
                 // Now that we have the feature, the metrics, and the thresholds, we can now add them to a
                 // greater collection for use later
-                for(MetricConstants metricName : metrics) {
-                    for (ThresholdOuter threshold : thresholds.getValue()) {
+                for ( MetricConstants metricName : metrics )
+                {
+                    for ( ThresholdOuter threshold : thresholds.getValue() )
+                    {
                         this.sharedBuilders.addThreshold(
-                                feature,
-                                thresholdGroup,
-                                metricName,
-                                threshold
-                        );
+                                                          feature,
+                                                          thresholdGroup,
+                                                          metricName,
+                                                          threshold );
                     }
                 }
             }
 
-            return recognizedFeatures;
+            return Collections.unmodifiableSet( recognized );
         }
         catch ( IOException e )
         {
@@ -253,12 +271,14 @@ public class ExternalThresholdReader {
      * @param side The side of the project's input to read identifiers from
      * @return a function that will retrieve the correct identifier from a WrdsLocation
      */
-    private Function<WrdsLocation, String> getFeatureIdentifier(LeftOrRightOrBaseline side) {
+    private Function<WrdsLocation, String> getFeatureIdentifier( LeftOrRightOrBaseline side )
+    {
         // Start out by getting the DataSourceConfig corresponding with the side; we'll need this in order to
         // try to figure out what field from the WrdsLocation we want to read from
         DataSourceConfig dataSourceConfig;
 
-        switch (side) {
+        switch ( side )
+        {
             case RIGHT:
                 dataSourceConfig = this.projectConfig.getInputs().getRight();
                 break;
@@ -269,11 +289,12 @@ public class ExternalThresholdReader {
                 dataSourceConfig = this.projectConfig.getInputs().getLeft();
         }
 
-        FeatureDimension dimension = ConfigHelper.getConcreteFeatureDimension(dataSourceConfig);
+        FeatureDimension dimension = ConfigHelper.getConcreteFeatureDimension( dataSourceConfig );
 
-        if (dimension == null || dimension == FeatureDimension.CUSTOM) {
-            LOGGER.warn("A definitive feature dimension could not be determined for linking thresholds to features; " +
-                    "defaulting to the NWS lid");
+        if ( dimension == null || dimension == FeatureDimension.CUSTOM )
+        {
+            LOGGER.warn( "A definitive feature dimension could not be determined for linking thresholds to features; " +
+                         "defaulting to the NWS lid" );
             return WrdsLocation::getNwsLid;
         }
 
@@ -281,7 +302,8 @@ public class ExternalThresholdReader {
         // one off of the WrdsLocation. WRDS only supports three different formats and it's fairly obvious which
         // sources use NWM ids or USGS sites, not so much for NWS lids. Since what CAN use NWS lids is so vague,
         // we assume that as the base case.
-        switch (dimension) {
+        switch ( dimension )
+        {
             case NWM_FEATURE_ID:
                 return WrdsLocation::getNwmFeatureId;
             case USGS_SITE_CODE:
@@ -291,21 +313,25 @@ public class ExternalThresholdReader {
         }
     }
 
-    public static ThresholdFormat getThresholdFormat(ThresholdsConfig config) {
-        return ((ThresholdsConfig.Source)config.getCommaSeparatedValuesOrSource()).getFormat();
+    public static ThresholdFormat getThresholdFormat( ThresholdsConfig config )
+    {
+        return ( (ThresholdsConfig.Source) config.getCommaSeparatedValuesOrSource() ).getFormat();
     }
 
-    private MeasurementUnit getDesiredMeasurementUnit() {
+    private MeasurementUnit getDesiredMeasurementUnit()
+    {
         return this.desiredMeasurementUnit;
     }
 
-    private MeasurementUnit getSourceMeasurementUnit(ThresholdsConfig config) {
+    private MeasurementUnit getSourceMeasurementUnit( ThresholdsConfig config )
+    {
         MeasurementUnit measurementUnit;
 
-        ThresholdsConfig.Source source = (ThresholdsConfig.Source)config.getCommaSeparatedValuesOrSource();
+        ThresholdsConfig.Source source = (ThresholdsConfig.Source) config.getCommaSeparatedValuesOrSource();
 
-        if (source.getUnit() != null && !source.getUnit().isBlank()) {
-            measurementUnit = MeasurementUnit.of(source.getUnit());
+        if ( source.getUnit() != null && !source.getUnit().isBlank() )
+        {
+            measurementUnit = MeasurementUnit.of( source.getUnit() );
         }
         else
         {
@@ -314,4 +340,93 @@ public class ExternalThresholdReader {
 
         return measurementUnit;
     }
+
+    /**
+     * Validates the thresholds against features. 
+     */
+
+    private void validate()
+    {
+        // No external thresholds declared
+        if ( this.getRecognizedFeatures().isEmpty() && this.getUnrecognizedFeatureNames().isEmpty() )
+        {
+            LOGGER.debug( "No external thresholds to validate." );
+
+            return;
+        }
+
+        LOGGER.debug( "Attempting to reconcile the {} features to evaluate with the {} features for which external "
+                      + "thresholds are available.",
+                      this.features.size(),
+                      this.getRecognizedFeatures().size() );
+
+        // Iterate the features to evaluate, filtering any for which external thresholds are not available
+        Set<FeatureTuple> missingThresholds = this.features
+                                                           .stream()
+                                                           .filter( feature -> !this.getRecognizedFeatures()
+                                                                                    .contains( feature ) )
+                                                           .collect( Collectors.toSet() );
+
+        if ( ( !missingThresholds.isEmpty() || !this.getUnrecognizedFeatureNames().isEmpty() )
+             && LOGGER.isWarnEnabled() )
+        {
+            StringJoiner joiner = new StringJoiner( ", " );
+
+            if ( missingThresholds.isEmpty() )
+            {
+                joiner.add( "[]" );
+            }
+            else
+            {
+                for ( FeatureTuple feature : missingThresholds )
+                {
+                    joiner.add( feature.toString() );
+                }
+            }
+
+            int missingCount = missingThresholds.size() + this.unrecognizedFeatures.size();
+
+            LOGGER.warn( "{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}",
+                         "While attempting to reconcile the features to ",
+                         "evaluate with the features for which thresholds ",
+                         "are available, found ",
+                         this.features.size(),
+                         " features to evaluate and ",
+                         this.getRecognizedFeatures().size(),
+                         " features for which thresholds are available, but ",
+                         missingCount,
+                         " features for which thresholds could not be ",
+                         "reconciled with features to evaluate. Features without ",
+                         "thresholds will be skipped. If the number of features ",
+                         "without thresholds is larger than expected, ensure that ",
+                         "the source of feature names (featureNameFrom) is properly ",
+                         "declared for the external thresholds. The ",
+                         "declared features without thresholds are: ",
+                         joiner,
+                         ". The feature names associated with thresholds for which no features were declared are: ",
+                         this.getUnrecognizedFeatureNames() );
+        }
+        
+        if ( missingThresholds.size() == this.features.size() )
+        {
+            throw new ThresholdReadingException( "Failed to discover any features for which thresholds were "
+                                                 + "available from the external sources declared. Add some thresholds "
+                                                 + "for one or more of the declared features, declare some features "
+                                                 + "for which thresholds are available or remove the declaration of "
+                                                 + "thresholds altogether. The names of features encountered without "
+                                                 + "thresholds are "
+                                                 + this.getUnrecognizedFeatureNames()
+                                                 + ". Thresholds were not discovered for any of the following declared "
+                                                 + "features "
+                                                 + missingThresholds
+                                                 + "." );
+        }
+
+        LOGGER.info( "Discovered {} features to evaluate for which external thresholds were available and {} "
+                     + "features with external thresholds that could not be evaluated (e.g., because there was "
+                     + "no data for these features).",
+                     this.getRecognizedFeatures().size(),
+                     this.getUnrecognizedFeatureNames().size() );
+    }
+
 }
