@@ -190,7 +190,7 @@ print( paste( "The location of the resource created by server was",
 # location returned by the POST response. This seems specific to crul.
 location_url_splitted <- strsplit( evaluation_location, "/" )
 
-# 1 is https, 2 is blank, 3 is nwcal... 4 and following are the path
+# 1 is https, 2 is blank, 3 is hostname, 4 and following are the path
 location_path_only <- paste( location_url_splitted[[1]][4],
                              location_url_splitted[[1]][5],
                              sep = "/" )

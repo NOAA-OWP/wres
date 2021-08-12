@@ -28,7 +28,6 @@ distributions
             from('.')
             {
                 include 'cacerts/*.pem'
-                include 'discover_cluster_entrypoint.sh'
                 include 'pg_dump_wres.sh'
                 include 'pg_restore_wres.sh'
                 include 'redmine_66113/wres_http_migrate_dbs.sh'

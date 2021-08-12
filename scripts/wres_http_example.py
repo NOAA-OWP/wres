@@ -67,7 +67,7 @@ print( "We are using the " + host + " environment in this example." )
 # server will send. When making client requests to the server, we instruct the
 # client to trust a ca for this request explicitly, referencing a file that
 # contains the certificate of the server. The file may be retrieved at
-# https://***REMOVED***/redmine/projects/wres-user-support/wiki/Import_Certificate_Authority_in_Browser_for_Access_to_WRES_Web_Front-End
+# https://public.cyber.mil/eca/
 
 wres_ca_file = "cacerts/dod_root_ca_3_expires_2029-12.pem"
 

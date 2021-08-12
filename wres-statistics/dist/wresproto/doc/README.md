@@ -64,10 +64,6 @@ For a complete description of the Protobuf format, see here:
 
 https://developers.google.com/protocol-buffers
 
-For a complete description of the WRES, see here (requires login):
-
-https://***REMOVED***/redmine/projects/wres/wiki
-
 ### Python users
 
 Import the ```wresproto``` resource into your own Python scripts in order to 
