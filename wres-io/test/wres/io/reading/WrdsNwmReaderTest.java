@@ -5,7 +5,6 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
@@ -219,8 +218,8 @@ public class WrdsNwmReaderTest
         DataSource dataSource = DataSource.of( COMPLEX,
                                                confSource,
                                                config,
-                                               Set.of( LeftOrRightOrBaseline.LEFT,
-                                                       LeftOrRightOrBaseline.RIGHT ),
+                                               List.of( LeftOrRightOrBaseline.LEFT,
+                                                        LeftOrRightOrBaseline.RIGHT ),
                                                fakeWrdsUri );
 
         WrdsNwmReader reader = Mockito.spy( new WrdsNwmReader( this.systemSettings,
@@ -398,8 +397,8 @@ public class WrdsNwmReaderTest
         DataSource dataSource = DataSource.of( COMPLEX,
                                                confSource,
                                                config,
-                                               Set.of( LeftOrRightOrBaseline.LEFT,
-                                                       LeftOrRightOrBaseline.RIGHT ),
+                                               List.of( LeftOrRightOrBaseline.LEFT,
+                                                        LeftOrRightOrBaseline.RIGHT ),
                                                fakeWrdsUri );
 
         WrdsNwmReader reader = Mockito.spy( new WrdsNwmReader( this.systemSettings,

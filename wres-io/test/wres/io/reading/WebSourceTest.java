@@ -86,7 +86,7 @@ public class WebSourceTest
         DataSource dataSource = DataSource.of( COMPLEX,
                                                source,
                                                sourceConfig,
-                                               Collections.emptySet(),
+                                               Collections.emptyList(),
                                                BASE_URI );
         WebSource webSource = WebSource.of( mockSystemSettings,
                                             mockDatabase,
@@ -140,7 +140,7 @@ public class WebSourceTest
         DataSource dataSource = DataSource.of( COMPLEX,
                                                source,
                                                sourceConfig,
-                                               Collections.emptySet(),
+                                               Collections.emptyList(),
                                                BASE_URI );
         WebSource webSource = WebSource.of( mockSystemSettings,
                                             mockDatabase,
@@ -193,7 +193,7 @@ public class WebSourceTest
         DataSource dataSource = DataSource.of( COMPLEX,
                                                source,
                                                sourceConfig,
-                                               Collections.emptySet(),
+                                               Collections.emptyList(),
                                                BASE_URI );
         WebSource webSource = WebSource.of( mockSystemSettings,
                                             mockDatabase,

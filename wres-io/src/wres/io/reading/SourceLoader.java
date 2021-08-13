@@ -598,8 +598,7 @@ public class SourceLoader
                     "determined that it is an archive that will need to " +
                     "be further evaluated.",
                     dataSource.getUri() );
-            return new FileEvaluation( null,
-                                       SourceStatus.REQUIRES_DECOMPOSITION,
+            return new FileEvaluation( SourceStatus.REQUIRES_DECOMPOSITION,
                                        KEY_NOT_FOUND );
         }
 
@@ -654,8 +653,7 @@ public class SourceLoader
                           dataSource.getUri(),
                           "it has data that could not be detected as readable ",
                           "by WRES" );
-            return new FileEvaluation( null,
-                                       SourceStatus.INVALID,
+            return new FileEvaluation( SourceStatus.INVALID,
                                        KEY_NOT_FOUND );
         }
 
@@ -668,13 +666,13 @@ public class SourceLoader
         // Get the surrogate key if it exists
         final long surrogateKey;
         Long dataSourceKey = null;
-        DataSources dataSourcesCache = this.getDataSourcesCache();
+        DataSources dataSources = this.getDataSourcesCache();
 
         if ( Objects.nonNull( hash ) )
         {
             try
             {
-                dataSourceKey = dataSourcesCache.getActiveSourceID( hash );
+                dataSourceKey = dataSources.getActiveSourceID( hash );
             }
             catch ( SQLException se )
             {
@@ -696,7 +694,7 @@ public class SourceLoader
             surrogateKey = dataSourceKey;
         }
 
-        return new FileEvaluation( hash, sourceStatus, surrogateKey );
+        return new FileEvaluation( sourceStatus, surrogateKey );
     }
 
     /**
@@ -711,8 +709,8 @@ public class SourceLoader
                                       DatabaseLockManager lockManager )
             throws SQLException
     {
-        DataSources dataSourcesCache = this.getDataSourcesCache();
-        SourceDetails sourceDetails = dataSourcesCache.getExistingSource( hash );
+        DataSources dataSources = this.getDataSourcesCache();
+        SourceDetails sourceDetails = dataSources.getExistingSource( hash );
         Long sourceId = sourceDetails.getId();
         return lockManager.isSourceLocked( sourceId );
     }
@@ -727,8 +725,8 @@ public class SourceLoader
     private boolean anotherTaskIsResponsibleForSource( String hash )
             throws SQLException
     {
-        DataSources dataSourcesCache = this.getDataSourcesCache();
-        return dataSourcesCache.hasSource( hash );
+        DataSources dataSources = this.getDataSourcesCache();
+        return dataSources.hasSource( hash );
     }
 
 
@@ -744,10 +742,10 @@ public class SourceLoader
     private boolean wasSourceCompleted( String hash )
             throws SQLException
     {
-        DataSources dataSourcesCache = this.getDataSourcesCache();
-        SourceDetails details = dataSourcesCache.getExistingSource( hash );
-        Database database = this.getDatabase();
-        SourceCompletedDetails completedDetails = new SourceCompletedDetails( database,
+        DataSources dataSources = this.getDataSourcesCache();
+        SourceDetails details = dataSources.getExistingSource( hash );
+        Database db = this.getDatabase();
+        SourceCompletedDetails completedDetails = new SourceCompletedDetails( db,
                                                                               details );
         return completedDetails.wasCompleted();
     }
@@ -776,8 +774,8 @@ public class SourceLoader
         // Admittedly not optimal to alternate between hash and key, but other
         // places are using querySourceStatus with the hash.
         long surrogateKey = ingestResult.getSurrogateKey();
-        DataSources dataSourcesCache = this.getDataSourcesCache();
-        String hash = SourceLoader.getHashFromSurrogateKey( dataSourcesCache, surrogateKey );
+        DataSources dataSources = this.getDataSourcesCache();
+        String hash = SourceLoader.getHashFromSurrogateKey( dataSources, surrogateKey );
         SourceStatus sourceStatus = querySourceStatus( hash,
                                                        this.lockManager );
 
@@ -831,48 +829,23 @@ public class SourceLoader
     }
 
     /**
-     * A result of file evaluation containing whether the file was valid,
-     * whether the file should be ingested, and the hash if available.
+     * A result of file evaluation.
      */
     private static class FileEvaluation
     {
-        private final String hash;
         private final SourceStatus sourceStatus;
         private final long surrogateKey;
 
-        FileEvaluation( String hash,
-                        SourceStatus sourceStatus,
+        FileEvaluation( SourceStatus sourceStatus,
                         long surrogateKey )
         {
-            this.hash = hash;
             this.sourceStatus = sourceStatus;
             this.surrogateKey = surrogateKey;
-        }
-
-        public boolean isValid()
-        {
-            return !this.sourceStatus.equals( SourceStatus.INVALID );
-        }
-
-        boolean shouldIngest()
-        {
-            return this.sourceStatus.equals( SourceStatus.INCOMPLETE_WITH_NO_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING )
-                    || this.sourceStatus.equals( SourceStatus.REQUIRES_DECOMPOSITION );
-        }
-
-        public String getHash()
-        {
-            return this.hash;
         }
 
         boolean ingestMarkedComplete()
         {
             return this.sourceStatus.equals( SourceStatus.COMPLETED );
-        }
-
-        boolean ingestInProgress()
-        {
-            return this.sourceStatus.equals( SourceStatus.INCOMPLETE_WITH_TASK_CLAIMING_AND_TASK_CURRENTLY_INGESTING );
         }
 
         SourceStatus getSourceStatus()
@@ -912,7 +885,7 @@ public class SourceLoader
         // The key is the distinct source, and the paired value is the context in
         // which the source appears and the set of additional links to create, if any.
         // Note that all project declaration overrides hashCode and equals (~ key in a HashMap)
-        Map<DataSourceConfig.Source, Pair<DataSourceConfig, Set<LeftOrRightOrBaseline>>> sources = new HashMap<>();
+        Map<DataSourceConfig.Source, Pair<DataSourceConfig, List<LeftOrRightOrBaseline>>> sources = new HashMap<>();
 
         // Must have one or more left sources to load and link
         SourceLoader.mutateSourcesToLoadAndLink( sources, projectConfig, projectConfig.getInputs().getLeft() );
@@ -930,13 +903,13 @@ public class SourceLoader
         Set<DataSource> returnMe = new HashSet<>();
 
         // Expand any file sources that represent directories and filter any that are not required
-        for ( Map.Entry<DataSourceConfig.Source, Pair<DataSourceConfig, Set<LeftOrRightOrBaseline>>> nextSource : sources.entrySet() )
+        for ( Map.Entry<DataSourceConfig.Source, Pair<DataSourceConfig, List<LeftOrRightOrBaseline>>> nextSource : sources.entrySet() )
         {
             // Evaluate the path, which is null for a source that is not file-like
             Path path = SourceLoader.evaluatePath( systemSettings, nextSource.getKey() );
 
             // Allow GC of new empty Sets by letting the links ref empty set.
-            Set<LeftOrRightOrBaseline> links = Collections.emptySet();
+            List<LeftOrRightOrBaseline> links = Collections.emptyList();
 
             if ( !nextSource.getValue()
                             .getRight()
@@ -947,7 +920,7 @@ public class SourceLoader
             }
 
             // If there is a file-like source, test for a directory and decompose it as required
-            if( Objects.nonNull( path ) )
+            if ( Objects.nonNull( path ) )
             {
                 DataSource source = DataSource.of( FILE_OR_DIRECTORY,
                                                    nextSource.getKey(),
@@ -1110,8 +1083,7 @@ public class SourceLoader
         String scheme = uri.getScheme();
 
         if ( scheme != null
-             && !scheme.toLowerCase()
-                       .equals( "file" ) )
+             && !scheme.equalsIgnoreCase( "file" ) )
         {
             LOGGER.debug( "Scheme '{}' indicates non-file.", scheme );
             return null;
@@ -1150,7 +1122,7 @@ public class SourceLoader
      */
 
     private static void
-            mutateSourcesToLoadAndLink( Map<DataSourceConfig.Source, Pair<DataSourceConfig, Set<LeftOrRightOrBaseline>>> sources,
+            mutateSourcesToLoadAndLink( Map<DataSourceConfig.Source, Pair<DataSourceConfig, List<LeftOrRightOrBaseline>>> sources,
                                         ProjectConfig projectConfig,
                                         DataSourceConfig dataSourceConfig )
     {
@@ -1173,18 +1145,12 @@ public class SourceLoader
             // Only create a link if the source is already in the load list/map
             if ( sources.containsKey( source ) )
             {
-                // Only link sources that appear in a different context
-                if ( ConfigHelper.getLeftOrRightOrBaseline( projectConfig,
-                                                            sources.get( source )
-                                                                   .getLeft() ) != sourceType )
-                {
-                    sources.get( source ).getRight().add( sourceType );
-                }
+                sources.get( source ).getRight().add( sourceType );
             }
             // Load
             else
             {
-                sources.put( source, Pair.of( dataSourceConfig, new HashSet<>() ) );
+                sources.put( source, Pair.of( dataSourceConfig, new ArrayList<>() ) );
             }
         }
 

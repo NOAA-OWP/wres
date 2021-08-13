@@ -5,8 +5,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
-
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -3407,8 +3405,8 @@ public class WRDSSourceTest
         DataSource dataSource = DataSource.of( JSON_WRDS_AHPS,
                                                confSource,
                                                config,
-                                               Set.of( LeftOrRightOrBaseline.LEFT,
-                                                       LeftOrRightOrBaseline.RIGHT ),
+                                               List.of( LeftOrRightOrBaseline.LEFT,
+                                                        LeftOrRightOrBaseline.RIGHT ),
                                                fakeAhpsUri );
 
         // Spy seems needed to make new instances within the classes under test.
@@ -3545,8 +3543,8 @@ public class WRDSSourceTest
         DataSource dataSource = DataSource.of( JSON_WRDS_AHPS,
                                                confSource,
                                                config,
-                                               Set.of( LeftOrRightOrBaseline.LEFT,
-                                                       LeftOrRightOrBaseline.RIGHT ),
+                                               List.of( LeftOrRightOrBaseline.LEFT,
+                                                        LeftOrRightOrBaseline.RIGHT ),
                                                fakeAhpsUri );
 
         // Spy seems needed to make new instances within the classes under test.
@@ -3673,8 +3671,8 @@ public class WRDSSourceTest
         DataSource dataSource = DataSource.of( JSON_WRDS_AHPS,
                                                confSource,
                                                config,
-                                               Set.of( LeftOrRightOrBaseline.LEFT,
-                                                       LeftOrRightOrBaseline.RIGHT ),
+                                               List.of( LeftOrRightOrBaseline.LEFT,
+                                                        LeftOrRightOrBaseline.RIGHT ),
                                                fakeAhpsUri );
 
         WRDSSource wrdsSource = Mockito.spy(
@@ -3790,8 +3788,8 @@ public class WRDSSourceTest
         DataSource dataSource = DataSource.of( JSON_WRDS_AHPS,
                                                confSource,
                                                config,
-                                               Set.of( LeftOrRightOrBaseline.LEFT,
-                                                       LeftOrRightOrBaseline.RIGHT ),
+                                               List.of( LeftOrRightOrBaseline.LEFT,
+                                                        LeftOrRightOrBaseline.RIGHT ),
                                                fakeAhpsUri );
 
         ReadValueManager readValueManager = Mockito.spy(
