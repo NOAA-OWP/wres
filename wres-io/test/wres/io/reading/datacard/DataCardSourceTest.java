@@ -9,7 +9,6 @@ import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Ignore;
@@ -175,8 +174,8 @@ public class DataCardSourceTest
         DataSource dataSource = DataSource.of( DATACARD,
                                                confSource,
                                                config,
-                                               Set.of( LeftOrRightOrBaseline.LEFT,
-                                                       LeftOrRightOrBaseline.RIGHT ),
+                                               List.of( LeftOrRightOrBaseline.LEFT,
+                                                        LeftOrRightOrBaseline.RIGHT ),
                                                fileUri );
 
         // TODO: Modify the other classes (CopyExecutor, Database, etc) rather than the datacard source to get truer results
@@ -274,8 +273,8 @@ public class DataCardSourceTest
         DataSource dataSource = DataSource.of( DATACARD,
                                                confSource,
                                                config,
-                                               Set.of( LeftOrRightOrBaseline.LEFT,
-                                                       LeftOrRightOrBaseline.RIGHT ),
+                                               List.of( LeftOrRightOrBaseline.LEFT,
+                                                        LeftOrRightOrBaseline.RIGHT ),
                                                fileUri );
 
         /*

@@ -47,7 +47,7 @@ public class WaterMLSourceTest
                                                           null,
                                                           null,
                                                           null ),
-                                    Collections.emptySet(),
+                                    Collections.emptyList(),
                                     URI.create( "https://fake.uri/somewhere" ) );
         String jsonResponse =
                 "{\n"

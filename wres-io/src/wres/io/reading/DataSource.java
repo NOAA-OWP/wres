@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -98,7 +99,7 @@ public class DataSource
      * its own {@link #context}.
      */
 
-    private final Set<LeftOrRightOrBaseline> links;
+    private final List<LeftOrRightOrBaseline> links;
 
     /**
      * URI of the source. Required when ingesting, but null when this object is
@@ -113,7 +114,6 @@ public class DataSource
      */
 
     private final TimeSeries<?> timeSeries;
-
 
     /**
      * Create a data source to load into <code>wres.Source</code>, with optional links to
@@ -137,7 +137,7 @@ public class DataSource
     public static DataSource of( DataDisposition disposition,
                                  DataSourceConfig.Source source,
                                  DataSourceConfig context,
-                                 Set<LeftOrRightOrBaseline> links,
+                                 List<LeftOrRightOrBaseline> links,
                                  URI uri )
     {
         Objects.requireNonNull( disposition );
@@ -149,7 +149,6 @@ public class DataSource
                                uri,
                                null );
     }
-
 
     /**
      * Create a data source to load into <code>wres.Source</code> with an
@@ -176,7 +175,7 @@ public class DataSource
     public static DataSource of( DataDisposition disposition,
                                  DataSourceConfig.Source source,
                                  DataSourceConfig context,
-                                 Set<LeftOrRightOrBaseline> links,
+                                 List<LeftOrRightOrBaseline> links,
                                  URI uri,
                                  TimeSeries<?> timeSeries )
     {
@@ -203,7 +202,7 @@ public class DataSource
     private DataSource( DataDisposition disposition,
                         DataSourceConfig.Source source,
                         DataSourceConfig context,
-                        Set<LeftOrRightOrBaseline> links,
+                        List<LeftOrRightOrBaseline> links,
                         URI uri,
                         TimeSeries<?> timeSeries )
     {
@@ -215,13 +214,13 @@ public class DataSource
         this.source = source;
         this.context = context;
 
-        if ( links.equals( Collections.emptySet() ) )
+        if ( links.equals( Collections.emptyList() ) )
         {
             this.links = links;
         }
         else
         {
-            this.links = Collections.unmodifiableSet( links );
+            this.links = Collections.unmodifiableList( links );
         }
 
         this.uri = uri;
@@ -245,7 +244,7 @@ public class DataSource
      * @return the type of link
      */
 
-    public Set<LeftOrRightOrBaseline> getLinks()
+    public List<LeftOrRightOrBaseline> getLinks()
     {
         // Rendered immutable on construction
         return this.links;

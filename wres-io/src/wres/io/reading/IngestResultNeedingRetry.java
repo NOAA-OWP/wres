@@ -96,7 +96,7 @@ class IngestResultNeedingRetry implements IngestResult
                 if ( leftCount == MAX_VALUE )
                 {
                     throw new IllegalStateException( "Too many re-uses of "
-                                                     + dataSource
+                                                     + this.getDataSource()
                                                      + " in left, more than "
                                                      + MAX_VALUE );
                 }
@@ -127,7 +127,7 @@ class IngestResultNeedingRetry implements IngestResult
                 if ( rightCount == MAX_VALUE )
                 {
                     throw new IllegalStateException( "Too many re-uses of "
-                                                     + dataSource
+                                                     + this.getDataSource()
                                                      + " in right, more than "
                                                      + MAX_VALUE );
                 }
@@ -158,7 +158,7 @@ class IngestResultNeedingRetry implements IngestResult
                 if ( baselineCount == MAX_VALUE )
                 {
                     throw new IllegalStateException( "Too many re-uses of "
-                                                     + dataSource
+                                                     + this.getDataSource()
                                                      + " in baseline, more than "
                                                      + MAX_VALUE );
                 }
@@ -174,9 +174,9 @@ class IngestResultNeedingRetry implements IngestResult
     public String toString()
     {
         return new ToStringBuilder( this )
-                .append( "leftOrRightOrBaseline", leftOrRightOrBaseline )
-                .append( "dataSource", dataSource )
-                .append( "surrogateKey", surrogateKey )
+                .append( "leftOrRightOrBaseline", this.getLeftOrRightOrBaseline() )
+                .append( "dataSource", this.getDataSource() )
+                .append( "surrogateKey", this.getSurrogateKey() )
                 .toString();
     }
 }
