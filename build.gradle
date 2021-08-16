@@ -49,7 +49,7 @@ plugins
     // To print junit test reports to the console in addition to html, so that
     // remote developers can see detailed test feedback without launching a
     // browser. See #61601
-    id 'com.github.ksoichiro.console.reporter' version '0.6.2'
+    id 'com.github.ksoichiro.console.reporter' version '0.6.3'
 
     // To discover library versions with known vulnerabilities
     id 'org.owasp.dependencycheck' version '6.2.2'
