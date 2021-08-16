@@ -14,28 +14,73 @@ volumes:
             type: "nfs"
             o: "ro,relatime,vers=4.1,rsize=1048576,wsize=1048576,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,local_lock=none,addr=${NFS_HOME_DIR_IP_ADDRESS}"
             device: "${NFS_HOME_DIR_DEVICE}"
+    wres_share_job_data:
+        driver_opts:
+            type: "nfs"
+            o: "rw,relatime,vers=3,rsize=65536,wsize=65536,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,local_lock=none,addr=${NFS_WRES_SHARE_DIR_IP_ADDRESS}"
+            device: "${NFS_WRES_SHARE_DIR_DEVICE}/job_data"
+    wres_share_evaluations:
+        driver_opts:
+            type: "nfs"
+            o: "rw,relatime,vers=3,rsize=65536,wsize=65536,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,local_lock=none,addr=${NFS_WRES_SHARE_DIR_IP_ADDRESS}"
+            device: "${NFS_WRES_SHARE_DIR_DEVICE}/evaluations"
+    wres_share_input_data_ro:
+        driver_opts:
+            type: "nfs"
+            o: "ro,relatime,vers=3,rsize=65536,wsize=65536,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,local_lock=none,addr=${NFS_WRES_SHARE_DIR_IP_ADDRESS}"
+            device: "${NFS_WRES_SHARE_DIR_DEVICE}/input_data"
+    wres_share_heap_dumps_tasker:
+        driver_opts:
+            type: "nfs"
+            o: "rw,relatime,vers=3,rsize=65536,wsize=65536,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,local_lock=none,addr=${NFS_WRES_SHARE_DIR_IP_ADDRESS}"
+            device: "${NFS_WRES_SHARE_DIR_DEVICE}/heap_dumps/tasker"
+    wres_share_systests:
+        driver_opts:
+            type: "nfs"
+            o: "ro,relatime,vers=3,rsize=65536,wsize=65536,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,local_lock=none,addr=${NFS_WRES_SHARE_DIR_IP_ADDRESS}"
+            device: "${NFS_WRES_SHARE_DIR_DEVICE}/systests"
+    wres_share_heap_dumps_worker-shim:
+        driver_opts:
+            type: "nfs"
+            o: "rw,relatime,vers=3,rsize=65536,wsize=65536,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,local_lock=none,addr=${NFS_WRES_SHARE_DIR_IP_ADDRESS}"
+            device: "${NFS_WRES_SHARE_DIR_DEVICE}/heap_dumps/worker-shim"
+    wres_share_heap_dumps_wres:
+        driver_opts:
+            type: "nfs"
+            o: "rw,relatime,vers=3,rsize=65536,wsize=65536,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,local_lock=none,addr=${NFS_WRES_SHARE_DIR_IP_ADDRESS}"
+            device: "${NFS_WRES_SHARE_DIR_DEVICE}/heap_dumps/wres"
+    wres_share_heap_dumps_eventsbroker:
+        driver_opts:
+            type: "nfs"
+            o: "rw,relatime,vers=3,rsize=65536,wsize=65536,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,local_lock=none,addr=${NFS_WRES_SHARE_DIR_IP_ADDRESS}"
+            device: "${NFS_WRES_SHARE_DIR_DEVICE}/heap_dumps/eventsbroker"
+    wres_share_heap_dumps_graphics:
+        driver_opts:
+            type: "nfs"
+            o: "rw,relatime,vers=3,rsize=65536,wsize=65536,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,local_lock=none,addr=${NFS_WRES_SHARE_DIR_IP_ADDRESS}"
+            device: "${NFS_WRES_SHARE_DIR_DEVICE}/heap_dumps/graphics"
 services:
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210809-810c4d7"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210816-f31dd7a"
         restart: always
         depends_on:
             eventsbroker:
                 condition: service_started
         volumes:
          # To write user output data:
-         - /mnt/wres_share/evaluations:/mnt/wres_share/evaluations
-         # To read user input data using read-only nfs mount above:
+         - wres_share_evaluations:/mnt/wres_share/evaluations
+         # To read user input using read-only nfs mount above:
          - home:/home:ro
          # To read user input data written by tasker:
-         - /mnt/wres_share/input_data:/mnt/wres_share/input_data:ro
+         - wres_share_input_data_ro:/mnt/wres_share/input_data:ro
          # To read test input data:
-         - /mnt/wres_share/systests:/mnt/wres_share/systests:ro
+         - wres_share_systests:/mnt/wres_share/systests:ro
          # For certificates, keys that correspond to them, and .pgpass:
          - /mnt/wres_keys:/wres_secrets:ro
          # To write heap dumps (worker-shim process):
-         - /mnt/wres_share/heap_dumps/worker-shim:/mnt/wres_share/heap_dumps/worker-shim
+         - wres_share_heap_dumps_worker-shim:/mnt/wres_share/heap_dumps/worker-shim
          # To write heap dumps (core WRES process):
-         - /mnt/wres_share/heap_dumps/wres:/mnt/wres_share/heap_dumps/wres
+         - wres_share_heap_dumps_wres:/mnt/wres_share/heap_dumps/wres
          # For logs (inside container, avoid writing to read-only /home)
          - /container_home
         environment:
@@ -59,11 +104,11 @@ services:
          - 5673
         ports:
          - 15673:15673
-        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20210804-988c7ba"
+        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20210816-f31dd7a"
         restart: always
         volumes:
          # For heap-dump files
-         - /mnt/wres_share/heap_dumps/eventsbroker:/mnt/wres_share/heap_dumps/eventsbroker
+         - wres_share_heap_dumps_eventsbroker:/mnt/wres_share/heap_dumps/eventsbroker
          # For certificates and keys that correspond to them
          - /mnt/wres_keys:/wres_secrets:ro
         environment:
@@ -83,13 +128,13 @@ services:
         depends_on:
             eventsbroker:
                 condition: service_started
-        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20210809-810c4d7"
+        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20210816-f31dd7a"
         restart: always
         volumes:
          # To write graphics outputs
-         - /mnt/wres_share/evaluations:/mnt/wres_share/evaluations
+         - wres_share_evaluations:/mnt/wres_share/evaluations
          # To write heap dumps
-         - /mnt/wres_share/heap_dumps/graphics:/mnt/wres_share/heap_dumps/graphics
+         - wres_share_heap_dumps_graphics:/mnt/wres_share/heap_dumps/graphics
         environment:
          # Override the broker address and port in the binding URL of the event.properties
          - JAVA_OPTS=-Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Djava.io.tmpdir=/mnt/wres_share/evaluations -Xms640m -Xmx640m -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/graphics -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/graphics/java_pid%p.hprof /mnt/wres_share/heap_dumps/graphics/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/graphics/java_pid%p_`hostname`.hprof' -XX:StartFlightRecording=name=graphics,maxsize=256m,disk=true,maxage=24h,dumponexit=true,filename=/mnt/wres_share/heap_dumps/graphics/`hostname`/`date +%Y%m%dT%H%M%S.%NZ --utc`.jfr -XX:FlightRecorderOptions=repository=/mnt/wres_share/heap_dumps/graphics/`hostname`
