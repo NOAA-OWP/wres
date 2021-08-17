@@ -66,7 +66,7 @@ volumes:
             device: "${NFS_WRES_SHARE_DIR_DEVICE}/heap_dumps/graphics"
 services:
     persister:
-        image: "${DOCKER_REGISTRY}/wres/wres-redis:20210816-f31dd7a"
+        image: "${DOCKER_REGISTRY}/wres/wres-redis:20210817-b31ec6d"
         restart: always
         volumes:
          # For the job data
@@ -131,7 +131,7 @@ services:
         healthcheck:
             start_period: 5m
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210816-f31dd7a"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210817-b31ec6d"
         restart: always
         depends_on:
             broker:
