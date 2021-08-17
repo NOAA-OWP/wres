@@ -61,7 +61,7 @@ volumes:
             device: "${NFS_WRES_SHARE_DIR_DEVICE}/heap_dumps/graphics"
 services:
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210816-f31dd7a"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210817-b31ec6d"
         restart: always
         depends_on:
             eventsbroker:
