@@ -71,8 +71,8 @@ services:
         volumes:
          # For the job data
          - wres_share_job_data:/data
-        # Enable persistence, limit RAM to less than mem_limit, evict any w/LRU
-        command: --appendonly yes --maxmemory 900mb --maxmemory-policy allkeys-lru
+        # Use the redis.conf for configuration (helps avoid rdb snapshots)
+        command: /etc/redis/redis.conf
         mem_limit: 940m
         read_only: true
         networks:
