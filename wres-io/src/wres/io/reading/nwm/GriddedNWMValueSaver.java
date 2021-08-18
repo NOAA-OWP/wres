@@ -16,7 +16,7 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.nc2.NetcdfFile;
-
+import ucar.nc2.NetcdfFiles;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Downloader;
 import wres.io.concurrency.WRESCallable;
@@ -44,14 +44,12 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
     private URI fileName;
     private NetcdfFile source;
     private final String hash;
-    private final int gridProjectionId;
 
 	GriddedNWMValueSaver( SystemSettings systemSettings,
                           Database database,
                           ProjectConfig projectConfig,
                           DataSource dataSource,
-                          final String hash,
-                          final int gridProjectionId )
+                          final String hash )
     {
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( database );
@@ -64,7 +62,6 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
         this.dataSource = dataSource;
         this.fileName = dataSource.getUri();
         this.hash = hash;
-        this.gridProjectionId = gridProjectionId;
     }
 
     private SystemSettings getSystemSettings()
@@ -202,7 +199,7 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
     {
         if (this.source == null) {
             this.getLogger().trace("Now opening '{}'...", this.fileName);
-            this.source = NetcdfFile.open( this.fileName.toString() );
+            this.source = NetcdfFiles.open( this.fileName.toString() );
             this.getLogger().trace("'{}' has been opened for parsing.", this.fileName);
         }
         return this.source;

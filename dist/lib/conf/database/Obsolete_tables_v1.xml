@@ -60,4 +60,18 @@
         </preConditions>
         <dropTable tableName="VariablePosition" schemaName="wres" cascadeConstraints="true"/>
     </changeSet>
+    <changeSet id="Remove wres.GridProjection v1" author="James Brown">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="GridProjection" schemaName="wres" />
+        </preConditions>
+        <dropTable tableName="GridProjection" schemaName="wres" cascadeConstraints="true"/>
+        <comment>Removed wres.GridProjection because gridded features are no longer ingested.</comment>
+    </changeSet>
+    <changeSet id="Remove wres.NetcdfCoordinate v1" author="James Brown">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="NetcdfCoordinate" schemaName="wres" />
+        </preConditions>
+        <dropTable tableName="NetcdfCoordinate" schemaName="wres" cascadeConstraints="true"/>
+        <comment>Removed wres.NetcdfCoordinate because gridded features are no longer ingested.</comment>
+    </changeSet>
 </databaseChangeLog>

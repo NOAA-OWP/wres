@@ -73,11 +73,14 @@ class WebSource implements Callable<List<IngestResult>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WebSource.class );
 
-    private static final String DATES_ERROR_MESSAGE =
+    private static final String ISSUED_DATES_ERROR_MESSAGE =
             "One must specify issued dates with both earliest and latest (e.g. "
             + "<issuedDates earliest=\"2018-12-28T15:42:00Z\" "
             + "latest=\"2019-01-01T00:00:00Z\" />) when using a web API as a "
-            + "source for forecasts. One must specify dates with both "
+            + "source for forecasts.";
+    
+    private static final String VALID_DATES_ERROR_MESSAGE =
+            "One must specify dates with both "
             + "earliest and latest (e.g. "
             + "<dates earliest=\"2019-08-10T14:30:00Z\" "
             + "latest=\"2019-08-15T18:00:00Z\" />) "
@@ -508,12 +511,10 @@ class WebSource implements Callable<List<IngestResult>>
 
     private void validateSource( DataSource source )
     {
-        if ( source.getContext()
-                   .getType()
-                   .equals( DatasourceType.SINGLE_VALUED_FORECASTS )
-             && source.getSource()
-                      .getInterface()
-                      .equals( InterfaceShortHand.WRDS_NWM )
+        if ( DatasourceType.SINGLE_VALUED_FORECASTS.equals( source.getContext()
+                                                                  .getType() )
+             && InterfaceShortHand.WRDS_NWM.equals( source.getSource()
+                                                          .getInterface() )
              && source.getUri()
                       .toString()
                       .toLowerCase()
@@ -736,13 +737,17 @@ class WebSource implements Callable<List<IngestResult>>
 
         boolean isForecast = ConfigHelper.isForecast( dataSource.getContext() );
 
-        if ( ( isForecast && declaration.getPair().getIssuedDates() == null )
-             || ( !isForecast && declaration.getPair().getDates() == null ) )
+        if ( ( isForecast && declaration.getPair().getIssuedDates() == null ) )
         {
             throw new ProjectConfigException( declaration.getPair(),
-                                              DATES_ERROR_MESSAGE );
+                                              ISSUED_DATES_ERROR_MESSAGE );
         }
-
+        else if( !isForecast && declaration.getPair().getDates() == null )
+        {
+            throw new ProjectConfigException( declaration.getPair(),
+                                              VALID_DATES_ERROR_MESSAGE );
+        }
+        
         DateCondition dates = declaration.getPair()
                                          .getDates();
 
@@ -756,7 +761,7 @@ class WebSource implements Callable<List<IngestResult>>
              || dates.getLatest() == null )
         {
             throw new ProjectConfigException( dates,
-                                              DATES_ERROR_MESSAGE );
+                                              VALID_DATES_ERROR_MESSAGE );
         }
 
         String specifiedEarliest = dates.getEarliest();
@@ -802,11 +807,15 @@ class WebSource implements Callable<List<IngestResult>>
 
         boolean isForecast = ConfigHelper.isForecast( dataSource.getContext() );
 
-        if ( ( isForecast && config.getPair().getIssuedDates() == null )
-             || ( !isForecast && config.getPair().getDates() == null ) )
+        if ( ( isForecast && config.getPair().getIssuedDates() == null ) )
         {
             throw new ProjectConfigException( config.getPair(),
-                                              DATES_ERROR_MESSAGE );
+                                              ISSUED_DATES_ERROR_MESSAGE );
+        }
+        else if( !isForecast && config.getPair().getDates() == null )
+        {
+            throw new ProjectConfigException( config.getPair(),
+                                              VALID_DATES_ERROR_MESSAGE );
         }
 
         DateCondition dates = config.getPair()
@@ -822,7 +831,7 @@ class WebSource implements Callable<List<IngestResult>>
              || dates.getLatest() == null )
         {
             throw new ProjectConfigException( dates,
-                                              DATES_ERROR_MESSAGE );
+                                              VALID_DATES_ERROR_MESSAGE );
         }
 
         SortedSet<Pair<Instant,Instant>> weekRanges = new TreeSet<>();
@@ -896,13 +905,17 @@ class WebSource implements Callable<List<IngestResult>>
 
         boolean isForecast = ConfigHelper.isForecast( dataSource.getContext() );
 
-        if ( ( isForecast && config.getPair().getIssuedDates() == null )
-             || ( !isForecast && config.getPair().getDates() == null ) )
+        if ( ( isForecast && config.getPair().getIssuedDates() == null ) )
         {
             throw new ProjectConfigException( config.getPair(),
-                                              DATES_ERROR_MESSAGE );
+                                              ISSUED_DATES_ERROR_MESSAGE );
         }
-
+        else if( !isForecast && config.getPair().getDates() == null )
+        {
+            throw new ProjectConfigException( config.getPair(),
+                                              VALID_DATES_ERROR_MESSAGE );
+        }
+        
         DateCondition dates = config.getPair()
                                     .getDates();
 
@@ -916,7 +929,7 @@ class WebSource implements Callable<List<IngestResult>>
              || dates.getLatest() == null )
         {
             throw new ProjectConfigException( dates,
-                                              DATES_ERROR_MESSAGE );
+                                              VALID_DATES_ERROR_MESSAGE );
         }
 
         SortedSet<Pair<Instant,Instant>> yearRanges = new TreeSet<>();

@@ -643,7 +643,7 @@ public class Project
         if ( this.usesGriddedData( this.getRight() ) )
         {
             LOGGER.debug( "Getting details of intersecting features for gridded data." );
-            intersectingFeatures = fCache.getGriddedDetails( this );
+            intersectingFeatures = fCache.getGriddedFeatures();
         }
         // No
         else

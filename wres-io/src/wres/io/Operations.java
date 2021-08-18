@@ -372,7 +372,7 @@ public final class Operations {
         Project result = null;
         List<IngestResult> projectSources = new ArrayList<>();
         DataSources dataSourcesCache = new DataSources( database );
-        Features featuresCache = new Features( database );
+        Features featuresCache = new Features( database, projectConfig.getPair().getGridSelection() );
         Variables variablesCache = new Variables( database );
         Ensembles ensemblesCache = new Ensembles( database );
         MeasurementUnits measurementUnitsCache = new MeasurementUnits( database );
