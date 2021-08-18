@@ -1,6 +1,5 @@
 package wres.io.utilities;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -1041,9 +1040,7 @@ public class Database {
                                        "wres.Ensemble",
                                        "wres.Project",
                                        "wres.ProjectSource",
-                                       "wres.Feature",
-                                       "wres.NetcdfCoordinate",
-                                       "wres.GridProjection" );
+                                       "wres.Feature" );
 
         for ( String table : tables )
         {

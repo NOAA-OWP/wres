@@ -20,11 +20,15 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import ucar.nc2.NetcdfFile;
+import ucar.nc2.NetcdfFiles;
 
 import static wres.io.reading.DataSource.DataDisposition.COMPLEX;
 import static wres.io.reading.DataSource.DataDisposition.FILE_OR_DIRECTORY;
@@ -47,6 +51,7 @@ import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
+import wres.io.reading.DataSource.DataDisposition;
 import wres.io.reading.nwm.NWMReader;
 import wres.io.removal.IncompleteIngest;
 import wres.io.utilities.Database;
@@ -465,10 +470,11 @@ public class SourceLoader
      * @param projectConfig the project configuration causing the ingest
      * @param lockManager the lock manager to use
      * @return a list of future lists of ingest results, possibly empty
+     * @throws IOException if the file could not be read
      */
     private List<CompletableFuture<List<IngestResult>>> ingestFile( DataSource source,
                                                                     ProjectConfig projectConfig,
-                                                                    DatabaseLockManager lockManager )
+                                                                    DatabaseLockManager lockManager ) throws IOException
     {
         Objects.requireNonNull( source );
         Objects.requireNonNull( projectConfig );
@@ -566,10 +572,45 @@ public class SourceLoader
                       tasks,
                       sourceUri );
 
+        // Always ingest gridded coordinates. Could potentially reduce file opens/closes by additionally checking for
+        // SourceStatus.COMPLETED and only reading when ingest has not occurred. Then, piggy-back off the file open
+        // in the reader (NWMSource at the time of writing), adding the coordinates to the Features in that context. 
+        // However, when experimenting, this did not save anything and the current approach is simpler.
+        if ( source.getDisposition() == DataDisposition.NETCDF_GRIDDED )
+        {
+            Supplier<List<IngestResult>> fakeResult = this.ingestGriddedFeatures( source );
+            CompletableFuture<List<IngestResult>> future =
+                    CompletableFuture.supplyAsync( fakeResult,
+                                                   this.getExecutor() );
+            tasks.add( future );
+        }
+        
         return Collections.unmodifiableList( tasks );
     }
 
+    /**
+     * @param source the gridded netcdf source to read
+     */
 
+    private Supplier<List<IngestResult>> ingestGriddedFeatures( DataSource source )
+    {
+        return () -> {
+            try ( NetcdfFile ncf = NetcdfFiles.open( source.getUri().toString() ) )
+            {
+                this.getFeaturesCache()
+                    .addGriddedFeatures( ncf );
+            }
+            catch ( IOException e )
+            {
+                throw new IngestException( "While ingesting features for Netcdf gridded file " + source.getUri()
+                                           + "." );
+            }
+
+            // Fake, no ingest results
+            return List.of();
+        };
+    }
+    
     /**
      * Determines whether or not data at an indicated path should be ingested.
      * archived data will always be further evaluated to determine whether its

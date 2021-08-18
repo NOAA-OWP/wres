@@ -59,6 +59,7 @@ import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeScaleFunction;
 import wres.config.generated.TimeSeriesMetricConfig;
+import wres.config.generated.UnnamedFeature;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
@@ -113,7 +114,7 @@ public class Validation
                                                               + "that you find an alternative to this option because "
                                                               + "it may be removed from the software without further "
                                                               + "warning.";
-    
+
     private Validation()
     {
         // prevent construction.
@@ -284,7 +285,7 @@ public class Validation
         }
 
         boolean isValid = true;
-        
+
         if ( Objects.nonNull( firstSourceThatRequiresFeatures )
              && noFeatureDeclaration )
         {
@@ -306,7 +307,7 @@ public class Validation
 
         return isValid && Validation.hasVariablesIfGridded( projectConfigPlus );
     }
-    
+
     /**
      * @param projectConfigPlus the declaration
      * @return true if the declaration is valid (is not gridded or has variables declared if gridded), otherwise false
@@ -1392,33 +1393,52 @@ public class Validation
             result = false;
         }
 
-        result = Validation.areFeaturesValid( pairConfig.getFeature() )
-                 && result;
+        result = result && Validation.areFeaturesValid( pairConfig.getFeature() );
 
-        result = Validation.areDatesValid( projectConfigPlus,
-                                           pairConfig.getDates() )
-                 && result;
+        result = result && Validation.areDatesValid( projectConfigPlus, pairConfig.getDates() );
 
-        result = Validation.areDatesValid( projectConfigPlus,
-                                           pairConfig.getIssuedDates() )
-                 && result;
+        result = result && Validation.areDatesValid( projectConfigPlus, pairConfig.getIssuedDates() );
 
-        result = Validation.areLeadTimesValid( projectConfigPlus,
-                                               pairConfig.getLeadHours() )
-                 && result;
+        result = result && Validation.areLeadTimesValid( projectConfigPlus, pairConfig.getLeadHours() );
 
-        result = Validation.isSeasonValid( projectConfigPlus,
-                                           pairConfig )
-                 && result;
+        result = result && Validation.isSeasonValid( projectConfigPlus, pairConfig );
 
-        result = Validation.isDesiredTimeScaleValid( projectConfigPlus,
-                                                     pairConfig )
-                 && result;
+        result = result && Validation.isDesiredTimeScaleValid( projectConfigPlus, pairConfig );
 
-        result = Validation.areTimeWindowsValid( projectConfigPlus, pairConfig )
-                 && result;
+        result = result && Validation.areTimeWindowsValid( projectConfigPlus, pairConfig );
+
+        result = result && Validation.isGridSelectionValid( projectConfigPlus, pairConfig );
 
         return result;
+    }
+
+    private static boolean isGridSelectionValid( ProjectConfigPlus projectConfigPlus,
+                                                 PairConfig pairConfig )
+    {
+        boolean valid = true;
+
+        for ( UnnamedFeature feature : pairConfig.getGridSelection() )
+        {
+            if ( Objects.nonNull( feature.getCoordinate() ) )
+            {
+                valid = false;
+
+                String msg = FILE_LINE_COLUMN_BOILERPLATE
+                             + " In the pair configuration, the grid selection contains a <coordinate> filter, which "
+                             + "is not currently supported. Please replace this declaration with a <polygon> filter "
+                             + "and try again.";
+
+                LOGGER.warn( msg,
+                             projectConfigPlus.getOrigin(),
+                             pairConfig.sourceLocation().getLineNumber(),
+                             pairConfig.sourceLocation()
+                                       .getColumnNumber() );
+
+                break;
+            }
+        }
+
+        return valid;
     }
 
     static boolean areFeaturesValid( List<Feature> features )
@@ -2165,16 +2185,16 @@ public class Validation
         boolean valid = true;
 
         valid = Validation.areDateTimeIntervalsValid( projectConfigPlus, pairConfig );
-        
+
         valid = valid && Validation.isValidDatesPoolingWindowValid( projectConfigPlus, pairConfig );
-        
+
         valid = valid && Validation.isIssuedDatesPoolingWindowValid( projectConfigPlus, pairConfig );
-        
+
         valid = valid && Validation.isLeadTimesPoolingWindowValid( projectConfigPlus, pairConfig );
 
         return valid;
     }
-    
+
     /**
      * Checks the internal consistency of the issued and valid time intervals.
      * 
@@ -2210,7 +2230,7 @@ public class Validation
                              latest );
             }
         }
-        
+
         // Issued dates
         DateCondition issuedDates = pairConfig.getIssuedDates();
         if ( Objects.nonNull( issuedDates ) && Objects.nonNull( issuedDates.getEarliest() )
@@ -2343,7 +2363,7 @@ public class Validation
 
         return valid;
     }
-    
+
     /**
      * Checks for issued dates pooling windows and validates for consistency with other
      * declaration, as well as internal consistency.
@@ -2407,15 +2427,15 @@ public class Validation
                                  pairConfig.getIssuedDates().sourceLocation().getColumnNumber(),
                                  issuedBoiler );
                 }
-                
+
                 // Both are present, check that they can produce a time window
                 if ( Objects.nonNull( pairConfig.getIssuedDates().getEarliest() )
                      && Objects.nonNull( pairConfig.getIssuedDates().getLatest() ) )
                 {
                     // Create the elements necessary to increment the windows
                     ChronoUnit periodUnits = ChronoUnit.valueOf( issuedDatesPoolingConfig.getUnit()
-                                                                                        .toString()
-                                                                                        .toUpperCase() );
+                                                                                         .toString()
+                                                                                         .toUpperCase() );
                     // Period associated with the issuedDatesPoolingWindow
                     Duration period = Duration.of( issuedDatesPoolingConfig.getPeriod(), periodUnits );
 
@@ -2449,7 +2469,7 @@ public class Validation
         }
 
         return valid;
-    }    
+    }
 
     /**
      * Checks for lead times pooling windows and validates for consistency with other
@@ -2514,15 +2534,15 @@ public class Validation
                                  pairConfig.getLeadHours().sourceLocation().getColumnNumber(),
                                  leadBoiler );
                 }
-                
+
                 // Both are present, check that they can produce a time window
                 if ( Objects.nonNull( pairConfig.getLeadHours().getMinimum() )
                      && Objects.nonNull( pairConfig.getLeadHours().getMaximum() ) )
                 {
                     // Create the elements necessary to increment the windows
                     ChronoUnit periodUnits = ChronoUnit.valueOf( leadTimesPoolingConfig.getUnit()
-                                                                                        .toString()
-                                                                                        .toUpperCase() );
+                                                                                       .toString()
+                                                                                       .toUpperCase() );
                     // Period associated with the leadTimesPoolingWindow
                     Duration period = Duration.of( leadTimesPoolingConfig.getPeriod(), periodUnits );
 
@@ -2617,7 +2637,7 @@ public class Validation
         DataSourceConfig left = projectConfig.getInputs().getLeft();
         DataSourceConfig right = projectConfig.getInputs().getRight();
         DataSourceConfig baseline = projectConfig.getInputs().getBaseline();
-        
+
         // Warn that removing an ensemble member by valid year is deprecated. Warn for each side of data.
         if ( Objects.nonNull( left.getRemoveMemberByValidYear() ) )
         {

@@ -75,8 +75,7 @@ public class ReaderFactory {
                                         database,
                                         dataSourcesCache,
                                         projectConfig,
-                                        dataSource,
-                                        lockManager );
+                                        dataSource );
 				break;
             case XML_PI_TIMESERIES:
                 source = new FEWSSource( systemSettings,
