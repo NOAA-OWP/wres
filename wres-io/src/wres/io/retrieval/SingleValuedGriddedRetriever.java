@@ -202,8 +202,8 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
                 LOGGER.debug( "Skipping request for gridded time-series as no paths were discovered for the "
                               + "variable {}, time window {} and features {}.",
                               this.getVariableName(),
-                              this.getFeatures(),
-                              this.getTimeWindow() );
+                              this.getTimeWindow(),
+                              this.getFeatures() );
 
                 return Stream.of();
             }
