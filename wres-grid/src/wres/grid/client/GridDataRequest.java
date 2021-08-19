@@ -5,6 +5,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
 import wres.datamodel.FeatureKey;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeWindowOuter;
@@ -77,12 +80,13 @@ class GridDataRequest implements Request
     /**
      * Hidden constructor.
      * 
-     * @param paths the paths to read
+     * @param paths the paths to read, one or more
      * @param features the features to read
      * @param variableName the variable to read
      * @param timeWindow the time window to consider
      * @param isForecast is true if the paths point to forecasts, otherwise false
      * @param declaredExistingTimeScale optional time-scale information that can augment, but not override
+     * @throws InvalidRequestException if the request is invalid for any reason
      */
 
     private GridDataRequest( List<String> paths,
@@ -103,6 +107,12 @@ class GridDataRequest implements Request
         this.timeWindow = timeWindow;
         this.isForecast = isForecast;
         this.declaredExistingTimeScale = declaredExistingTimeScale;
+
+        if ( this.getPaths().isEmpty() )
+        {
+            throw new InvalidRequestException( "A request for gridded data must contain at least one path to read. The "
+                    + "request was: " + this );
+        }
     }
 
     @Override
@@ -144,18 +154,15 @@ class GridDataRequest implements Request
     @Override
     public String toString()
     {
-        StringJoiner joiner = new StringJoiner( System.lineSeparator() );
-
-        joiner.add( "GridDataRequest instance " + this.hashCode() + ": { " );
-        joiner.add( "    variableName: " + this.getVariableName() + "," );
-        joiner.add( "    timeWindow: " + this.getTimeWindow() + "," );
-        joiner.add( "    isForecast: " + this.isForecast() + "," );
-        joiner.add( "    features: " + this.getFeatures() + "," );
-        joiner.add( "    paths: " + this.getPaths() );
-        joiner.add( "    time scale: " + this.getTimeScale() );
-        joiner.add( "}" );
-
-        return joiner.toString();
+        return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE ).append( "variableName",
+                                                                                     this.getVariableName() )
+                                                                            .append( "timeWindow",
+                                                                                     this.getTimeWindow() )
+                                                                            .append( "isForecast", this.isForecast() )
+                                                                            .append( "features", this.getFeatures() )
+                                                                            .append( "paths", this.getPaths() )
+                                                                            .append( "time scale", this.getTimeScale() )
+                                                                            .toString();
     }
 
     @Override
@@ -186,6 +193,5 @@ class GridDataRequest implements Request
                              this.getTimeWindow(),
                              this.getTimeScale() );
     }
-
-
+    
 }

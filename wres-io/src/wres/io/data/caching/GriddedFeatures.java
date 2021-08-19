@@ -419,6 +419,19 @@ class GriddedFeatures implements Supplier<Set<FeatureTuple>>
             Variable yCoordinates = NetCDF.getVariable( file, "y" );
             Variable coordinateSystem = NetCDF.getVariable( file, "ProjectionCoordinateSystem" );
 
+            if ( Objects.isNull( coordinateSystem ) )
+            {
+                coordinateSystem = NetCDF.getVariable( file, "crs" );
+
+                if ( Objects.isNull( coordinateSystem ) )
+                {
+                    throw new IllegalStateException( "While reading a netcdf blob, failed to discover the coordinate "
+                                                     + "system variable as either 'ProjectionCoordinateSystem' or "
+                                                     + "'crs'. The blob metadata is: "
+                                                     + file );
+                }
+            }
+            
             this.srText = coordinateSystem.findAttributeString( "esri_pe_string", "" );
             this.proj4 = coordinateSystem.findAttributeString( "proj4", "" );
             this.projectionMapping =
