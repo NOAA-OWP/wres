@@ -287,7 +287,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
         leftEvent.commit();
 
         List<TimeSeries<L>> leftData = cStream.collect( Collectors.toList() );
-
+        
         RetrievalEvent rightEvent = RetrievalEvent.of( LeftOrRightOrBaseline.RIGHT, this.metadata ); // Monitor
         rightEvent.begin();
         List<TimeSeries<R>> rightData = this.right.get()

@@ -9,6 +9,7 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.Builder;
 import wres.datamodel.time.TimeSeriesMetadata;
+import wres.grid.client.InvalidRequestException;
 import wres.grid.client.Request;
 import wres.grid.client.SingleValuedTimeSeriesResponse;
 import wres.util.NetCDF;
@@ -87,6 +88,13 @@ public class GriddedReader
     {
         Objects.requireNonNull( request );
 
+        // #90061-117
+        if ( request.getPaths().isEmpty() )
+        {
+            throw new InvalidRequestException( "A request for gridded data must contain at least one path to read. The "
+                    + "request was: " + request );
+        }
+        
         if ( LOGGER.isDebugEnabled() )
         {
             LOGGER.debug( "Processing the following request for gridded data {}.", request );
@@ -357,6 +365,7 @@ public class GriddedReader
                 Array data = variable.readDataSlice( time, 0, xIndexYIndex[1], xIndexYIndex[0] );
 
                 double value = data.getDouble( 0 );
+                
                 return new GridValue( value, variable.getUnitsString(), this.getIssueTime(), this.getValidTime() );
             }
             finally

@@ -14,7 +14,6 @@ import java.text.MessageFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.TimeZone;
 
 import com.zaxxer.hikari.HikariDataSource;
@@ -25,28 +24,16 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.ArgumentMatchers;
 import org.mockito.MockitoAnnotations;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
-import org.powermock.reflect.Whitebox;
 
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.grid.client.Fetcher;
-import wres.grid.client.Request;
-import wres.grid.client.SingleValuedTimeSeriesResponse;
-import wres.grid.reading.GriddedReader;
 import wres.io.data.caching.Features;
 import wres.io.data.details.SourceDetails;
 import wres.io.project.Project;
@@ -59,12 +46,8 @@ import wres.system.SystemSettings;
  * @author james.brown@hydrosolved.com
  */
 
-@RunWith( PowerMockRunner.class )
-@PrepareForTest( { GriddedReader.class } )
-@PowerMockIgnore( { "javax.management.*", "java.io.*", "javax.xml.*", "com.sun.*", "org.xml.*" } )
 public class SingleValuedGriddedRetrieverTest
 {
-
     @Mock
     private SystemSettings mockSystemSettings;
     private wres.io.utilities.Database wresDatabase;
@@ -162,44 +145,26 @@ public class SingleValuedGriddedRetrieverTest
 
         FeatureTuple featureTuple = new FeatureTuple( FEATURE, FEATURE, FEATURE );
         // Build the retriever
-        Retriever<TimeSeries<Double>> retriever =
-                new SingleValuedGriddedRetriever.Builder().setFeatures( List.of( featureTuple ) )
-                                                          .setIsForecast( true )
-                                                          .setProjectId( PROJECT_ID )
-                                                          .setLeftOrRightOrBaseline( SingleValuedGriddedRetrieverTest.LRB )
-                                                          .setUnitMapper( mapper )
-                                                          .setTimeWindow( timeWindow )
-                                                          .setDatabase( this.wresDatabase )
-                                                          .setVariableName( SingleValuedGriddedRetrieverTest.VARIABLE_NAME )                                                          
-                                                          .build();
+        SingleValuedGriddedRetriever retriever =
+                (SingleValuedGriddedRetriever) new SingleValuedGriddedRetriever.Builder().setFeatures( List.of( featureTuple ) )
+                                                  .setIsForecast( true )
+                                                  .setProjectId( PROJECT_ID )
+                                                  .setLeftOrRightOrBaseline( SingleValuedGriddedRetrieverTest.LRB )
+                                                  .setUnitMapper( mapper )
+                                                  .setTimeWindow( timeWindow )
+                                                  .setDatabase( this.wresDatabase )
+                                                  .setVariableName( SingleValuedGriddedRetrieverTest.VARIABLE_NAME )                                                          
+                                                  .build();
 
-        // Return a fake response from wres.grid, as only interested in the request here
-        PowerMockito.mockStatic( GriddedReader.class );
-        SingleValuedTimeSeriesResponse fakeResponse =
-                SingleValuedTimeSeriesResponse.of( Map.of(),
-                                                   SingleValuedGriddedRetrieverTest.VARIABLE_NAME,
-                                                   SingleValuedGriddedRetrieverTest.UNITS );
-
-        PowerMockito.when( GriddedReader.class, "getSingleValuedResponse", ArgumentMatchers.any( Request.class ) )
-                    .thenReturn( fakeResponse );
-
-        retriever.get();
-
-        Request actual = Whitebox.getInternalState( retriever, "request" );
+        List<String> actualPaths = retriever.getPaths();
 
         // Create the expected request
         List<String> expectedPaths = List.of( "/this/is/just/a/test/source_2.nc",
                                               "/this/is/just/a/test/source_3.nc",
                                               "/this/is/just/a/test/source_4.nc" );
-        Request expected = Fetcher.prepareRequest( expectedPaths,
-                                                   List.of( FEATURE ),
-                                                   SingleValuedGriddedRetrieverTest.VARIABLE_NAME,
-                                                   timeWindow,
-                                                   true,
-                                                   null );
 
         // Verify the captured request
-        assertEquals( expected, actual );
+        assertEquals( expectedPaths, actualPaths );
     }
 
     @After

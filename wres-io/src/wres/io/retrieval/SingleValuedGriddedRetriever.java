@@ -4,12 +4,16 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.FeatureKey;
@@ -31,6 +35,12 @@ import wres.io.utilities.ScriptBuilder;
 
 class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
 {
+
+    /** 
+     * Logger. 
+     * */
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( SingleValuedGriddedRetriever.class );
 
     /**
      * Exception message used several times on construction.
@@ -54,13 +64,6 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
             SingleValuedGriddedRetriever.getStartOfScriptForGetAllTimeSeries();
 
     /**
-     * End of script.
-     */
-
-    private static final String GET_END_OF_SCRIPT =
-            SingleValuedGriddedRetriever.getEndOfScriptForGetAllTimeSeries();
-
-    /**
      * Complete script.
      */
 
@@ -77,12 +80,6 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
      */
 
     private final Boolean isForecast;
-
-    /**
-     * The request.
-     */
-
-    private Request request = null;
 
     @Override
     boolean isForecast()
@@ -198,29 +195,38 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
     {
         try
         {
-            // Build the request object
-            if ( Objects.isNull( this.request ) )
+            List<String> paths = this.getPaths();
+
+            if ( paths.isEmpty() )
             {
-                this.request = this.getRequest();
+                LOGGER.debug( "Skipping request for gridded time-series as no paths were discovered for the "
+                              + "variable {}, time window {} and features {}.",
+                              this.getVariableName(),
+                              this.getFeatures(),
+                              this.getTimeWindow() );
+
+                return Stream.of();
             }
 
+            Request request = this.getRequest( paths );
+
             // Obtain the response
-            return this.getResponse( this.request );
+            return this.getResponse( request );
         }
         catch ( IOException | SQLException e )
         {
             throw new DataAccessException( "Failed to access the time-series data.", e );
         }
     }
-
+    
     /**
-     * Returns the request.
+     * Returns the path strings.
      * 
-     * @return the request
+     * @return the path strings
      * @throws SQLException if the request could not be formed
      */
 
-    private Request getRequest() throws SQLException
+    List<String> getPaths() throws SQLException
     {
         // Log the script
         super.logScript( this.script );
@@ -236,21 +242,32 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
                 paths.add( provider.getString( "path" ) );
             }
 
-            List<FeatureKey> featureKeys = this.getFeatures()
-                                               .stream()
-                                               .map( FeatureTuple::getRight )
-                                               .filter( Objects::nonNull )
-                                               .collect( Collectors.toList() );
-
-            // Build the request object
-            return Fetcher.prepareRequest( paths,
-                                           featureKeys,
-                                           this.getVariableName(),
-                                           this.getTimeWindow(),
-                                           this.isForecast(),
-                                           this.getDeclaredExistingTimeScale() );
-
+            return Collections.unmodifiableList( paths );
         }
+    }
+
+    /**
+     * Returns the request.
+     * 
+     * @param paths the paths
+     * @return the request
+     */
+
+    private Request getRequest( List<String> paths )
+    {
+        List<FeatureKey> featureKeys = this.getFeatures()
+                                           .stream()
+                                           .map( FeatureTuple::getRight )
+                                           .filter( Objects::nonNull )
+                                           .collect( Collectors.toList() );
+
+        // Build the request object
+        return Fetcher.prepareRequest( paths,
+                                       featureKeys,
+                                       this.getVariableName(),
+                                       this.getTimeWindow(),
+                                       this.isForecast(),
+                                       this.getDeclaredExistingTimeScale() );
     }
 
     /**
@@ -313,28 +330,11 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
 
         scripter.addLine( "SELECT path" );
         scripter.addLine( "FROM wres.Source S" );
-        scripter.addLine( "WHERE S.is_point_data = FALSE" );
-
-        return scripter.toString();
-    }
-
-    /**
-     * Returns the end of a script to acquire a time-series from the WRES database for all time-series.
-     * 
-     * @return the end of a script for the time-series
-     */
-
-    private static String getEndOfScriptForGetAllTimeSeries()
-    {
-        ScriptBuilder scripter = new ScriptBuilder();
-
-        scripter.addTab().addLine( "AND EXISTS (" );
-        scripter.addTab( 2 ).addLine( "SELECT 1" );
-        scripter.addTab( 2 ).addLine( "FROM wres.ProjectSource PS" );
-        scripter.addTab( 3 ).addLine( "WHERE PS.source_id = S.source_id" );
-        scripter.addTab( 2 ).addLine( "AND PS.project_id = ?" );
-        scripter.addTab( 3 ).addLine( "AND PS.member = ?" );
-        scripter.addTab().addLine( ");" );
+        scripter.addLine( "INNER JOIN wres.ProjectSource PS" );
+        scripter.addTab( 1 ).addLine( "ON PS.source_id = S.source_id" );
+        scripter.addLine( "WHERE PS.project_id = ?" );
+        scripter.addTab( 1 ).addLine( "AND PS.member = ?" );
+        scripter.addTab( 1 ).addLine( "AND S.is_point_data = FALSE" );
 
         return scripter.toString();
     }
@@ -383,14 +383,13 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
         Database database = super.getDatabase();
         DataScripter dataScripter = new DataScripter( database, GET_START_OF_SCRIPT );
 
-        // Time window
-        this.addTimeWindowClause( dataScripter, 0 );
-
-        // End of the script
-        dataScripter.addLine( GET_END_OF_SCRIPT );
+        // Parameters
         dataScripter.addArgument( this.getProjectId() )
                     .addArgument( this.getLeftOrRightOrBaseline()
-                                               .value() );
+                                      .value() );
+
+        // Time window
+        this.addTimeWindowClause( dataScripter, 0 );
 
         return dataScripter;
     }
