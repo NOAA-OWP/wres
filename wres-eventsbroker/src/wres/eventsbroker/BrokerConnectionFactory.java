@@ -416,7 +416,14 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
     }
 
     /**
-     * Creates an instance of an embedded broker if required.
+     * <p>Creates an instance of an embedded broker if required. Begins by looking for a system property 
+     * {@code wres.startBroker}. If {@code wres.startBroker=true}, then an embedded broker is created. If 
+     * {@code wres.startBroker=false}, then an embedded broker is not created. If the system property is missing, then 
+     * inspects the connection properties. If the connection properties declare a localhost, then first probes for an 
+     * active broker, and finally falls back on an embedded one. 
+     * 
+     * <p>An embedded broker is only created if either {@code wres.startBroker=true} or the connection properties 
+     * declare a localhost and there is no existing broker with those connection properties.
      * 
      * @param connectionProperty the connection property
      * @param properties the broker configuration properties
@@ -442,19 +449,30 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
                                                 + IN_THE_MAP_OF_PROPERTIES );
         }
 
-        EmbeddedBroker returnMe = null;
-
         String key = connectionPropertyName;
         String url = properties.getProperty( key );
 
-        // No failover/connection retries on an embedded broker: #89950
-        url = url + "&failover='nofailover'";
-        LOGGER.debug( "Adjusted the embedded broker url to remove all failover logic. The old url was {}. The new url "
-                      + "is {}.",
-                      properties.getProperty( key ),
-                      url );
+        // Look for a system property that definitively says whether an embedded broker should be started
+        String startBroker = System.getProperty( "wres.startBroker" );
+        if ( "true".equalsIgnoreCase( startBroker ) )
+        {
+            LOGGER.info( "Discovered the WRES system property wres.startBroker=true. Starting an embedded broker "
+                         + "at the binding URL {}...",
+                         url );
 
-        properties.setProperty( connectionPropertyName, url );
+            return this.createEmbeddedBroker( properties, connectionPropertyName, dynamicBindingAllowed );
+        }
+        else if ( "false".equalsIgnoreCase( startBroker ) )
+        {
+            LOGGER.warn( "Probing for an active AMQP broker at the binding URL {}. Discovered the WRES system property "
+                         + "wres.startBroker=false, so the evaluation will fail if no active broker is discovered at "
+                         + "the binding URL (after exhausting any failover options).",
+                         url );
+
+            return null;
+        }
+
+        EmbeddedBroker returnMe = null;
 
         // Loopback interface or all local interfaces? If so, an embedded broker may be required.
         if ( url.contains( "localhost" ) || url.contains( "127.0.0.1" ) || url.contains( "0.0.0.0" ) )
@@ -467,12 +485,12 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
             // Does the burl contain the tcp reserved port 0, i.e. dynamic binding required?
             if ( url.contains( LOCALHOST_0 ) || url.contains( LOCALHOST_127_0_0_1_0 ) )
             {
-                LOGGER.debug( "Discovered the connection property {} with value {}, which indicates that an embedded "
-                              + "broker should be started and bound to a port assigned dynamically by the broker.",
-                              key,
-                              url );
+                LOGGER.info( "Discovered a binding URL of {}, which includes the reserved TCP port of 0. Starting an "
+                             + "embedded broker at this URL and allowing the broker to assign a port dynamically. The "
+                             + "assigned port will be identified after the embedded broker has launched successfully.",
+                             url );
 
-                returnMe = this.createEmbeddedBroker( url, dynamicBindingAllowed );
+                returnMe = this.createEmbeddedBroker( properties, connectionPropertyName, dynamicBindingAllowed );
             }
             // Look for an active broker, fall back on an embedded one
             else
@@ -494,15 +512,15 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
 
                     this.testConnection( url, factory, 0 );
 
-                    LOGGER.debug( "Discovered an active AMQP broker at {}", url );
+                    LOGGER.info( "Discovered an active AMQP broker at {}", url );
                 }
                 catch ( BrokerConnectionException e )
                 {
-                    LOGGER.debug( "Could not connect to an active AMQP broker at {}. Starting an embedded broker "
-                                  + "instead.",
-                                  url );
+                    LOGGER.info( "Could not connect to an active AMQP broker at {}. Starting an embedded broker "
+                                 + "instead.",
+                                 url );
 
-                    returnMe = this.createEmbeddedBroker( url, dynamicBindingAllowed );
+                    returnMe = this.createEmbeddedBroker( properties, connectionPropertyName, dynamicBindingAllowed );
                 }
             }
         }
@@ -586,7 +604,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
         if ( systemProperties.containsKey( "wres.eventsBrokerPort" ) )
         {
             Object port = systemProperties.get( "wres.eventsBrokerPort" );
-            
+
             propertyValue = propertyValue.replaceAll( ":+[a-zA-Z0-9.]++'",
                                                       ":" + port + "'" )
                                          .replaceAll( ":+[a-zA-Z0-9.]++\\?",
@@ -663,21 +681,50 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
     }
 
     /**
-     * Attempts to create an embedded broker in two stages:
+     * <p>Attempts to create an embedded broker in two stages:
      * 
      * <ol>
      * <li>First, attempts to bind a broker on the configured port. If that fails, move the the second stage.</ol>
-     * <li>Second, attempts to bind a broker to a broker-chosen (free) port, which may be discovered from the embedded
-     * broker instance after startup.<li>
+     * <li>Second, if dynamic binding is allowed, attempts to bind a broker to a broker-chosen (free) port, which may 
+     * be discovered from the embedded broker instance after startup.<li>
      * </ol>
      * 
-     * @param connectionUrl the the connection url string
+     * <p>When creating an embedded broker, failovers are disabled in order to allow for a quick/clean exit without 
+     * failovers when the parent process is exiting. See: #89950. In order to achieve this, the broker url is mutated 
+     * to disable failovers and the corresponding url in the supplied properties is updated with the mutated url.
+     * 
+     * @param properties the connection properties, not null
+     * @param connectionPropertyName the name of the connection property to obtain from the properties                                                                        
      * @param dynamicBindingAllowed is true to override a configured port that is bound, false to throw an exception
      * @return an embedded broker instance
+     * @throws NullPointerException if the properties are null
      */
 
-    private EmbeddedBroker createEmbeddedBroker( String connectionUrl, boolean dynamicBindingAllowed )
+    private EmbeddedBroker createEmbeddedBroker( Properties properties,
+                                                 String connectionPropertyName,
+                                                 boolean dynamicBindingAllowed )
     {
+        Objects.requireNonNull( properties );
+        Objects.requireNonNull( connectionPropertyName );
+
+        if ( !properties.containsKey( connectionPropertyName ) )
+        {
+            throw new IllegalArgumentException( COULD_NOT_FIND_THE_NAMED_CONNECTION_PROPERTY + connectionPropertyName
+                                                + IN_THE_MAP_OF_PROPERTIES );
+        }
+
+        String connectionUrl = properties.getProperty( connectionPropertyName );
+
+        // No failover/connection retries on an embedded broker: #89950
+        connectionUrl = connectionUrl + "&failover='nofailover'";
+
+        LOGGER.debug( "Adjusted the embedded broker url to remove all failover logic. The old url was {}. The new url "
+                      + "is {}.",
+                      properties.getProperty( connectionPropertyName ),
+                      connectionUrl );
+
+        properties.setProperty( connectionPropertyName, connectionUrl );
+
         LOGGER.debug( "Creating an embedded broker at the url {}.", connectionUrl );
 
         // Could probably do all this with a single regex, i.e., whatever is the opposite of :+(\\d+)
@@ -722,7 +769,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
                     LOGGER.warn( "Unable to close an embedded broker instance.", f );
                 }
             }
-            
+
             if ( !dynamicBindingAllowed )
             {
                 throw new CouldNotStartEmbeddedBrokerException( "Could not bind an embedded amqp broker to port "
