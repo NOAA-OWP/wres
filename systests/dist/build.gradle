@@ -77,14 +77,17 @@ task( startGraphicsClient, dependsOn: unzipGraphicsArtifactToTest, group: 'test'
     doLast
     {
         // Pass on any java options
-        def testJvmPropertiesRaw = project.properties['testJvmSystemProperties']
+        def testJvmPropertiesGraphicsRaw = project.properties['testJvmSystemPropertiesGraphics']
 
         ProcessBuilder pb = new ProcessBuilder( graphicsBin );
         pb.environment()
-          .put( "JAVA_OPTS", testJvmPropertiesRaw );
+          .put( "JAVA_OPTS", testJvmPropertiesGraphicsRaw );
 
         println( "Starting graphics client ${graphicsVersionToTest}..." )
         println( "Graphics client start script: " + graphicsBin )
+
+        def splittedTestJvmPropertiesGraphics = testJvmPropertiesGraphicsRaw.trim().split( " " )
+        println( "Test JVM System Properties for the Graphics Client to be applied: ${splittedTestJvmPropertiesGraphics}" )
         
         // Redirect output to a log file
         File logFile = new File( project.buildDir, "wres-graphics-${graphicsVersionToTest}.log" )

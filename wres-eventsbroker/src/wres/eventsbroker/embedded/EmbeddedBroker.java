@@ -302,9 +302,10 @@ public class EmbeddedBroker implements Closeable
         @Override
         public void afterStartup()
         {
-            if ( this.systemConfig == null )
+            if ( Objects.isNull( this.systemConfig ) )
             {
-                throw new IllegalStateException( "System config is required" );
+                throw new IllegalStateException( "Cannot extract the port bound by the embedded broker without "
+                                                 + "system configuration, which is missing." );
             }
 
             Broker<?> broker = (Broker<?>) this.systemConfig.getContainer();
