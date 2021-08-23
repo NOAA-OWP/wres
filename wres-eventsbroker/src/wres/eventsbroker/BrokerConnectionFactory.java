@@ -755,7 +755,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
         catch ( CouldNotStartEmbeddedBrokerException e )
         {
             LOGGER.debug( "Unable to bind an embedded broker to the configured port of {}. Choosing another port, "
-                          + "which will be available from the broker instance after startup." );
+                          + "which will be available from the broker instance after startup.", port );
 
             // Close now
             if ( Objects.nonNull( returnMe ) )

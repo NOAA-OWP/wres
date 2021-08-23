@@ -86,7 +86,6 @@ public class EmbeddedBroker implements Closeable
     {
         URL initialConfig = EmbeddedBroker.class.getClassLoader()
                                                 .getResource( INITIAL_CONFIGURATION );
-
         if ( Objects.isNull( initialConfig ) )
         {
             throw new CouldNotStartEmbeddedBrokerException( "Expected a resource named '"
@@ -94,8 +93,11 @@ public class EmbeddedBroker implements Closeable
                                                             + "' on the classpath." );
         }
 
-        Map<String, Object> options = new HashMap<>();
         String initialConfigLocation = initialConfig.toExternalForm();
+        
+        LOGGER.debug( "The embedded broker initial configuration will be read from {}.", initialConfigLocation );
+
+        Map<String, Object> options = new HashMap<>();
         options.put( ConfiguredObject.TYPE, "Memory" );
         options.put( SystemConfig.INITIAL_CONFIGURATION_LOCATION,
                      initialConfigLocation );
@@ -267,7 +269,7 @@ public class EmbeddedBroker implements Closeable
 
         this.listener = new PortExtractingLauncherListener();
 
-        this.systemLauncher = new SystemLauncher( listener );
+        this.systemLauncher = new SystemLauncher( this.listener );
 
         this.isStarted = new AtomicBoolean();
     }
@@ -321,6 +323,10 @@ public class EmbeddedBroker implements Closeable
         @Override
         public void onContainerResolve( final SystemConfig<?> systemConfig )
         {
+            LOGGER.debug( "Discovered the system configuration on resolving the embedded broker container. The system "
+                          + "configuration is {}.",
+                          systemConfig );
+
             this.systemConfig = systemConfig;
         }
 
