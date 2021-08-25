@@ -237,7 +237,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         Objects.requireNonNull( scripter );
         Objects.requireNonNull( mapper );
 
-        try ( Connection connection = database.getConnection();
+        try ( Connection connection = this.getDatabase().getConnection();
               DataProvider provider = scripter.buffer( connection ) )
         {
             Map<Long, TimeSeries.Builder<S>> builders = new TreeMap<>();
@@ -1043,8 +1043,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
-     * Helper that returns the lower valid time from the {@link TimeWindowOuter}, preferentially, but otherwise infers the
-     * lower valid time from the forecast information present.
+     * Helper that returns the lower valid time from the {@link TimeWindowOuter}, preferentially, but otherwise infers 
+     * the lower valid time from the forecast information present.
      * 
      * @param timeWindow the time window
      * @return the lower valid time
