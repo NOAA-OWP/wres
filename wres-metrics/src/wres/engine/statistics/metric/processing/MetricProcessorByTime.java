@@ -2,10 +2,8 @@ package wres.engine.statistics.metric.processing;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
@@ -26,7 +24,6 @@ import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.statistics.Statistic;
-import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
@@ -41,7 +38,7 @@ import wres.engine.statistics.metric.MetricParameterException;
 /**
  * A {@link MetricProcessor} that processes and stores metric results by {@link TimeWindowOuter}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public abstract class MetricProcessorByTime<S extends Pool<?>>
@@ -56,34 +53,6 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
 
     static final String PROCESSING_COMPLETE_MESSAGE = "Completed processing of metrics for feature '{}' "
                                                       + "at time window '{}'.";
-
-    /**
-     * The metric futures from previous calls, indexed by {@link TimeWindowOuter}.
-     */
-
-    List<MetricFuturesByTime> futures = new CopyOnWriteArrayList<>();
-
-    @Override
-    public boolean hasCachedMetricOutput()
-    {
-        return futures.stream()
-                      .anyMatch( MetricFuturesByTime::hasFutureOutputs );
-    }
-
-    @Override
-    StatisticsForProject getCachedMetricOutputInternal()
-    {
-        MetricFuturesByTime.MetricFuturesByTimeBuilder builder =
-                new MetricFuturesByTime.MetricFuturesByTimeBuilder();
-        if ( this.hasCachedMetricOutput() )
-        {
-            for ( MetricFuturesByTime future : futures )
-            {
-                builder.addFutures( future );
-            }
-        }
-        return builder.build().getMetricOutput();
-    }
 
     /**
      * Helper that returns a predicate for filtering single-valued pairs based on the 
@@ -140,29 +109,6 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
                 return TimeSeriesSlicer.anyOfRightInTimeSeries( input::test );
             default:
                 throw new IllegalStateException( "Unrecognized threshold type '" + input.getDataType() + "'." );
-        }
-    }
-
-    /**
-     * Adds the input {@link MetricFuturesByTime} to the internal store of existing {@link MetricFuturesByTime} 
-     * defined for this processor.
-     * 
-     * @param mergeFutures the futures to add
-     * @throws MetricOutputMergeException if the outputs cannot be merged across calls
-     */
-
-    void addToMergeList( MetricFuturesByTime mergeFutures )
-    {
-        Objects.requireNonNull( mergeFutures, "Specify non-null futures for merging." );
-
-        //Merge futures if cached outputs identified
-        Set<StatisticType> cacheMe = this.getMetricOutputTypesToCache();
-        if ( !cacheMe.isEmpty() )
-        {
-            MetricFuturesByTime.MetricFuturesByTimeBuilder builder =
-                    new MetricFuturesByTime.MetricFuturesByTimeBuilder();
-            builder.addFutures( mergeFutures, cacheMe );
-            this.futures.add( builder.build() );
         }
     }
 
@@ -306,8 +252,6 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
      * @param metrics the metrics to process
      * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
      * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
-     * @param mergeSet a list of {@link StatisticType} whose outputs should be retained and merged across calls to
-     *            {@link #apply(Object)}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      * @throws NullPointerException if a required input is null
@@ -316,10 +260,9 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
     MetricProcessorByTime( final ProjectConfig config,
                            final Metrics metrics,
                            final ExecutorService thresholdExecutor,
-                           final ExecutorService metricExecutor,
-                           final Set<StatisticType> mergeSet )
+                           final ExecutorService metricExecutor )
     {
-        super( config, metrics, thresholdExecutor, metricExecutor, mergeSet );
+        super( config, metrics, thresholdExecutor, metricExecutor );
     }
 
     /**

@@ -5,7 +5,6 @@ import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.function.Predicate;
 
 import wres.config.MetricConfigException;
@@ -23,7 +22,7 @@ import wres.datamodel.metrics.MetricConstants.StatisticType;
 /**
  * A helper class for interpreting and using the {@link ProjectConfig} in the context of verification metrics.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public final class MetricConfigHelper
@@ -234,28 +233,6 @@ public final class MetricConfigHelper
         }
 
         return hasSpecifiedType && hasThresholdLeadType;
-    }
-
-    /**
-     * Helper that interprets the input configuration and returns a list of {@link StatisticType} whose results 
-     * should be cached when computing metrics incrementally.
-     * 
-     * @param projectConfig the project configuration
-     * @return a list of output types that should be cached
-     * @throws MetricConfigException if the configuration is invalid
-     * @throws NullPointerException if the input is null
-     */
-
-    public static Set<StatisticType> getCacheListFromProjectConfig( ProjectConfig projectConfig )
-    {
-        Objects.requireNonNull( projectConfig );
-        
-        Set<StatisticType> returnMe = new TreeSet<>();
-        
-        // Cache duration diagrams in case summary scores are required
-        returnMe.add( StatisticType.DURATION_DIAGRAM );       
-        
-        return Collections.unmodifiableSet( returnMe );
     }
 
     /**

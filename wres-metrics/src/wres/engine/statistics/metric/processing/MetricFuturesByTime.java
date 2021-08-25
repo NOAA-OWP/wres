@@ -27,7 +27,7 @@ import wres.datamodel.time.TimeWindowOuter;
  * Store of metric futures for each output type. Use {@link #getMetricOutput()} to obtain the processed
  * {@link StatisticsForProject}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 class MetricFuturesByTime
@@ -376,12 +376,12 @@ class MetricFuturesByTime
 
     private MetricFuturesByTime( MetricFuturesByTimeBuilder builder )
     {
-        doubleScore.addAll( builder.doubleScore );
-        durationScore.addAll( builder.durationScore );
-        diagrams.addAll( builder.diagram );
-        boxplotPerPair.addAll( builder.boxplotPerPair );
-        boxplotPerPool.addAll( builder.boxplotPerPool );
-        paired.addAll( builder.durationDiagram );
+        this.doubleScore.addAll( builder.doubleScore );
+        this.durationScore.addAll( builder.durationScore );
+        this.diagrams.addAll( builder.diagram );
+        this.boxplotPerPair.addAll( builder.boxplotPerPair );
+        this.boxplotPerPool.addAll( builder.boxplotPerPool );
+        this.paired.addAll( builder.durationDiagram );
     }
 
 }

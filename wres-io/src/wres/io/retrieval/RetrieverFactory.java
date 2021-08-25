@@ -17,9 +17,9 @@ import wres.io.pooling.PoolsGenerator;
  * <p>By design, the geospatial shape of a pool is not embedded within the retrieval factory. Thus, one pool may
  * contain one feature or many features or may involve the retrieval of grids, rather than features.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  * @param <L> the type of left data
- * @param <R> the type of right data
+ * @param <R> the type of right and baseline data
  */
 
 public interface RetrieverFactory<L, R>

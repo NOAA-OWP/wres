@@ -1,28 +1,22 @@
 package wres.engine.statistics.metric.processing;
 
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConfigException;
-import wres.config.ProjectConfigs;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DataFactory;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.Metrics;
@@ -49,14 +43,13 @@ import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.engine.statistics.metric.processing.MetricFuturesByTime.MetricFuturesByTimeBuilder;
-import wres.engine.statistics.metric.timeseries.TimingErrorDurationStatistics;
 
 /**
  * Builds and processes all {@link MetricCollection} associated with a {@link ProjectConfig} for metrics that consume
  * single-valued pairs and configured transformations thereof. For example, metrics that consume dichotomous pairs may 
  * be processed after transforming the single-valued pairs with an appropriate mapping function.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTime<Pool<Pair<Double, Double>>>
@@ -76,11 +69,11 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     private final MetricCollection<Pool<Pair<Double, Double>>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter> timeSeries;
 
     /**
-     * An instance of {@link TimingErrorDurationStatistics} for each timing error metric that requires 
-     * summary statistics.
+     * A {@link MetricCollection} of {@link Metric} that consume a {@link Pool} with single-valued pairs 
+     * and produce {@link DurationScoreStatisticOuter}.
      */
 
-    private final Map<MetricConstants, TimingErrorDurationStatistics> timingErrorDurationStatistics;
+    private final MetricCollection<Pool<Pair<Double, Double>>, DurationScoreStatisticOuter, DurationScoreStatisticOuter> timeSeriesStatistics;
 
     @Override
     public StatisticsForProject apply( Pool<Pair<Double, Double>> input )
@@ -132,9 +125,6 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         //Process and return the result       
         MetricFuturesByTime futureResults = futures.build();
 
-        //Add for merge with existing futures, if required
-        this.addToMergeList( futureResults );
-
         return futureResults.getMetricOutput();
     }
 
@@ -145,8 +135,6 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      * @param metrics the metrics to process
      * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
      * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
-     * @param mergeSet a list of {@link StatisticType} whose outputs should be retained and merged across calls to
-     *            {@link #apply(Object)}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      * @throws NullPointerException if a required input is null
@@ -155,12 +143,15 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     public MetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
                                                    final Metrics metrics,
                                                    final ExecutorService thresholdExecutor,
-                                                   final ExecutorService metricExecutor,
-                                                   final Set<StatisticType> mergeSet )
+                                                   final ExecutorService metricExecutor )
     {
-        super( config, metrics, thresholdExecutor, metricExecutor, mergeSet );
+        super( config, metrics, thresholdExecutor, metricExecutor );
 
         //Construct the metrics
+
+        //Time-series summary statistics
+        Map<MetricConstants, Set<MetricConstants>> localStatistics =
+                new EnumMap<>( MetricConstants.class );
 
         //Time-series 
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_DIAGRAM ) )
@@ -171,10 +162,6 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                                                 timingErrorMetrics );
 
             LOGGER.debug( "Created the timing-error metrics for processing. {}", this.timeSeries );
-
-            //Summary statistics
-            Map<MetricConstants, TimingErrorDurationStatistics> localStatistics =
-                    new EnumMap<>( MetricConstants.class );
 
             // Iterate the timing error metrics
             for ( MetricConstants nextMetric : timingErrorMetrics )
@@ -187,23 +174,25 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                                                           name -> nextMetric.name()
                                                                                                             .equals( name.name() ) );
 
-                    // Find the identifier for the summary statistics
-                    MetricConstants identifier = MetricFactory.ofSummaryStatisticsForTimingErrorMetric( nextMetric );
-
-                    TimingErrorDurationStatistics stats =
-                            TimingErrorDurationStatistics.of( identifier, ts );
-
-                    localStatistics.put( nextMetric, stats );
+                    localStatistics.put( nextMetric, ts );
                 }
             }
-
-            this.timingErrorDurationStatistics = Collections.unmodifiableMap( localStatistics );
         }
         else
         {
             this.timeSeries = null;
-            this.timingErrorDurationStatistics = Collections.unmodifiableMap( new EnumMap<>( MetricConstants.class ) );
         }
+
+        if ( !localStatistics.isEmpty() )
+        {
+            this.timeSeriesStatistics = MetricFactory.ofSummaryStatisticsForTimingErrorMetrics( metricExecutor,
+                                                                                                localStatistics );
+        }
+        else
+        {
+            this.timeSeriesStatistics = null;
+        }
+
     }
 
     @Override
@@ -245,80 +234,6 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                  + configurationLabel );
             }
 
-        }
-
-        // Check that time-series metrics are not combined with other metrics
-        String message = "Cannot configure time-series metrics together with non-time-series "
-                         + "metrics: correct the configuration"
-                         + configurationLabel;
-
-        // Metrics that are explicitly configured as time-series
-        if ( ProjectConfigs.hasTimeSeriesMetrics( config )
-             && ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED )
-                  || this.hasMetrics( SampleDataGroup.DICHOTOMOUS ) ) )
-        {
-            throw new MetricConfigException( message );
-        }
-    }
-
-    @Override
-    void completeCachedOutput() throws InterruptedException
-    {
-        // Determine whether to compute summary statistics
-        boolean proceed = this.hasCachedMetricOutput()
-                          && this.getCachedMetricOutputInternal().hasStatistic( StatisticType.DURATION_DIAGRAM );
-
-        // Summary statistics not already computed
-        proceed = proceed && !this.getCachedMetricOutputInternal().hasStatistic( StatisticType.DURATION_SCORE );
-
-        //Add the summary statistics for the cached time-to-peak errors if these statistics do not already exist
-        if ( proceed )
-        {
-
-            MetricFuturesByTimeBuilder addFutures = new MetricFuturesByTimeBuilder();
-
-            // Iterate through the timing error metrics
-            for ( Entry<MetricConstants, TimingErrorDurationStatistics> nextStats : this.timingErrorDurationStatistics.entrySet() )
-            {
-                // Obtain the output for the current statistic
-                List<DurationDiagramStatisticOuter> output =
-                        Slicer.filter( this.getCachedMetricOutputInternal().getInstantDurationPairStatistics(),
-                                       nextStats.getKey() );
-
-                // Compute the collection of statistics for the next timing error metric
-                TimingErrorDurationStatistics timeToPeakErrorStats = nextStats.getValue();
-
-                SortedSet<OneOrTwoThresholds> thresholds =
-                        Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
-
-                // Iterate through the thresholds
-                for ( OneOrTwoThresholds threshold : thresholds )
-                {
-                    // Filter by current threshold  
-                    List<DurationDiagramStatisticOuter> sliced =
-                            Slicer.filter( output,
-                                           next -> next.getMetadata().getThresholds().equals( threshold ) );
-
-                    // Find the union of the paired output
-                    DurationDiagramStatisticOuter union = DataFactory.unionOf( sliced );
-
-                    //Build the future result
-                    Supplier<List<DurationScoreStatisticOuter>> supplier = () -> {
-                        DurationScoreStatisticOuter result = timeToPeakErrorStats.apply( union );
-                        return Collections.singletonList( result );
-                    };
-
-                    // Execute
-                    Future<List<DurationScoreStatisticOuter>> addMe =
-                            CompletableFuture.supplyAsync( supplier, this.thresholdExecutor );
-
-                    // Add the future result to the store
-                    addFutures.addDurationScoreOutput( addMe );
-                }
-            }
-
-            // Build the store of futures
-            this.futures.add( addFutures.build() );
         }
     }
 
@@ -455,14 +370,22 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                            .build();
 
             // Build the future result
-            final Pool<Pair<Double, Double>> finalPairs = pairs;
-            Future<List<DurationDiagramStatisticOuter>> output = this.processTimeSeriesPairs( finalPairs,
+            Future<List<DurationDiagramStatisticOuter>> output = this.processTimeSeriesPairs( pairs,
                                                                                               this.timeSeries );
 
             // Add the future result to the store
             futures.addDurationDiagramOutput( output );
-        }
 
+            // Summary statistics?
+            if ( Objects.nonNull( this.timeSeriesStatistics ) )
+            {
+                Future<List<DurationScoreStatisticOuter>> summary = this.processTimeSeriesSummaryPairs( pairs,
+                                                                                                        this.timeSeriesStatistics );
+
+
+                futures.addDurationScoreOutput( summary );
+            }
+        }
     }
 
     /**
@@ -477,6 +400,42 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     private Future<List<DurationDiagramStatisticOuter>>
             processTimeSeriesPairs( Pool<Pair<Double, Double>> pairs,
                                     MetricCollection<Pool<Pair<Double, Double>>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter> collection )
+    {
+        // More samples than the minimum sample size?
+        int minimumSampleSize = super.getMetrics().getMinimumSampleSize();
+
+        // Log and return an empty result if the sample size is too small
+        if ( pairs.get().size() < minimumSampleSize )
+        {
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "While processing time-series for pool {}, discovered {} time-series, which is fewer "
+                              + "than the minimum sample size of {} time-series. The following metrics will not be "
+                              + "computed for this pool: {}.",
+                              pairs.getMetadata(),
+                              pairs.getRawData().size(),
+                              minimumSampleSize,
+                              collection.getMetrics() );
+            }
+
+            return CompletableFuture.completedFuture( List.of() );
+        }
+
+        return this.processMetricsRequiredForThisPool( pairs, collection );
+    }
+
+    /**
+     * Builds a metric future for a {@link MetricCollection} that consumes single-valued pairs and produces 
+     * {@link DurationScoreStatisticOuter}.
+     * 
+     * @param pairs the pairs
+     * @param collection the collection of metrics
+     * @return the future result
+     */
+
+    private Future<List<DurationScoreStatisticOuter>>
+            processTimeSeriesSummaryPairs( Pool<Pair<Double, Double>> pairs,
+                                           MetricCollection<Pool<Pair<Double, Double>>, DurationScoreStatisticOuter, DurationScoreStatisticOuter> collection )
     {
         // More samples than the minimum sample size?
         int minimumSampleSize = super.getMetrics().getMinimumSampleSize();

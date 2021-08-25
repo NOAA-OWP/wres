@@ -55,7 +55,7 @@ import wres.engine.statistics.metric.processing.MetricFuturesByTime.MetricFuture
  * pairs may be processed after transforming the ensemble pairs with an appropriate mapping
  * function, such as an ensemble mean.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Pool<Pair<Double, Ensemble>>>
@@ -173,9 +173,6 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         // Process and return the result       
         MetricFuturesByTime futureResults = futures.build();
 
-        // Add for merge with existing futures, if required
-        this.addToMergeList( futureResults );
-
         return futureResults.getMetricOutput();
     }
 
@@ -186,8 +183,6 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
      * @param metrics the metrics to process
      * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
      * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
-     * @param mergeSet a list of {@link StatisticType} whose outputs should be retained and merged across calls to
-     *            {@link #apply(Object)}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      * @throws NullPointerException if a required input is null
@@ -196,10 +191,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
     public MetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
                                                final Metrics metrics,
                                                final ExecutorService thresholdExecutor,
-                                               final ExecutorService metricExecutor,
-                                               final Set<StatisticType> mergeSet )
+                                               final ExecutorService metricExecutor )
     {
-        super( config, metrics, thresholdExecutor, metricExecutor, mergeSet );
+        super( config, metrics, thresholdExecutor, metricExecutor );
 
         //Construct the metrics
         //Discrete probability input, vector output
@@ -417,12 +411,6 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                                                  + "'." );
             }
         }
-    }
-
-    @Override
-    void completeCachedOutput()
-    {
-        //Currently, no outputs that need to be completed
     }
 
     /**

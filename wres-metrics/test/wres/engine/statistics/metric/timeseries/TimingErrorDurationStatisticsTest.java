@@ -28,7 +28,7 @@ import wres.statistics.generated.MetricName;
 /**
  * Tests the {@link TimingErrorDurationStatistics}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class TimingErrorDurationStatisticsTest
 {
@@ -44,9 +44,9 @@ public final class TimingErrorDurationStatisticsTest
 
         // Check the results
         DurationScoreStatisticOuter actual =
-                TimingErrorDurationStatistics.of( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                TimingErrorDurationStatistics.of( peakError,
                                                   Collections.singleton( MetricConstants.MEAN ) )
-                                             .apply( peakError.apply( input ) );
+                                             .apply( input );
 
         com.google.protobuf.Duration expectedSource = MessageFactory.parse( Duration.ofHours( 3 ) );
 
@@ -80,27 +80,27 @@ public final class TimingErrorDurationStatisticsTest
         // Check some additional statistics
         // Maximum error = 12
         DurationScoreStatisticOuter max =
-                TimingErrorDurationStatistics.of( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                TimingErrorDurationStatistics.of( peakError,
                                                   Collections.singleton( MetricConstants.MAXIMUM ) )
-                                             .apply( peakError.apply( input ) );
+                                             .apply( input );
 
         assertEquals( MessageFactory.parse( Duration.ofHours( 12 ) ),
                       max.getComponent( MetricConstants.MAXIMUM ).getData().getValue() );
 
         // Minimum error = -6
         DurationScoreStatisticOuter min =
-                TimingErrorDurationStatistics.of( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                TimingErrorDurationStatistics.of( peakError,
                                                   Collections.singleton( MetricConstants.MINIMUM ) )
-                                             .apply( peakError.apply( input ) );
+                                             .apply( input );
 
         assertEquals( MessageFactory.parse( Duration.ofHours( -6 ) ),
                       min.getComponent( MetricConstants.MINIMUM ).getData().getValue() );
 
         // Mean absolute error = 9
         DurationScoreStatisticOuter meanAbs =
-                TimingErrorDurationStatistics.of( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                TimingErrorDurationStatistics.of( peakError,
                                                   Collections.singleton( MetricConstants.MEAN_ABSOLUTE ) )
-                                             .apply( peakError.apply( input ) );
+                                             .apply( input );
 
         assertEquals( MessageFactory.parse( Duration.ofHours( 9 ) ),
                       meanAbs.getComponent( MetricConstants.MEAN_ABSOLUTE ).getData().getValue() );
@@ -117,7 +117,7 @@ public final class TimingErrorDurationStatisticsTest
 
         // Build the summary statistics
         TimingErrorDurationStatistics ttps =
-                TimingErrorDurationStatistics.of( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                TimingErrorDurationStatistics.of( peakError,
                                                   new HashSet<>( Arrays.asList( MetricConstants.MEAN,
                                                                                 MetricConstants.MAXIMUM,
                                                                                 MetricConstants.MINIMUM,
@@ -193,7 +193,7 @@ public final class TimingErrorDurationStatisticsTest
                                                                 .addStatistics( meanAbsComponent )
                                                                 .build();
 
-        DurationScoreStatisticOuter actual = ttps.apply( peakError.apply( input ) );
+        DurationScoreStatisticOuter actual = ttps.apply( input );
 
         assertEquals( expected, actual.getData() );
     }
@@ -209,11 +209,11 @@ public final class TimingErrorDurationStatisticsTest
 
         // Build the summary statistics
         TimingErrorDurationStatistics ttps =
-                TimingErrorDurationStatistics.of( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                TimingErrorDurationStatistics.of( peakError,
                                                   new HashSet<>( Arrays.asList( MetricConstants.MEAN ) ) );
 
         // Check the results
-        DurationScoreStatisticOuter actual = ttps.apply( peakError.apply( input ) );
+        DurationScoreStatisticOuter actual = ttps.apply( input );
 
         DurationScoreMetric metric = DurationScoreMetric.newBuilder()
                                                         .setName( MetricName.TIME_TO_PEAK_ERROR_STATISTIC )
@@ -230,7 +230,7 @@ public final class TimingErrorDurationStatisticsTest
     {
         MetricParameterException actual =
                 assertThrows( MetricParameterException.class,
-                              () -> TimingErrorDurationStatistics.of( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                              () -> TimingErrorDurationStatistics.of( TimeToPeakError.of(),
                                                                       null ) );
 
         assertEquals( "Specify a non-null container of summary statistics.", actual.getMessage() );
@@ -241,7 +241,7 @@ public final class TimingErrorDurationStatisticsTest
     {
         MetricParameterException actual =
                 assertThrows( MetricParameterException.class,
-                              () -> TimingErrorDurationStatistics.of( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                              () -> TimingErrorDurationStatistics.of( TimeToPeakError.of(),
                                                                       Collections.emptySet() ) );
 
         assertEquals( "Specify one or more summary statistics.", actual.getMessage() );
@@ -252,7 +252,7 @@ public final class TimingErrorDurationStatisticsTest
     {
         MetricParameterException actual =
                 assertThrows( MetricParameterException.class,
-                              () -> TimingErrorDurationStatistics.of( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                              () -> TimingErrorDurationStatistics.of( TimeToPeakError.of(),
                                                                       Collections.singleton( null ) ) );
 
         assertEquals( "Cannot build the metric with a null statistic.", actual.getMessage() );
@@ -262,7 +262,7 @@ public final class TimingErrorDurationStatisticsTest
     public void testExceptionOnUnrecognizedStatistic()
     {
         assertThrows( IllegalArgumentException.class,
-                      () -> TimingErrorDurationStatistics.of( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                      () -> TimingErrorDurationStatistics.of( TimeToPeakError.of(),
                                                               Collections.singleton( MetricConstants.NONE ) ) );
     }
 
@@ -278,7 +278,7 @@ public final class TimingErrorDurationStatisticsTest
     public void testApplyThrowsExceptionOnNullInput()
     {
         assertThrows( PoolException.class,
-                      () -> TimingErrorDurationStatistics.of( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                      () -> TimingErrorDurationStatistics.of( TimeToPeakError.of(),
                                                               Collections.singleton( MetricConstants.MEAN ) )
                                                          .apply( null ) );
 

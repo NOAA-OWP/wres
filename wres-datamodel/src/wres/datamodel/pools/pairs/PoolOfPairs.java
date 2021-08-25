@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
+import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
@@ -20,7 +21,7 @@ import org.apache.commons.lang3.tuple.Pair;
 /**
  * <p>A pool of pairs.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public class PoolOfPairs<L, R> implements Pool<Pair<L, R>>
 {
@@ -275,14 +276,44 @@ public class PoolOfPairs<L, R> implements Pool<Pair<L, R>>
             Objects.requireNonNull( poolOfPairs, NULL_INPUT );
 
             this.main.addAll( poolOfPairs.get() );
-            this.mainMeta = poolOfPairs.getMetadata();
-            this.climatology = poolOfPairs.getClimatology();
+
+            // Merge metadata?
+            if ( Objects.nonNull( this.mainMeta ) )
+            {
+                this.mainMeta = PoolMetadata.unionOf( List.of( this.mainMeta, poolOfPairs.getMetadata() ) );
+            }
+            else
+            {
+                this.mainMeta = poolOfPairs.getMetadata();
+            }
+
+            // Merge climatology?
+            if ( Objects.nonNull( this.climatology ) && poolOfPairs.hasClimatology() )
+            {
+                this.climatology = Slicer.concatenate( this.climatology, poolOfPairs.getClimatology() );
+            }
+            else
+            {
+                this.climatology = poolOfPairs.getClimatology();
+            }
 
             if ( poolOfPairs.hasBaseline() )
             {
                 Pool<Pair<L, R>> base = poolOfPairs.getBaselineData();
                 this.baseline.addAll( base.get() );
-                this.baselineMeta = poolOfPairs.getBaselineData().getMetadata();
+
+                // Merge metadata?
+                if ( Objects.nonNull( this.baselineMeta ) )
+                {
+                    this.baselineMeta = PoolMetadata.unionOf( List.of( this.baselineMeta,
+                                                                       poolOfPairs.getBaselineData()
+                                                                                  .getMetadata() ) );
+                }
+                else
+                {
+                    this.baselineMeta = poolOfPairs.getBaselineData()
+                                                   .getMetadata();
+                }
             }
 
             return this;
@@ -413,11 +444,11 @@ public class PoolOfPairs<L, R> implements Pool<Pair<L, R>>
         if ( Objects.isNull( this.baseline ) != Objects.isNull( this.baselineMeta ) )
         {
             throw new PoolException( "Specify a non-null baseline input and associated metadata or leave both "
-                                           + "null. The null status of the data and metadata, respectively, is: ["
-                                           + Objects.isNull( this.baseline )
-                                           + ","
-                                           + Objects.isNull( this.baselineMeta )
-                                           + "]" );
+                                     + "null. The null status of the data and metadata, respectively, is: ["
+                                     + Objects.isNull( this.baseline )
+                                     + ","
+                                     + Objects.isNull( this.baselineMeta )
+                                     + "]" );
         }
 
         if ( Objects.nonNull( this.baseline ) && this.baseline.contains( null ) )
@@ -428,7 +459,7 @@ public class PoolOfPairs<L, R> implements Pool<Pair<L, R>>
         if ( Objects.nonNull( this.baseline ) && !this.baselineMeta.getPool().getIsBaselinePool() )
         {
             throw new PoolException( "The metadata associated with the baseline pool does not designate this "
-                                           + "pool as a baseline. Correct the metadata." );
+                                     + "pool as a baseline. Correct the metadata." );
         }
     }
 
@@ -446,13 +477,13 @@ public class PoolOfPairs<L, R> implements Pool<Pair<L, R>>
             if ( this.getClimatology().size() == 0 )
             {
                 throw new PoolException( "Cannot build the paired data with an empty climatology: add one or "
-                                               + "more values." );
+                                         + "more values." );
             }
 
             if ( !Arrays.stream( this.getClimatology().getDoubles() ).anyMatch( Double::isFinite ) )
             {
                 throw new PoolException( "Must have at least one non-missing value in the climatological "
-                                               + "input" );
+                                         + "input" );
             }
         }
     }

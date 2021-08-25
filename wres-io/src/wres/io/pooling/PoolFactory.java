@@ -56,7 +56,7 @@ import wres.io.retrieval.UnitMapper;
 /**
  * A factory class for generating the pools of pairs associated with an evaluation.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class PoolFactory
@@ -104,7 +104,7 @@ public class PoolFactory
         Objects.requireNonNull( evaluation, "Cannot create pools from a null evaluation." );
         Objects.requireNonNull( project, "Cannot create pools from a null project." );
         Objects.requireNonNull( unitMapper, "Cannot create pools without a measurement unit mapper." );
-        Objects.requireNonNull( unitMapper, "Cannot create pools without a feature description." );
+        Objects.requireNonNull( feature, "Cannot create pools without a feature description." );
         Objects.requireNonNull( retrieverFactory, "Cannot create pools without a retriever factory." );
 
         // Validate the project declaration for the required data type
@@ -224,7 +224,7 @@ public class PoolFactory
         Objects.requireNonNull( evaluation, "Cannot create pools from a null evaluation." );
         Objects.requireNonNull( project, "Cannot create pools from a null project." );
         Objects.requireNonNull( unitMapper, "Cannot create pools without a measurement unit mapper." );
-        Objects.requireNonNull( unitMapper, "Cannot create pools without a feature description." );
+        Objects.requireNonNull( feature, "Cannot create pools without a feature description." );
         Objects.requireNonNull( retrieverFactory, "Cannot create pools without a retriever factory." );
 
         // Validate the project declaration for the required data type
