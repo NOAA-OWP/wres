@@ -19,9 +19,9 @@ import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Pool;
 
 /**
- * An immutable store of metadata associated with {@link Pool}.
+ * An immutable store of metadata that describes a {@link Pool}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public class PoolMetadata implements Comparable<PoolMetadata>
 {

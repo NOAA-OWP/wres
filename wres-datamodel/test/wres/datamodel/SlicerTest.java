@@ -46,7 +46,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 /**
  * Tests the {@link Slicer}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class SlicerTest
 {
@@ -697,6 +697,25 @@ public final class SlicerTest
         VectorOfDoubles actualOutput = Slicer.filter( input, predicate );
 
         assertEquals( expectedOutput, actualOutput );
+    }
+
+    @Test
+    public void testConcatenate()
+    {
+        assertEquals( VectorOfDoubles.of(), Slicer.concatenate() );
+
+        VectorOfDoubles input = VectorOfDoubles.of( 1, 2, 3 );
+
+        VectorOfDoubles actualOutputOne = Slicer.concatenate( input );
+        VectorOfDoubles expectedOutputOne = VectorOfDoubles.of( 1, 2, 3 );
+
+        assertEquals( expectedOutputOne, actualOutputOne );
+
+        VectorOfDoubles anotherInput = VectorOfDoubles.of( 4, 5, 6 );
+        VectorOfDoubles expectedOutputTwo = VectorOfDoubles.of( 1, 2, 3, 4, 5, 6 );
+        VectorOfDoubles actualOutputTwo = Slicer.concatenate( input, anotherInput );
+
+        assertEquals( expectedOutputTwo, actualOutputTwo );
     }
 
     @Test

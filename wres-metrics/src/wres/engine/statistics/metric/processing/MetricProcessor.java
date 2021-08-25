@@ -1,7 +1,6 @@
 package wres.engine.statistics.metric.processing;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -26,8 +25,6 @@ import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.Statistic;
-import wres.datamodel.statistics.StatisticAccessException;
-import wres.datamodel.statistics.StatisticException;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.ScoreStatistic;
@@ -75,14 +72,10 @@ import wres.engine.statistics.metric.config.MetricConfigHelper;
  * asynchronously for each {@link ThresholdOuter}.
  * </p>
  * <p>
- * The {@link Statistic} are computed and stored by {@link StatisticType}. For {@link Statistic} that are not
- * consumed until the end of a processing pipeline, the results from sequential calls to {@link #apply(Object)} may be
- * cached and merged. This is achieved by constructing a {@link MetricProcessor} with a <code>vararg</code> of
- * {@link StatisticType} whose results will be cached across successive calls. The merged results are accessible
- * from {@link #getCachedMetricOutput()}.
+ * The {@link Statistic} are computed and stored by {@link StatisticType}.
  * </p>
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public abstract class MetricProcessor<S extends Pool<?>>
@@ -139,12 +132,6 @@ public abstract class MetricProcessor<S extends Pool<?>>
     final Metrics metrics;
 
     /**
-     * An array of {@link StatisticType} that should be retained and merged across calls. May be null.
-     */
-
-    final Set<StatisticType> mergeSet;
-
-    /**
      * An {@link ExecutorService} used to process the thresholds.
      */
 
@@ -155,66 +142,6 @@ public abstract class MetricProcessor<S extends Pool<?>>
      */
 
     private static final int DECIMALS = 5;
-
-    /**
-     * Returns true if a prior call led to the caching of metric outputs.
-     * 
-     * @return true if stored results are available, false otherwise
-     */
-
-    public abstract boolean hasCachedMetricOutput();
-
-    /**
-     * Returns the (possibly empty) set of {@link StatisticType} that were cached across successive calls to 
-     * {@link #apply(Object)}. This may differ from the set of cached outputs that were declared on construction, 
-     * because some outputs are cached automatically. For the set of cached outputs declared on construction, 
-     * see: {@link #getMetricOutputTypesToCache()}.
-     * 
-     * @return the output types that were cached
-     * @throws InterruptedException if the retrieval was interrupted
-     * @throws StatisticException if the output could not be retrieved
-     * @throws MetricOutputMergeException if the cached output cannot be merged across calls
-     */
-
-    public Set<StatisticType> getCachedMetricOutputTypes() throws InterruptedException
-    {
-        return this.getCachedMetricOutput()
-                   .getStatisticTypes();
-    }
-
-    /**
-     * Returns a {@link StatisticsForProject} for the last available results or null if
-     * {@link #hasCachedMetricOutput()} returns false.
-     * 
-     * @return a {@link StatisticsForProject} or null
-     * @throws InterruptedException if the retrieval was interrupted
-     * @throws StatisticException if the output could not be retrieved
-     * @throws MetricOutputMergeException if the cached output cannot be merged across calls
-     */
-
-    public StatisticsForProject getCachedMetricOutput() throws InterruptedException
-    {
-        //Complete any end-of-pipeline processing
-        this.completeCachedOutput();
-
-        //Return the results
-        return this.getCachedMetricOutputInternal();
-    }
-
-    /**
-     * Returns the (possibly empty) set of {@link StatisticType} that will be cached across successive calls to 
-     * {@link #apply(Object)}. This contains the set of types to cache that were declared on construction of the 
-     * {@link MetricProcessor}. It may differ from the actual set of cached outputs, because some outputs are
-     * cached automatically. For the full set of cached outputs, post-computation, 
-     * see: {@link #getCachedMetricOutputTypes()}.
-     * 
-     * @return the output types that will be cached
-     */
-
-    public Set<StatisticType> getMetricOutputTypesToCache()
-    {
-        return Collections.unmodifiableSet( new HashSet<>( this.mergeSet ) );
-    }
 
     /**
      * Returns true if metrics are available for the input {@link SampleDataGroup} and {@link StatisticType}, false
@@ -305,34 +232,12 @@ public abstract class MetricProcessor<S extends Pool<?>>
     abstract void validate( ProjectConfig config );
 
     /**
-     * Completes any processing of cached output at the end of a processing pipeline. This may be required when 
-     * computing results that rely on other cached results (e.g. summary statistics). Note that this method may be
-     * called more than once.
-     * 
-     * @throws StatisticAccessException if the cached output cannot be completed because the cached outputs on 
-     *            which completion depends cannot be accessed
-     */
-
-    abstract void completeCachedOutput() throws InterruptedException;
-
-    /**
-     * Returns a {@link StatisticsForProject} for the last available results.
-     * 
-     * @return a {@link StatisticsForProject} or null
-     * @throws MetricOutputMergeException if the outputs cannot be merged across calls
-     */
-
-    abstract StatisticsForProject getCachedMetricOutputInternal();
-
-    /**
      * Constructor.
      * 
      * @param config the project configuration
      * @param metrics the metrics to process
      * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
      * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
-     * @param mergeSet a list of {@link StatisticType} whose outputs should be retained and merged across calls to
-     *            {@link #apply(Object)}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      * @throws NullPointerException if a required input is null
@@ -341,8 +246,7 @@ public abstract class MetricProcessor<S extends Pool<?>>
     MetricProcessor( final ProjectConfig config,
                      final Metrics metrics,
                      final ExecutorService thresholdExecutor,
-                     final ExecutorService metricExecutor,
-                     final Set<StatisticType> mergeSet )
+                     final ExecutorService metricExecutor )
     {
 
         Objects.requireNonNull( config, MetricConfigHelper.NULL_CONFIGURATION_ERROR );
@@ -415,15 +319,6 @@ public abstract class MetricProcessor<S extends Pool<?>>
         else
         {
             this.singleValuedBoxPlot = null;
-        }
-
-        if ( Objects.nonNull( mergeSet ) )
-        {
-            this.mergeSet = Set.copyOf( mergeSet );
-        }
-        else
-        {
-            this.mergeSet = Collections.emptySet();
         }
 
         //Set the executor for processing thresholds

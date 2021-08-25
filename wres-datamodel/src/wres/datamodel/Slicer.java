@@ -22,6 +22,7 @@ import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -45,7 +46,7 @@ import wres.datamodel.time.TimeSeriesSlicer;
 /**
  * A utility class for slicing/dicing and transforming datasets associated with verification metrics.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  * @see    TimeSeriesSlicer
  */
 
@@ -311,7 +312,6 @@ public final class Slicer
         };
     }
 
-
     /**
      * Returns the left side of the input as a primitive array of doubles.
      * 
@@ -496,23 +496,23 @@ public final class Slicer
      * 
      * @param <S> the metric output type
      * @param <T> the type of information required about the output
-     * @param outputs the list of outputs
+     * @param statistics the list of outputs
      * @param mapper the mapper function that discovers the type of interest
      * @return the unique instances of a given type associated with the output
      * @throws NullPointerException if the input list is null or the mapper is null
      */
 
-    public static <S extends Statistic<?>, T extends Object> SortedSet<T> discover( List<S> outputs,
+    public static <S extends Statistic<?>, T extends Object> SortedSet<T> discover( List<S> statistics,
                                                                                     Function<S, T> mapper )
     {
-        Objects.requireNonNull( outputs, NULL_INPUT_EXCEPTION );
+        Objects.requireNonNull( statistics, NULL_INPUT_EXCEPTION );
 
         Objects.requireNonNull( mapper, NULL_INPUT_EXCEPTION );
 
-        return Collections.unmodifiableSortedSet( outputs.stream()
-                                                         .map( mapper )
-                                                         .filter( Objects::nonNull )
-                                                         .collect( Collectors.toCollection( TreeSet::new ) ) );
+        return Collections.unmodifiableSortedSet( statistics.stream()
+                                                            .map( mapper )
+                                                            .filter( Objects::nonNull )
+                                                            .collect( Collectors.toCollection( TreeSet::new ) ) );
     }
 
     /**
@@ -522,22 +522,22 @@ public final class Slicer
      * <p><code>Slicer.filter( out, meta {@literal ->} meta.getMetricID() == metricIdentifier )</code></p>
      * 
      * @param <T> the metric output type
-     * @param outputs the list of outputs
+     * @param statistics the list of outputs
      * @param metricIdentifier the metric identifier                     
      * @throws NullPointerException if the input list is null or the identifier is null
      * @return the first available output that matches the input identifier or null if no such output is available
      */
 
-    public static <T extends Statistic<?>> List<T> filter( List<T> outputs,
+    public static <T extends Statistic<?>> List<T> filter( List<T> statistics,
                                                            MetricConstants metricIdentifier )
     {
-        Objects.requireNonNull( outputs, NULL_INPUT_EXCEPTION );
+        Objects.requireNonNull( statistics, NULL_INPUT_EXCEPTION );
 
         Objects.requireNonNull( metricIdentifier, NULL_INPUT_EXCEPTION );
 
-        return outputs.stream()
-                      .filter( next -> metricIdentifier == next.getMetricName() )
-                      .collect( Collectors.toUnmodifiableList() );
+        return statistics.stream()
+                         .filter( next -> metricIdentifier == next.getMetricName() )
+                         .collect( Collectors.toUnmodifiableList() );
     }
 
     /**
@@ -941,6 +941,32 @@ public final class Slicer
                      .collect( Collectors.groupingBy( classifier ) );
 
         return Collections.unmodifiableMap( groups );
+    }
+
+    /**
+     * Concatenates the input, appending from left to right.
+     * 
+     * @param input the input
+     */
+
+    public static VectorOfDoubles concatenate( VectorOfDoubles... input )
+    {
+        DoubleStream combined = DoubleStream.of();
+
+        for ( VectorOfDoubles next : input )
+        {
+            if ( Objects.isNull( combined ) )
+            {
+                combined = Arrays.stream( next.getDoubles() );
+            }
+            else
+            {
+                DoubleStream nextStream = Arrays.stream( next.getDoubles() );
+                combined = DoubleStream.concat( combined, nextStream );
+            }
+        }
+
+        return VectorOfDoubles.of( combined.toArray() );
     }
 
     /**

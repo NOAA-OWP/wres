@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
@@ -17,11 +18,11 @@ import wres.datamodel.Probability;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.Metrics;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
-import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
+import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsGenerator;
 import wres.engine.statistics.metric.MetricCollection.Builder;
@@ -32,7 +33,6 @@ import wres.engine.statistics.metric.categorical.PeirceSkillScore;
 import wres.engine.statistics.metric.categorical.ProbabilityOfDetection;
 import wres.engine.statistics.metric.categorical.ProbabilityOfFalseDetection;
 import wres.engine.statistics.metric.categorical.ThreatScore;
-import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.engine.statistics.metric.discreteprobability.BrierScore;
 import wres.engine.statistics.metric.discreteprobability.BrierSkillScore;
 import wres.engine.statistics.metric.discreteprobability.RelativeOperatingCharacteristicDiagram;
@@ -72,11 +72,12 @@ import wres.engine.statistics.metric.singlevalued.univariate.Minimum;
 import wres.engine.statistics.metric.singlevalued.univariate.StandardDeviation;
 import wres.engine.statistics.metric.timeseries.TimeToPeakError;
 import wres.engine.statistics.metric.timeseries.TimeToPeakRelativeError;
+import wres.engine.statistics.metric.timeseries.TimingErrorDurationStatistics;
 
 /**
  * <p>A factory class for constructing metrics.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public final class MetricFactory
@@ -95,23 +96,18 @@ public final class MetricFactory
     private static final String TEST_SEED_PROPERTY = "wres.systemTestSeed";
 
     /**
-     * <p>Returns an instance of a {@link MetricProcessor} for processing single-valued pairs. Optionally, retain 
-     * and merge the results associated with specific {@link StatisticType} across successive calls to
-     * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
-     * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.</p>
+     * <p>Returns an instance of a {@link MetricProcessor} for processing single-valued pairs.
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
      * @param config the project configuration
-     * @param mergeSet an optional list of {@link StatisticType} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     public static MetricProcessor<Pool<Pair<Double, Double>>>
-            ofMetricProcessorForSingleValuedPairs( final ProjectConfig config,
-                                                   final Set<StatisticType> mergeSet )
+            ofMetricProcessorForSingleValuedPairs( final ProjectConfig config )
     {
         ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( config );
         Metrics metrics = Metrics.of( thresholdsByMetric, 0 );
@@ -119,28 +115,22 @@ public final class MetricFactory
         return MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
                                                                     metrics,
                                                                     ForkJoinPool.commonPool(),
-                                                                    ForkJoinPool.commonPool(),
-                                                                    mergeSet );
+                                                                    ForkJoinPool.commonPool() );
     }
 
     /**
-     * <p>Returns an instance of a {@link MetricProcessor} for processing ensemble pairs. Optionally, retain 
-     * and merge the results associated with specific {@link StatisticType} across successive calls to
-     * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
-     * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.</p>
+     * <p>Returns an instance of a {@link MetricProcessor} for processing ensemble pairs.
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
      * @param config the project configuration
-     * @param mergeSet an optional list of {@link StatisticType} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     public static MetricProcessor<Pool<Pair<Double, Ensemble>>>
-            ofMetricProcessorForEnsemblePairs( final ProjectConfig config,
-                                               final Set<StatisticType> mergeSet )
+            ofMetricProcessorForEnsemblePairs( final ProjectConfig config )
     {
         ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( config );
         Metrics metrics = Metrics.of( thresholdsByMetric, 0 );
@@ -148,49 +138,37 @@ public final class MetricFactory
         return MetricFactory.ofMetricProcessorForEnsemblePairs( config,
                                                                 metrics,
                                                                 ForkJoinPool.commonPool(),
-                                                                ForkJoinPool.commonPool(),
-                                                                mergeSet );
+                                                                ForkJoinPool.commonPool() );
     }
 
     /**
-     * <p>Returns an instance of a {@link MetricProcessor} for processing single-valued pairs. Optionally, retain 
-     * and merge the results associated with specific {@link StatisticType} across successive calls to
-     * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
-     * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.</p>
+     * <p>Returns an instance of a {@link MetricProcessor} for processing single-valued pairs.
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
      * @param config the project configuration
      * @param metrics the metrics to process
-     * @param mergeSet an optional list of {@link StatisticType} for which results should be retained and merged
-     * @return the {@link MetricProcessorByTime}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     public static MetricProcessor<Pool<Pair<Double, Double>>>
             ofMetricProcessorForSingleValuedPairs( final ProjectConfig config,
-                                                   final Metrics metrics,
-                                                   final Set<StatisticType> mergeSet )
+                                                   final Metrics metrics )
     {
         return MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
                                                                     metrics,
                                                                     ForkJoinPool.commonPool(),
-                                                                    ForkJoinPool.commonPool(),
-                                                                    mergeSet );
+                                                                    ForkJoinPool.commonPool() );
     }
 
     /**
-     * <p>Returns an instance of a {@link MetricProcessor} for processing ensemble pairs. Optionally, retain 
-     * and merge the results associated with specific {@link StatisticType} across successive calls to
-     * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
-     * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.</p>
+     * <p>Returns an instance of a {@link MetricProcessor} for processing ensemble pairs.
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
      * @param config the project configuration
      * @param metrics the metrics to process
-     * @param mergeSet an optional list of {@link StatisticType} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
@@ -198,21 +176,17 @@ public final class MetricFactory
 
     public static MetricProcessor<Pool<Pair<Double, Ensemble>>>
             ofMetricProcessorForEnsemblePairs( final ProjectConfig config,
-                                               final Metrics metrics,
-                                               final Set<StatisticType> mergeSet )
+                                               final Metrics metrics )
     {
         return MetricFactory.ofMetricProcessorForEnsemblePairs( config,
                                                                 metrics,
                                                                 ForkJoinPool.commonPool(),
-                                                                ForkJoinPool.commonPool(),
-                                                                mergeSet );
+                                                                ForkJoinPool.commonPool() );
     }
 
 
     /**
-     * Returns an instance of a {@link MetricProcessor} for processing single-valued pairs. Inspects the project
-     * declaration for any statistics that should be retained and merged across successive calls to the processor
-     * and creates a processor that retains and merges those statistics.
+     * Returns an instance of a {@link MetricProcessor} for processing single-valued pairs.
      * 
      * @param config the project configuration
      * @param metrics the metrics to process
@@ -231,19 +205,14 @@ public final class MetricFactory
                                                    final ExecutorService thresholdExecutor,
                                                    final ExecutorService metricExecutor )
     {
-        Set<StatisticType> mergeSet = MetricConfigHelper.getCacheListFromProjectConfig( config );
-
-        return MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
-                                                                    metrics,
-                                                                    thresholdExecutor,
-                                                                    metricExecutor,
-                                                                    mergeSet );
+        return new MetricProcessorByTimeSingleValuedPairs( config,
+                                                           metrics,
+                                                           thresholdExecutor,
+                                                           metricExecutor );
     }
 
     /**
-     * Returns an instance of a {@link MetricProcessor} for processing single-valued pairs. Inspects the project
-     * declaration for any statistics that should be retained and merged across successive calls to the processor
-     * and creates a processor that retains and merges those statistics.
+     * Returns an instance of a {@link MetricProcessor} for processing single-valued pairs.
      * 
      * @param config the project configuration
      * @param metrics the metrics to process
@@ -262,77 +231,10 @@ public final class MetricFactory
                                                final ExecutorService thresholdExecutor,
                                                final ExecutorService metricExecutor )
     {
-        Set<StatisticType> mergeSet = MetricConfigHelper.getCacheListFromProjectConfig( config );
-
-        return MetricFactory.ofMetricProcessorForEnsemblePairs( config,
-                                                                metrics,
-                                                                thresholdExecutor,
-                                                                metricExecutor,
-                                                                mergeSet );
-    }
-
-    /**
-     * Returns an instance of a {@link MetricProcessor} for processing single-valued pairs. Optionally, retain 
-     * and merge the results associated with specific {@link StatisticType} across successive calls to
-     * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
-     * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
-     * 
-     * @param config the project configuration
-     * @param metrics the metrics to process
-     * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
-     *            {@link ForkJoinPool#commonPool()}
-     * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
-     *            {@link ForkJoinPool#commonPool()} 
-     * @param mergeSet an optional list of {@link StatisticType} for which results should be retained and merged
-     * @return the {@link MetricProcessorByTime}
-     * @throws MetricConfigException if the metrics are configured incorrectly
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
-
-    public static MetricProcessor<Pool<Pair<Double, Double>>>
-            ofMetricProcessorForSingleValuedPairs( final ProjectConfig config,
-                                                   final Metrics metrics,
-                                                   final ExecutorService thresholdExecutor,
-                                                   final ExecutorService metricExecutor,
-                                                   final Set<StatisticType> mergeSet )
-    {
-        return new MetricProcessorByTimeSingleValuedPairs( config,
-                                                           metrics,
-                                                           thresholdExecutor,
-                                                           metricExecutor,
-                                                           mergeSet );
-    }
-
-    /**
-     * Returns an instance of a {@link MetricProcessor} for processing ensemble pairs. Optionally, retain 
-     * and merge the results associated with specific {@link StatisticType} across successive calls to
-     * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
-     * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
-     * 
-     * @param config the project configuration
-     * @param metrics the metrics to process
-     * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
-     *            {@link ForkJoinPool#commonPool()}
-     * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
-     *            {@link ForkJoinPool#commonPool()} 
-     * @param mergeSet an optional set of {@link StatisticType} for which results should be retained and merged
-     * @return the {@link MetricProcessorByTime}
-     * @throws MetricConfigException if the metrics are configured incorrectly
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
-
-    public static MetricProcessorByTime<Pool<Pair<Double, Ensemble>>>
-            ofMetricProcessorForEnsemblePairs( final ProjectConfig config,
-                                               final Metrics metrics,
-                                               final ExecutorService thresholdExecutor,
-                                               final ExecutorService metricExecutor,
-                                               final Set<StatisticType> mergeSet )
-    {
         return new MetricProcessorByTimeEnsemblePairs( config,
                                                        metrics,
                                                        thresholdExecutor,
-                                                       metricExecutor,
-                                                       mergeSet );
+                                                       metricExecutor );
     }
 
     /**
@@ -1098,6 +1000,69 @@ public final class MetricFactory
         }
 
         return null;
+    }
+
+    /**
+     * Helper that returns timing error summary statistics for a nominated type of timing error metric.
+     * 
+     * @param timingMetric the timing error metric
+     * @param summaryStatistics the set of summary statistics to compute
+     * @return the summary statistics calculator
+     * @throws NullPointerException if any input is null
+     */
+
+    public static Metric<Pool<Pair<Double, Double>>, DurationScoreStatisticOuter>
+            ofSummaryStatisticsForTimingErrorMetric( MetricConstants timingMetric,
+                                                     Set<MetricConstants> summaryStatistics )
+    {
+        Objects.requireNonNull( timingMetric, "Specify a non-null timing error metric." );
+        Objects.requireNonNull( summaryStatistics, "Specify non-null summary statistics for the timing error metric." );
+
+
+        Random random = MetricFactory.getRandomNumberGenerator();
+
+        switch ( timingMetric )
+        {
+            case TIME_TO_PEAK_ERROR:
+                return TimingErrorDurationStatistics.of( TimeToPeakError.of( random ), summaryStatistics );
+            case TIME_TO_PEAK_RELATIVE_ERROR:
+                return TimingErrorDurationStatistics.of( TimeToPeakRelativeError.of( random ), summaryStatistics );
+            default:
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + timingMetric + "'." );
+        }
+    }
+
+    /**
+     * Helper that returns timing error summary statistics for a nominated type of timing error metric.
+     * 
+     * @param executor the executor
+     * @param timingMetrics the timing error metrics and associated summary statistics
+     * @return the summary statistics calculators
+     * @throws NullPointerException if the map of timing metrics is null
+     */
+
+    public static MetricCollection<Pool<Pair<Double, Double>>, DurationScoreStatisticOuter, DurationScoreStatisticOuter>
+            ofSummaryStatisticsForTimingErrorMetrics( ExecutorService executor,
+                                                      Map<MetricConstants, Set<MetricConstants>> timingMetrics )
+    {
+        Objects.requireNonNull( timingMetrics, "Specify a non-null map of timing error metrics." );
+
+        MetricCollection.Builder<Pool<Pair<Double, Double>>, DurationScoreStatisticOuter, DurationScoreStatisticOuter> builder =
+                new MetricCollection.Builder<>();
+        builder.setExecutorService( executor );
+
+        for ( Map.Entry<MetricConstants, Set<MetricConstants>> nextMetric : timingMetrics.entrySet() )
+        {
+            MetricConstants nextTimingMetric = nextMetric.getKey();
+            Set<MetricConstants> nextSummaryStatistics = nextMetric.getValue();
+
+            Metric<Pool<Pair<Double, Double>>, DurationScoreStatisticOuter> metric =
+                    MetricFactory.ofSummaryStatisticsForTimingErrorMetric( nextTimingMetric, nextSummaryStatistics );
+
+            builder.addMetric( metric );
+        }
+
+        return builder.build();
     }
 
     /**

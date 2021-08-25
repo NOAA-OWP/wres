@@ -11,7 +11,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -61,7 +60,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 /**
  * Tests the {@link MetricProcessorByTimeEnsemblePairs}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class MetricProcessorByTimeEnsemblePairsTest
 {
@@ -113,8 +112,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithoutThresholds.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<Pool<Pair<Double, Ensemble>>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( config,
-                                                                 null );
+                MetricFactory.ofMetricProcessorForEnsemblePairs( config );
         StatisticsForProject results =
                 processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
         DoubleScoreStatisticOuter bias =
@@ -168,13 +166,11 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<Pool<Pair<Double, Ensemble>>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( config,
-                                                                 StatisticType.set() );
-        processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
+                MetricFactory.ofMetricProcessorForEnsemblePairs( config );
+        StatisticsForProject statistics = processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
 
         //Validate bias
-        List<DoubleScoreStatisticOuter> bias = Slicer.filter( processor.getCachedMetricOutput()
-                                                                       .getDoubleScoreStatistics(),
+        List<DoubleScoreStatisticOuter> bias = Slicer.filter( statistics.getDoubleScoreStatistics(),
                                                               MetricConstants.BIAS_FRACTION );
         assertEquals( -0.032093836077598345,
                       bias.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
@@ -196,8 +192,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                       Precision.EPSILON );
 
         //Validate CoD
-        List<DoubleScoreStatisticOuter> cod = Slicer.filter( processor.getCachedMetricOutput()
-                                                                      .getDoubleScoreStatistics(),
+        List<DoubleScoreStatisticOuter> cod = Slicer.filter( statistics.getDoubleScoreStatistics(),
                                                              MetricConstants.COEFFICIENT_OF_DETERMINATION );
 
         assertEquals( 0.7873367083297588,
@@ -220,8 +215,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                       Precision.EPSILON );
 
         //Validate rho
-        List<DoubleScoreStatisticOuter> rho = Slicer.filter( processor.getCachedMetricOutput()
-                                                                      .getDoubleScoreStatistics(),
+        List<DoubleScoreStatisticOuter> rho = Slicer.filter( statistics.getDoubleScoreStatistics(),
                                                              MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
 
         assertEquals( 0.8873199582618204,
@@ -244,8 +238,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                       Precision.EPSILON );
 
         //Validate mae
-        List<DoubleScoreStatisticOuter> mae = Slicer.filter( processor.getCachedMetricOutput()
-                                                                      .getDoubleScoreStatistics(),
+        List<DoubleScoreStatisticOuter> mae = Slicer.filter( statistics.getDoubleScoreStatistics(),
                                                              MetricConstants.MEAN_ABSOLUTE_ERROR );
 
         assertEquals( 11.009512537315405,
@@ -268,8 +261,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                       Precision.EPSILON );
 
         //Validate me
-        List<DoubleScoreStatisticOuter> me = Slicer.filter( processor.getCachedMetricOutput()
-                                                                     .getDoubleScoreStatistics(),
+        List<DoubleScoreStatisticOuter> me = Slicer.filter( statistics.getDoubleScoreStatistics(),
                                                             MetricConstants.MEAN_ERROR );
 
         assertEquals( -1.157869354367079,
@@ -292,8 +284,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                       Precision.EPSILON );
 
         //Validate rmse
-        List<DoubleScoreStatisticOuter> rmse = Slicer.filter( processor.getCachedMetricOutput()
-                                                                       .getDoubleScoreStatistics(),
+        List<DoubleScoreStatisticOuter> rmse = Slicer.filter( statistics.getDoubleScoreStatistics(),
                                                               MetricConstants.ROOT_MEAN_SQUARE_ERROR );
 
         assertEquals( 41.01563032408479,
@@ -345,14 +336,12 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null );
 
         MetricProcessor<Pool<Pair<Double, Ensemble>>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig,
-                                                                 Collections.singleton( StatisticType.DOUBLE_SCORE ) );
+                MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig );
 
-        processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
+        StatisticsForProject statistics = processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
 
         // Obtain the results
-        List<DoubleScoreStatisticOuter> actual = processor.getCachedMetricOutput()
-                                                          .getDoubleScoreStatistics();
+        List<DoubleScoreStatisticOuter> actual = statistics.getDoubleScoreStatistics();
 
         assertEquals( Slicer.filter( actual, MetricConstants.THREAT_SCORE )
                             .get( 0 )
@@ -379,13 +368,11 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<Pool<Pair<Double, Ensemble>>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( config,
-                                                                 Collections.singleton( StatisticType.DOUBLE_SCORE ) );
-        processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
+                MetricFactory.ofMetricProcessorForEnsemblePairs( config );
+        StatisticsForProject statistics = processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
 
         //Obtain the results
-        List<DoubleScoreStatisticOuter> results = processor.getCachedMetricOutput()
-                                                           .getDoubleScoreStatistics();
+        List<DoubleScoreStatisticOuter> results = statistics.getDoubleScoreStatistics();
 
         //Validate bias
         List<DoubleScoreStatisticOuter> bias = Slicer.filter( results, MetricConstants.BIAS_FRACTION );
@@ -528,8 +515,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                                     null,
                                                                                     null,
                                                                                     null,
-                                                                                    null ),
-                                                                 Collections.singleton( StatisticType.DOUBLE_SCORE ) );
+                                                                                    null ) );
 
         NullPointerException actual = assertThrows( NullPointerException.class,
                                                     () -> processor.apply( null ) );
@@ -553,8 +539,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                                                                                Arrays.asList( metrics ),
                                                                                                                                null,
                                                                                                                                null,
-                                                                                                                               null ),
-                                                                                                            Collections.singleton( StatisticType.DOUBLE_SCORE ) ) );
+                                                                                                                               null ) ) );
 
         assertEquals( "Cannot configure 'BRIER SCORE' without thresholds to define the events: "
                       + "add one or more thresholds to the configuration.",
@@ -586,8 +571,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null );
 
         MetricProcessor<Pool<Pair<Double, Ensemble>>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig,
-                                                                 Collections.singleton( StatisticType.DOUBLE_SCORE ) );
+                MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig );
 
         MetricCalculationException actual = assertThrows( MetricCalculationException.class,
                                                           () -> processor.apply( MetricTestDataFactory.getEnsemblePairsThree() ) );
@@ -614,8 +598,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null );
 
         MetricConfigException actual = assertThrows( MetricConfigException.class,
-                                                     () -> MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig,
-                                                                                                            Collections.singleton( StatisticType.DOUBLE_SCORE ) ) );
+                                                     () -> MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig ) );
 
         assertEquals( "Specify a non-null baseline from which to generate the 'CONTINUOUS RANKED "
                       + "PROBABILITY SKILL SCORE'.",
@@ -647,8 +630,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
 
         MetricConfigException actual = assertThrows( MetricConfigException.class,
-                                                     () -> MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig,
-                                                                                                            Collections.singleton( StatisticType.DOUBLE_SCORE ) ) );
+                                                     () -> MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig ) );
 
         assertEquals( "In order to configure dichotomous metrics for ensemble inputs, every metric group "
                       + "that contains dichotomous metrics must also contain thresholds for classifying the forecast "
@@ -680,8 +662,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null );
 
         MetricConfigException actual = assertThrows( MetricConfigException.class,
-                                                     () -> MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig,
-                                                                                                            Collections.singleton( StatisticType.DOUBLE_SCORE ) ) );
+                                                     () -> MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig ) );
 
         assertEquals( "In order to configure multicategory metrics for ensemble inputs, every metric "
                       + "group that contains multicategory metrics must also contain thresholds for classifying the "
@@ -696,8 +677,8 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<Pool<Pair<Double, Ensemble>>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( config,
-                                                                 StatisticType.set() );
+                MetricFactory.ofMetricProcessorForEnsemblePairs( config );
+
         //Check for the expected number of metrics
         //One fewer than total, as sample size appears in both ensemble and single-valued
         assertTrue( processor.metrics.getMetrics().size() == SampleDataGroup.ENSEMBLE.getMetrics().size()
@@ -714,14 +695,12 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<Pool<Pair<Double, Ensemble>>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( config,
-                                                                 StatisticType.set() );
+                MetricFactory.ofMetricProcessorForEnsemblePairs( config );
 
-        processor.apply( MetricTestDataFactory.getEnsemblePairsOneWithMissings() );
+        StatisticsForProject statistics = processor.apply( MetricTestDataFactory.getEnsemblePairsOneWithMissings() );
 
         //Obtain the results
-        List<DoubleScoreStatisticOuter> results = processor.getCachedMetricOutput()
-                                                           .getDoubleScoreStatistics();
+        List<DoubleScoreStatisticOuter> results = statistics.getDoubleScoreStatistics();
 
         //Validate bias
         List<DoubleScoreStatisticOuter> bias = Slicer.filter( results, MetricConstants.BIAS_FRACTION );
@@ -863,8 +842,8 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<Pool<Pair<Double, Ensemble>>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( config, StatisticType.set() );
-        processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
+                MetricFactory.ofMetricProcessorForEnsemblePairs( config );
+        StatisticsForProject statistics = processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
 
         // Expected result
         final TimeWindowOuter expectedWindow = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
@@ -890,7 +869,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         //Obtain the results
         List<DoubleScoreStatisticOuter> results =
-                Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
+                Slicer.filter( statistics.getDoubleScoreStatistics(),
                                meta -> meta.getMetricName().equals( MetricConstants.CONTINGENCY_TABLE )
                                        && meta.getMetadata().getTimeWindow().equals( expectedWindow ) );
 
@@ -1119,11 +1098,11 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<Pool<Pair<Double, Ensemble>>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( config, StatisticType.set() );
-        processor.apply( MetricTestDataFactory.getEnsemblePairsFour() );
+                MetricFactory.ofMetricProcessorForEnsemblePairs( config );
+        StatisticsForProject statistics = processor.apply( MetricTestDataFactory.getEnsemblePairsFour() );
 
         //Obtain the results
-        List<DoubleScoreStatisticOuter> results = processor.getCachedMetricOutput().getDoubleScoreStatistics();
+        List<DoubleScoreStatisticOuter> results = statistics.getDoubleScoreStatistics();
 
         //Validate the score outputs
         for ( DoubleScoreStatisticOuter nextMetric : results )
@@ -1164,7 +1143,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null );
 
         MetricProcessor<Pool<Pair<Double, Ensemble>>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( mock, StatisticType.set() );
+                MetricFactory.ofMetricProcessorForEnsemblePairs( mock );
 
         Set<MetricConstants> actualSingleValuedScores =
                 Set.of( processor.getMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ) );
@@ -1221,7 +1200,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null );
 
         MetricProcessor<Pool<Pair<Double, Ensemble>>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( mock, StatisticType.set() );
+                MetricFactory.ofMetricProcessorForEnsemblePairs( mock );
 
         Set<MetricConstants> actualSingleValuedScores =
                 Set.of( processor.getMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ) );

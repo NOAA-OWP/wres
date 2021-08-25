@@ -86,14 +86,13 @@ import wres.statistics.generated.Evaluation.DefaultData;
  * TODO: most of the helpers within this class will disappear when the containers in the {@link wres.datamodel} are
  * replaced with canonical abstractions from {@link wres.statistics.generated}.
  *
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class MessageFactory
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( MessageFactory.class );
-
 
     /**
      * Creates a collection of {@link wres.statistics.generated.Statistics} by pool from a
@@ -102,28 +101,11 @@ public class MessageFactory
      * @param project the project statistics
      * @return the statistics message
      * @throws IllegalArgumentException if there are zero statistics in total
-     * @throws NullPointerException if the input is null
-     * @throws InterruptedException if the statistics could not be retrieved from the project
-     */
-
-    public static Collection<Statistics> parse( StatisticsForProject project ) throws InterruptedException
-    {
-        return MessageFactory.parse( project, Collections.emptySet() );
-    }
-
-    /**
-     * Creates a collection of {@link wres.statistics.generated.Statistics} by pool from a
-     * {@link wres.datamodel.statistics.StatisticsForProject}. Optionally ignores some types of statistics.
-     *
-     * @param project the project statistics
-     * @param ignore the types of statistics to ignore
-     * @return the statistics message
-     * @throws IllegalArgumentException if there are zero statistics in total
      * @throws NullPointerException if any input is null
      * @throws InterruptedException if the statistics could not be retrieved from the project
      */
 
-    public static Collection<Statistics> parse( StatisticsForProject project, Set<StatisticType> ignore )
+    public static Collection<Statistics> parse( StatisticsForProject project )
             throws InterruptedException
     {
         Objects.requireNonNull( project );
@@ -134,7 +116,7 @@ public class MessageFactory
 
         for ( StatisticsForProject next : decomposedStatistics )
         {
-            Statistics statistics = MessageFactory.parseOnePool( next, ignore );
+            Statistics statistics = MessageFactory.parseOnePool( next );
 
             // Do not add empty statistics
             if ( Objects.nonNull( statistics ) )
@@ -679,11 +661,10 @@ public class MessageFactory
 
     /**
      * Creates a collection of {@link wres.statistics.generated.Statistics} by pool from a
-     * {@link wres.datamodel.statistics.StatisticsForProject}. Optionally ignores some statistic types.
+     * {@link wres.datamodel.statistics.StatisticsForProject}.
      * 
      * @param project the project statistics
      * @param pairs the optional pairs
-     * @param ignore the types of statistics to ignore
      * @return the statistics messages
      * @throws IllegalArgumentException if there are zero statistics in total
      * @throws NullPointerException if the input is null
@@ -691,11 +672,10 @@ public class MessageFactory
      */
 
     static Statistics parseOnePool( StatisticsForProject project,
-                                    wres.datamodel.pools.Pool<Pair<Double, Ensemble>> pairs,
-                                    Set<StatisticType> ignore )
+                                    wres.datamodel.pools.Pool<Pair<Double, Ensemble>> pairs )
             throws InterruptedException
     {
-        Statistics prototype = MessageFactory.parseOnePool( project, ignore );
+        Statistics prototype = MessageFactory.parseOnePool( project );
 
         Statistics.Builder statistics = Statistics.newBuilder( prototype );
 
@@ -712,23 +692,19 @@ public class MessageFactory
 
     /**
      * Creates a {@link wres.statistics.generated.Statistics} from a 
-     * {@link wres.datamodel.statistics.StatisticsForProject}. Optionally ignores some types of statistics. If all are
-     * ignored, returns null.
+     * {@link wres.datamodel.statistics.StatisticsForProject}.
      * 
      * @param onePool the pool-shaped statistics
-     * @param ignore the statistic types to ignore
      * @return the statistics message or null
      * @throws IllegalArgumentException if there are zero statistics in total
      * @throws NullPointerException if the input is null
      * @throws InterruptedException if the statistics could not be retrieved from the project
      */
 
-    static Statistics parseOnePool( StatisticsForProject onePool,
-                                    Set<StatisticType> ignore )
+    static Statistics parseOnePool( StatisticsForProject onePool )
             throws InterruptedException
     {
         Objects.requireNonNull( onePool );
-        Objects.requireNonNull( ignore );
 
         Statistics.Builder statistics = Statistics.newBuilder();
         
@@ -740,7 +716,7 @@ public class MessageFactory
         boolean added = false;
 
         // Add the double scores
-        if ( onePool.hasStatistic( StatisticType.DOUBLE_SCORE ) && !ignore.contains( StatisticType.DOUBLE_SCORE ) )
+        if ( onePool.hasStatistic( StatisticType.DOUBLE_SCORE ) )
         {
             List<wres.datamodel.statistics.DoubleScoreStatisticOuter> doubleScores = onePool.getDoubleScoreStatistics();
             doubleScores.forEach( next -> statistics.addScores( MessageFactory.parse( next ) ) );
@@ -751,7 +727,7 @@ public class MessageFactory
         }
 
         // Add the diagrams
-        if ( onePool.hasStatistic( StatisticType.DIAGRAM ) && !ignore.contains( StatisticType.DIAGRAM ) )
+        if ( onePool.hasStatistic( StatisticType.DIAGRAM ) )
         {
             List<wres.datamodel.statistics.DiagramStatisticOuter> diagrams = onePool.getDiagramStatistics();
             diagrams.forEach( next -> statistics.addDiagrams( MessageFactory.parse( next ) ) );
@@ -762,8 +738,7 @@ public class MessageFactory
         }
 
         // Add the boxplots per pool
-        if ( onePool.hasStatistic( StatisticType.BOXPLOT_PER_POOL )
-             && !ignore.contains( StatisticType.BOXPLOT_PER_POOL ) )
+        if ( onePool.hasStatistic( StatisticType.BOXPLOT_PER_POOL ) )
         {
             List<wres.datamodel.statistics.BoxplotStatisticOuter> boxplots = onePool.getBoxPlotStatisticsPerPool();
             boxplots.forEach( next -> statistics.addOneBoxPerPool( MessageFactory.parse( next ) ) );
@@ -774,8 +749,7 @@ public class MessageFactory
         }
 
         // Add the boxplots per pair
-        if ( onePool.hasStatistic( StatisticType.BOXPLOT_PER_PAIR )
-             && !ignore.contains( StatisticType.BOXPLOT_PER_PAIR ) )
+        if ( onePool.hasStatistic( StatisticType.BOXPLOT_PER_PAIR ) )
         {
             List<wres.datamodel.statistics.BoxplotStatisticOuter> boxplots = onePool.getBoxPlotStatisticsPerPair();
             boxplots.forEach( next -> statistics.addOneBoxPerPair( MessageFactory.parse( next ) ) );
@@ -784,7 +758,7 @@ public class MessageFactory
         }
 
         // Add the duration scores
-        if ( onePool.hasStatistic( StatisticType.DURATION_SCORE ) && !ignore.contains( StatisticType.DURATION_SCORE ) )
+        if ( onePool.hasStatistic( StatisticType.DURATION_SCORE ) )
         {
             List<wres.datamodel.statistics.DurationScoreStatisticOuter> durationScores =
                     onePool.getDurationScoreStatistics();
@@ -796,8 +770,7 @@ public class MessageFactory
         }
 
         // Add the duration diagrams with instant/duration pairs
-        if ( onePool.hasStatistic( StatisticType.DURATION_DIAGRAM )
-             && !ignore.contains( StatisticType.DURATION_DIAGRAM ) )
+        if ( onePool.hasStatistic( StatisticType.DURATION_DIAGRAM ) )
         {
             List<wres.datamodel.statistics.DurationDiagramStatisticOuter> durationDiagrams =
                     onePool.getInstantDurationPairStatistics();
@@ -809,9 +782,8 @@ public class MessageFactory
         // Return null
         if ( !added )
         {
-            LOGGER.debug( "Discovered an empty pool of statistics for {} after ignoring {}. Returning null.",
-                          metadata.getPool(),
-                          ignore );
+            LOGGER.debug( "Discovered an empty pool of statistics for {}. Returning null.",
+                          metadata.getPool() );
 
             return null;
         }

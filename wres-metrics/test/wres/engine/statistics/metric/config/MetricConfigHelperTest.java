@@ -53,7 +53,7 @@ import wres.datamodel.thresholds.ThresholdsByMetric;
 /**
  * Tests the {@link MetricConfigHelper}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class MetricConfigHelperTest
 {
@@ -547,35 +547,6 @@ public final class MetricConfigHelperTest
         assertFalse( MetricConfigHelper.hasTheseOutputsByThresholdLead( mockedConfig,
                                                                         StatisticType.DIAGRAM ) );
 
-    }
-
-    /**
-     * Tests the {@link MetricConfigHelper#getCacheListFromProjectConfig(ProjectConfig)}.
-     * @throws MetricConfigException if the metric configuration is invalid
-     */
-
-    @Test
-    public void testGetCachedListFromProjectConfig()
-    {
-        // No outputs configuration defined
-        List<TimeSeriesMetricConfig> metrics = new ArrayList<>();
-        metrics.add( new TimeSeriesMetricConfig( null, TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR, null ) );
-
-        // Output configuration defined, but is not by threshold then lead
-        ProjectConfig mockedConfigWithOutput =
-                new ProjectConfig( null,
-                                   null,
-                                   Arrays.asList( new MetricsConfig( null, 0, null, metrics ) ),
-                                   new Outputs( null,
-                                                null ),
-                                   null,
-                                   null );
-
-        Set<StatisticType> expected = new HashSet<>();
-
-        expected.add( StatisticType.DURATION_DIAGRAM );
-
-        assertEquals( expected, MetricConfigHelper.getCacheListFromProjectConfig( mockedConfigWithOutput ) );
     }
 
 }

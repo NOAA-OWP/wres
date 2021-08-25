@@ -65,7 +65,7 @@ import wres.engine.statistics.metric.timeseries.TimeToPeakRelativeError;
 /**
  * Tests the {@link MetricFactory}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class MetricFactoryTest
 {
@@ -375,8 +375,7 @@ public final class MetricFactoryTest
     @Test
     public void testOfMetricProcessorByTimeSingleValuedPairs() throws MetricParameterException
     {
-        assertTrue( MetricFactory.ofMetricProcessorForSingleValuedPairs( mockSingleValued,
-                                                                         null ) instanceof MetricProcessorByTimeSingleValuedPairs );
+        assertTrue( MetricFactory.ofMetricProcessorForSingleValuedPairs( this.mockSingleValued ) instanceof MetricProcessorByTimeSingleValuedPairs );
     }
 
     /**
@@ -388,8 +387,7 @@ public final class MetricFactoryTest
     @Test
     public void testOfMetricProcessorByTimeEnsemblePairs() throws MetricParameterException
     {
-        assertTrue( MetricFactory.ofMetricProcessorForEnsemblePairs( mockEnsemble,
-                                                                     null ) instanceof MetricProcessorByTimeEnsemblePairs );
+        assertTrue( MetricFactory.ofMetricProcessorForEnsemblePairs( this.mockEnsemble ) instanceof MetricProcessorByTimeEnsemblePairs );
     }
 
     /**
@@ -407,9 +405,8 @@ public final class MetricFactoryTest
 
         Metrics metrics = Metrics.of( thresholdsByMetric, 0 );
 
-        assertTrue( MetricFactory.ofMetricProcessorForSingleValuedPairs( mockSingleValued,
-                                                                         metrics,
-                                                                         null ) instanceof MetricProcessorByTimeSingleValuedPairs );
+        assertTrue( MetricFactory.ofMetricProcessorForSingleValuedPairs( this.mockSingleValued,
+                                                                         metrics ) instanceof MetricProcessorByTimeSingleValuedPairs );
     }
 
     /**
@@ -427,8 +424,7 @@ public final class MetricFactoryTest
         Metrics metrics = Metrics.of( thresholdsByMetric, 0 );
 
         assertTrue( MetricFactory.ofMetricProcessorForEnsemblePairs( this.mockEnsemble,
-                                                                     metrics,
-                                                                     null ) instanceof MetricProcessorByTimeEnsemblePairs );
+                                                                     metrics ) instanceof MetricProcessorByTimeEnsemblePairs );
     }
 
     /**

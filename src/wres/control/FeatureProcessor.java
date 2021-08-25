@@ -3,10 +3,8 @@ package wres.control;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -14,7 +12,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -30,7 +27,6 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.Metrics;
-import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.ThresholdsByMetric;
@@ -51,7 +47,7 @@ import wres.statistics.generated.Statistics;
 /**
  * Encapsulates a task (with subtasks) for processing all verification results associated with one {@link FeatureTuple}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 class FeatureProcessor implements Supplier<FeatureProcessingResult>
@@ -289,9 +285,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         // Queue the various tasks by time window (time window is the pooling dimension for metric calculation here)
         List<CompletableFuture<Void>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
 
-        // The union of statistics types for which statistics were actually produced
-        Set<StatisticType> typesProduced = new HashSet<>();
-
         LOGGER.debug( "Submitting {} pools in group {} for asynchronous processing.", pools.size(), this.getGroupId() );
 
         // Something published?
@@ -312,15 +305,9 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                      // Publish the statistics for awaiting format consumers
                                      .thenAcceptAsync( statistics -> {
 
-                                         Set<StatisticType> cachedTypes = processors.stream()
-                                                                                    .flatMap( next -> next.getMetricOutputTypesToCache()
-                                                                                                          .stream() )
-                                                                                    .collect( Collectors.toSet() );
-
                                          boolean success = this.publish( evaluation,
                                                                          statistics,
-                                                                         this.getGroupId(),
-                                                                         cachedTypes );
+                                                                         this.getGroupId() );
 
                                          // Notify that something was published
                                          // This is needed to confirm group completion - cannot complete a message
@@ -330,13 +317,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                              published.set( true );
                                          }
 
-                                         // Register statistics produced
-                                         Set<StatisticType> types =
-                                                 statistics.stream()
-                                                           .flatMap( next -> next.getStatisticTypes()
-                                                                                 .stream() )
-                                                           .collect( Collectors.toSet() );
-                                         typesProduced.addAll( types );
                                      },
                                                        // Consuming happens in the product thread pool and publishing
                                                        // should happen in a different one because production is
@@ -354,20 +334,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             // Wait for completion of all data slices
             Pipelines.doAllOrException( listOfFutures ).join();
 
-            // Publish any end of pipeline/cached statistics and notify complete
-            for ( MetricProcessor<Pool<Pair<L, R>>> processor : processors )
-            {
-                if ( processor.hasCachedMetricOutput() )
-                {
-                    this.publish( evaluation,
-                                  List.of( processor.getCachedMetricOutput() ),
-                                  this.getGroupId(),
-                                  Collections.emptySet() );
-
-                    published.set( true );
-                }
-            }
-
             // Published? Then mark complete.
             if ( published.get() )
             {
@@ -380,15 +346,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             // Otherwise, chain and propagate the exception up to the top.
             throw new WresProcessingException( this.errorMessage, e );
         }
-        catch ( InterruptedException e )
-        {
-            Thread.currentThread().interrupt();
 
-            throw new WresProcessingException( this.errorMessage, e );
-        }
-
-        return new FeatureProcessingResult( this.feature,
-                                            !typesProduced.isEmpty() );
+        return new FeatureProcessingResult( this.feature, published.get() );
     }
 
     /**
@@ -397,20 +356,17 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @param evaluation the evaluation
      * @param statistics the statistics
      * @param groupId the statistics group identifier
-     * @param a set of statistics types to ignore when publishing because they are cached and published later
      * @return true if something was published, otherwise false
      * @throws EvaluationEventException if the statistics could not be published
      */
 
     private boolean publish( Evaluation evaluation,
                              List<StatisticsForProject> statistics,
-                             String groupId,
-                             Set<StatisticType> ignore )
+                             String groupId )
     {
         Objects.requireNonNull( evaluation );
         Objects.requireNonNull( statistics );
         Objects.requireNonNull( groupId );
-        Objects.requireNonNull( ignore );
 
         boolean returnMe = false;
 
@@ -418,7 +374,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         {
             for ( StatisticsForProject nextStatistics : statistics )
             {
-                Collection<Statistics> publishMe = MessageFactory.parse( nextStatistics, ignore );
+                Collection<Statistics> publishMe = MessageFactory.parse( nextStatistics );
 
                 for ( Statistics next : publishMe )
                 {
@@ -426,7 +382,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                     returnMe = true;
                 }
             }
-            LOGGER.debug( "Published statistics: {}. Ignored these types: {}.", returnMe, ignore );
+            
+            LOGGER.debug( "Published statistics: {}.", returnMe );
 
         }
         catch ( InterruptedException e )

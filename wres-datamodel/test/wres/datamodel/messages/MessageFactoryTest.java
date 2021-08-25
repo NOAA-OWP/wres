@@ -90,7 +90,7 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.Co
 /**
  * Tests the {@link MessageFactory}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class MessageFactoryTest
@@ -191,7 +191,7 @@ public class MessageFactoryTest
                                                   .build();
 
         Statistics statisticsOut =
-                MessageFactory.parseOnePool( statistics, this.ensemblePairs, Collections.emptySet() );
+                MessageFactory.parseOnePool( statistics, this.ensemblePairs );
 
         Path path = this.outputDirectory.resolve( "statistics.pb3" );
 
@@ -225,7 +225,7 @@ public class MessageFactoryTest
                                                   .addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
                                                   .build();
 
-        Statistics firstOut = MessageFactory.parseOnePool( statistics, this.ensemblePairs, Collections.emptySet() );
+        Statistics firstOut = MessageFactory.parseOnePool( statistics, this.ensemblePairs );
 
         Path path = this.outputDirectory.resolve( "statistics.pb3" );
 
@@ -263,8 +263,7 @@ public class MessageFactoryTest
 
         // Create a statistics message
         Statistics statisticsOut = MessageFactory.parseOnePool( statistics,
-                                                                this.ensemblePairs,
-                                                                Collections.emptySet() );
+                                                                this.ensemblePairs );
 
         Path path = this.outputDirectory.resolve( "box_plot_statistics.pb3" );
 
@@ -296,7 +295,7 @@ public class MessageFactoryTest
                                                   .build();
 
         // Create a statistics message
-        Statistics statisticsOut = MessageFactory.parseOnePool( statistics, Collections.emptySet() );
+        Statistics statisticsOut = MessageFactory.parseOnePool( statistics );
 
         Path path = this.outputDirectory.resolve( "duration_score_statistics.pb3" );
 
@@ -328,7 +327,7 @@ public class MessageFactoryTest
                                                   .build();
 
         // Create a statistics message
-        Statistics statisticsOut = MessageFactory.parseOnePool( statistics, Collections.emptySet() );
+        Statistics statisticsOut = MessageFactory.parseOnePool( statistics );
 
         Path path = this.outputDirectory.resolve( "duration_diagrams_statistics.pb3" );
 
@@ -373,8 +372,8 @@ public class MessageFactoryTest
                 new StatisticsForProject.Builder().addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
                                                   .build();
 
-        Statistics expectedScores = MessageFactory.parseOnePool( scores, Collections.emptySet() );
-        Statistics expectedDiagrams = MessageFactory.parseOnePool( diagrams, Collections.emptySet() );
+        Statistics expectedScores = MessageFactory.parseOnePool( scores );
+        Statistics expectedDiagrams = MessageFactory.parseOnePool( diagrams );
 
         Collection<Statistics> expected = Set.of( expectedDiagrams, expectedScores );
 

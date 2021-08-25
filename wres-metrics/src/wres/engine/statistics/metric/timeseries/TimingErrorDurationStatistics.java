@@ -8,16 +8,19 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
+
+import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.engine.statistics.metric.FunctionFactory;
+import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
@@ -27,15 +30,15 @@ import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticCo
 import wres.statistics.generated.MetricName;
 
 /**
- * A collection of summary statistics that operate on the outputs from {@link TimingError} and are expressed as 
+ * A collection of timing error summary statistics that consume a {@link Pool} of doubles and produce a 
  * {@link DurationScoreStatisticOuter}.
  * 
  * TODO: consider implementing an API for summary statistics that works directly with {@link Duration}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public class TimingErrorDurationStatistics
-        implements Function<DurationDiagramStatisticOuter, DurationScoreStatisticOuter>
+        implements Metric<Pool<Pair<Double, Double>>, DurationScoreStatisticOuter>
 {
 
     /**
@@ -51,7 +54,13 @@ public class TimingErrorDurationStatistics
     private final Map<MetricConstants, DurationScoreMetricComponent> components;
 
     /**
-     * The metric name.
+     * The underlying measure of timing error.
+     */
+
+    private final TimingError timingError;
+
+    /**
+     * The name of this metric.
      */
 
     private final MetricConstants identifier;
@@ -59,29 +68,32 @@ public class TimingErrorDurationStatistics
     /**
      * Returns an instance.
      * 
-     * @param identifier the unique identifier for the summary statistics
-     * @param statistics the list of statistics the compute
+     * @param timingError the underlying measure of timing error, not null
+     * @param statistics the list of statistics the compute, not null
      * @throws MetricParameterException if one or more parameters is invalid
      * @return an instance
      */
 
-    public static TimingErrorDurationStatistics of( MetricConstants identifier, Set<MetricConstants> statistics )
+    public static TimingErrorDurationStatistics of( TimingError timingError,
+                                                    Set<MetricConstants> statistics )
             throws MetricParameterException
     {
-        return new TimingErrorDurationStatistics( identifier, statistics );
+        return new TimingErrorDurationStatistics( timingError, statistics );
     }
 
     @Override
-    public DurationScoreStatisticOuter apply( DurationDiagramStatisticOuter pairs )
+    public DurationScoreStatisticOuter apply( Pool<Pair<Double, Double>> pairs )
     {
-        if ( Objects.isNull( pairs ) )
+        if ( Objects.isNull(pairs ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
+        DurationDiagramStatisticOuter statistics = this.timingError.apply( pairs );
+
         // Map of outputs
         DurationScoreMetric.Builder metricBuilder =
-                DurationScoreMetric.newBuilder().setName( MetricName.valueOf( this.identifier.name() ) );
+                DurationScoreMetric.newBuilder().setName( MetricName.valueOf( this.getMetricName().name() ) );
         DurationScoreStatistic.Builder scoreBuilder = DurationScoreStatistic.newBuilder();
 
         // Iterate through the statistics
@@ -91,19 +103,19 @@ public class TimingErrorDurationStatistics
             nextIdentifier = next.getKey();
 
             // Data available
-            if ( pairs.getData().getStatisticsCount() != 0 )
+            if ( statistics.getData().getStatisticsCount() != 0 )
             {
                 // Convert the input to double ms
-                double[] input = pairs.getData()
-                                      .getStatisticsList()
-                                      .stream()
-                                      .mapToDouble( a -> ( a.getDuration()
-                                                            .getSeconds()
-                                                           * 1000 )
-                                                         + ( a.getDuration()
-                                                              .getNanos()
-                                                             / 1_000_000 ) )
-                                      .toArray();
+                double[] input = statistics.getData()
+                                           .getStatisticsList()
+                                           .stream()
+                                           .mapToDouble( a -> ( a.getDuration()
+                                                                 .getSeconds()
+                                                                * 1000 )
+                                                              + ( a.getDuration()
+                                                                   .getNanos()
+                                                                  / 1_000_000 ) )
+                                           .toArray();
 
                 // Some loss of precision here, not consequential
                 Duration duration = Duration.ofMillis( Math.round( this.statistics.get( nextIdentifier )
@@ -122,28 +134,53 @@ public class TimingErrorDurationStatistics
 
         DurationScoreStatistic score = scoreBuilder.setMetric( metricBuilder ).build();
 
-        return DurationScoreStatisticOuter.of( score, pairs.getMetadata() );
+        return DurationScoreStatisticOuter.of( score, statistics.getMetadata() );
+    }
+
+    @Override
+    public MetricConstants getMetricName()
+    {
+        return this.identifier;
+    }
+
+    @Override
+    public boolean hasRealUnits()
+    {
+        return true;
     }
 
     /**
      * Hidden constructor.
      * 
-     * @param identifier the unique identifier for the summary statistics
-     * @param statistics the list of statistics the compute
+     * @param timingError the underlying measure of timing error, not null
+     * @param statistics the list of statistics the compute, not null
      * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private TimingErrorDurationStatistics( MetricConstants identifier, Set<MetricConstants> statistics )
+    private TimingErrorDurationStatistics( TimingError timingError,
+                                           Set<MetricConstants> statistics )
     {
-
-        if ( Objects.isNull( identifier ) )
+        if ( Objects.isNull( timingError ) )
         {
-            throw new MetricParameterException( "Specify a unique identifier from which to build the statistics." );
+            throw new MetricParameterException( "Specify a timing error metric from which to build the statistics." );
         }
 
         if ( Objects.isNull( statistics ) )
         {
             throw new MetricParameterException( "Specify a non-null container of summary statistics." );
+        }
+
+        String attemptedName = timingError.getMetricName().name() + "_STATISTIC";
+        try
+        {
+            this.identifier = MetricConstants.valueOf( attemptedName );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            throw new MetricParameterException( "Unexpected timing error metric: no summary statisitcs are available "
+                                                + "with the name "
+                                                + attemptedName
+                                                + "." );
         }
 
         // Copy locally
@@ -171,7 +208,7 @@ public class TimingErrorDurationStatistics
             this.components.put( next, component );
         }
 
-        this.identifier = identifier;
+        this.timingError = timingError;
     }
 
     /**
