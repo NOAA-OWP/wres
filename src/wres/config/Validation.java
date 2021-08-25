@@ -65,6 +65,7 @@ import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
+import wres.io.config.ConfigHelper;
 import wres.system.SystemSettings;
 
 
@@ -2679,21 +2680,21 @@ public class Validation
             result = false;
         }
 
-        result = Validation.areDataSourcesValid( projectConfigPlus,
-                                                 left )
-                 && result;
+        result = result && Validation.areDataSourcesValid( projectConfigPlus, left );
 
-        result = Validation.areDataSourcesValid( projectConfigPlus,
-                                                 right )
-                 && result;
+        result = result && Validation.areDataSourcesValid( projectConfigPlus, right );
+        
+        result = result && Validation.isTypeConsistentWithOtherDeclaration( projectConfigPlus, left );
+        
+        result = result && Validation.isTypeConsistentWithOtherDeclaration( projectConfigPlus, right );        
 
         if ( baseline != null )
         {
-            result = Validation.areDataSourcesValid( projectConfigPlus,
-                                                     baseline )
-                     && result;
+            result = result && Validation.areDataSourcesValid( projectConfigPlus, baseline );
 
-            result = Validation.areLeftAndBaselineConsistent( projectConfigPlus, left, baseline ) && result;
+            result = result && Validation.areLeftAndBaselineConsistent( projectConfigPlus, left, baseline );
+            
+            result = result && Validation.isTypeConsistentWithOtherDeclaration( projectConfigPlus, baseline );
         }
 
         return result;
@@ -2833,6 +2834,43 @@ public class Validation
                          projectConfigPlus,
                          baseline.sourceLocation().getLineNumber(),
                          baseline.sourceLocation().getColumnNumber() );
+
+            valid = false;
+        }
+
+        return valid;
+    }
+    
+    /**
+     * Checks that the {@link DataSourceConfig#getType()} is consistent with the other declaration.
+     *  
+     * @param projectConfigPlus the evaluation project configuration plus
+     * @param dataSourceConfig the data source configuration to validate
+     * @return true when valid, false otherwise.
+     */
+
+    private static boolean isTypeConsistentWithOtherDeclaration( ProjectConfigPlus projectConfigPlus,
+                                                                 DataSourceConfig dataSourceConfig )
+    {
+        boolean valid = true;
+
+        LeftOrRightOrBaseline side = ConfigHelper.getLeftOrRightOrBaseline( projectConfigPlus.getProjectConfig(),
+                                                                            dataSourceConfig );
+
+        // Ensemble filter not allowed unless type is ENSEMBLE_FORECASTS
+        if ( dataSourceConfig.getType() != DatasourceType.ENSEMBLE_FORECASTS
+             && !dataSourceConfig.getEnsemble().isEmpty() )
+        {
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE +
+                         " The {} dataset declares ensemble filters using <ensemble> but the data source <type> is "
+                         + "{}, which is inconsistent with the filters. Remove the <ensemble> or correct the <type> to "
+                         + "{} and then try again.",
+                         projectConfigPlus,
+                         dataSourceConfig.sourceLocation().getLineNumber(),
+                         dataSourceConfig.sourceLocation().getColumnNumber(),
+                         side,
+                         dataSourceConfig.getType(),
+                         DatasourceType.ENSEMBLE_FORECASTS );
 
             valid = false;
         }
