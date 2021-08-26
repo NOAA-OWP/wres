@@ -16,7 +16,7 @@ volumes:
             device: "${NFS_HOME_DIR_DEVICE}"
 services:
     persister:
-        image: "${DOCKER_REGISTRY}/wres/wres-redis:20210826-512a1f2"
+        image: "${DOCKER_REGISTRY}/wres/wres-redis:20210826-5980621"
         restart: always
         volumes:
          # For the job data
@@ -64,7 +64,7 @@ services:
         ports:
          - "5671:5671"
          - "15671:15671"
-        image: "${DOCKER_REGISTRY}/wres/wres-broker:20210816-a76eaf8"
+        image: "${DOCKER_REGISTRY}/wres/wres-broker:20210826-dab6374"
         restart: always
         volumes:
          # For certificates and keys that correspond to them:
@@ -81,7 +81,7 @@ services:
         healthcheck:
             start_period: 5m
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210826-512a1f2"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210826-5980621"
         restart: always
         depends_on:
             broker:
