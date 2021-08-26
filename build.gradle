@@ -239,7 +239,7 @@ project(':wres-util')
         testImplementation 'junit:junit:4.13.2'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:3.11.4'
+        testImplementation 'org.mockito:mockito-core:3.12.4'
 
         // super-duper mocking help (mocking static, private methods)
         testImplementation 'org.powermock:powermock-api-mockito2:2.0.9'
@@ -314,7 +314,7 @@ project(':wres-datamodel')
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:3.11.4'
+        testImplementation 'org.mockito:mockito-core:3.12.4'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.2'
@@ -408,7 +408,7 @@ project(':wres-io')
         testImplementation 'org.liquibase:liquibase-core:4.4.3'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:3.11.4'
+        testImplementation 'org.mockito:mockito-core:3.12.4'
 
         // TODO: remove dependence on powermock, remove powermock completely.
         testImplementation 'org.powermock:powermock-api-mockito2:2.0.9'
@@ -481,7 +481,7 @@ project(':wres-metrics')
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha2'
 
         testImplementation 'junit:junit:4.13.2'
-        testImplementation 'org.mockito:mockito-core:3.11.4'
+        testImplementation 'org.mockito:mockito-core:3.12.4'
     }
 }
 
@@ -707,7 +707,7 @@ project(':wres-vis')
         testImplementation 'junit:junit:4.13.2'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:3.11.4'
+        testImplementation 'org.mockito:mockito-core:3.12.4'
 
         testRuntimeOnly files('dist/lib/conf')
     }
@@ -1323,9 +1323,9 @@ project(':wres-events')
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.2'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:3.11.4'
+        testImplementation 'org.mockito:mockito-core:3.12.4'
         // Mocking final classes
-        testImplementation 'org.mockito:mockito-inline:3.11.4'
+        testImplementation 'org.mockito:mockito-inline:3.12.4'
     }
 
     // Facilitate unit tests with JUnit
@@ -1588,7 +1588,7 @@ dependencies
     }
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.2'
-    testImplementation 'org.mockito:mockito-core:3.11.4'
+    testImplementation 'org.mockito:mockito-core:3.12.4'
 
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.2'
 }
