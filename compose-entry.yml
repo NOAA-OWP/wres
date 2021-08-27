@@ -81,7 +81,7 @@ services:
         healthcheck:
             start_period: 5m
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210826-5980621"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210827-5776490"
         restart: always
         depends_on:
             broker:
