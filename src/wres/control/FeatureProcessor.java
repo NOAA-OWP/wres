@@ -24,10 +24,10 @@ import wres.control.ProcessorHelper.Executors;
 import wres.control.ProcessorHelper.MetricsAndThresholds;
 import wres.control.ProcessorHelper.SharedWriters;
 import wres.datamodel.Ensemble;
-import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.Metrics;
 import wres.datamodel.pools.Pool;
+import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.MetricFactory;
@@ -110,9 +110,9 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
     /**
      * Monitor.
      */
-    
+
     private final EvaluationEvent monitor;
-    
+
     /**
      * Build a processor. 
      * 
@@ -134,7 +134,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         ResolvedProject localResolvedProject = evaluationDetails.getResolvedProject();
         Evaluation localEvaluation = evaluationDetails.getEvaluation();
         EvaluationEvent localMonitor = evaluationDetails.getMonitor();
-        
+
         Objects.requireNonNull( feature );
         Objects.requireNonNull( localProject );
         Objects.requireNonNull( localResolvedProject );
@@ -186,7 +186,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                                                                                this.unitMapper );
 
             List<Supplier<Pool<Pair<Double, Ensemble>>>> pools =
-                    PoolFactory.getEnsemblePools( this.evaluation,
+                    PoolFactory.getEnsemblePools( this.evaluation.getEvaluationDescription(),
                                                   this.project,
                                                   this.feature,
                                                   this.unitMapper,
@@ -226,7 +226,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                                                                                  this.unitMapper );
 
             List<Supplier<Pool<Pair<Double, Double>>>> pools =
-                    PoolFactory.getSingleValuedPools( this.evaluation,
+                    PoolFactory.getSingleValuedPools( this.evaluation.getEvaluationDescription(),
                                                       this.project,
                                                       this.feature,
                                                       this.unitMapper,
@@ -248,7 +248,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             List<MetricProcessor<Pool<Pair<Double, Double>>>> processors =
                     this.getSingleValuedProcessors( projectConfig,
                                                     metrics );
-            
+
             return this.processFeature( this.evaluation,
                                         projectConfig,
                                         processors,
@@ -280,7 +280,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                                            List<Supplier<Pool<Pair<L, R>>>> pools,
                                                            PairsWriter<L, R> pairsWriter,
                                                            PairsWriter<L, R> basePairsWriter,
-                                                           ToIntFunction<Pool<Pair<L,R>>> traceCountEstimator )
+                                                           ToIntFunction<Pool<Pair<L, R>>> traceCountEstimator )
     {
         // Queue the various tasks by time window (time window is the pooling dimension for metric calculation here)
         List<CompletableFuture<Void>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
@@ -301,7 +301,9 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                      // Write the baseline pairs, as needed
                                      .thenApply( this.getPairWritingTask( true, basePairsWriter, projectConfig ) )
                                      // Compute the statistics
-                                     .thenApply( this.getStatisticsProcessingTask( processors, projectConfig, traceCountEstimator ) )
+                                     .thenApply( this.getStatisticsProcessingTask( processors,
+                                                                                   projectConfig,
+                                                                                   traceCountEstimator ) )
                                      // Publish the statistics for awaiting format consumers
                                      .thenAcceptAsync( statistics -> {
 
@@ -382,7 +384,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                     returnMe = true;
                 }
             }
-            
+
             LOGGER.debug( "Published statistics: {}.", returnMe );
 
         }
@@ -471,7 +473,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
     private <L, R> Function<Pool<Pair<L, R>>, List<StatisticsForProject>>
             getStatisticsProcessingTask( List<MetricProcessor<Pool<Pair<L, R>>>> processors,
                                          ProjectConfig projectConfig,
-                                         ToIntFunction<Pool<Pair<L,R>>> traceCountEstimator )
+                                         ToIntFunction<Pool<Pair<L, R>>> traceCountEstimator )
     {
         return pool -> {
             Objects.requireNonNull( pool );
@@ -509,7 +511,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                     if ( pool.hasBaseline() )
                     {
                         Pool<Pair<L, R>> baseline = pool.getBaselineData();
-                        
+
                         if ( projectConfig.getInputs().getBaseline().isSeparateMetrics() )
                         {
                             LOGGER.debug( "Computing separate statistics for the baseline pairs associated with pool {}.",
@@ -518,13 +520,13 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                             StatisticsForProject baselineStatistics = processor.apply( baseline );
                             builder.addStatistics( baselineStatistics );
                         }
-                        
+
                         baselineTraceCount = traceCountEstimator.applyAsInt( baseline );
                     }
 
                     StatisticsForProject nextStatistics = builder.build();
                     returnMe.add( nextStatistics );
-                    
+
                     this.monitor.registerPool( pool, traceCountEstimator.applyAsInt( pool ), baselineTraceCount );
                 }
             }

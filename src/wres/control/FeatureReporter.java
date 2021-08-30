@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.Feature;
-import wres.datamodel.FeatureTuple;
+import wres.datamodel.space.FeatureTuple;
 import wres.io.data.caching.Features;
 import wres.events.Evaluation;
 

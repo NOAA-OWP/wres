@@ -26,7 +26,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MissingValues;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.FeatureKey;
+import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;

@@ -10,8 +10,8 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
-import wres.datamodel.FeatureKey;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.space.FeatureKey;
 
 /**
  * Value object the stores the metadata associated with an {@link TimeSeries}.

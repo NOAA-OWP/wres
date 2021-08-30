@@ -2,8 +2,8 @@ package wres.grid.client;
 
 import java.util.List;
 
-import wres.datamodel.FeatureKey;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.TimeWindowOuter;
 
 import java.nio.file.Path;

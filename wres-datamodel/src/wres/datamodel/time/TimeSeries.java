@@ -25,7 +25,7 @@ import wres.datamodel.scale.TimeScaleOuter;
  * <p>This class is immutable and thread-safe.
  * 
  * @param <T> the type of time-series data
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  * @author Jesse Bickel
  */
 
@@ -44,13 +44,11 @@ public class TimeSeries<T>
 
     private final TimeSeriesMetadata metadata;
 
-
     /**
      * The events.
      */
 
     private final SortedSet<Event<T>> events;
-
 
     /**
      * Returns an empty {@link TimeSeries} with a <code>null</code> {@link TimeScaleOuter}.

@@ -9,9 +9,10 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
-import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageUtilities;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.space.FeatureGroup;
+import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.TimeWindowOuter;
@@ -340,10 +341,11 @@ public class PoolMetadata implements Comparable<PoolMetadata>
         Pool pool = this.getPool();
 
         // Pretty print the feature tuples
-        List<FeatureTuple> featureTuples = pool.getGeometryTuplesList()
-                                               .stream()
-                                               .map( next -> new FeatureTuple( next ) )
-                                               .collect( Collectors.toList() );
+        Set<FeatureTuple> featureTuples = pool.getGeometryTuplesList()
+                                              .stream()
+                                              .map( next -> new FeatureTuple( next ) )
+                                              .collect( Collectors.toSet() );
+        FeatureGroup featureGroup = FeatureGroup.of( pool.getRegionName(), featureTuples );
 
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
                                                                             .append( "leftDataName",
@@ -360,7 +362,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
                                                                                      evaluation.getBaselineVariableName() )
                                                                             .append( "isBaselinePool",
                                                                                      pool.getIsBaselinePool() )
-                                                                            .append( "featureTuples", featureTuples )
+                                                                            .append( "features", featureGroup )
                                                                             .append( "timeWindow",
                                                                                      this.getTimeWindow() )
                                                                             .append( "thresholds",

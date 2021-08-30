@@ -2,7 +2,7 @@ package wres.control;
 
 import java.util.Objects;
 import wres.config.generated.Feature;
-import wres.datamodel.FeatureTuple;
+import wres.datamodel.space.FeatureTuple;
 
 /**
  * Records the completion of one {@link Feature}. 

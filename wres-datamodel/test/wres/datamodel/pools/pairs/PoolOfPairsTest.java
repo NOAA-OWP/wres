@@ -17,10 +17,10 @@ import java.util.stream.StreamSupport;
 
 import org.junit.Test;
 
-import wres.datamodel.FeatureKey;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;

@@ -15,8 +15,8 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.FeatureTuple;
-import wres.datamodel.FeatureKey;
+import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.TimeSeries;
 import wres.grid.client.Fetcher;
 import wres.grid.client.Request;

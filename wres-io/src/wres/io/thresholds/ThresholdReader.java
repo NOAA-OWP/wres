@@ -2,8 +2,8 @@ package wres.io.thresholds;
 
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.FeatureTuple;
 import wres.datamodel.pools.MeasurementUnit;
+import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.io.retrieval.UnitMapper;
 import wres.system.SystemSettings;

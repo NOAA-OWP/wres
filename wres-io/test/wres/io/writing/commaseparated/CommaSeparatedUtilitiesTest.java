@@ -10,13 +10,13 @@ import java.util.StringJoiner;
 import org.junit.Before;
 import org.junit.Test;
 
-import wres.datamodel.FeatureKey;
-import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
+import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Pool;
@@ -52,7 +52,7 @@ public class CommaSeparatedUtilitiesTest
     @Test
     public void testGetTimeWindowHeaderFromSampleMetadataWithInstantaneousTimeScale()
     {
-        Pool pool = MessageFactory.parse( null,
+        Pool pool = MessageFactory.parse( (FeatureTuple) null,
                                           this.timeWindow,
                                           TimeScaleOuter.of(),
                                           null,
@@ -78,7 +78,7 @@ public class CommaSeparatedUtilitiesTest
     {
         TimeScaleOuter timeScale = TimeScaleOuter.of( Duration.ofHours( 1 ), TimeScaleFunction.TOTAL );
 
-        Pool pool = MessageFactory.parse( null,
+        Pool pool = MessageFactory.parse( (FeatureTuple) null,
                                           this.timeWindow,
                                           timeScale,
                                           null,
@@ -120,7 +120,7 @@ public class CommaSeparatedUtilitiesTest
     @Test
     public void testGetFeatureNameFromMetadataWithNullLocation()
     {
-        Pool pool = MessageFactory.parse( null,
+        Pool pool = MessageFactory.parse( (FeatureTuple) null,
                                           null,
                                           null,
                                           null,

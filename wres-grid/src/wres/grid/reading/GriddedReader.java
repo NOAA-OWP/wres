@@ -2,8 +2,8 @@ package wres.grid.reading;
 
 import thredds.client.catalog.ServiceType;
 import ucar.nc2.NetcdfFile;
-import wres.datamodel.FeatureKey;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;

@@ -947,6 +947,7 @@ public final class Slicer
      * Concatenates the input, appending from left to right.
      * 
      * @param input the input
+     * @return the concatenated input
      */
 
     public static VectorOfDoubles concatenate( VectorOfDoubles... input )

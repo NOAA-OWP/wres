@@ -1,9 +1,13 @@
 package wres.io.pooling;
 
 import java.time.MonthDay;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -28,12 +32,14 @@ import wres.config.generated.ProjectConfig.Inputs;
 import wres.config.generated.RemoveMemberByValidYear;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
-import wres.datamodel.FeatureTuple;
 import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
+import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.space.FeatureGroup;
+import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesCrossPairer;
@@ -47,11 +53,12 @@ import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.generators.PersistenceGenerator;
-import wres.events.Evaluation;
+import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
 import wres.io.retrieval.RetrieverFactory;
 import wres.io.retrieval.UnitMapper;
+import wres.statistics.generated.Evaluation;
 
 /**
  * A factory class for generating the pools of pairs associated with an evaluation.
@@ -144,7 +151,8 @@ public class PoolFactory
 
         // Create the basic metadata for the pools
         PoolMetadata mainMetadata = PoolFactory.createMetadata( evaluation,
-                                                                feature,
+                                                                Set.of( feature ),
+                                                                TimeWindowOuter.of(),
                                                                 desiredTimeScale,
                                                                 LeftOrRightOrBaseline.RIGHT );
 
@@ -160,7 +168,8 @@ public class PoolFactory
                           feature );
 
             baselineMetadata = PoolFactory.createMetadata( evaluation,
-                                                           feature,
+                                                           Set.of( feature ),
+                                                           TimeWindowOuter.of(),
                                                            desiredTimeScale,
                                                            LeftOrRightOrBaseline.BASELINE );
 
@@ -266,7 +275,8 @@ public class PoolFactory
 
         // Create the basic metadata for the pools
         PoolMetadata mainMetadata = PoolFactory.createMetadata( evaluation,
-                                                                feature,
+                                                                Set.of( feature ),
+                                                                TimeWindowOuter.of(),
                                                                 desiredTimeScale,
                                                                 LeftOrRightOrBaseline.RIGHT );
 
@@ -280,7 +290,8 @@ public class PoolFactory
                           feature );
 
             baselineMetadata = PoolFactory.createMetadata( evaluation,
-                                                           feature,
+                                                           Set.of( feature ),
+                                                           TimeWindowOuter.of(),
                                                            desiredTimeScale,
                                                            LeftOrRightOrBaseline.BASELINE );
         }
@@ -317,6 +328,68 @@ public class PoolFactory
     }
 
     /**
+     * Generates the {@link PoolRequest} associated with a project in order to drive pool creation.
+     * 
+     * @param evaluation the evaluation description
+     * @param projectConfig the project declaration
+     * @param featureGroups the feature groups
+     * @return the pool requests
+     * @throws NullPointerException if the input is null
+     * @throws PoolCreationException if the pool could not be created for any other reason
+     */
+
+    public static List<PoolRequest> getPoolRequests( Evaluation evaluation,
+                                                     ProjectConfig projectConfig,
+                                                     Set<FeatureGroup> featureGroups )
+    {
+        Objects.requireNonNull( evaluation );
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( featureGroups );
+
+        PairConfig pairConfig = projectConfig.getPair();
+
+        // Get the desired times scale
+        TimeScaleOuter desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
+
+        // Get the time windows and sort them
+        Set<TimeWindowOuter> timeWindows =
+                new TreeSet<>( TimeWindowGenerator.getTimeWindowsFromPairConfig( pairConfig ) );
+
+        List<PoolRequest> poolRequests = new ArrayList<>();
+
+        // Iterate the features and time windows, creating metadata for each
+        for ( FeatureGroup features : featureGroups )
+        {
+            Set<FeatureTuple> nextFeatures = features.getFeatures();
+            for ( TimeWindowOuter timeWindow : timeWindows )
+            {
+                PoolMetadata mainMetadata = PoolFactory.createMetadata( evaluation,
+                                                                        nextFeatures,
+                                                                        timeWindow,
+                                                                        desiredTimeScale,
+                                                                        LeftOrRightOrBaseline.RIGHT );
+
+                // Create the basic metadata
+                PoolMetadata baselineMetadata = null;
+                if ( ConfigHelper.hasBaseline( projectConfig ) )
+                {
+                    baselineMetadata = PoolFactory.createMetadata( evaluation,
+                                                                   nextFeatures,
+                                                                   timeWindow,
+                                                                   desiredTimeScale,
+                                                                   LeftOrRightOrBaseline.BASELINE );
+                }
+
+                PoolRequest request = PoolRequest.of( mainMetadata, baselineMetadata );
+
+                poolRequests.add( request );
+            }
+        }
+
+        return Collections.unmodifiableList( poolRequests );
+    }
+
+    /**
      * Returns an instance of a {@link TimeSeriesCrossPairer} or null if none is required.
      * 
      * 
@@ -341,24 +414,26 @@ public class PoolFactory
      * Returns a metadata representation of the input.
      * 
      * @param evaluation the evaluation description
-     * @param featureTuple the feature
+     * @param featureTuples the features
+     * @param timeWindow the time window
      * @param desiredTimeScale the desired time scale
      * @param leftOrRightOrBaseline the context for the data as it relates to the declaration
      * @return the metadata
      */
 
-    private static PoolMetadata createMetadata( Evaluation evaluation,
-                                                FeatureTuple featureTuple,
+    private static PoolMetadata createMetadata( wres.statistics.generated.Evaluation evaluation,
+                                                Set<FeatureTuple> featureTuples,
+                                                TimeWindowOuter timeWindow,
                                                 TimeScaleOuter desiredTimeScale,
                                                 LeftOrRightOrBaseline leftOrRightOrBaseline )
     {
-        wres.statistics.generated.Pool pool = MessageFactory.parse( featureTuple,
-                                                                    TimeWindowOuter.of(), // Default to start with
+        wres.statistics.generated.Pool pool = MessageFactory.parse( featureTuples,
+                                                                    timeWindow, // Default to start with
                                                                     desiredTimeScale,
                                                                     null,
                                                                     leftOrRightOrBaseline == LeftOrRightOrBaseline.BASELINE );
 
-        return PoolMetadata.of( evaluation.getEvaluationDescription(), pool );
+        return PoolMetadata.of( evaluation, pool );
     }
 
     /**

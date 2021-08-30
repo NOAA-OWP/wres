@@ -15,8 +15,8 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 
 import ucar.nc2.NetcdfFile;
 import wres.config.generated.UnnamedFeature;
-import wres.datamodel.FeatureTuple;
-import wres.datamodel.FeatureKey;
+import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.FeatureTuple;
 import wres.io.data.details.FeatureDetails;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;

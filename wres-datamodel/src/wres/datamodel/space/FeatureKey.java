@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.space;
 
 import java.util.Arrays;
 import java.util.List;

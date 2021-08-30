@@ -18,8 +18,8 @@ import org.slf4j.LoggerFactory;
 import static org.apache.commons.math3.util.Precision.EPSILON;
 
 import wres.datamodel.MissingValues;
-import wres.datamodel.FeatureKey;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;

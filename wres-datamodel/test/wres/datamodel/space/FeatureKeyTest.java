@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.space;
 
 import org.junit.Test;
 
