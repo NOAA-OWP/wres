@@ -17,15 +17,15 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import wres.datamodel.FeatureTuple;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.pairs.PoolOfPairs;
-import wres.datamodel.FeatureKey;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
+import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;

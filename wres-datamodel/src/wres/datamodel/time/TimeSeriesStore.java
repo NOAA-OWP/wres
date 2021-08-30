@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 import net.jcip.annotations.Immutable;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.Ensemble;
-import wres.datamodel.FeatureKey;
+import wres.datamodel.space.FeatureKey;
 
 /**
  * Store of {@link TimeSeries} that is built incrementally with a {@link Builder}.

@@ -28,8 +28,8 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
-import wres.datamodel.FeatureKey;
-import wres.datamodel.FeatureTuple;
+import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.FeatureTuple;
 import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;

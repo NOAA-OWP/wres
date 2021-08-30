@@ -26,10 +26,13 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.ProjectConfigs;
-import wres.config.generated.*;
+import wres.config.generated.DestinationConfig;
+import wres.config.generated.DestinationType;
+import wres.config.generated.MetricsConfig;
+import wres.config.generated.ProjectConfig;
 import wres.control.Evaluator.DatabaseServices;
-import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.events.Evaluation;
 import wres.events.EvaluationEventUtilities;
@@ -351,11 +354,11 @@ class ProcessorHelper
                                                  executors.getIoExecutor(),
                                                  featurefulProjectConfig,
                                                  databaseServices.getDatabaseLockManager() );
-            
+
             LOGGER.debug( "Finished ingest for project {}...", projectConfigPlus );
-            
+
             Operations.prepareForExecution( project );
-            
+
             evaluationDetails.setProject( project );
             projectHash = project.getHash();
 
@@ -458,7 +461,7 @@ class ProcessorHelper
                                                                   metricsAndThresholds,
                                                                   outputDirectory );
             evaluationDetails.setResolvedProject( resolvedProject );
-            
+
             // Tasks for features
             List<CompletableFuture<Void>> featureTasks = new ArrayList<>();
 
@@ -1156,7 +1159,7 @@ class ProcessorHelper
         private ResolvedProject resolvedProject;
         /** The messaging component of an evaluation, possibly null. */
         private Evaluation evaluation;
-        
+
         /**
          * @return the project configuration
          */
@@ -1196,7 +1199,7 @@ class ProcessorHelper
         {
             return connections;
         }
-        
+
         /**
          * @return the monitor
          */
@@ -1205,7 +1208,7 @@ class ProcessorHelper
         {
             return this.monitor;
         }
-        
+
         /**
          * @return the project, possibly null
          */
@@ -1214,7 +1217,7 @@ class ProcessorHelper
         {
             return this.project;
         }
-        
+
         /**
          * @return the resolvedProject, possibly null
          */
@@ -1223,7 +1226,7 @@ class ProcessorHelper
         {
             return this.resolvedProject;
         }
-        
+
         /**
          * @return the evaluation, possibly null
          */
@@ -1232,7 +1235,7 @@ class ProcessorHelper
         {
             return this.evaluation;
         }
-        
+
         /**
          * Set the project, not null.
          * @param project the project
@@ -1242,10 +1245,10 @@ class ProcessorHelper
         void setProject( Project project )
         {
             Objects.requireNonNull( project );
-            
+
             this.project = project;
         }
-        
+
         /**
          * Set the resolved project, not null.
          * @param resolvedProject the resolved project
@@ -1255,10 +1258,10 @@ class ProcessorHelper
         void setResolvedProject( ResolvedProject resolvedProject )
         {
             Objects.requireNonNull( resolvedProject );
-            
+
             this.resolvedProject = resolvedProject;
         }
-        
+
         /**
          * Set the evaluation, not null.
          * @param evaluation the evaluation
@@ -1268,10 +1271,10 @@ class ProcessorHelper
         void setEvaluation( Evaluation evaluation )
         {
             Objects.requireNonNull( evaluation );
-            
+
             this.evaluation = evaluation;
         }
-        
+
         /**
          * Builds an instance.
          * 

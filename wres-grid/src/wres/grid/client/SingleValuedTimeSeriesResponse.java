@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import wres.datamodel.FeatureKey;
+import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.TimeSeries;
 
 /**

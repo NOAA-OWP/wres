@@ -25,10 +25,10 @@ import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.DataSourceConfig.Variable;
 import wres.datamodel.Ensemble;
-import wres.datamodel.FeatureKey;
-import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
+import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.FeatureTuple;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.project.Project;
@@ -145,9 +145,6 @@ public class PoolsGeneratorTest
                .thenReturn( projectConfig );
 
         Evaluation evaluationDescription = MessageFactory.parse( projectConfigPlus );
-        wres.events.Evaluation mockEvaluation = Mockito.mock( wres.events.Evaluation.class );
-        Mockito.when( mockEvaluation.getEvaluationDescription() )
-               .thenReturn( evaluationDescription );
 
         // Mock a feature-shaped retriever factory
         RetrieverFactory<Double, Double> retrieverFactory = Mockito.mock( SingleValuedRetrieverFactory.class );
@@ -156,7 +153,7 @@ public class PoolsGeneratorTest
 
         // Create the actual output
         List<Supplier<Pool<Pair<Double, Double>>>> actual =
-                PoolFactory.getSingleValuedPools( mockEvaluation,
+                PoolFactory.getSingleValuedPools( evaluationDescription,
                                                   project,
                                                   new FeatureTuple( feature, feature, null ),
                                                   this.unitMapper,
@@ -254,9 +251,6 @@ public class PoolsGeneratorTest
                .thenReturn( projectConfig );
 
         Evaluation evaluationDescription = MessageFactory.parse( projectConfigPlus );
-        wres.events.Evaluation mockEvaluation = Mockito.mock( wres.events.Evaluation.class );
-        Mockito.when( mockEvaluation.getEvaluationDescription() )
-               .thenReturn( evaluationDescription );
 
         // Mock a feature-shaped retriever factory
         RetrieverFactory<Double, Ensemble> retrieverFactory = Mockito.mock( EnsembleRetrieverFactory.class );
@@ -265,7 +259,7 @@ public class PoolsGeneratorTest
 
         // Create the actual output
         List<Supplier<Pool<Pair<Double, Ensemble>>>> actual =
-                PoolFactory.getEnsemblePools( mockEvaluation,
+                PoolFactory.getEnsemblePools( evaluationDescription,
                                               project,
                                               new FeatureTuple( feature, feature, null ),
                                               this.unitMapper,

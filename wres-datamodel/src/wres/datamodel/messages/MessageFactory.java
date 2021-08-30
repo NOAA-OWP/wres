@@ -33,12 +33,12 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.DataFactory;
 import wres.datamodel.Ensemble;
-import wres.datamodel.FeatureKey;
-import wres.datamodel.FeatureTuple;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticsForProject;
@@ -189,7 +189,7 @@ public class MessageFactory
     /**
      * Builds a pool from the input, some of which may be missing.
      * 
-     * @param featureTuple the feature tuple
+     * @param featureTuple the feature tuples
      * @param timeWindow the time window
      * @param timeScale the time scale
      * @param thresholds the thresholds
@@ -203,18 +203,52 @@ public class MessageFactory
                               OneOrTwoThresholds thresholds,
                               boolean isBaselinePool )
     {
+        Set<FeatureTuple> tuple = new HashSet<>();
+        
+        if ( Objects.nonNull( featureTuple ) )
+        {
+            tuple.add( featureTuple );
+        }
+
+        return MessageFactory.parse( tuple,
+                                     timeWindow,
+                                     timeScale,
+                                     thresholds,
+                                     isBaselinePool );
+    }
+    
+    /**
+     * Builds a pool from the input, some of which may be missing.
+     * 
+     * @param featureTuples the feature tuples
+     * @param timeWindow the time window
+     * @param timeScale the time scale
+     * @param thresholds the thresholds
+     * @param isBaselinePool is true if the pool refers to pairs of left and baseline data, otherwise left and right
+     * @return the pool
+     */
+
+    public static Pool parse( Set<FeatureTuple> featureTuples,
+                              TimeWindowOuter timeWindow,
+                              TimeScaleOuter timeScale,
+                              OneOrTwoThresholds thresholds,
+                              boolean isBaselinePool )
+    {
 
         Pool.Builder poolBuilder = Pool.newBuilder()
                                        .setIsBaselinePool( isBaselinePool );
 
         // Feature tuple
-        if ( Objects.nonNull( featureTuple ) )
+        if ( Objects.nonNull( featureTuples ) )
         {
-            GeometryTuple geoTuple = MessageFactory.parse( featureTuple );
-            poolBuilder.addGeometryTuples( geoTuple );
+            
+            Set<GeometryTuple> geoTuples = featureTuples.stream()
+                                                         .map( MessageFactory::parse )
+                                                         .collect( Collectors.toSet() );
+            poolBuilder.addAllGeometryTuples( geoTuples );
 
-            LOGGER.debug( "While creating sample metadata, populated the pool with a geometry tuple of {}.",
-                          featureTuple );
+            LOGGER.debug( "While creating sample metadata, populated the pool with geometry tuples of {}.",
+                          featureTuples );
         }
 
         // Time window
@@ -511,7 +545,7 @@ public class MessageFactory
     }
 
     /**
-     * Creates a {@link wres.statistics.generated.GeometryTuple} from a {@link wres.datamodel.FeatureTuple}.
+     * Creates a {@link wres.statistics.generated.GeometryTuple} from a {@link wres.datamodel.space.FeatureTuple}.
      * 
      * @param location the location from which to create a message
      * @return the message
@@ -537,7 +571,7 @@ public class MessageFactory
     }
 
     /**
-     * Creates a {@link wres.statistics.generated.Geometry} from a {@link wres.datamodel.FeatureKey}.
+     * Creates a {@link wres.statistics.generated.Geometry} from a {@link wres.datamodel.space.FeatureKey}.
      * 
      * @param featureKey the feature key from which to create a message
      * @return the message
@@ -573,7 +607,7 @@ public class MessageFactory
     }
 
     /**
-     * Creates a {@link wres.datamodel.FeatureTuple} from a {@link wres.statistics.generated.GeometryTuple}.
+     * Creates a {@link wres.datamodel.space.FeatureTuple} from a {@link wres.statistics.generated.GeometryTuple}.
      * 
      * @param location the location from which to create a message
      * @return the message
@@ -914,10 +948,10 @@ public class MessageFactory
     {
         private final OneOrTwoThresholds thresholds;
         private final wres.datamodel.time.TimeWindowOuter window;
-        private final wres.datamodel.FeatureTuple location;
+        private final wres.datamodel.space.FeatureTuple location;
         private final boolean isBaselinePool;
 
-        private PoolBoundaries( wres.datamodel.FeatureTuple location,
+        private PoolBoundaries( wres.datamodel.space.FeatureTuple location,
                                 wres.datamodel.time.TimeWindowOuter window,
                                 OneOrTwoThresholds thresholds,
                                 boolean isBaselinePool )

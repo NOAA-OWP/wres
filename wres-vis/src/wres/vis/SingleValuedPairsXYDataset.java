@@ -3,9 +3,9 @@ package wres.vis;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jfree.data.xy.AbstractXYDataset;
 
-import wres.datamodel.FeatureKey;
-import wres.datamodel.FeatureTuple;
 import wres.datamodel.pools.Pool;
+import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.FeatureTuple;
 
 /**
  * An {@link AbstractXYDataset} for single-valued pairs.

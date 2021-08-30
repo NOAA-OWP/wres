@@ -28,13 +28,13 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import wres.datamodel.FeatureKey;
-import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
+import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;

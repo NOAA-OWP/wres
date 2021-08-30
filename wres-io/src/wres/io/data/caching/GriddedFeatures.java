@@ -30,8 +30,8 @@ import wres.config.generated.Circle;
 import wres.config.generated.Polygon;
 import wres.config.generated.Polygon.Point;
 import wres.config.generated.UnnamedFeature;
-import wres.datamodel.FeatureKey;
-import wres.datamodel.FeatureTuple;
+import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.FeatureTuple;
 import wres.util.NetCDF;
 
 /**

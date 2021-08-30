@@ -12,9 +12,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.Ensemble;
-import wres.datamodel.FeatureKey;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
+import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.TimeSeries.Builder;
 
 /**

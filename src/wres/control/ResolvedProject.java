@@ -11,8 +11,8 @@ import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
 import wres.control.ProcessorHelper.MetricsAndThresholds;
-import wres.datamodel.FeatureTuple;
 import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.space.FeatureTuple;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 
 /**

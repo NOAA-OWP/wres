@@ -8,8 +8,8 @@ import java.util.StringJoiner;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
-import wres.datamodel.FeatureKey;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.TimeWindowOuter;
 
 /**

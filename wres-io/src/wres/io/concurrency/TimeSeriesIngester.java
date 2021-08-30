@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MissingValues;
-import wres.datamodel.FeatureKey;
+import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;

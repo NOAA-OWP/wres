@@ -17,7 +17,7 @@ message Pool
     /*A message that encapsulates a pool, which is the atomic collection of 
     pairs and statistics.*/
     
-    repeated GeometryTuple geometryTuples = 1;
+    repeated GeometryTuple geometry_tuples = 1;
     // Zero or more geometry tuples that characterize this pool.
         
     TimeWindow time_window = 2;
@@ -49,4 +49,7 @@ message Pool
     // baseline pairs, this allows the resulting statistics to be discriminated 
     // between.
 
+    string region_name = 8;
+    // The name of the spatial aggregation or geographic region associated with 
+    // the geometries (e.g., Patagonia).
 }

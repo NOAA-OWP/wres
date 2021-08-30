@@ -3,8 +3,8 @@ package wres.grid.client;
 import java.io.IOException;
 import java.util.List;
 
-import wres.datamodel.FeatureKey;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.grid.reading.GriddedReader;
 

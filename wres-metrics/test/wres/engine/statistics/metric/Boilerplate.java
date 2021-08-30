@@ -1,10 +1,10 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.FeatureKey;
-import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.PoolMetadata;
+import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.FeatureTuple;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Pool;
 
