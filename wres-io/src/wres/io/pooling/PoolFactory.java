@@ -89,11 +89,11 @@ public class PoolFactory
     private static final String WHICH_IS_NOT_ALLOWED = "', which is not allowed.";
 
     /**
-     * Create pools for single-valued data from a prescribed {@link Project} and {@link Feature}.
+     * Create pools for single-valued data from a prescribed {@link Project} and {@link FeatureGroup}.
      * 
      * @param evaluation the evaluation description
      * @param project the project for which pools are required
-     * @param feature the feature for which pools are required
+     * @param featureGroup the feature group for which pools are required
      * @param unitMapper the mapper to convert measurement units
      * @param retrieverFactory the retriever factory
      * @return a list of suppliers that supply pools of pairs
@@ -104,14 +104,14 @@ public class PoolFactory
 
     public static List<Supplier<Pool<Pair<Double, Double>>>> getSingleValuedPools( Evaluation evaluation,
                                                                                    Project project,
-                                                                                   FeatureTuple feature,
+                                                                                   FeatureGroup featureGroup,
                                                                                    UnitMapper unitMapper,
                                                                                    RetrieverFactory<Double, Double> retrieverFactory )
     {
         Objects.requireNonNull( evaluation, "Cannot create pools from a null evaluation." );
         Objects.requireNonNull( project, "Cannot create pools from a null project." );
         Objects.requireNonNull( unitMapper, "Cannot create pools without a measurement unit mapper." );
-        Objects.requireNonNull( feature, "Cannot create pools without a feature description." );
+        Objects.requireNonNull( featureGroup, "Cannot create pools without a feature group description." );
         Objects.requireNonNull( retrieverFactory, "Cannot create pools without a retriever factory." );
 
         // Validate the project declaration for the required data type
@@ -125,9 +125,9 @@ public class PoolFactory
 
         long projectId = project.getId();
 
-        LOGGER.debug( "Creating pool suppliers for project '{}' and feature '{}'.",
+        LOGGER.debug( "Creating pool suppliers for project '{}' and feature group '{}'.",
                       projectId,
-                      feature );
+                      featureGroup );
 
         // Get the times scale
         TimeScaleOuter desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
@@ -149,40 +149,28 @@ public class PoolFactory
         // Create a default upscaler
         TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleUpscaler.of();
 
-        // Create the basic metadata for the pools
-        PoolMetadata mainMetadata = PoolFactory.createMetadata( evaluation,
-                                                                Set.of( feature ),
-                                                                TimeWindowOuter.of(),
-                                                                desiredTimeScale,
-                                                                LeftOrRightOrBaseline.RIGHT );
-
-        // Create the basic metadata for the baseline pools, if any
-        // Also, create a baseline generator function (e.g., persistence), if required
-        PoolMetadata baselineMetadata = null;
+        // Create a baseline generator function (e.g., persistence), if required
         UnaryOperator<TimeSeries<Double>> baselineGenerator = null;
-        if ( project.hasBaseline() )
+        // Generated baseline declared?
+        if ( ConfigHelper.hasGeneratedBaseline( baselineConfig ) )
         {
-            LOGGER.debug( "While genenerating pools for project '{}' and feature '{}', discovered a baseline data "
-                          + "source.",
+            LOGGER.debug( "While creating pools for project '{}' and feature group '{}', discovered a baseline "
+                          + "to generate from a data source.",
                           projectId,
-                          feature );
+                          featureGroup );
 
-            baselineMetadata = PoolFactory.createMetadata( evaluation,
-                                                           Set.of( feature ),
-                                                           TimeWindowOuter.of(),
-                                                           desiredTimeScale,
-                                                           LeftOrRightOrBaseline.BASELINE );
+            PoolMetadata baselineMetadata = PoolFactory.createMetadata( evaluation,
+                                                                        featureGroup.getFeatures(),
+                                                                        TimeWindowOuter.of(),
+                                                                        desiredTimeScale,
+                                                                        LeftOrRightOrBaseline.BASELINE );
 
-            // Generated baseline declared?
-            if ( ConfigHelper.hasGeneratedBaseline( baselineConfig ) )
-            {
-                baselineGenerator = PoolFactory.getGeneratedBaseline( baselineConfig,
-                                                                      retrieverFactory.getBaselineRetriever(),
-                                                                      Function.identity(),
-                                                                      upscaler,
-                                                                      baselineMetadata,
-                                                                      Double::isFinite );
-            }
+            baselineGenerator = PoolFactory.getGeneratedBaseline( baselineConfig,
+                                                                  retrieverFactory.getBaselineRetriever(),
+                                                                  Function.identity(),
+                                                                  upscaler,
+                                                                  baselineMetadata,
+                                                                  Double::isFinite );
         }
 
         // Create any required transformers for value constraints
@@ -192,11 +180,15 @@ public class PoolFactory
         UnaryOperator<Event<Double>> rightTransformer =
                 next -> Event.of( next.getTime(), leftTransformer.applyAsDouble( next.getValue() ) );
 
+        // Create the pool requests
+        List<PoolRequest> poolRequests = PoolFactory.getPoolRequests( evaluation, 
+                                                                      projectConfig,
+                                                                      Set.of( featureGroup ) );
+
         // Build and return the pool suppliers
         return new PoolsGenerator.Builder<Double, Double>().setProject( project )
                                                            .setRetrieverFactory( retrieverFactory )
-                                                           .setBasicMetadata( mainMetadata )
-                                                           .setBasicMetadataForBaseline( baselineMetadata )
+                                                           .setPoolRequests( poolRequests )
                                                            .setBaselineGenerator( baselineGenerator )
                                                            .setLeftTransformer( leftTransformer::applyAsDouble )
                                                            .setRightTransformer( rightTransformer )
@@ -215,7 +207,7 @@ public class PoolFactory
      * 
      * @param evaluation the evaluation description
      * @param project the project for which pools are required
-     * @param feature the feature for which pools are required
+     * @param featureGroup the feature group for which pools are required
      * @param unitMapper the mapper to convert measurement units
      * @param retrieverFactory the retriever factory
      * @return a list of suppliers that supply pools of pairs
@@ -226,14 +218,14 @@ public class PoolFactory
 
     public static List<Supplier<Pool<Pair<Double, Ensemble>>>> getEnsemblePools( Evaluation evaluation,
                                                                                  Project project,
-                                                                                 FeatureTuple feature,
+                                                                                 FeatureGroup featureGroup,
                                                                                  UnitMapper unitMapper,
                                                                                  RetrieverFactory<Double, Ensemble> retrieverFactory )
     {
         Objects.requireNonNull( evaluation, "Cannot create pools from a null evaluation." );
         Objects.requireNonNull( project, "Cannot create pools from a null project." );
         Objects.requireNonNull( unitMapper, "Cannot create pools without a measurement unit mapper." );
-        Objects.requireNonNull( feature, "Cannot create pools without a feature description." );
+        Objects.requireNonNull( featureGroup, "Cannot create pools without a feature group description." );
         Objects.requireNonNull( retrieverFactory, "Cannot create pools without a retriever factory." );
 
         // Validate the project declaration for the required data type
@@ -246,12 +238,9 @@ public class PoolFactory
 
         long projectId = project.getId();
 
-        LOGGER.debug( "Creating pool suppliers for project '{}' and feature '{}'.",
+        LOGGER.debug( "Creating pool suppliers for project '{}' and feature group '{}'.",
                       projectId,
-                      feature );
-
-        // Get the times scale
-        TimeScaleOuter desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
+                      featureGroup );
 
         // Create a default pairer for finite left values and one or more finite right values
         TimePairingType timePairingType = PoolFactory.getTimePairingTypeFromInputsConfig( inputsConfig );
@@ -273,29 +262,6 @@ public class PoolFactory
         TimeSeriesUpscaler<Double> leftUpscaler = TimeSeriesOfDoubleUpscaler.of();
         TimeSeriesUpscaler<Ensemble> rightUpscaler = TimeSeriesOfEnsembleUpscaler.of();
 
-        // Create the basic metadata for the pools
-        PoolMetadata mainMetadata = PoolFactory.createMetadata( evaluation,
-                                                                Set.of( feature ),
-                                                                TimeWindowOuter.of(),
-                                                                desiredTimeScale,
-                                                                LeftOrRightOrBaseline.RIGHT );
-
-        // Create the basic metadata for the baseline pools, if any
-        PoolMetadata baselineMetadata = null;
-        if ( project.hasBaseline() )
-        {
-            LOGGER.debug( "While genenerating pools for project '{}' and feature '{}', discovered a baseline data "
-                          + "source.",
-                          projectId,
-                          feature );
-
-            baselineMetadata = PoolFactory.createMetadata( evaluation,
-                                                           Set.of( feature ),
-                                                           TimeWindowOuter.of(),
-                                                           desiredTimeScale,
-                                                           LeftOrRightOrBaseline.BASELINE );
-        }
-
         // Left transformer
         DoubleUnaryOperator leftTransformer = PoolFactory.getSingleValuedTransformer( pairConfig.getValues() );
 
@@ -308,12 +274,16 @@ public class PoolFactory
         MonthDay removeMemberByValidYearBaseline = PoolFactory.getRemoveMemberByValidYear( inputsConfig.getBaseline() );
         UnaryOperator<Event<Ensemble>> baselineTransformer = PoolFactory.getEnsembleTransformer( leftTransformer,
                                                                                                  removeMemberByValidYearBaseline );
+        
+        // Create the pool requests
+        List<PoolRequest> poolRequests = PoolFactory.getPoolRequests( evaluation, 
+                                                                      projectConfig,
+                                                                      Set.of( featureGroup ) );
 
         // Build and return the pool suppliers
         return new PoolsGenerator.Builder<Double, Ensemble>().setProject( project )
                                                              .setRetrieverFactory( retrieverFactory )
-                                                             .setBasicMetadata( mainMetadata )
-                                                             .setBasicMetadataForBaseline( baselineMetadata )
+                                                             .setPoolRequests( poolRequests )
                                                              .setLeftTransformer( leftTransformer::applyAsDouble )
                                                              .setRightTransformer( rightTransformer )
                                                              .setBaselineTransformer( baselineTransformer )

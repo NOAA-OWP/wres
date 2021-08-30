@@ -27,6 +27,7 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.Metrics;
 import wres.datamodel.pools.Pool;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.ThresholdsByMetric;
@@ -175,6 +176,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                            .getRight()
                                            .getType();
 
+        FeatureGroup featureGroup = FeatureGroup.of( this.feature );
+        
         // In future, other types of pools may be handled here
         // Pairs that contain ensemble forecasts
         if ( type == DatasourceType.ENSEMBLE_FORECASTS )
@@ -184,11 +187,11 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             RetrieverFactory<Double, Ensemble> retrieverFactory = EnsembleRetrieverFactory.of( this.project,
                                                                                                this.feature,
                                                                                                this.unitMapper );
-
+            
             List<Supplier<Pool<Pair<Double, Ensemble>>>> pools =
                     PoolFactory.getEnsemblePools( this.evaluation.getEvaluationDescription(),
                                                   this.project,
-                                                  this.feature,
+                                                  featureGroup,
                                                   this.unitMapper,
                                                   retrieverFactory );
             this.monitor.setPoolCount( pools.size() );
@@ -224,11 +227,11 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             RetrieverFactory<Double, Double> retrieverFactory = SingleValuedRetrieverFactory.of( this.project,
                                                                                                  this.feature,
                                                                                                  this.unitMapper );
-
+            
             List<Supplier<Pool<Pair<Double, Double>>>> pools =
                     PoolFactory.getSingleValuedPools( this.evaluation.getEvaluationDescription(),
                                                       this.project,
-                                                      this.feature,
+                                                      featureGroup,
                                                       this.unitMapper,
                                                       retrieverFactory );
             this.monitor.setPoolCount( pools.size() );

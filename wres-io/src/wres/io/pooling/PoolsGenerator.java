@@ -28,7 +28,7 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.pools.PoolMetadata;
+import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -38,7 +38,6 @@ import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
 import wres.io.retrieval.CachingRetriever;
@@ -67,16 +66,10 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
     private final Project project;
 
     /**
-     * The basic metadata for the sequence of pools.
+     * The pool requests.
      */
 
-    private final PoolMetadata basicMetadata;
-
-    /**
-     * The basic metadata for the sequence of pools with respect to the baseline.
-     */
-
-    private final PoolMetadata basicMetadataForBaseline;
+    private final List<PoolRequest> poolRequests;
 
     /**
      * A factory to create project-relevant retrievers.
@@ -171,16 +164,10 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
         private Project project;
 
         /**
-         * The basic metadata for the sequence of pools.
+         * The pool requests.
          */
 
-        private PoolMetadata basicMetadata;
-
-        /**
-         * The basic metadata for the sequence of pools with respect to the baseline.
-         */
-
-        private PoolMetadata basicMetadataForBaseline;
+        private List<PoolRequest> poolRequests = new ArrayList<>();
 
         /**
          * A factory to create project-relevant retrievers.
@@ -262,23 +249,16 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
         }
 
         /**
-         * @param basicMetadata the basic metadata for the primary pairs
+         * @param poolRequests the pool requests
          * @return the builder
          */
-        Builder<L, R> setBasicMetadata( PoolMetadata basicMetadata )
+        Builder<L, R> setPoolRequests( List<PoolRequest> poolRequests )
         {
-            this.basicMetadata = basicMetadata;
+            if ( Objects.nonNull( poolRequests ) )
+            {
+                this.poolRequests.addAll( poolRequests );
+            }
 
-            return this;
-        }
-
-        /**
-         * @param basicMetadataForBaseline the basic metadata for the baseline pairs
-         * @return the builder
-         */
-        Builder<L, R> setBasicMetadataForBaseline( PoolMetadata basicMetadataForBaseline )
-        {
-            this.basicMetadataForBaseline = basicMetadataForBaseline;
             return this;
         }
 
@@ -428,8 +408,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
         // Set then validate
         this.project = builder.project;
         this.retrieverFactory = builder.retrieverFactory;
-        this.basicMetadata = builder.basicMetadata;
-        this.basicMetadataForBaseline = builder.basicMetadataForBaseline;
+        this.poolRequests = Collections.unmodifiableList( new ArrayList<>( builder.poolRequests ) );
         this.baselineGenerator = builder.baselineGenerator;
         this.pairer = builder.pairer;
         this.leftUpscaler = builder.leftUpscaler;
@@ -445,17 +424,16 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
 
         Objects.requireNonNull( this.project, messageStart + "the project is missing." );
         Objects.requireNonNull( this.retrieverFactory, messageStart + "the retriever factory is missing." );
-        Objects.requireNonNull( this.basicMetadata, messageStart + "the basic metadata is missing." );
 
         Objects.requireNonNull( this.pairer, messageStart + "the pairer is missing." );
         Objects.requireNonNull( this.leftUpscaler, messageStart + "the upscaler for left values is missing" );
         Objects.requireNonNull( this.rightUpscaler, messageStart + "the upscaler for right values is missing." );
 
         // If adding a baseline, baseline metadata is needed. If not, it should not be supplied
-        if ( this.project.hasBaseline() != Objects.nonNull( this.basicMetadataForBaseline ) )
+        if ( this.getPoolRequests().isEmpty() )
         {
-            throw new IllegalArgumentException( messageStart + "baseline metadata should be supplied when required, "
-                                                + "otherwise it should not be supplied." );
+            throw new IllegalArgumentException( messageStart + "cannot create pools with zero pool requests. Add one "
+                                                + "or more pool requests and try again." );
         }
 
         // A baseline generator should be supplied if there is a baseline to generate, otherwise not
@@ -480,7 +458,9 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
 
     private List<Supplier<Pool<Pair<L, R>>>> createPools()
     {
-        LOGGER.debug( "Creating pool suppliers for '{}'.", this.getBasicMetadata() );
+        LOGGER.debug( "Creating pool suppliers for {} pools requests: {}.",
+                      this.getPoolRequests().size(),
+                      this.getPoolRequests() );
 
         ProjectConfig projectConfig = this.getProject().getProjectConfig();
         PairConfig pairConfig = projectConfig.getPair();
@@ -499,9 +479,6 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
 
         // Obtain and set the desired time scale. 
         TimeScaleOuter desiredTimeScale = this.setAndGetDesiredTimeScale( pairConfig, builder );
-
-        // Time windows
-        Set<TimeWindowOuter> timeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairConfig );
 
         // Get a left-ish retriever for every pool in order to promote re-use across pools via caching. May consider
         // doing this for other sides of data in future, but left-ish data is the priority because this is very 
@@ -537,7 +514,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
             // No climatology, so populate the collection of per-pool left-ish retrievers
             else
             {
-                leftRetrievers = this.getLeftRetrievers( timeWindows,
+                leftRetrievers = this.getLeftRetrievers( this.getPoolRequests(),
                                                          inputsConfig.getLeft()
                                                                      .getType() );
             }
@@ -545,16 +522,16 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
             List<PoolSupplier<L, R>> returnMe = new ArrayList<>();
 
             // Create the retrievers for each time window
-            for ( TimeWindowOuter nextWindow : timeWindows )
+            for ( PoolRequest nextPool : this.getPoolRequests() )
             {
+                TimeWindowOuter nextWindow = nextPool.getMetadata()
+                                                     .getTimeWindow();
+
                 Supplier<Stream<TimeSeries<R>>> rightSupplier = this.getRetrieverFactory()
                                                                     .getRightRetriever( nextWindow );
 
                 builder.setRight( rightSupplier );
-
-                // Set the metadata
-                PoolMetadata poolMeta = PoolMetadata.of( this.getBasicMetadata(), nextWindow );
-                builder.setMetadata( poolMeta );
+                builder.setMetadata( nextPool.getMetadata() );
 
                 // Add left data, using the climatology supplier first if one exists
                 Supplier<Stream<TimeSeries<L>>> leftSupplier = climatologySupplier;
@@ -567,12 +544,9 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
                 builder.setLeft( leftSupplier );
 
                 // Set baseline if needed
-                if ( this.getProject().hasBaseline() )
+                if ( nextPool.hasBaseline() )
                 {
-
-                    // Set the metadata
-                    PoolMetadata poolBaseMeta = PoolMetadata.of( this.getBasicMetadataForBaseline(), nextWindow );
-                    builder.setBaselineMetadata( poolBaseMeta );
+                    builder.setBaselineMetadata( nextPool.getMetadataForBaseline() );
 
                     // Generated baseline?
                     if ( ConfigHelper.hasGeneratedBaseline( projectConfig.getInputs().getBaseline() ) )
@@ -592,17 +566,15 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
                 returnMe.add( builder.build() );
             }
 
-            LOGGER.debug( "Created {} pool suppliers for '{}'.",
-                          returnMe.size(),
-                          this.getBasicMetadata() );
+            LOGGER.debug( "Created pool suppliers for {} pool requests: {}.",
+                          this.getPoolRequests().size(),
+                          this.getPoolRequests() );
 
             return Collections.unmodifiableList( returnMe );
         }
         catch ( DataAccessException | ProjectConfigException e )
         {
-            throw new PoolCreationException( "While attempting to create pools for '" + basicMetadata
-                                             + "':",
-                                             e );
+            throw new PoolCreationException( "While attempting to create pool suppliers:", e );
         }
     }
 
@@ -615,15 +587,19 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
      * windows. De-duplication only happens for datasets that are {@link DatasourceType#OBSERVATIONS} or 
      * {@link DatasourceType#SIMULATIONS}.
      * 
-     * @param timeWindows the time windows
+     * @param poolRequest the pool requests
      * @param type the type of data
      * @return a left-ish retriever for each time-window
      */
 
-    private Map<TimeWindowOuter, Supplier<Stream<TimeSeries<L>>>> getLeftRetrievers( Set<TimeWindowOuter> timeWindows,
+    private Map<TimeWindowOuter, Supplier<Stream<TimeSeries<L>>>> getLeftRetrievers( List<PoolRequest> poolRequests,
                                                                                      DatasourceType type )
     {
         RetrieverFactory<L, R> factory = this.getRetrieverFactory();
+
+        Set<TimeWindowOuter> timeWindows = poolRequests.stream()
+                                                       .map( next -> next.getMetadata().getTimeWindow() )
+                                                       .collect( Collectors.toSet() );
 
         // Observations or simulations? Then de-duplicate if possible.
         if ( type == DatasourceType.OBSERVATIONS || type == DatasourceType.SIMULATIONS )
@@ -641,9 +617,9 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
             // Log any de-duplication that was achieved
             if ( LOGGER.isDebugEnabled() )
             {
-                LOGGER.debug( "While creating pools for {}, de-duplicated the retrievers of {} data from {} to {} "
+                LOGGER.debug( "While creating pools for {} pools, de-duplicated the retrievers of {} data from {} to {} "
                               + "using the union of time windows across all pools, which is {}.",
-                              this.getBasicMetadata(),
+                              this.getPoolRequests().size(),
                               LeftOrRightOrBaseline.LEFT,
                               timeWindows.size(),
                               1,
@@ -763,25 +739,14 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
     }
 
     /**
-     * Returns the basic metadata.
+     * Returns the pool requests.
      * 
-     * @return the basic metadata
+     * @return the pool requests
      */
 
-    private PoolMetadata getBasicMetadata()
+    private List<PoolRequest> getPoolRequests()
     {
-        return this.basicMetadata;
-    }
-
-    /**
-     * Returns the basic metadata for a baseline, if any.
-     * 
-     * @return the basic metadata for a baseline
-     */
-
-    private PoolMetadata getBasicMetadataForBaseline()
-    {
-        return this.basicMetadataForBaseline;
+        return this.poolRequests;
     }
 
     /**
