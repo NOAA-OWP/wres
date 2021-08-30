@@ -27,6 +27,7 @@ import wres.config.generated.DataSourceConfig.Variable;
 import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.io.data.caching.Ensembles;
@@ -151,11 +152,13 @@ public class PoolsGeneratorTest
         Mockito.when( retrieverFactory.getLeftRetriever( Mockito.any() ) ).thenReturn( () -> Stream.of() );
         Mockito.when( retrieverFactory.getRightRetriever( Mockito.any() ) ).thenReturn( () -> Stream.of() );
 
+        FeatureGroup featureGroup = FeatureGroup.of( new FeatureTuple( feature, feature, null ) );
+        
         // Create the actual output
         List<Supplier<Pool<Pair<Double, Double>>>> actual =
                 PoolFactory.getSingleValuedPools( evaluationDescription,
                                                   project,
-                                                  new FeatureTuple( feature, feature, null ),
+                                                  featureGroup,
                                                   this.unitMapper,
                                                   retrieverFactory );
 
@@ -257,11 +260,13 @@ public class PoolsGeneratorTest
         Mockito.when( retrieverFactory.getLeftRetriever( Mockito.any() ) ).thenReturn( () -> Stream.of() );
         Mockito.when( retrieverFactory.getRightRetriever( Mockito.any() ) ).thenReturn( () -> Stream.of() );
 
+        FeatureGroup featureGroup = FeatureGroup.of( new FeatureTuple( feature, feature, null ) );
+        
         // Create the actual output
         List<Supplier<Pool<Pair<Double, Ensemble>>>> actual =
                 PoolFactory.getEnsemblePools( evaluationDescription,
                                               project,
-                                              new FeatureTuple( feature, feature, null ),
+                                              featureGroup,
                                               this.unitMapper,
                                               retrieverFactory );
 
