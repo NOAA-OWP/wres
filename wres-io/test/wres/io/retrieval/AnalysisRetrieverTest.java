@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
@@ -76,9 +77,11 @@ public class AnalysisRetrieverTest
                          .get( ReferenceTimeType.ANALYSIS_START_TIME )
                          .compareTo( b.getReferenceTimes()
                                       .get( ReferenceTimeType.ANALYSIS_START_TIME ) );
-    @Mock private SystemSettings mockSystemSettings;
+    @Mock
+    private SystemSettings mockSystemSettings;
     private wres.io.utilities.Database wresDatabase;
-    @Mock private Executor mockExecutor;
+    @Mock
+    private Executor mockExecutor;
     private Features featuresCache;
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
@@ -154,10 +157,11 @@ public class AnalysisRetrieverTest
                                                // Weird that I cannot set this
                                                // before setDuplicatePolicy.
                                                // Composition over inheritance?
-                                               .setDatabase( this.wresDatabase ).setProjectId( PROJECT_ID )
+                                               .setDatabase( this.wresDatabase )
+                                               .setProjectId( PROJECT_ID )
                                                .setFeaturesCache( this.featuresCache )
                                                .setVariableName( VARIABLE_NAME )
-                                               .setFeature( FEATURE )
+                                               .setFeatures( Set.of( FEATURE ) )
                                                .setUnitMapper( this.unitMapper )
                                                .setLeftOrRightOrBaseline( LRB )
                                                .build();
@@ -186,10 +190,10 @@ public class AnalysisRetrieverTest
                                        CFS );
         TimeSeries<Double> expectedSeriesOne =
                 new TimeSeries.Builder<Double>().setMetadata( metadata )
-                                               .addEvent( Event.of( Instant.parse( T2023_04_01T01_00_00Z ), 30.0 ) )
-                                               .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ), 37.0 ) )
-                                               .addEvent( Event.of( Instant.parse( "2023-04-01T03:00:00Z" ), 44.0 ) )
-                                               .build();
+                                                .addEvent( Event.of( Instant.parse( T2023_04_01T01_00_00Z ), 30.0 ) )
+                                                .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ), 37.0 ) )
+                                                .addEvent( Event.of( Instant.parse( "2023-04-01T03:00:00Z" ), 44.0 ) )
+                                                .build();
 
         // Actual series equals expected series
         assertEquals( expectedSeriesOne, actualSeriesOne );
@@ -204,10 +208,10 @@ public class AnalysisRetrieverTest
                                        CFS );
         TimeSeries<Double> expectedSeriesTwo =
                 new TimeSeries.Builder<Double>().setMetadata( metadataTwo )
-                                               .addEvent( Event.of( Instant.parse( T2023_04_01T04_00_00Z ), 72.0 ) )
-                                               .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 79.0 ) )
-                                               .addEvent( Event.of( Instant.parse( "2023-04-01T06:00:00Z" ), 86.0 ) )
-                                               .build();
+                                                .addEvent( Event.of( Instant.parse( T2023_04_01T04_00_00Z ), 72.0 ) )
+                                                .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 79.0 ) )
+                                                .addEvent( Event.of( Instant.parse( "2023-04-01T06:00:00Z" ), 86.0 ) )
+                                                .build();
 
         // Actual series equals expected series
         assertEquals( expectedSeriesTwo, actualSeriesTwo );
@@ -222,13 +226,13 @@ public class AnalysisRetrieverTest
                                        CFS );
         TimeSeries<Double> expectedSeriesThree =
                 new TimeSeries.Builder<Double>().setMetadata( metadataThree )
-                                               .addEvent( Event.of( Instant.parse( T2023_04_01T07_00_00Z ), 114.0 ) )
-                                               .addEvent( Event.of( Instant.parse( "2023-04-01T08:00:00Z" ), 121.0 ) )
-                                               .addEvent( Event.of( Instant.parse( "2023-04-01T09:00:00Z" ), 128.0 ) )
-                                               .addEvent( Event.of( Instant.parse( "2023-04-01T10:00:00Z" ), 135.0 ) )
-                                               .addEvent( Event.of( Instant.parse( "2023-04-01T11:00:00Z" ), 142.0 ) )
-                                               .addEvent( Event.of( Instant.parse( "2023-04-01T12:00:00Z" ), 149.0 ) )
-                                               .build();
+                                                .addEvent( Event.of( Instant.parse( T2023_04_01T07_00_00Z ), 114.0 ) )
+                                                .addEvent( Event.of( Instant.parse( "2023-04-01T08:00:00Z" ), 121.0 ) )
+                                                .addEvent( Event.of( Instant.parse( "2023-04-01T09:00:00Z" ), 128.0 ) )
+                                                .addEvent( Event.of( Instant.parse( "2023-04-01T10:00:00Z" ), 135.0 ) )
+                                                .addEvent( Event.of( Instant.parse( "2023-04-01T11:00:00Z" ), 142.0 ) )
+                                                .addEvent( Event.of( Instant.parse( "2023-04-01T12:00:00Z" ), 149.0 ) )
+                                                .build();
 
         // Actual series equals expected series
         assertEquals( expectedSeriesThree, actualSeriesThree );
@@ -245,7 +249,7 @@ public class AnalysisRetrieverTest
                                                .setFeaturesCache( this.featuresCache )
                                                .setProjectId( PROJECT_ID )
                                                .setVariableName( VARIABLE_NAME )
-                                               .setFeature( FEATURE )
+                                               .setFeatures( Set.of( FEATURE ) )
                                                .setUnitMapper( this.unitMapper )
                                                .setLeftOrRightOrBaseline( LRB )
                                                .build();
@@ -274,8 +278,8 @@ public class AnalysisRetrieverTest
                                        CFS );
         TimeSeries<Double> expectedSeriesOne =
                 new TimeSeries.Builder<Double>().setMetadata( metadata )
-                                               .addEvent( Event.of( Instant.parse( T2023_04_01T01_00_00Z ), 30.0 ) )
-                                               .build();
+                                                .addEvent( Event.of( Instant.parse( T2023_04_01T01_00_00Z ), 30.0 ) )
+                                                .build();
 
         // Actual series equals expected series
         assertEquals( expectedSeriesOne, actualSeriesOne );
@@ -290,8 +294,8 @@ public class AnalysisRetrieverTest
                                        CFS );
         TimeSeries<Double> expectedSeriesTwo =
                 new TimeSeries.Builder<Double>().setMetadata( metadataTwo )
-                                               .addEvent( Event.of( Instant.parse( T2023_04_01T04_00_00Z ), 72.0 ) )
-                                               .build();
+                                                .addEvent( Event.of( Instant.parse( T2023_04_01T04_00_00Z ), 72.0 ) )
+                                                .build();
 
         // Actual series equals expected series
         assertEquals( expectedSeriesTwo, actualSeriesTwo );
@@ -306,8 +310,8 @@ public class AnalysisRetrieverTest
                                        CFS );
         TimeSeries<Double> expectedSeriesThree =
                 new TimeSeries.Builder<Double>().setMetadata( metadataThree )
-                                               .addEvent( Event.of( Instant.parse( T2023_04_01T07_00_00Z ), 114.0 ) )
-                                               .build();
+                                                .addEvent( Event.of( Instant.parse( T2023_04_01T07_00_00Z ), 114.0 ) )
+                                                .build();
 
         // Actual series equals expected series
         assertEquals( expectedSeriesThree, actualSeriesThree );
@@ -325,7 +329,7 @@ public class AnalysisRetrieverTest
                                                .setFeaturesCache( this.featuresCache )
                                                .setProjectId( PROJECT_ID )
                                                .setVariableName( VARIABLE_NAME )
-                                               .setFeature( FEATURE )
+                                               .setFeatures( Set.of( FEATURE ) )
                                                .setUnitMapper( this.unitMapper )
                                                .setLeftOrRightOrBaseline( LRB )
                                                .build();
@@ -357,8 +361,8 @@ public class AnalysisRetrieverTest
                                        CFS );
         TimeSeries<Double> expectedSeriesOne =
                 new TimeSeries.Builder<Double>().setMetadata( metadata )
-                                               .addEvent( Event.of( Instant.parse( T2023_04_01T01_00_00Z ), 30.0 ) )
-                                               .build();
+                                                .addEvent( Event.of( Instant.parse( T2023_04_01T01_00_00Z ), 30.0 ) )
+                                                .build();
 
         // Actual series equals expected series
         assertEquals( expectedSeriesOne, actualSeriesOne );
@@ -373,8 +377,8 @@ public class AnalysisRetrieverTest
                                        CFS );
         TimeSeries<Double> expectedSeriesTwo =
                 new TimeSeries.Builder<Double>().setMetadata( metadataTwo )
-                                               .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ), 37.0 ) )
-                                               .build();
+                                                .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ), 37.0 ) )
+                                                .build();
 
         // Actual series equals expected series
         assertEquals( expectedSeriesTwo, actualSeriesTwo );
@@ -389,8 +393,8 @@ public class AnalysisRetrieverTest
                                        CFS );
         TimeSeries<Double> expectedSeriesThree =
                 new TimeSeries.Builder<Double>().setMetadata( metadataThree )
-                                               .addEvent( Event.of( Instant.parse( T2023_04_01T04_00_00Z ), 72.0 ) )
-                                               .build();
+                                                .addEvent( Event.of( Instant.parse( T2023_04_01T04_00_00Z ), 72.0 ) )
+                                                .build();
 
         // Actual series equals expected series
         assertEquals( expectedSeriesThree, actualSeriesThree );
@@ -405,8 +409,8 @@ public class AnalysisRetrieverTest
                                        CFS );
         TimeSeries<Double> expectedSeriesFour =
                 new TimeSeries.Builder<Double>().setMetadata( metadataFour )
-                                               .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 79.0 ) )
-                                               .build();
+                                                .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 79.0 ) )
+                                                .build();
 
         // Actual series equals expected series
         assertEquals( expectedSeriesFour, actualSeriesFour );
@@ -421,8 +425,8 @@ public class AnalysisRetrieverTest
                                        CFS );
         TimeSeries<Double> expectedSeriesFive =
                 new TimeSeries.Builder<Double>().setMetadata( metadataFive )
-                                               .addEvent( Event.of( Instant.parse( T2023_04_01T07_00_00Z ), 114.0 ) )
-                                               .build();
+                                                .addEvent( Event.of( Instant.parse( T2023_04_01T07_00_00Z ), 114.0 ) )
+                                                .build();
 
         // Actual series equals expected series
         assertEquals( expectedSeriesFive, actualSeriesFive );
@@ -437,8 +441,8 @@ public class AnalysisRetrieverTest
                                        CFS );
         TimeSeries<Double> expectedSeriesSix =
                 new TimeSeries.Builder<Double>().setMetadata( metadataSix )
-                                               .addEvent( Event.of( Instant.parse( "2023-04-01T08:00:00Z" ), 121.0 ) )
-                                               .build();
+                                                .addEvent( Event.of( Instant.parse( "2023-04-01T08:00:00Z" ), 121.0 ) )
+                                                .build();
 
         // Actual series equals expected series
         assertEquals( expectedSeriesSix, actualSeriesSix );

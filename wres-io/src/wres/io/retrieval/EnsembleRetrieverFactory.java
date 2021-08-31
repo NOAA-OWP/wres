@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -22,6 +23,8 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.Ensemble;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.space.FeatureGroup;
+import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -90,12 +93,18 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
      */
 
     private final UnitMapper unitMapper;
-
+    
     /**
-     * A feature tuple for retrieval.
+     * The right-ish features for retrieval.
      */
 
-    private final FeatureTuple feature;
+    private final Set<FeatureKey> rightFeatures;
+    
+    /**
+     * The baseline-ish features for retrieval.
+     */
+
+    private final Set<FeatureKey> baselineFeatures;
 
     /**
      * A single-valued retriever factory for the left-ish data.
@@ -107,17 +116,17 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
      * Returns an instance.
      *
      * @param project the project
-     * @param feature a feature to evaluate
+     * @param featureGroup a feature group to evaluate
      * @param unitMapper the unit mapper
      * @return a factory instance
      * @throws NullPointerException if any input is null
      */
 
     public static EnsembleRetrieverFactory of( Project project,
-                                               FeatureTuple feature,
+                                               FeatureGroup featureGroup,
                                                UnitMapper unitMapper )
     {
-        return new EnsembleRetrieverFactory( project, feature, unitMapper );
+        return new EnsembleRetrieverFactory( project, featureGroup, unitMapper );
     }
 
     @Override
@@ -135,9 +144,9 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     @Override
     public Supplier<Stream<TimeSeries<Ensemble>>> getRightRetriever( TimeWindowOuter timeWindow )
     {
-        LOGGER.debug( "Creating a right retriever for project '{}', feature '{}' and time window {}.",
+        LOGGER.debug( "Creating a right retriever for project '{}', features '{}' and time window {}.",
                       this.project.getId(),
-                      this.feature.getRight(),
+                      this.getRightFeatures(),
                       timeWindow );
 
         // Obtain any ensemble member constraints
@@ -153,7 +162,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
                    .setDatabase( this.getDatabase() )
                    .setFeaturesCache( this.getFeaturesCache() )
                    .setProjectId( this.project.getId() )
-                   .setFeature( this.feature.getRight() )
+                   .setFeatures( this.getRightFeatures() )
                    .setVariableName( this.project.getRightVariableName() )
                    .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.RIGHT )
                    .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( rightConfig ) )
@@ -174,13 +183,13 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     @Override
     public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( TimeWindowOuter timeWindow )
     {
-        Supplier<Stream<TimeSeries<Ensemble>>> baseline = () -> Stream.of();
+        Supplier<Stream<TimeSeries<Ensemble>>> baseline = Stream::of;
 
         if ( this.hasBaseline() )
         {
-            LOGGER.debug( "Creating a baseline retriever for project '{}', feature '{}' and time window {}.",
+            LOGGER.debug( "Creating a baseline retriever for project '{}', features '{}' and time window {}.",
                           this.project.getId(),
-                          this.feature.getBaseline(),
+                          this.getBaselineFeatures(),
                           timeWindow );
 
             // Obtain any ensemble member constraints
@@ -196,7 +205,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
                            .setDatabase( this.getDatabase() )
                            .setFeaturesCache( this.getFeaturesCache() )
                            .setProjectId( this.project.getId() )
-                           .setFeature( this.feature.getBaseline() )
+                           .setFeatures( this.getBaselineFeatures() )
                            .setVariableName( this.project.getBaselineVariableName() )
                            .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.BASELINE )
                            .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( baselineConfig ) )
@@ -258,7 +267,25 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     {
         return this.project.getProjectConfig();
     }
+    
+    /**
+     * @return the right-ish features to retrieve.
+     */
 
+    private Set<FeatureKey> getRightFeatures()
+    {
+        return this.rightFeatures;
+    }
+
+    /**
+     * @return the baseline-ish features to retrieve.
+     */
+
+    private Set<FeatureKey> getBaselineFeatures()
+    {
+        return this.baselineFeatures;
+    }
+    
     /**
      * Returns a builder for a right-ish retriever.
      * 
@@ -380,21 +407,20 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
      * Hidden constructor.
      * 
      * @param project the project
-     * @param feature a feature to evaluate
+     * @param feature a feature group to evaluate
      * @param unitMapper the unit mapper
      * @throws NullPointerException if any input is null
      */
 
     private EnsembleRetrieverFactory( Project project,
-                                      FeatureTuple feature,
+                                      FeatureGroup featureGroup,
                                       UnitMapper unitMapper )
     {
         Objects.requireNonNull( project );
         Objects.requireNonNull( unitMapper );
-        Objects.requireNonNull( feature );
+        Objects.requireNonNull( featureGroup );
 
         this.project = project;
-        this.feature = feature;
         this.unitMapper = unitMapper;
 
         ProjectConfig projectConfig = project.getProjectConfig();
@@ -412,8 +438,20 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
 
         // Create a factory for the left-ish data
         this.leftFactory = SingleValuedRetrieverFactory.of( project,
-                                                            feature,
+                                                            featureGroup,
                                                             unitMapper );
+        
+        // Set the features to retrieve
+        this.rightFeatures = featureGroup.getFeatures()
+                                         .stream()
+                                         .map( FeatureTuple::getRight )
+                                         .collect( Collectors.toUnmodifiableSet() );
+
+        this.baselineFeatures = featureGroup.getFeatures()
+                                            .stream()
+                                            .filter( next -> Objects.nonNull( next.getBaseline() ) )
+                                            .map( FeatureTuple::getBaseline )
+                                            .collect( Collectors.toUnmodifiableSet() );
     }
 
 }

@@ -185,7 +185,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
             // Create a feature-shaped retriever factory to support retrieval for this project
             RetrieverFactory<Double, Ensemble> retrieverFactory = EnsembleRetrieverFactory.of( this.project,
-                                                                                               this.feature,
+                                                                                               featureGroup,
                                                                                                this.unitMapper );
             
             List<Supplier<Pool<Pair<Double, Ensemble>>>> pools =
@@ -225,7 +225,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         {
             // Create a feature-shaped retriever factory to support retrieval for this project
             RetrieverFactory<Double, Double> retrieverFactory = SingleValuedRetrieverFactory.of( this.project,
-                                                                                                 this.feature,
+                                                                                                 featureGroup,
                                                                                                  this.unitMapper );
             
             List<Supplier<Pool<Pair<Double, Double>>>> pools =

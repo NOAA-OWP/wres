@@ -78,6 +78,7 @@ public class Projects
      * Convert a projectConfig and a raw list of IngestResult into ProjectDetails
      * @param systemSettings The system settings to use.
      * @param database The database to use.
+     * @param featuresCache the feature cache
      * @param executor The executor to use.
      * @param projectConfig the config that produced the ingest results
      * @param ingestResults the ingest results

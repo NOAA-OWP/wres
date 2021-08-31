@@ -14,6 +14,7 @@ import java.text.MessageFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.TimeZone;
 
 import com.zaxxer.hikari.HikariDataSource;
@@ -29,7 +30,6 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 import wres.datamodel.space.FeatureKey;
-import wres.datamodel.space.FeatureTuple;
 import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
@@ -143,18 +143,17 @@ public class SingleValuedGriddedRetrieverTest
         TimeWindowOuter timeWindow =
                 TimeWindowOuter.of( referenceStart, referenceEnd, validStart, validEnd, leadStart, leadEnd );
 
-        FeatureTuple featureTuple = new FeatureTuple( FEATURE, FEATURE, FEATURE );
         // Build the retriever
         SingleValuedGriddedRetriever retriever =
-                (SingleValuedGriddedRetriever) new SingleValuedGriddedRetriever.Builder().setFeatures( List.of( featureTuple ) )
-                                                  .setIsForecast( true )
-                                                  .setProjectId( PROJECT_ID )
-                                                  .setLeftOrRightOrBaseline( SingleValuedGriddedRetrieverTest.LRB )
-                                                  .setUnitMapper( mapper )
-                                                  .setTimeWindow( timeWindow )
-                                                  .setDatabase( this.wresDatabase )
-                                                  .setVariableName( SingleValuedGriddedRetrieverTest.VARIABLE_NAME )                                                          
-                                                  .build();
+                (SingleValuedGriddedRetriever) new SingleValuedGriddedRetriever.Builder().setIsForecast( true )
+                                                                                         .setFeatures( Set.of( FEATURE ) )
+                                                                                         .setProjectId( PROJECT_ID )
+                                                                                         .setLeftOrRightOrBaseline( SingleValuedGriddedRetrieverTest.LRB )
+                                                                                         .setUnitMapper( mapper )
+                                                                                         .setTimeWindow( timeWindow )
+                                                                                         .setDatabase( this.wresDatabase )
+                                                                                         .setVariableName( SingleValuedGriddedRetrieverTest.VARIABLE_NAME )
+                                                                                         .build();
 
         List<String> actualPaths = retriever.getPaths();
 

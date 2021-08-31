@@ -16,6 +16,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
@@ -127,7 +128,7 @@ public class ObservationRetrieverTest
                .thenReturn( "h2" );
         Mockito.when( this.mockSystemSettings.getMaximumPoolSize() )
                .thenReturn( 10 );
-        
+
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
         this.featuresCache = new Features( this.wresDatabase );
 
@@ -152,7 +153,7 @@ public class ObservationRetrieverTest
                                                   .setFeaturesCache( this.featuresCache )
                                                   .setProjectId( PROJECT_ID )
                                                   .setVariableName( VARIABLE_NAME )
-                                                  .setFeature( FEATURE )
+                                                  .setFeatures( Set.of( FEATURE ) )
                                                   .setUnitMapper( this.unitMapper )
                                                   .setLeftOrRightOrBaseline( LRB )
                                                   .build();
@@ -206,7 +207,7 @@ public class ObservationRetrieverTest
                                                   .setFeaturesCache( this.featuresCache )
                                                   .setProjectId( PROJECT_ID )
                                                   .setVariableName( VARIABLE_NAME )
-                                                  .setFeature( FEATURE )
+                                                  .setFeatures( Set.of( FEATURE ) )
                                                   .setUnitMapper( this.unitMapper )
                                                   .setTimeWindow( poolBoundaries )
                                                   .setLeftOrRightOrBaseline( LRB )
@@ -258,7 +259,7 @@ public class ObservationRetrieverTest
                                                   .setUnitMapper( this.unitMapper )
                                                   .setProjectId( PROJECT_ID )
                                                   .setVariableName( VARIABLE_NAME )
-                                                  .setFeature( FEATURE )
+                                                  .setFeatures( Set.of( FEATURE ) )
                                                   .setLeftOrRightOrBaseline( LRB )
                                                   .build();
 
@@ -276,7 +277,7 @@ public class ObservationRetrieverTest
                 new ObservationRetriever.Builder().setDatabase( this.wresDatabase )
                                                   .setProjectId( PROJECT_ID )
                                                   .setVariableName( VARIABLE_NAME )
-                                                  .setFeature( FEATURE )
+                                                  .setFeatures( Set.of( FEATURE ) )
                                                   .setUnitMapper( this.unitMapper )
                                                   .setLeftOrRightOrBaseline( LRB )
                                                   .build();
@@ -295,13 +296,15 @@ public class ObservationRetrieverTest
                 new ObservationRetriever.Builder().setDatabase( this.wresDatabase )
                                                   .setProjectId( PROJECT_ID )
                                                   .setVariableName( VARIABLE_NAME )
-                                                  .setFeature( FEATURE )
+                                                  .setFeatures( Set.of( FEATURE ) )
                                                   .setUnitMapper( this.unitMapper )
                                                   .setLeftOrRightOrBaseline( LRB )
                                                   .build();
 
+        LongStream longStream = LongStream.of();
+
         UnsupportedOperationException expected = assertThrows( UnsupportedOperationException.class,
-                                                               () -> forecastRetriever.get( LongStream.of() ) );
+                                                               () -> forecastRetriever.get( longStream ) );
 
         assertEquals( NO_IDENTIFIER_ERROR, expected.getMessage() );
     }

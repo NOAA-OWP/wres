@@ -3,7 +3,7 @@ package wres.grid.client;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.StringJoiner;
+import java.util.Set;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -29,7 +29,7 @@ class GridDataRequest implements Request
      * The features to read.
      */
 
-    private final List<FeatureKey> features;
+    private final Set<FeatureKey> features;
 
     /**
      * The variable name.
@@ -68,7 +68,7 @@ class GridDataRequest implements Request
      */
 
     static GridDataRequest of( List<String> paths,
-                               List<FeatureKey> features,
+                               Set<FeatureKey> features,
                                String variableName,
                                TimeWindowOuter timeWindow,
                                boolean isForecast,
@@ -90,7 +90,7 @@ class GridDataRequest implements Request
      */
 
     private GridDataRequest( List<String> paths,
-                             List<FeatureKey> features,
+                             Set<FeatureKey> features,
                              String variableName,
                              TimeWindowOuter timeWindow,
                              boolean isForecast,
@@ -102,7 +102,7 @@ class GridDataRequest implements Request
         Objects.requireNonNull( timeWindow );
 
         this.paths = Collections.unmodifiableList( paths );
-        this.features = Collections.unmodifiableList( features );
+        this.features = Collections.unmodifiableSet( features );
         this.variableName = variableName;
         this.timeWindow = timeWindow;
         this.isForecast = isForecast;
@@ -134,7 +134,7 @@ class GridDataRequest implements Request
     }
 
     @Override
-    public List<FeatureKey> getFeatures()
+    public Set<FeatureKey> getFeatures()
     {
         return this.features; // Rendered immutable on construction
     }

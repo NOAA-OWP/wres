@@ -1,6 +1,7 @@
 package wres.grid.client;
 
 import java.util.List;
+import java.util.Set;
 
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
@@ -27,7 +28,7 @@ public interface Request
      * @return the features requested
      */
     
-    List<FeatureKey> getFeatures();
+    Set<FeatureKey> getFeatures();
     
     /**
      * @return the time window

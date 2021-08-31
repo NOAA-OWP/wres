@@ -183,7 +183,7 @@ public class EnsembleForecastRetrieverTest
                                                        .setFeaturesCache( this.featuresCache )
                                                        .setProjectId( PROJECT_ID )
                                                        .setVariableName( VARIABLE_NAME )
-                                                       .setFeature( FEATURE )
+                                                       .setFeatures( Set.of( FEATURE ) )
                                                        .setUnitMapper( this.unitMapper )
                                                        .setLeftOrRightOrBaseline( LRB )
                                                        .build();
@@ -241,7 +241,7 @@ public class EnsembleForecastRetrieverTest
                                                        .setFeaturesCache( this.featuresCache )
                                                        .setProjectId( PROJECT_ID )
                                                        .setVariableName( VARIABLE_NAME )
-                                                       .setFeature( FEATURE )
+                                                       .setFeatures( Set.of( FEATURE ) )
                                                        .setUnitMapper( this.unitMapper )
                                                        .setLeftOrRightOrBaseline( LRB )
                                                        .build();
@@ -295,7 +295,7 @@ public class EnsembleForecastRetrieverTest
                                                        .setDatabase( this.wresDatabase )
                                                        .setProjectId( PROJECT_ID )
                                                        .setVariableName( VARIABLE_NAME )
-                                                       .setFeature( FEATURE )
+                                                       .setFeatures( Set.of( FEATURE ) )
                                                        .setUnitMapper( this.unitMapper )
                                                        .setLeftOrRightOrBaseline( LRB )
                                                        .build();
@@ -315,7 +315,7 @@ public class EnsembleForecastRetrieverTest
                                                        .setDatabase( this.wresDatabase )
                                                        .setProjectId( PROJECT_ID )
                                                        .setVariableName( VARIABLE_NAME )
-                                                       .setFeature( FEATURE )
+                                                       .setFeatures( Set.of( FEATURE ) )
                                                        .setUnitMapper( this.unitMapper )
                                                        .setLeftOrRightOrBaseline( LRB )
                                                        .build();
@@ -335,13 +335,15 @@ public class EnsembleForecastRetrieverTest
                                                        .setDatabase( this.wresDatabase )
                                                        .setProjectId( PROJECT_ID )
                                                        .setVariableName( VARIABLE_NAME )
-                                                       .setFeature( FEATURE )
+                                                       .setFeatures( Set.of( FEATURE ) )
                                                        .setUnitMapper( this.unitMapper )
                                                        .setLeftOrRightOrBaseline( LRB )
                                                        .build();
 
+        LongStream longStream = LongStream.of();
+        
         UnsupportedOperationException expected = assertThrows( UnsupportedOperationException.class,
-                                                               () -> forecastRetriever.get( LongStream.of() ) );
+                                                               () -> forecastRetriever.get( longStream ) );
 
         assertEquals( NO_IDENTIFIER_ERROR, expected.getMessage() );
     }

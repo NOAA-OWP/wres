@@ -37,8 +37,8 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
      * <code>GROUP BY</code> clause, which is repeated several times.
      */
 
-    private static final String GROUP_BY_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE =
-            "GROUP BY series_id, TSV.lead, TSV.series_value";
+    private static final String GROUP_BY_FEATURE_ID_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE =
+            "GROUP BY TS.feature_id, series_id, TSV.lead, TSV.series_value";
 
     /**
      * Script string re-used several times. 
@@ -102,7 +102,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
 
         Database database = super.getDatabase();
         DataScripter dataScripter = new DataScripter( database, script );
-        
+
         // Add the first argument, the time-series identifier
         dataScripter.addArgument( identifier );
 
@@ -113,7 +113,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         this.addSeasonClause( dataScripter, 1 );
 
         // Add GROUP BY and ORDER BY clauses
-        dataScripter.addLine( GROUP_BY_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE ); // #56214-272
+        dataScripter.addLine( GROUP_BY_FEATURE_ID_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE ); // #56214-272
         dataScripter.addLine( ORDER_BY_OCCURRENCES_TS_INITIALIZATION_DATE_VALID_TIME_SERIES_ID );
 
         // Log
@@ -193,9 +193,9 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         // Add the time-series identifiers
         dataScripter.addTab( 1 ).addLine( "AND TS.timeseries_id = ANY(?)" );
         dataScripter.addArgument( identifiers.boxed().toArray() );
-        
+
         // Add GROUP BY clause
-        dataScripter.addLine( GROUP_BY_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE ); // #56214-272
+        dataScripter.addLine( GROUP_BY_FEATURE_ID_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE ); // #56214-272
 
         // Add ORDER BY clause
         dataScripter.addLine( ORDER_BY_OCCURRENCES_TS_INITIALIZATION_DATE_VALID_TIME_SERIES_ID );
@@ -232,7 +232,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         this.addSeasonClause( dataScripter, 1 );
 
         // Add GROUP BY clause
-        dataScripter.addLine( GROUP_BY_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE ); // #56214-272
+        dataScripter.addLine( GROUP_BY_FEATURE_ID_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE ); // #56214-272
 
         // Add ORDER BY clause
         dataScripter.addLine( ORDER_BY_OCCURRENCES_TS_INITIALIZATION_DATE_VALID_TIME_SERIES_ID );
@@ -249,7 +249,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
     {
         return true;
     }
-    
+
     /**
      * Returns a function that obtains the measured value in the desired units from a {@link DataProvider}.
      * 
@@ -320,6 +320,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         scripter.addTab().addLine( "TS.measurementunit_id," );
         scripter.addTab().addLine( "TS.scale_period," );
         scripter.addTab().addLine( "TS.scale_function," );
+        scripter.addTab().addLine( "TS.feature_id," );
         // See #56214-272. Add the count to allow re-duplication of duplicate series
         scripter.addTab().addLine( "COUNT(*) AS occurrences" );
         scripter.addLine( FROM_WRES_TIME_SERIES_TS );

@@ -10,9 +10,11 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.function.Function;
@@ -115,10 +117,10 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     private final long projectId;
 
     /**
-     * The feature.
+     * The features.
      */
 
-    private final FeatureKey feature;
+    private final Set<FeatureKey> features;
 
     /**
      * The variable name.
@@ -207,9 +209,9 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @return the feature.
      */
 
-    FeatureKey getFeature()
+    Set<FeatureKey> getFeatures()
     {
-        return this.feature;
+        return this.features;
     }
 
     /**
@@ -295,11 +297,14 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                                                                           functionString,
                                                                           validTime );
 
+                long featureId = provider.getLong( "feature_id" );
+                FeatureKey featureKey = this.featuresCache.getFeatureKey( featureId );
+
                 TimeSeriesMetadata metadata =
                         TimeSeriesMetadata.of( referenceTimes,
                                                latestScale,
                                                this.getVariableName(),
-                                               this.getFeature(),
+                                               featureKey,
                                                this.unitMapper.getDesiredMeasurementUnitName() );
                 builder.setMetadata( metadata );
                 lastScale = latestScale;
@@ -439,6 +444,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      *
      * @param script the script to augment
      * @param tabsIn the number of tabs in for the outermost clause
+     * @throws DataAccessException if the feature identifier could not be found
      */
 
     void addProjectFeatureVariableAndMemberConstraints( DataScripter script, int tabsIn )
@@ -456,12 +462,13 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         }
 
         // Feature identifier, can be null with no baseline.
-        if ( Objects.nonNull( this.getFeature() ) )
+        if ( !this.getFeatures().isEmpty() )
         {
+            Long[] featureIds = this.getFeatureIds();
             this.addWhereOrAndClause( script,
                                       tabsIn,
-                                      "TS.feature_id = ?",
-                                      this.getFeatureId() );
+                                      "TS.feature_id = ANY(?)",
+                                      featureIds );
         }
 
         // Member
@@ -1230,10 +1237,10 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         private String variableName;
 
         /**
-         * Feature.
+         * Features.
          */
 
-        private FeatureKey feature;
+        private Set<FeatureKey> features = new HashSet<>();
 
         /**
          * The data type.
@@ -1316,15 +1323,19 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         }
 
         /**
-         * Sets the feature.
+         * Sets the features.
          * 
-         * @param feature the feature
+         * @param features the features
          * @return the builder
          */
 
-        TimeSeriesRetrieverBuilder<S> setFeature( FeatureKey feature )
+        TimeSeriesRetrieverBuilder<S> setFeatures( Set<FeatureKey> features )
         {
-            this.feature = feature;
+            if ( Objects.nonNull( features ) )
+            {
+                this.features.addAll( features );
+            }
+
             return this;
         }
 
@@ -1454,7 +1465,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         this.featuresCache = builder.featuresCache;
         this.projectId = builder.projectId;
         this.variableName = builder.variableName;
-        this.feature = builder.feature;
+        this.features = Collections.unmodifiableSet( new HashSet<>( builder.features ) );
         this.lrb = builder.lrb;
         this.timeWindow = builder.timeWindow;
         this.desiredTimeScale = builder.desiredTimeScale;
@@ -1486,6 +1497,11 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         {
             throw new IllegalArgumentException( "Cannot build a time-series retriever with a null reference time "
                                                 + "type." );
+        }
+
+        if ( this.features.isEmpty() )
+        {
+            throw new IllegalArgumentException( validationStart + " set of one or more features." );
         }
 
         // Log missing information
@@ -1535,20 +1551,28 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
-     * Use the features cache to get a db id for the feature associated.
-     * @return the db row id for the feature.
+     * Use the features cache to get a db id for each feature. Return boxed types as the H2 driver seems to prefer
+     * this as a parameter and the postgres driver is also fine with it.
+     * @return the db row id for each feature.
      */
 
-    protected long getFeatureId()
+    Long[] getFeatureIds()
     {
-        try
-        {
-            return this.featuresCache.getFeatureId( this.getFeature() );
-        }
-        catch ( SQLException se )
-        {
-            throw new DataAccessException( "Unable to find feature id for "
-                                           + this.getFeature() );
-        }
+        return this.getFeatures()
+                   .stream()
+                   .mapToLong( nextFeature -> {
+                       try
+                       {
+                           return this.featuresCache.getFeatureId( nextFeature );
+                       }
+                       catch ( SQLException e )
+                       {
+                           throw new DataAccessException( "Unable to find a feature id for "
+                                                          + nextFeature
+                                                          + "." );
+                       }
+                   } )
+                   .boxed()
+                   .toArray( Long[]::new );
     }
 }
