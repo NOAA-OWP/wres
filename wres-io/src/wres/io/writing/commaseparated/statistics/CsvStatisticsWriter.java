@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.DoubleFunction;
 import java.util.function.Function;
 import java.util.zip.GZIPOutputStream;
 
@@ -160,7 +161,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * Decimal formatter.
      */
 
-    private final Function<Double, String> decimalFormatter;
+    private final DoubleFunction<String> decimalFormatter;
 
     /**
      * Nanoseconds per {@link #durationUnits}.
@@ -212,7 +213,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                           Path path,
                                           boolean gzip,
                                           ChronoUnit durationUnits,
-                                          Function<Double, String> decimalFormatter )
+                                          DoubleFunction<String> decimalFormatter )
     {
         return new CsvStatisticsWriter( evaluation, path, gzip, durationUnits, decimalFormatter );
     }
@@ -1335,7 +1336,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * @return the decimal formatter
      */
 
-    private Function<Double, String> getDecimalFormatter()
+    private DoubleFunction<String> getDecimalFormatter()
     {
         return this.decimalFormatter;
     }
@@ -1356,7 +1357,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                  Path path,
                                  boolean gzip,
                                  ChronoUnit durationUnits,
-                                 Function<Double, String> decimalFormatter )
+                                 DoubleFunction<String> decimalFormatter )
     {
         LOGGER.debug( "Creating a CSV format writer, which will write statistics to {}.", path );
 

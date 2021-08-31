@@ -61,10 +61,10 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
     private static final Logger LOGGER = LoggerFactory.getLogger( FeatureProcessor.class );
 
     /**
-     * The feature.
+     * The feature group.
      */
 
-    private final FeatureTuple feature;
+    private final FeatureGroup featureGroup;
 
     /**
      * The project.
@@ -118,7 +118,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * Build a processor. 
      * 
      * @param evaluationDetails the evaluation details
-     * @param feature the feature to process
+     * @param featureGroup the feature group to evaluate
      * @param unitMapper the unit mapper
      * @param executors the executors for pairs, thresholds, and metrics
      * @param sharedWriters shared writers
@@ -126,7 +126,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      */
 
     FeatureProcessor( EvaluationDetails evaluationDetails,
-                      FeatureTuple feature,
+                      FeatureGroup featureGroup,
                       UnitMapper unitMapper,
                       Executors executors,
                       SharedWriters sharedWriters )
@@ -136,7 +136,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         Evaluation localEvaluation = evaluationDetails.getEvaluation();
         EvaluationEvent localMonitor = evaluationDetails.getMonitor();
 
-        Objects.requireNonNull( feature );
+        Objects.requireNonNull( featureGroup );
         Objects.requireNonNull( localProject );
         Objects.requireNonNull( localResolvedProject );
         Objects.requireNonNull( unitMapper );
@@ -145,7 +145,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         Objects.requireNonNull( localEvaluation );
         Objects.requireNonNull( localMonitor );
 
-        this.feature = feature;
+        this.featureGroup = featureGroup;
         this.resolvedProject = localResolvedProject;
         this.project = localProject;
         this.unitMapper = unitMapper;
@@ -155,14 +155,14 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         this.monitor = localMonitor;
 
         // Error message
-        this.errorMessage = "While processing feature " + feature;
+        this.errorMessage = "While processing feature group " + featureGroup;
     }
 
     @Override
     public FeatureProcessingResult get()
     {
         // Report
-        LOGGER.debug( "Started feature '{}'", this.feature );
+        LOGGER.debug( "Started feature group '{}'", this.featureGroup );
 
         ProjectConfig projectConfig = this.resolvedProject.getProjectConfig();
         List<MetricsAndThresholds> metricsAndThresholds = this.resolvedProject.getMetricsAndThresholds();
@@ -175,8 +175,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         DatasourceType type = projectConfig.getInputs()
                                            .getRight()
                                            .getType();
-
-        FeatureGroup featureGroup = FeatureGroup.of( this.feature );
         
         // In future, other types of pools may be handled here
         // Pairs that contain ensemble forecasts
@@ -185,7 +183,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
             // Create a feature-shaped retriever factory to support retrieval for this project
             RetrieverFactory<Double, Ensemble> retrieverFactory = EnsembleRetrieverFactory.of( this.project,
-                                                                                               featureGroup,
+                                                                                               this.featureGroup,
                                                                                                this.unitMapper );
             
             List<Supplier<Pool<Pair<Double, Ensemble>>>> pools =
@@ -225,7 +223,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         {
             // Create a feature-shaped retriever factory to support retrieval for this project
             RetrieverFactory<Double, Double> retrieverFactory = SingleValuedRetrieverFactory.of( this.project,
-                                                                                                 featureGroup,
+                                                                                                 this.featureGroup,
                                                                                                  this.unitMapper );
             
             List<Supplier<Pool<Pair<Double, Double>>>> pools =
@@ -352,7 +350,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             throw new WresProcessingException( this.errorMessage, e );
         }
 
-        return new FeatureProcessingResult( this.feature, published.get() );
+        return new FeatureProcessingResult( this.featureGroup, published.get() );
     }
 
     /**
@@ -405,25 +403,12 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
     }
 
     /**
-     * Returns the group identifier for the feature. The identifier is composed of the l/r/b feature names.
-     * 
-     * @return a group identifier
+     * @return the feature group identifier
      */
 
     private String getGroupId()
     {
-        String left = this.feature.getLeftName();
-        String right = this.feature.getRightName();
-        String baseline = this.feature.getBaselineName();
-
-        String returnMe = left + "-" + right;
-
-        if ( Objects.nonNull( baseline ) )
-        {
-            returnMe = returnMe + "-" + baseline;
-        }
-
-        return returnMe;
+        return this.featureGroup.getName();
     }
 
     /**
@@ -603,9 +588,15 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
     {
         List<Metrics> metrics = new ArrayList<>();
 
+        // Select the first feature in the group to determine the thresholds. TODO: relax this assumption for
+        // feature pooling
+        FeatureTuple featureTuple = this.featureGroup.getFeatures()
+                                                     .iterator()
+                                                     .next();
+        
         for ( MetricsAndThresholds next : metricsAndThresholds )
         {
-            ThresholdsByMetric thresholds = next.getThresholdsByMetric( this.feature );
+            ThresholdsByMetric thresholds = next.getThresholdsByMetric( featureTuple );
             Metrics nextMetrics = Metrics.of( thresholds, next.getMinimumSampleSize() );
             metrics.add( nextMetrics );
         }

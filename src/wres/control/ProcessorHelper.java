@@ -29,9 +29,11 @@ import wres.config.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.MetricsConfig;
+import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.control.Evaluator.DatabaseServices;
 import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.events.Evaluation;
@@ -63,8 +65,8 @@ import wres.system.SystemSettings;
  *
  * TODO: abstract away the functions used for graphical processing to a separate helper, GraphicalProductsHelper.
  *
- * @author james.brown@hydrosolved.com
- * @author jesse.bickel@***REMOVED***
+ * @author James Brown
+ * @author Jesse Bickel
  */
 class ProcessorHelper
 {
@@ -474,11 +476,15 @@ class ProcessorHelper
             // completion state of features has no value when reported in this way
             ProgressMonitor.deactivate();
 
-            // Create one task per feature
-            for ( FeatureTuple feature : decomposedFeatures )
+            // Create the feature groups
+            Set<FeatureGroup> featureGroups = ProcessorHelper.getFeatureGroups( decomposedFeatures, 
+                                                                                projectConfig.getPair());
+            
+            // Create one task per feature group
+            for ( FeatureGroup nextGroup : featureGroups )
             {
                 Supplier<FeatureProcessingResult> featureProcessor = new FeatureProcessor( evaluationDetails,
-                                                                                           feature,
+                                                                                           nextGroup,
                                                                                            unitMapper,
                                                                                            executors,
                                                                                            sharedWriters );
@@ -1134,7 +1140,32 @@ class ProcessorHelper
 
         return pathString;
     }
+    
+    /**
+     * @param features the individual feature tuples
+     * @param pairConfig the pair declaration
+     * @return the feature groups
+     */
 
+    private static Set<FeatureGroup> getFeatureGroups( Set<FeatureTuple> features, PairConfig pairConfig )
+    {
+        Objects.requireNonNull( features );
+        Objects.requireNonNull( pairConfig );
+        
+        Set<FeatureGroup> featureGroups = new HashSet<>();
+        for ( FeatureTuple feature : features )
+        {
+            StringJoiner inner = new StringJoiner( ", ", "( ", " )" );
+            String groupName = feature.toStringShort();
+            inner.add( groupName );
+
+            FeatureGroup featureGroup = FeatureGroup.of( inner.toString(), feature );
+            featureGroups.add( featureGroup );
+        }
+
+        return Collections.unmodifiableSet( featureGroups );
+    }
+    
     /**
      * Small value class to collect together variables needed to instantiate an evaluation.
      */

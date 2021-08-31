@@ -2,7 +2,7 @@ package wres.control;
 
 import java.util.Objects;
 import wres.config.generated.Feature;
-import wres.datamodel.space.FeatureTuple;
+import wres.datamodel.space.FeatureGroup;
 
 /**
  * Records the completion of one {@link Feature}. 
@@ -12,24 +12,24 @@ import wres.datamodel.space.FeatureTuple;
 
 class FeatureProcessingResult
 {
-    private final FeatureTuple feature;
+    private final FeatureGroup featureGroup;
 
     /**
      * Is <code>true</code> if statistics were produced for one of more pools, otherwise <code>false</code>.
      */
     private final boolean hasStatistics;
 
-    FeatureProcessingResult( FeatureTuple feature,
+    FeatureProcessingResult( FeatureGroup featureGroup,
                              boolean hasStatistics )
     {
-        Objects.requireNonNull( feature );
-        this.feature = feature;
+        Objects.requireNonNull( featureGroup );
+        this.featureGroup = featureGroup;
         this.hasStatistics = hasStatistics;
     }
 
-    FeatureTuple getFeature()
+    FeatureGroup getFeatureGroup()
     {
-        return this.feature;
+        return this.featureGroup;
     }
 
     /**
@@ -46,8 +46,8 @@ class FeatureProcessingResult
     @Override
     public String toString()
     {
-        return "Feature "
-               + this.getFeature()
+        return "Feature group "
+               + this.getFeatureGroup()
                + " produced statistics: "
                + this.hasStatistics();
     }
