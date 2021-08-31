@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.DoubleFunction;
 import java.util.function.Function;
 
 import org.slf4j.Logger;
@@ -116,8 +117,8 @@ class StatisticsConsumerFactory implements ConsumerFactory
 
             Path fullPath = path.resolve( CsvStatisticsWriter.DEFAULT_FILE_NAME );
 
-            Function<Double, String> formatter = this.getDecimalFormatter( this.projectConfig,
-                                                                           Set.of( DestinationType.CSV2 ) );
+            DoubleFunction<String> formatter = this.getDecimalFormatter( this.projectConfig,
+                                                                         Set.of( DestinationType.CSV2 ) );
             CsvStatisticsWriter writer = CsvStatisticsWriter.of( evaluation,
                                                                  fullPath,
                                                                  true,
@@ -177,7 +178,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
                                                            .toUpperCase();
 
             // Formatted doubles to write
-            Function<Double, String> formatter =
+            DoubleFunction<String> formatter =
                     this.getDecimalFormatter( this.projectConfig,
                                               Set.of( DestinationType.CSV, DestinationType.NUMERIC ) );
             Function<DoubleScoreComponentOuter, String> doubleMapper =
@@ -326,8 +327,8 @@ class StatisticsConsumerFactory implements ConsumerFactory
      * @return a formatter
      */
 
-    private Function<Double, String> getDecimalFormatter( ProjectConfig projectConfig,
-                                                          Set<DestinationType> destinationTypes )
+    private DoubleFunction<String> getDecimalFormatter( ProjectConfig projectConfig,
+                                                        Set<DestinationType> destinationTypes )
     {
         // Find the relevant config
         DestinationConfig config = projectConfig.getOutputs()

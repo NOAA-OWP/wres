@@ -2,9 +2,9 @@ package wres.control;
 
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -14,13 +14,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigPlus;
-import wres.config.generated.Feature;
-import wres.datamodel.space.FeatureTuple;
-import wres.io.data.caching.Features;
+import wres.datamodel.space.FeatureGroup;
 import wres.events.Evaluation;
 
 /**
- * <p>A {@link Consumer} that records information about the completion state of a {@link Feature}. The 
+ * <p>A {@link Consumer} that records information about the completion state of a {@link FeatureGroup}. The 
  * {@link FeatureReporter} is mutable and is updated asynchronously as {@link FeatureProcessingResult} become available.
  * Some information is reported during execution, and additional information is reported on request (e.g. at the 
  * end of execution) by calling {@link #report()}.
@@ -35,7 +33,7 @@ import wres.events.Evaluation;
  * status reporting to the {@link Evaluation}, specifically to the package private EvaluationStatusTracker and report
  * on "group" consumption more generally, noting that a group may contain more than one feature. See #88698.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 class FeatureReporter implements Consumer<FeatureProcessingResult>
@@ -51,7 +49,7 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
      * List of successful features.
      */
 
-    private final ConcurrentLinkedQueue<FeatureTuple> successfulFeatures;
+    private final ConcurrentLinkedQueue<FeatureGroup> successfulFeatures;
 
     /**
      * Set of paths modified by this feature.
@@ -122,22 +120,22 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
 
         if ( !result.hasStatistics() && LOGGER.isWarnEnabled() )
         {
-            LOGGER.warn( "[{}/{}] Completed feature tuple '{}', but no statistics were created. "
+            LOGGER.warn( "[{}/{}] Completed feature group {}, but no statistics were created. "
                          + "This probably occurred because no pools contained valid pairs.",
                          currentFeature,
                          this.totalFeatures,
-                         result.getFeature().toStringShort() );
+                         result.getFeatureGroup().getName() );
         }
         else
         {
-            this.successfulFeatures.add( result.getFeature() );
+            this.successfulFeatures.add( result.getFeatureGroup() );
 
             if ( LOGGER.isInfoEnabled() )
             {
-                LOGGER.info( "[{}/{}] Completed statistics for feature tuple '{}'",
+                LOGGER.info( "[{}/{}] Completed statistics for feature group {}",
                              currentFeature,
                              this.totalFeatures,
-                             result.getFeature().toStringShort() );
+                             result.getFeatureGroup().getName() );
             }
         }
     }
@@ -151,7 +149,7 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
     void report()
     {
         // Finalize results
-        List<FeatureTuple> successfulFeaturesToReport = List.copyOf( successfulFeatures );
+        Set<FeatureGroup> successfulFeaturesToReport = Set.copyOf( this.successfulFeatures );
 
         // Detailed report
         if ( LOGGER.isInfoEnabled() &&
@@ -159,8 +157,8 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
              &&
              !successfulFeaturesToReport.isEmpty() )
         {
-            LOGGER.info( "Statistics were created for these feature tuples: {}",
-                         Features.getFeaturesDescription( successfulFeaturesToReport ) );
+            LOGGER.info( "Statistics were created for these feature groups: {}",
+                         FeatureReporter.getFeaturesDescription( successfulFeaturesToReport ) );
         }
 
         // Exception after detailed report: in practice, this should be handled earlier
@@ -182,13 +180,13 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
         {
             if ( this.totalFeatures == successfulFeaturesToReport.size() )
             {
-                LOGGER.info( "Finished creating statistics for all feature tuples in project {}.",
+                LOGGER.info( "Finished creating statistics for all feature groups in project {}.",
                              this.projectConfigPlus );
             }
             else
             {
-                LOGGER.info( "{} out of {} feature tuples in project {} produced statistics and "
-                             + "{} out of {} feature tuples did not produce statistics.",
+                LOGGER.info( "{} out of {} feature groups in project {} produced statistics and "
+                             + "{} out of {} feature groups did not produce statistics.",
                              successfulFeaturesToReport.size(),
                              this.totalFeatures,
                              this.projectConfigPlus,
@@ -202,4 +200,23 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
     {
         return Collections.unmodifiableSet( this.pathsWrittenTo );
     }
+
+    /**
+     * Get a comma separated description of a set of features groups.
+     *
+     * @param featureGroups the groups of features, not null
+     * @return a summary description of all features
+     */
+    private static String getFeaturesDescription( Set<FeatureGroup> featureGroups )
+    {
+        StringJoiner outer = new StringJoiner( ", ", "[ ", " ]" );
+
+        for ( FeatureGroup nextGroup : featureGroups )
+        {
+            outer.add( nextGroup.getName() );
+        }
+
+        return outer.toString();
+    }
+
 }

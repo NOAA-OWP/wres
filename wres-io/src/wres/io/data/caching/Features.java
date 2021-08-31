@@ -238,24 +238,4 @@ public class Features
         GriddedFeatures features = this.griddedFeatures.build();
         return features.get();
     }
-
-    /**
-     * Get a comma separated description of a list of features.
-     *
-     * @param features the list of features to describe, nonnull
-     * @return a description of all features
-     * @throws NullPointerException when list of features is null
-     */
-    public static String getFeaturesDescription( List<FeatureTuple> features )
-    {
-        Objects.requireNonNull( features );
-        StringJoiner result = new StringJoiner( ", ", "( ", " )" );
-
-        for ( FeatureTuple feature : features )
-        {
-            result.add( feature.toStringShort() );
-        }
-
-        return result.toString();
-    }
 }
