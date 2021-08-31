@@ -45,6 +45,7 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.DataSourceConfig.Variable;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.Event;
@@ -437,8 +438,9 @@ public class SingleValuedRetrieverFactoryTest
 
         // Create the factory instance
         UnitMapper unitMapper = UnitMapper.of( this.wresDatabase, CFS );
+        FeatureGroup featureGroup = FeatureGroup.of( allFeatures );
         this.factoryToTest = SingleValuedRetrieverFactory.of( project,
-                                                              featureTuple,
+                                                              featureGroup,
                                                               unitMapper );
     }
 

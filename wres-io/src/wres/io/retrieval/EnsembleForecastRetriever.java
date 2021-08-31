@@ -217,7 +217,8 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         this.addSeasonClause( dataScripter, 1 );
 
         // Add GROUP BY clause
-        dataScripter.addLine( "GROUP BY reference_time, "
+        dataScripter.addLine( "GROUP BY TS.feature_id,"
+                              + "reference_time, "
                               + "series_id, "
                               + "TSV.lead, "
                               + "TS.scale_period, "
@@ -382,6 +383,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         scripter.addTab().addLine( "TS.scale_period," );
         scripter.addTab().addLine( "TS.scale_function," );
         scripter.addTab().addLine( "TS.measurementunit_id," );
+        scripter.addTab().addLine( "TS.feature_id," );
         // To discover duplicates
         scripter.addTab().addLine( "COUNT(TS.ensemble_id) / COUNT(DISTINCT TS.ensemble_id) AS occurrences" );
         scripter.addLine( FROM_WRES_TIME_SERIES_TS );

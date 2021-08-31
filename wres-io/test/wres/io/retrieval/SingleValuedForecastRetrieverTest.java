@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
@@ -146,7 +147,7 @@ public class SingleValuedForecastRetrieverTest
                                                            .setFeaturesCache( this.featuresCache )
                                                            .setProjectId( PROJECT_ID )
                                                            .setVariableName( VARIABLE_NAME )
-                                                           .setFeature( FEATURE )
+                                                           .setFeatures( Set.of( FEATURE ) )
                                                            .setUnitMapper( this.unitMapper )
                                                            .setLeftOrRightOrBaseline( LRB )
                                                            .build();
@@ -225,7 +226,7 @@ public class SingleValuedForecastRetrieverTest
                                                            .setFeaturesCache( this.featuresCache )
                                                            .setProjectId( PROJECT_ID )
                                                            .setVariableName( VARIABLE_NAME )
-                                                           .setFeature( FEATURE )
+                                                           .setFeatures( Set.of( FEATURE ) )
                                                            .setUnitMapper( this.unitMapper )
                                                            .setTimeWindow( timeWindow )
                                                            .setLeftOrRightOrBaseline( LRB )
@@ -286,7 +287,7 @@ public class SingleValuedForecastRetrieverTest
                                                            .setFeaturesCache( this.featuresCache )
                                                            .setProjectId( PROJECT_ID )
                                                            .setVariableName( VARIABLE_NAME )
-                                                           .setFeature( FEATURE )
+                                                           .setFeatures( Set.of( FEATURE ) )
                                                            .setLeftOrRightOrBaseline( LRB )
                                                            .setUnitMapper( this.unitMapper )
                                                            .build();
@@ -307,7 +308,7 @@ public class SingleValuedForecastRetrieverTest
                                                            .setFeaturesCache( this.featuresCache )
                                                            .setProjectId( PROJECT_ID )
                                                            .setVariableName( VARIABLE_NAME )
-                                                           .setFeature( FEATURE )
+                                                           .setFeatures( Set.of( FEATURE ) )
                                                            .setUnitMapper( this.unitMapper )
                                                            .setLeftOrRightOrBaseline( LRB )
                                                            .build();

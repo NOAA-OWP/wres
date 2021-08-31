@@ -110,7 +110,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
         this.addSeasonClause( dataScripter, 1 );
         this.addProjectFeatureVariableAndMemberConstraints( dataScripter, 0 );
 
-        dataScripter.addLine( "GROUP BY TS.timeseries_id, TSV.lead, TSV.series_value" );
+        dataScripter.addLine( "GROUP BY TS.feature_id, TS.timeseries_id, TSV.lead, TSV.series_value" );
 
         // Add ORDER BY clause
         dataScripter.addLine( "ORDER BY series_id, valid_time;" );
@@ -175,6 +175,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
         scripter.addTab().addLine( "TS.measurementunit_id," );
         scripter.addTab().addLine( "TS.scale_period," );
         scripter.addTab().addLine( "TS.scale_function," );
+        scripter.addTab().addLine( "TS.feature_id," );
         // See #56214-272. Add the count to allow re-duplication of duplicate series
         scripter.addTab().addLine( "COUNT(*) AS occurrences" );
         scripter.addLine( "FROM wres.TimeSeries TS" );

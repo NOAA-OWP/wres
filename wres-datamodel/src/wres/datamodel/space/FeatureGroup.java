@@ -29,6 +29,17 @@ public class FeatureGroup
     private final Set<FeatureTuple> features;
 
     /**
+     * @param features the grouped features, not null, not empty
+     * @return an instance
+     * @throws NullPointerException if the features are null
+     * @throws IllegalArgumentException if the features are empty
+     */
+    public static FeatureGroup of( Set<FeatureTuple> features )
+    {
+        return new FeatureGroup( null, features );
+    }
+
+    /**
      * @param name the group name, may be null
      * @param features the grouped features, not null, not empty
      * @return an instance

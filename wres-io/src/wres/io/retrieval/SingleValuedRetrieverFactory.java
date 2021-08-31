@@ -3,9 +3,10 @@ package wres.io.retrieval;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.MonthDay;
-import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -18,6 +19,8 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.space.FeatureGroup;
+import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -106,11 +109,24 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
 
     private final UnitMapper unitMapper;
 
+
     /**
-     * A feature for retrieval.
+     * The left-ish features for retrieval.
      */
 
-    private final FeatureTuple feature;
+    private final Set<FeatureKey> leftFeatures;
+
+    /**
+     * The right-ish features for retrieval.
+     */
+
+    private final Set<FeatureKey> rightFeatures;
+
+    /**
+     * The baseline-ish features for retrieval.
+     */
+
+    private final Set<FeatureKey> baselineFeatures;
 
     /**
      * A string that describes the feature.
@@ -122,18 +138,18 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
      * Returns an instance.
      *
      * @param project the project
-     * @param feature a feature to evaluate
+     * @param featureGroup the feature group to evaluate
      * @param unitMapper the unit mapper
      * @return a factory instance
      * @throws NullPointerException if any input is null
      */
 
     public static SingleValuedRetrieverFactory of( Project project,
-                                                   FeatureTuple feature,
+                                                   FeatureGroup featureGroup,
                                                    UnitMapper unitMapper )
     {
         return new SingleValuedRetrieverFactory( project,
-                                                 feature,
+                                                 featureGroup,
                                                  unitMapper );
     }
 
@@ -141,40 +157,35 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever()
     {
         return this.get( this.leftConfig,
-                         null,
-                         this.featureString );
+                         null );
     }
 
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( TimeWindowOuter timeWindow )
     {
         return this.get( this.leftConfig,
-                         timeWindow,
-                         this.featureString );
+                         timeWindow );
     }
 
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getRightRetriever( TimeWindowOuter timeWindow )
     {
         return this.get( this.rightConfig,
-                         timeWindow,
-                         this.featureString );
+                         timeWindow );
     }
-    
+
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever()
     {
         return this.get( this.baselineConfig,
-                         null,
-                         this.featureString );
-    }    
+                         null );
+    }
 
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( TimeWindowOuter timeWindow )
     {
         return this.get( this.baselineConfig,
-                         timeWindow,
-                         this.featureString );
+                         timeWindow );
     }
 
     /**
@@ -187,20 +198,19 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
      */
 
     private Supplier<Stream<TimeSeries<Double>>> get( DataSourceConfig dataSourceConfig,
-                                                      TimeWindowOuter timeWindow,
-                                                      String featureName )
+                                                      TimeWindowOuter timeWindow )
     {
         Objects.requireNonNull( dataSourceConfig );
         ProjectConfig projectConfig = this.getProject()
                                           .getProjectConfig();
-        
+
         LeftOrRightOrBaseline leftOrRightOrBaseline =
                 ConfigHelper.getLeftOrRightOrBaseline( projectConfig,
                                                        dataSourceConfig );
-        LOGGER.debug( "Creating a {} retriever for project '{}', feature '{}' and time window {}.",
+        LOGGER.debug( "Creating a {} retriever for project '{}', feature group '{}' and time window {}.",
                       leftOrRightOrBaseline,
                       this.getProject().getId(),
-                      featureName,
+                      this.featureString,
                       timeWindow );
         TimeSeriesRetrieverBuilder<Double> builder;
 
@@ -216,8 +226,8 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
             if ( this.getProject().usesGriddedData( dataSourceConfig ) )
             {
                 builder = this.getGriddedRetrieverBuilder( dataSourceConfig.getType() )
-                              .setFeatures( List.of( this.feature ) )
-                              .setIsForecast( isConfiguredAsForecast );
+                              .setIsForecast( isConfiguredAsForecast )
+                              .setFeatures( this.getRightFeatures() );
             }
             else
             {
@@ -225,15 +235,15 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
 
                 if ( leftOrRightOrBaseline.equals( LeftOrRightOrBaseline.LEFT ) )
                 {
-                    builder.setFeature( this.feature.getLeft() );
+                    builder.setFeatures( this.getLeftFeatures() );
                 }
                 else if ( leftOrRightOrBaseline.equals( LeftOrRightOrBaseline.RIGHT ) )
                 {
-                    builder.setFeature( this.feature.getRight() );
+                    builder.setFeatures( this.getRightFeatures() );
                 }
                 if ( leftOrRightOrBaseline.equals( LeftOrRightOrBaseline.BASELINE ) )
                 {
-                    builder.setFeature( this.feature.getBaseline() );
+                    builder.setFeatures( this.getBaselineFeatures() );
                 }
             }
         }
@@ -295,7 +305,34 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     {
         return this.project.getFeaturesCache();
     }
-    
+
+    /**
+     * @return the left-ish features to retrieve.
+     */
+
+    private Set<FeatureKey> getLeftFeatures()
+    {
+        return this.leftFeatures;
+    }
+
+    /**
+     * @return the right-ish features to retrieve.
+     */
+
+    private Set<FeatureKey> getRightFeatures()
+    {
+        return this.rightFeatures;
+    }
+
+    /**
+     * @return the baseline-ish features to retrieve.
+     */
+
+    private Set<FeatureKey> getBaselineFeatures()
+    {
+        return this.baselineFeatures;
+    }
+
     /**
      * Returns a builder for a retriever.
      * 
@@ -389,30 +426,29 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     private Project getProject()
     {
         return this.project;
-    }    
-    
+    }
+
     /**
      * Hidden constructor.
      * 
      * @param project the project
-     * @param feature a feature
+     * @param featureGroup the feature group to evaluate
      * @param unitMapper the unit mapper
      * @throws NullPointerException if any input is null
      */
 
     private SingleValuedRetrieverFactory( Project project,
-                                          FeatureTuple feature,
+                                          FeatureGroup featureGroup,
                                           UnitMapper unitMapper )
     {
         Objects.requireNonNull( project );
         Objects.requireNonNull( unitMapper );
-        Objects.requireNonNull( feature );
+        Objects.requireNonNull( featureGroup );
 
         this.project = project;
-        this.feature = feature;
         this.unitMapper = unitMapper;
 
-        this.featureString = feature.toString();
+        this.featureString = featureGroup.toString();
 
         ProjectConfig projectConfig = project.getProjectConfig();
         PairConfig pairConfig = projectConfig.getPair();
@@ -427,6 +463,23 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
 
         // Obtain and set the desired time scale. 
         this.desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
+
+        // Set the features to retrieve
+        this.leftFeatures = featureGroup.getFeatures()
+                                        .stream()
+                                        .map( FeatureTuple::getLeft )
+                                        .collect( Collectors.toUnmodifiableSet() );
+
+        this.rightFeatures = featureGroup.getFeatures()
+                                         .stream()
+                                         .map( FeatureTuple::getRight )
+                                         .collect( Collectors.toUnmodifiableSet() );
+
+        this.baselineFeatures = featureGroup.getFeatures()
+                                            .stream()
+                                            .filter( next -> Objects.nonNull( next.getBaseline() ) )
+                                            .map( FeatureTuple::getBaseline )
+                                            .collect( Collectors.toUnmodifiableSet() );
     }
 
 }

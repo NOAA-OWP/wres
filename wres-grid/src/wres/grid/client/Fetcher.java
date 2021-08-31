@@ -2,6 +2,7 @@ package wres.grid.client;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
@@ -52,7 +53,7 @@ public class Fetcher
      */
 
     public static GridDataRequest prepareRequest( List<String> paths,
-                                                  List<FeatureKey> features,
+                                                  Set<FeatureKey> features,
                                                   String variableName,
                                                   TimeWindowOuter timeWindow,
                                                   boolean isForecast,

@@ -15,8 +15,6 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.space.FeatureKey;
-import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.TimeSeries;
 import wres.grid.client.Fetcher;
 import wres.grid.client.Request;
@@ -70,12 +68,6 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
     private final DataScripter script;
 
     /**
-     * The features.
-     */
-
-    private final List<FeatureTuple> features;
-
-    /**
      * Is <code>true</code> to retrieve a forecast type, <code>false</code> for a non-forecast type. 
      */
 
@@ -95,12 +87,6 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
     {
 
         /**
-         * The features.
-         */
-
-        private List<FeatureTuple> features;
-
-        /**
          * Is <code>true</code> to retrieve a forecast type, <code>false</code> for a non-forecast type. 
          */
 
@@ -116,19 +102,6 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
         Builder setIsForecast( Boolean isForecast )
         {
             this.isForecast = isForecast;
-            return this;
-        }
-
-        /**
-         * Sets the features.
-         * 
-         * @param features the features
-         * @return the builder
-         */
-
-        Builder setFeatures( List<FeatureTuple> features )
-        {
-            this.features = features;
             return this;
         }
 
@@ -255,15 +228,8 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
 
     private Request getRequest( List<String> paths )
     {
-        List<FeatureKey> featureKeys = this.getFeatures()
-                                           .stream()
-                                           .map( FeatureTuple::getRight )
-                                           .filter( Objects::nonNull )
-                                           .collect( Collectors.toList() );
-
-        // Build the request object
         return Fetcher.prepareRequest( paths,
-                                       featureKeys,
+                                       this.getFeatures(),
                                        this.getVariableName(),
                                        this.getTimeWindow(),
                                        this.isForecast(),
@@ -308,17 +274,6 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
     }
 
     /**
-     * Returns the features.
-     *
-     * @return the features
-     */
-
-    private List<FeatureTuple> getFeatures()
-    {
-        return this.features;
-    }
-
-    /**
      * Returns the start of a script to acquire a time-series from the WRES database for all time-series.
      * 
      * @return the start of a script for the time-series
@@ -349,17 +304,11 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
     {
         super( builder, "S.output_time", "S.lead" );
 
-        this.features = builder.features;
         this.isForecast = builder.isForecast;
 
         // Validate
         Objects.requireNonNull( this.getProjectId(),
                                 CANNOT_BUILD_A_TIME_SERIES_RETRIEVER_WITHOUT_A + "project identifier." );
-
-        if ( Objects.isNull( this.getFeatures() ) || this.getFeatures().isEmpty() )
-        {
-            throw new NullPointerException( CANNOT_BUILD_A_TIME_SERIES_RETRIEVER_WITHOUT_A + "list of features." );
-        }
 
         Objects.requireNonNull( this.getLeftOrRightOrBaseline(),
                                 CANNOT_BUILD_A_TIME_SERIES_RETRIEVER_WITHOUT_A

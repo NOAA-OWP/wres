@@ -186,7 +186,7 @@ public final class GeneralWRDSReader
      * @param config The threshold configurations.
      * @param desiredUnitMapper The desired units.
      * @return A map of WRDS locations to thresholds, parsed using an appropriate version of the response.
-     * @throws StreamIOException
+     * @throws StreamIOException If an error is encountered while reading threshold data
      */
     protected static Map<WrdsLocation, Set<ThresholdOuter>> extract( byte[] responseBytes,
                                                                      ThresholdsConfig config,
@@ -316,6 +316,7 @@ public final class GeneralWRDSReader
 
     /**
      * This is protected to support testing.
+     * @param address the address
      * @return The response in byte[], where the URI can point to a file or a website.
      */
     protected byte[] getResponse( final URI address ) throws StreamIOException

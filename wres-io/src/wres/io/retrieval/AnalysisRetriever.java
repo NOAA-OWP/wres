@@ -142,7 +142,7 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
                                                            .setUnitMapper( super.getMeasurementUnitMapper() )
                                                            .setLeftOrRightOrBaseline( super.getLeftOrRightOrBaseline() )
                                                            .setTimeWindow( analysisRanges )
-                                                           .setFeature( super.getFeature() )
+                                                           .setFeatures( super.getFeatures() )
                                                            .setVariableName( super.getVariableName() )
                                                            .setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME )
                                                            //.setSeasonEnd(  )
