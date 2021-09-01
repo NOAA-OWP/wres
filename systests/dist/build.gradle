@@ -49,7 +49,7 @@ task( unzipGraphicsArtifactToTest, dependsOn: unzipArtifactToTest, type: Copy, g
     description = 'Unzips the wres graphics zip artifact to be tested.'
 
     def zipFile = file( "${wresGraphicsZipDirectory}/wres-vis-${graphicsVersionToTest}.zip" )
-    
+
     def outputDir = file( "${buildDir}" )
 
     println( "wresGraphicsZipDirectory: " + wresGraphicsZipDirectory )
@@ -68,7 +68,7 @@ task( startGraphicsClient, dependsOn: unzipGraphicsArtifactToTest, group: 'test'
 {
     def fS = System.getProperty( "file.separator" )
     def graphicsBin = "${buildDir}" + fS + "wres-vis-${graphicsVersionToTest}" + fS + "bin" + fS + "wres-vis"
- 
+
     if( isWindows() )
     {
        graphicsBin = graphicsBin + ".bat"
@@ -83,28 +83,25 @@ task( startGraphicsClient, dependsOn: unzipGraphicsArtifactToTest, group: 'test'
         pb.environment()
           .put( "JAVA_OPTS", testJvmPropertiesGraphicsRaw );
 
-        println( "Starting graphics client ${graphicsVersionToTest}..." )
+        println( "Starting graphics client ${graphicsVersionToTest} with JAVA_OPTS=${testJvmPropertiesGraphicsRaw}" )
         println( "Graphics client start script: " + graphicsBin )
 
-        def splittedTestJvmPropertiesGraphics = testJvmPropertiesGraphicsRaw.trim().split( " " )
-        println( "Test JVM System Properties for the Graphics Client to be applied: ${splittedTestJvmPropertiesGraphics}" )
-        
         // Redirect output to a log file
         File logFile = new File( project.buildDir, "wres-graphics-${graphicsVersionToTest}.log" )
-        
+
         println( "Writing a log for the test task graphics to " + logFile )
-        
+
         graphicsProcess = pb.redirectErrorStream( true )
                             .redirectInput( ProcessBuilder.Redirect.INHERIT )
                             .redirectOutput( ProcessBuilder.Redirect.to( logFile ) )
                             .start();
-        
+
         // Cannot proceed without a graphics client
         if( ! graphicsProcess.isAlive() )
         {
             throw new GradleException( "Unable to instantiate a graphics client for the test task." )
         }
-                            
+
         // Do not wait for the graphics client to end
         println( "Graphics client has started." )
     }
@@ -124,9 +121,10 @@ task( stopGraphicsClient, group: 'test' )
             {
                 nextChild.destroy()
             }
-            graphicsProcess.destroy()            
+
+            graphicsProcess.destroy()
             graphicsProcess.waitFor( 5, TimeUnit.SECONDS )
-            
+
             // Still alive? Mdk
             if( graphicsProcess.isAlive() )
             {
@@ -134,9 +132,10 @@ task( stopGraphicsClient, group: 'test' )
                 {
                     nextChild.destroyForcibly()
                 }
+
                 graphicsProcess.destroyForcibly()
             }
-            
+
             println( "Graphics client has stopped." )
         }
     }
@@ -184,8 +183,12 @@ test
     // -PtestJvmSystemProperties="-Dwres.useSSL=false -Dwres.blah=true"
     // or like this:
     // -PtestJvmSystemProperties="wres.useSSL=false wres.blah=true"
-	jvmArgs '-XX:+HeapDumpOnOutOfMemoryError'
-	maxHeapSize = "1894m"
+    jvmArgs += '-XX:+HeapDumpOnOutOfMemoryError'
+    def now = Instant.now();
+    jvmArgs += "-XX:StartFlightRecording=settings=${unzipArtifactToTest.destinationDir}/wres-${versionToTest}/lib/conf/wres_jfr.jfc,maxsize=128m,dumponexit=true,filename=systests_${versionToTest}_${now}.jfr"
+    jvmArgs += '-XX:FlightRecorderOptions=repository=.'
+    minHeapSize = "1894m"
+    maxHeapSize = "1894m"
     // No longer necessary to fork on every test: see #61206
     // forkEvery=1
     def testJvmPropertiesRaw = project.properties['testJvmSystemProperties']
@@ -195,18 +198,25 @@ test
 
     // Without the findall, a seemingly empty array still evaluates the "each"
     splittedTestJvmProperties.findAll().each{ s ->
-        def noDashD = s
         if ( s.startsWith( "-D" ) )
         {
-            noDashD = s.substring( 2 )
+            def noPrefix = s.substring( 2 )
+            def pair = noPrefix.split( "=", 2 )
+            furtherSplittedTestJvmProperties[pair[0]] = pair[1]
         }
-        def pair = noDashD.split( "=" )
-        furtherSplittedTestJvmProperties[pair[0]] = pair[1]
+        else if ( s.startsWith( "-" ) )
+        {
+            jvmArgs += s
+        }
     }
 
     systemProperties += [ "user.timezone": "UTC" ]
     println( "Test JVM System Properties to be applied: ${furtherSplittedTestJvmProperties}" )
     systemProperties += furtherSplittedTestJvmProperties
+    println( "Test JVM Minimum Heap: ${minHeapSize}" )
+    println( "Test JVM Maximum Heap: ${maxHeapSize}" )
+    println( "Test JVM Args: ${jvmArgs}" )
+    println( "Test JVM System Properties: ${systemProperties}" )
 
     jacoco
     {
