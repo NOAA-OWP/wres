@@ -421,14 +421,9 @@ public class PoolOfPairs<L, R> implements Pool<Pair<L, R>>
             throw new PoolException( "Specify non-null metadata for the time-series input." );
         }
 
-        if ( Objects.isNull( this.main ) )
-        {
-            throw new PoolException( "Specify a non-null dataset for the time-series input." );
-        }
-
         if ( this.main.contains( null ) )
         {
-            throw new PoolException( "One or more of the time-series is null." );
+            throw new PoolException( "One or more of the time-series is null, which is not allowed." );
         }
 
     }

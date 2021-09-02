@@ -465,10 +465,20 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         if ( !this.getFeatures().isEmpty() )
         {
             Long[] featureIds = this.getFeatureIds();
+            Object parameter = featureIds;
+            String clause = "TS.feature_id = ANY(?)";
+            
+            // Simplify script if there is only one
+            if(featureIds.length==1 )
+            {
+                parameter = featureIds[0];
+                clause = "TS.feature_id = ?";
+            }
+            
             this.addWhereOrAndClause( script,
                                       tabsIn,
-                                      "TS.feature_id = ANY(?)",
-                                      featureIds );
+                                      clause,
+                                      parameter );
         }
 
         // Member
@@ -671,7 +681,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                           this,
                           System.lineSeparator(),
                           dataScripter,
-                          dataScripter.getParameters() );
+                          dataScripter.getParameterStrings() );
         }
 
         // Log the runnable form of the prepared statement to assist in debugging

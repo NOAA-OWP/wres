@@ -204,7 +204,7 @@ public class UnitMapper
                           + "{}The script was built as a prepared statement with the following list of parameters: {}.",
                           System.lineSeparator(),
                           dataScripter,
-                          dataScripter.getParameters() );
+                          dataScripter.getParameterStrings() );
         }
 
         // Set high priority

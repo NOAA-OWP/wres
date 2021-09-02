@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.messages.MessageUtilities;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
@@ -470,6 +471,21 @@ public class PoolMetadata implements Comparable<PoolMetadata>
     }
 
     /**
+     * Returns the {@link FeatureTuple} associated with the metadata.
+     * 
+     * @return the feature tuples
+     */
+
+    public Set<FeatureTuple> getFeatureTuples()
+    {
+        return this.getPool()
+                   .getGeometryTuplesList()
+                   .stream()
+                   .map( MessageFactory::parse )
+                   .collect( Collectors.toUnmodifiableSet() );
+    }
+
+    /**
      * Returns a {@link OneOrTwoThresholds} associated with the metadata or null.
      * 
      * @return a set of thresholds or null
@@ -566,7 +582,8 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
         if ( unit.isBlank() )
         {
-            throw new IllegalArgumentException( "Specify a valid measurement unit from which to build the metadata." );
+            throw new IllegalArgumentException( "The evaluation description must contain a valid measurement unit "
+                                                + "in order to build the pool metadata." );
         }
     }
 
