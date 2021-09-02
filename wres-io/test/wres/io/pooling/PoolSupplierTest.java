@@ -32,6 +32,8 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.retrieval.CachingRetriever;
 import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryTuple;
 import wres.datamodel.time.TimeSeriesOfDoubleUpscaler;
 import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesPairerByExactTime;
@@ -136,7 +138,7 @@ public class PoolSupplierTest
     private static final Instant T2551_03_17T00_00_00Z = Instant.parse( "2551-03-17T00:00:00Z" );
 
     private static final String VARIABLE_NAME = "STREAMFLOW";
-    private static final FeatureKey FEATURE_NAME = FeatureKey.of( "DRRC2" );
+    private static final FeatureKey FEATURE = FeatureKey.of( "DRRC2" );
     private static final String UNIT = "CMS";
 
     private static TimeSeriesMetadata getBoilerplateMetadata()
@@ -144,7 +146,7 @@ public class PoolSupplierTest
         return TimeSeriesMetadata.of( Collections.emptyMap(),
                                       TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
-                                      FEATURE_NAME,
+                                      FEATURE,
                                       UNIT );
     }
 
@@ -154,17 +156,18 @@ public class PoolSupplierTest
         return TimeSeriesMetadata.of( Collections.emptyMap(),
                                       timeScale,
                                       VARIABLE_NAME,
-                                      FEATURE_NAME,
+                                      FEATURE,
                                       UNIT );
     }
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0AndTimeScale( Instant t0,
+                                                                                FeatureKey featureKey,
                                                                                 TimeScaleOuter timeScale )
     {
         return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
                                       timeScale,
                                       VARIABLE_NAME,
-                                      FEATURE_NAME,
+                                      featureKey,
                                       UNIT );
     }
 
@@ -337,6 +340,7 @@ public class PoolSupplierTest
         // Forecast: 25510317T12_FAKE2_forecast.xml
         TimeSeriesMetadata forecastOneMetadata =
                 getBoilerplateMetadataWithT0AndTimeScale( T2551_03_17T12_00_00Z,
+                                                          FEATURE,
                                                           existingTimeScale );
         this.forecastOne =
                 new TimeSeries.Builder<Double>().setMetadata( forecastOneMetadata )
@@ -356,6 +360,7 @@ public class PoolSupplierTest
         // Forecast: 25510318T00_FAKE2_forecast.xml
         TimeSeriesMetadata forecastTwoMetadata =
                 getBoilerplateMetadataWithT0AndTimeScale( T2551_03_18T00_00_00Z,
+                                                          FEATURE,
                                                           existingTimeScale );
         this.forecastTwo =
                 new TimeSeries.Builder<Double>().setMetadata( forecastTwoMetadata )
@@ -375,6 +380,7 @@ public class PoolSupplierTest
         // Forecast: 25510318T12_FAKE2_forecast.xml
         TimeSeriesMetadata forecastThreeMetadata =
                 getBoilerplateMetadataWithT0AndTimeScale( T2551_03_18T12_00_00Z,
+                                                          FEATURE,
                                                           existingTimeScale );
         this.forecastThree =
                 new TimeSeries.Builder<Double>().setMetadata( forecastThreeMetadata )
@@ -394,6 +400,7 @@ public class PoolSupplierTest
         // Forecast: 25510319T00_FAKE2_forecast.xml
         TimeSeriesMetadata forecastFourMetadata =
                 getBoilerplateMetadataWithT0AndTimeScale( T2551_03_19T00_00_00Z,
+                                                          FEATURE,
                                                           existingTimeScale );
         this.forecastFour =
                 new TimeSeries.Builder<Double>().setMetadata( forecastFourMetadata )
@@ -419,9 +426,9 @@ public class PoolSupplierTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( new FeatureTuple( FeatureKey.of( "FAKE2" ),
-                                                                                      FeatureKey.of( "FAKE2" ),
-                                                                                      null ),
+        wres.statistics.generated.Pool pool = MessageFactory.parse( new FeatureTuple( FEATURE,
+                                                                                      FEATURE,
+                                                                                      FEATURE ),
                                                                     null,
                                                                     null,
                                                                     null,
@@ -475,6 +482,7 @@ public class PoolSupplierTest
         // Pool One expected
         TimeSeriesMetadata poolOneTimeSeriesMetadata =
                 getBoilerplateMetadataWithT0AndTimeScale( T2551_03_17T12_00_00Z,
+                                                          FEATURE,
                                                           this.desiredTimeScale );
         TimeSeries<Pair<Double, Double>> poolOneSeries =
                 new TimeSeries.Builder<Pair<Double, Double>>().setMetadata( poolOneTimeSeriesMetadata )
@@ -565,6 +573,7 @@ public class PoolSupplierTest
         // Pool One expected
         TimeSeriesMetadata poolOneTimeSeriesMetadata =
                 getBoilerplateMetadataWithT0AndTimeScale( T2551_03_17T12_00_00Z,
+                                                          FEATURE,
                                                           this.desiredTimeScale );
         TimeSeries<Pair<Double, Double>> poolOneSeries =
                 new TimeSeries.Builder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_17T15_00_00Z,
@@ -647,6 +656,7 @@ public class PoolSupplierTest
         // Pool Eleven expected
         TimeSeriesMetadata poolTimeSeriesMetadata =
                 getBoilerplateMetadataWithT0AndTimeScale( T2551_03_18T12_00_00Z,
+                                                          FEATURE,
                                                           this.desiredTimeScale );
         TimeSeries<Pair<Double, Double>> poolElevenOneSeries =
                 new TimeSeries.Builder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_18T15_00_00Z,
@@ -674,6 +684,7 @@ public class PoolSupplierTest
 
         TimeSeriesMetadata poolTimeSeriesTwoMetadata =
                 getBoilerplateMetadataWithT0AndTimeScale( T2551_03_19T00_00_00Z,
+                                                          FEATURE,
                                                           this.desiredTimeScale );
         TimeSeries<Pair<Double, Double>> poolElevenTwoSeries =
                 new TimeSeries.Builder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_19T03_00_00Z,
@@ -756,6 +767,87 @@ public class PoolSupplierTest
                                                          .build();
 
         assertEquals( poolEighteenExpected, poolEighteenActual );
+    }
+
+    @Test
+    public void testGetReturnsPoolThatContainsTwentyEightPairsInFourSeriesForTwoFeatures()
+    {
+        // Create the duplicate observed series for a different feature
+        String featureName = "DOSC1";
+        FeatureKey feature = FeatureKey.of( featureName );
+
+        TimeSeriesMetadata obsMeta = this.observations.getMetadata();
+        TimeSeries<Double> observationsTwo = new TimeSeries.Builder<Double>().addEvents( this.observations.getEvents() )
+                                                                             .setMetadata( new TimeSeriesMetadata.Builder().setReferenceTimes( obsMeta.getReferenceTimes() )
+                                                                                                                           .setTimeScale( obsMeta.getTimeScale() )
+                                                                                                                           .setUnit( obsMeta.getUnit() )
+                                                                                                                           .setVariableName( obsMeta.getVariableName() )
+                                                                                                                           .setFeature( feature )
+                                                                                                                           .build() )
+                                                                             .build();
+
+        Mockito.when( this.observationRetriever.get() ).thenReturn( Stream.of( this.observations, observationsTwo ) );
+        Supplier<Stream<TimeSeries<Double>>> obsSupplier = CachingRetriever.of( this.observationRetriever );
+
+        // Create the duplicate forecast series for a different feature
+        TimeSeriesMetadata forcThreeMeta = this.forecastThree.getMetadata();
+        TimeSeries<Double> forecastFive = new TimeSeries.Builder<Double>().addEvents( this.forecastThree.getEvents() )
+                                                                          .setMetadata( new TimeSeriesMetadata.Builder().setReferenceTimes( forcThreeMeta.getReferenceTimes() )
+                                                                                                                        .setTimeScale( forcThreeMeta.getTimeScale() )
+                                                                                                                        .setUnit( forcThreeMeta.getUnit() )
+                                                                                                                        .setVariableName( forcThreeMeta.getVariableName() )
+                                                                                                                        .setFeature( feature )
+                                                                                                                        .build() )
+                                                                          .build();
+
+        TimeSeriesMetadata forcFourMeta = this.forecastFour.getMetadata();
+        TimeSeries<Double> forecastSix = new TimeSeries.Builder<Double>().addEvents( this.forecastFour.getEvents() )
+                                                                         .setMetadata( new TimeSeriesMetadata.Builder().setReferenceTimes( forcFourMeta.getReferenceTimes() )
+                                                                                                                       .setTimeScale( forcFourMeta.getTimeScale() )
+                                                                                                                       .setUnit( forcFourMeta.getUnit() )
+                                                                                                                       .setVariableName( forcFourMeta.getVariableName() )
+                                                                                                                       .setFeature( feature )
+                                                                                                                       .build() )
+                                                                         .build();
+
+        Mockito.when( this.forecastRetriever.get() )
+               .thenReturn( Stream.of( this.forecastThree, this.forecastFour, forecastFive, forecastSix ) );
+
+        Supplier<Stream<TimeSeries<Double>>> forcSupplier = CachingRetriever.of( this.forecastRetriever );
+
+        TimeWindowOuter poolWindow = TimeWindowOuter.of( T2551_03_18T11_00_00Z, //2551-03-18T11:00:00Z
+                                                         T2551_03_19T00_00_00Z, //2551-03-19T00:00:00Z
+                                                         Duration.ofHours( 0 ),
+                                                         Duration.ofHours( 23 ) );
+
+        Geometry geometry = Geometry.newBuilder()
+                                    .setName( featureName )
+                                    .build();
+        PoolMetadata start = PoolMetadata.of( this.metadata,
+                                              poolWindow,
+                                              this.desiredTimeScale );
+        PoolMetadata poolMetadata =
+                PoolMetadata.of( start.getEvaluation(),
+                                 start.getPool()
+                                      .toBuilder()
+                                      .addGeometryTuples( GeometryTuple.newBuilder()
+                                                                       .setLeft( geometry )
+                                                                       .setRight( geometry ) )
+                                      .build() );
+
+        Supplier<Pool<Pair<Double, Double>>> poolSupplier =
+                new PoolSupplier.Builder<Double, Double>().setLeft( obsSupplier )
+                                                          .setRight( forcSupplier )
+                                                          .setLeftUpscaler( this.upscaler )
+                                                          .setPairer( this.pairer )
+                                                          .setDesiredTimeScale( this.desiredTimeScale )
+                                                          .setMetadata( poolMetadata )
+                                                          .build();
+
+        Pool<Pair<Double, Double>> poolActual = poolSupplier.get();
+
+        assertEquals( 28, poolActual.getRawData().size() );
+        assertEquals( 4, poolActual.get().size() );
     }
 
 }

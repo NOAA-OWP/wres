@@ -587,7 +587,7 @@ public class Project
         {
             LOGGER.debug( "The script for auto-detecting variables on the {} side will run with parameters {}:{}{}",
                           lrb,
-                          script.getParameters(),
+                          script.getParameterStrings(),
                           System.lineSeparator(),
                           script );
         }

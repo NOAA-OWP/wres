@@ -137,7 +137,7 @@ class GraphicsClient
         // Create the server
         int exitCode = 0;
 
-        BrokerConnectionFactory broker = BrokerConnectionFactory.of();
+        BrokerConnectionFactory broker = BrokerConnectionFactory.of( false ); // No dynamic binding, nominated port only
         GraphicsClient graphics = GraphicsClient.of( broker );
 
         Instant started = Instant.now();

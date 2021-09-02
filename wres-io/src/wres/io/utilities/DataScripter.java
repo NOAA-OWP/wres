@@ -3,6 +3,7 @@ package wres.io.utilities;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -284,11 +285,37 @@ public class DataScripter extends ScriptBuilder
      * @return the parameters associated with the script.
      */
 
-    public List<Object> getParameters()
+    private List<Object> getParameters()
     {
         return Collections.unmodifiableList( this.arguments );
     }
     
+    /**
+     * @return a string representation of the parameters, pretty printing long[] and Long[]
+     */
+
+    public List<String> getParameterStrings()
+    {
+        List<String> parameterStrings = new ArrayList<>();
+        for ( Object next : this.getParameters() )
+        {
+            if ( next instanceof long[] )
+            {
+                parameterStrings.add( Arrays.toString( (long[]) next ) );
+            }
+            else if ( next instanceof Long[] )
+            {
+                parameterStrings.add( Arrays.toString( (Long[]) next ) );
+            }
+            else
+            {
+                parameterStrings.add( next.toString() );
+            }
+        }
+
+        return Collections.unmodifiableList( parameterStrings );
+    }
+
     /**
      * <p>Returns a string representation of the script that is runnable on a database instance. If the script contains 
      * a prepared statement, then the parameters are added inline to the script.

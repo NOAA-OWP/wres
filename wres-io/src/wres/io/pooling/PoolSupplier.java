@@ -25,6 +25,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Functions;
+
 import net.jcip.annotations.ThreadSafe;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.ProjectConfig.Inputs;
@@ -37,6 +39,8 @@ import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.scale.RescalingException;
 import wres.datamodel.scale.ScaleValidationEvent;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.scale.ScaleValidationEvent.EventType;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
@@ -72,7 +76,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
  * 
  * <p>This class is thread safe.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  * @param <L> the type of left value in each pair
  * @param <R> the type of right value in each pair and, where applicable, the type of baseline value
  */
@@ -267,8 +271,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
         PoolCreationEvent poolMonitor = PoolCreationEvent.of( this.metadata ); // Monitor
         poolMonitor.begin();
 
-        PoolOfPairs.Builder<L, R> builder = new PoolOfPairs.Builder<>();
-
         // Left data provided or is climatology the left data?
         Stream<TimeSeries<L>> cStream;
 
@@ -287,14 +289,14 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
         leftEvent.commit();
 
         List<TimeSeries<L>> leftData = cStream.collect( Collectors.toList() );
-        
+
         RetrievalEvent rightEvent = RetrievalEvent.of( LeftOrRightOrBaseline.RIGHT, this.metadata ); // Monitor
         rightEvent.begin();
         List<TimeSeries<R>> rightData = this.right.get()
                                                   .collect( Collectors.toList() );
         rightEvent.commit();
 
-        List<TimeSeries<R>> baselineData = null;
+        List<TimeSeries<R>> baselineData = new ArrayList<>();
 
         // Baseline that is not generated?
         if ( this.hasBaseline() && Objects.isNull( this.baselineGenerator ) )
@@ -306,96 +308,55 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
             baselineEvent.commit();
         }
 
-        // Apply any time offsets immediately, in order to simplify further evaluation,
-        // which is then in the target time system
-        leftData = this.applyValidTimeOffset( leftData, this.leftOffset, LeftOrRightOrBaseline.LEFT );
-        rightData = this.applyValidTimeOffset( rightData, this.rightOffset, LeftOrRightOrBaseline.RIGHT );
-        baselineData = this.applyValidTimeOffset( baselineData, this.baselineOffset, LeftOrRightOrBaseline.BASELINE );
+        // Build a separate mini-pool for each feature tuple, then combine them
+        PoolOfPairs.Builder<L, R> builder = new PoolOfPairs.Builder<>();
 
-        // Obtain the desired time scale. If this is unavailable, use the Least Common Scale.
-        TimeScaleOuter desiredTimeScaleToUse =
-                this.getDesiredTimeScale( leftData, rightData, baselineData, this.inputs );
-
-        // Set the metadata, adjusted to include the desired time scale
-        PoolMetadata sampleMetadata = PoolMetadata.of( this.metadata, desiredTimeScaleToUse );
-        builder.setMetadata( sampleMetadata );
-
-        // The left data is most likely to contain a large set of observations, such as climatology
-        // Snipping a large observation-like dataset helps with performance and does not affect accuracy
-        // For now, only apply to the left side, as this is most likely to contain observation-like data that extends
-        // far beyond the bounds of the right data
-        leftData = this.snip( leftData, rightData );
-
-        // Consolidate any observation-like time-series as these values can be shared/combined (e.g., when rescaling)
-        leftData = this.consolidateTimeSeriesWithZeroReferenceTimes( leftData );
-        rightData = this.consolidateTimeSeriesWithZeroReferenceTimes( rightData );
-        baselineData = this.consolidateTimeSeriesWithZeroReferenceTimes( baselineData );
-
-        // Get the paired frequency
-        Duration pairedFrequency = this.getPairedFrequency();
-
-        List<TimeSeries<Pair<L, R>>> mainPairs = this.createPairs( leftData,
-                                                                   rightData,
-                                                                   this.getRightTransformer(),
-                                                                   desiredTimeScaleToUse,
-                                                                   pairedFrequency,
-                                                                   LeftOrRightOrBaseline.RIGHT,
-                                                                   sampleMetadata.getTimeWindow() );
-
-        // Create the baseline pairs
-        if ( this.hasBaseline() )
+        // Must be some left data plus right or baseline data, otherwise it's an empty pool
+        if ( leftData.isEmpty() || ( rightData.isEmpty() && Objects.isNull( this.baselineGenerator )
+                                     && baselineData.isEmpty() ) )
         {
-            PoolMetadata baselineSampleMetadata = PoolMetadata.of( this.baselineMetadata,
-                                                                   desiredTimeScaleToUse );
-
-            builder.setMetadataForBaseline( baselineSampleMetadata );
-
-            LOGGER.debug( "Adding pairs for baseline to pool {}, which have metadata {}.",
-                          this.metadata,
-                          baselineSampleMetadata );
-
-            // Baseline that is generated?
-            if ( Objects.nonNull( this.baselineGenerator ) )
-            {
-                baselineData = this.createBaseline( this.baselineGenerator, mainPairs );
-            }
-
-            List<TimeSeries<Pair<L, R>>> basePairs = this.createPairs( leftData,
-                                                                       baselineData,
-                                                                       this.getBaselineTransformer(),
-                                                                       desiredTimeScaleToUse,
-                                                                       pairedFrequency,
-                                                                       LeftOrRightOrBaseline.BASELINE,
-                                                                       baselineSampleMetadata.getTimeWindow() );
-
-            // Cross-pair?
-            if ( Objects.nonNull( this.crossPairer ) )
-            {
-                LOGGER.debug( "Conducting cross-pairing of {} and {}.", this.metadata, this.baselineMetadata );
-
-                CrossPairs<L, R> crossPairs = this.crossPairer.apply( mainPairs, basePairs );
-                mainPairs = crossPairs.getMainPairs();
-                basePairs = crossPairs.getBaselinePairs();
-            }
-
-            // Add baseline the pairs to the builder
-            basePairs.forEach( builder::addTimeSeriesForBaseline );
+            return this.getEmptyPool( leftData.size(), rightData.size(), baselineData.size() );
         }
 
-        // Add the main pairs to the builder
-        mainPairs.forEach( builder::addTimeSeries );
+        // Get the mapped series
+        Map<FeatureKey, List<TimeSeries<L>>> mappedLeft =
+                this.getMappedSeries( leftData );
+        Map<FeatureKey, List<TimeSeries<R>>> mappedRight =
+                this.getMappedSeries( rightData );
+        Map<FeatureKey, List<TimeSeries<R>>> mappedBaseline = null;
 
-        VectorOfDoubles clim = this.getClimatology();
-        builder.setClimatology( clim );
+        if ( Objects.nonNull( baselineData ) )
+        {
+            mappedBaseline = this.getMappedSeries( baselineData );
+        }
 
-        // Create the pairs
-        PoolOfPairs<L, R> returnMe = builder.build();
+        // Iterate the tuples
+        Set<FeatureTuple> tuples = this.metadata.getFeatureTuples();
+
+        LOGGER.debug( "Discovered the following feature tuples to iterate: {}.", tuples );
+
+        for ( FeatureTuple nextTuple : tuples )
+        {
+            List<TimeSeries<L>> l = mappedLeft.get( nextTuple.getLeft() );
+            List<TimeSeries<R>> r = mappedRight.get( nextTuple.getRight() );
+            List<TimeSeries<R>> b = null;
+
+            if ( Objects.nonNull( baselineData ) )
+            {
+                b = mappedBaseline.get( nextTuple.getBaseline() );
+            }
+
+            Pool<Pair<L, R>> miniPool = this.createPoolPerFeatureTuple( nextTuple, l, r, b );
+            builder.addPoolOfPairs( miniPool );
+        }
+
+        Pool<Pair<L, R>> returnMe = builder.build();
+
+        poolMonitor.commit();
 
         LOGGER.debug( "Finished creating pool {}, which contains {} pairs.",
                       this.metadata,
                       returnMe.getRawData().size() );
-
-        poolMonitor.commit();
 
         return returnMe;
     }
@@ -403,7 +364,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
     /**
      * Builder for a {@link PoolSupplier}.
      * 
-     * @author james.brown@hydrosolved.com
+     * @author James Brown
      * @param <L> the left type of paired value
      * @param <R> the right type of paired value and, where required, the baseline type
      */
@@ -719,6 +680,124 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
         {
             return new PoolSupplier<>( this );
         }
+    }
+
+    /**
+     * Create a pool for a single feature tuple.
+     * @param feature the feature
+     * @param leftData the left time-series
+     * @param rightData the right time-series
+     * @param baselineData the baseline time-series
+     * @return the mini-pool
+     * @throws NullPointerException if any input is null
+     */
+
+    private Pool<Pair<L, R>> createPoolPerFeatureTuple( FeatureTuple feature,
+                                                        List<TimeSeries<L>> leftData,
+                                                        List<TimeSeries<R>> rightData,
+                                                        List<TimeSeries<R>> baselineData )
+    {
+        Objects.requireNonNull( feature, "A feature is expected for the creation of pool " + this.metadata + "." );
+        Objects.requireNonNull( leftData, "Left data is expected for the creation of pool " + this.metadata + "." );
+        Objects.requireNonNull( rightData, "Right data is expected for the creation of pool " + this.metadata + "." );
+
+        PoolOfPairs.Builder<L, R> builder = new PoolOfPairs.Builder<>();
+
+        // Apply any time offsets immediately, in order to simplify further evaluation,
+        // which is then in the target time system
+        leftData = this.applyValidTimeOffset( leftData, this.leftOffset, LeftOrRightOrBaseline.LEFT );
+        rightData = this.applyValidTimeOffset( rightData, this.rightOffset, LeftOrRightOrBaseline.RIGHT );
+        baselineData = this.applyValidTimeOffset( baselineData, this.baselineOffset, LeftOrRightOrBaseline.BASELINE );
+
+        // Obtain the desired time scale. If this is unavailable, use the Least Common Scale.
+        TimeScaleOuter desiredTimeScaleToUse =
+                this.getDesiredTimeScale( leftData, rightData, baselineData, this.inputs );
+
+        // Set the metadata, adjusted to include the desired time scale
+        PoolMetadata sampleMetadata = PoolMetadata.of( this.metadata, desiredTimeScaleToUse );
+        builder.setMetadata( sampleMetadata );
+
+        // The left data is most likely to contain a large set of observations, such as climatology
+        // Snipping a large observation-like dataset helps with performance and does not affect accuracy
+        // For now, only apply to the left side, as this is most likely to contain observation-like data that extends
+        // far beyond the bounds of the right data
+        leftData = this.snip( leftData, rightData );
+
+        // Consolidate any observation-like time-series as these values can be shared/combined (e.g., when rescaling)
+        leftData = this.consolidateTimeSeriesWithZeroReferenceTimes( leftData );
+        rightData = this.consolidateTimeSeriesWithZeroReferenceTimes( rightData );
+        baselineData = this.consolidateTimeSeriesWithZeroReferenceTimes( baselineData );
+
+        // Get the paired frequency
+        Duration pairedFrequency = this.getPairedFrequency();
+
+        List<TimeSeries<Pair<L, R>>> mainPairs = this.createPairs( leftData,
+                                                                   rightData,
+                                                                   this.getRightTransformer(),
+                                                                   desiredTimeScaleToUse,
+                                                                   pairedFrequency,
+                                                                   LeftOrRightOrBaseline.RIGHT,
+                                                                   sampleMetadata.getTimeWindow() );
+
+        // Create the baseline pairs
+        if ( this.hasBaseline() )
+        {
+            PoolMetadata baselineSampleMetadata = PoolMetadata.of( this.baselineMetadata,
+                                                                   desiredTimeScaleToUse );
+
+            builder.setMetadataForBaseline( baselineSampleMetadata );
+
+            LOGGER.debug( "Adding pairs for the baseline to feature tuple {} of pool {}. The baseline metadata is: {}.",
+                          feature,
+                          this.metadata,
+                          baselineSampleMetadata );
+
+            // Baseline that is generated?
+            if ( Objects.nonNull( this.baselineGenerator ) )
+            {
+                baselineData = this.createBaseline( this.baselineGenerator, mainPairs );
+            }
+
+            List<TimeSeries<Pair<L, R>>> basePairs = this.createPairs( leftData,
+                                                                       baselineData,
+                                                                       this.getBaselineTransformer(),
+                                                                       desiredTimeScaleToUse,
+                                                                       pairedFrequency,
+                                                                       LeftOrRightOrBaseline.BASELINE,
+                                                                       baselineSampleMetadata.getTimeWindow() );
+
+            // Cross-pair?
+            if ( Objects.nonNull( this.crossPairer ) )
+            {
+                LOGGER.debug( "For feature tuple {}, conducting cross-pairing of {} and {}.",
+                              feature,
+                              this.metadata,
+                              this.baselineMetadata );
+
+                CrossPairs<L, R> crossPairs = this.crossPairer.apply( mainPairs, basePairs );
+                mainPairs = crossPairs.getMainPairs();
+                basePairs = crossPairs.getBaselinePairs();
+            }
+
+            // Add baseline the pairs to the builder
+            basePairs.forEach( builder::addTimeSeriesForBaseline );
+        }
+
+        // Add the main pairs to the builder
+        mainPairs.forEach( builder::addTimeSeries );
+
+        VectorOfDoubles clim = this.getClimatology();
+        builder.setClimatology( clim );
+
+        // Create the pairs
+        PoolOfPairs<L, R> returnMe = builder.build();
+
+        LOGGER.debug( "Finished creating pool for feature tuple {}, which contains {} pairs and has this metadata: {}.",
+                      feature,
+                      returnMe.getRawData().size(),
+                      this.metadata );
+
+        return returnMe;
     }
 
     /**
@@ -1854,6 +1933,46 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
         }
 
         return period;
+    }
+
+    /**
+     * Maps the input time-series by feature.
+     * @param timeSeries the time-series to map
+     * @return the mapped time-series
+     */
+
+    private <T> Map<FeatureKey, List<TimeSeries<T>>> getMappedSeries( List<TimeSeries<T>> timeSeries )
+    {
+        return timeSeries.stream()
+                         .collect( Collectors.groupingBy( next -> next.getMetadata().getFeature(),
+                                                          Collectors.mapping( Functions.identity(),
+                                                                              Collectors.toList() ) ) );
+    }
+
+    /**
+     * @param leftCount the number of left series, to help with logging
+     * @param rightCount the number of right series, to help with logging
+     * @param baselineCount the number of baseline series, to help with logging
+     * @return an empty pool.
+     */
+
+    private Pool<Pair<L, R>> getEmptyPool( int leftCount, int rightCount, int baselineCount )
+    {
+        PoolOfPairs.Builder<L, R> builder = new PoolOfPairs.Builder<>();
+
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "The following pool was empty: {}. There were {} left time-series, {} right time-series "
+                          + "and {} baseline time-series.",
+                          this.metadata,
+                          leftCount,
+                          rightCount,
+                          baselineCount );
+        }
+
+        return builder.setMetadata( this.metadata )
+                      .setMetadataForBaseline( this.baselineMetadata )
+                      .build();
     }
 
     /**

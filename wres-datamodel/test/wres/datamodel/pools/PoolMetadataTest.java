@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Set;
 
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -189,8 +190,8 @@ public class PoolMetadataTest
         PoolMetadata failTwo = PoolMetadata.of( evaluation, poolTwo );
 
         PoolMetadataException actual = assertThrows( PoolMetadataException.class,
-                                                       () -> PoolMetadata.unionOf( Arrays.asList( failOne,
-                                                                                                    failTwo ) ) );
+                                                     () -> PoolMetadata.unionOf( Arrays.asList( failOne,
+                                                                                                failTwo ) ) );
 
         assertEquals( "Only the time window and thresholds can differ when finding the union of metadata.",
                       actual.getMessage() );
@@ -206,9 +207,9 @@ public class PoolMetadataTest
         assertNotNull( PoolMetadata.of() );
 
         assertNotNull( PoolMetadata.of( Evaluation.newBuilder()
-                                                    .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
-                                                    .build(),
-                                          Pool.getDefaultInstance() ) );
+                                                  .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
+                                                  .build(),
+                                        Pool.getDefaultInstance() ) );
         FeatureKey a = FeatureKey.of( "A" );
 
         Evaluation evaluation = Evaluation.newBuilder()
@@ -327,9 +328,9 @@ public class PoolMetadataTest
         PoolMetadata m5 = PoolMetadata.of( evaluationFive, poolSix );
         assertNotEquals( m4, m5 );
         PoolMetadata m5NoDim = PoolMetadata.of( Evaluation.newBuilder()
-                                                              .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
-                                                              .build(),
-                                                    poolSix );
+                                                          .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
+                                                          .build(),
+                                                poolSix );
         assertNotEquals( m5, m5NoDim );
 
         // Consistent
@@ -809,4 +810,30 @@ public class PoolMetadataTest
 
         assertEquals( m11.hashCode(), m12.hashCode() );
     }
+
+    @Test
+    public void testGetMetadata()
+    {
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setMeasurementUnit( SQIN )
+                                          .build();
+
+        OneOrTwoThresholds thresholds = OneOrTwoThresholds.of( ThresholdOuter.ALL_DATA );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of();
+
+        FeatureKey left = FeatureKey.of( DRRC2 );
+        FeatureKey right = FeatureKey.of( DRRC3 );
+
+        Pool pool = MessageFactory.parse( new FeatureTuple( left, right, null ),
+                                          timeWindow,
+                                          TimeScaleOuter.of( Duration.ofDays( 1 ),
+                                                             TimeScaleFunction.MEAN ),
+                                          thresholds,
+                                          false );
+
+        PoolMetadata metadata = PoolMetadata.of( evaluation, pool );
+
+        assertEquals( Set.of( new FeatureTuple( left, right, null ) ), metadata.getFeatureTuples() );
+    }
+
 }
