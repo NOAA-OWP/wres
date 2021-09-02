@@ -184,7 +184,10 @@ test
     // or like this:
     // -PtestJvmSystemProperties="wres.useSSL=false wres.blah=true"
     jvmArgs += '-XX:+HeapDumpOnOutOfMemoryError'
-    def now = Instant.now();
+    def now = Instant.now()
+                     .toString()
+                     .replace( '-', '_' )
+                     .replace( ':', '_' );
     jvmArgs += "-XX:StartFlightRecording=settings=${unzipArtifactToTest.destinationDir}/wres-${versionToTest}/lib/conf/wres_jfr.jfc,maxsize=128m,dumponexit=true,filename=systests_${versionToTest}_${now}.jfr"
     jvmArgs += '-XX:FlightRecorderOptions=repository=.'
     minHeapSize = "1894m"
