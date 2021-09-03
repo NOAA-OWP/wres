@@ -16,14 +16,14 @@ volumes:
             device: "${NFS_HOME_DIR_DEVICE}"
 services:
     persister:
-        image: "${DOCKER_REGISTRY}/wres/wres-redis:20210826-5980621"
+        image: "${DOCKER_REGISTRY}/wres/wres-redis:20210903-ea85c63"
         restart: always
         volumes:
          # For the job data
          - /mnt/wres_share/job_data:/data
         # Use the redis.conf for configuration (helps avoid rdb snapshots)
         command: /etc/redis/redis.conf
-        mem_limit: 940m
+        mem_limit: 3072m
         read_only: true
         networks:
             wres_net:
@@ -33,7 +33,7 @@ services:
     tasker:
         ports:
          - "443:8443"
-        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20210826-07555b6"
+        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20210903-ea85c63"
         restart: always
         depends_on:
             broker:
@@ -81,7 +81,7 @@ services:
         healthcheck:
             start_period: 5m
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210827-5776490"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210903-ea85c63"
         restart: always
         depends_on:
             broker:
@@ -114,8 +114,8 @@ services:
          # Write heap dumps to the root of the volume above.
          # Override the broker address and port in the binding URL of the event.properties.
          - INNER_JAVA_OPTS=-Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Dwres.externalGraphics=true -Djava.io.tmpdir=/mnt/wres_share/evaluations -Dwres.databaseHost=${WRES_DB_FQDN} -Dwres.databaseName=wres8 -Dwres.username=wres_user8 -Dwres.attemptToMigrate=false -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/wres -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/wres/java_pid%p.hprof /mnt/wres_share/heap_dumps/wres/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/wres/java_pid%p_`hostname`.hprof' -XX:StartFlightRecording=settings=wres_jfr,maxsize=128m,dumponexit=true,filename=/mnt/wres_share/heap_dumps/wres/`date +%Y%m%dT%H%M%S.%NZ --utc`.jfr -XX:FlightRecorderOptions=repository=/mnt/wres_share/heap_dumps/wres/
-        # Shim JVM should have 32m max heap, core JVM should have 1680m max heap
-        mem_limit: 2814m
+        # Shim JVM should have 64m max heap, core JVM should have 2560m max heap
+        mem_limit: 3584m
         cap_drop:
          - ALL
         read_only: true
@@ -126,7 +126,7 @@ services:
          - 5673
         ports:
          - 15673:15673
-        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20210826-07555b6"
+        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20210903-ea85c63"
         restart: always
         volumes:
          # For heap-dump files
@@ -150,7 +150,7 @@ services:
         depends_on:
             eventsbroker:
                 condition: service_started
-        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20210826-07555b6"
+        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20210903-ea85c63"
         restart: always
         volumes:
          # To write graphics outputs
