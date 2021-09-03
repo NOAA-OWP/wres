@@ -1,6 +1,7 @@
 package wres.io.retrieval;
 
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -13,7 +14,7 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureTuple;
+import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesSlicer;
@@ -38,9 +39,6 @@ public class EnsembleRetrieverFactory2 implements RetrieverFactory<Double, Ensem
     /** Declared <code>desiredTimeScale</code>, if any. */
     private final TimeScaleOuter desiredTimeScale;
 
-    /** A feature tuple for retrieval. */
-    private final FeatureTuple feature;
-
     /** A time-series store. */
     private final TimeSeriesStore timeSeriesStore;
 
@@ -51,7 +49,6 @@ public class EnsembleRetrieverFactory2 implements RetrieverFactory<Double, Ensem
      * Returns an instance.
      *
      * @param projectConfig the project declaration
-     * @param feature a feature to evaluate
      * @param timeSeriesStore the store of time-series
      * @param unitMapper the unit mapper
      * @return a factory instance
@@ -59,24 +56,24 @@ public class EnsembleRetrieverFactory2 implements RetrieverFactory<Double, Ensem
      */
 
     public static EnsembleRetrieverFactory2 of( ProjectConfig projectConfig,
-                                                FeatureTuple feature,
                                                 TimeSeriesStore timeSeriesStore,
                                                 UnitMapper unitMapper )
     {
-        return new EnsembleRetrieverFactory2( projectConfig, feature, timeSeriesStore, unitMapper );
+        return new EnsembleRetrieverFactory2( projectConfig, timeSeriesStore, unitMapper );
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever()
+    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<FeatureKey> features )
     {
         // Wrap in a caching retriever to allow re-use of left-ish data, and map the units here
         return CachingRetriever.of( () -> this.timeSeriesStore.getSingleValuedSeries( LeftOrRightOrBaseline.LEFT,
-                                                                                      this.feature.getLeft() )
+                                                                                      features.iterator().next() )
                                                               .map( this::mapUnits ) );
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( TimeWindowOuter timeWindow )
+    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<FeatureKey> features,
+                                                                  TimeWindowOuter timeWindow )
     {
         // Consider all possible lead durations
         TimeWindowOuter adjustedWindow = timeWindow.toBuilder()
@@ -87,37 +84,39 @@ public class EnsembleRetrieverFactory2 implements RetrieverFactory<Double, Ensem
         // Wrap in a caching retriever to allow re-use of left-ish data
         return CachingRetriever.of( () -> this.timeSeriesStore.getSingleValuedSeries( adjustedWindow,
                                                                                       LeftOrRightOrBaseline.LEFT,
-                                                                                      this.feature.getLeft() )
+                                                                                      features.iterator().next() )
                                                               .map( this::mapUnits ) );
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Ensemble>>> getRightRetriever( TimeWindowOuter timeWindow )
+    public Supplier<Stream<TimeSeries<Ensemble>>> getRightRetriever( Set<FeatureKey> features,
+                                                                     TimeWindowOuter timeWindow )
     {
         TimeWindowOuter adjustedWindow = this.adjustByTimeScalePeriod( timeWindow );
 
         // TODO: allow for unit mapping
         return () -> this.timeSeriesStore.getEnsembleSeries( adjustedWindow,
                                                              LeftOrRightOrBaseline.RIGHT,
-                                                             this.feature.getRight() );
+                                                             features.iterator().next() );
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever()
+    public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( Set<FeatureKey> features )
     {
         // TODO: allow for unit mapping
-        return this.getBaselineRetriever( TimeWindowOuter.of() );
+        return this.getBaselineRetriever( features, TimeWindowOuter.of() );
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( TimeWindowOuter timeWindow )
+    public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( Set<FeatureKey> features,
+                                                                        TimeWindowOuter timeWindow )
     {
         TimeWindowOuter adjustedWindow = this.adjustByTimeScalePeriod( timeWindow );
 
         // TODO: allow for unit mapping
         return () -> this.timeSeriesStore.getEnsembleSeries( adjustedWindow,
                                                              LeftOrRightOrBaseline.BASELINE,
-                                                             this.feature.getBaseline() );
+                                                             features.iterator().next() );
     }
 
     /**
@@ -156,7 +155,7 @@ public class EnsembleRetrieverFactory2 implements RetrieverFactory<Double, Ensem
     private final TimeSeries<Double> mapUnits( TimeSeries<Double> timeSeries )
     {
         DoubleUnaryOperator mapper = this.unitMapper.getUnitMapper( timeSeries.getMetadata().getUnit() );
-        
+
         TimeSeriesMetadata meta =
                 new TimeSeriesMetadata.Builder( timeSeries.getMetadata() ).setUnit( this.unitMapper.getDesiredMeasurementUnitName() )
                                                                           .build();
@@ -168,7 +167,6 @@ public class EnsembleRetrieverFactory2 implements RetrieverFactory<Double, Ensem
      * Hidden constructor.
      * 
      * @param projectConfig the project declaration
-     * @param feature a feature to evaluate
      * @param timeSeriesStore the time-series store
      * @param unitMapper the unit mapper
      * @param timeSeriesStore the store of time-series
@@ -176,16 +174,13 @@ public class EnsembleRetrieverFactory2 implements RetrieverFactory<Double, Ensem
      */
 
     private EnsembleRetrieverFactory2( ProjectConfig projectConfig,
-                                       FeatureTuple feature,
                                        TimeSeriesStore timeSeriesStore,
                                        UnitMapper unitMapper )
     {
         Objects.requireNonNull( projectConfig );
-        Objects.requireNonNull( feature );
         Objects.requireNonNull( timeSeriesStore );
         Objects.requireNonNull( unitMapper );
 
-        this.feature = feature;
         this.timeSeriesStore = timeSeriesStore;
         this.unitMapper = unitMapper;
 

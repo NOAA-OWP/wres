@@ -186,7 +186,7 @@ public class EnsembleRetrieverFactoryTest
     {
 
         // Get the actual left series
-        List<TimeSeries<Double>> actualCollection = this.factoryToTest.getLeftRetriever()
+        List<TimeSeries<Double>> actualCollection = this.factoryToTest.getLeftRetriever( Set.of( FAKE_FEATURE ) )
                                                                       .get()
                                                                       .collect( Collectors.toList() );
 
@@ -229,7 +229,8 @@ public class EnsembleRetrieverFactoryTest
                                                          Instant.parse( T2023_04_01T07_00_00Z ) );
 
         // Get the actual left series
-        List<TimeSeries<Double>> actualCollection = this.factoryToTest.getLeftRetriever( timeWindow )
+        List<TimeSeries<Double>> actualCollection = this.factoryToTest.getLeftRetriever( Set.of( FAKE_FEATURE ),
+                                                                                         timeWindow )
                                                                       .get()
                                                                       .collect( Collectors.toList() );
 
@@ -269,7 +270,8 @@ public class EnsembleRetrieverFactoryTest
                                                          Instant.parse( T2023_04_01T04_00_00Z ) );
 
         // Get the actual left series
-        List<TimeSeries<Ensemble>> actualCollection = this.factoryToTest.getRightRetriever( timeWindow )
+        List<TimeSeries<Ensemble>> actualCollection = this.factoryToTest.getRightRetriever( Set.of( FAKE_FEATURE ),
+                                                                                            timeWindow )
                                                                         .get()
                                                                         .collect( Collectors.toList() );
 
@@ -314,7 +316,8 @@ public class EnsembleRetrieverFactoryTest
                                                          Instant.parse( T2023_04_01T04_00_00Z ) );
 
         // Get the actual left series
-        List<TimeSeries<Ensemble>> actualCollection = this.factoryToTest.getBaselineRetriever( timeWindow )
+        List<TimeSeries<Ensemble>> actualCollection = this.factoryToTest.getBaselineRetriever( Set.of( FAKE_FEATURE ),
+                                                                                               timeWindow )
                                                                         .get()
                                                                         .collect( Collectors.toList() );
 

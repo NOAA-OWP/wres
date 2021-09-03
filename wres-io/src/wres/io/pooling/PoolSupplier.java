@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
 import java.util.function.UnaryOperator;
@@ -147,7 +148,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
      * Generator for baseline data source. Optional.
      */
 
-    private final UnaryOperator<TimeSeries<R>> baselineGenerator;
+    private final Function<Set<FeatureKey>, UnaryOperator<TimeSeries<R>>> baselineGenerator;
 
     /**
      * Pairer.
@@ -406,7 +407,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
          * Generator for baseline data source. Optional.
          */
 
-        private UnaryOperator<TimeSeries<R>> baselineGenerator;
+        private Function<Set<FeatureKey>, UnaryOperator<TimeSeries<R>>> baselineGenerator;
 
         /**
          * Pairer.
@@ -531,7 +532,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
          * @param baselineGenerator a baseline generator to set
          * @return the builder
          */
-        Builder<L, R> setBaselineGenerator( UnaryOperator<TimeSeries<R>> baselineGenerator )
+        Builder<L, R> setBaselineGenerator( Function<Set<FeatureKey>, UnaryOperator<TimeSeries<R>>> baselineGenerator )
         {
             this.baselineGenerator = baselineGenerator;
 
@@ -755,7 +756,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
             // Baseline that is generated?
             if ( Objects.nonNull( this.baselineGenerator ) )
             {
-                baselineData = this.createBaseline( this.baselineGenerator, mainPairs );
+                baselineData = this.createBaseline( this.baselineGenerator.apply( Set.of( feature.getBaseline() ) ),
+                                                    mainPairs );
             }
 
             List<TimeSeries<Pair<L, R>>> basePairs = this.createPairs( leftData,

@@ -223,7 +223,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         {
             // Create a feature-shaped retriever factory to support retrieval for this project
             RetrieverFactory<Double, Double> retrieverFactory = SingleValuedRetrieverFactory.of( this.project,
-                                                                                                 this.featureGroup,
                                                                                                  this.unitMapper );
             
             List<Supplier<Pool<Pair<Double, Double>>>> pools =

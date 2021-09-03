@@ -2,7 +2,7 @@
 
 <!--
      This is a Java Flight Recorder (JFR) configuration file for the 
-     Water Resources Evaluation Service (WRES). It builds on the profile.jfc
+     Water Resources Evaluation Service (WRES). It builds on the default.jfc
      that is shipped with the Java Runtime Environment, limiting the exposure 
      of some events.
 
