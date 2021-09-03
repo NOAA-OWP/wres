@@ -172,7 +172,7 @@ subprojects
 
     test
     {
-        maxHeapSize = "1894m"
+        maxHeapSize = "512m"
         testLogging.showStandardStreams = true
         systemProperties += [ 'user.timezone': 'UTC' ]
     }
@@ -964,7 +964,7 @@ project(':wres-worker')
     apply plugin: 'application'
 
     mainClassName = 'wres.worker.Worker'
-    applicationDefaultJvmArgs = ['-Xms32m','-Xmx32m',
+    applicationDefaultJvmArgs = ['-Xms64m','-Xmx64m',
                                  '-XX:+HeapDumpOnOutOfMemoryError']
 
     // Add logging configuration to the classpath when running via script
@@ -1514,7 +1514,7 @@ mainClassName = 'wres.Main'
 sourceCompatibility = '11'
 targetCompatibility = '11'
 
-applicationDefaultJvmArgs = ['-Xms1894m', '-Xmx1894m',
+applicationDefaultJvmArgs = ['-Xms2560m', '-Xmx2560m',
                              '-XX:MaxDirectMemorySize=512m',
                              '-XX:+HeapDumpOnOutOfMemoryError',
 
