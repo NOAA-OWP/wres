@@ -126,7 +126,7 @@ services:
          - 5673
         ports:
          - 15673:15673
-        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20210903-ea85c63"
+        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20210903-f386acd"
         restart: always
         volumes:
          # For heap-dump files
