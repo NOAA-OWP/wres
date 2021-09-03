@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
@@ -28,8 +29,11 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesCrossPairer;
@@ -136,7 +140,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
      * An optional generator for baseline data (e.g., persistence or climatology)
      */
 
-    private final UnaryOperator<TimeSeries<R>> baselineGenerator;
+    private final Function<Set<FeatureKey>, UnaryOperator<TimeSeries<R>>> baselineGenerator;
 
     /**
      * The pool suppliers.
@@ -235,7 +239,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
          * An optional generator for baseline data (e.g., persistence or climatology)
          */
 
-        private UnaryOperator<TimeSeries<R>> baselineGenerator;
+        private Function<Set<FeatureKey>, UnaryOperator<TimeSeries<R>>> baselineGenerator;
 
         /**
          * @param project the project
@@ -376,7 +380,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
          * @param baselineGenerator the baselineGenerator to set
          * @return the builder
          */
-        Builder<L, R> setBaselineGenerator( UnaryOperator<TimeSeries<R>> baselineGenerator )
+        Builder<L, R> setBaselineGenerator( Function<Set<FeatureKey>, UnaryOperator<TimeSeries<R>>> baselineGenerator )
         {
             this.baselineGenerator = baselineGenerator;
 
@@ -494,8 +498,9 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
                  || ConfigHelper.hasGeneratedBaseline( inputsConfig.getBaseline() ) )
             {
                 // Re-use the climatology across pools with a caching retriever
+                Set<FeatureKey> leftFeatures = this.getFeatures( FeatureTuple::getLeft );
                 Supplier<Stream<TimeSeries<L>>> leftSupplier = this.getRetrieverFactory()
-                                                                   .getLeftRetriever();
+                                                                   .getLeftRetriever( leftFeatures );
 
                 climatologySupplier = CachingRetriever.of( leftSupplier );
 
@@ -527,8 +532,12 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
                 TimeWindowOuter nextWindow = nextPool.getMetadata()
                                                      .getTimeWindow();
 
+                Set<FeatureKey> rightFeatures = this.getFeatures( nextPool.getMetadata(),
+                                                                  FeatureTuple::getRight );
+
                 Supplier<Stream<TimeSeries<R>>> rightSupplier = this.getRetrieverFactory()
-                                                                    .getRightRetriever( nextWindow );
+                                                                    .getRightRetriever( rightFeatures,
+                                                                                        nextWindow );
 
                 builder.setRight( rightSupplier );
                 builder.setMetadata( nextPool.getMetadata() );
@@ -556,8 +565,12 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
                     // Data-source baseline
                     else
                     {
+                        Set<FeatureKey> baselineFeatures = this.getFeatures( nextPool.getMetadata(),
+                                                                             FeatureTuple::getBaseline );
+
                         Supplier<Stream<TimeSeries<R>>> baselineSupplier = this.getRetrieverFactory()
-                                                                               .getBaselineRetriever( nextWindow );
+                                                                               .getBaselineRetriever( baselineFeatures,
+                                                                                                      nextWindow );
 
                         builder.setBaseline( baselineSupplier );
                     }
@@ -601,13 +614,18 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
                                                        .map( next -> next.getMetadata().getTimeWindow() )
                                                        .collect( Collectors.toSet() );
 
+        Set<FeatureKey> features = poolRequests.stream()
+                                               .flatMap( next -> next.getMetadata().getFeatureTuples().stream() )
+                                               .map( FeatureTuple::getLeft )
+                                               .collect( Collectors.toSet() );
+
         // Observations or simulations? Then de-duplicate if possible.
         if ( type == DatasourceType.OBSERVATIONS || type == DatasourceType.SIMULATIONS )
         {
             // Find the union of the time windows, bearing in mind that lead durations can influence the valid 
             // datetimes for observation selection
             TimeWindowOuter unionWindow = TimeWindowOuter.unionOf( timeWindows );
-            Supplier<Stream<TimeSeries<L>>> leftRetriever = factory.getLeftRetriever( unionWindow );
+            Supplier<Stream<TimeSeries<L>>> leftRetriever = factory.getLeftRetriever( features, unionWindow );
             Supplier<Stream<TimeSeries<L>>> cachingRetriever = CachingRetriever.of( leftRetriever );
 
             // Build a retriever for each unique time window (ignoring lead durations via the comparator)
@@ -633,7 +651,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
         {
             Map<TimeWindowOuter, Supplier<Stream<TimeSeries<L>>>> returnMe = new HashMap<>();
 
-            timeWindows.forEach( next -> returnMe.put( next, factory.getLeftRetriever( next ) ) );
+            timeWindows.forEach( next -> returnMe.put( next, factory.getLeftRetriever( features, next ) ) );
 
             return Collections.unmodifiableMap( returnMe );
         }
@@ -750,12 +768,12 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
     }
 
     /**
-     * Returns the baseline generator, if any.
+     * Returns a feature-specific baseline generator, if any.
      * 
      * @return the baseline generator
      */
 
-    private UnaryOperator<TimeSeries<R>> getBaselineGenerator()
+    private Function<Set<FeatureKey>, UnaryOperator<TimeSeries<R>>> getBaselineGenerator()
     {
         return this.baselineGenerator;
     }
@@ -780,6 +798,42 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
     private ToDoubleFunction<L> getClimateMapper()
     {
         return this.climateMapper;
+    }
+
+    /**
+     * @param metadata
+     * @param featureGetter the feature-getter
+     * @return the features from the metadata using the prescribed feature-getter
+     * @throws NullPointerException if the metadata is null
+     */
+
+    private Set<FeatureKey> getFeatures( PoolMetadata metadata,
+                                         Function<FeatureTuple, FeatureKey> featureGetter )
+    {
+        Objects.requireNonNull( metadata );
+        Objects.requireNonNull( featureGetter );
+
+        return metadata.getFeatureTuples()
+                       .stream()
+                       .map( featureGetter )
+                       .collect( Collectors.toUnmodifiableSet() );
+    }
+
+    /**
+     * @param featureGetter the feature-getter
+     * @return the features using the prescribed feature-getter
+     * @throws NullPointerException if the metadata is null
+     */
+
+    private Set<FeatureKey> getFeatures( Function<FeatureTuple, FeatureKey> featureGetter )
+    {
+        Objects.requireNonNull( featureGetter );
+        return this.getPoolRequests()
+                   .stream()
+                   .flatMap( next -> next.getMetadata().getFeatureTuples().stream() )
+                   .map( featureGetter )
+                   .collect( Collectors.toSet() );
+
     }
 
     /**

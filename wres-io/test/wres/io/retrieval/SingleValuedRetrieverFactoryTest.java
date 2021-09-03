@@ -45,7 +45,6 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.DataSourceConfig.Variable;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
-import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.Event;
@@ -168,7 +167,7 @@ public class SingleValuedRetrieverFactoryTest
     {
 
         // Get the actual left series
-        List<TimeSeries<Double>> actualCollection = this.factoryToTest.getLeftRetriever()
+        List<TimeSeries<Double>> actualCollection = this.factoryToTest.getLeftRetriever( Set.of( FAKE_FEATURE ) )
                                                                       .get()
                                                                       .collect( Collectors.toList() );
 
@@ -211,7 +210,8 @@ public class SingleValuedRetrieverFactoryTest
                                                          Instant.parse( T2023_04_01T07_00_00Z ) );
 
         // Get the actual left series
-        List<TimeSeries<Double>> actualCollection = this.factoryToTest.getLeftRetriever( timeWindow )
+        List<TimeSeries<Double>> actualCollection = this.factoryToTest.getLeftRetriever( Set.of( FAKE_FEATURE ), 
+                                                                                         timeWindow )
                                                                       .get()
                                                                       .collect( Collectors.toList() );
 
@@ -251,7 +251,8 @@ public class SingleValuedRetrieverFactoryTest
                                                          Instant.parse( T2023_04_01T04_00_00Z ) );
 
         // Get the actual left series
-        List<TimeSeries<Double>> actualCollection = this.factoryToTest.getRightRetriever( timeWindow )
+        List<TimeSeries<Double>> actualCollection = this.factoryToTest.getRightRetriever( Set.of( FAKE_FEATURE ), 
+                                                                                          timeWindow )
                                                                       .get()
                                                                       .collect( Collectors.toList() );
 
@@ -290,7 +291,8 @@ public class SingleValuedRetrieverFactoryTest
                                                          Instant.parse( T2023_04_01T04_00_00Z ) );
 
         // Get the actual left series
-        List<TimeSeries<Double>> actualCollection = this.factoryToTest.getBaselineRetriever( timeWindow )
+        List<TimeSeries<Double>> actualCollection = this.factoryToTest.getBaselineRetriever( Set.of( FAKE_FEATURE ), 
+                                                                                             timeWindow )
                                                                       .get()
                                                                       .collect( Collectors.toList() );
 
@@ -438,9 +440,7 @@ public class SingleValuedRetrieverFactoryTest
 
         // Create the factory instance
         UnitMapper unitMapper = UnitMapper.of( this.wresDatabase, CFS );
-        FeatureGroup featureGroup = FeatureGroup.of( allFeatures );
         this.factoryToTest = SingleValuedRetrieverFactory.of( project,
-                                                              featureGroup,
                                                               unitMapper );
     }
 

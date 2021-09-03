@@ -8,7 +8,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -25,7 +24,6 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
-import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
@@ -93,18 +91,6 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
      */
 
     private final UnitMapper unitMapper;
-    
-    /**
-     * The right-ish features for retrieval.
-     */
-
-    private final Set<FeatureKey> rightFeatures;
-    
-    /**
-     * The baseline-ish features for retrieval.
-     */
-
-    private final Set<FeatureKey> baselineFeatures;
 
     /**
      * A single-valued retriever factory for the left-ish data.
@@ -130,23 +116,25 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever()
+    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<FeatureKey> features )
     {
-        return this.leftFactory.getLeftRetriever();
+        return this.leftFactory.getLeftRetriever( features );
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( TimeWindowOuter timeWindow )
+    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<FeatureKey> features,
+                                                                  TimeWindowOuter timeWindow )
     {
-        return this.leftFactory.getLeftRetriever( timeWindow );
+        return this.leftFactory.getLeftRetriever( features, timeWindow );
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Ensemble>>> getRightRetriever( TimeWindowOuter timeWindow )
+    public Supplier<Stream<TimeSeries<Ensemble>>> getRightRetriever( Set<FeatureKey> features,
+                                                                     TimeWindowOuter timeWindow )
     {
         LOGGER.debug( "Creating a right retriever for project '{}', features '{}' and time window {}.",
                       this.project.getId(),
-                      this.getRightFeatures(),
+                      features,
                       timeWindow );
 
         // Obtain any ensemble member constraints
@@ -162,7 +150,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
                    .setDatabase( this.getDatabase() )
                    .setFeaturesCache( this.getFeaturesCache() )
                    .setProjectId( this.project.getId() )
-                   .setFeatures( this.getRightFeatures() )
+                   .setFeatures( features )
                    .setVariableName( this.project.getRightVariableName() )
                    .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.RIGHT )
                    .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( rightConfig ) )
@@ -175,13 +163,14 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever()
+    public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( Set<FeatureKey> features )
     {
-        return this.getBaselineRetriever( null );
+        return this.getBaselineRetriever( features );
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( TimeWindowOuter timeWindow )
+    public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( Set<FeatureKey> features, 
+                                                                        TimeWindowOuter timeWindow )
     {
         Supplier<Stream<TimeSeries<Ensemble>>> baseline = Stream::of;
 
@@ -189,7 +178,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
         {
             LOGGER.debug( "Creating a baseline retriever for project '{}', features '{}' and time window {}.",
                           this.project.getId(),
-                          this.getBaselineFeatures(),
+                          features,
                           timeWindow );
 
             // Obtain any ensemble member constraints
@@ -205,7 +194,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
                            .setDatabase( this.getDatabase() )
                            .setFeaturesCache( this.getFeaturesCache() )
                            .setProjectId( this.project.getId() )
-                           .setFeatures( this.getBaselineFeatures() )
+                           .setFeatures( features )
                            .setVariableName( this.project.getBaselineVariableName() )
                            .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.BASELINE )
                            .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( baselineConfig ) )
@@ -266,24 +255,6 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     private ProjectConfig getProjectConfig()
     {
         return this.project.getProjectConfig();
-    }
-    
-    /**
-     * @return the right-ish features to retrieve.
-     */
-
-    private Set<FeatureKey> getRightFeatures()
-    {
-        return this.rightFeatures;
-    }
-
-    /**
-     * @return the baseline-ish features to retrieve.
-     */
-
-    private Set<FeatureKey> getBaselineFeatures()
-    {
-        return this.baselineFeatures;
     }
     
     /**
@@ -438,20 +409,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
 
         // Create a factory for the left-ish data
         this.leftFactory = SingleValuedRetrieverFactory.of( project,
-                                                            featureGroup,
                                                             unitMapper );
-        
-        // Set the features to retrieve
-        this.rightFeatures = featureGroup.getFeatures()
-                                         .stream()
-                                         .map( FeatureTuple::getRight )
-                                         .collect( Collectors.toUnmodifiableSet() );
-
-        this.baselineFeatures = featureGroup.getFeatures()
-                                            .stream()
-                                            .filter( next -> Objects.nonNull( next.getBaseline() ) )
-                                            .map( FeatureTuple::getBaseline )
-                                            .collect( Collectors.toUnmodifiableSet() );
     }
 
 }

@@ -149,11 +149,13 @@ public class PoolsGeneratorTest
 
         // Mock a feature-shaped retriever factory
         RetrieverFactory<Double, Double> retrieverFactory = Mockito.mock( SingleValuedRetrieverFactory.class );
-        Mockito.when( retrieverFactory.getLeftRetriever( Mockito.any() ) ).thenReturn( () -> Stream.of() );
-        Mockito.when( retrieverFactory.getRightRetriever( Mockito.any() ) ).thenReturn( () -> Stream.of() );
+        Mockito.when( retrieverFactory.getLeftRetriever( Mockito.any(), Mockito.any() ) )
+               .thenReturn( () -> Stream.of() );
+        Mockito.when( retrieverFactory.getRightRetriever( Mockito.any(), Mockito.any() ) )
+               .thenReturn( () -> Stream.of() );
 
         FeatureGroup featureGroup = FeatureGroup.of( new FeatureTuple( feature, feature, null ) );
-        
+
         // Create the actual output
         List<Supplier<Pool<Pair<Double, Double>>>> actual =
                 PoolFactory.getSingleValuedPools( evaluationDescription,
@@ -257,11 +259,13 @@ public class PoolsGeneratorTest
 
         // Mock a feature-shaped retriever factory
         RetrieverFactory<Double, Ensemble> retrieverFactory = Mockito.mock( EnsembleRetrieverFactory.class );
-        Mockito.when( retrieverFactory.getLeftRetriever( Mockito.any() ) ).thenReturn( () -> Stream.of() );
-        Mockito.when( retrieverFactory.getRightRetriever( Mockito.any() ) ).thenReturn( () -> Stream.of() );
+        Mockito.when( retrieverFactory.getLeftRetriever( Mockito.any(), Mockito.any() ) )
+               .thenReturn( () -> Stream.of() );
+        Mockito.when( retrieverFactory.getRightRetriever( Mockito.any(), Mockito.any() ) )
+               .thenReturn( () -> Stream.of() );
 
         FeatureGroup featureGroup = FeatureGroup.of( new FeatureTuple( feature, feature, null ) );
-        
+
         // Create the actual output
         List<Supplier<Pool<Pair<Double, Ensemble>>>> actual =
                 PoolFactory.getEnsemblePools( evaluationDescription,

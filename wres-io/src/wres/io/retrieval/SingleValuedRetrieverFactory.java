@@ -6,7 +6,6 @@ import java.time.MonthDay;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -19,9 +18,7 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
-import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
@@ -53,7 +50,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     /**
      * Message about features, re-used several times.
      */
-    private static final String FEATURE_MESSAGE = ", feature ";
+    private static final String FEATURE_MESSAGE = ", features ";
 
     /**
      * Message about time windows, re-used several times.
@@ -109,82 +106,62 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
 
     private final UnitMapper unitMapper;
 
-
-    /**
-     * The left-ish features for retrieval.
-     */
-
-    private final Set<FeatureKey> leftFeatures;
-
-    /**
-     * The right-ish features for retrieval.
-     */
-
-    private final Set<FeatureKey> rightFeatures;
-
-    /**
-     * The baseline-ish features for retrieval.
-     */
-
-    private final Set<FeatureKey> baselineFeatures;
-
-    /**
-     * A string that describes the feature.
-     */
-
-    private final String featureString;
-
     /**
      * Returns an instance.
      *
      * @param project the project
-     * @param featureGroup the feature group to evaluate
      * @param unitMapper the unit mapper
      * @return a factory instance
      * @throws NullPointerException if any input is null
      */
 
     public static SingleValuedRetrieverFactory of( Project project,
-                                                   FeatureGroup featureGroup,
                                                    UnitMapper unitMapper )
     {
         return new SingleValuedRetrieverFactory( project,
-                                                 featureGroup,
                                                  unitMapper );
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever()
+    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<FeatureKey> features )
     {
         return this.get( this.leftConfig,
+                         features,
                          null );
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( TimeWindowOuter timeWindow )
+    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<FeatureKey> features,
+                                                                  TimeWindowOuter timeWindow )
     {
         return this.get( this.leftConfig,
+                         features,
                          timeWindow );
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getRightRetriever( TimeWindowOuter timeWindow )
+    public Supplier<Stream<TimeSeries<Double>>> getRightRetriever( Set<FeatureKey> features,
+                                                                   TimeWindowOuter timeWindow )
     {
         return this.get( this.rightConfig,
+                         features,
                          timeWindow );
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever()
+    public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( Set<FeatureKey> features )
     {
         return this.get( this.baselineConfig,
+                         features,
                          null );
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( TimeWindowOuter timeWindow )
+    public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( Set<FeatureKey> features,
+                                                                      TimeWindowOuter timeWindow )
     {
         return this.get( this.baselineConfig,
+                         features,
                          timeWindow );
     }
 
@@ -192,25 +169,28 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
      * Returns a supplier of time-series.
      * 
      * @param dataSourceConfig the data source configuration
+     * @param features the features
      * @param timeWindow the time window
      * @param featureName the feature name
      * @return the supplier
      */
 
     private Supplier<Stream<TimeSeries<Double>>> get( DataSourceConfig dataSourceConfig,
+                                                      Set<FeatureKey> features,
                                                       TimeWindowOuter timeWindow )
     {
         Objects.requireNonNull( dataSourceConfig );
+        Objects.requireNonNull( features );
         ProjectConfig projectConfig = this.getProject()
                                           .getProjectConfig();
 
         LeftOrRightOrBaseline leftOrRightOrBaseline =
                 ConfigHelper.getLeftOrRightOrBaseline( projectConfig,
                                                        dataSourceConfig );
-        LOGGER.debug( "Creating a {} retriever for project '{}', feature group '{}' and time window {}.",
+        LOGGER.debug( "Creating a {} retriever for project '{}', features '{}' and time window {}.",
                       leftOrRightOrBaseline,
                       this.getProject().getId(),
-                      this.featureString,
+                      features,
                       timeWindow );
         TimeSeriesRetrieverBuilder<Double> builder;
 
@@ -227,24 +207,12 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
             {
                 builder = this.getGriddedRetrieverBuilder( dataSourceConfig.getType() )
                               .setIsForecast( isConfiguredAsForecast )
-                              .setFeatures( this.getRightFeatures() );
+                              .setFeatures( features );
             }
             else
             {
-                builder = this.getRetrieverBuilder( dataSourceConfig.getType() );
-
-                if ( leftOrRightOrBaseline.equals( LeftOrRightOrBaseline.LEFT ) )
-                {
-                    builder.setFeatures( this.getLeftFeatures() );
-                }
-                else if ( leftOrRightOrBaseline.equals( LeftOrRightOrBaseline.RIGHT ) )
-                {
-                    builder.setFeatures( this.getRightFeatures() );
-                }
-                if ( leftOrRightOrBaseline.equals( LeftOrRightOrBaseline.BASELINE ) )
-                {
-                    builder.setFeatures( this.getBaselineFeatures() );
-                }
+                builder = this.getRetrieverBuilder( dataSourceConfig.getType() )
+                              .setFeatures( features );
             }
         }
         catch ( SQLException e )
@@ -254,7 +222,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
                                            + " data for project "
                                            + this.getProject().getId()
                                            + FEATURE_MESSAGE
-                                           + this.featureString
+                                           + features
                                            + AND_TIME_WINDOW_MESSAGE
                                            + timeWindow
                                            + ":",
@@ -284,7 +252,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
             builder.setSeasonStart( this.seasonStart )
                    .setSeasonEnd( this.seasonEnd );
         }
-
+        
         return builder.build();
     }
 
@@ -304,33 +272,6 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     private Features getFeaturesCache()
     {
         return this.project.getFeaturesCache();
-    }
-
-    /**
-     * @return the left-ish features to retrieve.
-     */
-
-    private Set<FeatureKey> getLeftFeatures()
-    {
-        return this.leftFeatures;
-    }
-
-    /**
-     * @return the right-ish features to retrieve.
-     */
-
-    private Set<FeatureKey> getRightFeatures()
-    {
-        return this.rightFeatures;
-    }
-
-    /**
-     * @return the baseline-ish features to retrieve.
-     */
-
-    private Set<FeatureKey> getBaselineFeatures()
-    {
-        return this.baselineFeatures;
     }
 
     /**
@@ -432,23 +373,18 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
      * Hidden constructor.
      * 
      * @param project the project
-     * @param featureGroup the feature group to evaluate
      * @param unitMapper the unit mapper
      * @throws NullPointerException if any input is null
      */
 
     private SingleValuedRetrieverFactory( Project project,
-                                          FeatureGroup featureGroup,
                                           UnitMapper unitMapper )
     {
         Objects.requireNonNull( project );
         Objects.requireNonNull( unitMapper );
-        Objects.requireNonNull( featureGroup );
 
         this.project = project;
         this.unitMapper = unitMapper;
-
-        this.featureString = featureGroup.toString();
 
         ProjectConfig projectConfig = project.getProjectConfig();
         PairConfig pairConfig = projectConfig.getPair();
@@ -463,23 +399,6 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
 
         // Obtain and set the desired time scale. 
         this.desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
-
-        // Set the features to retrieve
-        this.leftFeatures = featureGroup.getFeatures()
-                                        .stream()
-                                        .map( FeatureTuple::getLeft )
-                                        .collect( Collectors.toUnmodifiableSet() );
-
-        this.rightFeatures = featureGroup.getFeatures()
-                                         .stream()
-                                         .map( FeatureTuple::getRight )
-                                         .collect( Collectors.toUnmodifiableSet() );
-
-        this.baselineFeatures = featureGroup.getFeatures()
-                                            .stream()
-                                            .filter( next -> Objects.nonNull( next.getBaseline() ) )
-                                            .map( FeatureTuple::getBaseline )
-                                            .collect( Collectors.toUnmodifiableSet() );
     }
 
 }

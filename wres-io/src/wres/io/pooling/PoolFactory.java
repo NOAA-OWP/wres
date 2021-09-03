@@ -39,6 +39,7 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
+import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -149,8 +150,8 @@ public class PoolFactory
         // Create a default upscaler
         TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleUpscaler.of();
 
-        // Create a baseline generator function (e.g., persistence), if required
-        UnaryOperator<TimeSeries<Double>> baselineGenerator = null;
+        // Create a feature-specific baseline generator function (e.g., persistence), if required
+        Function<Set<FeatureKey>, UnaryOperator<TimeSeries<Double>>> baselineGenerator = null;
         // Generated baseline declared?
         if ( ConfigHelper.hasGeneratedBaseline( baselineConfig ) )
         {
@@ -166,8 +167,7 @@ public class PoolFactory
                                                                         LeftOrRightOrBaseline.BASELINE );
 
             baselineGenerator = PoolFactory.getGeneratedBaseline( baselineConfig,
-                                                                  retrieverFactory.getBaselineRetriever(),
-                                                                  Function.identity(),
+                                                                  retrieverFactory,
                                                                   upscaler,
                                                                   baselineMetadata,
                                                                   Double::isFinite );
@@ -181,7 +181,7 @@ public class PoolFactory
                 next -> Event.of( next.getTime(), leftTransformer.applyAsDouble( next.getValue() ) );
 
         // Create the pool requests
-        List<PoolRequest> poolRequests = PoolFactory.getPoolRequests( evaluation, 
+        List<PoolRequest> poolRequests = PoolFactory.getPoolRequests( evaluation,
                                                                       projectConfig,
                                                                       Set.of( featureGroup ) );
 
@@ -274,9 +274,9 @@ public class PoolFactory
         MonthDay removeMemberByValidYearBaseline = PoolFactory.getRemoveMemberByValidYear( inputsConfig.getBaseline() );
         UnaryOperator<Event<Ensemble>> baselineTransformer = PoolFactory.getEnsembleTransformer( leftTransformer,
                                                                                                  removeMemberByValidYearBaseline );
-        
+
         // Create the pool requests
-        List<PoolRequest> poolRequests = PoolFactory.getPoolRequests( evaluation, 
+        List<PoolRequest> poolRequests = PoolFactory.getPoolRequests( evaluation,
                                                                       projectConfig,
                                                                       Set.of( featureGroup ) );
 
@@ -550,46 +550,42 @@ public class PoolFactory
     }
 
     /**
-     * Creates a baseline generator, if required. Supported baselines are built from left-ish data and consume and 
-     * produce right-ish data.
+     * Creates a feature-specific baseline generator, if required.
      * 
      * @param baselineConfig the baseline declaration
-     * @param source the data source for the generated baseline
-     * @param mapper a mapper to map from left-ish data to right-ish data for baselines that consume and produce the
-     *            same types of data (e.g., persistence). Not required otherwise.
+     * @param retrieverFactory the factory to acquire a data source for a generated baseline
      * @param upscaler an upscaler, which is optional unless the generated series requires upscaling
      * @param baselineMeta the baseline metadata to assist with logging
      * @param admissibleValue a guard for admissible values of the generated baseline
+     * @return a function that takes a set of features and returns a unary operator that generates a baseline
      */
 
-    private static <L, R> UnaryOperator<TimeSeries<R>> getGeneratedBaseline( DataSourceConfig baselineConfig,
-                                                                             Supplier<Stream<TimeSeries<L>>> source,
-                                                                             Function<L, R> mapper,
-                                                                             TimeSeriesUpscaler<R> upscaler,
-                                                                             PoolMetadata baselineMeta,
-                                                                             Predicate<R> admissibleValue )
+    private static <L, R> Function<Set<FeatureKey>, UnaryOperator<TimeSeries<R>>>
+            getGeneratedBaseline( DataSourceConfig baselineConfig,
+                                  RetrieverFactory<L, R> retrieverFactory,
+                                  TimeSeriesUpscaler<R> upscaler,
+                                  PoolMetadata baselineMeta,
+                                  Predicate<R> admissibleValue )
     {
         Objects.requireNonNull( baselineConfig );
-        Objects.requireNonNull( source );
+        Objects.requireNonNull( retrieverFactory );
         Objects.requireNonNull( baselineMeta );
 
         // Persistence is supported
         if ( baselineConfig.getTransformation() == SourceTransformationType.PERSISTENCE )
         {
-            Objects.requireNonNull( mapper );
-
             LOGGER.trace( "Creating a persistence generator for pool {}.", baselineMeta );
 
             // Map from the input data type to the required type
-            Function<TimeSeries<L>, TimeSeries<R>> map = next -> TimeSeriesSlicer.transform( next, mapper );
-            Supplier<Stream<TimeSeries<R>>> persistenceSource = () -> source.get().map( map );
+            return features -> {
+                Supplier<Stream<TimeSeries<R>>> persistenceSource =
+                        () -> retrieverFactory.getBaselineRetriever( features ).get();
 
-            // Order 1 by default. If others are supported later, add these                              
-            return PersistenceGenerator.of( persistenceSource,
-                                            upscaler,
-                                            admissibleValue );
-
-
+                // Order 1 by default. If others are supported later, add these                              
+                return PersistenceGenerator.of( persistenceSource,
+                                                upscaler,
+                                                admissibleValue );
+            };
         }
         // Other types are not supported
         else
