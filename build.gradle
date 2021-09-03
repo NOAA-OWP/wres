@@ -1517,6 +1517,9 @@ targetCompatibility = '11'
 applicationDefaultJvmArgs = ['-Xms1894m', '-Xmx1894m',
                              '-XX:MaxDirectMemorySize=512m',
                              '-XX:+HeapDumpOnOutOfMemoryError',
+
+                             // See #95586. Use CMS GC in jdk 11, use ZGC in 16+
+                             '-XX:+UseConcMarkSweepGC',
                              '-Duser.timezone=UTC',
                              '-Djava.util.logging.config.class=wres.system.logging.JavaUtilLoggingRedirector',
                              '-Ducar.unidata.io.http.maxReadCacheSize=200000',
