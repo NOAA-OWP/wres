@@ -190,6 +190,9 @@ test
                      .replace( ':', '_' );
     jvmArgs += "-XX:StartFlightRecording=settings=${unzipArtifactToTest.destinationDir}/wres-${versionToTest}/lib/conf/wres_jfr.jfc,maxsize=128m,dumponexit=true,filename=systests_${versionToTest}_${now}.jfr"
     jvmArgs += '-XX:FlightRecorderOptions=repository=.'
+
+    // See #95586, use CMS until Java 16+ and use ZGC when switching to that.
+    jvmArgs += '-XX:+UseConcMarkSweepGC'
     minHeapSize = "1894m"
     maxHeapSize = "1894m"
     // No longer necessary to fork on every test: see #61206
