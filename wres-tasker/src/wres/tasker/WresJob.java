@@ -83,7 +83,7 @@ public class WresJob
      * A maximum length less than the largest-seen successful project sent
      * to a worker-shim with the current worker-shim heap limits. E.g. no OOME.
      */
-    private static final int MAXIMUM_PROJECT_DECLARATION_LENGTH = 2_500_000;
+    private static final int MAXIMUM_PROJECT_DECLARATION_LENGTH = 5_000_000;
 
     /**
      * A smaller-than-minimum number of bytes expected in a project declaration.
@@ -274,7 +274,7 @@ public class WresJob
         {
             int lengthOfProjectDeclaration = projectConfig.length();
 
-            // Limit project config to less than 1.6 million characters
+            // Limit project config to avoid heap overflow in worker-shim
             if ( lengthOfProjectDeclaration
                  > MAXIMUM_PROJECT_DECLARATION_LENGTH )
             {
