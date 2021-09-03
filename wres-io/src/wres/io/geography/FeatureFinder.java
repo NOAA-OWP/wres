@@ -25,8 +25,6 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.geography.wrds.WrdsLocation;
-import wres.io.geography.wrds.v2.WrdsLocationRootDocument;
-import wres.io.geography.wrds.v3.WrdsLocationRootDocumentV3;
 import wres.io.reading.PreIngestException;
 
 /**
@@ -168,6 +166,7 @@ public class FeatureFinder
         PairConfig featurefulPairDeclaration = new PairConfig( originalPairDeclaration.getUnit(),
                                                                originalPairDeclaration.getFeatureService(),
                                                                filledFeatures,
+                                                               originalPairDeclaration.getFeatureGroup(),
                                                                originalPairDeclaration.getGridSelection(),
                                                                originalPairDeclaration.isByTimeSeries(),
                                                                originalPairDeclaration.getLeadHours(),

@@ -42,6 +42,7 @@ import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
+import wres.config.generated.FeaturePool;
 import wres.config.generated.IntBoundsType;
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
@@ -1395,7 +1396,9 @@ public class Validation
         }
 
         result = result && Validation.areFeaturesValid( pairConfig.getFeature() );
-
+        
+        result = result && Validation.areFeatureGroupsValid( projectConfigPlus, pairConfig );
+        
         result = result && Validation.areDatesValid( projectConfigPlus, pairConfig.getDates() );
 
         result = result && Validation.areDatesValid( projectConfigPlus, pairConfig.getIssuedDates() );
@@ -1445,27 +1448,58 @@ public class Validation
     static boolean areFeaturesValid( List<Feature> features )
     {
         boolean valid = true;
-
-        valid = Validation.doesEachFeatureHaveSomethingDeclared( features )
-                && valid;
+        
+        valid = valid && Validation.doesEachFeatureHaveSomethingDeclared( features );
         List<String> leftRawNames = Validation.getFeatureNames( features,
                                                                 LeftOrRightOrBaseline.LEFT );
         List<String> rightRawNames = Validation.getFeatureNames( features,
                                                                  LeftOrRightOrBaseline.RIGHT );
         List<String> baselineRawNames = getFeatureNames( features,
                                                          LeftOrRightOrBaseline.BASELINE );
-        valid = Validation.validateFeatureNames( leftRawNames,
-                                                 LeftOrRightOrBaseline.LEFT )
-                && valid;
-        valid = Validation.validateFeatureNames( rightRawNames,
-                                                 LeftOrRightOrBaseline.RIGHT )
-                && valid;
-        valid = Validation.validateFeatureNames( baselineRawNames,
-                                                 LeftOrRightOrBaseline.BASELINE )
-                && valid;
+        valid = valid && Validation.validateFeatureNames( leftRawNames,
+                                                 LeftOrRightOrBaseline.LEFT );
+        valid = valid && Validation.validateFeatureNames( rightRawNames,
+                                                 LeftOrRightOrBaseline.RIGHT );
+        valid = valid && Validation.validateFeatureNames( baselineRawNames,
+                                                 LeftOrRightOrBaseline.BASELINE );
+        
         return valid;
     }
 
+    /**
+     * Validates any feature groups in the pair declaration.
+     * @param projectConfigPlus the project declaration
+     * @param pairConfig the pair declaration
+     * @return true when the feature group declaration is valid, otherwise false
+     */
+
+    private static boolean areFeatureGroupsValid( ProjectConfigPlus projectConfigPlus,
+                                                  PairConfig pairConfig )
+    {
+        boolean valid = true;
+
+        List<FeaturePool> groups = pairConfig.getFeatureGroup();
+
+        String allowGroups = System.getProperty( "wres.featureGroups" );
+
+        if ( !groups.isEmpty() && !"true".equalsIgnoreCase( allowGroups ) )
+        {
+            valid = false;
+
+            String msg = FILE_LINE_COLUMN_BOILERPLATE
+                         + " Feature grouping is an experimental feature for developers and cannot be used without the "
+                         + "'wres.featureGroups=true' system property. Please set the system property or remove the "
+                         + "<featureGroup> declaration and try again.";
+
+            LOGGER.warn( msg,
+                         projectConfigPlus.getOrigin(),
+                         pairConfig.sourceLocation().getLineNumber(),
+                         pairConfig.sourceLocation().getColumnNumber() );
+        }
+
+        return valid;
+    }
+    
     /**
      * Each attribute is individually optional in feature, but at least one must
      * be present.

@@ -181,6 +181,20 @@
         </xs:all>
     </xs:complexType>
 
+    <xs:complexType name="featurePool">
+        <xs:annotation>
+            <xs:documentation>Used to declare groups of features for pooling.
+            </xs:documentation>
+            <xs:appinfo>
+                <jaxb:class name="FeaturePool" />
+            </xs:appinfo>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="feature" type="feature" minOccurs="1" maxOccurs="unbounded" >
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
     <xs:complexType name="coordinateSelection">
         <xs:all>
             <xs:element name="longitude" type="xs:float" />
@@ -881,6 +895,7 @@ time scale within a single class, rather than two classes.
             <xs:element name="unit" type="xs:string" minOccurs="0" maxOccurs="1" />
             <xs:element name="featureService" type="featureService" minOccurs="0" maxOccurs="1" />
             <xs:element name="feature" type="feature" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="featureGroup" type="featurePool" minOccurs="0" maxOccurs="unbounded"/>
             <xs:element name="gridSelection" type="unnamedFeature" minOccurs="0" maxOccurs="unbounded"/>
             <xs:element name="byTimeSeries" type="xs:boolean" default="false" minOccurs="0" />
             <xs:element name="leadHours" type="intBoundsType" minOccurs="0" />

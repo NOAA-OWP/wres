@@ -145,6 +145,7 @@ public final class ThresholdsGeneratorTest
                                                    null,
                                                    null,
                                                    null,
+                                                   null,
                                                    null ),
                                    Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
                                    null,
@@ -170,6 +171,7 @@ public final class ThresholdsGeneratorTest
         ProjectConfig mockedConfigWithoutThresholds =
                 new ProjectConfig( null,
                                    new PairConfig( null,
+                                                   null,
                                                    null,
                                                    null,
                                                    null,
