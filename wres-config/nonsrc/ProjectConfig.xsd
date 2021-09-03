@@ -183,7 +183,9 @@
 
     <xs:complexType name="featurePool">
         <xs:annotation>
-            <xs:documentation>Used to declare groups of features for pooling.
+            <xs:documentation>Used to declare groups of features for pooling. This is
+                an EXPERIMENTAL FEATURE that is protected by a feature toggle. Unless 
+                you are a developer, do not use!
             </xs:documentation>
             <xs:appinfo>
                 <jaxb:class name="FeaturePool" />
