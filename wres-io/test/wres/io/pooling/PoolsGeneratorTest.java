@@ -83,6 +83,7 @@ public class PoolsGeneratorTest
                                                  null,
                                                  null,
                                                  null,
+                                                 null,
                                                  leadBoundsConfig,
                                                  null,
                                                  null,
@@ -188,6 +189,7 @@ public class PoolsGeneratorTest
         PoolingWindowConfig issuedDatesPoolingWindowConfig =
                 new PoolingWindowConfig( 13, 7, DurationUnit.HOURS );
         PairConfig pairsConfig = new PairConfig( "CFS",
+                                                 null,
                                                  null,
                                                  null,
                                                  null,

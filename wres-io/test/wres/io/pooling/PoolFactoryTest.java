@@ -49,6 +49,7 @@ class PoolFactoryTest
                                                  null,
                                                  null,
                                                  null,
+                                                 null,
                                                  leadBoundsConfig,
                                                  null,
                                                  null,
