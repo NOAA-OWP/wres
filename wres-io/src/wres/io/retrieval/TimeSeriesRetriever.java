@@ -249,10 +249,18 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             Map<Long, Integer> seriesCounts = new HashMap<>();
 
             TimeScaleOuter lastScale = null; // Record of last scale
-
+            long lastSeriesId = -1;
+            
             while ( provider.next() )
             {
                 long seriesId = provider.getLong( "series_id" );
+                
+                // Reset the last time scale
+                if( seriesId != lastSeriesId )
+                {
+                    lastScale = null;
+                }
+                
                 int seriesCount = 1;
 
                 // Records occurrences?
@@ -308,6 +316,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                                                this.unitMapper.getDesiredMeasurementUnitName() );
                 builder.setMetadata( metadata );
                 lastScale = latestScale;
+                lastSeriesId = seriesId;
             }
 
             return this.composeWithDuplicates( Collections.unmodifiableMap( builders ),
@@ -729,7 +738,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                                            String functionString,
                                            Instant validTime )
     {
-
         Duration periodToUse = null;
         TimeScaleFunction functionToUse = null;
 
