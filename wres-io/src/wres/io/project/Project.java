@@ -312,22 +312,22 @@ public class Project
         
         this.featureGroups = innerFeatures.getRight();
         
-        LOGGER.info( "Finished setting the feature groups for project {}. Discovered {} feature groups: {}.",
+        LOGGER.debug( "Finished setting the feature groups for project {}. Discovered {} feature groups: {}.",
                       this.getId(),
                       this.featureGroups.size(),
                       this.featureGroups );
-        
+
         // Features are the union of the singletons and grouped features
         Set<FeatureTuple> singletons = new HashSet<>( innerFeatures.getLeft() );
         this.featureGroups.stream()
                           .flatMap( next -> next.getFeatures().stream() )
                           .forEach( singletons::add );
         this.features = Collections.unmodifiableSet( singletons );
-        
-        LOGGER.info( "Finished setting the features for project {}. Discovered {} features: {}.",
-                this.getId(),
-                this.features.size(),
-                this.features );
+
+        LOGGER.debug( "Finished setting the features for project {}. Discovered {} features: {}.",
+                      this.getId(),
+                      this.features.size(),
+                      this.features );
     }
     
     /**
