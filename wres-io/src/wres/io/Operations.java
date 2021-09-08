@@ -95,7 +95,7 @@ public final class Operations {
             leftTimeSeriesValid = executor.submit(
                                                    () -> Objects.isNull( project.getDeclaredLeftVariableName() )
                                                          || variables.isValid( project.getId(),
-                                                                               Project.LEFT_MEMBER,
+                                                                               LeftOrRightOrBaseline.LEFT.value(),
                                                                                project.getDeclaredLeftVariableName() ) );
         }
 
@@ -104,7 +104,7 @@ public final class Operations {
             rightTimeSeriesValid = executor.submit(
                                                     () -> Objects.isNull( project.getDeclaredRightVariableName() )
                                                           || variables.isValid( project.getId(),
-                                                                                Project.RIGHT_MEMBER,
+                                                                                LeftOrRightOrBaseline.RIGHT.value(),
                                                                                 project.getDeclaredRightVariableName() ) );
         }
 
@@ -113,7 +113,7 @@ public final class Operations {
             baselineTimeSeriesValid = executor.submit(
                                                        () -> Objects.isNull( project.getDeclaredBaselineVariableName() )
                                                              || variables.isValid( project.getId(),
-                                                                                   Project.BASELINE_MEMBER,
+                                                                                   LeftOrRightOrBaseline.BASELINE.value(),
                                                                                    project.getDeclaredBaselineVariableName() ) );
         }
 
