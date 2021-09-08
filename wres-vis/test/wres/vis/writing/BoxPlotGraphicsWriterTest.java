@@ -18,6 +18,7 @@ import wres.config.ProjectConfigException;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
@@ -98,9 +99,9 @@ public class BoxPlotGraphicsWriterTest
             throws IOException, InterruptedException
     {
         Outputs outputs = Outputs.newBuilder()
-                .setPng( PngFormat.getDefaultInstance() )
-                .build();
-        
+                                 .setPng( PngFormat.getDefaultInstance() )
+                                 .build();
+
         // Begin the actual test now that we have constructed dependencies.
         BoxPlotGraphicsWriter writer = BoxPlotGraphicsWriter.of( outputs,
                                                                  this.outputDirectory );
@@ -149,9 +150,13 @@ public class BoxPlotGraphicsWriterTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( new FeatureTuple( feature,
-                                                            feature,
-                                                            null ),
+        FeatureTuple featureTuple = new FeatureTuple( feature,
+                                                      feature,
+                                                      null );
+
+        FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
+
+        Pool pool = MessageFactory.parse( featureGroup,
                                           timeOne,
                                           null,
                                           threshold,
@@ -185,9 +190,7 @@ public class BoxPlotGraphicsWriterTest
                                     Duration.ofHours( 48 ),
                                     Duration.ofHours( 48 ) );
 
-        Pool poolTwo = MessageFactory.parse( new FeatureTuple( feature,
-                                                               feature,
-                                                               null ),
+        Pool poolTwo = MessageFactory.parse( featureGroup,
                                              timeTwo,
                                              null,
                                              threshold,
@@ -239,9 +242,13 @@ public class BoxPlotGraphicsWriterTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( new FeatureTuple( feature,
-                                                            feature,
-                                                            null ),
+        FeatureTuple featureTuple = new FeatureTuple( feature,
+                                                      feature,
+                                                      null );
+
+        FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
+
+        Pool pool = MessageFactory.parse( featureGroup,
                                           timeOne,
                                           null,
                                           threshold,

@@ -40,7 +40,6 @@ import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
-import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesCrossPairer;
@@ -161,7 +160,7 @@ public class PoolFactory
                           featureGroup );
 
             PoolMetadata baselineMetadata = PoolFactory.createMetadata( evaluation,
-                                                                        featureGroup.getFeatures(),
+                                                                        featureGroup,
                                                                         TimeWindowOuter.of(),
                                                                         desiredTimeScale,
                                                                         LeftOrRightOrBaseline.BASELINE );
@@ -328,9 +327,8 @@ public class PoolFactory
         List<PoolRequest> poolRequests = new ArrayList<>();
 
         // Iterate the features and time windows, creating metadata for each
-        for ( FeatureGroup features : featureGroups )
+        for ( FeatureGroup nextFeatures : featureGroups )
         {
-            Set<FeatureTuple> nextFeatures = features.getFeatures();
             for ( TimeWindowOuter timeWindow : timeWindows )
             {
                 PoolMetadata mainMetadata = PoolFactory.createMetadata( evaluation,
@@ -384,7 +382,7 @@ public class PoolFactory
      * Returns a metadata representation of the input.
      * 
      * @param evaluation the evaluation description
-     * @param featureTuples the features
+     * @param featureGroup the feature group
      * @param timeWindow the time window
      * @param desiredTimeScale the desired time scale
      * @param leftOrRightOrBaseline the context for the data as it relates to the declaration
@@ -392,12 +390,12 @@ public class PoolFactory
      */
 
     private static PoolMetadata createMetadata( wres.statistics.generated.Evaluation evaluation,
-                                                Set<FeatureTuple> featureTuples,
+                                                FeatureGroup featureGroup,
                                                 TimeWindowOuter timeWindow,
                                                 TimeScaleOuter desiredTimeScale,
                                                 LeftOrRightOrBaseline leftOrRightOrBaseline )
     {
-        wres.statistics.generated.Pool pool = MessageFactory.parse( featureTuples,
+        wres.statistics.generated.Pool pool = MessageFactory.parse( featureGroup,
                                                                     timeWindow, // Default to start with
                                                                     desiredTimeScale,
                                                                     null,

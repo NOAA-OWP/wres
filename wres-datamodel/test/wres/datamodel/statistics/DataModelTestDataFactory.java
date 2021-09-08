@@ -9,6 +9,7 @@ import java.util.List;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -46,7 +47,7 @@ public final class DataModelTestDataFactory
     private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
 
     private static final FeatureKey DRRC2 = FeatureKey.of( "DRRC2" );
-    private static final FeatureTuple DRRC2_TUPLE = new FeatureTuple( DRRC2, DRRC2, DRRC2 );
+    private static final FeatureGroup DRRC2_GROUP = FeatureGroup.of( new FeatureTuple( DRRC2, DRRC2, DRRC2 ) );
 
     /**
      * Returns a {@link List} of {@link ScoreStatistic} comprising the MAE for selected
@@ -68,7 +69,7 @@ public final class DataModelTestDataFactory
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( DataModelTestDataFactory.DRRC2_TUPLE,
+        Pool pool = MessageFactory.parse( DataModelTestDataFactory.DRRC2_GROUP,
                                           null,
                                           null,
                                           null,

@@ -29,7 +29,6 @@ import wres.config.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.MetricsConfig;
-import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.control.Evaluator.DatabaseServices;
 import wres.datamodel.messages.MessageFactory;
@@ -396,7 +395,8 @@ class ProcessorHelper
 
             ProgressMonitor.setShowStepDescription( false );
 
-            Set<FeatureTuple> decomposedFeatures = ProcessorHelper.getDecomposedFeatures( project );
+            // Acquire the individual feature tuples to correlate with thresholds
+            Set<FeatureTuple> featuresForThresholds = project.getFeatures();
 
             // Read external thresholds from the configuration, per feature
             // Compare on left dataset's feature name only.
@@ -413,7 +413,7 @@ class ProcessorHelper
                                                                        projectConfig,
                                                                        metricsConfig,
                                                                        unitMapper,
-                                                                       decomposedFeatures );
+                                                                       featuresForThresholds );
 
                 Map<FeatureTuple, ThresholdsByMetric> nextThresholds = thresholdReader.read();
                 Set<FeatureTuple> features = thresholdReader.getEvaluatableFeatures();
@@ -425,12 +425,9 @@ class ProcessorHelper
 
             // Render the bags of thresholds and features immutable
             metricsAndThresholds = Collections.unmodifiableList( metricsAndThresholds );
-            havingThresholds = Collections.unmodifiableSet( havingThresholds );
+            featuresForThresholds = Collections.unmodifiableSet( havingThresholds );
 
-            // If the left dataset name exists in thresholds, keep it in the set.
-            decomposedFeatures = Collections.unmodifiableSet( havingThresholds );
-
-            if ( decomposedFeatures.isEmpty() )
+            if ( featuresForThresholds.isEmpty() )
             {
                 throw new NoDataException( "There were data correlated by "
                                            + "geographic features specified "
@@ -448,7 +445,7 @@ class ProcessorHelper
 
                 for ( NetcdfOutputWriter writer : netcdfWriters )
                 {
-                    writer.createBlobsForWriting( decomposedFeatures,
+                    writer.createBlobsForWriting( featuresForThresholds,
                                                   thresholds );
                 }
             }
@@ -458,7 +455,7 @@ class ProcessorHelper
 
             ResolvedProject resolvedProject = ResolvedProject.of(
                                                                   projectConfigPlus,
-                                                                  decomposedFeatures,
+                                                                  featuresForThresholds,
                                                                   projectIdentifier,
                                                                   metricsAndThresholds,
                                                                   outputDirectory );
@@ -467,18 +464,18 @@ class ProcessorHelper
             // Tasks for features
             List<CompletableFuture<Void>> featureTasks = new ArrayList<>();
 
+            // Create the feature groups
+            Set<FeatureGroup> featureGroups = ProcessorHelper.getFeatureGroups( project, 
+                                                                                featuresForThresholds );
+            
             // Report on the completion state of all features
             // Report detailed state by default (final arg = true)
             // TODO: demote to summary report (final arg = false) for >> feature count
-            FeatureReporter featureReport = new FeatureReporter( projectConfigPlus, decomposedFeatures.size(), true );
+            FeatureReporter featureReport = new FeatureReporter( projectConfigPlus, featureGroups.size(), true );
 
             // Deactivate progress monitoring within features, as features are processed asynchronously - the internal
             // completion state of features has no value when reported in this way
             ProgressMonitor.deactivate();
-
-            // Create the feature groups
-            Set<FeatureGroup> featureGroups = ProcessorHelper.getFeatureGroups( decomposedFeatures, 
-                                                                                projectConfig.getPair());
             
             // Create one task per feature group
             for ( FeatureGroup nextGroup : featureGroups )
@@ -532,37 +529,6 @@ class ProcessorHelper
                 evaluation.close();
             }
         }
-    }
-
-    /**
-     * Returns the decomposed features.
-     * 
-     * @param project the project
-     * @throws NoDataException if no features could be retrieved
-     */
-
-    private static Set<FeatureTuple> getDecomposedFeatures( Project project )
-    {
-
-        Set<FeatureTuple> decomposedFeatures;
-
-        try
-        {
-            decomposedFeatures = project.getFeatures();
-        }
-        catch ( SQLException e )
-        {
-            throw new NoDataException( "Failed to retrieve the set of features.", e );
-        }
-
-        if ( decomposedFeatures.isEmpty() )
-        {
-            throw new NoDataException( "There were no data correlated by "
-                                       + " geographic features specified "
-                                       + "available for evaluation." );
-        }
-
-        return decomposedFeatures;
     }
 
     /**
@@ -1142,28 +1108,42 @@ class ProcessorHelper
     }
     
     /**
-     * @param features the individual feature tuples
-     * @param pairConfig the pair declaration
+     * @param project the project
+     * @param featuresWithThresholds the features that have thresholds
      * @return the feature groups
      */
 
-    private static Set<FeatureGroup> getFeatureGroups( Set<FeatureTuple> features, PairConfig pairConfig )
+    private static Set<FeatureGroup> getFeatureGroups( Project project, Set<FeatureTuple> featuresWithThresholds )
     {
-        Objects.requireNonNull( features );
-        Objects.requireNonNull( pairConfig );
-        
-        Set<FeatureGroup> featureGroups = new HashSet<>();
-        for ( FeatureTuple feature : features )
-        {
-            StringJoiner inner = new StringJoiner( ", ", "( ", " )" );
-            String groupName = feature.toStringShort();
-            inner.add( groupName );
+        Objects.requireNonNull( project );
+        Objects.requireNonNull( featuresWithThresholds );
 
-            FeatureGroup featureGroup = FeatureGroup.of( inner.toString(), feature );
-            featureGroups.add( featureGroup );
+        // Get the baseline groups
+        Set<FeatureGroup> featureGroups = project.getFeatureGroups();
+
+        Set<FeatureGroup> adjustedGroups = new HashSet<>( featureGroups );
+        Set<FeatureGroup> removed = new HashSet<>();
+
+        // Check that every group has one or more thresholds for every tuple, else warn and filter them out
+        for ( FeatureGroup nextGroup : featureGroups )
+        {
+            if ( nextGroup.getFeatures().size() > 1 && !featuresWithThresholds.containsAll( nextGroup.getFeatures() ) )
+            {
+                adjustedGroups.remove( nextGroup );
+                removed.add( nextGroup );
+            }
         }
 
-        return Collections.unmodifiableSet( featureGroups );
+        // Warn about groups without thresholds, which will be skipped
+        if ( !removed.isEmpty() && LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "While correlating thresholds with the feature tuples that belong to feature groups, "
+                         + "discovered {} feature groups without thresholds for one or more of their feature "
+                         + "tuples. These groups will not be evaluated. The groups are: {}.",
+                         removed );
+        }
+
+        return Collections.unmodifiableSet( adjustedGroups );
     }
     
     /**

@@ -195,6 +195,7 @@
             <xs:element name="feature" type="feature" minOccurs="1" maxOccurs="unbounded" >
             </xs:element>
         </xs:sequence>
+        <xs:attribute name="name" type="xs:string" />
     </xs:complexType>
 
     <xs:complexType name="coordinateSelection">

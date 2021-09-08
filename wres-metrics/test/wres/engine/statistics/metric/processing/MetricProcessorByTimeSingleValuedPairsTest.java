@@ -43,7 +43,7 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
-import wres.datamodel.space.FeatureTuple;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
@@ -200,7 +200,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                          Instant.MAX,
                                                          Duration.ofHours( i ) );
 
-            FeatureTuple featureTuple = MetricTestDataFactory.getLocation( DRRC2 );
+            FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( DRRC2 );
 
             Evaluation evaluation = Evaluation.newBuilder()
                                               .setRightVariableName( "SQIN" )
@@ -208,7 +208,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                               .setMeasurementUnit( "CMS" )
                                               .build();
 
-            wres.statistics.generated.Pool pool = MessageFactory.parse( featureTuple,
+            wres.statistics.generated.Pool pool = MessageFactory.parse( featureGroup,
                                                                         window,
                                                                         null,
                                                                         null,
@@ -251,7 +251,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( DRRC2 ),
+        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup( DRRC2 ),
                                                                     expectedWindow,
                                                                     null,
                                                                     expectedThreshold,
@@ -362,7 +362,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( "A" ),
+        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup( "A" ),
                                                                     firstWindow,
                                                                     null,
                                                                     thresholds,
@@ -370,7 +370,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         PoolMetadata m1 = PoolMetadata.of( evaluation, pool );
 
-        wres.statistics.generated.Pool poolTwo = MessageFactory.parse( MetricTestDataFactory.getLocation( "A" ),
+        wres.statistics.generated.Pool poolTwo = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup( "A" ),
                                                                        secondWindow,
                                                                        null,
                                                                        thresholds,
@@ -452,7 +452,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         //Validate the outputs
         //Compare the errors against the benchmark
-        
+
         //Build the expected output
         // Metadata for the output
         TimeWindowOuter firstWindow = TimeWindowOuter.of( FIRST_DATE,
@@ -477,7 +477,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( "A" ),
+        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup( "A" ),
                                                                     null,
                                                                     null,
                                                                     null,
@@ -591,7 +591,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( "A" ),
+        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup( "A" ),
                                                                     timeWindow,
                                                                     null,
                                                                     thresholds,
@@ -742,7 +742,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                          Instant.MAX,
                                                          Duration.ofHours( i ) );
 
-            FeatureTuple featureTuple = MetricTestDataFactory.getLocation( DRRC2 );
+            FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( DRRC2 );
 
             Evaluation evaluation = Evaluation.newBuilder()
                                               .setRightVariableName( "SQIN" )
@@ -750,7 +750,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                               .setRightDataName( "HEFS" )
                                               .build();
 
-            wres.statistics.generated.Pool pool = MessageFactory.parse( featureTuple,
+            wres.statistics.generated.Pool pool = MessageFactory.parse( featureGroup,
                                                                         window,
                                                                         null,
                                                                         null,
@@ -792,7 +792,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( DRRC2 ),
+        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup( DRRC2 ),
                                                                     expectedWindow,
                                                                     null,
                                                                     expectedThreshold,
@@ -850,7 +850,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                          Instant.MAX,
                                                          Duration.ofHours( i ) );
 
-            FeatureTuple featureTuple = MetricTestDataFactory.getLocation( DRRC2 );
+            FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( DRRC2 );
 
             Evaluation evaluation = Evaluation.newBuilder()
                                               .setRightVariableName( "SQIN" )
@@ -858,7 +858,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                               .setMeasurementUnit( "CMS" )
                                               .build();
 
-            wres.statistics.generated.Pool pool = MessageFactory.parse( featureTuple,
+            wres.statistics.generated.Pool pool = MessageFactory.parse( featureGroup,
                                                                         window,
                                                                         null,
                                                                         null,
@@ -909,7 +909,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( "A" ),
+        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup( "A" ),
                                                                     timeWindow,
                                                                     null,
                                                                     thresholds,
@@ -946,7 +946,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      Instant.MAX,
                                                      Duration.ZERO );
 
-        FeatureTuple featureTuple = MetricTestDataFactory.getLocation( DRRC2 );
+        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( DRRC2 );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "SQIN" )
@@ -954,7 +954,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( featureTuple,
+        wres.statistics.generated.Pool pool = MessageFactory.parse( featureGroup,
                                                                     window,
                                                                     null,
                                                                     null,

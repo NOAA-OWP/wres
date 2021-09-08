@@ -37,6 +37,7 @@ import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -185,42 +186,11 @@ public class MessageFactory
 
         return builder.build();
     }
-
-    /**
-     * Builds a pool from the input, some of which may be missing.
-     * 
-     * @param featureTuple the feature tuples
-     * @param timeWindow the time window
-     * @param timeScale the time scale
-     * @param thresholds the thresholds
-     * @param isBaselinePool is true if the pool refers to pairs of left and baseline data, otherwise left and right
-     * @return the pool
-     */
-
-    public static Pool parse( FeatureTuple featureTuple,
-                              TimeWindowOuter timeWindow,
-                              TimeScaleOuter timeScale,
-                              OneOrTwoThresholds thresholds,
-                              boolean isBaselinePool )
-    {
-        Set<FeatureTuple> tuple = new HashSet<>();
-        
-        if ( Objects.nonNull( featureTuple ) )
-        {
-            tuple.add( featureTuple );
-        }
-
-        return MessageFactory.parse( tuple,
-                                     timeWindow,
-                                     timeScale,
-                                     thresholds,
-                                     isBaselinePool );
-    }
     
     /**
      * Builds a pool from the input, some of which may be missing.
      * 
-     * @param featureTuples the feature tuples
+     * @param featureGroup the feature group
      * @param timeWindow the time window
      * @param timeScale the time scale
      * @param thresholds the thresholds
@@ -228,7 +198,7 @@ public class MessageFactory
      * @return the pool
      */
 
-    public static Pool parse( Set<FeatureTuple> featureTuples,
+    public static Pool parse( FeatureGroup featureGroup,
                               TimeWindowOuter timeWindow,
                               TimeScaleOuter timeScale,
                               OneOrTwoThresholds thresholds,
@@ -239,16 +209,23 @@ public class MessageFactory
                                        .setIsBaselinePool( isBaselinePool );
 
         // Feature tuple
-        if ( Objects.nonNull( featureTuples ) )
+        if ( Objects.nonNull( featureGroup ) )
         {
-            
-            Set<GeometryTuple> geoTuples = featureTuples.stream()
-                                                         .map( MessageFactory::parse )
-                                                         .collect( Collectors.toSet() );
-            poolBuilder.addAllGeometryTuples( geoTuples );
 
-            LOGGER.debug( "While creating sample metadata, populated the pool with geometry tuples of {}.",
-                          featureTuples );
+            Set<GeometryTuple> geoTuples = featureGroup.getFeatures()
+                                                       .stream()
+                                                       .map( MessageFactory::parse )
+                                                       .collect( Collectors.toSet() );
+            poolBuilder.addAllGeometryTuples( geoTuples );
+            
+            // Region name?
+            if( Objects.nonNull( featureGroup.getName() ) )
+            {
+                poolBuilder.setRegionName( featureGroup.getName() );
+            }
+
+            LOGGER.debug( "While creating sample metadata, populated the pool with a feature group of {}.",
+                          featureGroup );
         }
 
         // Time window
@@ -922,20 +899,14 @@ public class MessageFactory
 
         wres.datamodel.time.TimeWindowOuter window = metadata.getTimeWindow();
         wres.datamodel.thresholds.OneOrTwoThresholds thresholds = metadata.getThresholds();
+        
+        Set<wres.datamodel.space.FeatureTuple> features = metadata.getPool()
+                                                                  .getGeometryTuplesList()
+                                                                  .stream()
+                                                                  .map( MessageFactory::parse )
+                                                                  .collect( Collectors.toSet() );
 
-        if ( metadata.getPool().getGeometryTuplesCount() != 1 )
-        {
-            throw new IllegalArgumentException( "Expected one geometry tuple per pool but discovered "
-                                                + metadata.getPool().getGeometryTuplesCount()
-                                                + ", which is not supported." );
-        }
-
-        GeometryTuple geometryTuple = metadata.getPool()
-                                              .getGeometryTuples( 0 );
-
-        FeatureTuple featureTuple = MessageFactory.parse( geometryTuple );
-
-        return new PoolBoundaries( featureTuple, window, thresholds, metadata.getPool().getIsBaselinePool() );
+        return new PoolBoundaries( features, window, thresholds, metadata.getPool().getIsBaselinePool() );
     }
 
     /**
@@ -948,15 +919,15 @@ public class MessageFactory
     {
         private final OneOrTwoThresholds thresholds;
         private final wres.datamodel.time.TimeWindowOuter window;
-        private final wres.datamodel.space.FeatureTuple location;
+        private final Set<wres.datamodel.space.FeatureTuple> features;
         private final boolean isBaselinePool;
 
-        private PoolBoundaries( wres.datamodel.space.FeatureTuple location,
+        private PoolBoundaries( Set<wres.datamodel.space.FeatureTuple> features,
                                 wres.datamodel.time.TimeWindowOuter window,
                                 OneOrTwoThresholds thresholds,
                                 boolean isBaselinePool )
         {
-            this.location = location;
+            this.features = features;
             this.window = window;
             this.thresholds = thresholds;
             this.isBaselinePool = isBaselinePool;
@@ -977,7 +948,7 @@ public class MessageFactory
 
             PoolBoundaries input = (PoolBoundaries) o;
 
-            return Objects.equals( this.location, input.location ) && Objects.equals( this.window, input.window )
+            return Objects.equals( this.features, input.features ) && Objects.equals( this.window, input.window )
                    && Objects.equals( this.thresholds, input.thresholds )
                    && this.isBaselinePool == input.isBaselinePool;
         }
@@ -985,7 +956,7 @@ public class MessageFactory
         @Override
         public int hashCode()
         {
-            return Objects.hash( this.location, this.window, this.thresholds, this.isBaselinePool );
+            return Objects.hash( this.features, this.window, this.thresholds, this.isBaselinePool );
         }
     }
 

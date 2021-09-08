@@ -1482,19 +1482,36 @@ public class Validation
 
         String allowGroups = System.getProperty( "wres.featureGroups" );
 
-        if ( !groups.isEmpty() && !"true".equalsIgnoreCase( allowGroups ) )
+        if ( !groups.isEmpty() )
         {
-            valid = false;
+            if ( !"true".equalsIgnoreCase( allowGroups ) )
+            {
+                valid = false;
 
-            String msg = FILE_LINE_COLUMN_BOILERPLATE
-                         + " Feature grouping is an experimental feature for developers and cannot be used without the "
-                         + "'wres.featureGroups=true' system property. Please set the system property or remove the "
-                         + "<featureGroup> declaration and try again.";
+                String msg = FILE_LINE_COLUMN_BOILERPLATE
+                             + " Feature grouping is an experimental feature for developers and cannot be used without the "
+                             + "'wres.featureGroups=true' system property. Please set the system property or remove the "
+                             + "<featureGroup> declaration and try again.";
 
-            LOGGER.warn( msg,
-                         projectConfigPlus.getOrigin(),
-                         pairConfig.sourceLocation().getLineNumber(),
-                         pairConfig.sourceLocation().getColumnNumber() );
+                LOGGER.warn( msg,
+                             projectConfigPlus.getOrigin(),
+                             pairConfig.sourceLocation().getLineNumber(),
+                             pairConfig.sourceLocation().getColumnNumber() );
+            }
+
+            if ( !pairConfig.getGridSelection().isEmpty() )
+            {
+                valid = false;
+
+                String msg = FILE_LINE_COLUMN_BOILERPLATE
+                             + " Feature grouping is not supported for gridded evaluations. Please remove the "
+                             + "<featureGroup> declaration and try again.";
+
+                LOGGER.warn( msg,
+                             projectConfigPlus.getOrigin(),
+                             pairConfig.sourceLocation().getLineNumber(),
+                             pairConfig.sourceLocation().getColumnNumber() );
+            }
         }
 
         return valid;

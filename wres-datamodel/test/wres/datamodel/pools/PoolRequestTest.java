@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.TimeWindowOuter;
@@ -23,7 +24,7 @@ class PoolRequestTest
     private PoolMetadata poolMetadata;
     private Evaluation evaluation;
     private TimeWindowOuter timeWindow;
-    private FeatureTuple featureTuple;
+    private FeatureGroup featureGroup;
 
     @BeforeEach
     void setUpBeforeEachTest()
@@ -35,12 +36,12 @@ class PoolRequestTest
                                     .build();
 
         FeatureKey featureOne = FeatureKey.of( "DRRC2" );
-        this.featureTuple = new FeatureTuple( featureOne, featureOne, featureOne );
+        this.featureGroup = FeatureGroup.of( new FeatureTuple( featureOne, featureOne, featureOne ) );
 
         this.timeWindow = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                               Instant.parse( "1985-12-31T23:59:59Z" ) );
 
-        Pool poolOne = MessageFactory.parse( this.featureTuple,
+        Pool poolOne = MessageFactory.parse( this.featureGroup,
                                              this.timeWindow,
                                              null,
                                              null,
@@ -58,7 +59,7 @@ class PoolRequestTest
         assertEquals( this.poolRequest, this.poolRequest );
 
         // Symmetric
-        Pool anotherPool = MessageFactory.parse( this.featureTuple,
+        Pool anotherPool = MessageFactory.parse( this.featureGroup,
                                                  this.timeWindow,
                                                  null,
                                                  null,
@@ -71,7 +72,7 @@ class PoolRequestTest
                     && this.poolRequest.equals( anotherPoolRequest ) );
 
         // Transitive
-        Pool yetAnotherPool = MessageFactory.parse( this.featureTuple,
+        Pool yetAnotherPool = MessageFactory.parse( this.featureGroup,
                                                     this.timeWindow,
                                                     null,
                                                     null,
@@ -97,7 +98,7 @@ class PoolRequestTest
         // Unequal cases
         FeatureKey aFeature = FeatureKey.of( "DRRC3" );
 
-        Pool oneMorePool = MessageFactory.parse( new FeatureTuple( aFeature, aFeature, aFeature ),
+        Pool oneMorePool = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( aFeature, aFeature, aFeature ) ),
                                                  this.timeWindow,
                                                  null,
                                                  null,

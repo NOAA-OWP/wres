@@ -11,9 +11,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.StringJoiner;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,10 +28,13 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.DurationBoundsType;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.EnsembleCondition;
+import wres.config.generated.Feature;
+import wres.config.generated.FeaturePool;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.space.FeatureTuple;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
@@ -112,6 +118,12 @@ public class Project
      */
     private Set<FeatureTuple> features;
 
+    /**
+     * The feature groups related to the project.
+     */
+    
+    private Set<FeatureGroup> featureGroups;
+    
     /**
      * Indicates whether or not this project was inserted on upon this
      * execution of the project
@@ -270,16 +282,14 @@ public class Project
         // data for each feature on each side, but does not guarantee pairs.
         synchronized ( this.featureLock )
         {
-            LOGGER.debug( "Features so far: {}", this.features );
-            this.features = this.getIntersectingFeatures( db );
-            LOGGER.debug( "Features after getting intersecting features: {}",
-                          this.features );
+            this.setFeaturesAndFeatureGroups( db );
         }
 
-        if ( this.features.isEmpty() )
+        if ( this.features.isEmpty() && this.featureGroups.isEmpty() )
         {
-            throw new NoDataException( "No features had data on both the left and the right for the variables "
-                                       + "specified." );
+            throw new NoDataException( "Failed to identify any features with data on both the left and right sides for "
+                    + "the variables and other declaration supplied. Please check that the declaration is expected to "
+                    + "produce some features with time-series data on both sides of the pairing." );
         }
 
         // Validate any ensemble conditions
@@ -289,6 +299,37 @@ public class Project
         this.setVariablesToEvaluate();
     }
 
+    /**
+     * Sets the features and feature groups.
+     * @param db the database
+     * @throws SQLException if the features and/or feature groups could not be set
+     */
+
+    private void setFeaturesAndFeatureGroups( Database db ) throws SQLException
+    {
+        LOGGER.debug( "Setting the features and feature groups for project {}.", this.getId() );
+        Pair<Set<FeatureTuple>, Set<FeatureGroup>> innerFeatures = this.getIntersectingFeatures( db );
+        
+        this.featureGroups = innerFeatures.getRight();
+        
+        LOGGER.info( "Finished setting the feature groups for project {}. Discovered {} feature groups: {}.",
+                      this.getId(),
+                      this.featureGroups.size(),
+                      this.featureGroups );
+        
+        // Features are the union of the singletons and grouped features
+        Set<FeatureTuple> singletons = new HashSet<>( innerFeatures.getLeft() );
+        this.featureGroups.stream()
+                          .flatMap( next -> next.getFeatures().stream() )
+                          .forEach( singletons::add );
+        this.features = Collections.unmodifiableSet( singletons );
+        
+        LOGGER.info( "Finished setting the features for project {}. Discovered {} features: {}.",
+                this.getId(),
+                this.features.size(),
+                this.features );
+    }
+    
     /**
      * Checks that the union of ensemble conditions will select some data, otherwise throws an exception.
      * 
@@ -666,109 +707,169 @@ public class Project
      * Does not check if the data is pairable, simply checks that there is data
      * on each of the left and right for this variable at a given feature.
      * @param database The database to use.
-     * @return The Set of FeatureDetails with some data on each side
+     * @return The sets of features to evaluate, ungrouped on the left side and grouped on the right side
      */
 
-    private Set<FeatureTuple> getIntersectingFeatures( Database database )
+    private Pair<Set<FeatureTuple>, Set<FeatureGroup>> getIntersectingFeatures( Database database )
             throws SQLException
     {
-        Set<FeatureTuple> intersectingFeatures;
+        Set<FeatureTuple> singletons = new HashSet<>(); // Singleton feature tuples
+        Set<FeatureTuple> grouped = new HashSet<>(); // Multi-tuple groups
+        
         Features fCache = this.getFeaturesCache();
 
         // Gridded features? #74266
         // Yes
         if ( this.usesGriddedData( this.getRight() ) )
         {
+            // Feature grouping not currently supported for gridded evaluations
+            
             LOGGER.debug( "Getting details of intersecting features for gridded data." );
-            intersectingFeatures = fCache.getGriddedFeatures();
+            singletons.addAll( fCache.getGriddedFeatures() );
         }
         // No
         else
         {
-            intersectingFeatures = new HashSet<>();
-
             // At this point, features should already have been correlated by
             // the declaration or by a location service. In the latter case, the
             // WRES will have generated the List<Feature> and replaced them in
             // a new ProjectConfig, so this code cannot tell the difference.
-            DataScripter script =
-                    ProjectScriptGenerator.createIntersectingFeaturesScript( database,
-                                                                             this.getId(),
-                                                                             this.getProjectConfig()
-                                                                                 .getPair()
-                                                                                 .getFeature(),
-                                                                             this.hasBaseline() );
 
-            LOGGER.debug( "getIntersectingFeatures will run: {}", script );
 
-            try ( Connection connection = database.getConnection();
-                  DataProvider dataProvider = script.buffer( connection ) )
+            // Deal with the special case of singletons first
+            List<Feature> singletonFeatures = this.getProjectConfig()
+                                                  .getPair()
+                                                  .getFeature();
+
+            // If there are no declared singletons, allow features to be discovered, but only if there are no declared
+            // multi-feature groups. TODO: consider whether zero declared features should be supported in future
+            List<FeaturePool> declaredGroups = this.getProjectConfig()
+                                                   .getPair()
+                                                   .getFeatureGroup();
+            if ( !singletonFeatures.isEmpty() || declaredGroups.isEmpty() )
             {
-                while ( dataProvider.next() )
-                {
-                    int leftId = dataProvider.getInt( "left_id" );
-                    FeatureKey leftKey =
-                            fCache.getFeatureKey( leftId );
-                    int rightId = dataProvider.getInt( "right_id" );
-                    FeatureKey rightKey =
-                            fCache.getFeatureKey( rightId );
-                    FeatureKey baselineKey = null;
+                DataScripter script =
+                        ProjectScriptGenerator.createIntersectingFeaturesScript( database,
+                                                                                 this.getId(),
+                                                                                 singletonFeatures,
+                                                                                 this.hasBaseline() );
 
-                    // Baseline column will only be there when baseline exists.
-                    if ( hasBaseline() )
-                    {
-                        int baselineId =
-                                dataProvider.getInt( "baseline_id" );
-
-                        // JDBC getInt returns 0 when not found. All primary key
-                        // columns should start at 1.
-                        if ( baselineId > 0 )
-                        {
-                            baselineKey =
-                                    fCache.getFeatureKey( baselineId );
-                        }
-                    }
-
-                    FeatureTuple featureTuple = new FeatureTuple( leftKey,
-                                                                  rightKey,
-                                                                  baselineKey );
-                    intersectingFeatures.add( featureTuple );
-                }
+                LOGGER.debug( "getIntersectingFeatures will run for singleton features: {}", script );
+                Set<FeatureTuple> innerSingletons = this.readFeaturesFromScript( script, fCache );
+                singletons.addAll( innerSingletons );
+                LOGGER.debug( "getIntersectingFeatures completed for singleton features: {}", script );
             }
 
-            LOGGER.debug( "getIntersectingFeatures finished run: {}", script );
+            // Now deal with feature groups that contain one or more
+            List<Feature> groupedFeatures = declaredGroups.stream()
+                                                          .flatMap( next -> next.getFeature().stream() )
+                                                          .collect( Collectors.toList() );
+
+            if ( !groupedFeatures.isEmpty() )
+            {
+                DataScripter scriptForGroups =
+                        ProjectScriptGenerator.createIntersectingFeaturesScript( database,
+                                                                                 this.getId(),
+                                                                                 groupedFeatures,
+                                                                                 this.hasBaseline() );
+
+                LOGGER.debug( "getIntersectingFeatures will run for grouped features: {}", scriptForGroups );
+                Set<FeatureTuple> innerGroups = this.readFeaturesFromScript( scriptForGroups, fCache );
+                grouped.addAll( innerGroups );
+                LOGGER.debug( "getIntersectingFeatures completed for grouped features: {}", scriptForGroups );
+            }
         }
 
-        LOGGER.info( "Discovered {} features with data on both the left and right sides (statistics should "
-                     + "be expected for this many features at most).",
-                     intersectingFeatures.size() );
-
-        return Collections.unmodifiableSet( intersectingFeatures );
+        // Combine the singletons and feature groups into groups that contain one or more tuples
+        Set<FeatureGroup> groups = this.getFeatureGroups( Collections.unmodifiableSet( singletons ),
+                                                          Collections.unmodifiableSet( grouped ),
+                                                          this.getProjectConfig().getPair() );
+        
+        return Pair.of( Collections.unmodifiableSet( singletons ), Collections.unmodifiableSet( groups ) );
     }
 
-
     /**
-     * Returns the set of FeaturesDetails for the project. If none have been
+     * Reads a set of feature tuples from a feature selection script.
+     * @param script the script to read
+     * @param fCache the features cache
+     * @return the feature tuples
+     * @throws SQLException if the features could not be read
+     */
+
+    private Set<FeatureTuple> readFeaturesFromScript( DataScripter script, Features fCache ) throws SQLException
+    {
+        Set<FeatureTuple> featureTuples = new HashSet<>();
+
+        try ( Connection connection = database.getConnection();
+              DataProvider dataProvider = script.buffer( connection ) )
+        {
+            while ( dataProvider.next() )
+            {
+                int leftId = dataProvider.getInt( "left_id" );
+                FeatureKey leftKey =
+                        fCache.getFeatureKey( leftId );
+                int rightId = dataProvider.getInt( "right_id" );
+                FeatureKey rightKey =
+                        fCache.getFeatureKey( rightId );
+                FeatureKey baselineKey = null;
+
+                // Baseline column will only be there when baseline exists.
+                if ( hasBaseline() )
+                {
+                    int baselineId =
+                            dataProvider.getInt( "baseline_id" );
+
+                    // JDBC getInt returns 0 when not found. All primary key
+                    // columns should start at 1.
+                    if ( baselineId > 0 )
+                    {
+                        baselineKey =
+                                fCache.getFeatureKey( baselineId );
+                    }
+                }
+
+                FeatureTuple featureTuple = new FeatureTuple( leftKey,
+                                                              rightKey,
+                                                              baselineKey );
+
+                featureTuples.add( featureTuple );
+            }
+        }
+
+        return Collections.unmodifiableSet( featureTuples );
+    }
+     
+    /**
+     * Returns the set of {@link FeatureTuple} for the project. If none have been
      * created yet, then it is evaluated. If there is no specification within
      * the configuration, all locations that have been ingested are retrieved
-     * @return A set of all FeatureDetails involved in the project
-     * @throws SQLException Thrown if details about the project's features
+     * @return A set of all feature tuples involved in the project
      * cannot be retrieved from the database
+     * @throws IllegalStateException if the features have not been set. Call {@link #prepareForExecution()} first.
      */
-    public Set<FeatureTuple> getFeatures() throws SQLException
+    public Set<FeatureTuple> getFeatures()
     {
-        Database db = this.getDatabase();
-
-        synchronized ( this.featureLock )
+        if( Objects.isNull( this.features ) )
         {
-            if ( this.features == null )
-            {
-                LOGGER.debug( "getFeatures(): no features found, populating." );
-                this.features = this.getIntersectingFeatures( db );
-            }
+            throw new IllegalStateException( "The features have not been set." );
         }
 
         return Collections.unmodifiableSet( this.features );
+    }
+    
+    /**
+     * Returns the set of {@link FeatureGroup} for the project.
+     * @return A set of all feature groups involved in the project
+     * @throws IllegalStateException if the features have not been set. Call {@link #prepareForExecution()} first.
+     */
+    public Set<FeatureGroup> getFeatureGroups()
+    {
+        if( Objects.isNull( this.featureGroups ) )
+        {
+            throw new IllegalStateException( "The feature groups have not been set." );
+        }
+        
+        return Collections.unmodifiableSet( this.featureGroups );
     }
 
     /**
@@ -1086,6 +1187,172 @@ public class Project
                                                       dataSourceConfig )
                            .value()
                            .toLowerCase();
+    }
+
+    /**
+     * Creates feature groups from the inputs.
+     * @param singletons the singleton features
+     * @param featuresForGroups the features for multi-feature groups
+     * @param pairConfig the pair configuration
+     * @return the feature groups
+     * @throws ProjectConfigException if more than one matching tuple was found
+     */
+
+    private Set<FeatureGroup> getFeatureGroups( Set<FeatureTuple> singletons,
+                                                Set<FeatureTuple> featuresForGroups,
+                                                PairConfig pairConfig )
+    {
+        if ( Objects.nonNull( this.featureGroups ) )
+        {
+            return this.featureGroups;
+        }
+
+        LOGGER.debug( "Creating feature groups for project {}.", this.getId() );
+        Set<FeatureGroup> innerGroups = new HashSet<>();
+
+        // Add the singletons
+        singletons.forEach( next -> innerGroups.add( FeatureGroup.of( "( " + next.toStringShort() + " )", next ) ) );
+        LOGGER.debug( "Added {} singleton feature groups to project {}.", innerGroups.size(), this.getId() );
+
+        // Add the multi-feature groups
+        List<FeaturePool> declaredGroups = pairConfig.getFeatureGroup();
+
+        for ( FeaturePool nextGroup : declaredGroups )
+        {
+            Set<FeatureTuple> groupedTuples = new HashSet<>();
+            
+            for ( Feature nextFeature : nextGroup.getFeature() )
+            {
+                FeatureTuple foundTuple = this.findFeature( nextFeature, featuresForGroups, nextGroup );
+
+                if ( Objects.isNull( foundTuple ) )
+                {
+                    groupedTuples.clear();
+                    LOGGER.debug( "Could not find all of the features associated with feature group {}. The first "
+                                  + "missing feature had a left name of {}, a right name of {} and a baseline name "
+                                  + "of {}.",
+                                  nextGroup.getName(),
+                                  nextFeature.getLeft(),
+                                  nextFeature.getRight(),
+                                  nextFeature.getBaseline() );
+                    break;
+                }
+                else
+                {
+                    groupedTuples.add( foundTuple );
+                }
+            }
+
+            if ( !groupedTuples.isEmpty() )
+            {
+                String groupName = getFeatureGroupNameFrom( groupedTuples, nextGroup );
+                FeatureGroup newGroup = FeatureGroup.of( groupName, groupedTuples );
+                innerGroups.add( newGroup );
+                LOGGER.debug( "Discovered a new feature group, {}.", newGroup );
+            }
+        }
+
+        LOGGER.info( "Discovered {} feature groups with data on both the left and right sides (statistics "
+                     + "should be expected for this many feature groups at most).",
+                     innerGroups.size() );
+
+
+        return Collections.unmodifiableSet( innerGroups );
+    }
+    
+    /**
+     * @param groupedTuples the groupedTuples
+     * @param declaredGroup the declared group
+     * @return a group name
+     */
+
+    private String getFeatureGroupNameFrom( Set<FeatureTuple> groupedTuples, FeaturePool declaredGroup )
+    {
+        if ( Objects.nonNull( declaredGroup.getName() ) )
+        {
+            return declaredGroup.getName();
+        }
+
+        StringJoiner joiner = new StringJoiner( "(", ", ", ")" );
+
+        for ( FeatureTuple feature : groupedTuples )
+        {
+            String tupleName = feature.toStringShort();
+            joiner.add( tupleName );
+        }
+
+        return joiner.toString();
+    }
+    
+    /**
+     * Searches for a matching feature tuple and throws an exception if more than one is found.
+     * @param featureToFind
+     * @param tuplesToSearch
+     * @param nextGroup the group context to assist when an error occurs
+     * @return a matching tuple or null if no tuple was found
+     * @throws ProjectConfigException if more than one matching tuple was found
+     */
+
+    private FeatureTuple findFeature( Feature featureToFind, Set<FeatureTuple> tuplesToSearch, FeaturePool nextGroup )
+    {
+        // Find the left-name matching features first.
+        Set<FeatureTuple> leftMatched = tuplesToSearch.stream()
+                                                      .filter( next -> Objects.equals( featureToFind.getLeft(),
+                                                                                       next.getLeft().getName() ) )
+                                                      .collect( Collectors.toSet() );
+
+        if ( leftMatched.isEmpty() )
+        {
+            return null;
+        }
+        else if ( leftMatched.size() == 1 )
+        {
+            return leftMatched.iterator().next();
+        }
+
+        // Find the right-name matching features second.
+        Set<FeatureTuple> rightMatched = leftMatched.stream()
+                                                    .filter( next -> Objects.equals( featureToFind.getRight(),
+                                                                                     next.getRight().getName() ) )
+                                                    .collect( Collectors.toSet() );
+
+        if ( rightMatched.isEmpty() )
+        {
+            return null;
+        }
+        else if ( rightMatched.size() == 1 )
+        {
+            return rightMatched.iterator().next();
+        }
+
+        // Find the baseline-name matching features last.
+        Set<FeatureTuple> baselineMatched = rightMatched.stream()
+                                                        .filter( next -> Objects.equals( featureToFind.getBaseline(),
+                                                                                         next.getBaseline()
+                                                                                             .getName() ) )
+                                                        .collect( Collectors.toSet() );
+
+        if ( baselineMatched.isEmpty() )
+        {
+            return null;
+        }
+        else if ( baselineMatched.size() == 1 )
+        {
+            return baselineMatched.iterator().next();
+        }
+
+        throw new ProjectConfigException( nextGroup,
+                                          "Discovered a feature group called '" + nextGroup.getName()
+                                                     + "', which has an ambiguous feature tuple. Please additionally "
+                                                     + "qualify the feature with left name "
+                                                     + featureToFind.getLeft()
+                                                     + ", right name "
+                                                     + featureToFind.getRight()
+                                                     + " and baseline name "
+                                                     + featureToFind.getBaseline()
+                                                     + ", which matches the feature tuples "
+                                                     + baselineMatched
+                                                     + "." );
     }
 
     /**

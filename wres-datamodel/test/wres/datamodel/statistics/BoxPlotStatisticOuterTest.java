@@ -13,6 +13,7 @@ import org.junit.Test;
 
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.statistics.generated.BoxplotMetric;
@@ -77,7 +78,7 @@ public final class BoxPlotStatisticOuterTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( new FeatureTuple( l2, l2, l2 ),
+        Pool pool = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l2, l2, l2 ) ),
                                           null,
                                           null,
                                           null,
@@ -103,7 +104,7 @@ public final class BoxPlotStatisticOuterTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( new FeatureTuple( l1, l1, l1 ),
+        Pool pool = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l1, l1, l1 ) ),
                                           null,
                                           null,
                                           null,
@@ -112,7 +113,7 @@ public final class BoxPlotStatisticOuterTest
         PoolMetadata m1 = PoolMetadata.of( evaluation, pool );
         FeatureKey l2 = FeatureKey.of( "A" );
 
-        Pool poolTwo = MessageFactory.parse( new FeatureTuple( l2, l2, l2 ),
+        Pool poolTwo = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l2, l2, l2 ) ),
                                              null,
                                              null,
                                              null,
@@ -122,7 +123,7 @@ public final class BoxPlotStatisticOuterTest
         PoolMetadata m2 = PoolMetadata.of( evaluation, poolTwo );
         FeatureKey l3 = FeatureKey.of( "B" );
 
-        Pool poolThree = MessageFactory.parse( new FeatureTuple( l3, l3, l3 ),
+        Pool poolThree = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l3, l3, l3 ) ),
                                                null,
                                                null,
                                                null,
@@ -284,7 +285,7 @@ public final class BoxPlotStatisticOuterTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( new FeatureTuple( l2, l2, l2 ),
+        Pool pool = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l2, l2, l2 ) ),
                                           null,
                                           null,
                                           null,
