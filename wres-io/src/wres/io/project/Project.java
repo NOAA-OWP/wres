@@ -76,21 +76,6 @@ public class Project
     private static final Logger LOGGER = LoggerFactory.getLogger( Project.class );
 
     /**
-     * The member identifier for left handed data in the database
-     */
-    public static final String LEFT_MEMBER = "left";
-
-    /**
-     * The member identifier for right handed data in the database
-     */
-    public static final String RIGHT_MEMBER = "right";
-
-    /**
-     * The member identifier for baseline data in the database
-     */
-    public static final String BASELINE_MEMBER = "baseline";
-
-    /**
      * Protects access and generation of the feature collection
      */
     private final Object featureLock = new Object();
@@ -1110,22 +1095,22 @@ public class Project
     {
         Boolean usesGriddedData;
 
-        String name = this.getInputName( dataSourceConfig );
+        LeftOrRightOrBaseline lrb = ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(), dataSourceConfig );
 
-        switch ( name )
+        switch ( lrb )
         {
-            case Project.LEFT_MEMBER:
+            case LEFT:
                 usesGriddedData = this.leftUsesGriddedData;
                 break;
-            case Project.RIGHT_MEMBER:
+            case RIGHT:
                 usesGriddedData = this.rightUsesGriddedData;
                 break;
-            case Project.BASELINE_MEMBER:
+            case BASELINE:
                 usesGriddedData = this.baselineUsesGriddedData;
                 break;
             default:
                 throw new IllegalArgumentException( "Unrecognized enumeration value in this context, '"
-                                                    + name
+                                                    + lrb
                                                     + "'." );
         }
 
@@ -1140,7 +1125,7 @@ public class Project
             script.addLine( "WHERE PS.project_id = ?" );
             script.addArgument( this.getId() );
             script.addTab().addLine( "AND PS.member = ?" );
-            script.addArgument( this.getInputName( dataSourceConfig ) );
+            script.addArgument( lrb.toString().toLowerCase() );
             script.addTab().addLine( "AND S.is_point_data = FALSE" );
             script.setMaxRows( 1 );
 
@@ -1150,43 +1135,25 @@ public class Project
                 usesGriddedData = provider.next();
             }
 
-            switch ( name )
+            switch ( lrb )
             {
-                case Project.LEFT_MEMBER:
+                case LEFT:
                     this.leftUsesGriddedData = usesGriddedData;
                     break;
-                case Project.RIGHT_MEMBER:
+                case RIGHT:
                     this.rightUsesGriddedData = usesGriddedData;
                     break;
-                case Project.BASELINE_MEMBER:
+                case BASELINE:
                     this.baselineUsesGriddedData = usesGriddedData;
                     break;
                 default:
                     throw new IllegalArgumentException( "Unrecognized enumeration value in this context, '"
-                                                        + name
+                                                        + lrb
                                                         + "'." );
             }
         }
 
         return usesGriddedData;
-    }
-
-    /**
-     * Returns the name of the member that the DataSourceConfig belongs to
-     *
-     * <p>
-     * If the "this.getInputName(this.getRight())" is called, the result
-     * should be "ProjectDetails.RIGHT_MEMBER"
-     *</p>
-     * @param dataSourceConfig A DataSourceConfig from a project configuration
-     * @return The name for how the DataSourceConfig relates to the project
-     */
-    private String getInputName( DataSourceConfig dataSourceConfig )
-    {
-        return ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(),
-                                                      dataSourceConfig )
-                           .value()
-                           .toLowerCase();
     }
 
     /**
