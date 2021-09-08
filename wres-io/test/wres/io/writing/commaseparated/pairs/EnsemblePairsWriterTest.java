@@ -35,6 +35,7 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.Event;
@@ -116,9 +117,12 @@ public final class EnsemblePairsWriterTest
                                           .setMeasurementUnit( "SCOOBIES" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( new FeatureTuple( FeatureKey.of( "PLUM" ),
-                                                            FeatureKey.of( "PLUM" ),
-                                                            null ),
+        FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( "PLUM" ),
+                                                      FeatureKey.of( "PLUM" ),
+                                                      null );
+        FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
+
+        Pool pool = MessageFactory.parse( featureGroup,
                                           null,
                                           null,
                                           null,
@@ -147,9 +151,12 @@ public final class EnsemblePairsWriterTest
                                              .setMeasurementUnit( "SCOOBIES" )
                                              .build();
 
-        Pool poolTwo = MessageFactory.parse( new FeatureTuple( FeatureKey.of( "ORANGE" ),
-                                                               FeatureKey.of( "ORANGE" ),
-                                                               null ),
+        FeatureTuple featureTupleTwo = new FeatureTuple( FeatureKey.of( "ORANGE" ),
+                                                         FeatureKey.of( "ORANGE" ),
+                                                         null );
+        FeatureGroup featureGroupTwo = FeatureGroup.of( featureTupleTwo );
+
+        Pool poolTwo = MessageFactory.parse( featureGroupTwo,
                                              null,
                                              null,
                                              null,
@@ -181,9 +188,12 @@ public final class EnsemblePairsWriterTest
                                                .setMeasurementUnit( "SCOOBIES" )
                                                .build();
 
-        Pool poolThree = MessageFactory.parse( new FeatureTuple( FeatureKey.of( "BANANA" ),
-                                                                 FeatureKey.of( "BANANA" ),
-                                                                 null ),
+        FeatureTuple featureTupleThree = new FeatureTuple( FeatureKey.of( "BANANA" ),
+                                                           FeatureKey.of( "BANANA" ),
+                                                           null );
+        FeatureGroup featureGroupThree = FeatureGroup.of( featureTupleThree );
+
+        Pool poolThree = MessageFactory.parse( featureGroupThree,
                                                null,
                                                null,
                                                null,
@@ -234,7 +244,7 @@ public final class EnsemblePairsWriterTest
                                               .setMeasurementUnit( "SCOOBIES" )
                                               .build();
 
-            Pool pool = MessageFactory.parse( featureTuple,
+            Pool pool = MessageFactory.parse( FeatureGroup.of( featureTuple ),
                                               null,
                                               TimeScaleOuter.of( Duration.ofSeconds( 3600 ),
                                                                  TimeScaleFunction.MEAN ),
@@ -303,7 +313,7 @@ public final class EnsemblePairsWriterTest
                                               .setMeasurementUnit( "SCOOBIES" )
                                               .build();
 
-            Pool pool = MessageFactory.parse( featureTuple,
+            Pool pool = MessageFactory.parse( FeatureGroup.of( featureTuple ),
                                               null,
                                               TimeScaleOuter.of( Duration.ofSeconds( 3600 ),
                                                                  TimeScaleFunction.MEAN ),

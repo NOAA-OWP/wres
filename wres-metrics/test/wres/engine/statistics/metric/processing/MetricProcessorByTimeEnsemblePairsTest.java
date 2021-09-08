@@ -37,6 +37,7 @@ import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.OneOrTwoDoubles;
@@ -859,7 +860,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( featureTuple,
+        wres.statistics.generated.Pool pool = MessageFactory.parse( FeatureGroup.of( featureTuple ),
                                                                     expectedWindow,
                                                                     null,
                                                                     null,

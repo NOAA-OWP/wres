@@ -24,6 +24,7 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.Event;
@@ -426,9 +427,11 @@ public class PoolSupplierTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( new FeatureTuple( FEATURE,
-                                                                                      FEATURE,
-                                                                                      FEATURE ),
+        FeatureTuple featureTuple = new FeatureTuple( FEATURE,
+                                                      FEATURE,
+                                                      FEATURE );
+        FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
+        wres.statistics.generated.Pool pool = MessageFactory.parse( featureGroup,
                                                                     null,
                                                                     null,
                                                                     null,

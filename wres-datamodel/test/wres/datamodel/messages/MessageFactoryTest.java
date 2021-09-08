@@ -36,6 +36,7 @@ import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
@@ -126,6 +127,14 @@ public class MessageFactoryTest
                                                     TWELFTH_TIME,
                                                     EARLIEST_LEAD,
                                                     LATEST_LEAD );
+    private static final FeatureKey LOCATION = new FeatureKey( FEATURE_NAME, null, null, "POINT ( 23.45, 56.21 )" );
+    private static final FeatureKey ANOTHER_LOCATION = FeatureKey.of( "DOLC2" );
+    private static final FeatureGroup FEATURE_GROUP = FeatureGroup.of( new FeatureTuple( LOCATION,
+                                                                                         LOCATION,
+                                                                                         LOCATION ) );
+    private static final FeatureGroup ANOTHER_FEATURE_GROUP = FeatureGroup.of( new FeatureTuple( ANOTHER_LOCATION,
+                                                                                                 ANOTHER_LOCATION,
+                                                                                                 ANOTHER_LOCATION ) );
 
     /**
      * Scores to serialize.
@@ -550,8 +559,6 @@ public class MessageFactoryTest
                                                                                     Operator.GREATER,
                                                                                     ThresholdDataType.LEFT ) );
 
-        FeatureKey location = new FeatureKey( FEATURE_NAME, null, null, "POINT ( 23.45, 56.21 )" );
-
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( SQIN )
                                           .setRightDataName( HEFS )
@@ -559,9 +566,7 @@ public class MessageFactoryTest
                                           .setMeasurementUnit( CMS.toString() )
                                           .build();
 
-        Pool pool = MessageFactory.parse( new FeatureTuple( location,
-                                                            location,
-                                                            location ),
+        Pool pool = MessageFactory.parse( FEATURE_GROUP,
                                           TIME_WINDOW,
                                           timeScale,
                                           threshold,
@@ -625,8 +630,6 @@ public class MessageFactoryTest
                                                                                                      Operator.GREATER_EQUAL,
                                                                                                      ThresholdDataType.LEFT ) );
 
-        FeatureKey location = new FeatureKey( FEATURE_NAME, null, null, "POINT ( 23.45, 56.21 )" );
-
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( SQIN )
                                           .setRightDataName( HEFS )
@@ -634,9 +637,7 @@ public class MessageFactoryTest
                                           .setMeasurementUnit( CMS.toString() )
                                           .build();
 
-        Pool pool = MessageFactory.parse( new FeatureTuple( location,
-                                                            location,
-                                                            location ),
+        Pool pool = MessageFactory.parse( FEATURE_GROUP,
                                           TIME_WINDOW,
                                           timeScale,
                                           threshold,
@@ -710,8 +711,6 @@ public class MessageFactoryTest
                                                                                                      Operator.GREATER_EQUAL,
                                                                                                      ThresholdDataType.LEFT ) );
 
-        FeatureKey location = new FeatureKey( FEATURE_NAME, null, null, "POINT ( 23.45, 56.21 )" );
-
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( SQIN )
                                           .setRightDataName( HEFS )
@@ -719,9 +718,7 @@ public class MessageFactoryTest
                                           .setMeasurementUnit( CMS.toString() )
                                           .build();
 
-        Pool pool = MessageFactory.parse( new FeatureTuple( location,
-                                                            location,
-                                                            location ),
+        Pool pool = MessageFactory.parse( FEATURE_GROUP,
                                           TIME_WINDOW,
                                           timeScale,
                                           threshold,
@@ -842,8 +839,6 @@ public class MessageFactoryTest
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        FeatureKey location = FeatureKey.of( "DOLC2" );
-
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( SQIN )
                                           .setRightDataName( HEFS )
@@ -851,9 +846,7 @@ public class MessageFactoryTest
                                           .setMeasurementUnit( CMS.toString() )
                                           .build();
 
-        Pool pool = MessageFactory.parse( new FeatureTuple( location,
-                                                            location,
-                                                            location ),
+        Pool pool = MessageFactory.parse( ANOTHER_FEATURE_GROUP,
                                           timeOne,
                                           null,
                                           threshold,
@@ -903,8 +896,6 @@ public class MessageFactoryTest
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        FeatureKey location = FeatureKey.of( "DOLC2" );
-
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( SQIN )
                                           .setRightDataName( HEFS )
@@ -912,9 +903,7 @@ public class MessageFactoryTest
                                           .setMeasurementUnit( CMS.toString() )
                                           .build();
 
-        Pool pool = MessageFactory.parse( new FeatureTuple( location,
-                                                            location,
-                                                            location ),
+        Pool pool = MessageFactory.parse( ANOTHER_FEATURE_GROUP,
                                           timeOne,
                                           null,
                                           threshold,

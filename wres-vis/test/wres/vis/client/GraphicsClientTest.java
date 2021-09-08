@@ -16,6 +16,7 @@ import org.junit.Test;
 
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -185,9 +186,13 @@ public class GraphicsClientTest
                                     earliestLead,
                                     latestLead );
 
-        Pool pool = MessageFactory.parse( new FeatureTuple( location,
-                                                            location,
-                                                            location ),
+        FeatureTuple featureTuple = new FeatureTuple( location,
+                                                      location,
+                                                      location );
+
+        FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
+
+        Pool pool = MessageFactory.parse( featureGroup,
                                           timeWindow,
                                           timeScale,
                                           threshold,

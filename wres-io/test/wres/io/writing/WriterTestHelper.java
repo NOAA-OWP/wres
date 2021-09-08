@@ -18,6 +18,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
@@ -163,9 +164,11 @@ public class WriterTestHelper
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( new FeatureTuple( feature,
-                                                            feature,
-                                                            null ),
+        FeatureTuple featureTuple = new FeatureTuple( feature,
+                                                      feature,
+                                                      null );
+        FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
+        Pool pool = MessageFactory.parse( featureGroup,
                                           timeOne,
                                           null,
                                           threshold,
@@ -199,9 +202,7 @@ public class WriterTestHelper
                                     Duration.ofHours( 48 ),
                                     Duration.ofHours( 48 ) );
 
-        Pool poolTwo = MessageFactory.parse( new FeatureTuple( feature,
-                                                               feature,
-                                                               null ),
+        Pool poolTwo = MessageFactory.parse( featureGroup,
                                              timeTwo,
                                              null,
                                              threshold,
@@ -254,9 +255,12 @@ public class WriterTestHelper
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( new FeatureTuple( feature,
-                                                            feature,
-                                                            null ),
+        FeatureTuple featureTuple = new FeatureTuple( feature,
+                                                      feature,
+                                                      null );
+        FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
+        
+        Pool pool = MessageFactory.parse( featureGroup,
                                           timeOne,
                                           null,
                                           threshold,
@@ -332,9 +336,12 @@ public class WriterTestHelper
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( new FeatureTuple( feature,
-                                                            feature,
-                                                            null ),
+        FeatureTuple featureTuple = new FeatureTuple( feature,
+                                                      feature,
+                                                      null );
+        FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
+        
+        Pool pool = MessageFactory.parse( featureGroup,
                                           timeOne,
                                           null,
                                           threshold,
@@ -425,9 +432,12 @@ public class WriterTestHelper
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( new FeatureTuple( feature,
-                                                            feature,
-                                                            null ),
+        FeatureTuple featureTuple = new FeatureTuple( feature,
+                                                      feature,
+                                                      null );
+        FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
+        
+        Pool pool = MessageFactory.parse( featureGroup,
                                           timeOne,
                                           null,
                                           threshold,
@@ -513,9 +523,12 @@ public class WriterTestHelper
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( new FeatureTuple( feature,
-                                                            feature,
-                                                            null ),
+        FeatureTuple featureTuple = new FeatureTuple( feature,
+                                                      feature,
+                                                      null );
+        FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
+        
+        Pool pool = MessageFactory.parse( featureGroup,
                                           timeOne,
                                           null,
                                           threshold,
@@ -600,9 +613,12 @@ public class WriterTestHelper
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( new FeatureTuple( feature,
-                                                            feature,
-                                                            null ),
+        FeatureTuple featureTuple = new FeatureTuple( feature,
+                                                      feature,
+                                                      null );
+        FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
+        
+        Pool pool = MessageFactory.parse( featureGroup,
                                           timeOne,
                                           null,
                                           threshold,
@@ -670,9 +686,12 @@ public class WriterTestHelper
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( new FeatureTuple( feature,
-                                                            feature,
-                                                            null ),
+        FeatureTuple featureTuple = new FeatureTuple( feature,
+                                                      feature,
+                                                      null );
+        FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
+        
+        Pool pool = MessageFactory.parse( featureGroup,
                                           timeOne,
                                           null,
                                           thresholdOne,
@@ -697,9 +716,7 @@ public class WriterTestHelper
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        Pool poolTwo = MessageFactory.parse( new FeatureTuple( feature,
-                                                               feature,
-                                                               null ),
+        Pool poolTwo = MessageFactory.parse( featureGroup,
                                              timeOne,
                                              null,
                                              thresholdTwo,
@@ -712,9 +729,7 @@ public class WriterTestHelper
         // Add data for another time, and one threshold only
         TimeWindowOuter timeTwo = TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
 
-        Pool poolThree = MessageFactory.parse( new FeatureTuple( feature,
-                                                                 feature,
-                                                                 null ),
+        Pool poolThree = MessageFactory.parse( featureGroup,
                                                timeTwo,
                                                null,
                                                thresholdOne,

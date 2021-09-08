@@ -12,6 +12,7 @@ import com.google.protobuf.Timestamp;
 
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.statistics.generated.DurationDiagramMetric;
@@ -70,7 +71,7 @@ public final class DurationDiagramStatisticOuterTest
                                           .build();
 
 
-        Pool pool = MessageFactory.parse( new FeatureTuple( feature, feature, feature ),
+        Pool pool = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( feature, feature, feature ) ),
                                           null,
                                           null,
                                           null,
@@ -96,7 +97,7 @@ public final class DurationDiagramStatisticOuterTest
                                           .build();
 
 
-        Pool pool = MessageFactory.parse( new FeatureTuple( l2, l2, l2 ),
+        Pool pool = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l2, l2, l2 ) ),
                                           null,
                                           null,
                                           null,
@@ -105,7 +106,7 @@ public final class DurationDiagramStatisticOuterTest
         PoolMetadata m2 = PoolMetadata.of( evaluation, pool );
         FeatureKey l3 = FeatureKey.of( "B" );
 
-        Pool poolTwo = MessageFactory.parse( new FeatureTuple( l3, l3, l3 ),
+        Pool poolTwo = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l3, l3, l3 ) ),
                                              null,
                                              null,
                                              null,
@@ -220,7 +221,7 @@ public final class DurationDiagramStatisticOuterTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( new FeatureTuple( l2, l2, l2 ),
+        Pool pool = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l2, l2, l2 ) ),
                                           null,
                                           null,
                                           null,

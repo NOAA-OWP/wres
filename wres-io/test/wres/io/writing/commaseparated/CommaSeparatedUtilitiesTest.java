@@ -15,6 +15,7 @@ import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.TimeWindowOuter;
@@ -52,7 +53,7 @@ public class CommaSeparatedUtilitiesTest
     @Test
     public void testGetTimeWindowHeaderFromSampleMetadataWithInstantaneousTimeScale()
     {
-        Pool pool = MessageFactory.parse( (FeatureTuple) null,
+        Pool pool = MessageFactory.parse( (FeatureGroup) null,
                                           this.timeWindow,
                                           TimeScaleOuter.of(),
                                           null,
@@ -78,7 +79,7 @@ public class CommaSeparatedUtilitiesTest
     {
         TimeScaleOuter timeScale = TimeScaleOuter.of( Duration.ofHours( 1 ), TimeScaleFunction.TOTAL );
 
-        Pool pool = MessageFactory.parse( (FeatureTuple) null,
+        Pool pool = MessageFactory.parse( (FeatureGroup) null,
                                           this.timeWindow,
                                           timeScale,
                                           null,
@@ -102,7 +103,7 @@ public class CommaSeparatedUtilitiesTest
     @Test
     public void testGetFeatureNameFromMetadataWithNamedLocation()
     {
-        Pool pool = MessageFactory.parse( FEATURE_TUPLE,
+        Pool pool = MessageFactory.parse( FeatureGroup.of( FEATURE_TUPLE ),
                                           null,
                                           null,
                                           null,
@@ -120,7 +121,7 @@ public class CommaSeparatedUtilitiesTest
     @Test
     public void testGetFeatureNameFromMetadataWithNullLocation()
     {
-        Pool pool = MessageFactory.parse( (FeatureTuple) null,
+        Pool pool = MessageFactory.parse( (FeatureGroup) null,
                                           null,
                                           null,
                                           null,

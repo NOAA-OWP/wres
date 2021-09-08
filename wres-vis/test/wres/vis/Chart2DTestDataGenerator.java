@@ -17,6 +17,7 @@ import wres.datamodel.Slicer;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.PoolMetadata;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
@@ -57,7 +58,8 @@ public abstract class Chart2DTestDataGenerator
     private static final FeatureKey USGS_FEATURE =
             new FeatureKey( "09165000", "DOLORES RIVER BELOW RICO, CO.", 4326, "POINT ( -108.0603517 37.63888428 )" );
     private static final FeatureKey NWM_FEATURE = new FeatureKey( "18384141", null, null, null );
-    private static final FeatureTuple FEATURE_TUPLE = new FeatureTuple( USGS_FEATURE, NWS_FEATURE, NWM_FEATURE );
+    private static final FeatureGroup FEATURE_GROUP =
+            FeatureGroup.of( new FeatureTuple( USGS_FEATURE, NWS_FEATURE, NWM_FEATURE ) );
 
     /**
      * Returns a {@link List} of {@link DoubleScoreStatisticOuter} comprising the CRPSS for a
@@ -362,7 +364,7 @@ public abstract class Chart2DTestDataGenerator
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( FEATURE_TUPLE,
+        Pool pool = MessageFactory.parse( FEATURE_GROUP,
                                           null,
                                           null,
                                           threshold,
@@ -485,7 +487,7 @@ public abstract class Chart2DTestDataGenerator
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( FEATURE_TUPLE,
+        Pool pool = MessageFactory.parse( FEATURE_GROUP,
                                           null,
                                           null,
                                           threshold,
@@ -706,7 +708,7 @@ public abstract class Chart2DTestDataGenerator
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( FEATURE_TUPLE,
+        Pool pool = MessageFactory.parse( FEATURE_GROUP,
                                           window,
                                           null,
                                           threshold,
@@ -751,7 +753,7 @@ public abstract class Chart2DTestDataGenerator
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( FEATURE_TUPLE,
+        Pool pool = MessageFactory.parse( FEATURE_GROUP,
                                           window,
                                           null,
                                           threshold,

@@ -35,6 +35,7 @@ import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.processing.MetricProcessor;
 import wres.events.Evaluation;
+import wres.events.EvaluationEventUtilities;
 import wres.io.concurrency.Pipelines;
 import wres.io.pooling.PoolFactory;
 import wres.io.project.Project;
@@ -113,7 +114,13 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      */
 
     private final EvaluationEvent monitor;
+    
+    /**
+     * A unique identifier for the feature group for messaging purposes.
+     */
 
+    private final String groupIdForMessaging;
+    
     /**
      * Build a processor. 
      * 
@@ -153,7 +160,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         this.sharedWriters = sharedWriters;
         this.evaluation = localEvaluation;
         this.monitor = localMonitor;
-
+        this.groupIdForMessaging = EvaluationEventUtilities.getUniqueId();
+        
         // Error message
         this.errorMessage = "While processing feature group " + featureGroup;
     }
@@ -285,7 +293,10 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         // Queue the various tasks by time window (time window is the pooling dimension for metric calculation here)
         List<CompletableFuture<Void>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
 
-        LOGGER.debug( "Submitting {} pools in group {} for asynchronous processing.", pools.size(), this.getGroupId() );
+        LOGGER.debug( "Submitting {} pools in group {} with identifier {} for asynchronous processing.",
+                      pools.size(),
+                      this.featureGroup.getName(),
+                      this.getGroupIdForMessaging() );
 
         // Something published?
         AtomicBoolean published = new AtomicBoolean();
@@ -309,7 +320,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
                                          boolean success = this.publish( evaluation,
                                                                          statistics,
-                                                                         this.getGroupId() );
+                                                                         this.getGroupIdForMessaging() );
 
                                          // Notify that something was published
                                          // This is needed to confirm group completion - cannot complete a message
@@ -340,7 +351,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             if ( published.get() )
             {
                 // Notify consumers that all statistics for this group have been published
-                evaluation.markGroupPublicationCompleteReportedSuccess( this.getGroupId() );
+                evaluation.markGroupPublicationCompleteReportedSuccess( this.getGroupIdForMessaging() );
             }
         }
         catch ( CompletionException e )
@@ -366,9 +377,9 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                              List<StatisticsForProject> statistics,
                              String groupId )
     {
-        Objects.requireNonNull( evaluation );
-        Objects.requireNonNull( statistics );
-        Objects.requireNonNull( groupId );
+        Objects.requireNonNull( evaluation, "Cannot publish statistics without an evaluation." );
+        Objects.requireNonNull( statistics, "Cannot publis null statistics." );
+        Objects.requireNonNull( groupId, "Cannot publish statistics without a group identifier." );
 
         boolean returnMe = false;
 
@@ -405,9 +416,9 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @return the feature group identifier
      */
 
-    private String getGroupId()
+    private String getGroupIdForMessaging()
     {
-        return this.featureGroup.getName();
+        return this.groupIdForMessaging;
     }
 
     /**

@@ -34,6 +34,9 @@ final class ProjectScriptGenerator
                                                           List<Feature> featureDeclarations,
                                                           boolean hasBaseline )
     {
+        Objects.requireNonNull( database );
+        Objects.requireNonNull( featureDeclarations );
+
         DataScripter script = new DataScripter( database );
         String tempTableName = ProjectScriptGenerator.generateTempTableName( projectId,
                                                                              featureDeclarations );
