@@ -120,7 +120,7 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
 
         if ( !result.hasStatistics() && LOGGER.isWarnEnabled() )
         {
-            LOGGER.warn( "[{}/{}] Completed feature group {}, but no statistics were created. "
+            LOGGER.warn( "[{}/{}] Completed feature group '{}', but no statistics were created. "
                          + "This probably occurred because no pools contained valid pairs.",
                          currentFeature,
                          this.totalFeatures,
@@ -132,7 +132,7 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
 
             if ( LOGGER.isInfoEnabled() )
             {
-                LOGGER.info( "[{}/{}] Completed statistics for feature group {}",
+                LOGGER.info( "[{}/{}] Completed statistics for feature group '{}'",
                              currentFeature,
                              this.totalFeatures,
                              result.getFeatureGroup().getName() );

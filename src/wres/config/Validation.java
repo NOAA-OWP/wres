@@ -1512,6 +1512,34 @@ public class Validation
                              pairConfig.sourceLocation().getLineNumber(),
                              pairConfig.sourceLocation().getColumnNumber() );
             }
+            
+            // Non-unique group names?
+            Set<String> duplicates = groups.stream()
+                                           // Group by name and count instances
+                                           .collect( Collectors.groupingBy( FeaturePool::getName,
+                                                                            Collectors.counting() ) )
+                                           .entrySet()
+                                           .stream()
+                                           // Find duplicates
+                                           .filter( next -> next.getValue() > 1 )
+                                           .map( Map.Entry::getKey )
+                                           .collect( Collectors.toSet() );
+            
+            if ( !duplicates.isEmpty() )
+            {
+                valid = false;
+
+                String msg = FILE_LINE_COLUMN_BOILERPLATE
+                             + " Each feature group or <featureGroup> must contain a unique name. The following "
+                             + "feature groups contained duplicate names {}. Please de-duplicate these feature group "
+                             + "names and try again.";
+
+                LOGGER.warn( msg,
+                             projectConfigPlus.getOrigin(),
+                             pairConfig.sourceLocation().getLineNumber(),
+                             pairConfig.sourceLocation().getColumnNumber(),
+                             duplicates );
+            }
         }
 
         return valid;

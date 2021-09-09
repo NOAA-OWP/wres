@@ -28,7 +28,6 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Evaluation;
-import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
 import wres.vis.ChartEngineFactory.ChartType;
 
@@ -282,31 +281,15 @@ class ArgumentProcessor extends DefaultArgumentsProcessor
     private void recordIdentifierArguments( PoolMetadata meta, MetricConstants metric, MetricConstants component )
     {
 
-        List<GeometryTuple> tuples = meta.getPool().getGeometryTuplesList();
+        String regionName = meta.getPool().getRegionName();
 
-        if ( !tuples.isEmpty() )
+        if ( Objects.isNull( regionName ) )
         {
-            // Assumes only one tuple for now
-            GeometryTuple tuple = tuples.get( 0 );
-            if ( tuple.hasBaseline() )
-            {
-                addArgument( "locationName",
-                             "(left=" + tuple.getLeft().getName()
-                                             + ", right="
-                                             + tuple.getRight().getName()
-                                             + ", baseline="
-                                             + tuple.getBaseline().getName()
-                                             + ")" );
-            }
-            else
-            {
-                addArgument( "locationName",
-                             "(left=" + tuple.getLeft().getName()
-                                             + ", right="
-                                             + tuple.getRight().getName()
-                                             + ")" );
-            }
+            throw new IllegalArgumentException( "Failed to create parameters for graphics generation: the region "
+                                                + "name was missing from the pool metadata, which is not allowed." );
         }
+
+        addArgument( "locationName", regionName );
 
         // Addition to the primary scenario based on metric context. See #81790
         String primaryScenario = this.getScenarioName( meta, metric, component );

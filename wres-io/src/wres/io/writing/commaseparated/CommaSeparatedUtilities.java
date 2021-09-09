@@ -1,11 +1,13 @@
 package wres.io.writing.commaseparated;
 
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Pool;
 import wres.util.TimeHelper;
 
@@ -114,10 +116,20 @@ public class CommaSeparatedUtilities
 
         if ( Objects.nonNull( pool ) && pool.getGeometryTuplesCount() > 0 )
         {
-            // TODO: decide if "right" is sufficient or a combination is better.
-            featureName = pool.getGeometryTuples( 0 )
-                              .getRight()
-                              .getName();
+            List<GeometryTuple> geometries = pool.getGeometryTuplesList();
+
+            // Preserve backwards compatibility of names, even though this is a partial naming
+            if ( geometries.size() == 1 )
+            {
+                featureName = pool.getGeometryTuples( 0 )
+                                  .getRight()
+                                  .getName();
+            }
+            else
+            {
+                // Use the region name
+                featureName = pool.getRegionName();
+            }
         }
 
         return featureName;

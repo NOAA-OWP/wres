@@ -149,8 +149,8 @@ class ProjectTest
 
         Set<FeatureGroup> actual = this.project.getFeatureGroups();
 
-        FeatureGroup firstGroup = FeatureGroup.of( "( F-F )", new FeatureTuple( FEATURE, FEATURE, null ) );
-        FeatureGroup secondGroup = FeatureGroup.of( "( G-G )",
+        FeatureGroup firstGroup = FeatureGroup.of( "F-F", new FeatureTuple( FEATURE, FEATURE, null ) );
+        FeatureGroup secondGroup = FeatureGroup.of( "G-G",
                                                     new FeatureTuple( ANOTHER_FEATURE, ANOTHER_FEATURE, null ) );
         FeatureGroup overallGroup = FeatureGroup.of( "A feature group!",
                                                      Set.of( new FeatureTuple( FEATURE, FEATURE, null ),

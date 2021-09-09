@@ -26,20 +26,24 @@ final class ProjectScriptGenerator
      * @param projectId The wres.project row id to look for intersecting data.
      * @param featureDeclarations Original or generated feature declarations.
      * @param hasBaseline Whether the project has a baseline dataset.
+     * @param isGrouped is true if the features are part of a group
      * @return the script
      */
 
     static DataScripter createIntersectingFeaturesScript( Database database,
                                                           long projectId,
                                                           List<Feature> featureDeclarations,
-                                                          boolean hasBaseline )
+                                                          boolean hasBaseline,
+                                                          boolean isGrouped )
     {
         Objects.requireNonNull( database );
         Objects.requireNonNull( featureDeclarations );
 
         DataScripter script = new DataScripter( database );
+
         String tempTableName = ProjectScriptGenerator.generateTempTableName( projectId,
-                                                                             featureDeclarations );
+                                                                             featureDeclarations,
+                                                                             isGrouped );
         boolean featuresDeclared = !featureDeclarations.isEmpty();
 
         if ( featuresDeclared )
@@ -274,15 +278,30 @@ final class ProjectScriptGenerator
      * sole seed because the collision to avoid would be when this method runs
      * at the same millisecond-on-the-clock. Try to avoid collision by using
      * nanos and some attribute of the project datasets and features given.
+     * Add additional qualification for a feature group because the features 
+     * may be common across singletons and groups and groups may appear more 
+     * than once with a different name, i.e., the features list is not 
+     * sufficient qualification.
+     * @param projectId the project identifier
+     * @param features the features
+     * @param isGrouped is true if the features are grouped
      * @return A temporary table name.
      */
 
     private static String generateTempTableName( long projectId,
-                                                 List<Feature> features )
+                                                 List<Feature> features,
+                                                 boolean isGrouped )
     {
+        int qualifier = 0;
+        if( isGrouped )
+        {
+            qualifier = new Random().nextInt();
+        }
+        
         Random random = new Random( Instant.now()
                                            .getNano()
-                                    + features.hashCode() );
+                                    + features.hashCode()
+                                    + qualifier );
         long someNumber = random.nextLong();
 
         while ( someNumber < 0 )
