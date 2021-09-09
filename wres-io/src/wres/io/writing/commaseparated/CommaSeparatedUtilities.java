@@ -116,20 +116,9 @@ public class CommaSeparatedUtilities
 
         if ( Objects.nonNull( pool ) && pool.getGeometryTuplesCount() > 0 )
         {
-            List<GeometryTuple> geometries = pool.getGeometryTuplesList();
-
-            // Preserve backwards compatibility of names, even though this is a partial naming
-            if ( geometries.size() == 1 )
-            {
-                featureName = pool.getGeometryTuples( 0 )
-                                  .getRight()
-                                  .getName();
-            }
-            else
-            {
-                // Use the region name
-                featureName = pool.getRegionName();
-            }
+            featureName = pool.getGeometryTuples( 0 )
+                              .getRight()
+                              .getName();
         }
 
         return featureName;
