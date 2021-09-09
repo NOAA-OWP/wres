@@ -57,7 +57,7 @@ import wres.statistics.generated.Pool;
  * 
  * TODO: improve unit test coverage.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public final class DataFactory
@@ -386,15 +386,13 @@ public final class DataFactory
      * Forms the union of the {@link DurationDiagramStatisticOuter}, returning a {@link DurationDiagramStatisticOuter} that contains all of the 
      * pairs in the inputs.
      * 
-     * @param <S> the left side of the paired output
-     * @param <T> the right side of the paired output
      * @param collection the list of inputs
      * @return a combined {@link DurationDiagramStatisticOuter}
      * @throws NullPointerException if the input is null
      * @throws IllegalArgumentException if the input is empty
      */
 
-    public static <S, T> DurationDiagramStatisticOuter unionOf( Collection<DurationDiagramStatisticOuter> collection )
+    public static DurationDiagramStatisticOuter unionOf( Collection<DurationDiagramStatisticOuter> collection )
     {
         Objects.requireNonNull( collection );
 
@@ -571,13 +569,13 @@ public final class DataFactory
         return DataFactory.getPathFromSampleMetadata( outputDirectory,
                                                       meta,
                                                       DataFactory.durationToLongUnits( timeWindow.getLatestLeadDuration(),
-                                                                                      leadUnits )
+                                                                                       leadUnits )
                                                             + "_"
                                                             + leadUnits.name().toUpperCase(),
                                                       metricName,
                                                       metricComponentName );
     }
-    
+
     /**
      * Returns a path to write from a combination of the destination configuration, the input metadata and any 
      * additional string that should be appended to the path (e.g. lead time or threshold). 
@@ -607,45 +605,15 @@ public final class DataFactory
 
         Pool pool = meta.getPool();
 
-        if ( pool.getGeometryTuplesCount() == 0 )
-        {
-            throw new IllegalArgumentException( "Expected metadata with at least one feature tuple, but found none." );
-        }
-
         // Build the path 
         StringJoiner joinElements = new StringJoiner( "_" );
 
         Evaluation evaluation = meta.getEvaluation();
 
-        GeometryTuple firstTuple = pool.getGeometryTuples( 0 );
-
-
-        // Work-around to figure out if this is gridded data and if so to use
-        // something other than the feature name, use the description.
-        // When you make gridded benchmarks congruent, remove this.
-        if ( firstTuple.getRight()
-                       .getName()
-                       .matches( "^-?[0-9]+\\.[0-9]+ -?[0-9]+\\.[0-9]+$" ) )
-        {
-            LOGGER.debug( "Using ugly workaround for ugly gridded benchmarks: {}",
-                          firstTuple );
-            joinElements.add( firstTuple.getRight()
-                                        .getDescription() );
-        }
-        else
-        {
-            joinElements.add( firstTuple.getLeft()
-                                        .getName() );
-            joinElements.add( firstTuple.getRight()
-                                        .getName() );
-
-            if ( firstTuple.hasBaseline() )
-            {
-                joinElements.add( firstTuple.getBaseline()
-                                            .getName() );
-            }
-        }
-
+        // Geographic name
+        String geoName = DataFactory.getGeographicName( pool );
+        joinElements.add( geoName );
+        
         // Dataset name
         String dataName = DataFactory.getDatasetName( evaluation, pool );
 
@@ -668,7 +636,7 @@ public final class DataFactory
         {
             joinElements.add( append );
         }
-        
+
         // Derive a sanitized name
         String safeName = URLEncoder.encode( joinElements.toString().replace( " ", "_" ), "UTF-8" );
 
@@ -725,12 +693,12 @@ public final class DataFactory
                                                   MetricConstants metricComponentName )
             throws IOException
     {
-        return getPathFromSampleMetadata( outputDirectory,
-                                          meta,
-                                          (String) null,
-                                          metricName,
-                                          metricComponentName );
-    }    
+        return DataFactory.getPathFromSampleMetadata( outputDirectory,
+                                                      meta,
+                                                      (String) null,
+                                                      metricName,
+                                                      metricComponentName );
+    }
 
     /**
      * Returns valid metrics for {@link SampleDataGroup#ENSEMBLE}
@@ -771,6 +739,79 @@ public final class DataFactory
     }
 
     /**
+     * Returns a geographic name for the pool.
+     * @param pool the pool
+     * @return a graphic name
+     * @throws IllegalArgumentException if the pool has zero feature tuples or many tuples and no group name
+     */
+
+    private static String getGeographicName( Pool pool )
+    {
+        int geoCount = pool.getGeometryTuplesCount();
+        if ( geoCount == 0 )
+        {
+            throw new IllegalArgumentException( "Expected metadata with at least one feature tuple, but found none." );
+        }
+
+        if ( geoCount > 1 )
+        {
+            if ( "".equals( pool.getRegionName() ) )
+            {
+                throw new IllegalArgumentException( "Discovered a pool with " + geoCount
+                                                    + " features, but no region "
+                                                    + "name that describes them, which is not allowed in this "
+                                                    + "context." );
+            }
+
+            return pool.getRegionName();
+        }
+
+        // Exactly one tuple
+        GeometryTuple firstTuple = pool.getGeometryTuples( 0 );
+
+        StringJoiner joiner = new StringJoiner( "_" );
+
+        // Work-around to figure out if this is gridded data and if so to use
+        // something other than the feature name, use the description.
+        // When you make gridded benchmarks congruent, remove this.
+        if ( firstTuple.getRight()
+                       .getName()
+                       .matches( "^-?[0-9]+\\.[0-9]+ -?[0-9]+\\.[0-9]+$" ) )
+        {
+            LOGGER.debug( "Using ugly workaround for ugly gridded benchmarks: {}",
+                          firstTuple );
+            joiner.add( firstTuple.getRight()
+                                  .getDescription() );
+        }
+        else
+        {
+            LOGGER.debug( "Creating a geographic name from the single feature tuple, {}.", firstTuple );
+
+            // Region name?
+            if ( !"".equals( pool.getRegionName() ) )
+            {
+                joiner.add( pool.getRegionName().replace( "-", "_" ) );
+            }
+            // No, use the first tuple instead
+            else
+            {
+                joiner.add( firstTuple.getLeft()
+                                      .getName() );
+                joiner.add( firstTuple.getRight()
+                                      .getName() );
+
+                if ( firstTuple.hasBaseline() )
+                {
+                    joiner.add( firstTuple.getBaseline()
+                                          .getName() );
+                }
+            }
+        }
+
+        return joiner.toString();
+    }
+
+    /**
      * Returns valid ordinary metrics for {@link SampleDataGroup#SINGLE_VALUED}. Also see:
      * {@link #getValidMetricsForSingleValuedInput(ProjectConfig, MetricsConfig)}
      * 
@@ -801,7 +842,7 @@ public final class DataFactory
 
         return removeMetricsDisallowedByOtherConfig( projectConfig, returnMe );
     }
-    
+
     /**
      * Returns the set of available dichotomous metrics, not including the component elements of the 
      * {@link MetricConstants#CONTINGENCY_TABLE}, only the {@link MetricConstants#CONTINGENCY_TABLE} itself.
@@ -989,7 +1030,7 @@ public final class DataFactory
 
         return name;
     }
-    
+
     /**
      * Prevent construction.
      */

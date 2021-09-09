@@ -11,7 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.StringJoiner;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -737,7 +737,8 @@ public class Project
                         ProjectScriptGenerator.createIntersectingFeaturesScript( database,
                                                                                  this.getId(),
                                                                                  singletonFeatures,
-                                                                                 this.hasBaseline() );
+                                                                                 this.hasBaseline(),
+                                                                                 false );
 
                 LOGGER.debug( "getIntersectingFeatures will run for singleton features: {}", script );
                 Set<FeatureTuple> innerSingletons = this.readFeaturesFromScript( script, fCache );
@@ -756,7 +757,8 @@ public class Project
                         ProjectScriptGenerator.createIntersectingFeaturesScript( database,
                                                                                  this.getId(),
                                                                                  groupedFeatures,
-                                                                                 this.hasBaseline() );
+                                                                                 this.hasBaseline(),
+                                                                                 true );
 
                 LOGGER.debug( "getIntersectingFeatures will run for grouped features: {}", scriptForGroups );
                 Set<FeatureTuple> innerGroups = this.readFeaturesFromScript( scriptForGroups, fCache );
@@ -1178,12 +1180,13 @@ public class Project
         Set<FeatureGroup> innerGroups = new HashSet<>();
 
         // Add the singletons
-        singletons.forEach( next -> innerGroups.add( FeatureGroup.of( "( " + next.toStringShort() + " )", next ) ) );
+        singletons.forEach( next -> innerGroups.add( FeatureGroup.of( next.toStringShort(), next ) ) );
         LOGGER.debug( "Added {} singleton feature groups to project {}.", innerGroups.size(), this.getId() );
 
         // Add the multi-feature groups
         List<FeaturePool> declaredGroups = pairConfig.getFeatureGroup();
 
+        AtomicInteger groupNumber = new AtomicInteger( 1 ); // For naming when no name is present        
         for ( FeaturePool nextGroup : declaredGroups )
         {
             Set<FeatureTuple> groupedTuples = new HashSet<>();
@@ -1212,7 +1215,7 @@ public class Project
 
             if ( !groupedTuples.isEmpty() )
             {
-                String groupName = getFeatureGroupNameFrom( groupedTuples, nextGroup );
+                String groupName = getFeatureGroupNameFrom( groupedTuples, nextGroup, groupNumber );
                 FeatureGroup newGroup = FeatureGroup.of( groupName, groupedTuples );
                 innerGroups.add( newGroup );
                 LOGGER.debug( "Discovered a new feature group, {}.", newGroup );
@@ -1230,25 +1233,28 @@ public class Project
     /**
      * @param groupedTuples the groupedTuples
      * @param declaredGroup the declared group
+     * @param groupNumber the group number to increment when choosing a default group name
      * @return a group name
      */
 
-    private String getFeatureGroupNameFrom( Set<FeatureTuple> groupedTuples, FeaturePool declaredGroup )
+    private String getFeatureGroupNameFrom( Set<FeatureTuple> groupedTuples,
+                                            FeaturePool declaredGroup,
+                                            AtomicInteger groupNumber )
     {
         if ( Objects.nonNull( declaredGroup.getName() ) )
         {
             return declaredGroup.getName();
         }
-
-        StringJoiner joiner = new StringJoiner( "(", ", ", ")" );
-
-        for ( FeatureTuple feature : groupedTuples )
+        else if ( groupedTuples.size() == 1 )
         {
-            String tupleName = feature.toStringShort();
-            joiner.add( tupleName );
+            return groupedTuples.iterator()
+                                .next()
+                                .toStringShort();
         }
-
-        return joiner.toString();
+        else
+        {
+            return "GROUP_" + groupNumber.getAndIncrement();
+        }
     }
     
     /**

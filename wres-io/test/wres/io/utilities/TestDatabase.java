@@ -26,6 +26,9 @@ import liquibase.resource.ClassLoaderResourceAccessor;
  * state is expected to be managed by the test classes themselves, and this is
  * here to reduce the repetition of exact implementation of setup and tear down
  * methods that are frequently used by tests.
+ * 
+ * TODO: there are a LOT of resource leaks in this class. Return the resources 
+ * for the caller to close (JBr).
  */
 
 public class TestDatabase
