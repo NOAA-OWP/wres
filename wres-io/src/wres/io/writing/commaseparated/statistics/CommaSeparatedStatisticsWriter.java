@@ -26,7 +26,8 @@ import wres.datamodel.MissingValues;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.io.writing.commaseparated.CommaSeparatedUtilities;
+import wres.statistics.generated.GeometryTuple;
+import wres.statistics.generated.Pool;
 import wres.util.TimeHelper;
 
 /**
@@ -173,7 +174,7 @@ abstract class CommaSeparatedStatisticsWriter
         File file = path.toFile();
 
         boolean fileExists = file.exists();
-        
+
         // #81735-173 and #86077
         if ( fileExists && LOGGER.isWarnEnabled() )
         {
@@ -182,7 +183,7 @@ abstract class CommaSeparatedStatisticsWriter
                          + "may indicate an error in format writing. The file has been retained and not modified.",
                          file );
         }
-        
+
         return !fileExists;
     }
 
@@ -258,7 +259,7 @@ abstract class CommaSeparatedStatisticsWriter
             row = new StringJoiner( "," );
 
             // #57932
-            String featureName = CommaSeparatedUtilities.getFeatureNameFromMetadata( sampleMetadata );
+            String featureName = CommaSeparatedStatisticsWriter.getFeatureNameFromMetadata( sampleMetadata );
             String earliestLeadDuration =
                     Long.toString( TimeHelper.durationToLongUnits( timeWindow.getEarliestLeadDuration(),
                                                                    durationUnits ) );
@@ -480,6 +481,43 @@ abstract class CommaSeparatedStatisticsWriter
     }
 
     /**
+     * Returns the name of a geographic feature from an instance of {@link PoolMetadata}.
+     * 
+     * @param metadata the metadata
+     * @return name the feature name
+     * @throws NullPointerException if the input is null
+     */
+
+    private static String getFeatureNameFromMetadata( PoolMetadata metadata )
+    {
+        Objects.requireNonNull( metadata );
+
+        String featureName = "UNKNOWN";
+
+        Pool pool = metadata.getPool();
+
+        if ( Objects.nonNull( pool ) && pool.getGeometryTuplesCount() > 0 )
+        {
+            List<GeometryTuple> geometries = pool.getGeometryTuplesList();
+
+            // Preserve backwards compatibility of names, even though this is a partial naming
+            if ( geometries.size() == 1 )
+            {
+                featureName = pool.getGeometryTuples( 0 )
+                                  .getRight()
+                                  .getName();
+            }
+            else
+            {
+                // Use the region name
+                featureName = pool.getRegionName();
+            }
+        }
+
+        return featureName;
+    }
+
+    /**
      * Constructor.
      *
      * @param projectConfig the project configuration that will drive the writer logic
@@ -495,7 +533,7 @@ abstract class CommaSeparatedStatisticsWriter
         Objects.requireNonNull( projectConfig, "Specify non-null project configuration." );
         Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
         Objects.requireNonNull( outputDirectory, "Specify non-null output directory." );
-        
+
         // Validate
         File directory = outputDirectory.toFile();
         if ( !directory.isDirectory() || !directory.exists() || !directory.canWrite() )
