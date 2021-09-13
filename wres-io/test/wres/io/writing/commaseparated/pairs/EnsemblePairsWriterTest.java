@@ -2,12 +2,11 @@ package wres.io.writing.commaseparated.pairs;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.Instant;
@@ -24,10 +23,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
@@ -48,7 +48,7 @@ import wres.statistics.generated.Pool;
 /**
  * Tests the {@link EnsemblePairsWriter}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class EnsemblePairsWriterTest
 {
@@ -94,8 +94,6 @@ public final class EnsemblePairsWriterTest
 
     private static wres.datamodel.pools.Pool<Pair<Double, Ensemble>> pairsThree = null;
 
-    private Path tempDir = null;
-
     @BeforeClass
     public static void setUpBeforeAllTests()
     {
@@ -129,7 +127,10 @@ public final class EnsemblePairsWriterTest
                                           false );
 
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
-        TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( basisTime );
+        TimeSeriesMetadata boilerplate = EnsemblePairsWriterTest.getBoilerplateMetadataWithT0( basisTime );
+        TimeSeriesMetadata metadata =
+                new TimeSeriesMetadata.Builder( boilerplate ).setFeature( FeatureKey.of( "PLUM" ) )
+                                                             .build();
         TimeSeries<Pair<Double, Ensemble>> timeSeriesOne =
                 TimeSeries.of( metadata, setOfPairs );
 
@@ -163,8 +164,10 @@ public final class EnsemblePairsWriterTest
                                              false );
 
         PoolMetadata metaTwo = PoolMetadata.of( evaluationTwo, poolTwo );
-
-        TimeSeriesMetadata metadataTwo = getBoilerplateMetadataWithT0( basisTimeTwo );
+        TimeSeriesMetadata boilerplateTwo = EnsemblePairsWriterTest.getBoilerplateMetadataWithT0( basisTimeTwo );
+        TimeSeriesMetadata metadataTwo =
+                new TimeSeriesMetadata.Builder( boilerplateTwo ).setFeature( FeatureKey.of( "ORANGE" ) )
+                                                                .build();
         TimeSeries<Pair<Double, Ensemble>> timeSeriesTwo =
                 TimeSeries.of( metadataTwo, setOfPairsTwo );
 
@@ -200,7 +203,12 @@ public final class EnsemblePairsWriterTest
                                                false );
 
         PoolMetadata metaThree = PoolMetadata.of( evaluationThree, poolThree );
-        TimeSeriesMetadata metadataThree = getBoilerplateMetadataWithT0( basisTimeThree );
+
+        TimeSeriesMetadata boilerplateThree = EnsemblePairsWriterTest.getBoilerplateMetadataWithT0( basisTimeThree );
+        TimeSeriesMetadata metadataThree =
+                new TimeSeriesMetadata.Builder( boilerplateThree ).setFeature( FeatureKey.of( "BANANA" ) )
+                                                                  .build();
+
         TimeSeries<Pair<Double, Ensemble>> timeSeriesThree =
                 TimeSeries.of( metadataThree, setOfPairsThree );
 
@@ -211,12 +219,6 @@ public final class EnsemblePairsWriterTest
 
     }
 
-    @Before
-    public void setup() throws IOException
-    {
-        this.tempDir = Files.createTempDirectory( "wres_temp" );
-    }
-
     /**
      * Builds a {@link EnsemblePairsWriter} and attempts to write some empty pairs, which should not be written.
      * @throws IOException if the writing or removal of the paired file fails
@@ -225,48 +227,50 @@ public final class EnsemblePairsWriterTest
     @Test
     public void testAcceptWithEmptyPairs() throws IOException
     {
-        // Create the path
-        Path pathToFile = Paths.get( this.tempDir.toString(), PairsWriter.DEFAULT_PAIRS_NAME );
-
-        // Create the writer
-        try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
+        // Create the file system
+        try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
         {
+            Path directory = fileSystem.getPath( "test" );
+            Files.createDirectory( directory );
+            Path csvPath = fileSystem.getPath( "test", PairsWriter.DEFAULT_PAIRS_NAME );
 
-            Builder<Double, Ensemble> tsBuilder = new Builder<>();
+            // Create the writer
+            try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, ChronoUnit.SECONDS ) )
+            {
 
-            // Set the measurement units and time scale
-            FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( "PINEAPPLE" ),
-                                                          FeatureKey.of( "PINEAPPLE" ),
-                                                          null );
+                Builder<Double, Ensemble> tsBuilder = new Builder<>();
 
-            Evaluation evaluation = Evaluation.newBuilder()
-                                              .setRightVariableName( "MORTARS" )
-                                              .setMeasurementUnit( "SCOOBIES" )
-                                              .build();
+                // Set the measurement units and time scale
+                FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( "PINEAPPLE" ),
+                                                              FeatureKey.of( "PINEAPPLE" ),
+                                                              null );
 
-            Pool pool = MessageFactory.parse( FeatureGroup.of( featureTuple ),
-                                              null,
-                                              TimeScaleOuter.of( Duration.ofSeconds( 3600 ),
-                                                                 TimeScaleFunction.MEAN ),
-                                              null,
-                                              false );
+                Evaluation evaluation = Evaluation.newBuilder()
+                                                  .setRightVariableName( "MORTARS" )
+                                                  .setMeasurementUnit( "SCOOBIES" )
+                                                  .build();
 
-            PoolMetadata meta = PoolMetadata.of( evaluation, pool );
+                Pool pool = MessageFactory.parse( FeatureGroup.of( featureTuple ),
+                                                  null,
+                                                  TimeScaleOuter.of( Duration.ofSeconds( 3600 ),
+                                                                     TimeScaleFunction.MEAN ),
+                                                  null,
+                                                  false );
 
-            TimeSeries<Pair<Double, Ensemble>> timeSeriesOne = TimeSeries.of( getBoilerplateMetadata(),
-                                                                              Collections.emptySortedSet() );
+                PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
-            wres.datamodel.pools.Pool<Pair<Double, Ensemble>> emptyPairs =
-                    tsBuilder.addTimeSeries( timeSeriesOne ).setMetadata( meta ).build();
+                TimeSeries<Pair<Double, Ensemble>> timeSeriesOne = TimeSeries.of( getBoilerplateMetadata(),
+                                                                                  Collections.emptySortedSet() );
 
-            // Write the pairs
-            writer.accept( emptyPairs );
+                wres.datamodel.pools.Pool<Pair<Double, Ensemble>> emptyPairs =
+                        tsBuilder.addTimeSeries( timeSeriesOne ).setMetadata( meta ).build();
 
-            // Assert the expected results of nothing
-            assertFalse( pathToFile.toFile().exists() );
+                // Write the pairs
+                writer.accept( emptyPairs );
 
-            // Nothing expected
-            Files.deleteIfExists( pathToFile );
+                // Assert the expected results of nothing
+                assertFalse( Files.exists( csvPath ) );
+            }
         }
     }
 
@@ -280,77 +284,85 @@ public final class EnsemblePairsWriterTest
     @Test
     public void testAcceptWithNaNPairs() throws IOException
     {
-        // Create the path
-        Path pathToFile = Paths.get( this.tempDir.toString(), PairsWriter.DEFAULT_PAIRS_NAME );
-
         // Formatter
         DecimalFormat formatter = new DecimalFormat();
         formatter.applyPattern( "0.0" );
 
-        // Create the writer
-        try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS, formatter ) )
+        // Create the file system
+        try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
         {
+            Path directory = fileSystem.getPath( "test" );
+            Files.createDirectory( directory );
+            Path csvPath = fileSystem.getPath( "test", PairsWriter.DEFAULT_PAIRS_NAME );
 
-            Builder<Double, Ensemble> tsBuilder = new Builder<>();
+            // Create the writer
+            try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, ChronoUnit.SECONDS, formatter ) )
+            {
 
-            SortedSet<Event<Pair<Double, Ensemble>>> setOfPairs = new TreeSet<>();
+                Builder<Double, Ensemble> tsBuilder = new Builder<>();
 
-            Event<Pair<Double, Ensemble>> event = Event.of( Instant.MAX,
-                                                            Pair.of( Double.NaN, Ensemble.of( Double.NaN ) ) );
+                SortedSet<Event<Pair<Double, Ensemble>>> setOfPairs = new TreeSet<>();
 
-            setOfPairs.add( event );
+                Event<Pair<Double, Ensemble>> event = Event.of( Instant.MAX,
+                                                                Pair.of( Double.NaN, Ensemble.of( Double.NaN ) ) );
 
-            TimeSeries<Pair<Double, Ensemble>> timeSeriesNaN = TimeSeries.of( getBoilerplateMetadata(),
-                                                                              setOfPairs );
-            tsBuilder.addTimeSeries( timeSeriesNaN );
+                setOfPairs.add( event );
 
-            // Set the measurement units and time scale
-            FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( "PINEAPPLE" ),
-                                                          FeatureKey.of( "PINEAPPLE" ),
-                                                          null );
-            Evaluation evaluation = Evaluation.newBuilder()
-                                              .setRightVariableName( "MORTARS" )
-                                              .setMeasurementUnit( "SCOOBIES" )
-                                              .build();
+                TimeSeriesMetadata boilerplate = EnsemblePairsWriterTest.getBoilerplateMetadata();
+                TimeSeriesMetadata metadata =
+                        new TimeSeriesMetadata.Builder( boilerplate ).setFeature( FeatureKey.of( "PINEAPPLE" ) )
+                                                                     .build();
 
-            Pool pool = MessageFactory.parse( FeatureGroup.of( featureTuple ),
-                                              null,
-                                              TimeScaleOuter.of( Duration.ofSeconds( 3600 ),
-                                                                 TimeScaleFunction.MEAN ),
-                                              null,
-                                              false );
+                TimeSeries<Pair<Double, Ensemble>> timeSeriesNaN = TimeSeries.of( metadata,
+                                                                                  setOfPairs );
+                tsBuilder.addTimeSeries( timeSeriesNaN );
 
-            PoolMetadata meta = PoolMetadata.of( evaluation, pool );
+                // Set the measurement units and time scale
+                FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( "PINEAPPLE" ),
+                                                              FeatureKey.of( "PINEAPPLE" ),
+                                                              null );
+                Evaluation evaluation = Evaluation.newBuilder()
+                                                  .setRightVariableName( "MORTARS" )
+                                                  .setMeasurementUnit( "SCOOBIES" )
+                                                  .build();
 
-            TimeSeries<Pair<Double, Ensemble>> timeSeriesOne = TimeSeries.of( getBoilerplateMetadata(),
-                                                                              Collections.emptySortedSet() );
+                Pool pool = MessageFactory.parse( FeatureGroup.of( featureTuple ),
+                                                  null,
+                                                  TimeScaleOuter.of( Duration.ofSeconds( 3600 ),
+                                                                     TimeScaleFunction.MEAN ),
+                                                  null,
+                                                  false );
 
-            wres.datamodel.pools.Pool<Pair<Double, Ensemble>> emptyPairs = tsBuilder.addTimeSeries( timeSeriesOne )
-                                                                                    .setMetadata( meta )
-                                                                                    .build();
+                PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
-            // Write the pairs
-            writer.accept( emptyPairs );
+                TimeSeries<Pair<Double, Ensemble>> timeSeriesOne = TimeSeries.of( metadata,
+                                                                                  Collections.emptySortedSet() );
 
-            // Read the results
-            List<String> results = Files.readAllLines( pathToFile );
+                wres.datamodel.pools.Pool<Pair<Double, Ensemble>> emptyPairs = tsBuilder.addTimeSeries( timeSeriesOne )
+                                                                                        .setMetadata( meta )
+                                                                                        .build();
 
-            // Assert the expected results
-            assertTrue( results.size() == 2 );
-            assertEquals( results.get( 0 ),
-                          "FEATURE DESCRIPTION,"
-                                            + "VALID TIME OF PAIR,"
-                                            + "LEAD DURATION OF PAIR IN SECONDS "
-                                            + "[MEAN OVER PAST 3600 SECONDS],"
-                                            + "LEFT IN SCOOBIES,"
-                                            + "RIGHT MEMBER 1 IN SCOOBIES" );
+                // Write the pairs
+                writer.accept( emptyPairs );
 
-            assertEquals( "PINEAPPLE,+1000000000-12-31T23:59:59.999999999Z,"
-                          + "0,NaN,NaN",
-                          results.get( 1 ) );
+                // Read the results
+                List<String> results = Files.readAllLines( csvPath );
 
-            // If all succeeded, remove the file, otherwise leave to help debugging
-            Files.deleteIfExists( pathToFile );
+                // Assert the expected results
+                assertEquals( 2, results.size() );
+                assertEquals( "FEATURE DESCRIPTION,"
+                              + "FEATURE GROUP NAME,"
+                              + "VALID TIME OF PAIR,"
+                              + "LEAD DURATION OF PAIR IN SECONDS "
+                              + "[MEAN OVER PAST 3600 SECONDS],"
+                              + "LEFT IN SCOOBIES,"
+                              + "RIGHT MEMBER 1 IN SCOOBIES",
+                              results.get( 0 ) );
+
+                assertEquals( "PINEAPPLE,,+1000000000-12-31T23:59:59.999999999Z,"
+                              + "0,NaN,NaN",
+                              results.get( 1 ) );
+            }
         }
     }
 
@@ -363,35 +375,38 @@ public final class EnsemblePairsWriterTest
     @Test
     public void testAcceptForOneSetOfPairs() throws IOException
     {
-        // Create the path
-        Path pathToFile = Paths.get( this.tempDir.toString(), PairsWriter.DEFAULT_PAIRS_NAME );
-
-        // Create the writer
-        try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
+        // Create the file system
+        try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
         {
+            Path directory = fileSystem.getPath( "test" );
+            Files.createDirectory( directory );
+            Path csvPath = fileSystem.getPath( "test", PairsWriter.DEFAULT_PAIRS_NAME );
 
-            // Write the pairs
-            writer.accept( pairs );
+            // Create the writer
+            try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, ChronoUnit.SECONDS ) )
+            {
+                // Write the pairs
+                writer.accept( EnsemblePairsWriterTest.pairs );
 
-            // Read the results
-            List<String> results = Files.readAllLines( pathToFile );
+                // Read the results
+                List<String> results = Files.readAllLines( csvPath );
 
-            // Assert the expected results
-            assertTrue( results.size() == 4 );
-            assertTrue( results.get( 0 )
-                               .equals( "FEATURE DESCRIPTION,"
-                                        + "VALID TIME OF PAIR,"
-                                        + "LEAD DURATION OF PAIR IN SECONDS,"
-                                        + "LEFT IN SCOOBIES,"
-                                        + "RIGHT MEMBER 1 IN SCOOBIES,"
-                                        + "RIGHT MEMBER 2 IN SCOOBIES,"
-                                        + "RIGHT MEMBER 3 IN SCOOBIES" ) );
-            assertTrue( results.get( 1 ).equals( "PLUM,1985-01-01T01:00:00Z,3600,1.001,2.0,3.0,4.0" ) );
-            assertTrue( results.get( 2 ).equals( "PLUM,1985-01-01T02:00:00Z,7200,5.0,6.0,7.0,8.0" ) );
-            assertTrue( results.get( 3 ).equals( "PLUM,1985-01-01T03:00:00Z,10800,9.0,10.0,11.0,12.0" ) );
+                // Assert the expected results
+                assertEquals( 4, results.size() );
+                assertEquals( "FEATURE DESCRIPTION,"
+                              + "FEATURE GROUP NAME,"
+                              + "VALID TIME OF PAIR,"
+                              + "LEAD DURATION OF PAIR IN SECONDS,"
+                              + "LEFT IN SCOOBIES,"
+                              + "RIGHT MEMBER 1 IN SCOOBIES,"
+                              + "RIGHT MEMBER 2 IN SCOOBIES,"
+                              + "RIGHT MEMBER 3 IN SCOOBIES",
+                              results.get( 0 ) );
+                assertEquals( "PLUM,,1985-01-01T01:00:00Z,3600,1.001,2.0,3.0,4.0", results.get( 1 ) );
+                assertEquals( "PLUM,,1985-01-01T02:00:00Z,7200,5.0,6.0,7.0,8.0", results.get( 2 ) );
+                assertEquals( "PLUM,,1985-01-01T03:00:00Z,10800,9.0,10.0,11.0,12.0", results.get( 3 ) );
 
-            // If all succeeded, remove the file, otherwise leave to help debugging
-            Files.deleteIfExists( pathToFile );
+            }
         }
     }
 
@@ -404,39 +419,42 @@ public final class EnsemblePairsWriterTest
     @Test
     public void testAcceptForTwoSetsOfPairsWrittenSync() throws IOException
     {
-        // Create the path
-        Path pathToFile = Paths.get( this.tempDir.toString(), PairsWriter.DEFAULT_PAIRS_NAME );
-
-        // Create the writer
-        try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
+        // Create the file system
+        try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
         {
+            Path directory = fileSystem.getPath( "test" );
+            Files.createDirectory( directory );
+            Path csvPath = fileSystem.getPath( "test", PairsWriter.DEFAULT_PAIRS_NAME );
 
-            // Write the pairs
-            writer.accept( pairs );
-            writer.accept( pairsTwo );
+            // Create the writer
+            try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, ChronoUnit.SECONDS ) )
+            {
 
-            // Read the results
-            List<String> results = Files.readAllLines( pathToFile );
+                // Write the pairs
+                writer.accept( EnsemblePairsWriterTest.pairs );
+                writer.accept( EnsemblePairsWriterTest.pairsTwo );
 
-            // Assert the expected results
-            assertTrue( results.size() == 7 );
-            assertTrue( results.get( 0 )
-                               .equals( "FEATURE DESCRIPTION,"
-                                        + "VALID TIME OF PAIR,"
-                                        + "LEAD DURATION OF PAIR IN SECONDS,"
-                                        + "LEFT IN SCOOBIES,"
-                                        + "RIGHT MEMBER 1 IN SCOOBIES,"
-                                        + "RIGHT MEMBER 2 IN SCOOBIES,"
-                                        + "RIGHT MEMBER 3 IN SCOOBIES" ) );
-            assertTrue( results.get( 1 ).equals( "PLUM,1985-01-01T01:00:00Z,3600,1.001,2.0,3.0,4.0" ) );
-            assertTrue( results.get( 2 ).equals( "PLUM,1985-01-01T02:00:00Z,7200,5.0,6.0,7.0,8.0" ) );
-            assertTrue( results.get( 3 ).equals( "PLUM,1985-01-01T03:00:00Z,10800,9.0,10.0,11.0,12.0" ) );
-            assertTrue( results.get( 4 ).equals( "ORANGE,1985-01-01T04:00:00Z,14400,13.0,14.0,15.0,16.0" ) );
-            assertTrue( results.get( 5 ).equals( "ORANGE,1985-01-01T05:00:00Z,18000,17.0,18.0,19.0,20.0" ) );
-            assertTrue( results.get( 6 ).equals( "ORANGE,1985-01-01T06:00:00Z,21600,21.0,22.0,23.0,24.0" ) );
+                // Read the results
+                List<String> results = Files.readAllLines( csvPath );
 
-            // If all succeeded, remove the file, otherwise leave to help debugging
-            Files.deleteIfExists( pathToFile );
+                // Assert the expected results
+                assertEquals( 7, results.size() );
+                assertEquals( "FEATURE DESCRIPTION,"
+                              + "FEATURE GROUP NAME,"
+                              + "VALID TIME OF PAIR,"
+                              + "LEAD DURATION OF PAIR IN SECONDS,"
+                              + "LEFT IN SCOOBIES,"
+                              + "RIGHT MEMBER 1 IN SCOOBIES,"
+                              + "RIGHT MEMBER 2 IN SCOOBIES,"
+                              + "RIGHT MEMBER 3 IN SCOOBIES",
+                              results.get( 0 ) );
+                assertEquals( "PLUM,,1985-01-01T01:00:00Z,3600,1.001,2.0,3.0,4.0", results.get( 1 ) );
+                assertEquals( "PLUM,,1985-01-01T02:00:00Z,7200,5.0,6.0,7.0,8.0", results.get( 2 ) );
+                assertEquals( "PLUM,,1985-01-01T03:00:00Z,10800,9.0,10.0,11.0,12.0", results.get( 3 ) );
+                assertEquals( "ORANGE,,1985-01-01T04:00:00Z,14400,13.0,14.0,15.0,16.0", results.get( 4 ) );
+                assertEquals( "ORANGE,,1985-01-01T05:00:00Z,18000,17.0,18.0,19.0,20.0", results.get( 5 ) );
+                assertEquals( "ORANGE,,1985-01-01T06:00:00Z,21600,21.0,22.0,23.0,24.0", results.get( 6 ) );
+            }
         }
     }
 
@@ -451,49 +469,53 @@ public final class EnsemblePairsWriterTest
     @Test
     public void testAcceptForThreeSetsOfPairsWrittenAsync() throws IOException, InterruptedException, ExecutionException
     {
-        // Create the path
-        Path pathToFile = Paths.get( this.tempDir.toString(), PairsWriter.DEFAULT_PAIRS_NAME );
-
         // Create the writer with a decimal format
         DecimalFormat formatter = new DecimalFormat();
         formatter.applyPattern( "0.0" );
-        try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS, formatter ) )
+        // Create the file system
+        try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
         {
+            Path directory = fileSystem.getPath( "test" );
+            Files.createDirectory( directory );
+            Path csvPath = fileSystem.getPath( "test", PairsWriter.DEFAULT_PAIRS_NAME );
 
-            // Write the pairs async on the common FJP
-            CompletableFuture.allOf( CompletableFuture.runAsync( () -> writer.accept( pairs ) ),
-                                     CompletableFuture.runAsync( () -> writer.accept( pairsTwo ) ),
-                                     CompletableFuture.runAsync( () -> writer.accept( pairsThree ) ) )
-                             .get();
+            // Create the writer
+            try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, ChronoUnit.SECONDS, formatter ) )
+            {
 
-            // Read the results
-            List<String> results = Files.readAllLines( pathToFile );
+                // Write the pairs async on the common FJP
+                CompletableFuture.allOf( CompletableFuture.runAsync( () -> writer.accept( EnsemblePairsWriterTest.pairs ) ),
+                                         CompletableFuture.runAsync( () -> writer.accept( EnsemblePairsWriterTest.pairsTwo ) ),
+                                         CompletableFuture.runAsync( () -> writer.accept( EnsemblePairsWriterTest.pairsThree ) ) )
+                                 .get();
 
-            // Sort the results
-            Collections.sort( results, Comparator.naturalOrder() );
+                // Read the results
+                List<String> results = Files.readAllLines( csvPath );
 
-            // Assert the expected results
-            assertTrue( results.size() == 10 );
-            assertTrue( results.get( 0 ).equals( "BANANA,1985-01-01T07:00:00Z,25200,25.0,26.0,27.0,28.0" ) );
-            assertTrue( results.get( 1 ).equals( "BANANA,1985-01-01T08:00:00Z,28800,29.0,30.0,31.0,32.0" ) );
-            assertTrue( results.get( 2 ).equals( "BANANA,1985-01-01T09:00:00Z,32400,33.0,34.0,35.0,36.0" ) );
-            assertTrue( results.get( 3 )
-                               .equals( "FEATURE DESCRIPTION,"
-                                        + "VALID TIME OF PAIR,"
-                                        + "LEAD DURATION OF PAIR IN SECONDS,"
-                                        + "LEFT IN SCOOBIES,"
-                                        + "RIGHT MEMBER 1 IN SCOOBIES,"
-                                        + "RIGHT MEMBER 2 IN SCOOBIES,"
-                                        + "RIGHT MEMBER 3 IN SCOOBIES" ) );
-            assertTrue( results.get( 4 ).equals( "ORANGE,1985-01-01T04:00:00Z,14400,13.0,14.0,15.0,16.0" ) );
-            assertTrue( results.get( 5 ).equals( "ORANGE,1985-01-01T05:00:00Z,18000,17.0,18.0,19.0,20.0" ) );
-            assertTrue( results.get( 6 ).equals( "ORANGE,1985-01-01T06:00:00Z,21600,21.0,22.0,23.0,24.0" ) );
-            assertTrue( results.get( 7 ).equals( "PLUM,1985-01-01T01:00:00Z,3600,1.0,2.0,3.0,4.0" ) );
-            assertTrue( results.get( 8 ).equals( "PLUM,1985-01-01T02:00:00Z,7200,5.0,6.0,7.0,8.0" ) );
-            assertTrue( results.get( 9 ).equals( "PLUM,1985-01-01T03:00:00Z,10800,9.0,10.0,11.0,12.0" ) );
+                // Sort the results
+                Collections.sort( results, Comparator.naturalOrder() );
 
-            // If all succeeded, remove the file, otherwise leave to help debugging
-            Files.deleteIfExists( pathToFile );
+                // Assert the expected results
+                assertEquals( 10, results.size() );
+                assertEquals( "BANANA,,1985-01-01T07:00:00Z,25200,25.0,26.0,27.0,28.0", results.get( 0 ) );
+                assertEquals( "BANANA,,1985-01-01T08:00:00Z,28800,29.0,30.0,31.0,32.0", results.get( 1 ) );
+                assertEquals( "BANANA,,1985-01-01T09:00:00Z,32400,33.0,34.0,35.0,36.0", results.get( 2 ) );
+                assertEquals( "FEATURE DESCRIPTION,"
+                              + "FEATURE GROUP NAME,"
+                              + "VALID TIME OF PAIR,"
+                              + "LEAD DURATION OF PAIR IN SECONDS,"
+                              + "LEFT IN SCOOBIES,"
+                              + "RIGHT MEMBER 1 IN SCOOBIES,"
+                              + "RIGHT MEMBER 2 IN SCOOBIES,"
+                              + "RIGHT MEMBER 3 IN SCOOBIES",
+                              results.get( 3 ) );
+                assertEquals( "ORANGE,,1985-01-01T04:00:00Z,14400,13.0,14.0,15.0,16.0", results.get( 4 ) );
+                assertEquals( "ORANGE,,1985-01-01T05:00:00Z,18000,17.0,18.0,19.0,20.0", results.get( 5 ) );
+                assertEquals( "ORANGE,,1985-01-01T06:00:00Z,21600,21.0,22.0,23.0,24.0", results.get( 6 ) );
+                assertEquals( "PLUM,,1985-01-01T01:00:00Z,3600,1.0,2.0,3.0,4.0", results.get( 7 ) );
+                assertEquals( "PLUM,,1985-01-01T02:00:00Z,7200,5.0,6.0,7.0,8.0", results.get( 8 ) );
+                assertEquals( "PLUM,,1985-01-01T03:00:00Z,10800,9.0,10.0,11.0,12.0", results.get( 9 ) );
+            }
         }
     }
 
@@ -508,36 +530,37 @@ public final class EnsemblePairsWriterTest
     @Test
     public void testAcceptForManySetsOfPairsWrittenAsync() throws IOException, InterruptedException, ExecutionException
     {
-        // Create the path
-        Path pathToFile = Paths.get( this.tempDir.toString(), PairsWriter.DEFAULT_PAIRS_NAME );
-
         // Create the writer with a decimal format
         DecimalFormat formatter = new DecimalFormat();
         formatter.applyPattern( "0.0" );
-        try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS, formatter ) )
+        // Create the file system
+        try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
         {
+            Path directory = fileSystem.getPath( "test" );
+            Files.createDirectory( directory );
+            Path csvPath = fileSystem.getPath( "test", PairsWriter.DEFAULT_PAIRS_NAME );
 
-            // Write the pairs async on the common FJP
-
-            List<CompletableFuture<Void>> futures = new ArrayList<>();
-            for ( int i = 0; i < 100; i++ )
+            // Create the writer
+            try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, ChronoUnit.SECONDS, formatter ) )
             {
-                futures.add( CompletableFuture.runAsync( () -> writer.accept( pairs ) ) );
+                // Write the pairs async on the common FJP
+                List<CompletableFuture<Void>> futures = new ArrayList<>();
+                for ( int i = 0; i < 100; i++ )
+                {
+                    futures.add( CompletableFuture.runAsync( () -> writer.accept( EnsemblePairsWriterTest.pairs ) ) );
+                }
+
+                CompletableFuture.allOf( futures.toArray( new CompletableFuture[futures.size()] ) ).get();
+
+                // Read the results
+                List<String> results = Files.readAllLines( csvPath );
+
+                // Sort the results
+                Collections.sort( results, Comparator.naturalOrder() );
+
+                // Assert the expected results by dimension
+                assertEquals( results.size(), 301 );
             }
-
-            CompletableFuture.allOf( futures.toArray( new CompletableFuture[futures.size()] ) ).get();
-
-            // Read the results
-            List<String> results = Files.readAllLines( pathToFile );
-
-            // Sort the results
-            Collections.sort( results, Comparator.naturalOrder() );
-
-            // Assert the expected results by dimension
-            assertEquals( results.size(), 301 );
-
-            // If all succeeded, remove the file, otherwise leave to help debugging
-            Files.deleteIfExists( pathToFile );
         }
     }
 
@@ -550,27 +573,25 @@ public final class EnsemblePairsWriterTest
     @Test
     public void testSuppliedPath() throws IOException
     {
-        // Create the path
-        Path pathToFile = Paths.get( this.tempDir.toString(), PairsWriter.DEFAULT_PAIRS_NAME );
-
-        // Create the writer
-        try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
+        // Create the file system
+        try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
         {
+            Path directory = fileSystem.getPath( "test" );
+            Files.createDirectory( directory );
+            Path csvPath = fileSystem.getPath( "test", PairsWriter.DEFAULT_PAIRS_NAME );
 
-            // Write the pairs
-            writer.accept( EnsemblePairsWriterTest.pairs );
+            // Create the writer
+            try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, ChronoUnit.SECONDS ) )
+            {
 
-            // Assert the expected results
-            assertEquals( writer.get(), Set.of( pathToFile ) );
 
-            // If all succeeded, remove the file, otherwise leave to help debugging
-            Files.deleteIfExists( pathToFile );
+                // Write the pairs
+                writer.accept( EnsemblePairsWriterTest.pairs );
+
+                // Assert the expected results
+                assertEquals( writer.get(), Set.of( csvPath ) );
+            }
         }
     }
 
-    @After
-    public void tearDown() throws IOException
-    {
-        Files.deleteIfExists( this.tempDir );
-    }
 }

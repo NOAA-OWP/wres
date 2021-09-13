@@ -16,8 +16,6 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureKey;
-import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Pool;
@@ -28,9 +26,6 @@ import wres.statistics.generated.Pool;
 
 public class CommaSeparatedUtilitiesTest
 {
-    private static final FeatureKey FEATURE_ONE = FeatureKey.of( "fooBasin" );
-    private static final FeatureKey FEATURE_TWO = FeatureKey.of( "fooBasiny" );
-    private static final FeatureTuple FEATURE_TUPLE = new FeatureTuple( FEATURE_TWO, FEATURE_ONE, FEATURE_TWO );
     private static final Evaluation EVALUATION = Evaluation.newBuilder()
                                                            .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
                                                            .build();;
@@ -98,42 +93,6 @@ public class CommaSeparatedUtilitiesTest
                 CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( metadata, ChronoUnit.HOURS );
 
         assertEquals( expected, actual.toString() );
-    }
-
-    @Test
-    public void testGetFeatureNameFromMetadataWithNamedLocation()
-    {
-        Pool pool = MessageFactory.parse( FeatureGroup.of( FEATURE_TUPLE ),
-                                          null,
-                                          null,
-                                          null,
-                                          false );
-
-        PoolMetadata metadata = PoolMetadata.of( CommaSeparatedUtilitiesTest.EVALUATION, pool );
-
-        String actual =
-                CommaSeparatedUtilities.getFeatureNameFromMetadata( metadata );
-
-        assertEquals( "fooBasin", actual.toString() );
-
-    }
-
-    @Test
-    public void testGetFeatureNameFromMetadataWithNullLocation()
-    {
-        Pool pool = MessageFactory.parse( (FeatureGroup) null,
-                                          null,
-                                          null,
-                                          null,
-                                          false );
-
-        PoolMetadata metadata = PoolMetadata.of( CommaSeparatedUtilitiesTest.EVALUATION, pool );
-
-        String actual =
-                CommaSeparatedUtilities.getFeatureNameFromMetadata( metadata );
-
-        assertEquals( "UNKNOWN", actual.toString() );
-
     }
 
 }

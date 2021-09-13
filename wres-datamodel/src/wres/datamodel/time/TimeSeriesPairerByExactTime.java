@@ -187,13 +187,15 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
         // Log inadmissible cases
         this.logInadmissibleCases( left, right, leftInadmissible, rightInadmissible );
 
+        // The pairs inherit the metadata of the right-hand time-series, which is a simplification. In order to model
+        // this properly, we would need something like a TimeSeriesOfPairs that included both sides of metadata.
         TimeSeriesMetadata metadata =
                 new TimeSeriesMetadata.Builder( right.getMetadata() ).setReferenceTimes( referenceTimes )
                                                                      .build();
 
         return new Builder<Pair<L, R>>().setMetadata( metadata )
-                                                  .setEvents( pairs )
-                                                  .build();
+                                        .setEvents( pairs )
+                                        .build();
     }
 
     /**

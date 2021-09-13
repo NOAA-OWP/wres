@@ -11,6 +11,8 @@
             <endDate date="2551-03-20" time="12:00:00"/>
             <missVal>-999.0</missVal>
             <stationName>SOME FAKE PLACE 3</stationName>
+            <lat>45.1</lat>
+            <lon>105.1</lon>
             <units>CMS</units>
         </header>
         <event date="2551-03-17" time="00:00:00" value="313" flag="0"/>
