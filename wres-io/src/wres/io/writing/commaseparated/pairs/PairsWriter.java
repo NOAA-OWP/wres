@@ -28,9 +28,12 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.pools.Pool;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.writing.WriteException;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
@@ -38,11 +41,22 @@ import wres.util.TimeHelper;
 
 /**
  * <p>Abstract base class for writing a time-series of pairs as comma separated values (CSV). There is one 
- * {@link PairsWriter} for each {@link Path} to be written; writing to that {@link Path} is 
- * managed by this {@link PairsWriter}. The {@link PairsWriter} must be closed after all writing is complete.
+ * {@link PairsWriter} for each {@link Path} to be written; writing to that {@link Path} is managed by this 
+ * {@link PairsWriter}. The {@link PairsWriter} must be closed after all writing is complete.
  * 
  * <p>The {@link Path} is supplied on construction and no guarantee is made that anything is created at that 
  * {@link Path}. If nothing is created, then {@link #get()} will return the {@link Collections#emptySet()}.
+ * 
+ * TODO: Add some additional qualification to the pairs, such as the left and right feature names (separately). However,
+ * pairs are modeled as time-series of pairs, not pairs of time-series, so the time-series metadata only accommodates a
+ * {@link FeatureKey}, not a {@link FeatureTuple}. Currently, the time-series metadata contains the {@link FeatureKey} 
+ * associated with the evaluation subject or right-hand data only. There are various possible fixes. Ultimately, the 
+ * thing abstracted by a time-series event has some metadata, so the most flexible approach would be to improve the 
+ * modeling of that thing, i.e., of the pair, by adding a {@link FeatureTuple} to it. An alternative approach would be 
+ * to model a {@code TimeSeriesOfPairs<L,R> extends TimeSeries<Pair<L,R>>} that composes the time-series of pairs, plus 
+ * both sides of time-series metadata. However, this class would then need to consume a {@code PoolOfPairs<L, R>} that 
+ * composed the {@code TimeSeriesOfPairs<L,R>}. Another alternative would be to replace the {@link FeatureKey} within 
+ * the {@link TimeSeriesMetadata} with a {@link FeatureTuple}.
  * 
  * @param <L> the type of left data in the pairing
  * @param <R> the type of right data in the pairing
@@ -51,6 +65,12 @@ import wres.util.TimeHelper;
 
 public abstract class PairsWriter<L, R> implements Consumer<Pool<Pair<L, R>>>, Supplier<Set<Path>>, Closeable
 {
+
+    /**
+     * Double quotation mark.
+     */
+
+    private static final String QUOTE = "\"";
 
     /**
      * A default name for the pairs.
@@ -135,7 +155,8 @@ public abstract class PairsWriter<L, R> implements Consumer<Pool<Pair<L, R>>>, S
 
         StringJoiner joiner = new StringJoiner( "," );
 
-        joiner.add( "FEATURE DESCRIPTION" );
+        joiner.add( "FEATURE DESCRIPTION" )
+              .add( "FEATURE GROUP NAME" );
 
         // Time window?
         if ( pairs.getMetadata().hasTimeWindow() )
@@ -224,8 +245,8 @@ public abstract class PairsWriter<L, R> implements Consumer<Pool<Pair<L, R>>>, S
                 // At this point, we have a non-empty pool: #67088
                 this.writeHeaderIfRequired( pairs );
 
-                // Feature to write, which is fixed across all pairs
-                String featureName = CommaSeparatedUtilities.getFeatureNameFromMetadata( pairs.getMetadata() );
+                // Feature group name
+                String featureGroupName = this.getFeatureNameFrom( pairs.getMetadata().getPool().getRegionName() );
 
                 // Time window to write, which is fixed across all pairs
                 TimeWindowOuter timeWindow = pairs.getMetadata().getTimeWindow();
@@ -249,6 +270,10 @@ public abstract class PairsWriter<L, R> implements Consumer<Pool<Pair<L, R>>>, S
                     // Iterate in time-series order
                     for ( TimeSeries<Pair<L, R>> nextSeries : pairs.get() )
                     {
+                        String featureName = this.getFeatureNameFrom( nextSeries.getMetadata()
+                                                                                .getFeature()
+                                                                                .getName() );
+
                         // Iterate the events
                         for ( Event<Pair<L, R>> nextPair : nextSeries.getEvents() )
                         {
@@ -261,6 +286,9 @@ public abstract class PairsWriter<L, R> implements Consumer<Pool<Pair<L, R>>>, S
 
                             // Feature description
                             joiner.add( featureName );
+
+                            // Feature group description
+                            joiner.add( featureGroupName );
 
                             // Time window if available
                             if ( Objects.nonNull( timeWindow ) )
@@ -500,6 +528,23 @@ public abstract class PairsWriter<L, R> implements Consumer<Pool<Pair<L, R>>>, S
     private Function<Pair<L, R>, String> getPairFormatter()
     {
         return this.pairFormatter;
+    }
+
+    /**
+     * Returns a sanitized feature name from the input.
+     * 
+     * @param featureName the unsanitized name
+     * @return the sanitized name
+     */
+
+    private String getFeatureNameFrom( String featureName )
+    {
+        if ( Objects.nonNull( featureName ) && featureName.contains( "," ) )
+        {
+            return QUOTE + featureName + QUOTE;
+        }
+
+        return featureName;
     }
 
     /**

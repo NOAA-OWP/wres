@@ -1,14 +1,11 @@
 package wres.io.writing.commaseparated;
 
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.statistics.generated.GeometryTuple;
-import wres.statistics.generated.Pool;
 import wres.util.TimeHelper;
 
 /**
@@ -96,32 +93,6 @@ public class CommaSeparatedUtilities
                     + timeScale );
 
         return joiner;
-    }
-
-    /**
-     * Returns the name of a geographic feature from an instance of {@link PoolMetadata}.
-     * 
-     * @param metadata the metadata
-     * @return name the feature name
-     * @throws NullPointerException if the input is null
-     */
-
-    public static String getFeatureNameFromMetadata( PoolMetadata metadata )
-    {
-        Objects.requireNonNull( metadata );
-
-        String featureName = "UNKNOWN";
-
-        Pool pool = metadata.getPool();
-
-        if ( Objects.nonNull( pool ) && pool.getGeometryTuplesCount() > 0 )
-        {
-            featureName = pool.getGeometryTuples( 0 )
-                              .getRight()
-                              .getName();
-        }
-
-        return featureName;
     }
 
 }
