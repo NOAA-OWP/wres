@@ -14,17 +14,23 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.DoubleFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPOutputStream;
 
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKTReader;
+import org.locationtech.jts.io.WKTWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.GuardedBy;
 import net.jcip.annotations.ThreadSafe;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.MetricDimension;
@@ -92,28 +98,35 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      */
 
     private static final String HEADER = "LEFT VARIABLE NAME,RIGHT VARIABLE NAME,BASELINE VARIABLE NAME,POOL NUMBER,"
-                                         + "EVALUATION SUBJECT,LEFT FEATURE NAME,LEFT FEATURE WKT,LEFT FEATURE SRID,"
-                                         + "LEFT FEATURE DESCRIPTION,RIGHT FEATURE NAME,RIGHT FEATURE WKT,RIGHT "
-                                         + "FEATURE SRID,RIGHT FEATURE DESCRIPTION,BASELINE FEATURE NAME,BASELINE "
-                                         + "FEATURE WKT,BASELINE FEATURE SRID,BASELINE FEATURE DESCRIPTION,EARLIEST "
-                                         + "ISSUED TIME EXCLUSIVE,LATEST ISSUED TIME INCLUSIVE,EARLIEST VALID TIME "
-                                         + "EXCLUSIVE,LATEST VALID TIME INCLUSIVE,EARLIEST LEAD DURATION EXCLUSIVE,"
-                                         + "LATEST LEAD DURATION INCLUSIVE,TIME SCALE DURATION,TIME SCALE FUNCTION,"
-                                         + "EVENT THRESHOLD NAME,EVENT THRESHOLD LOWER VALUE,EVENT THRESHOLD UPPER "
-                                         + "VALUE,EVENT THRESHOLD UNITS,EVENT THRESHOLD LOWER PROBABILITY,EVENT "
-                                         + "THRESHOLD UPPER PROBABILITY,EVENT THRESHOLD SIDE,EVENT THRESHOLD OPERATOR,"
-                                         + "DECISION THRESHOLD NAME,DECISION THRESHOLD LOWER VALUE,DECISION THRESHOLD "
-                                         + "UPPER VALUE,DECISION THRESHOLD UNITS,DECISION THRESHOLD LOWER PROBABILITY,"
-                                         + "DECISION THRESHOLD UPPER PROBABILITY,DECISION THRESHOLD SIDE,DECISION "
-                                         + "THRESHOLD OPERATOR,METRIC NAME,METRIC COMPONENT NAME,METRIC COMPONENT "
-                                         + "QUALIFIER,METRIC COMPONENT UNITS,METRIC COMPONENT MINIMUM,METRIC COMPONENT "
-                                         + "MAXIMUM,METRIC COMPONENT OPTIMUM,STATISTIC GROUP NUMBER,STATISTIC";
+                                         + "EVALUATION SUBJECT,FEATURE GROUP NAME,LEFT FEATURE NAME,LEFT FEATURE WKT,"
+                                         + "LEFT FEATURE SRID,LEFT FEATURE DESCRIPTION,RIGHT FEATURE NAME,RIGHT "
+                                         + "FEATURE WKT,RIGHT FEATURE SRID,RIGHT FEATURE DESCRIPTION,BASELINE FEATURE "
+                                         + "NAME,BASELINE FEATURE WKT,BASELINE FEATURE SRID,BASELINE FEATURE "
+                                         + "DESCRIPTION,EARLIEST ISSUED TIME EXCLUSIVE,LATEST ISSUED TIME INCLUSIVE,"
+                                         + "EARLIEST VALID TIME EXCLUSIVE,LATEST VALID TIME INCLUSIVE,EARLIEST LEAD "
+                                         + "DURATION EXCLUSIVE,LATEST LEAD DURATION INCLUSIVE,TIME SCALE DURATION,"
+                                         + "TIME SCALE FUNCTION,EVENT THRESHOLD NAME,EVENT THRESHOLD LOWER VALUE,EVENT "
+                                         + "THRESHOLD UPPER VALUE,EVENT THRESHOLD UNITS,EVENT THRESHOLD LOWER "
+                                         + "PROBABILITY,EVENT THRESHOLD UPPER PROBABILITY,EVENT THRESHOLD SIDE,EVENT "
+                                         + "THRESHOLD OPERATOR,DECISION THRESHOLD NAME,DECISION THRESHOLD LOWER VALUE,"
+                                         + "DECISION THRESHOLD UPPER VALUE,DECISION THRESHOLD UNITS,DECISION THRESHOLD "
+                                         + "LOWER PROBABILITY,DECISION THRESHOLD UPPER PROBABILITY,DECISION THRESHOLD "
+                                         + "SIDE,DECISION THRESHOLD OPERATOR,METRIC NAME,METRIC COMPONENT NAME,METRIC "
+                                         + "COMPONENT QUALIFIER,METRIC COMPONENT UNITS,METRIC COMPONENT MINIMUM,"
+                                         + "METRIC COMPONENT MAXIMUM,METRIC COMPONENT OPTIMUM,STATISTIC GROUP NUMBER,"
+                                         + "STATISTIC";
 
     /**
      * The CSV delimiter.
      */
 
     private static final String DELIMITER = ",";
+
+    /**
+     * A delimiter for items within a list.
+     */
+
+    private static final String LIST_DELIMITER = ":";
 
     /**
      * Platform-dependent line separator.
@@ -325,8 +338,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         }
 
         // Merge in geometry description
+        String featureGroupName = pool.getRegionName();
         List<GeometryTuple> geometries = pool.getGeometryTuplesList();
-        StringJoiner geometryDescription = this.getGeometryDescription( geometries );
+        StringJoiner geometryDescription = this.getGeometryTupleDescription( geometries, featureGroupName );
         joiner = joiner.merge( geometryDescription );
 
         // Merge in time window description
@@ -364,83 +378,60 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
     }
 
     /**
-     * Returns a geometry description from the input. Currently accepts one geometry only.
+     * Returns a geometry description from the input.
      * 
      * @param geometries the geometries
+     * @param featureGroupName the feature group name
      * @return the geometry description
-     * @throws IllegalArgumentException if there is more than one geometry
+     * @throws IllegalArgumentException if there are no geometries or more than one srid
      */
 
-    private StringJoiner getGeometryDescription( List<GeometryTuple> geometries )
+    private StringJoiner getGeometryTupleDescription( List<GeometryTuple> geometries, String featureGroupName )
     {
-        if ( geometries.size() != 1 )
+        if ( geometries.isEmpty() )
         {
-            throw new IllegalArgumentException( "Expected one geometry tuple per pool but discovered "
-                                                + geometries.size()
-                                                + ", which is not supported." );
+            throw new IllegalArgumentException( "Expected at least one geometry but found none while processing "
+                                                + "feature group "
+                                                + featureGroupName
+                                                + "." );
         }
 
         StringJoiner joiner = new StringJoiner( CsvStatisticsWriter.DELIMITER );
 
-        GeometryTuple first = geometries.get( 0 );
+        this.append( joiner, featureGroupName, true );
 
         // Left
-        Geometry left = first.getLeft();
-        // SRID of 0 means no SRID
-        String leftSrid = Integer.toString( left.getSrid() );
-        joiner.add( left.getName() )
-              .add( left.getWkt() );
+        List<Geometry> left = geometries.stream()
+                                        .map( GeometryTuple::getLeft )
+                                        .collect( Collectors.toList() );
 
-        if ( !left.getWkt().isBlank() )
-        {
-            joiner.add( leftSrid );
-        }
-        // Placeholder
-        else
-        {
-            CsvStatisticsWriter.addEmptyValues( joiner, 1 );
-        }
+        StringJoiner leftJoiner = this.getGeometryDescription( left, LeftOrRightOrBaseline.LEFT, featureGroupName );
 
-        // Description
-        this.append( joiner, left.getDescription(), true );
+        joiner = joiner.merge( leftJoiner );
 
         // Right
-        Geometry right = first.getRight();
-        String rightSrid = Integer.toString( right.getSrid() );
-        joiner.add( right.getName() )
-              .add( right.getWkt() );
-        if ( !right.getWkt().isBlank() )
-        {
-            joiner.add( rightSrid );
-        }
-        // Placeholder
-        else
-        {
-            CsvStatisticsWriter.addEmptyValues( joiner, 1 );
-        }
-        // Description
-        this.append( joiner, right.getDescription(), true );
+        List<Geometry> right = geometries.stream()
+                                         .map( GeometryTuple::getRight )
+                                         .collect( Collectors.toList() );
+
+        StringJoiner rightJoiner = this.getGeometryDescription( right, LeftOrRightOrBaseline.RIGHT, featureGroupName );
+
+        joiner = joiner.merge( rightJoiner );
+
 
         // Baseline
+        GeometryTuple first = geometries.get( 0 );
         if ( first.hasBaseline() )
         {
-            Geometry baseline = first.getBaseline();
-            String baselineSrid = Integer.toString( baseline.getSrid() );
-            joiner.add( baseline.getName() )
-                  .add( baseline.getWkt() );
+            // Right
+            List<Geometry> baseline = geometries.stream()
+                                                .map( GeometryTuple::getBaseline )
+                                                .collect( Collectors.toList() );
 
-            if ( !baseline.getWkt().isBlank() )
-            {
-                joiner.add( baselineSrid );
-            }
-            // Placeholder
-            else
-            {
-                CsvStatisticsWriter.addEmptyValues( joiner, 1 );
-            }
+            StringJoiner baselineJoiner =
+                    this.getGeometryDescription( baseline, LeftOrRightOrBaseline.BASELINE, featureGroupName );
 
-            // Description
-            this.append( joiner, baseline.getDescription(), true );
+            joiner = joiner.merge( baselineJoiner );
         }
         // Add placeholders
         else
@@ -449,6 +440,142 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         }
 
         return joiner;
+    }
+
+    /**
+     * Returns a geometry description from the list of geometries.
+     * 
+     * @param geometries the geometries
+     * @param lrb the left or right or baseline context to help with messaging
+     * @param groupName to help with messaging
+     * @return the geometry description
+     * @throws IllegalArgumentException if there are no geometries or more than one srid
+     */
+
+    private StringJoiner getGeometryDescription( List<Geometry> geometries,
+                                                 LeftOrRightOrBaseline lrb,
+                                                 String groupName )
+    {
+        StringJoiner joiner = new StringJoiner( CsvStatisticsWriter.DELIMITER );
+
+        if ( geometries.isEmpty() )
+        {
+            throw new IllegalArgumentException( "Expected at least one geometry but found none while processing "
+                                                + "feature group "
+                                                + groupName
+                                                + "." );
+        }
+
+        // Single srid expected
+        Set<Integer> srids = geometries.stream()
+                                       .mapToInt( Geometry::getSrid )
+                                       .boxed()
+                                       .collect( Collectors.toSet() );
+
+        if ( srids.size() > 1 )
+        {
+            throw new IllegalArgumentException( "The csv2 format does not support a feature group whose features "
+                                                + "contain more than one Spatial Reference Identifier (SRID). While "
+                                                + "writing statistics for the "
+                                                + lrb
+                                                + " side of feature group "
+                                                + groupName
+                                                + ", discovered "
+                                                + srids.size()
+                                                + " SRIDs as follows: "
+                                                + srids
+                                                + "." );
+        }
+
+        // SRID of 0 means no SRID
+        String srid = Integer.toString( srids.iterator().next() );
+
+        List<String> wkts = geometries.stream()
+                                      .map( Geometry::getWkt )
+                                      .filter( next -> !"".equals( next ) )
+                                      .collect( Collectors.toList() );
+
+        // Compose the names with a delimiter
+        StringJoiner names = new StringJoiner( LIST_DELIMITER );
+        geometries.stream()
+                  .map( Geometry::getName )
+                  .forEach( names::add );
+
+        this.append( joiner, names.toString(), true );
+
+        if ( !wkts.isEmpty() )
+        {
+            String multipartWkt = this.getMultiPartWktFromSinglePartWkts( wkts );
+            this.append( joiner, multipartWkt, true );
+            this.append( joiner, srid, false );
+        }
+        else
+        {
+            CsvStatisticsWriter.addEmptyValues( joiner, 2 );
+        }
+
+        // Compose any descriptions with a delimiter
+        StringJoiner description = new StringJoiner( LIST_DELIMITER );
+        geometries.stream()
+                  .map( Geometry::getDescription )
+                  .forEach( names::add );
+
+        this.append( joiner, description.toString(), true );
+
+        return joiner;
+    }
+
+    /**
+     * Attempts to create a multi-part geometry from single-part geometries. TODO: consider using a geospatial library
+     * for this. A limitation of this method as currently written is that it attempts to aggregate the geometries into
+     * multi-part geometries, rather than simply collect them. Unfortunately, qgis and probably other tools do not 
+     * currently support geometry collections, only multi-part geometries. If they ever do, consider upgrading this 
+     * method as JTS and WKT both support a geometry collection and it is a much better modeling choice. Currently, 
+     * if this method receives multiple polygons, for example, it will form the union of their point geometries.
+     * 
+     * @param wkts the wkts
+     * @return the multi-part geometry
+     * @throws IllegalArgumentException if the multi-part geometry could not be constructed for whatever reason
+     */
+
+    private String getMultiPartWktFromSinglePartWkts( List<String> wkts )
+    {
+        if ( wkts.isEmpty() )
+        {
+            throw new IllegalArgumentException( "Cannot build a multi-part geometry from an empty collection." );
+        }
+
+        WKTReader reader = new WKTReader();
+        org.locationtech.jts.geom.Geometry unionGeometry = null;
+
+        if ( LOGGER.isTraceEnabled() )
+        {
+            LOGGER.trace( "Writing these WKT strings to the CSV2: {}.", wkts );
+        }
+
+        for ( String wkt : wkts )
+        {
+            try
+            {
+                org.locationtech.jts.geom.Geometry nextGeometry = reader.read( wkt );
+                if ( Objects.isNull( unionGeometry ) )
+                {
+                    unionGeometry = nextGeometry;
+                }
+                else
+                {
+                    unionGeometry = unionGeometry.union( nextGeometry );
+                }
+            }
+            catch ( ParseException e )
+            {
+                throw new IllegalArgumentException( "Failed to parse wkt " + wkt
+                                                    + " into a geometry for aggregation." );
+            }
+        }
+
+        WKTWriter writer = new WKTWriter();
+        return writer.write( unionGeometry );
     }
 
     /**
@@ -804,7 +931,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
             // Name qualifier
             this.append( joiner, "", false );
-            
+
             // Add the metric component units
             this.append( joiner, metricComponent.getUnits(), false );
 
@@ -888,7 +1015,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             // Add the metric component name, pretty printed
             MetricConstants namedMetricComponent = MetricConstants.valueOf( metricComponent.getName().name() );
             this.append( joiner, namedMetricComponent.toString(), false );
-            
+
             // Name qualifier
             this.append( joiner, "", false );
 
@@ -1029,7 +1156,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
                 // Name qualifier
                 this.append( joiner, next.getName(), false );
-                
+
                 // Add the metric component units
                 this.append( joiner, metricComponent.getUnits(), false );
 
@@ -1096,10 +1223,10 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             this.append( joiner, namedMetric.toString(), false );
             ReferenceTimeType referenceTimeType = ReferenceTimeType.valueOf( next.getReferenceTimeType().name() );
             this.append( joiner, referenceTimeType.toString(), false );
-            
+
             // Name qualifier
             this.append( joiner, "", false );
-            
+
             this.append( joiner, epochString, false );
             Instant time = Instant.ofEpochSecond( next.getTime().getSeconds(), next.getTime().getNanos() );
 
@@ -1124,10 +1251,10 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             joinerTwo.merge( poolDescription );
             this.append( joinerTwo, namedMetric.toString(), false );
             this.append( joinerTwo, "ERROR", false );
-            
+
             // Name qualifier
             this.append( joinerTwo, "", false );
-            
+
             this.append( joinerTwo, durationUnits.toString().toUpperCase(), false );
 
             com.google.protobuf.Duration protoDuration = next.getDuration();
@@ -1268,7 +1395,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
         // Add the component name            
         this.append( joiner, metricComponentName, false );
-        
+
         // Add the component qualifier            
         this.append( joiner, "", false );
 
@@ -1496,13 +1623,13 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         // Resolve the path for the CSVT file
         Path pathToCsvt = path.getParent().resolve( name );
 
-        String columnClasses = "\"String\",\"String\",\"String\",\"Integer\",\"String\",\"String\",\"WKT\",\"Integer\","
-                               + "\"String\",\"String\",\"WKT\",\"Integer\",\"String\",\"String\",\"WKT\",\"Integer\","
-                               + "\"String\",\"String\",\"String\",\"String\",\"String\",\"String\",\"String\","
-                               + "\"String\",\"String\",\"String\",\"Real\",\"Real\",\"String\",\"Real\",\"Real\","
-                               + "\"String\",\"String\",\"String\",\"Real\",\"Real\",\"String\",\"Real\",\"Real\","
-                               + "\"String\",\"String\",\"String\",\"String\",\"String\",\"String\",\"Real\",\"Real\","
-                               + "\"Real\",\"Integer\",\"Real\"";
+        String columnClasses = "\"String\",\"String\",\"String\",\"String\",\"Integer\",\"String\",\"String\",\"WKT\","
+                               + "\"Integer\",\"String\",\"String\",\"WKT\",\"Integer\",\"String\",\"String\",\"WKT\","
+                               + "\"Integer\",\"String\",\"String\",\"String\",\"String\",\"String\",\"String\","
+                               + "\"String\",\"String\",\"String\",\"String\",\"Real\",\"Real\",\"String\",\"Real\","
+                               + "\"Real\",\"String\",\"String\",\"String\",\"Real\",\"Real\",\"String\",\"Real\","
+                               + "\"Real\",\"String\",\"String\",\"String\",\"String\",\"String\",\"String\",\"Real\","
+                               + "\"Real\",\"Real\",\"Integer\",\"Real\"";
 
         // Sanity check that the number of column classes equals the number of columns
         int classCount = columnClasses.split( "," ).length;

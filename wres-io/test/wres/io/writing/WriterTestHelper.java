@@ -258,8 +258,8 @@ public class WriterTestHelper
         FeatureTuple featureTuple = new FeatureTuple( feature,
                                                       feature,
                                                       null );
-        FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
-        
+        FeatureGroup featureGroup = FeatureGroup.of( "JUNP1-JUNP1", featureTuple );
+
         Pool pool = MessageFactory.parse( featureGroup,
                                           timeOne,
                                           null,
@@ -339,8 +339,8 @@ public class WriterTestHelper
         FeatureTuple featureTuple = new FeatureTuple( feature,
                                                       feature,
                                                       null );
-        FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
-        
+        FeatureGroup featureGroup = FeatureGroup.of( "CREC1-CREC1", featureTuple );
+
         Pool pool = MessageFactory.parse( featureGroup,
                                           timeOne,
                                           null,
@@ -435,8 +435,8 @@ public class WriterTestHelper
         FeatureTuple featureTuple = new FeatureTuple( feature,
                                                       feature,
                                                       null );
-        FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
-        
+        FeatureGroup featureGroup = FeatureGroup.of( "FTSC1-FTSC1", featureTuple );
+
         Pool pool = MessageFactory.parse( featureGroup,
                                           timeOne,
                                           null,
@@ -526,8 +526,8 @@ public class WriterTestHelper
         FeatureTuple featureTuple = new FeatureTuple( feature,
                                                       feature,
                                                       null );
-        FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
-        
+        FeatureGroup featureGroup = FeatureGroup.of( "DRRC2-DRRC2", featureTuple );
+
         Pool pool = MessageFactory.parse( featureGroup,
                                           timeOne,
                                           null,
@@ -616,8 +616,8 @@ public class WriterTestHelper
         FeatureTuple featureTuple = new FeatureTuple( feature,
                                                       feature,
                                                       null );
-        FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
-        
+        FeatureGroup featureGroup = FeatureGroup.of( "DOLC2-DOLC2", featureTuple );
+
         Pool pool = MessageFactory.parse( featureGroup,
                                           timeOne,
                                           null,
@@ -690,7 +690,7 @@ public class WriterTestHelper
                                                       feature,
                                                       null );
         FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
-        
+
         Pool pool = MessageFactory.parse( featureGroup,
                                           timeOne,
                                           null,
