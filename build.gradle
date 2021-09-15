@@ -394,6 +394,10 @@ project(':wres-io')
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
 
+        // For geometries
+        implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.18.2'
+        implementation group: 'org.locationtech.jts', name: 'jts-io', version: '1.18.2', ext: 'pom'
+
         compileOnly 'net.jcip:jcip-annotations:1.0'
 
         // Because org.postgresql:postgresql uses JUL logging, bridge at runtime
