@@ -743,7 +743,7 @@ public class Project
                 LOGGER.debug( "getIntersectingFeatures will run for singleton features: {}", script );
                 Set<FeatureTuple> innerSingletons = this.readFeaturesFromScript( script, fCache );
                 singletons.addAll( innerSingletons );
-                LOGGER.debug( "getIntersectingFeatures completed for singleton features: {}", script );
+                LOGGER.debug( "getIntersectingFeatures completed for singleton features." );
             }
 
             // Now deal with feature groups that contain one or more
@@ -763,7 +763,7 @@ public class Project
                 LOGGER.debug( "getIntersectingFeatures will run for grouped features: {}", scriptForGroups );
                 Set<FeatureTuple> innerGroups = this.readFeaturesFromScript( scriptForGroups, fCache );
                 grouped.addAll( innerGroups );
-                LOGGER.debug( "getIntersectingFeatures completed for grouped features: {}", scriptForGroups );
+                LOGGER.debug( "getIntersectingFeatures completed for grouped features." );
             }
         }
 
@@ -1190,22 +1190,16 @@ public class Project
         for ( FeaturePool nextGroup : declaredGroups )
         {
             Set<FeatureTuple> groupedTuples = new HashSet<>();
-            
+            Set<FeatureTuple> noDataTuples = new HashSet<>();
+
             for ( Feature nextFeature : nextGroup.getFeature() )
             {
                 FeatureTuple foundTuple = this.findFeature( nextFeature, featuresForGroups, nextGroup );
 
                 if ( Objects.isNull( foundTuple ) )
                 {
-                    groupedTuples.clear();
-                    LOGGER.debug( "Could not find all of the features associated with feature group {}. The first "
-                                  + "missing feature had a left name of {}, a right name of {} and a baseline name "
-                                  + "of {}.",
-                                  nextGroup.getName(),
-                                  nextFeature.getLeft(),
-                                  nextFeature.getRight(),
-                                  nextFeature.getBaseline() );
-                    break;
+                    FeatureTuple noData = new FeatureTuple( nextFeature );
+                    noDataTuples.add( noData );
                 }
                 else
                 {
@@ -1213,12 +1207,30 @@ public class Project
                 }
             }
 
+            String groupName = this.getFeatureGroupNameFrom( groupedTuples, nextGroup, groupNumber );
+
             if ( !groupedTuples.isEmpty() )
             {
-                String groupName = getFeatureGroupNameFrom( groupedTuples, nextGroup, groupNumber );
                 FeatureGroup newGroup = FeatureGroup.of( groupName, groupedTuples );
                 innerGroups.add( newGroup );
                 LOGGER.debug( "Discovered a new feature group, {}.", newGroup );
+
+                if ( !noDataTuples.isEmpty() && LOGGER.isWarnEnabled() )
+                {
+                    LOGGER.warn( "While processing feature group {}, discovered {} feature tuples without time-series "
+                                 + "data. The statistics from this group will contain {} features instead of {} "
+                                 + "features. The features without time-series data are: {}.",
+                                 groupName,
+                                 noDataTuples.size(),
+                                 groupedTuples.size(),
+                                 groupedTuples.size() + noDataTuples.size(),
+                                 noDataTuples );
+                }
+            }
+            else
+            {
+                LOGGER.warn( "Skipping feature group {} because no features contained any time-series data.",
+                             groupName );
             }
         }
 

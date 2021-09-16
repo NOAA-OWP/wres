@@ -6,6 +6,7 @@ import java.util.StringJoiner;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
+import wres.config.generated.Feature;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.messages.MessageFactory;
 import wres.statistics.generated.Geometry;
@@ -23,22 +24,7 @@ public class FeatureTuple implements Comparable<FeatureTuple>
 
     public FeatureTuple( FeatureKey left, FeatureKey right, FeatureKey baseline )
     {
-        Objects.requireNonNull( left );
-        Objects.requireNonNull( right );
-
-        Geometry leftGeom = MessageFactory.parse( left );
-        Geometry rightGeom = MessageFactory.parse( right );
-        GeometryTuple.Builder builder = GeometryTuple.newBuilder()
-                                                     .setLeft( leftGeom )
-                                                     .setRight( rightGeom );
-
-        if ( Objects.nonNull( baseline ) )
-        {
-            Geometry baselineGeom = MessageFactory.parse( baseline );
-            builder.setBaseline( baselineGeom );
-        }
-
-        this.geometryTuple = builder.build();
+        this.geometryTuple = this.getGeometryFromFeatureKeys( left, right, baseline );
     }
 
     public FeatureTuple( GeometryTuple geometryTuple )
@@ -46,6 +32,26 @@ public class FeatureTuple implements Comparable<FeatureTuple>
         Objects.requireNonNull( geometryTuple );
 
         this.geometryTuple = geometryTuple;
+    }
+
+    /**
+     * @param feature a declared feature from which to build the instance, not null
+     */
+    
+    public FeatureTuple( Feature feature )
+    {
+        Objects.requireNonNull( feature );
+
+        FeatureKey left = FeatureKey.of( feature.getLeft() );
+        FeatureKey right = FeatureKey.of( feature.getRight() );
+        FeatureKey baseline = null;
+
+        if ( Objects.nonNull( feature.getBaseline() ) )
+        {
+            baseline = FeatureKey.of( feature.getBaseline() );
+        }
+
+        this.geometryTuple = this.getGeometryFromFeatureKeys( left, right, baseline );
     }
 
     public FeatureKey getLeft()
@@ -240,4 +246,33 @@ public class FeatureTuple implements Comparable<FeatureTuple>
             throw new UnsupportedOperationException( "Cannot handle non-Left/Right/Baseline" );
         }
     }
+    
+    /**
+     * @param left the left feature key, not null
+     * @param right the right feature key, not null
+     * @param baseline the baseline feature key, possibly null
+     * @return the geometry
+     * @throws NullPointerException if the left or right features are null
+     */
+    
+    private GeometryTuple getGeometryFromFeatureKeys( FeatureKey left, FeatureKey right, FeatureKey baseline )
+    {
+        Objects.requireNonNull( left );
+        Objects.requireNonNull( right );
+
+        Geometry leftGeom = MessageFactory.parse( left );
+        Geometry rightGeom = MessageFactory.parse( right );
+        GeometryTuple.Builder builder = GeometryTuple.newBuilder()
+                                                     .setLeft( leftGeom )
+                                                     .setRight( rightGeom );
+
+        if ( Objects.nonNull( baseline ) )
+        {
+            Geometry baselineGeom = MessageFactory.parse( baseline );
+            builder.setBaseline( baselineGeom );
+        }
+
+        return builder.build();
+    }
+    
 }
