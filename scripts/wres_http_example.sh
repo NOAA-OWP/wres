@@ -25,9 +25,9 @@ main()
 # 0. Identify the host and locate the .pem CA file. 
 # ==================================================================
 
-# Identify  the name of the COWRES host to be communcated with.  Normally, it
-# wiil be this:
-    host=wres.***REMOVED***.***REMOVED***
+# Identify  the name of the COWRES host to be communcated with. Specify the
+# host accordingly, below.
+    host=localhost
     echo "We are using the $host environment in this example."
     echo ""
 
