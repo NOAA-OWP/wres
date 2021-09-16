@@ -281,7 +281,10 @@ public class Validation
                                  .isEmpty() )
              && ( Objects.isNull( pairDeclaration.getFeatureService() )
                   || Objects.isNull( pairDeclaration.getFeatureService()
-                                                    .getBaseUrl() ) ) )
+                                                    .getBaseUrl() ) )
+             && ( Objects.isNull( pairDeclaration.getFeatureGroup() )
+                  || pairDeclaration.getFeatureGroup()
+                                    .isEmpty() ) )
         {
             noFeatureDeclaration = true;
         }
@@ -294,9 +297,8 @@ public class Validation
             if ( LOGGER.isWarnEnabled() )
             {
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + ": at least one data source declaration required"
-                             + " <feature> or <featureService> declaration but"
-                             + " none was declared.",
+                             + ": at least one data source declaration required <feature> or <featureGroup> or "
+                             + "<featureService> declaration but none was declared.",
                              projectConfigPlus.getOrigin(),
                              firstSourceThatRequiresFeatures.sourceLocation()
                                                             .getLineNumber(),
