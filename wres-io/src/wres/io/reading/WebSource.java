@@ -71,6 +71,12 @@ import wres.system.SystemSettings;
  */
 class WebSource implements Callable<List<IngestResult>>
 {
+    private static final String COULD_NOT_CREATE_URI_FROM = "Could not create URI from ";
+
+    private static final String AND = " and ";
+
+    private static final String SLASH = "/";
+
     private static final Logger LOGGER = LoggerFactory.getLogger( WebSource.class );
 
     private static final String ISSUED_DATES_ERROR_MESSAGE =
@@ -330,7 +336,7 @@ class WebSource implements Callable<List<IngestResult>>
                                              range,
                                              featureBlock );
 
-                        DataSource dataSource =
+                        DataSource dSource =
                                 DataSource.of( disposition,
                                                this.getSourceConfig(),
                                                this.getDataSourceConfig(),
@@ -341,7 +347,7 @@ class WebSource implements Callable<List<IngestResult>>
                                                this.getDataSource()
                                                    .getLinks(),
                                                uri );
-                        LOGGER.debug( "Created datasource {}", dataSource );
+                        LOGGER.debug( "Created datasource {}", dSource );
 
                         IngestSaver ingestSaver =
                                 IngestSaver.createTask()
@@ -352,7 +358,7 @@ class WebSource implements Callable<List<IngestResult>>
                                            .withVariablesCache( this.getVariablesCache() )
                                            .withEnsemblesCache( this.getEnsemblesCache() )
                                            .withMeasurementUnitsCache( this.getMeasurementUnitsCache() )
-                                           .withDataSource( dataSource )
+                                           .withDataSource( dSource )
                                            .withProject( this.getProjectConfig() )
                                            .withoutHash()
                                            .withLockManager( this.getLockManager() )
@@ -425,7 +431,7 @@ class WebSource implements Callable<List<IngestResult>>
                         continue;
                     }
 
-                    DataSource dataSource =
+                    DataSource dSource =
                             DataSource.of( disposition,
                                            this.getSourceConfig(),
                                            this.getDataSourceConfig(),
@@ -436,7 +442,7 @@ class WebSource implements Callable<List<IngestResult>>
                                            this.getDataSource()
                                                .getLinks(),
                                            uri );
-                    LOGGER.debug( "Created datasource {}", dataSource);
+                    LOGGER.debug( "Created datasource {}", dSource);
 
                     IngestSaver ingestSaver =
                             IngestSaver.createTask()
@@ -447,7 +453,7 @@ class WebSource implements Callable<List<IngestResult>>
                                        .withVariablesCache( this.getVariablesCache() )
                                        .withEnsemblesCache( this.getEnsemblesCache() )
                                        .withMeasurementUnitsCache( this.getMeasurementUnitsCache() )
-                                       .withDataSource( dataSource )
+                                       .withDataSource( dSource )
                                        .withProject( this.getProjectConfig() )
                                        .withoutHash()
                                        .withLockManager( this.getLockManager() )
@@ -584,7 +590,7 @@ class WebSource implements Callable<List<IngestResult>>
 
     /**
      * If this source needs features to be recomposed into blocks of features.
-     * @return true if recomposition neeeded.
+     * @return true if recomposition needed.
      */
     private boolean usesFeatureBlocks()
     {
@@ -702,8 +708,7 @@ class WebSource implements Callable<List<IngestResult>>
         else if ( this.isWrdsAhpsSource( dataSource ) )
         {
             return this.createWrdsAhpsRanges( declaration,
-                                              dataSource,
-                                              nowDate );
+                                              dataSource );
         }
         else
         {
@@ -713,8 +718,7 @@ class WebSource implements Callable<List<IngestResult>>
     }
 
     private Set<Pair<Instant,Instant>> createWrdsAhpsRanges( ProjectConfig declaration,
-                                                             DataSource dataSource,
-                                                             OffsetDateTime nowDate )
+                                                             DataSource dataSource )
     {
         return this.createSimpleRange( declaration, dataSource );
     }
@@ -1101,7 +1105,7 @@ class WebSource implements Callable<List<IngestResult>>
         {
             LOGGER.warn( "Expected URI like '"
                          + "https://nwis.waterservices.usgs.gov/nwis/iv'"
-                         + " but instead got " + baseUri.toString() );
+                         + " but instead got {}.", baseUri.toString() );
         }
 
         Map<String, String> urlParameters = createUsgsUrlParameters( range,
@@ -1131,19 +1135,16 @@ class WebSource implements Callable<List<IngestResult>>
         String basePath = baseUri.getPath();
 
         // Tolerate either a slash at end or not.
-        if ( !basePath.endsWith( "/" ) )
+        if ( !basePath.endsWith( SLASH ) )
         {
-            basePath = basePath + "/";
+            basePath = basePath + SLASH;
         }
         
         //Add nws_lid to the end of the path.
         //TODO Remove the outer if-check once the old, 1.1 API is gone. 
-        if (!basePath.contains( "v1.1" ))
+        if (!basePath.contains( "v1.1" ) && !basePath.endsWith("nws_lid/"))
         {
-            if (!basePath.endsWith("nws_lid/"))
-            {
-                basePath = basePath + "nws_lid/";
-            }
+            basePath = basePath + "nws_lid/";
         }
 
         Map<String, String> wrdsParameters = createWrdsAhpsUrlParameters( issuedRange,
@@ -1160,9 +1161,9 @@ class WebSource implements Callable<List<IngestResult>>
         }
         catch ( URISyntaxException use )
         {
-            throw new IllegalArgumentException( "Could not create URI from "
+            throw new IllegalArgumentException( COULD_NOT_CREATE_URI_FROM
                                                 + this.getBaseUri().toString()
-                                                + " and "
+                                                + AND
                                                 + pathWithLocation, use );
         }
 
@@ -1200,9 +1201,9 @@ class WebSource implements Callable<List<IngestResult>>
         String basePath = baseUri.getPath();
 
         // Tolerate either a slash at end or not.
-        if ( !basePath.endsWith( "/" ) )
+        if ( !basePath.endsWith( SLASH ) )
         {
-            basePath = basePath + "/";
+            basePath = basePath + SLASH;
         }
 
         boolean isEnsemble = dataSource.getContext()
@@ -1222,7 +1223,7 @@ class WebSource implements Callable<List<IngestResult>>
 
         String featureNamesCsv = joiner.toString();
         String pathWithLocation = basePath + variableName + "/nwm_feature_id/"
-                                  + featureNamesCsv + "/";
+                                  + featureNamesCsv + SLASH;
 
         if ( pathWithLocation.length() > 1960 )
         {
@@ -1240,9 +1241,9 @@ class WebSource implements Callable<List<IngestResult>>
         }
         catch ( URISyntaxException use )
         {
-            throw new IllegalArgumentException( "Could not create URI from "
+            throw new IllegalArgumentException( COULD_NOT_CREATE_URI_FROM
                                                 + this.getBaseUri().toString()
-                                                + " and "
+                                                + AND
                                                 + pathWithLocation, use );
         }
 
@@ -1416,8 +1417,8 @@ class WebSource implements Callable<List<IngestResult>>
         }
         catch ( URISyntaxException e )
         {
-            throw new IllegalArgumentException( "Could not create URI from "
-                                                + uri.toString() + " and "
+            throw new IllegalArgumentException( COULD_NOT_CREATE_URI_FROM
+                                                + uri.toString() + AND
                                                 + urlParameters.toString(), e );
         }
     }

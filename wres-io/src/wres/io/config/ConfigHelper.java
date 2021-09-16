@@ -12,6 +12,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -494,8 +495,15 @@ public class ConfigHelper
                                                         DataSourceConfig sourceDeclaration )
     {
         SortedSet<String> featureNames = new TreeSet<>();
-        List<Feature> featuresConfigured = projectDeclaration.getPair()
-                                                             .getFeature();
+        
+        // Collect the features from the singleton groups and multi-feature groups
+        PairConfig pairConfig = projectDeclaration.getPair();
+        List<Feature> featuresConfigured = new ArrayList<>( pairConfig.getFeature() );
+        List<Feature> groupedFeatures = pairConfig.getFeatureGroup()
+                                                  .stream()
+                                                  .flatMap( next -> next.getFeature().stream() )
+                                                  .collect( Collectors.toList() );
+        featuresConfigured.addAll( groupedFeatures );
 
         if ( featuresConfigured.isEmpty() )
         {
