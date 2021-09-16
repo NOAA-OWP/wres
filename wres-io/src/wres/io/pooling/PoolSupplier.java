@@ -310,7 +310,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
         }
 
         // Build a separate mini-pool for each feature tuple, then combine them
-        PoolOfPairs.Builder<L, R> builder = new PoolOfPairs.Builder<>();
 
         // Must be some left data plus right or baseline data, otherwise it's an empty pool
         if ( leftData.isEmpty() || ( rightData.isEmpty() && Objects.isNull( this.baselineGenerator )
@@ -319,39 +318,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
             return this.getEmptyPool( leftData.size(), rightData.size(), baselineData.size() );
         }
 
-        // Get the mapped series
-        Map<FeatureKey, List<TimeSeries<L>>> mappedLeft =
-                this.getMappedSeries( leftData );
-        Map<FeatureKey, List<TimeSeries<R>>> mappedRight =
-                this.getMappedSeries( rightData );
-        Map<FeatureKey, List<TimeSeries<R>>> mappedBaseline = null;
-
-        if ( Objects.nonNull( baselineData ) )
-        {
-            mappedBaseline = this.getMappedSeries( baselineData );
-        }
-
-        // Iterate the tuples
-        Set<FeatureTuple> tuples = this.metadata.getFeatureTuples();
-
-        LOGGER.debug( "Discovered the following feature tuples to iterate: {}.", tuples );
-
-        for ( FeatureTuple nextTuple : tuples )
-        {
-            List<TimeSeries<L>> l = mappedLeft.get( nextTuple.getLeft() );
-            List<TimeSeries<R>> r = mappedRight.get( nextTuple.getRight() );
-            List<TimeSeries<R>> b = null;
-
-            if ( Objects.nonNull( baselineData ) )
-            {
-                b = mappedBaseline.get( nextTuple.getBaseline() );
-            }
-
-            Pool<Pair<L, R>> miniPool = this.createPoolPerFeatureTuple( nextTuple, l, r, b );
-            builder.addPoolOfPairs( miniPool );
-        }
-
-        Pool<Pair<L, R>> returnMe = builder.build();
+        Pool<Pair<L, R>> returnMe = this.createPool( leftData, rightData, baselineData );
 
         poolMonitor.commit();
 
@@ -681,6 +648,74 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
         {
             return new PoolSupplier<>( this );
         }
+    }
+
+    /**
+     * @param leftData the left-ish time-series data
+     * @param rightData the right-ish time-series data
+     * @param baselineData the baseline-ish time-series data
+     * @return the pool
+     */
+
+    private Pool<Pair<L, R>> createPool( List<TimeSeries<L>> leftData,
+                                         List<TimeSeries<R>> rightData,
+                                         List<TimeSeries<R>> baselineData )
+    {
+
+        PoolOfPairs.Builder<L, R> builder = new PoolOfPairs.Builder<>();
+
+        // Get the mapped series
+        Map<FeatureKey, List<TimeSeries<L>>> mappedLeft =
+                this.getMappedSeries( leftData );
+        Map<FeatureKey, List<TimeSeries<R>>> mappedRight =
+                this.getMappedSeries( rightData );
+        Map<FeatureKey, List<TimeSeries<R>>> mappedBaseline = null;
+
+        if ( Objects.nonNull( baselineData ) )
+        {
+            mappedBaseline = this.getMappedSeries( baselineData );
+        }
+
+        // Iterate the tuples
+        Set<FeatureTuple> tuples = this.metadata.getFeatureTuples();
+
+        LOGGER.debug( "Discovered the following feature tuples to iterate: {}.", tuples );
+
+        Set<FeatureTuple> noData = new HashSet<>();
+
+        for ( FeatureTuple nextTuple : tuples )
+        {
+            if ( !mappedLeft.containsKey( nextTuple.getLeft() )
+                 || !mappedRight.containsKey( nextTuple.getRight() ) )
+            {
+                noData.add( nextTuple );
+            }
+            else
+            {
+                List<TimeSeries<L>> l = mappedLeft.get( nextTuple.getLeft() );
+                List<TimeSeries<R>> r = mappedRight.get( nextTuple.getRight() );
+                List<TimeSeries<R>> b = null;
+
+                if ( Objects.nonNull( baselineData ) )
+                {
+                    b = mappedBaseline.get( nextTuple.getBaseline() );
+                }
+
+                Pool<Pair<L, R>> miniPool = this.createPoolPerFeatureTuple( nextTuple, l, r, b );
+                builder.addPoolOfPairs( miniPool );
+            }
+        }
+
+        if ( LOGGER.isWarnEnabled() && !noData.isEmpty() )
+        {
+            LOGGER.warn( "While building pool {}, discovered insufficient time-series for {} features as follows: {}. "
+                         + "These features will not be represented in the statistics for this pool.",
+                         this.metadata,
+                         noData.size(),
+                         noData );
+        }
+
+        return builder.build();
     }
 
     /**
