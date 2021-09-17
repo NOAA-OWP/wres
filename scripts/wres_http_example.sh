@@ -260,9 +260,9 @@ EOF
             post_result_http_code=$( echo -n "$post_result" | grep HTTP | tail -n 1 | cut -d' ' -f2 )
             if [ "$post_result_http_code" -eq "201" ] || [ "$post_result_http_code" -eq "200" ]
             then
-                echo "The response code to posting left data was successful: $post_result_http_code"
+                echo "The response code to posting right data was successful: $post_result_http_code"
             else
-                echo "The response code to posting left data was a failure: $post_result_http_code"
+                echo "The response code to posting right data was a failure: $post_result_http_code"
                 echo "Continuing with the evaluation to ensure it is not left in a hanging state."
             fi
         done 
