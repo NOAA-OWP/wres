@@ -179,8 +179,8 @@ final class DatabaseSettings
             // MySQL and H2 use milliseconds, not seconds.
             mysqlProperties.put( "max_statement_time",
                                  this.getQueryTimeout() * 1000 );
-            h2Properties.put( "maxQueryTimeout",
-                              this.getQueryTimeout() * 1000 );
+
+            // H2 MAX_QUERY_TIMEOUT property is added to the jdbc url below.
         }
 
         postgresqlProperties.putAll( commonProperties );
@@ -196,7 +196,16 @@ final class DatabaseSettings
 
         if ( Objects.nonNull( this.getJdbcUrl() ) )
         {
-            h2Properties.put( "url", this.getJdbcUrl() );
+            String h2JdbcUrl = this.getJdbcUrl();
+
+            if ( this.getQueryTimeout() > 0 )
+            {
+                h2JdbcUrl = h2JdbcUrl
+                            + ";MAX_QUERY_TIMEOUT="
+                            + this.getQueryTimeout() * 1000;
+            }
+
+            h2Properties.put( "url", h2JdbcUrl );
         }
 
         mapping.put( "h2", h2Properties );
