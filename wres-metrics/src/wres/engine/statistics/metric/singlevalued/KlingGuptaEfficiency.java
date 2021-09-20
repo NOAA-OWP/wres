@@ -35,7 +35,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * that contains the relevant components for computing both, including the marginal means and variances and the 
  * covariances. Do the same for any other scores that uses these components.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public class KlingGuptaEfficiency extends DecomposableScore<Pool<Pair<Double, Double>>>
 {

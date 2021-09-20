@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.discreteprobability;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -130,7 +131,7 @@ public final class BrierSkillScoreTest
     @Test
     public void testGetName()
     {
-        assertTrue( this.brierSkillScore.getName().equals( MetricConstants.BRIER_SKILL_SCORE.toString() ) );
+        assertEquals( MetricConstants.BRIER_SKILL_SCORE.toString(), this.brierSkillScore.getName() );
     }
 
     /**
@@ -160,7 +161,7 @@ public final class BrierSkillScoreTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( this.brierSkillScore.getScoreOutputGroup() == MetricGroup.NONE );
+        assertSame( MetricGroup.NONE, this.brierSkillScore.getScoreOutputGroup() );
     }
 
     /**

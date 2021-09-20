@@ -2,8 +2,8 @@ package wres.engine.statistics.metric.singlevalued;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 
@@ -53,12 +53,12 @@ public final class MeanAbsoluteErrorTest
         //Check the results
         DoubleScoreStatisticOuter actual = this.mae.apply( input );
 
-        DoubleScoreMetricComponent metricComponent = MeanAbsoluteError.METRIC.getComponents( 0 )
-                                                                             .toBuilder()
-                                                                             .setUnits( input.getMetadata()
-                                                                                             .getMeasurementUnit()
-                                                                                             .toString() )
-                                                                             .build();
+        DoubleScoreMetricComponent metricComponent = MeanAbsoluteError.METRIC_INNER.getComponents( 0 )
+                                                                                   .toBuilder()
+                                                                                   .setUnits( input.getMetadata()
+                                                                                                   .getMeasurementUnit()
+                                                                                                   .toString() )
+                                                                                   .build();
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setMetric( metricComponent )
@@ -66,10 +66,10 @@ public final class MeanAbsoluteErrorTest
                                                                                .build();
 
         DoubleScoreStatistic expected = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( DoubleScoreMetric.newBuilder()
-                                                                                      .setName( MetricName.MEAN_ABSOLUTE_ERROR ) )
-                                                         .addStatistics( component )
-                                                         .build();
+                                                            .setMetric( DoubleScoreMetric.newBuilder()
+                                                                                         .setName( MetricName.MEAN_ABSOLUTE_ERROR ) )
+                                                            .addStatistics( component )
+                                                            .build();
 
         assertEquals( expected, actual.getData() );
     }
@@ -89,32 +89,32 @@ public final class MeanAbsoluteErrorTest
     @Test
     public void testGetName()
     {
-        assertTrue( mae.getName().equals( MetricConstants.MEAN_ABSOLUTE_ERROR.toString() ) );
+        assertEquals( MetricConstants.MEAN_ABSOLUTE_ERROR.toString(), this.mae.getName() );
     }
 
     @Test
     public void testIsDecomposable()
     {
-        assertFalse( mae.isDecomposable() );
+        assertFalse( this.mae.isDecomposable() );
     }
 
     @Test
     public void testIsSkillScore()
     {
-        assertFalse( mae.isSkillScore() );
+        assertFalse( this.mae.isSkillScore() );
     }
 
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( mae.getScoreOutputGroup() == MetricGroup.NONE );
+        assertSame( MetricGroup.NONE, this.mae.getScoreOutputGroup() );
     }
 
     @Test
     public void testExceptionOnNullInput()
     {
         PoolException actual = assertThrows( PoolException.class,
-                                                   () -> this.mae.apply( null ) );
+                                             () -> this.mae.apply( null ) );
 
         assertEquals( "Specify non-null input to the '" + this.mae.getName() + "'.", actual.getMessage() );
     }

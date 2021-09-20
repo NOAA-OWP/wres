@@ -2,8 +2,8 @@ package wres.engine.statistics.metric.singlevalued;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 
@@ -53,7 +53,7 @@ public final class MeanErrorTest
         //Check the results
         DoubleScoreStatisticOuter actual = this.meanError.apply( input );
 
-        DoubleScoreMetricComponent metricComponent = MeanError.METRIC.getComponents( 0 )
+        DoubleScoreMetricComponent metricComponent = MeanError.METRIC_INNER.getComponents( 0 )
                                                                      .toBuilder()
                                                                      .setUnits( input.getMetadata()
                                                                                      .getMeasurementUnit()
@@ -89,7 +89,7 @@ public final class MeanErrorTest
     @Test
     public void testGetName()
     {
-        assertTrue( this.meanError.getName().equals( MetricConstants.MEAN_ERROR.toString() ) );
+        assertEquals( MetricConstants.MEAN_ERROR.toString(), this.meanError.getName() );
     }
 
     @Test
@@ -107,7 +107,7 @@ public final class MeanErrorTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( this.meanError.getScoreOutputGroup() == MetricGroup.NONE );
+        assertSame( MetricGroup.NONE, this.meanError.getScoreOutputGroup() );
     }
 
     @Test

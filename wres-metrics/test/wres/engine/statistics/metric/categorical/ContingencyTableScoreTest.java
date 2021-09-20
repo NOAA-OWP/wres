@@ -2,11 +2,9 @@ package wres.engine.statistics.metric.categorical;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -20,6 +18,7 @@ import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.Boilerplate;
+import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
@@ -27,7 +26,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 /**
  * Tests the {@link ContingencyTableScore}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class ContingencyTableScoreTest
 {
@@ -107,39 +106,13 @@ public final class ContingencyTableScoreTest
     }
 
     /**
-     * Checks that a {@link ContingencyTableScore} accepts input with the correct shape.
-     * @throws PoolException if the input is not accepted
-     */
-
-    @Test
-    public void testContingencyTableScoreAcceptsCorrectInput()
-    {
-        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( this.table, meta );
-
-        this.cs.is2x2ContingencyTable( expected, this.cs );
-    }
-
-    /**
-     * Checks that input with the correct shape is accepted for a table of arbitrary size.
-     * @throws PoolException if the input is not accepted
-     */
-
-    @Test
-    public void testContingencyTableScoreAcceptsCorrectInputForLargeTable()
-    {
-        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( this.table, meta );
-
-        this.cs.isContingencyTable( expected, this.cs );
-    }
-
-    /**
      * Checks that {@link ContingencyTableScore#getCollectionOf()} returns {@link MetricConstants#CONTINGENCY_TABLE}.
      */
 
     @Test
     public void testGetCollectionOf()
     {
-        assertTrue( this.cs.getCollectionOf() == MetricConstants.CONTINGENCY_TABLE );
+        assertSame( MetricConstants.CONTINGENCY_TABLE, this.cs.getCollectionOf() );
     }
 
     /**
@@ -179,7 +152,7 @@ public final class ContingencyTableScoreTest
     @Test
     public void testGetScoreOutputGroupReturnsNone()
     {
-        assertTrue( cs.getScoreOutputGroup() == MetricGroup.NONE );
+        assertSame( MetricGroup.NONE, cs.getScoreOutputGroup() );
     }
 
     /**
@@ -217,8 +190,8 @@ public final class ContingencyTableScoreTest
     @Test
     public void testExceptionOnNullInputInternal()
     {
-        PoolException exception =
-                assertThrows( PoolException.class,
+        MetricCalculationException exception =
+                assertThrows( MetricCalculationException.class,
                               () -> cs.is2x2ContingencyTable( (DoubleScoreStatisticOuter) null, cs ) );
 
         assertEquals( SPECIFY_NON_NULL_INPUT_TO_THE_THREAT_SCORE, exception.getMessage() );
@@ -232,8 +205,8 @@ public final class ContingencyTableScoreTest
     @Test
     public void testExceptionOnNullInputInternalForLargeTable()
     {
-        PoolException exception =
-                assertThrows( PoolException.class,
+        MetricCalculationException exception =
+                assertThrows( MetricCalculationException.class,
                               () -> cs.isContingencyTable( (DoubleScoreStatisticOuter) null, cs ) );
 
         assertEquals( SPECIFY_NON_NULL_INPUT_TO_THE_THREAT_SCORE, exception.getMessage() );
@@ -246,11 +219,11 @@ public final class ContingencyTableScoreTest
     @Test
     public void testExceptionOnInputThatIsTooSmall()
     {
-        PoolException exception =
-                assertThrows( PoolException.class,
-                              () -> cs.is2x2ContingencyTable( DoubleScoreStatisticOuter.of( this.invalidTable,
-                                                                                            this.meta ),
-                                                              this.cs ) );
+        DoubleScoreStatisticOuter statistic = DoubleScoreStatisticOuter.of( this.invalidTable, this.meta );
+
+        MetricCalculationException exception =
+                assertThrows( MetricCalculationException.class,
+                              () -> cs.is2x2ContingencyTable( statistic, this.cs ) );
 
         Set<MetricConstants> expected = Set.of( MetricConstants.TRUE_POSITIVES,
                                                 MetricConstants.TRUE_NEGATIVES,
@@ -272,11 +245,11 @@ public final class ContingencyTableScoreTest
     @Test
     public void testExceptionOnNullMetric()
     {
-        PoolException exception =
-                assertThrows( PoolException.class,
-                              () -> this.cs.is2x2ContingencyTable( DoubleScoreStatisticOuter.of( this.invalidTable,
-                                                                                                 this.meta ),
-                                                                   null ) );
+        DoubleScoreStatisticOuter statistic = DoubleScoreStatisticOuter.of( this.invalidTable, this.meta );
+
+        MetricCalculationException exception =
+                assertThrows( MetricCalculationException.class,
+                              () -> this.cs.is2x2ContingencyTable( statistic, null ) );
 
         assertEquals( SPECIFY_NON_NULL_INPUT_TO_THE_THREAT_SCORE, exception.getMessage() );
     }
@@ -288,16 +261,29 @@ public final class ContingencyTableScoreTest
     @Test
     public void testExceptionOnNullMetricForLargeTable()
     {
-        Map<MetricConstants, Double> table = new HashMap<>();
-        table.put( MetricConstants.TRUE_POSITIVES, 82.0 );
+        DoubleScoreStatisticOuter statistic = DoubleScoreStatisticOuter.of( this.invalidTable, this.meta );
 
-        PoolException exception =
-                assertThrows( PoolException.class,
-                              () -> this.cs.isContingencyTable( DoubleScoreStatisticOuter.of( this.invalidTable,
-                                                                                              this.meta ),
-                                                                null ) );
+        MetricCalculationException exception =
+                assertThrows( MetricCalculationException.class,
+                              () -> this.cs.isContingencyTable( statistic, null ) );
 
         assertEquals( SPECIFY_NON_NULL_INPUT_TO_THE_THREAT_SCORE, exception.getMessage() );
     }
+
+    @Test
+    public void testExceptionOnInputThatIsNotSquare()
+    {
+        DoubleScoreStatisticOuter statistic = DoubleScoreStatisticOuter.of( this.invalidTable, this.meta );
+        ProbabilityOfDetection metric = ProbabilityOfDetection.of();
+
+        MetricCalculationException exception =
+                assertThrows( MetricCalculationException.class,
+                              () -> this.cs.isContingencyTable( statistic, metric ) );
+
+        assertEquals( "Expected an intermediate result with a square number of elements when computing the "
+                      + "'PROBABILITY OF DETECTION': [1].",
+                      exception.getMessage() );
+    }
+
 
 }

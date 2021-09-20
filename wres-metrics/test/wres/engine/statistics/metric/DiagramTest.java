@@ -1,6 +1,6 @@
 package wres.engine.statistics.metric;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
@@ -25,7 +25,7 @@ public final class DiagramTest
     {
         QuantileQuantileDiagram qqd = QuantileQuantileDiagram.of();
 
-        assertTrue( "QUANTILE QUANTILE DIAGRAM".equals( qqd.toString() ) );
+        assertEquals( "QUANTILE QUANTILE DIAGRAM", qqd.toString() );
     }     
 
 }

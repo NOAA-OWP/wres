@@ -12,6 +12,7 @@ import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
+import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.OrdinaryScore;
 
 /**
@@ -76,34 +77,34 @@ abstract class ContingencyTableScore extends OrdinaryScore<Pool<Pair<Boolean, Bo
      * 
      * @param output the output to check
      * @param metric the metric to use when throwing an informative exception
-     * @throws PoolException if the output is not a valid input for an intermediate calculation
+     * @throws MetricCalculationException if the output is not a valid input for an intermediate calculation
      */
 
     void isContingencyTable( final DoubleScoreStatisticOuter output, final Metric<?, ?> metric )
     {
         if ( Objects.isNull( output ) )
         {
-            throw new PoolException( nullString );
+            throw new MetricCalculationException( nullString );
         }
         if ( Objects.isNull( metric ) )
         {
-            throw new PoolException( nullString );
+            throw new MetricCalculationException( nullString );
         }
         int count = output.getComponents().size();
 
         double sr = Math.sqrt( count );
 
         // If square root is an integer 
-        boolean square = sr - Math.floor( sr ) == 0;
+        boolean square = sr > 1 && sr - Math.floor( sr ) == 0;
 
         if ( !square )
         {
-            throw new PoolException( "Expected an intermediate result with a square number of elements when "
-                                           + "computing the '"
-                                           + metric
-                                           + "': ["
-                                           + count
-                                           + "]." );
+            throw new MetricCalculationException( "Expected an intermediate result with a square number of elements "
+                                                  + "when computing the '"
+                                                  + metric
+                                                  + "': ["
+                                                  + count
+                                                  + "]." );
         }
     }
 
@@ -113,18 +114,18 @@ abstract class ContingencyTableScore extends OrdinaryScore<Pool<Pair<Boolean, Bo
      * 
      * @param output the output to check
      * @param metric the metric to use when throwing an informative exception
-     * @throws PoolException if the output is not a valid input for an intermediate calculation
+     * @throws MetricCalculationException if the output is not a valid input for an intermediate calculation
      */
 
     void is2x2ContingencyTable( final DoubleScoreStatisticOuter output, final Metric<?, ?> metric )
     {
         if ( Objects.isNull( output ) )
         {
-            throw new PoolException( nullString );
+            throw new MetricCalculationException( nullString );
         }
         if ( Objects.isNull( metric ) )
         {
-            throw new PoolException( nullString );
+            throw new MetricCalculationException( nullString );
         }
 
         Set<MetricConstants> expected = Set.of( MetricConstants.TRUE_POSITIVES,
@@ -134,11 +135,11 @@ abstract class ContingencyTableScore extends OrdinaryScore<Pool<Pair<Boolean, Bo
 
         if ( !expected.equals( output.getComponents() ) )
         {
-            throw new PoolException( "Expected an intermediate result with elements "
-                                           + expected
-                                           + " but found elements "
-                                           + output.getComponents()
-                                           + "." );
+            throw new MetricCalculationException( "Expected an intermediate result with elements "
+                                                  + expected
+                                                  + " but found elements "
+                                                  + output.getComponents()
+                                                  + "." );
         }
 
     }

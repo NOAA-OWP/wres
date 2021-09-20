@@ -1,5 +1,7 @@
 package wres.engine.statistics.metric;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Objects;
@@ -17,7 +19,7 @@ public final class MetricParameterExceptionTest
     /**
      * Expected exception message.
      */
-    
+
     private static final String TEST_EXCEPTION = "Test exception.";
 
     /**
@@ -28,15 +30,15 @@ public final class MetricParameterExceptionTest
     public void testMetricConfigurationException()
     {
         assertTrue( Objects.nonNull( new MetricParameterException() ) );
-        
-        MetricParameterException f = new MetricParameterException(TEST_EXCEPTION);
-        assertTrue( Objects.nonNull( f ) );
-        assertTrue( f.getMessage().equals( TEST_EXCEPTION ) );
-        
-        MetricParameterException g = new MetricParameterException(f.getMessage(), f);
-        
-        assertTrue( Objects.nonNull( f ) );
-        assertTrue( g.getMessage().equals( TEST_EXCEPTION ) );
-        assertTrue( g.getCause().equals( f ) );
+
+        MetricParameterException f = new MetricParameterException( TEST_EXCEPTION );
+        assertNotNull( f );
+        assertEquals( TEST_EXCEPTION, f.getMessage() );
+
+        MetricParameterException g = new MetricParameterException( f.getMessage(), f );
+
+        assertNotNull( g );
+        assertEquals( TEST_EXCEPTION, g.getMessage() );
+        assertEquals( f, g.getCause() );
     }
 }

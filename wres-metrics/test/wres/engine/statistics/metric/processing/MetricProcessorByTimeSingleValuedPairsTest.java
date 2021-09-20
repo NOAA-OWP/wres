@@ -217,8 +217,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
             Pool<TimeSeries<Pair<Double, Double>>> next =
                     new Pool.Builder<TimeSeries<Pair<Double, Double>>>().addPool( pairs )
-                                                                             .setMetadata( meta )
-                                                                             .build();
+                                                                        .setMetadata( meta )
+                                                                        .build();
 
             StatisticsForProject statistics = processor.apply( next );
             scores.addAll( statistics.getDoubleScoreStatistics() );
@@ -556,8 +556,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         Pool<TimeSeries<Pair<Double, Double>>> aggPool =
                 new Pool.Builder<TimeSeries<Pair<Double, Double>>>().addPool( first )
-                                                                         .addPool( second )
-                                                                         .build();
+                                                                    .addPool( second )
+                                                                    .build();
 
         //Compute the metrics
         StatisticsForProject project = processor.apply( aggPool );
@@ -760,8 +760,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
             Pool<TimeSeries<Pair<Double, Double>>> next =
                     new Pool.Builder<TimeSeries<Pair<Double, Double>>>().addPool( pairs )
-                                                                             .setMetadata( meta )
-                                                                             .build();
+                                                                        .setMetadata( meta )
+                                                                        .build();
 
             StatisticsForProject some = processor.apply( next );
             statistics.addAll( some.getDoubleScoreStatistics() );
@@ -870,8 +870,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
             Pool<TimeSeries<Pair<Double, Double>>> next =
                     new Pool.Builder<TimeSeries<Pair<Double, Double>>>().addPool( pairs )
-                                                                             .setMetadata( meta )
-                                                                             .build();
+                                                                        .setMetadata( meta )
+                                                                        .build();
 
             StatisticsForProject statistics = processor.apply( next );
             assertTrue( statistics.getDoubleScoreStatistics().isEmpty() );
@@ -968,8 +968,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         Pool<TimeSeries<Pair<Double, Double>>> next =
                 new Pool.Builder<TimeSeries<Pair<Double, Double>>>().addPool( pairs )
-                                                                         .setMetadata( meta )
-                                                                         .build();
+                                                                    .setMetadata( meta )
+                                                                    .build();
 
         StatisticsForProject statistics = processor.apply( next );
 
@@ -1014,14 +1014,16 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                    Arrays.asList( new MetricConfig( null, MetricConfigName.FREQUENCY_BIAS ) ),
                                    null );
 
+        ProjectConfig config = new ProjectConfig( null,
+                                                  null,
+                                                  Arrays.asList( metrics ),
+                                                  null,
+                                                  null,
+                                                  null );
+
         MetricConfigException actual =
                 assertThrows( MetricConfigException.class,
-                              () -> MetricFactory.ofMetricProcessorForSingleValuedPairs( new ProjectConfig( null,
-                                                                                                            null,
-                                                                                                            Arrays.asList( metrics ),
-                                                                                                            null,
-                                                                                                            null,
-                                                                                                            null ) ) );
+                              () -> MetricFactory.ofMetricProcessorForSingleValuedPairs( config ) );
 
         assertEquals( "Cannot configure 'FREQUENCY BIAS' without thresholds to define the "
                       + "events: add one or more thresholds to the configuration.",
@@ -1057,9 +1059,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( mockedConfig );
 
+        Pool<TimeSeries<Pair<Double, Double>>> pairs = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsTen();
+
         MetricCalculationException actual =
                 assertThrows( MetricCalculationException.class,
-                              () -> processor.apply( MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsTen() ) );
+                              () -> processor.apply( pairs ) );
 
         assertEquals( "Unable to determine quantile threshold from probability threshold: no climatological "
                       + "observations were available in the input.",

@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.categorical;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -20,6 +21,7 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
+import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.Score;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -102,7 +104,7 @@ public final class PeirceSkillScoreTest
     @Test
     public void testMetricIsNamedCorrectly()
     {
-        assertTrue( this.pss.getName().equals( MetricConstants.PEIRCE_SKILL_SCORE.toString() ) );
+        assertEquals( MetricConstants.PEIRCE_SKILL_SCORE.toString(), this.pss.getName() );
     }
 
     /**
@@ -132,7 +134,7 @@ public final class PeirceSkillScoreTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( this.pss.getScoreOutputGroup() == MetricGroup.NONE );
+        assertSame( MetricGroup.NONE, this.pss.getScoreOutputGroup() );
     }
 
     /**
@@ -142,7 +144,7 @@ public final class PeirceSkillScoreTest
     @Test
     public void testGetCollectionOf()
     {
-        assertTrue( this.pss.getCollectionOf() == MetricConstants.CONTINGENCY_TABLE );
+        assertSame( MetricConstants.CONTINGENCY_TABLE, this.pss.getCollectionOf() );
     }
 
     /**
@@ -155,7 +157,7 @@ public final class PeirceSkillScoreTest
     {
         PoolException exception =
                 assertThrows( PoolException.class,
-                              () -> this.pss.aggregate( this.pss.aggregate( (DoubleScoreStatisticOuter) null ) ) );
+                              () -> this.pss.aggregate( (DoubleScoreStatisticOuter) null ) );
 
         String expectedMessage = "Specify non-null input to the '" + this.pss.getName() + "'.";
 
@@ -183,9 +185,10 @@ public final class PeirceSkillScoreTest
                                                                                                       .setValue( 1.0 ) )
                                                          .build();
 
-        PoolException exception =
-                assertThrows( PoolException.class,
-                              () -> this.pss.aggregate( DoubleScoreStatisticOuter.of( table, this.meta ) ) );
+        DoubleScoreStatisticOuter statistic = DoubleScoreStatisticOuter.of( table, this.meta );
+
+        MetricCalculationException exception =
+                assertThrows( MetricCalculationException.class, () -> this.pss.aggregate( statistic ) );
 
         String expectedMessage = "Expected an intermediate result with a square number of elements when computing "
                                  + "the '"

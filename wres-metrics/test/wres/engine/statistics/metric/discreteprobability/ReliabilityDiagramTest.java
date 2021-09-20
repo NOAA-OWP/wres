@@ -2,7 +2,6 @@ package wres.engine.statistics.metric.discreteprobability;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -286,7 +285,7 @@ public final class ReliabilityDiagramTest
     @Test
     public void testGetName()
     {
-        assertTrue( rel.getName().equals( MetricConstants.RELIABILITY_DIAGRAM.toString() ) );
+        assertEquals( MetricConstants.RELIABILITY_DIAGRAM.toString(), this.rel.getName() );
     }
 
     /**

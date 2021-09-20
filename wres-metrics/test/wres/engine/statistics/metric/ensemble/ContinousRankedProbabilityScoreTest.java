@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.ensemble;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -205,7 +206,7 @@ public final class ContinousRankedProbabilityScoreTest
     @Test
     public void testGetName()
     {
-        assertTrue( crps.getName().equals( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE.toString() ) );
+        assertEquals( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE.toString(), crps.getName() );
     }
 
     /**
@@ -236,7 +237,7 @@ public final class ContinousRankedProbabilityScoreTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( crps.getScoreOutputGroup() == MetricGroup.NONE );
+        assertSame( MetricGroup.NONE, this.crps.getScoreOutputGroup() );
     }
 
     /**

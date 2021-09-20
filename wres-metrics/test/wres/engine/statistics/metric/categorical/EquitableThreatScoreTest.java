@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.categorical;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -14,12 +15,12 @@ import org.junit.Test;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.MetricGroup;
-import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
+import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.Score;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -102,7 +103,7 @@ public final class EquitableThreatScoreTest
     @Test
     public void testMetricIsNamedCorrectly()
     {
-        assertTrue( ets.getName().equals( MetricConstants.EQUITABLE_THREAT_SCORE.toString() ) );
+        assertEquals( MetricConstants.EQUITABLE_THREAT_SCORE.toString(), this.ets.getName() );
     }
 
     /**
@@ -132,7 +133,7 @@ public final class EquitableThreatScoreTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( ets.getScoreOutputGroup() == MetricGroup.NONE );
+        assertSame( MetricGroup.NONE,  this.ets.getScoreOutputGroup() );
     }
 
     /**
@@ -142,7 +143,7 @@ public final class EquitableThreatScoreTest
     @Test
     public void testGetCollectionOf()
     {
-        assertTrue( ets.getCollectionOf() == MetricConstants.CONTINGENCY_TABLE );
+        assertSame( MetricConstants.CONTINGENCY_TABLE, this.ets.getCollectionOf() );
     }
 
     /**
@@ -153,8 +154,8 @@ public final class EquitableThreatScoreTest
     @Test
     public void testExceptionOnNullInput()
     {
-        PoolException actual = assertThrows( PoolException.class,
-                                                   () -> this.ets.aggregate( (DoubleScoreStatisticOuter) null ) );
+        MetricCalculationException actual = assertThrows( MetricCalculationException.class,
+                                                          () -> this.ets.aggregate( (DoubleScoreStatisticOuter) null ) );
 
         assertEquals( "Specify non-null input to the '" + this.ets.getName() + "'.", actual.getMessage() );
     }

@@ -2,8 +2,8 @@ package wres.engine.statistics.metric.singlevalued;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -78,31 +78,31 @@ public final class IndexOfAgreementTest
     @Test
     public void testGetName()
     {
-        assertTrue( ioa.getName().equals( MetricConstants.INDEX_OF_AGREEMENT.toString() ) );
+        assertEquals( MetricConstants.INDEX_OF_AGREEMENT.toString(), this.ioa.getName() );
     }
 
     @Test
     public void testIsDecomposable()
     {
-        assertFalse( ioa.isDecomposable() );
+        assertFalse( this.ioa.isDecomposable() );
     }
 
     @Test
     public void testIsSkillScore()
     {
-        assertFalse( ioa.isSkillScore() );
+        assertFalse( this.ioa.isSkillScore() );
     }
 
     @Test
     public void testhasRealUnits()
     {
-        assertFalse( ioa.hasRealUnits() );
+        assertFalse( this.ioa.hasRealUnits() );
     }
 
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( ioa.getScoreOutputGroup() == MetricGroup.NONE );
+        assertSame( MetricGroup.NONE, this.ioa.getScoreOutputGroup() );
     }
 
     @Test

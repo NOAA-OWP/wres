@@ -42,7 +42,7 @@ public class Ensemble implements Comparable<Ensemble>
          * The labels, which may be empty.
          */
 
-        private final String[] labels;
+        private final String[] labs;
 
         /**
          * @param labels the labels
@@ -69,7 +69,7 @@ public class Ensemble implements Comparable<Ensemble>
 
         public String[] getLabels()
         {
-            return this.labels.clone();
+            return this.labs.clone();
         }
 
         /**
@@ -78,7 +78,7 @@ public class Ensemble implements Comparable<Ensemble>
 
         public boolean hasLabels()
         {
-            return this.labels.length > 0;
+            return this.labs.length > 0;
         }
 
         /**
@@ -93,7 +93,7 @@ public class Ensemble implements Comparable<Ensemble>
 
             // Labels are de-duplicated, so search the unordered labels, else would need to store de-duplicated ordered
             // labels to use a search that relies on order
-            for ( String next : labels )
+            for ( String next : labs )
             {
                 if ( ensembleName.equals( next ) )
                 {
@@ -119,13 +119,13 @@ public class Ensemble implements Comparable<Ensemble>
 
             Labels otherLabels = (Labels) other;
 
-            return Arrays.equals( this.labels, otherLabels.labels );
+            return Arrays.equals( this.labs, otherLabels.labs );
         }
 
         @Override
         public int hashCode()
         {
-            return Arrays.hashCode( this.labels );
+            return Arrays.hashCode( this.labs );
         }
 
         /**
@@ -164,7 +164,7 @@ public class Ensemble implements Comparable<Ensemble>
         {
             Objects.requireNonNull( labels );
 
-            this.labels = labels.clone();
+            this.labs = labels.clone();
         }
     }
 
@@ -231,9 +231,9 @@ public class Ensemble implements Comparable<Ensemble>
     {
         Objects.requireNonNull( label );
 
-        for ( int i = 0; i < this.labels.labels.length; i++ )
+        for ( int i = 0; i < this.labels.labs.length; i++ )
         {
-            if ( label.equals( this.labels.labels[i] ) )
+            if ( label.equals( this.labels.labs[i] ) )
             {
                 return this.members[i];
             }
@@ -290,7 +290,7 @@ public class Ensemble implements Comparable<Ensemble>
         {
             Comparator<String[]> compare = Comparator.nullsFirst( Arrays::compare );
 
-            return Objects.compare( labs.labels, otherLabs.labels, compare );
+            return Objects.compare( labs.labs, otherLabs.labs, compare );
         }
 
         return 0;
@@ -330,7 +330,7 @@ public class Ensemble implements Comparable<Ensemble>
 
             for ( int i = 0; i < this.members.length; i++ )
             {
-                joiner.add( "{" + this.labels.labels[i] + "," + this.members[i] + "}" );
+                joiner.add( "{" + this.labels.labs[i] + "," + this.members[i] + "}" );
             }
 
             return joiner.toString();
@@ -366,15 +366,12 @@ public class Ensemble implements Comparable<Ensemble>
         Objects.requireNonNull( members );
         Objects.requireNonNull( labels );
 
-        if ( labels.hasLabels() )
+        if ( labels.hasLabels() && members.length != labels.labs.length )
         {
-            if ( members.length != labels.labels.length )
-            {
-                throw new IllegalArgumentException( "Expected the same number of members (" + members.length
-                                                    + ") as labels ("
-                                                    + labels.labels.length
-                                                    + ")." );
-            }
+            throw new IllegalArgumentException( "Expected the same number of members (" + members.length
+                                                + ") as labels ("
+                                                + labels.labs.length
+                                                + ")." );
         }
 
         this.labels = labels;

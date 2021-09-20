@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.singlevalued;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -85,37 +86,37 @@ public final class RootMeanSquareErrorTest
     @Test
     public void testGetName()
     {
-        assertTrue( rmse.getName().equals( MetricConstants.ROOT_MEAN_SQUARE_ERROR.toString() ) );
+        assertEquals( MetricConstants.ROOT_MEAN_SQUARE_ERROR.toString(), this.rmse.getName() );
     }
 
     @Test
     public void testIsDecomposable()
     {
-        assertFalse( rmse.isDecomposable() );
+        assertFalse( this.rmse.isDecomposable() );
     }
 
     @Test
     public void testIsSkillScore()
     {
-        assertFalse( rmse.isSkillScore() );
+        assertFalse( this.rmse.isSkillScore() );
     }
 
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( rmse.getScoreOutputGroup() == MetricGroup.NONE );
+        assertSame( MetricGroup.NONE, this.rmse.getScoreOutputGroup() );
     }
 
     @Test
     public void testGetCollectionOf()
     {
-        assertTrue( rmse.getCollectionOf().equals( MetricConstants.SUM_OF_SQUARE_ERROR ) );
+        assertEquals( MetricConstants.SUM_OF_SQUARE_ERROR, this.rmse.getCollectionOf() );
     }
 
     @Test
     public void testHasRealUnits()
     {
-        assertTrue( rmse.hasRealUnits() );
+        assertTrue( this.rmse.hasRealUnits() );
     }
 
     @Test

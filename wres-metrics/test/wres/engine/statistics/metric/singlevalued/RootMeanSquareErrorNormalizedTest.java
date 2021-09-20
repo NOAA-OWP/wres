@@ -2,8 +2,8 @@ package wres.engine.statistics.metric.singlevalued;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 
@@ -96,7 +96,7 @@ public final class RootMeanSquareErrorNormalizedTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( this.rmsen.getScoreOutputGroup() == MetricGroup.NONE );
+        assertSame( MetricGroup.NONE, this.rmsen.getScoreOutputGroup() );
     }
 
     @Test

@@ -53,10 +53,10 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<Pool<Pair<Do
      * Full description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
-                                                                    .addComponents( RootMeanSquareErrorNormalized.MAIN )
-                                                                    .setName( MetricName.ROOT_MEAN_SQUARE_ERROR_NORMALIZED )
-                                                                    .build();
+    public static final DoubleScoreMetric METRIC_INNER = DoubleScoreMetric.newBuilder()
+                                                                          .addComponents( RootMeanSquareErrorNormalized.MAIN )
+                                                                          .setName( MetricName.ROOT_MEAN_SQUARE_ERROR_NORMALIZED )
+                                                                          .build();
 
     /**
      * Instance of a standard deviation.
@@ -136,7 +136,7 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<Pool<Pair<Do
 
     private RootMeanSquareErrorNormalized()
     {
-        super( FunctionFactory.squareError(), FunctionFactory.mean(), RootMeanSquareErrorNormalized.METRIC );
+        super( FunctionFactory.squareError(), FunctionFactory.mean(), RootMeanSquareErrorNormalized.METRIC_INNER );
 
         stdev = FunctionFactory.standardDeviation();
     }

@@ -15,7 +15,7 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.Co
  * between a single-valued predictand and a verifying observation. It measures the 
  * median bias of the predictand.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public class MedianError extends DoubleErrorScore<Pool<Pair<Double, Double>>>
 {
@@ -24,7 +24,7 @@ public class MedianError extends DoubleErrorScore<Pool<Pair<Double, Double>>>
      * Canonical description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC =
+    public static final DoubleScoreMetric METRIC_INNER =
             DoubleScoreMetric.newBuilder()
                              .addComponents( DoubleScoreMetricComponent.newBuilder()
                                                                        .setMinimum( Double.NEGATIVE_INFINITY )
@@ -63,7 +63,7 @@ public class MedianError extends DoubleErrorScore<Pool<Pair<Double, Double>>>
 
     private MedianError()
     {
-        super( FunctionFactory.error(), FunctionFactory.median(), MedianError.METRIC );
+        super( FunctionFactory.error(), FunctionFactory.median(), MedianError.METRIC_INNER );
     }
 
 }

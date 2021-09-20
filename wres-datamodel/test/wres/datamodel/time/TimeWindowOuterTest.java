@@ -541,11 +541,11 @@ public final class TimeWindowOuterTest
     }
 
     /**
-     * Tests the {@link TimeWindowOuter#unionWith(TimeWindowOuter)}.
+     * Tests the {@link TimeWindowOuter#unionOf(Set)}.
      */
 
     @Test
-    public void testUnionWith()
+    public void testUnionOf()
     {
         TimeWindowOuter first = TimeWindowOuter.of( SECOND_TIME,
                                                     SEVENTH_TIME,
@@ -563,7 +563,9 @@ public final class TimeWindowOuterTest
         union.add( first );
         union.add( second );
 
-        assertTrue( TimeWindowOuter.unionOf( union ).equals( expected ) );
+        TimeWindowOuter actual = TimeWindowOuter.unionOf( union );
+        
+        assertEquals( expected, actual );
 
 
         TimeWindowOuter third = TimeWindowOuter.of( SECOND_TIME,
@@ -588,8 +590,9 @@ public final class TimeWindowOuterTest
         unionTwo.add( third );
         unionTwo.add( fourth );
 
-        assertTrue( TimeWindowOuter.unionOf( unionTwo ).equals( expectedTwo ) );
-
+        TimeWindowOuter actualTwo = TimeWindowOuter.unionOf( unionTwo );
+        
+        assertEquals( expectedTwo, actualTwo );
     }
 
     @Test

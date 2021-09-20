@@ -1,8 +1,9 @@
 package wres.engine.statistics.metric;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
@@ -58,11 +59,10 @@ public final class SampleSizeTest
         assertEquals( expected, actual );
 
         //Check the parameters
-        assertTrue( "Unexpected name for the Sample Size.",
-                    ss.getName().equals( MetricConstants.SAMPLE_SIZE.toString() ) );
-        assertTrue( "The Sample Size is not decomposable.", !ss.isDecomposable() );
-        assertTrue( "The Sample Size is not a skill score.", !ss.isSkillScore() );
-        assertTrue( "The Sample Size cannot be decomposed.", ss.getScoreOutputGroup() == MetricGroup.NONE );
+        assertEquals( MetricConstants.SAMPLE_SIZE.toString(), ss.getName() );
+        assertFalse( ss.isDecomposable() );
+        assertFalse( ss.isSkillScore() );
+        assertSame( MetricGroup.NONE, ss.getScoreOutputGroup() );
     }
 
     /**

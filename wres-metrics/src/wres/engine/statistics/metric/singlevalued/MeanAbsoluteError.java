@@ -14,7 +14,7 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.Co
  * The mean absolute error applies to continuous variables and is the average unsigned difference between a
  * single-valued predictand and verifying observation. It measures the first-order bias of the predictand.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public class MeanAbsoluteError extends DoubleErrorScore<Pool<Pair<Double, Double>>>
 {
@@ -23,7 +23,7 @@ public class MeanAbsoluteError extends DoubleErrorScore<Pool<Pair<Double, Double
      * Canonical description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC =
+    public static final DoubleScoreMetric METRIC_INNER =
             DoubleScoreMetric.newBuilder()
                              .addComponents( DoubleScoreMetricComponent.newBuilder()
                                                                        .setMinimum( 0 )
@@ -62,7 +62,7 @@ public class MeanAbsoluteError extends DoubleErrorScore<Pool<Pair<Double, Double
 
     private MeanAbsoluteError()
     {
-        super( FunctionFactory.absError(), MeanAbsoluteError.METRIC );
+        super( FunctionFactory.absError(), MeanAbsoluteError.METRIC_INNER );
     }
 
 }

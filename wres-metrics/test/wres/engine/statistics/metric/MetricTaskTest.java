@@ -70,7 +70,7 @@ public final class MetricTaskTest
         // Compute the pairs
         this.pairPool.submit( futureInput );
 
-        DoubleScoreMetricComponent metricComponent = MeanError.METRIC.getComponents( 0 )
+        DoubleScoreMetricComponent metricComponent = MeanError.METRIC_INNER.getComponents( 0 )
                                                                      .toBuilder()
                                                                      .setUnits( input.getMetadata()
                                                                                      .getMeasurementUnit()

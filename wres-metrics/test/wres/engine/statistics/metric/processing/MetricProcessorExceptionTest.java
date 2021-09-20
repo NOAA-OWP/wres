@@ -1,5 +1,7 @@
 package wres.engine.statistics.metric.processing;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Objects;
@@ -19,7 +21,7 @@ public final class MetricProcessorExceptionTest
     /**
      * Expected exception message.
      */
-    
+
     private static final String TEST_EXCEPTION = "Test exception.";
 
     /**
@@ -30,15 +32,15 @@ public final class MetricProcessorExceptionTest
     public void testMetricConfigurationException()
     {
         assertTrue( Objects.nonNull( new MetricProcessorException() ) );
-        
-        MetricProcessorException f = new MetricProcessorException(TEST_EXCEPTION);
-        assertTrue( Objects.nonNull( f ) );
-        assertTrue( f.getMessage().equals( TEST_EXCEPTION ) );
-        
-        MetricProcessorException g = new MetricProcessorException(f.getMessage(), f);
-        
-        assertTrue( Objects.nonNull( f ) );
-        assertTrue( g.getMessage().equals( TEST_EXCEPTION ) );
-        assertTrue( g.getCause().equals( f ) );
+
+        MetricProcessorException f = new MetricProcessorException( TEST_EXCEPTION );
+        assertNotNull( f );
+        assertEquals( TEST_EXCEPTION, f.getMessage() );
+
+        MetricProcessorException g = new MetricProcessorException( f.getMessage(), f );
+
+        assertNotNull( g );
+        assertEquals( TEST_EXCEPTION, g.getMessage() );
+        assertEquals( f, g.getCause() );
     }
 }

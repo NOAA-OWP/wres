@@ -36,7 +36,7 @@ public class EquitableThreatScore extends ContingencyTableScore
      */
 
     public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( -1 / 3 )
+                                                                                    .setMinimum( -1.0 / 3 )
                                                                                     .setMaximum( Double.POSITIVE_INFINITY )
                                                                                     .setOptimum( 1 )
                                                                                     .setName( ComponentName.MAIN )

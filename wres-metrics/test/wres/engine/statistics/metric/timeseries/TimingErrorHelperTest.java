@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric.timeseries;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -42,14 +43,14 @@ public final class TimingErrorHelperTest
         Pair<Instant, Instant> expectedPeaksFirst =
                 Pair.of( Instant.parse( "1985-01-01T18:00:00Z" ), Instant.parse( "1985-01-01T12:00:00Z" ) );
 
-        assertTrue( actualPeaksFirst.equals( expectedPeaksFirst ) );
+        assertEquals( expectedPeaksFirst, actualPeaksFirst );
 
         Pair<Instant, Instant> actualPeaksSecond = TimingErrorHelper.getTimeToPeak( second, r );
 
         Pair<Instant, Instant> expectedPeaksSecond =
                 Pair.of( Instant.parse( "1985-01-02T06:00:00Z" ), Instant.parse( "1985-01-02T18:00:00Z" ) );
 
-        assertTrue( actualPeaksSecond.equals( expectedPeaksSecond ) );
+        assertEquals( expectedPeaksSecond, actualPeaksSecond );
     }
 
     @Test
@@ -68,7 +69,7 @@ public final class TimingErrorHelperTest
         Pair<Instant, Instant> expectedPeaks =
                 Pair.of( Instant.parse( "1985-01-02T06:00:00Z" ), Instant.parse( "1985-01-02T18:00:00Z" ) );
 
-        assertTrue( actualPeaks.equals( expectedPeaks ) );
+        assertEquals( expectedPeaks, actualPeaks );
     }
 
     @Test
@@ -77,7 +78,7 @@ public final class TimingErrorHelperTest
     {
         final Constructor<TimingErrorHelper> constructor = TimingErrorHelper.class.getDeclaredConstructor();
         constructor.setAccessible( true );
-        constructor.newInstance();
+        assertNotNull( constructor.newInstance() );
     }
 
 }

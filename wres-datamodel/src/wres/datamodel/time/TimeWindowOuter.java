@@ -40,7 +40,7 @@ import wres.statistics.generated.TimeWindow;
  * 
  * <p>The internal data is stored, and accessible, as a {@link TimeWindow}.
  *
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class TimeWindowOuter implements Comparable<TimeWindowOuter>
@@ -269,36 +269,37 @@ public class TimeWindowOuter implements Comparable<TimeWindowOuter>
         }
 
         // Check and set time parameters
-        Instant earliestR = null;
-        Instant latestR = null;
-        Instant earliestV = null;
-        Instant latestV = null;
-        Duration earliestL = null;
-        Duration latestL = null;
+        TimeWindowOuter first = input.iterator().next();
+        Instant earliestR = first.getEarliestReferenceTime();
+        Instant latestR = first.getLatestReferenceTime();
+        Instant earliestV = first.getEarliestValidTime();
+        Instant latestV = first.getLatestValidTime();
+        Duration earliestL = first.getEarliestLeadDuration();
+        Duration latestL = first.getLatestLeadDuration();
 
         for ( TimeWindowOuter next : input )
         {
-            if ( Objects.isNull( earliestR ) || earliestR.isAfter( next.getEarliestReferenceTime() ) )
+            if ( earliestR.isAfter( next.getEarliestReferenceTime() ) )
             {
                 earliestR = next.getEarliestReferenceTime();
             }
-            if ( Objects.isNull( latestR ) || latestR.isBefore( next.getLatestReferenceTime() ) )
+            if ( latestR.isBefore( next.getLatestReferenceTime() ) )
             {
                 latestR = next.getLatestReferenceTime();
             }
-            if ( Objects.isNull( earliestL ) || earliestL.compareTo( next.getEarliestLeadDuration() ) > 0 )
+            if ( earliestL.compareTo( next.getEarliestLeadDuration() ) > 0 )
             {
                 earliestL = next.getEarliestLeadDuration();
             }
-            if ( Objects.isNull( latestL ) || latestL.compareTo( next.getLatestLeadDuration() ) < 0 )
+            if ( latestL.compareTo( next.getLatestLeadDuration() ) < 0 )
             {
                 latestL = next.getLatestLeadDuration();
             }
-            if ( Objects.isNull( earliestV ) || earliestV.isAfter( next.getEarliestValidTime() ) )
+            if ( earliestV.isAfter( next.getEarliestValidTime() ) )
             {
                 earliestV = next.getEarliestValidTime();
             }
-            if ( Objects.isNull( latestV ) || latestV.isBefore( next.getLatestValidTime() ) )
+            if ( latestV.isBefore( next.getLatestValidTime() ) )
             {
                 latestV = next.getLatestValidTime();
             }

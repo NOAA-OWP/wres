@@ -7,6 +7,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
@@ -229,9 +230,11 @@ public final class TimingErrorDurationStatisticsTest
     @Test
     public void testExceptionOnNullStatistics()
     {
+        TimeToPeakError metric = TimeToPeakError.of();
+        
         MetricParameterException actual =
                 assertThrows( MetricParameterException.class,
-                              () -> TimingErrorDurationStatistics.of( TimeToPeakError.of(),
+                              () -> TimingErrorDurationStatistics.of( metric,
                                                                       null ) );
 
         assertEquals( "Specify a non-null container of summary statistics.", actual.getMessage() );
@@ -240,10 +243,13 @@ public final class TimingErrorDurationStatisticsTest
     @Test
     public void testExceptionOnEmptyStatistics()
     {
+        TimeToPeakError metric = TimeToPeakError.of();
+        Set<MetricConstants> names = Collections.emptySet();
+        
         MetricParameterException actual =
                 assertThrows( MetricParameterException.class,
-                              () -> TimingErrorDurationStatistics.of( TimeToPeakError.of(),
-                                                                      Collections.emptySet() ) );
+                              () -> TimingErrorDurationStatistics.of( metric,
+                                                                      names ) );
 
         assertEquals( "Specify one or more summary statistics.", actual.getMessage() );
     }
@@ -251,10 +257,12 @@ public final class TimingErrorDurationStatisticsTest
     @Test
     public void testExceptionOnNullStatistic()
     {
+        TimeToPeakError metric = TimeToPeakError.of();
+        Set<MetricConstants> names = Collections.singleton( null );
+        
         MetricParameterException actual =
                 assertThrows( MetricParameterException.class,
-                              () -> TimingErrorDurationStatistics.of( TimeToPeakError.of(),
-                                                                      Collections.singleton( null ) ) );
+                              () -> TimingErrorDurationStatistics.of( metric, names ) );
 
         assertEquals( "Cannot build the metric with a null statistic.", actual.getMessage() );
     }
@@ -262,26 +270,32 @@ public final class TimingErrorDurationStatisticsTest
     @Test
     public void testExceptionOnUnrecognizedStatistic()
     {
+        TimeToPeakError metric = TimeToPeakError.of();
+        Set<MetricConstants> names = Collections.singleton( MetricConstants.NONE );
+        
         assertThrows( IllegalArgumentException.class,
-                      () -> TimingErrorDurationStatistics.of( TimeToPeakError.of(),
-                                                              Collections.singleton( MetricConstants.NONE ) ) );
+                      () -> TimingErrorDurationStatistics.of( metric, names ) );
     }
 
     @Test
     public void testExceptionOnNullIdentifier()
     {
+        Set<MetricConstants> names = Collections.singleton( MetricConstants.MEAN );
+        
         assertThrows( MetricParameterException.class,
                       () -> TimingErrorDurationStatistics.of( null,
-                                                              Collections.singleton( MetricConstants.MEAN ) ) );
+                                                              names ) );
     }
 
     @Test
     public void testApplyThrowsExceptionOnNullInput()
     {
+        TimeToPeakError metric = TimeToPeakError.of();
+        Set<MetricConstants> names = Collections.singleton( MetricConstants.MEAN );       
+        TimingErrorDurationStatistics innerMetric = TimingErrorDurationStatistics.of( metric, names );
+        
         assertThrows( PoolException.class,
-                      () -> TimingErrorDurationStatistics.of( TimeToPeakError.of(),
-                                                              Collections.singleton( MetricConstants.MEAN ) )
-                                                         .apply( null ) );
+                      () -> innerMetric.apply( null ) );
 
     }
 

@@ -2,7 +2,6 @@ package wres.engine.statistics.metric.categorical;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
@@ -71,10 +70,10 @@ public final class ContingencyTableTest
 
         final DoubleScoreStatisticOuter actual = this.table.apply( input );
         final DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( result, meta );
-        assertTrue( "Unexpected result for the contingency table.", actual.equals( expected ) );
+        assertEquals( expected, actual );
 
         //Check the parameters
-        assertTrue( this.table.getName().equals( MetricConstants.CONTINGENCY_TABLE.toString() ) );
+        assertEquals( MetricConstants.CONTINGENCY_TABLE.toString(), this.table.getName() );
     }
 
     /**
@@ -84,7 +83,7 @@ public final class ContingencyTableTest
     @Test
     public void testContingencyTableIsNamedCorrectly()
     {
-        assertTrue( this.table.getName().equals( MetricConstants.CONTINGENCY_TABLE.toString() ) );
+        assertEquals( MetricConstants.CONTINGENCY_TABLE.toString(),  this.table.getName() );
     }
 
     /**

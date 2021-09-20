@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.singlevalued.univariate;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -115,7 +116,7 @@ public final class MaximumTest
     @Test
     public void testGetName()
     {
-        assertTrue( this.maximum.getName().equals( MetricConstants.MAXIMUM.toString() ) );
+        assertEquals( MetricConstants.MAXIMUM.toString(), this.maximum.getName() );
     }
 
     @Test
@@ -133,7 +134,7 @@ public final class MaximumTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( this.maximum.getScoreOutputGroup() == MetricGroup.UNIVARIATE_STATISTIC );
+        assertSame( MetricGroup.UNIVARIATE_STATISTIC, this.maximum.getScoreOutputGroup() );
     }
 
     @Test

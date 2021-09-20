@@ -18,7 +18,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 /**
  * An abstract base class for an immutable score output.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements ScoreStatistic<S, T>
@@ -188,16 +188,16 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
                 return true;
             }
 
-            if ( o.getClass() != this.getClass() )
+            if ( ! ( o instanceof BasicScoreComponent ) )
             {
                 return false;
             }
 
-            BasicScoreComponent<?> component = (BasicScoreComponent<?>) o;
+            BasicScoreComponent<?> c = (BasicScoreComponent<?>) o;
 
-            return Objects.equals( this.getMetricName(), component.getMetricName() )
-                   && Objects.equals( this.getData(), component.getData() )
-                   && Objects.equals( this.getMetadata(), component.getMetadata() );
+            return Objects.equals( this.getMetricName(), c.getMetricName() )
+                   && Objects.equals( this.getData(), c.getData() )
+                   && Objects.equals( this.getMetadata(), c.getMetadata() );
         }
 
         @Override

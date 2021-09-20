@@ -137,26 +137,26 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                 Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE )
                       .get( 0 );
 
-        assertEquals( bias.getComponent( MetricConstants.MAIN ).getData().getValue(),
-                      -0.032093836077598345,
+        assertEquals( -0.032093836077598345,
+                      bias.getComponent( MetricConstants.MAIN ).getData().getValue(),
                       Precision.EPSILON );
-        assertEquals( cod.getComponent( MetricConstants.MAIN ).getData().getValue(),
-                      0.7873367083297588,
+        assertEquals( 0.7873367083297588,
+                      cod.getComponent( MetricConstants.MAIN ).getData().getValue(),
                       Precision.EPSILON );
-        assertEquals( rho.getComponent( MetricConstants.MAIN ).getData().getValue(),
-                      0.8873199582618204,
+        assertEquals( 0.8873199582618204,
+                      rho.getComponent( MetricConstants.MAIN ).getData().getValue(),
                       Precision.EPSILON );
-        assertEquals( mae.getComponent( MetricConstants.MAIN ).getData().getValue(),
-                      11.009512537315405,
+        assertEquals( 11.009512537315405,
+                      mae.getComponent( MetricConstants.MAIN ).getData().getValue(),
                       Precision.EPSILON );
-        assertEquals( me.getComponent( MetricConstants.MAIN ).getData().getValue(),
-                      -1.157869354367079,
+        assertEquals( -1.157869354367079,
+                      me.getComponent( MetricConstants.MAIN ).getData().getValue(),
                       Precision.EPSILON );
-        assertEquals( rmse.getComponent( MetricConstants.MAIN ).getData().getValue(),
-                      41.01563032408479,
+        assertEquals( 41.01563032408479,
+                      rmse.getComponent( MetricConstants.MAIN ).getData().getValue(),
                       Precision.EPSILON );
-        assertEquals( crps.getComponent( MetricConstants.MAIN ).getData().getValue(),
-                      9.076475676968208,
+        assertEquals( 9.076475676968208,
+                      crps.getComponent( MetricConstants.MAIN ).getData().getValue(),
                       Precision.EPSILON );
     }
 
@@ -345,20 +345,20 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         // Obtain the results
         List<DoubleScoreStatisticOuter> actual = statistics.getDoubleScoreStatistics();
 
-        assertEquals( Slicer.filter( actual, MetricConstants.THREAT_SCORE )
+        assertEquals( 0.9160756501182034,
+                      Slicer.filter( actual, MetricConstants.THREAT_SCORE )
                             .get( 0 )
                             .getComponent( MetricConstants.MAIN )
                             .getData()
                             .getValue(),
-                      0.9160756501182034,
                       Precision.EPSILON );
 
-        assertEquals( Slicer.filter( actual, MetricConstants.PEIRCE_SKILL_SCORE )
+        assertEquals( -0.0012886597938144284,
+                      Slicer.filter( actual, MetricConstants.PEIRCE_SKILL_SCORE )
                             .get( 0 )
                             .getComponent( MetricConstants.MAIN )
                             .getData()
                             .getValue(),
-                      -0.0012886597938144284,
                       Precision.EPSILON );
     }
 
@@ -535,13 +535,15 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    Arrays.asList( new MetricConfig( null, MetricConfigName.BRIER_SCORE ) ),
                                    null );
 
+        ProjectConfig config = new ProjectConfig( null,
+                                                  null,
+                                                  Arrays.asList( metrics ),
+                                                  null,
+                                                  null,
+                                                  null );
+
         MetricConfigException actual = assertThrows( MetricConfigException.class,
-                                                     () -> MetricFactory.ofMetricProcessorForEnsemblePairs( new ProjectConfig( null,
-                                                                                                                               null,
-                                                                                                                               Arrays.asList( metrics ),
-                                                                                                                               null,
-                                                                                                                               null,
-                                                                                                                               null ) ) );
+                                                     () -> MetricFactory.ofMetricProcessorForEnsemblePairs( config ) );
 
         assertEquals( "Cannot configure 'BRIER SCORE' without thresholds to define the events: "
                       + "add one or more thresholds to the configuration.",
@@ -575,8 +577,10 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
                 MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig );
 
+        Pool<TimeSeries<Pair<Double, Ensemble>>> pairs = MetricTestDataFactory.getTimeSeriesOfEnsemblePairsThree();
+
         MetricCalculationException actual = assertThrows( MetricCalculationException.class,
-                                                          () -> processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsThree() ) );
+                                                          () -> processor.apply( pairs ) );
 
         assertEquals( "Unable to determine quantile threshold from probability threshold: no climatological "
                       + "observations were available in the input.",
@@ -683,10 +687,11 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         //Check for the expected number of metrics
         //One fewer than total, as sample size appears in both ensemble and single-valued
-        assertTrue( processor.metrics.getMetrics().size() == SampleDataGroup.ENSEMBLE.getMetrics().size()
-                                                             + SampleDataGroup.DISCRETE_PROBABILITY.getMetrics().size()
-                                                             + SampleDataGroup.SINGLE_VALUED.getMetrics().size()
-                                                             - 1 );
+        assertEquals( SampleDataGroup.ENSEMBLE.getMetrics().size()
+                      + SampleDataGroup.DISCRETE_PROBABILITY.getMetrics().size()
+                      + SampleDataGroup.SINGLE_VALUED.getMetrics().size()
+                      - 1,
+                      processor.metrics.getMetrics().size() );
     }
 
     @Test
@@ -699,7 +704,8 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
                 MetricFactory.ofMetricProcessorForEnsemblePairs( config );
 
-        StatisticsForProject statistics = processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsOneWithMissings() );
+        StatisticsForProject statistics =
+                processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsOneWithMissings() );
 
         //Obtain the results
         List<DoubleScoreStatisticOuter> results = statistics.getDoubleScoreStatistics();

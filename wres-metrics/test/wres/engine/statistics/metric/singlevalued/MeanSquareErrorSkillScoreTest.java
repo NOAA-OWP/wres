@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric.singlevalued;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -122,7 +123,7 @@ public final class MeanSquareErrorSkillScoreTest
     @Test
     public void testGetName()
     {
-        assertTrue( this.msess.getName().equals( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE.toString() ) );
+        assertEquals( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE.toString(), this.msess.getName() );
     }
 
     @Test
@@ -140,7 +141,7 @@ public final class MeanSquareErrorSkillScoreTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( this.msess.getScoreOutputGroup() == MetricGroup.NONE );
+        assertSame( MetricGroup.NONE, this.msess.getScoreOutputGroup() );
     }
 
     @Test
