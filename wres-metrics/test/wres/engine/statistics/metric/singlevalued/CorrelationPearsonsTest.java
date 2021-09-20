@@ -2,8 +2,8 @@ package wres.engine.statistics.metric.singlevalued;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 
@@ -67,7 +67,7 @@ public final class CorrelationPearsonsTest
     {
         Pool<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        assertTrue( rho.apply( input ).equals( this.rho.aggregate( rho.getInputForAggregation( input ) ) ) );
+        assertEquals( this.rho.aggregate( rho.getInputForAggregation( input ) ), this.rho.apply( input ) );
     }
 
     @Test
@@ -85,7 +85,7 @@ public final class CorrelationPearsonsTest
     @Test
     public void testGetName()
     {
-        assertTrue( this.rho.getName().equals( MetricConstants.PEARSON_CORRELATION_COEFFICIENT.toString() ) );
+        assertEquals( MetricConstants.PEARSON_CORRELATION_COEFFICIENT.toString(), this.rho.getName() );
     }
 
     @Test
@@ -109,13 +109,13 @@ public final class CorrelationPearsonsTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( this.rho.getScoreOutputGroup() == MetricGroup.NONE );
+        assertSame( MetricGroup.NONE, this.rho.getScoreOutputGroup() );
     }
 
     @Test
     public void testGetCollectionOf()
     {
-        assertTrue( this.rho.getCollectionOf().equals( MetricConstants.PEARSON_CORRELATION_COEFFICIENT ) );
+        assertEquals( MetricConstants.PEARSON_CORRELATION_COEFFICIENT, this.rho.getCollectionOf() );
     }
 
     @Test

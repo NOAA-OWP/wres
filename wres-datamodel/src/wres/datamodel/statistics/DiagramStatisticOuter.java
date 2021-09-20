@@ -148,11 +148,11 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
     @Override
     public boolean equals( final Object o )
     {
-        if( o == this )
+        if ( o == this )
         {
             return true;
         }
-        
+
         if ( ! ( o instanceof DiagramStatisticOuter ) )
         {
             return false;
@@ -205,25 +205,25 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
         this.diagram = diagram;
         this.metadata = meta;
 
-        SortedSet<MetricDimension> componentNames = new TreeSet<>();
-        SortedSet<String> componentNameQualifiers = new TreeSet<>();
-        Map<Pair<MetricDimension, String>, Integer> componentIndexes = new HashMap<>();
+        SortedSet<MetricDimension> cNames = new TreeSet<>();
+        SortedSet<String> cQual = new TreeSet<>();
+        Map<Pair<MetricDimension, String>, Integer> cInd = new HashMap<>();
 
         int index = 0;
         for ( DiagramStatisticComponent next : this.getData().getStatisticsList() )
         {
             MetricDimension nextName = MetricDimension.valueOf( next.getMetric().getName().name() );
-            componentNames.add( nextName );
+            cNames.add( nextName );
             String nextQualifier = next.getName();
-            componentNameQualifiers.add( nextQualifier );
-            componentIndexes.put( Pair.of( nextName, nextQualifier ), index );
+            cQual.add( nextQualifier );
+            cInd.put( Pair.of( nextName, nextQualifier ), index );
             index++;
         }
 
-        this.componentNames = Collections.unmodifiableSortedSet( componentNames );
-        this.componentNameQualifiers = Collections.unmodifiableSortedSet( componentNameQualifiers );
+        this.componentNames = Collections.unmodifiableSortedSet( cNames );
+        this.componentNameQualifiers = Collections.unmodifiableSortedSet( cQual );
         this.metricName = MetricConstants.valueOf( diagram.getMetric().getName().name() );
-        this.componentIndexes = componentIndexes; // Not exposed to mutation
+        this.componentIndexes = cInd; // Not exposed to mutation
     }
 
 }

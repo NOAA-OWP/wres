@@ -1,6 +1,6 @@
 package wres.engine.statistics.metric;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
@@ -26,7 +26,7 @@ public final class OrdinaryScoreTest
     {
         SampleSize<Pool<Pair<Double, Double>>> ss = SampleSize.of();
 
-        assertTrue( "SAMPLE SIZE".equals( ss.toString() ) );
+        assertEquals( "SAMPLE SIZE", ss.toString() );
     }
 
 }

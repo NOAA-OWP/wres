@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.ensemble;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -71,10 +72,10 @@ public final class ContinousRankedProbabilitySkillScoreTest
         basePairs.add( Pair.of( 43.0, Ensemble.of( 23, 12, 12, 39, 10 ) ) );
 
         Pool<Pair<Double, Ensemble>> input = Pool.of( pairs,
-                                                                       PoolMetadata.of(),
-                                                                       basePairs,
-                                                                       PoolMetadata.of(),
-                                                                       null );
+                                                      PoolMetadata.of(),
+                                                      basePairs,
+                                                      PoolMetadata.of(),
+                                                      null );
 
         //Check the results       
         DoubleScoreStatisticOuter actual = this.crpss.apply( input );
@@ -103,10 +104,10 @@ public final class ContinousRankedProbabilitySkillScoreTest
         // Generate empty data
         Pool<Pair<Double, Ensemble>> input =
                 Pool.of( Arrays.asList(),
-                                    PoolMetadata.of(),
-                                    Arrays.asList(),
-                                    PoolMetadata.of(),
-                                    null );
+                         PoolMetadata.of(),
+                         Arrays.asList(),
+                         PoolMetadata.of(),
+                         null );
 
         DoubleScoreStatisticOuter actual = this.crpss.apply( input );
 
@@ -121,8 +122,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
     @Test
     public void testGetName()
     {
-        assertTrue( this.crpss.getName()
-                              .equals( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE.toString() ) );
+        assertEquals( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE.toString(), this.crpss.getName() );
     }
 
     /**
@@ -153,7 +153,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( this.crpss.getScoreOutputGroup() == MetricGroup.NONE );
+        assertSame( MetricGroup.NONE, this.crpss.getScoreOutputGroup() );
     }
 
     /**
@@ -186,11 +186,11 @@ public final class ContinousRankedProbabilitySkillScoreTest
     {
         Pool<Pair<Double, Ensemble>> pairs = MetricTestDataFactory.getEnsemblePairsOne();
 
-        assertTrue( this.crpss.apply( pairs )
-                              .getMetadata()
-                              .getEvaluation()
-                              .getBaselineDataName()
-                              .equals( "ESP" ) );
+        assertEquals( "ESP",
+                      this.crpss.apply( pairs )
+                                .getMetadata()
+                                .getEvaluation()
+                                .getBaselineDataName() );
     }
 
     /**
@@ -202,7 +202,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
     public void testExceptionOnNullInput()
     {
         PoolException actual = assertThrows( PoolException.class,
-                                                   () -> this.crpss.apply( (Pool<Pair<Double, Ensemble>>) null ) );
+                                             () -> this.crpss.apply( (Pool<Pair<Double, Ensemble>>) null ) );
 
         assertEquals( "Specify non-null input to the '" + this.crpss.getName() + "'.", actual.getMessage() );
     }
@@ -234,7 +234,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
         Pool<Pair<Double, Ensemble>> input = Pool.of( pairs, PoolMetadata.of() );
 
         PoolException actual = assertThrows( PoolException.class,
-                                                   () -> this.crpss.apply( input ) );
+                                             () -> this.crpss.apply( input ) );
 
         assertEquals( "Specify a non-null baseline for the 'CONTINUOUS RANKED PROBABILITY SKILL SCORE'.",
                       actual.getMessage() );

@@ -203,9 +203,10 @@ public final class BoxPlotErrorByForecastTest
     @Test
     public void testConstructionWithNullDimensionException() throws MetricParameterException
     {
+        VectorOfDoubles doubles = VectorOfDoubles.of( 0.0, 1.0 );
         MetricParameterException expected =
                 assertThrows( MetricParameterException.class,
-                              () -> BoxPlotErrorByForecast.of( null, VectorOfDoubles.of( 0.0, 1.0 ) ) );
+                              () -> BoxPlotErrorByForecast.of( null, doubles ) );
 
         assertEquals( "Cannot build the box plot of forecast errors by forecast value without a dimension "
                       + "for the domain axis.",
@@ -222,10 +223,11 @@ public final class BoxPlotErrorByForecastTest
     @Test
     public void testConstructionWithWrongDimensionException() throws MetricParameterException
     {
+        VectorOfDoubles doubles = VectorOfDoubles.of( 0.0, 1.0 );
         MetricParameterException expected =
                 assertThrows( MetricParameterException.class,
                               () -> BoxPlotErrorByForecast.of( MetricDimension.FALSE_NEGATIVES,
-                                                               VectorOfDoubles.of( 0.0, 1.0 ) ) );
+                                                               doubles ) );
 
         assertEquals( "Unsupported dimension for the domain axis of the box plot: 'FALSE NEGATIVES'.",
                       expected.getMessage() );

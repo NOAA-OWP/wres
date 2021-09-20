@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.processing;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -253,7 +254,7 @@ public final class MetricProcessorTest
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT_AND_RIGHT );
 
-        assertTrue( expected.equals( processor.getAllDataThreshold() ) );
+        assertEquals( expected, processor.getAllDataThreshold() );
     }
 
     @After

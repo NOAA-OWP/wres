@@ -7,6 +7,7 @@ import java.io.StringWriter;
 import java.net.URI;
 import java.util.Objects;
 
+import javax.xml.XMLConstants;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
@@ -178,15 +179,20 @@ public abstract class XMLReader
         // Optional for subclasses to implement
     }
 
-    private XMLStreamReader createReader() throws IOException, XMLStreamException
+    private XMLStreamReader createReader() throws XMLStreamException
     {
         return factory.createXMLStreamReader( inputStream );
     }
 
-    public String getRawXML() throws IOException, XMLStreamException, TransformerException
+    public String getRawXML() throws XMLStreamException, TransformerException
     {
         XMLStreamReader reader = createReader();
-        Transformer transformer = TransformerFactory.newInstance().newTransformer();
+        
+        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+        // Prohibit the use of all protocols by external entities:
+        transformerFactory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+        transformerFactory.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
+        Transformer transformer = transformerFactory.newTransformer();
         StringWriter stringWriter = new StringWriter();
         transformer.transform( new StAXSource( reader ), new StreamResult( stringWriter ) );
         return stringWriter.toString();
@@ -200,7 +206,7 @@ public abstract class XMLReader
                 this.getLogger().trace( "Start of the document" );
                 break;
             case XMLStreamConstants.START_ELEMENT:
-                this.getLogger().trace( "Start element = '" + reader.getLocalName() + "'" );
+                this.getLogger().trace( "Start element = '{}'", reader.getLocalName() );
                 break;
             case XMLStreamConstants.CHARACTERS:
                 int beginIndex = reader.getTextStart();
@@ -214,7 +220,7 @@ public abstract class XMLReader
 
                 break;
             case XMLStreamConstants.END_ELEMENT:
-                this.getLogger().trace( "End element = '" + reader.getLocalName() + "'" );
+                this.getLogger().trace( "End element = '{}'", reader.getLocalName() );
                 break;
             case XMLStreamConstants.COMMENT:
                 if ( reader.hasText() )

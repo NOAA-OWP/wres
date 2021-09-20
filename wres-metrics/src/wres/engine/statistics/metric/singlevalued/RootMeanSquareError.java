@@ -22,7 +22,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * However, the RMSE is expressed in the original (unsquared) units of the predictand and no decompositions are
  * available for the RMSE.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public class RootMeanSquareError extends DoubleErrorScore<Pool<Pair<Double, Double>>>
         implements Collectable<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
@@ -51,10 +51,10 @@ public class RootMeanSquareError extends DoubleErrorScore<Pool<Pair<Double, Doub
      * Full description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
-                                                                    .addComponents( RootMeanSquareError.MAIN )
-                                                                    .setName( MetricName.ROOT_MEAN_SQUARE_ERROR )
-                                                                    .build();
+    public static final DoubleScoreMetric METRIC_INNER = DoubleScoreMetric.newBuilder()
+                                                                          .addComponents( RootMeanSquareError.MAIN )
+                                                                          .setName( MetricName.ROOT_MEAN_SQUARE_ERROR )
+                                                                          .build();
 
     /**
      * Instance of {@link SumOfSquareError}.
@@ -145,7 +145,7 @@ public class RootMeanSquareError extends DoubleErrorScore<Pool<Pair<Double, Doub
 
     RootMeanSquareError()
     {
-        super( FunctionFactory.squareError(), RootMeanSquareError.METRIC );
+        super( FunctionFactory.squareError(), RootMeanSquareError.METRIC_INNER );
 
         this.sse = SumOfSquareError.of();
     }

@@ -2,8 +2,8 @@ package wres.engine.statistics.metric.categorical;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 
@@ -14,12 +14,12 @@ import org.junit.Test;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.MetricGroup;
-import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
+import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.Score;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -102,7 +102,7 @@ public final class FrequencyBiasTest
     @Test
     public void testMetricIsNamedCorrectly()
     {
-        assertTrue( fb.getName().equals( MetricConstants.FREQUENCY_BIAS.toString() ) );
+        assertEquals( MetricConstants.FREQUENCY_BIAS.toString(), fb.getName() );
     }
 
     /**
@@ -132,7 +132,7 @@ public final class FrequencyBiasTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( fb.getScoreOutputGroup() == MetricGroup.NONE );
+        assertSame( MetricGroup.NONE, this.fb.getScoreOutputGroup() );
     }
 
     /**
@@ -142,7 +142,7 @@ public final class FrequencyBiasTest
     @Test
     public void testGetCollectionOf()
     {
-        assertTrue( fb.getCollectionOf() == MetricConstants.CONTINGENCY_TABLE );
+        assertSame( MetricConstants.CONTINGENCY_TABLE, fb.getCollectionOf() );
     }
 
     /**
@@ -153,7 +153,7 @@ public final class FrequencyBiasTest
     @Test
     public void testExceptionOnNullInput()
     {
-        PoolException actual = assertThrows( PoolException.class,
+        MetricCalculationException actual = assertThrows( MetricCalculationException.class,
                                                    () -> this.fb.aggregate( (DoubleScoreStatisticOuter) null ) );
 
         assertEquals( "Specify non-null input to the '" + this.fb.getName() + "'.", actual.getMessage() );

@@ -2,8 +2,8 @@ package wres.engine.statistics.metric.singlevalued;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
@@ -20,7 +20,7 @@ import wres.engine.statistics.metric.MetricTestDataFactory;
 /**
  * Tests the {@link DoubleErrorScore}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class DoubleErrorScoreTest
 {
@@ -45,26 +45,25 @@ public final class DoubleErrorScoreTest
         final Pool<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Check the results
-        final DoubleScoreStatisticOuter actual = score.apply( input );
+        final DoubleScoreStatisticOuter actual = this.score.apply( input );
 
         //Check the parameters
-        assertTrue( "Unexpected baseline identifier for the DoubleErrorScore.",
-                    actual.getMetadata()
-                          .getEvaluation()
-                          .getBaselineDataName()
-                          .equals( "ESP" ) );
+        assertEquals( "ESP",
+                      actual.getMetadata()
+                            .getEvaluation()
+                            .getBaselineDataName() );
     }
 
     @Test
     public void testIsDecomposable()
     {
-        assertFalse( score.isDecomposable() );
+        assertFalse( this.score.isDecomposable() );
     }
 
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( score.getScoreOutputGroup() == MetricGroup.NONE );
+        assertSame( MetricGroup.NONE, this.score.getScoreOutputGroup() );
     }
 
     @Test
@@ -74,7 +73,7 @@ public final class DoubleErrorScoreTest
         {
             private ExceptionCheck()
             {
-                super( null, MeanError.METRIC );
+                super( null, MeanError.METRIC_INNER );
             }
 
             @Override
@@ -95,9 +94,9 @@ public final class DoubleErrorScoreTest
                 return false;
             }
         }
-
+        
         NullPointerException actual = assertThrows( NullPointerException.class,
-                                                    () -> new ExceptionCheck().apply( MetricTestDataFactory.getSingleValuedPairsOne() ) );
+                                                    () -> new ExceptionCheck() );
 
         assertEquals( "Cannot construct the error score 'MEAN ERROR' with a null error function.",
                       actual.getMessage() );
@@ -110,7 +109,7 @@ public final class DoubleErrorScoreTest
         {
             private ExceptionCheck()
             {
-                super( FunctionFactory.error(), null, MeanError.METRIC );
+                super( FunctionFactory.error(), null, MeanError.METRIC_INNER );
             }
 
             @Override
@@ -133,10 +132,10 @@ public final class DoubleErrorScoreTest
         }
 
         NullPointerException actual = assertThrows( NullPointerException.class,
-                                                    () -> new ExceptionCheck().apply( MetricTestDataFactory.getSingleValuedPairsOne() ) );
+                                                    () -> new ExceptionCheck() );
 
         assertEquals( "Cannot construct the error score 'MEAN ERROR' with a null "
-                + "accumulator function.",
+                      + "accumulator function.",
                       actual.getMessage() );
     }
 
@@ -147,7 +146,7 @@ public final class DoubleErrorScoreTest
         {
             private ExceptionCheck()
             {
-                super( null, FunctionFactory.mean(), MeanError.METRIC );
+                super( null, FunctionFactory.mean(), MeanError.METRIC_INNER );
             }
 
             @Override
@@ -170,7 +169,7 @@ public final class DoubleErrorScoreTest
         }
 
         NullPointerException actual = assertThrows( NullPointerException.class,
-                                                    () -> new ExceptionCheck().apply( MetricTestDataFactory.getSingleValuedPairsOne() ) );
+                                                    () -> new ExceptionCheck() );
 
         assertEquals( "Cannot construct the error score 'MEAN ERROR' with a null error function.",
                       actual.getMessage() );
@@ -180,7 +179,7 @@ public final class DoubleErrorScoreTest
     public void testExceptionOnNullInput()
     {
         PoolException actual = assertThrows( PoolException.class,
-                                                   () -> this.score.apply( null ) );
+                                             () -> this.score.apply( null ) );
 
         assertEquals( "Specify non-null input to the '" + this.score.getName() + "'.", actual.getMessage() );
     }

@@ -99,7 +99,6 @@ class MessageUtilitiesTest
         Evaluation first = zeroth.toBuilder()
                                  .build();
 
-        assertEquals( zeroth, zeroth );
         assertEquals( zeroth, first );
         assertEquals( 0, MessageUtilities.compare( zeroth, zeroth ) );
         assertEquals( 0, MessageUtilities.compare( zeroth, first ) );
@@ -238,7 +237,6 @@ class MessageUtilitiesTest
         Outputs first = zeroth.toBuilder()
                               .build();
 
-        assertEquals( zeroth, zeroth );
         assertEquals( zeroth, first );
         assertEquals( 0, MessageUtilities.compare( zeroth, zeroth ) );
         assertEquals( 0, MessageUtilities.compare( zeroth, first ) );
@@ -311,7 +309,6 @@ class MessageUtilitiesTest
         Season second = first.toBuilder()
                              .build();
 
-        assertEquals( first, first );
         assertEquals( first, second );
         assertEquals( 0, MessageUtilities.compare( first, first ) );
         assertEquals( 0, MessageUtilities.compare( first, second ) );
@@ -351,7 +348,6 @@ class MessageUtilitiesTest
         ValueFilter second = first.toBuilder()
                                   .build();
 
-        assertEquals( first, first );
         assertEquals( first, second );
         assertEquals( 0, MessageUtilities.compare( first, first ) );
         assertEquals( 0, MessageUtilities.compare( first, second ) );
@@ -428,7 +424,6 @@ class MessageUtilitiesTest
         Pool second = first.toBuilder()
                            .build();
 
-        assertEquals( first, first );
         assertEquals( first, second );
         assertEquals( 0, MessageUtilities.compare( first, first ) );
         assertEquals( 0, MessageUtilities.compare( first, second ) );

@@ -163,9 +163,10 @@ public final class BoxPlotErrorByObservedTest
     @Test
     public void testForExceptionOnTooFewProbabilities() throws MetricParameterException
     {
+        VectorOfDoubles doubles = VectorOfDoubles.of( 0.1 );
         MetricParameterException expected =
                 assertThrows( MetricParameterException.class,
-                              () -> BoxPlotErrorByObserved.of( VectorOfDoubles.of( 0.1 ) ) );
+                              () -> BoxPlotErrorByObserved.of( doubles ) );
 
         assertEquals( "Specify at least two probabilities for the verification box plot.", expected.getMessage() );
     }
@@ -177,9 +178,10 @@ public final class BoxPlotErrorByObservedTest
     @Test
     public void testForExceptionOnNegativeProbabilities() throws MetricParameterException
     {
+        VectorOfDoubles doubles = VectorOfDoubles.of( -0.1, 0.0, 0.5 );
         MetricParameterException expected =
                 assertThrows( MetricParameterException.class,
-                              () -> BoxPlotErrorByObserved.of( VectorOfDoubles.of( -0.1, 0.0, 0.5 ) ) );
+                              () -> BoxPlotErrorByObserved.of( doubles ) );
 
         assertEquals( "Specify only valid probabilities within [0,1] from which to construct the box plot.",
                       expected.getMessage() );
@@ -192,9 +194,10 @@ public final class BoxPlotErrorByObservedTest
     @Test
     public void testForExceptionOnProbabilitiesGreaterThanOne() throws MetricParameterException
     {
+        VectorOfDoubles doubles = VectorOfDoubles.of( 0.0, 0.5, 1.5 );
         MetricParameterException expected =
                 assertThrows( MetricParameterException.class,
-                              () -> BoxPlotErrorByObserved.of( VectorOfDoubles.of( 0.0, 0.5, 1.5 ) ) );
+                              () -> BoxPlotErrorByObserved.of( doubles ) );
 
         assertEquals( "Specify only valid probabilities within [0,1] from which to construct the box plot.",
                       expected.getMessage() );
@@ -207,9 +210,10 @@ public final class BoxPlotErrorByObservedTest
     @Test
     public void testForExceptionOnDuplicateProbabilities() throws MetricParameterException
     {
+        VectorOfDoubles doubles = VectorOfDoubles.of( 0.0, 0.0, 1.0 );
         MetricParameterException expected =
                 assertThrows( MetricParameterException.class,
-                              () -> BoxPlotErrorByObserved.of( VectorOfDoubles.of( 0.0, 0.0, 1.0 ) ) );
+                              () -> BoxPlotErrorByObserved.of( doubles ) );
 
         assertEquals( "Specify only non-unique probabilities from which to construct the box plot.",
                       expected.getMessage() );
@@ -222,9 +226,10 @@ public final class BoxPlotErrorByObservedTest
     @Test
     public void testForExceptionOnEvenNumberOfProbabilities() throws MetricParameterException
     {
+        VectorOfDoubles doubles = VectorOfDoubles.of( 0.0, 0.25, 0.5, 1.0 );
         MetricParameterException expected =
                 assertThrows( MetricParameterException.class,
-                              () -> BoxPlotErrorByObserved.of( VectorOfDoubles.of( 0.0, 0.25, 0.5, 1.0 ) ) );
+                              () -> BoxPlotErrorByObserved.of( doubles ) );
 
         assertEquals( "Specify an odd number of probabilities for the verification box plot.",
                       expected.getMessage() );

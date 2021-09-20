@@ -18,7 +18,7 @@ import wres.statistics.generated.BoxplotStatistic;
  * Metric constants. The metric identifiers are grouped by metric input/output type, as defined by the
  * {@link SampleDataGroup} and {@link StatisticType}, respectively.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public enum MetricConstants
@@ -715,7 +715,7 @@ public enum MetricConstants
     @Override
     public String toString()
     {
-        return name().replaceAll( "_", " " );
+        return name().replace( "_", " " );
     }
 
     /**
@@ -1099,7 +1099,7 @@ public enum MetricConstants
         @Override
         public String toString()
         {
-            return name().replaceAll( "_", " " );
+            return name().replace( "_", " " );
         }
 
     }

@@ -52,10 +52,10 @@ public class StandardDeviation extends DecomposableScore<Pool<Pair<Double, Doubl
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
-        DoubleScoreStatistic score = this.getScore()
+        DoubleScoreStatistic scoreStatistic = this.getScore()
                                          .apply( pairs );
 
-        return DoubleScoreStatisticOuter.of( score, pairs.getMetadata() );
+        return DoubleScoreStatisticOuter.of( scoreStatistic, pairs.getMetadata() );
     }
 
     @Override

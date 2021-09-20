@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.singlevalued;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -99,7 +100,7 @@ public final class KlingGuptaEfficiencyTest
     @Test
     public void testGetName()
     {
-        assertTrue( this.kge.getName().equals( MetricConstants.KLING_GUPTA_EFFICIENCY.toString() ) );
+        assertEquals( MetricConstants.KLING_GUPTA_EFFICIENCY.toString(), this.kge.getName() );
     }
 
     @Test
@@ -123,7 +124,7 @@ public final class KlingGuptaEfficiencyTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( this.kge.getScoreOutputGroup() == MetricGroup.NONE );
+        assertSame( MetricGroup.NONE, this.kge.getScoreOutputGroup() );
     }
 
     @Test

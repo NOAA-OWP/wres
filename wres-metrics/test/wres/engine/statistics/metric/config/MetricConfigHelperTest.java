@@ -138,7 +138,7 @@ public final class MetricConfigHelperTest
     public void testExceptionFromMetricNameWithNullInput()
     {
         NullPointerException actual = assertThrows( NullPointerException.class,
-                                                   () -> MetricConfigHelper.from( (MetricConfigName) null ) );
+                                                    () -> MetricConfigHelper.from( (MetricConfigName) null ) );
 
         assertEquals( "Specify input configuration with a non-null name to map.", actual.getMessage() );
     }
@@ -191,10 +191,10 @@ public final class MetricConfigHelperTest
     @Test
     public void testGetMetricsFromConfig()
     {
-        assertTrue( MetricConfigHelper.getMetricsFromConfig( defaultMockedConfig )
-                                      .equals( new HashSet<>( Arrays.asList( MetricConstants.BIAS_FRACTION,
-                                                                             MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
-                                                                             MetricConstants.MEAN_ERROR ) ) ) );
+        assertEquals( Set.of( MetricConstants.BIAS_FRACTION,
+                              MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
+                              MetricConstants.MEAN_ERROR ),
+                      MetricConfigHelper.getMetricsFromConfig( this.defaultMockedConfig ) );
     }
 
     /**
@@ -259,7 +259,7 @@ public final class MetricConfigHelperTest
         ThresholdsByMetric.Builder builder = new ThresholdsByMetric.Builder();
         builder.addThresholds( mockExternal, ThresholdGroup.VALUE );
         builder.addThresholds( ThresholdsGenerator.getThresholdsFromConfig( mockedConfig )
-                                                             .getOneOrTwoThresholds() );
+                                                  .getOneOrTwoThresholds() );
 
         ThresholdsByMetric actualByMetric = builder.build();
 
@@ -287,7 +287,7 @@ public final class MetricConfigHelperTest
 
         expected.put( MetricConstants.BIAS_FRACTION, atomicThresholds );
 
-        assertTrue( actual.equals( expected ) );
+        assertEquals( expected, actual );
     }
 
     /**
@@ -334,7 +334,7 @@ public final class MetricConfigHelperTest
         expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.2, 0.3 ),
                                                              Operator.BETWEEN,
                                                              ThresholdConstants.ThresholdDataType.LEFT ) );
-        assertTrue( actual.equals( expected ) );
+        assertEquals( expected, actual );
 
         // Test with value thresholds
         @SuppressWarnings( "unchecked" )
@@ -354,7 +354,7 @@ public final class MetricConfigHelperTest
                                               ThresholdConstants.ThresholdDataType.LEFT ) );
 
 
-        assertTrue( actualValue.equals( expectedValue ) );
+        assertEquals( expectedValue, actualValue );
 
         // Test exception 
         InvocationTargetException exception = assertThrows( InvocationTargetException.class,

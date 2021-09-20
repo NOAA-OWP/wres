@@ -2,7 +2,6 @@ package wres.engine.statistics.metric.singlevalued;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -289,7 +288,7 @@ public final class BoxPlotErrorTest
     @Test
     public void testGetName()
     {
-        assertTrue( this.boxPlotError.getName().equals( MetricConstants.BOX_PLOT_OF_ERRORS.toString() ) );
+        assertEquals( MetricConstants.BOX_PLOT_OF_ERRORS.toString(), this.boxPlotError.getName() );
     }
 
     @Test

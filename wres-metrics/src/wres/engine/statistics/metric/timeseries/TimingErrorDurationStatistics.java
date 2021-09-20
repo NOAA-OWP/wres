@@ -77,7 +77,6 @@ public class TimingErrorDurationStatistics
 
     public static TimingErrorDurationStatistics of( TimingError timingError,
                                                     Set<MetricConstants> statistics )
-            throws MetricParameterException
     {
         return new TimingErrorDurationStatistics( timingError, statistics );
     }
@@ -85,12 +84,12 @@ public class TimingErrorDurationStatistics
     @Override
     public DurationScoreStatisticOuter apply( Pool<TimeSeries<Pair<Double, Double>>> pairs )
     {
-        if ( Objects.isNull(pairs ) )
+        if ( Objects.isNull( pairs ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
-        DurationDiagramStatisticOuter statistics = this.timingError.apply( pairs );
+        DurationDiagramStatisticOuter statisticsInner = this.timingError.apply( pairs );
 
         // Map of outputs
         DurationScoreMetric.Builder metricBuilder =
@@ -104,19 +103,19 @@ public class TimingErrorDurationStatistics
             nextIdentifier = next.getKey();
 
             // Data available
-            if ( statistics.getData().getStatisticsCount() != 0 )
+            if ( statisticsInner.getData().getStatisticsCount() != 0 )
             {
                 // Convert the input to double ms
-                double[] input = statistics.getData()
-                                           .getStatisticsList()
-                                           .stream()
-                                           .mapToDouble( a -> ( a.getDuration()
-                                                                 .getSeconds()
-                                                                * 1000 )
-                                                              + ( a.getDuration()
-                                                                   .getNanos()
-                                                                  / 1_000_000 ) )
-                                           .toArray();
+                double[] input = statisticsInner.getData()
+                                                .getStatisticsList()
+                                                .stream()
+                                                .mapToDouble( a -> ( a.getDuration()
+                                                                      .getSeconds()
+                                                                     * 1000 )
+                                                                   + ( a.getDuration()
+                                                                        .getNanos()
+                                                                       / 1_000_000 ) )
+                                                .toArray();
 
                 // Some loss of precision here, not consequential
                 Duration duration = Duration.ofMillis( Math.round( this.statistics.get( nextIdentifier )
@@ -135,7 +134,7 @@ public class TimingErrorDurationStatistics
 
         DurationScoreStatistic score = scoreBuilder.setMetric( metricBuilder ).build();
 
-        return DurationScoreStatisticOuter.of( score, statistics.getMetadata() );
+        return DurationScoreStatisticOuter.of( score, statisticsInner.getMetadata() );
     }
 
     @Override

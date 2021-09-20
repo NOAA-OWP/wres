@@ -27,7 +27,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 /**
  * A collection of utilities for working with messages.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class MessageUtilities

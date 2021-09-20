@@ -2,8 +2,8 @@ package wres.engine.statistics.metric.singlevalued;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.List;
@@ -54,7 +54,7 @@ public final class MedianErrorTest
         //Check the results
         DoubleScoreStatisticOuter actual = this.medianError.apply( input );
 
-        DoubleScoreMetricComponent metricComponent = MedianError.METRIC.getComponents( 0 )
+        DoubleScoreMetricComponent metricComponent = MedianError.METRIC_INNER.getComponents( 0 )
                                                                        .toBuilder()
                                                                        .setUnits( input.getMetadata()
                                                                                        .getMeasurementUnit()
@@ -86,7 +86,7 @@ public final class MedianErrorTest
         //Check the results
         DoubleScoreStatisticOuter actual = this.medianError.apply( input );
 
-        DoubleScoreMetricComponent metricComponent = MedianError.METRIC.getComponents( 0 )
+        DoubleScoreMetricComponent metricComponent = MedianError.METRIC_INNER.getComponents( 0 )
                                                                        .toBuilder()
                                                                        .setUnits( input.getMetadata()
                                                                                        .getMeasurementUnit()
@@ -120,7 +120,7 @@ public final class MedianErrorTest
         //Check the results
         DoubleScoreStatisticOuter actual = this.medianError.apply( input );
 
-        DoubleScoreMetricComponent metricComponent = MedianError.METRIC.getComponents( 0 )
+        DoubleScoreMetricComponent metricComponent = MedianError.METRIC_INNER.getComponents( 0 )
                                                                        .toBuilder()
                                                                        .setUnits( input.getMetadata()
                                                                                        .getMeasurementUnit()
@@ -156,7 +156,7 @@ public final class MedianErrorTest
     @Test
     public void testGetName()
     {
-        assertTrue( this.medianError.getName().equals( MetricConstants.MEDIAN_ERROR.toString() ) );
+        assertEquals( MetricConstants.MEDIAN_ERROR.toString(), this.medianError.getName() );
     }
 
     @Test
@@ -174,7 +174,7 @@ public final class MedianErrorTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( this.medianError.getScoreOutputGroup() == MetricGroup.NONE );
+        assertSame( MetricGroup.NONE,  this.medianError.getScoreOutputGroup() );
     }
 
     @Test

@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.discreteprobability;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -247,8 +248,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     @Test
     public void testGetName()
     {
-        assertTrue( this.rocScore.getName()
-                                 .equals( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE.toString() ) );
+        assertEquals( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE.toString(), this.rocScore.getName() );
     }
 
     /**
@@ -279,7 +279,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( this.rocScore.getScoreOutputGroup() == MetricGroup.NONE );
+        assertSame( MetricGroup.NONE, this.rocScore.getScoreOutputGroup() );
     }
 
     /**

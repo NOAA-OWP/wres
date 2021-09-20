@@ -2,8 +2,8 @@ package wres.engine.statistics.metric.singlevalued;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 
@@ -77,7 +77,7 @@ public final class BiasFractionTest
     @Test
     public void testGetName()
     {
-        assertTrue( this.biasFraction.getName().equals( MetricConstants.BIAS_FRACTION.toString() ) );
+        assertEquals( MetricConstants.BIAS_FRACTION.toString(), this.biasFraction.getName() );
     }
 
     @Test
@@ -95,14 +95,14 @@ public final class BiasFractionTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( this.biasFraction.getScoreOutputGroup() == MetricGroup.NONE );
+        assertSame( MetricGroup.NONE, this.biasFraction.getScoreOutputGroup() );
     }
 
     @Test
     public void testExceptionOnNullInput()
     {
         PoolException actual = assertThrows( PoolException.class,
-                                                   () -> this.biasFraction.apply( null ) );
+                                             () -> this.biasFraction.apply( null ) );
 
         assertEquals( "Specify non-null input to the '" + this.biasFraction.getName() + "'.", actual.getMessage() );
     }

@@ -2,8 +2,8 @@ package wres.engine.statistics.metric.singlevalued;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -79,7 +79,7 @@ public final class VolumetricEfficiencyTest
     @Test
     public void testGetName()
     {
-        assertTrue( this.ve.getName().equals( MetricConstants.VOLUMETRIC_EFFICIENCY.toString() ) );
+        assertEquals( MetricConstants.VOLUMETRIC_EFFICIENCY.toString(), this.ve.getName() );
     }
 
     @Test
@@ -97,7 +97,7 @@ public final class VolumetricEfficiencyTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( this.ve.getScoreOutputGroup() == MetricGroup.NONE );
+        assertSame( MetricGroup.NONE, this.ve.getScoreOutputGroup() );
     }
 
     @Test

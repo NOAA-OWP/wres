@@ -1,6 +1,6 @@
 package wres.engine.statistics.metric.singlevalued;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
@@ -10,7 +10,7 @@ import wres.engine.statistics.metric.Metric;
 /**
  * Tests the {@link Metric} using single-valued metrics.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class MetricSingleValuedTest
 {
@@ -28,8 +28,7 @@ public final class MetricSingleValuedTest
         final MeanError me = MeanError.of();
 
         //Check for equality of names
-        assertTrue( "Unexpected metric name.",
-                    MetricConstants.MEAN_ERROR.toString().equals( me.toString() ) );
+        assertEquals( MetricConstants.MEAN_ERROR.toString(), me.toString() );
     }
 
 }

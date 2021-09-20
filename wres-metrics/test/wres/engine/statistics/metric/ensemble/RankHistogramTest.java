@@ -3,7 +3,6 @@ package wres.engine.statistics.metric.ensemble;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -224,7 +223,7 @@ public final class RankHistogramTest
     @Test
     public void testGetName()
     {
-        assertTrue( rh.getName().equals( MetricConstants.RANK_HISTOGRAM.toString() ) );
+        assertEquals( MetricConstants.RANK_HISTOGRAM.toString(), this.rh.getName() );
     }
 
     /**

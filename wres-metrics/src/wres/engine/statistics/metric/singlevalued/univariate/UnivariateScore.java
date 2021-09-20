@@ -66,8 +66,8 @@ class UnivariateScore implements Function<Pool<Pair<Double, Double>>, DoubleScor
     {
         Objects.requireNonNull( pairs );
 
-        double left = MissingValues.DOUBLE;
-        double right = MissingValues.DOUBLE;
+        double leftInner = MissingValues.DOUBLE;
+        double rightInner = MissingValues.DOUBLE;
 
         // Data available?
         List<Pair<Double, Double>> rawPairs = pairs.get();
@@ -86,9 +86,9 @@ class UnivariateScore implements Function<Pool<Pair<Double, Double>>, DoubleScor
             VectorOfDoubles rightVector = VectorOfDoubles.of( rightDoubles );
 
 
-            left = this.getFunction()
+            leftInner = this.getFunction()
                        .applyAsDouble( leftVector );
-            right = this.getFunction()
+            rightInner = this.getFunction()
                         .applyAsDouble( rightVector );
         }
 
@@ -103,14 +103,14 @@ class UnivariateScore implements Function<Pool<Pair<Double, Double>>, DoubleScor
         DoubleScoreStatisticComponent leftComp = DoubleScoreStatisticComponent.newBuilder()
                                                                               .setMetric( this.left.toBuilder()
                                                                                                    .setUnits( units ) )
-                                                                              .setValue( left )
+                                                                              .setValue( leftInner )
                                                                               .build();
 
         DoubleScoreStatisticComponent rightComp = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setMetric( this.right.toBuilder()
                                                                                                      .setUnits( units ) )
 
-                                                                               .setValue( right )
+                                                                               .setValue( rightInner )
                                                                                .build();
 
         DoubleScoreStatistic.Builder builder = DoubleScoreStatistic.newBuilder()
@@ -124,7 +124,7 @@ class UnivariateScore implements Function<Pool<Pair<Double, Double>>, DoubleScor
             Pool<Pair<Double, Double>> baselinePairs = pairs.getBaselineData();
             List<Pair<Double, Double>> rawBaselinePairs = baselinePairs.get();
 
-            double baseline = MissingValues.DOUBLE;
+            double baselineInner = MissingValues.DOUBLE;
 
             if ( !rawBaselinePairs.isEmpty() )
             {
@@ -135,7 +135,7 @@ class UnivariateScore implements Function<Pool<Pair<Double, Double>>, DoubleScor
                 }
 
                 VectorOfDoubles baselineVector = VectorOfDoubles.of( baselineDoubles );
-                baseline = this.getFunction()
+                baselineInner = this.getFunction()
                                .applyAsDouble( baselineVector );
             }
 
@@ -144,7 +144,7 @@ class UnivariateScore implements Function<Pool<Pair<Double, Double>>, DoubleScor
                                                                                       .setMetric( this.baseline.toBuilder()
                                                                                                                .setUnits( units ) )
 
-                                                                                      .setValue( baseline )
+                                                                                      .setValue( baselineInner )
                                                                                       .build();
 
             builder.addStatistics( baselineComp );

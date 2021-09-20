@@ -2,7 +2,6 @@ package wres.engine.statistics.metric.discreteprobability;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.List;
@@ -160,7 +159,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
     @Test
     public void testGetName()
     {
-        assertTrue( this.roc.getName().equals( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM.toString() ) );
+        assertEquals( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM.toString(), this.roc.getName() );
     }
 
     /**

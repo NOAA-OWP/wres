@@ -1,5 +1,7 @@
 package wres.engine.statistics.metric;
 
+import static org.junit.Assert.assertNotNull;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
@@ -12,7 +14,7 @@ import wres.engine.statistics.metric.config.MetricConfigHelper;
  * coverage statistics. Add new factory classes as they are implemented. TODO: remove this class when test coverage can
  * be selectively suppressed for factory constructors.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public final class FactoryConstructionTest
@@ -34,8 +36,8 @@ public final class FactoryConstructionTest
             IllegalAccessException,
             InvocationTargetException
     {
-        coverageSingleton( FunctionFactory.class );
-        coverageSingleton( MetricConfigHelper.class );
+        assertNotNull( this.coverageSingleton( FunctionFactory.class ) );
+        assertNotNull( this.coverageSingleton( MetricConfigHelper.class ) );
     }
 
     /**
@@ -50,14 +52,14 @@ public final class FactoryConstructionTest
      * @throws InvocationTargetException if reflection fails
      */
 
-    private <S> void coverageSingleton( final Class<S> singletonClass ) throws NoSuchMethodException,
+    private <S> S coverageSingleton( final Class<S> singletonClass ) throws NoSuchMethodException,
             InstantiationException,
             IllegalAccessException,
             InvocationTargetException
     {
         final Constructor<S> constructor = singletonClass.getDeclaredConstructor();
         constructor.setAccessible( true );
-        constructor.newInstance();
+        return constructor.newInstance();
     }
 
 }

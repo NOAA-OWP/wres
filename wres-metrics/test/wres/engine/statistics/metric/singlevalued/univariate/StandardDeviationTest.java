@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.singlevalued.univariate;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -115,7 +116,7 @@ public final class StandardDeviationTest
     @Test
     public void testGetName()
     {
-        assertTrue( this.stdev.getName().equals( MetricConstants.STANDARD_DEVIATION.toString() ) );
+        assertEquals( MetricConstants.STANDARD_DEVIATION.toString(), this.stdev.getName() );
     }
 
     @Test
@@ -133,7 +134,7 @@ public final class StandardDeviationTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( this.stdev.getScoreOutputGroup() == MetricGroup.UNIVARIATE_STATISTIC );
+        assertSame( MetricGroup.UNIVARIATE_STATISTIC, this.stdev.getScoreOutputGroup() );
     }
 
     @Test

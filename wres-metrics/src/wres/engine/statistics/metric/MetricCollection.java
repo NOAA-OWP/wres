@@ -275,7 +275,7 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
          * @throws MetricParameterException if one or more parameters is invalid
          */
 
-        protected MetricCollection<S, T, U> build() throws MetricParameterException
+        protected MetricCollection<S, T, U> build()
         {
             return new MetricCollection<>( this );
         }

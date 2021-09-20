@@ -54,10 +54,10 @@ public class IndexOfAgreement extends DoubleErrorScore<Pool<Pair<Double, Double>
      * Full description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
-                                                                    .addComponents( IndexOfAgreement.MAIN )
-                                                                    .setName( MetricName.INDEX_OF_AGREEMENT )
-                                                                    .build();
+    public static final DoubleScoreMetric METRIC_INNER = DoubleScoreMetric.newBuilder()
+                                                                          .addComponents( IndexOfAgreement.MAIN )
+                                                                          .setName( MetricName.INDEX_OF_AGREEMENT )
+                                                                          .build();
 
     /**
      * The default exponent.
@@ -141,7 +141,7 @@ public class IndexOfAgreement extends DoubleErrorScore<Pool<Pair<Double, Double>
 
     private IndexOfAgreement()
     {
-        super( IndexOfAgreement.METRIC );
+        super( IndexOfAgreement.METRIC_INNER );
 
         this.exponent = DEFAULT_EXPONENT;
     }

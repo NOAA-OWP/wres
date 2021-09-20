@@ -52,10 +52,10 @@ public class BiasFraction extends DoubleErrorScore<Pool<Pair<Double, Double>>>
      * Full description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
-                                                                    .addComponents( BiasFraction.MAIN )
-                                                                    .setName( MetricName.BIAS_FRACTION )
-                                                                    .build();
+    public static final DoubleScoreMetric METRIC_INNER = DoubleScoreMetric.newBuilder()
+                                                                          .addComponents( BiasFraction.MAIN )
+                                                                          .setName( MetricName.BIAS_FRACTION )
+                                                                          .build();
 
     /**
      * Returns an instance.
@@ -135,7 +135,7 @@ public class BiasFraction extends DoubleErrorScore<Pool<Pair<Double, Double>>>
 
     private BiasFraction()
     {
-        super( BiasFraction.METRIC );
+        super( BiasFraction.METRIC_INNER );
     }
 
 }

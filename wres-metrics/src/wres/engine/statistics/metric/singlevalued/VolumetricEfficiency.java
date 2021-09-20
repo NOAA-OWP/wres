@@ -53,10 +53,10 @@ public class VolumetricEfficiency extends DoubleErrorScore<Pool<Pair<Double, Dou
      * Full description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
-                                                                    .addComponents( VolumetricEfficiency.MAIN )
-                                                                    .setName( MetricName.VOLUMETRIC_EFFICIENCY )
-                                                                    .build();
+    public static final DoubleScoreMetric METRIC_INNER = DoubleScoreMetric.newBuilder()
+                                                                          .addComponents( VolumetricEfficiency.MAIN )
+                                                                          .setName( MetricName.VOLUMETRIC_EFFICIENCY )
+                                                                          .build();
 
     /**
      * Returns an instance.
@@ -124,7 +124,7 @@ public class VolumetricEfficiency extends DoubleErrorScore<Pool<Pair<Double, Dou
 
     private VolumetricEfficiency()
     {
-        super( VolumetricEfficiency.METRIC );
+        super( VolumetricEfficiency.METRIC_INNER );
     }
 
 }

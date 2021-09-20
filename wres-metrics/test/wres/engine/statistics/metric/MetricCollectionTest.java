@@ -357,9 +357,12 @@ public class MetricCollectionTest
     @Test
     public void testBuildWithNoMetrics() throws MetricParameterException
     {
+        Builder<Pool<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> collection =
+                new Builder<Pool<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter>().setExecutorService( this.metricPool );
+
         MetricParameterException expected =
                 assertThrows( MetricParameterException.class,
-                              () -> Builder.of().setExecutorService( metricPool ).build() );
+                              () -> collection.build() );
 
         assertEquals( "Cannot construct a metric collection without any metrics.", expected.getMessage() );
     }
@@ -377,7 +380,7 @@ public class MetricCollectionTest
      */
 
     @Test
-    @Ignore // Until new way of interrupting with mockito is found
+    @Ignore( "Until new way of interrupting with mockito is found." )
     public void testApplyThrowsExceptionWhenInterrupted() throws MetricParameterException, IllegalAccessException,
             InvocationTargetException, NoSuchMethodException
     {
@@ -415,14 +418,13 @@ public class MetricCollectionTest
         Mockito.when( meanError.getMetricName() ).thenReturn( MetricConstants.MEAN_ERROR );
         Mockito.when( meanError.apply( input ) ).thenThrow( IllegalArgumentException.class );
 
-        Builder<Pool<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> failed =
-                Builder.of();
+        MetricCollection<Pool<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> collection =
+                new Builder<Pool<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter>().setExecutorService( metricPool )
+                                                                                                  .addMetric( meanError )
+                                                                                                  .build();
 
         MetricCalculationException expected = assertThrows( MetricCalculationException.class,
-                                                            () -> failed.setExecutorService( metricPool )
-                                                                        .addMetric( meanError )
-                                                                        .build()
-                                                                        .apply( input ) );
+                                                            () -> collection.apply( input ) );
 
         assertEquals( "Computation of the metric collection failed: ", expected.getMessage() );
     }

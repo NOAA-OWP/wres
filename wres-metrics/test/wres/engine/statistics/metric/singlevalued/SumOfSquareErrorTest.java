@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.singlevalued;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -86,7 +87,7 @@ public final class SumOfSquareErrorTest
     @Test
     public void testGetName()
     {
-        assertTrue( this.sse.getName().equals( MetricConstants.SUM_OF_SQUARE_ERROR.toString() ) );
+        assertEquals( MetricConstants.SUM_OF_SQUARE_ERROR.toString(), this.sse.getName() );
     }
 
     @Test
@@ -104,20 +105,20 @@ public final class SumOfSquareErrorTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( this.sse.getScoreOutputGroup() == MetricGroup.NONE );
+        assertSame( MetricGroup.NONE, this.sse.getScoreOutputGroup() );
     }
 
     @Test
     public void testGetCollectionOf()
     {
-        assertTrue( this.sse.getCollectionOf().equals( MetricConstants.SUM_OF_SQUARE_ERROR ) );
+        assertEquals( MetricConstants.SUM_OF_SQUARE_ERROR, this.sse.getCollectionOf() );
     }
 
     @Test
     public void testExceptionOnNullInput()
     {
         PoolException actual = assertThrows( PoolException.class,
-                                                   () -> this.sse.apply( null ) );
+                                             () -> this.sse.apply( null ) );
 
         assertEquals( "Specify non-null input to the '" + this.sse.getName() + "'.", actual.getMessage() );
     }
@@ -126,7 +127,7 @@ public final class SumOfSquareErrorTest
     public void testAggregateExceptionOnNullInput()
     {
         PoolException actual = assertThrows( PoolException.class,
-                                                   () -> this.sse.aggregate( null ) );
+                                             () -> this.sse.aggregate( null ) );
 
         assertEquals( "Specify non-null input to the '" + this.sse.getName() + "'.", actual.getMessage() );
     }

@@ -338,36 +338,36 @@ public class PoolMetadata implements Comparable<PoolMetadata>
     public String toString()
     {
         // Use a limited subset of the most important/useful descriptors
-        Evaluation evaluation = this.getEvaluation();
-        Pool pool = this.getPool();
+        Evaluation innerEvaluation = this.getEvaluation();
+        Pool innerPool = this.getPool();
 
         // Pretty print the feature tuples
-        Set<FeatureTuple> featureTuples = pool.getGeometryTuplesList()
-                                              .stream()
-                                              .map( FeatureTuple::new )
-                                              .collect( Collectors.toSet() );
+        Set<FeatureTuple> featureTuples = innerPool.getGeometryTuplesList()
+                                                   .stream()
+                                                   .map( FeatureTuple::new )
+                                                   .collect( Collectors.toSet() );
         FeatureGroup featureGroup = null;
 
         if ( !featureTuples.isEmpty() )
         {
-            featureGroup = FeatureGroup.of( pool.getRegionName(), featureTuples );
+            featureGroup = FeatureGroup.of( innerPool.getRegionName(), featureTuples );
         }
 
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
                                                                             .append( "leftDataName",
-                                                                                     evaluation.getLeftDataName() )
+                                                                                     innerEvaluation.getLeftDataName() )
                                                                             .append( "rightDataName",
-                                                                                     evaluation.getRightDataName() )
+                                                                                     innerEvaluation.getRightDataName() )
                                                                             .append( "baselineDataName",
-                                                                                     evaluation.getBaselineDataName() )
+                                                                                     innerEvaluation.getBaselineDataName() )
                                                                             .append( "leftVariableName",
-                                                                                     evaluation.getLeftVariableName() )
+                                                                                     innerEvaluation.getLeftVariableName() )
                                                                             .append( "rightVariableName",
-                                                                                     evaluation.getRightVariableName() )
+                                                                                     innerEvaluation.getRightVariableName() )
                                                                             .append( "baselineVariableName",
-                                                                                     evaluation.getBaselineVariableName() )
+                                                                                     innerEvaluation.getBaselineVariableName() )
                                                                             .append( "isBaselinePool",
-                                                                                     pool.getIsBaselinePool() )
+                                                                                     innerPool.getIsBaselinePool() )
                                                                             .append( "features", featureGroup )
                                                                             .append( "timeWindow",
                                                                                      this.getTimeWindow() )
