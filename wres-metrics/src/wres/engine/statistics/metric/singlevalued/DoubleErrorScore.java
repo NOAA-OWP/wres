@@ -28,7 +28,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * provide a {@link DoubleErrorFunction} to the constructor. This function is applied to each pair, and the average
  * score returned across all pairs.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public abstract class DoubleErrorScore<S extends Pool<Pair<Double, Double>>>
         extends OrdinaryScore<S, DoubleScoreStatisticOuter>
@@ -70,9 +70,9 @@ public abstract class DoubleErrorScore<S extends Pool<Pair<Double, Double>>>
 
         //Compute the atomic errors in a stream
         double doubleScore = MissingValues.DOUBLE;
-        if ( !s.getRawData().isEmpty() )
+        if ( !s.get().isEmpty() )
         {
-            double[] doubles = s.getRawData().stream().mapToDouble( this.getErrorFunction() ).toArray();
+            double[] doubles = s.get().stream().mapToDouble( this.getErrorFunction() ).toArray();
             VectorOfDoubles wrappedDoubles = VectorOfDoubles.of( doubles );
             doubleScore = this.getErrorAccumulator().applyAsDouble( wrappedDoubles );
         }

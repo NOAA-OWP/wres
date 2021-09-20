@@ -29,7 +29,7 @@ import wres.statistics.generated.BoxplotStatistic.Box;
  * domain axis may show a function of the ensemble forecast value (e.g. the ensemble mean) and the range axis may show
  * forecast error. 
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 abstract class EnsembleBoxPlot extends Diagram<Pool<Pair<Double, Ensemble>>, BoxplotStatisticOuter>
@@ -76,7 +76,7 @@ abstract class EnsembleBoxPlot extends Diagram<Pool<Pair<Double, Ensemble>>, Box
         List<Box> boxes = new ArrayList<>();
 
         // Create each box
-        for ( Pair<Double, Ensemble> next : s.getRawData() )
+        for ( Pair<Double, Ensemble> next : s.get() )
         {
             boxes.add( this.getBox( next ) );
         }

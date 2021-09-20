@@ -18,7 +18,6 @@ import org.junit.Test;
 import wres.datamodel.Ensemble;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.pools.BasicPool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DiagramStatisticOuter;
@@ -29,7 +28,7 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 /**
  * Tests the {@link RankHistogram}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class RankHistogramTest
 {
@@ -73,7 +72,7 @@ public final class RankHistogramTest
             values.add( Pair.of( left, Ensemble.of( right ) ) );
         }
 
-        Pool<Pair<Double, Ensemble>> input = BasicPool.of( values, PoolMetadata.of() );
+        Pool<Pair<Double, Ensemble>> input = Pool.of( values, PoolMetadata.of() );
 
         //Check the results       
         DiagramStatisticOuter actual = this.rh.apply( input );
@@ -131,7 +130,7 @@ public final class RankHistogramTest
         //Generate some data using an RNG for a uniform U[0,1] distribution with a fixed seed
         List<Pair<Double, Ensemble>> values = new ArrayList<>();
         values.add( Pair.of( 2.0, Ensemble.of( 1, 2, 2, 2, 4, 5, 6, 7, 8 ) ) );
-        Pool<Pair<Double, Ensemble>> input = BasicPool.of( values, PoolMetadata.of() );
+        Pool<Pair<Double, Ensemble>> input = Pool.of( values, PoolMetadata.of() );
 
         //Check the results       
         DiagramStatisticOuter actual = this.rh.apply( input );
@@ -190,7 +189,7 @@ public final class RankHistogramTest
     {
         // Generate empty data
         Pool<Pair<Double, Ensemble>> input =
-                BasicPool.of( Arrays.asList(), PoolMetadata.of() );
+                Pool.of( Arrays.asList(), PoolMetadata.of() );
 
         DiagramStatisticOuter actual = this.rh.apply( input );
 

@@ -27,7 +27,7 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
  * distribution, the order statistics (and hence the quantiles) should be the same, notwithstanding any sampling error.
  * Uses as many quantiles as the smaller of the number of order statistics (pairs) and the prescribed count.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class QuantileQuantileDiagram extends Diagram<Pool<Pair<Double, Double>>, DiagramStatisticOuter>
@@ -121,7 +121,7 @@ public class QuantileQuantileDiagram extends Diagram<Pool<Pair<Double, Double>>,
         int quantileCount = this.probCount;
 
         // Use the smaller of the number of pairs and the default: no value in more quantiles than order statistics
-        int orderStatistics = pairs.getRawData()
+        int orderStatistics = pairs.get()
                                    .size();
         if ( orderStatistics < quantileCount )
         {

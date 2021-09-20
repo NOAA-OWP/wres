@@ -30,7 +30,7 @@ import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDurati
  * latest {@link Instant} is chosen. The timing error is measured with a {@link Duration}. A negative {@link Duration} 
  * indicates that the predicted peak was too early, i.e., occurred earlier than the observed peak.</p>
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public class TimeToPeakError extends TimingError
 {
@@ -80,7 +80,7 @@ public class TimeToPeakError extends TimingError
     }
 
     @Override
-    public DurationDiagramStatisticOuter apply( Pool<Pair<Double, Double>> s )
+    public DurationDiagramStatisticOuter apply( Pool<TimeSeries<Pair<Double, Double>>> s )
     {
         if ( Objects.isNull( s ) )
         {

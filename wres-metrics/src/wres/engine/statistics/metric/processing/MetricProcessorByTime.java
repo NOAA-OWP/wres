@@ -17,7 +17,7 @@ import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.BasicPool.Builder;
+import wres.datamodel.pools.Pool.Builder;
 import wres.datamodel.Slicer;
 import wres.datamodel.metrics.Metrics;
 import wres.datamodel.metrics.MetricConstants;
@@ -155,7 +155,7 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
                                   StatisticType outGroup )
     {
         // Don't waste cpu cycles computing statistics for empty pairs
-        if ( pairs.getRawData().isEmpty() )
+        if ( pairs.get().isEmpty() )
         {
             LOGGER.debug( "Skipping the calculation of statistics for an empty pool of pairs with metadata {}.",
                           pairs.getMetadata() );
@@ -175,17 +175,16 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
      * any metrics from consideration for which {@link MetricConstants#isAThresholdMetric()} returns false when the 
      * threshold is not the "all data" threshold.
      * 
-     * @param <U> the left data type
-     * @param <V> the right data type
+     * @param <U> the type of pooled data
      * @param <T> the type of {@link Statistic}
      * @param pairs the pairs
      * @param collection the metric collection
      * @return the future result
      */
 
-    <U, V, T extends Statistic<?>> Future<List<T>>
-            processMetricsRequiredForThisPool( Pool<Pair<U, V>> pairs,
-                                               MetricCollection<Pool<Pair<U, V>>, T, T> collection )
+    <U, T extends Statistic<?>> Future<List<T>>
+            processMetricsRequiredForThisPool( Pool<U> pairs,
+                                               MetricCollection<Pool<U>, T, T> collection )
     {
         int minimumSampleSize = super.getMetrics().getMinimumSampleSize();
 
@@ -195,7 +194,7 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
         // Are there skill metrics and does the baseline also meet the minimum sample size constraint?
         if ( collection.getMetrics().stream().anyMatch( MetricConstants::isSkillMetric ) && pairs.hasBaseline() )
         {
-            int actualBaselineSampleSize = pairs.getBaselineData().getRawData().size();
+            int actualBaselineSampleSize = pairs.getBaselineData().get().size();
 
             if ( actualBaselineSampleSize < minimumSampleSize )
             {
@@ -303,7 +302,7 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
 
             Builder<Pair<Double, Double>> builder = new Builder<>();
 
-            Pool<Pair<Double, Double>> pairs = builder.addData( input )
+            Pool<Pair<Double, Double>> pairs = builder.addPool( input )
                                                       .setMetadata( PoolMetadata.of( input.getMetadata(),
                                                                                      oneOrTwo ) )
                                                       .setMetadataForBaseline( baselineMeta )
@@ -339,7 +338,7 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
                                            StatisticType outGroup )
     {
         // Don't waste cpu cycles computing statistics for empty pairs
-        if ( pairs.getRawData().isEmpty() )
+        if ( pairs.get().isEmpty() )
         {
             LOGGER.debug( "Skipping the calculation of statistics for an empty pool of pairs with metadata {}.",
                           pairs.getMetadata() );
@@ -386,7 +385,7 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
         int minimumSampleSize = super.getMetrics().getMinimumSampleSize();
 
         // Log and return an empty result if the sample size is too small
-        if ( pairs.getRawData().size() < minimumSampleSize )
+        if ( pairs.get().size() < minimumSampleSize )
         {
             if ( LOGGER.isDebugEnabled() )
             {
@@ -397,7 +396,7 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
                               + "minimum sample size of {} pairs. The following metrics will not be computed for this "
                               + "pool: {}.",
                               pairs.getMetadata(),
-                              pairs.getRawData().size(),
+                              pairs.get().size(),
                               minimumSampleSize,
                               collected );
             }
@@ -466,7 +465,7 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
         int occurrences = 0;
         int nonOccurrences = 0;
 
-        for ( Pair<Boolean, Boolean> next : pairs.getRawData() )
+        for ( Pair<Boolean, Boolean> next : pairs.get() )
         {
             if ( Boolean.TRUE.equals( next.getLeft() ) )
             {

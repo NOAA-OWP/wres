@@ -18,7 +18,6 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.MetricGroup;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.pools.BasicPool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -30,7 +29,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 /**
  * Tests the {@link ContinuousRankedProbabilitySkillScore}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class ContinousRankedProbabilitySkillScoreTest
 {
@@ -71,7 +70,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
         basePairs.add( Pair.of( 12.1, Ensemble.of( 9, 18, 5, 6, 12 ) ) );
         basePairs.add( Pair.of( 43.0, Ensemble.of( 23, 12, 12, 39, 10 ) ) );
 
-        Pool<Pair<Double, Ensemble>> input = BasicPool.of( pairs,
+        Pool<Pair<Double, Ensemble>> input = Pool.of( pairs,
                                                                        PoolMetadata.of(),
                                                                        basePairs,
                                                                        PoolMetadata.of(),
@@ -103,7 +102,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
     {
         // Generate empty data
         Pool<Pair<Double, Ensemble>> input =
-                BasicPool.of( Arrays.asList(),
+                Pool.of( Arrays.asList(),
                                     PoolMetadata.of(),
                                     Arrays.asList(),
                                     PoolMetadata.of(),
@@ -232,7 +231,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
     {
         List<Pair<Double, Ensemble>> pairs = new ArrayList<>();
         pairs.add( Pair.of( 25.7, Ensemble.of( 23, 43, 45, 23, 54 ) ) );
-        Pool<Pair<Double, Ensemble>> input = BasicPool.of( pairs, PoolMetadata.of() );
+        Pool<Pair<Double, Ensemble>> input = Pool.of( pairs, PoolMetadata.of() );
 
         PoolException actual = assertThrows( PoolException.class,
                                                    () -> this.crpss.apply( input ) );

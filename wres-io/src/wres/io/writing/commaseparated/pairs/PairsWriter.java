@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
@@ -60,10 +61,11 @@ import wres.util.TimeHelper;
  * 
  * @param <L> the type of left data in the pairing
  * @param <R> the type of right data in the pairing
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
-public abstract class PairsWriter<L, R> implements Consumer<Pool<Pair<L, R>>>, Supplier<Set<Path>>, Closeable
+public abstract class PairsWriter<L, R>
+        implements Consumer<Pool<TimeSeries<Pair<L, R>>>>, Supplier<Set<Path>>, Closeable
 {
 
     /**
@@ -149,7 +151,7 @@ public abstract class PairsWriter<L, R> implements Consumer<Pool<Pair<L, R>>>, S
      * @throws NullPointerException if the pairs are null
      */
 
-    StringJoiner getHeaderFromPairs( Pool<Pair<L, R>> pairs )
+    StringJoiner getHeaderFromPairs( Pool<TimeSeries<Pair<L, R>>> pairs )
     {
         Objects.requireNonNull( pairs, "Cannot obtain header from null pairs." );
 
@@ -229,7 +231,7 @@ public abstract class PairsWriter<L, R> implements Consumer<Pool<Pair<L, R>>>, S
      */
 
     @Override
-    public void accept( Pool<Pair<L, R>> pairs )
+    public void accept( Pool<TimeSeries<Pair<L, R>>> pairs )
     {
         Objects.requireNonNull( pairs, "Cannot write null pairs." );
 
@@ -239,7 +241,7 @@ public abstract class PairsWriter<L, R> implements Consumer<Pool<Pair<L, R>>>, S
         try
         {
             // Write contents if available
-            if ( !pairs.getRawData().isEmpty() )
+            if ( PoolSlicer.getPairCount( pairs ) > 0 )
             {
                 // Write header if not already written
                 // At this point, we have a non-empty pool: #67088
@@ -327,11 +329,16 @@ public abstract class PairsWriter<L, R> implements Consumer<Pool<Pair<L, R>>>, S
                     // Flush the buffer
                     sharedWriter.flush();
 
-                    LOGGER.debug( "{} pairs written to {} for geometries {} at time window {}.",
-                                  pairs.getRawData().size(),
-                                  this.getPath(),
-                                  pairs.getMetadata().getPool().getGeometryTuplesList(),
-                                  timeWindow );
+                    if ( LOGGER.isDebugEnabled() )
+                    {
+                        LOGGER.debug( "{} time-series of pairs containing {} pairs written to {} for geometries {} at time "
+                                      + "window {}.",
+                                      pairs.get().size(),
+                                      PoolSlicer.getPairCount( pairs ),
+                                      this.getPath(),
+                                      pairs.getMetadata().getPool().getGeometryTuplesList(),
+                                      timeWindow );
+                    }
                 }
                 // Clean-up
                 finally
@@ -462,7 +469,7 @@ public abstract class PairsWriter<L, R> implements Consumer<Pool<Pair<L, R>>>, S
      * @throws NullPointerException if the header is null
      */
 
-    private void writeHeaderIfRequired( final Pool<Pair<L, R>> pairs ) throws IOException
+    private void writeHeaderIfRequired( final Pool<TimeSeries<Pair<L, R>>> pairs ) throws IOException
     {
         Objects.requireNonNull( pairs, "Specify a non-null header for writing pairs." );
 

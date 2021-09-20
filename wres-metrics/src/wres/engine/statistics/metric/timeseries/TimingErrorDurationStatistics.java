@@ -18,6 +18,7 @@ import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
+import wres.datamodel.time.TimeSeries;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.Metric;
@@ -38,7 +39,7 @@ import wres.statistics.generated.MetricName;
  * @author James Brown
  */
 public class TimingErrorDurationStatistics
-        implements Metric<Pool<Pair<Double, Double>>, DurationScoreStatisticOuter>
+        implements Metric<Pool<TimeSeries<Pair<Double, Double>>>, DurationScoreStatisticOuter>
 {
 
     /**
@@ -82,7 +83,7 @@ public class TimingErrorDurationStatistics
     }
 
     @Override
-    public DurationScoreStatisticOuter apply( Pool<Pair<Double, Double>> pairs )
+    public DurationScoreStatisticOuter apply( Pool<TimeSeries<Pair<Double, Double>>> pairs )
     {
         if ( Objects.isNull(pairs ) )
         {

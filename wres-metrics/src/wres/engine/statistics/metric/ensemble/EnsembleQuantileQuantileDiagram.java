@@ -28,7 +28,7 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
  * Creates a quantile-quantile curve for each trace in an ensemble. Uses as many quantiles as the smaller of the number
  * of order statistics and the {@link #DEFAULT_PROBABILITY_COUNT}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class EnsembleQuantileQuantileDiagram extends Diagram<Pool<Pair<Double, Ensemble>>, DiagramStatisticOuter>
@@ -111,7 +111,7 @@ public class EnsembleQuantileQuantileDiagram extends Diagram<Pool<Pair<Double, E
 
         // Find the unique labels across ensemble members
         Set<String> labels = new TreeSet<>();
-        for ( Pair<Double, Ensemble> pair : pairs.getRawData() )
+        for ( Pair<Double, Ensemble> pair : pairs.get() )
         {
             String[] nextLabels = pair.getRight()
                                       .getLabels()

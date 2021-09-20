@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -19,7 +20,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 /**
  * An immutable score statistic that wraps a {@link DoubleScoreStatistic}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 @Immutable
@@ -49,7 +50,7 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
     /**
      * A wrapper for a {@link DoubleScoreStatisticComponent}.
      * 
-     * @author james.brown@hydrosolved.com
+     * @author James Brown
      */
 
     public static class DoubleScoreComponentOuter extends BasicScoreComponent<DoubleScoreStatisticComponent>
@@ -95,6 +96,35 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
         {
             return this.metricName;
         }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( !super.equals( o ) )
+            {
+                return false;
+            }
+
+            if ( ! ( o instanceof DoubleScoreComponentOuter ) )
+            {
+                return false;
+            }
+
+            if ( o == this )
+            {
+                return true;
+            }
+
+            DoubleScoreComponentOuter inner = (DoubleScoreComponentOuter) o;
+
+            return Objects.equals( this.getMetricName(), inner.getMetricName() );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return 31 * this.getMetricName().hashCode() + super.hashCode();
+        }
     }
 
     @Override
@@ -116,6 +146,35 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
                .append( "sample size", this.getData().getSampleSize() );
 
         return builder.toString();
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( !super.equals( o ) )
+        {
+            return false;
+        }
+
+        if ( ! ( o instanceof DoubleScoreStatisticOuter ) )
+        {
+            return false;
+        }
+
+        if ( o == this )
+        {
+            return true;
+        }
+
+        DoubleScoreStatisticOuter inner = (DoubleScoreStatisticOuter) o;
+
+        return Objects.equals( this.getMetricName(), inner.getMetricName() );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return 31 * this.getMetricName().hashCode() + super.hashCode();
     }
 
     /**

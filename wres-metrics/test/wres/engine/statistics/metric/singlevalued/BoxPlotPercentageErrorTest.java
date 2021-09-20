@@ -6,7 +6,6 @@ import static org.junit.Assert.assertThrows;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -17,10 +16,8 @@ import org.junit.Test;
 
 import wres.datamodel.pools.Pool;
 import wres.datamodel.metrics.MetricConstants;
-import wres.datamodel.pools.BasicPool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -37,7 +34,7 @@ import wres.statistics.generated.BoxplotStatistic.Box;
 /**
  * Tests the {@link BoxPlotPercentageError}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class BoxPlotPercentageErrorTest
 {
@@ -90,7 +87,7 @@ public final class BoxPlotPercentageErrorTest
     public void testApplyAgainstSingleValuedPairsNine()
     {
         //Generate some data
-        Pool<Pair<Double, Double>>  input = MetricTestDataFactory.getSingleValuedPairsNine();
+        Pool<TimeSeries<Pair<Double, Double>>> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsNine();
 
         //Check the results        
         List<BoxplotStatistic> actualRaw = new ArrayList<>();
@@ -114,12 +111,11 @@ public final class BoxPlotPercentageErrorTest
                 events.addAll( filtered.getEvents() );
             }
 
-            Builder<Double, Double> builder = new Builder<>();
+            Pool.Builder<Pair<Double, Double>> builder = new Pool.Builder<>();
             builder.setMetadata( input.getMetadata() );
             for ( Event<Pair<Double, Double>> next : events )
             {
-                builder.addTimeSeries( TimeSeries.of( MetricTestDataFactory.getBoilerplateMetadata(),
-                                                      new TreeSet<>( Collections.singleton( next ) ) ) );
+                builder.addData( next.getValue() );
             }
 
             actualRaw.add( this.boxPlotPercentageError.apply( builder.build() ).getData() );
@@ -254,8 +250,8 @@ public final class BoxPlotPercentageErrorTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        BasicPool<Pair<Double, Double>> input =
-                BasicPool.of( Arrays.asList(), PoolMetadata.of() );
+        Pool<Pair<Double, Double>> input =
+                Pool.of( Arrays.asList(), PoolMetadata.of() );
 
         BoxplotStatisticOuter actual = this.boxPlotPercentageError.apply( input );
 

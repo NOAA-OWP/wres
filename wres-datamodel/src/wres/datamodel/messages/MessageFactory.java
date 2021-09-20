@@ -186,7 +186,7 @@ public class MessageFactory
 
         return builder.build();
     }
-    
+
     /**
      * Builds a pool from the input, some of which may be missing.
      * 
@@ -217,9 +217,9 @@ public class MessageFactory
                                                        .map( MessageFactory::parse )
                                                        .collect( Collectors.toSet() );
             poolBuilder.addAllGeometryTuples( geoTuples );
-            
+
             // Region name?
-            if( Objects.nonNull( featureGroup.getName() ) )
+            if ( Objects.nonNull( featureGroup.getName() ) )
             {
                 poolBuilder.setRegionName( featureGroup.getName() );
             }
@@ -275,7 +275,8 @@ public class MessageFactory
      * @return a pairs message
      */
 
-    public static Pairs parseTimeSeriesOfEnsemblePairs( wres.datamodel.pools.Pool<Pair<Double, Ensemble>> pairs )
+    public static Pairs
+            parseTimeSeriesOfEnsemblePairs( wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> pairs )
     {
         Objects.requireNonNull( pairs );
 
@@ -683,7 +684,7 @@ public class MessageFactory
      */
 
     static Statistics parseOnePool( StatisticsForProject project,
-                                    wres.datamodel.pools.Pool<Pair<Double, Ensemble>> pairs )
+                                    wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> pairs )
             throws InterruptedException
     {
         Statistics prototype = MessageFactory.parseOnePool( project );
@@ -718,7 +719,7 @@ public class MessageFactory
         Objects.requireNonNull( onePool );
 
         Statistics.Builder statistics = Statistics.newBuilder();
-        
+
         // Set the minimum sample size
         statistics.setMinimumSampleSize( onePool.getMinimumSampleSize() );
 
@@ -875,7 +876,7 @@ public class MessageFactory
         Collection<StatisticsForProject> returnMe = new ArrayList<>();
 
         // Build the per-pool statistics
-        for( StatisticsForProject.Builder builder : mappedStatistics.values() )
+        for ( StatisticsForProject.Builder builder : mappedStatistics.values() )
         {
             StatisticsForProject statistics = builder.setMinimumSampleSize( project.getMinimumSampleSize() )
                                                      .build();
@@ -899,7 +900,7 @@ public class MessageFactory
 
         wres.datamodel.time.TimeWindowOuter window = metadata.getTimeWindow();
         wres.datamodel.thresholds.OneOrTwoThresholds thresholds = metadata.getThresholds();
-        
+
         Set<wres.datamodel.space.FeatureTuple> features = metadata.getPool()
                                                                   .getGeometryTuplesList()
                                                                   .stream()

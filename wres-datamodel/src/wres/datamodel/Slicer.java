@@ -33,7 +33,7 @@ import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.BasicPool.Builder;
+import wres.datamodel.pools.Pool.Builder;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.statistics.ScoreStatistic.ScoreComponent;
 import wres.datamodel.statistics.Statistic;
@@ -42,12 +42,14 @@ import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.TimeSeriesSlicer;
+import wres.datamodel.pools.PoolSlicer;
 
 /**
- * A utility class for slicing/dicing and transforming datasets associated with verification metrics.
+ * A utility class for slicing/dicing and transforming datasets.
  * 
  * @author James Brown
  * @see    TimeSeriesSlicer
+ * @see    PoolSlicer
  */
 
 public final class Slicer
@@ -325,7 +327,7 @@ public final class Slicer
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
-        return input.getRawData().stream().mapToDouble( Pair::getLeft ).toArray();
+        return input.get().stream().mapToDouble( Pair::getLeft ).toArray();
     }
 
     /**
@@ -341,7 +343,7 @@ public final class Slicer
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
-        return input.getRawData().stream().mapToDouble( Pair::getRight ).toArray();
+        return input.get().stream().mapToDouble( Pair::getRight ).toArray();
     }
 
     /**
@@ -366,7 +368,7 @@ public final class Slicer
 
         Builder<T> builder = new Builder<>();
 
-        List<T> mainPairs = input.getRawData();
+        List<T> mainPairs = input.get();
         List<T> mainPairsSubset =
                 mainPairs.stream().filter( condition ).collect( Collectors.toList() );
 
@@ -389,7 +391,7 @@ public final class Slicer
         if ( input.hasBaseline() )
         {
             Pool<T> baseline = input.getBaselineData();
-            List<T> basePairs = baseline.getRawData();
+            List<T> basePairs = baseline.get();
             List<T> basePairsSubset =
                     basePairs.stream().filter( condition ).collect( Collectors.toList() );
 
@@ -707,7 +709,7 @@ public final class Slicer
                .setMetadata( input.getMetadata() );
 
         // Add the main series
-        for ( S next : input.getRawData() )
+        for ( S next : input.get() )
         {
             T transformed = transformer.apply( next );
             if ( Objects.nonNull( transformed ) )
@@ -721,7 +723,7 @@ public final class Slicer
         {
             Pool<S> baseline = input.getBaselineData();
 
-            for ( S next : baseline.getRawData() )
+            for ( S next : baseline.get() )
             {
                 T transformed = transformer.apply( next );
                 if ( Objects.nonNull( transformed ) )

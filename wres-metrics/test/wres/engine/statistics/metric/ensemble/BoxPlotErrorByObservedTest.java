@@ -17,7 +17,6 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.pools.BasicPool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
@@ -32,7 +31,7 @@ import wres.statistics.generated.BoxplotStatistic.Box;
 /**
  * Tests the {@link BoxPlotErrorByObserved}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class BoxPlotErrorByObservedTest
 {
@@ -60,7 +59,7 @@ public final class BoxPlotErrorByObservedTest
         List<Pair<Double, Ensemble>> values = new ArrayList<>();
         values.add( Pair.of( 50.0, Ensemble.of( 0.0, 25.0, 50.0, 75.0, 100.0 ) ) );
 
-        Pool<Pair<Double, Ensemble>> input = BasicPool.of( values, PoolMetadata.of() );
+        Pool<Pair<Double, Ensemble>> input = Pool.of( values, PoolMetadata.of() );
 
         BoxplotStatisticOuter actual = this.bpe.apply( input );
 
@@ -96,7 +95,7 @@ public final class BoxPlotErrorByObservedTest
     {
         // Generate empty data
         Pool<Pair<Double, Ensemble>> input =
-                BasicPool.of( Arrays.asList(), PoolMetadata.of() );
+                Pool.of( Arrays.asList(), PoolMetadata.of() );
 
         BoxplotStatisticOuter actual = bpe.apply( input );
 

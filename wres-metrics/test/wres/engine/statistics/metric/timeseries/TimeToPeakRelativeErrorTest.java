@@ -15,6 +15,7 @@ import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
+import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
@@ -23,7 +24,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 /**
  * Tests the {@link TimeToPeakRelativeError}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class TimeToPeakRelativeErrorTest
 {
@@ -44,7 +45,7 @@ public final class TimeToPeakRelativeErrorTest
     public void testTimeToPeakRelativeError()
     {
         // Generate some data
-        Pool<Pair<Double, Double>> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
+        Pool<TimeSeries<Pair<Double, Double>>> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
         DurationDiagramStatisticOuter actual = this.ttp.apply( input );
 
@@ -57,7 +58,7 @@ public final class TimeToPeakRelativeErrorTest
                                                                                   .setNanos( firstInstant.getNano() ) )
                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
                                                                                                          .setSeconds( -1200 ) )
-                                                               .setReferenceTimeType( ReferenceTimeType.T0 )    
+                                                               .setReferenceTimeType( ReferenceTimeType.T0 )
                                                                .build();
 
         PairOfInstantAndDuration two = PairOfInstantAndDuration.newBuilder()
@@ -66,7 +67,7 @@ public final class TimeToPeakRelativeErrorTest
                                                                                   .setNanos( secondInstant.getNano() ) )
                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
                                                                                                          .setSeconds( 7200 ) )
-                                                               .setReferenceTimeType( ReferenceTimeType.T0 )    
+                                                               .setReferenceTimeType( ReferenceTimeType.T0 )
                                                                .build();
 
         DurationDiagramStatistic expected = DurationDiagramStatistic.newBuilder()

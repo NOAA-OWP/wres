@@ -13,7 +13,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.metrics.MetricConstants;
-import wres.datamodel.pools.BasicPool;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.statistics.generated.DiagramStatistic;
@@ -22,7 +22,7 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 /**
  * Tests the {@link QuantileQuantileDiagram}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class QuantileQuantileDiagramTest
 {
@@ -51,7 +51,7 @@ public final class QuantileQuantileDiagramTest
             values.add( Pair.of( left, right ) );
         }
 
-        BasicPool<Pair<Double, Double>> input = BasicPool.of( values, PoolMetadata.of() );
+        Pool<Pair<Double, Double>> input = Pool.of( values, PoolMetadata.of() );
 
         //Check the results        
         DiagramStatisticOuter actual = this.qqd.apply( input );
@@ -93,8 +93,8 @@ public final class QuantileQuantileDiagramTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        BasicPool<Pair<Double, Double>> input =
-                BasicPool.of( Arrays.asList(), PoolMetadata.of() );
+        Pool<Pair<Double, Double>> input =
+                Pool.of( Arrays.asList(), PoolMetadata.of() );
 
         DiagramStatisticOuter actual = this.qqd.apply( input );
 

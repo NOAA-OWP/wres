@@ -17,7 +17,6 @@ import org.junit.Test;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.pools.BasicPool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.OneOrTwoDoubles;
@@ -36,7 +35,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 /**
  * Tests the {@link RelativeOperatingCharacteristicScore}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class RelativeOperatingCharacteristicScoreTest
 {
@@ -80,7 +79,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         values.add( Pair.of( Probability.ONE, Probability.of( 1.0 ) ) );
 
         Pool<Pair<Probability, Probability>> input =
-                BasicPool.of( values, PoolMetadata.of() );
+                Pool.of( values, PoolMetadata.of() );
 
         //Metadata for the output
         PoolMetadata m1 = PoolMetadata.of();
@@ -129,7 +128,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         values.add( Pair.of( Probability.ONE, Probability.of( 0.984 ) ) );
         values.add( Pair.of( Probability.ONE, Probability.of( 0.952 ) ) );
         PoolMetadata meta = PoolMetadata.of();
-        Pool<Pair<Probability, Probability>> input = BasicPool.of( values, meta );
+        Pool<Pair<Probability, Probability>> input = Pool.of( values, meta );
 
         //Metadata for the output
         PoolMetadata m1 = PoolMetadata.of();
@@ -155,7 +154,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         assertEquals( expected, actual );
 
         //Check against a baseline
-        Pool<Pair<Probability, Probability>> inputBase = BasicPool.of( values, meta, values, meta, null );
+        Pool<Pair<Probability, Probability>> inputBase = Pool.of( values, meta, values, meta, null );
         DoubleScoreStatisticOuter actualBase = this.rocScore.apply( inputBase );
 
         DoubleScoreStatisticComponent componentBase = DoubleScoreStatisticComponent.newBuilder()
@@ -200,7 +199,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         values.add( Pair.of( Probability.ZERO, Probability.of( 0.952 ) ) );
         PoolMetadata meta = PoolMetadata.of();
 
-        Pool<Pair<Probability, Probability>> input = BasicPool.of( values, meta );
+        Pool<Pair<Probability, Probability>> input = Pool.of( values, meta );
 
         //Metadata for the output
         PoolMetadata m1 = PoolMetadata.of();
@@ -233,7 +232,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     {
         // Generate empty data
         Pool<Pair<Probability, Probability>> input =
-                BasicPool.of( Arrays.asList(), PoolMetadata.of() );
+                Pool.of( Arrays.asList(), PoolMetadata.of() );
 
         DoubleScoreStatisticOuter actual = this.rocScore.apply( input );
 

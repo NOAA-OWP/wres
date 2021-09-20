@@ -102,11 +102,11 @@ public class PoolFactory
      *            data
      */
 
-    public static List<Supplier<Pool<Pair<Double, Double>>>> getSingleValuedPools( Evaluation evaluation,
-                                                                                   Project project,
-                                                                                   FeatureGroup featureGroup,
-                                                                                   UnitMapper unitMapper,
-                                                                                   RetrieverFactory<Double, Double> retrieverFactory )
+    public static List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> getSingleValuedPools( Evaluation evaluation,
+                                                                                               Project project,
+                                                                                               FeatureGroup featureGroup,
+                                                                                               UnitMapper unitMapper,
+                                                                                               RetrieverFactory<Double, Double> retrieverFactory )
     {
         Objects.requireNonNull( evaluation, "Cannot create pools from a null evaluation." );
         Objects.requireNonNull( project, "Cannot create pools from a null project." );
@@ -215,11 +215,11 @@ public class PoolFactory
      *            data
      */
 
-    public static List<Supplier<Pool<Pair<Double, Ensemble>>>> getEnsemblePools( Evaluation evaluation,
-                                                                                 Project project,
-                                                                                 FeatureGroup featureGroup,
-                                                                                 UnitMapper unitMapper,
-                                                                                 RetrieverFactory<Double, Ensemble> retrieverFactory )
+    public static List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> getEnsemblePools( Evaluation evaluation,
+                                                                                             Project project,
+                                                                                             FeatureGroup featureGroup,
+                                                                                             UnitMapper unitMapper,
+                                                                                             RetrieverFactory<Double, Ensemble> retrieverFactory )
     {
         Objects.requireNonNull( evaluation, "Cannot create pools from a null evaluation." );
         Objects.requireNonNull( project, "Cannot create pools from a null project." );

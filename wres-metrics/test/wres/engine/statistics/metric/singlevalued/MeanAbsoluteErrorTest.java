@@ -13,7 +13,6 @@ import org.junit.Test;
 
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.MetricGroup;
-import wres.datamodel.pools.BasicPool;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
@@ -28,7 +27,7 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 /**
  * Tests the {@link MeanAbsoluteError}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class MeanAbsoluteErrorTest
 {
@@ -79,8 +78,8 @@ public final class MeanAbsoluteErrorTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        BasicPool<Pair<Double, Double>> input =
-                BasicPool.of( Arrays.asList(), PoolMetadata.of() );
+        Pool<Pair<Double, Double>> input =
+                Pool.of( Arrays.asList(), PoolMetadata.of() );
 
         DoubleScoreStatisticOuter actual = mae.apply( input );
 

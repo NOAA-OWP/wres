@@ -17,6 +17,7 @@ import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
+import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.singlevalued.SumOfSquareError;
 import wres.statistics.generated.DurationDiagramStatistic;
@@ -26,7 +27,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 /**
  * Tests the {@link TimeToPeakError}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class TimeToPeakErrorTest
 {
@@ -47,7 +48,7 @@ public final class TimeToPeakErrorTest
     public void testTimeToPeakError()
     {
         // Generate some data
-        Pool<Pair<Double, Double>> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
+        Pool<TimeSeries<Pair<Double, Double>>> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
         DurationDiagramStatisticOuter actual = this.ttp.apply( input );
 

@@ -24,7 +24,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 /**
  * Base class for decomposable scores that involve a sum-of-square errors.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public class SumOfSquareError extends DecomposableScore<Pool<Pair<Double, Double>>>
         implements Collectable<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
@@ -98,11 +98,11 @@ public class SumOfSquareError extends DecomposableScore<Pool<Pair<Double, Double
         double returnMe = MissingValues.DOUBLE;
 
         // Data available
-        if ( !input.getRawData().isEmpty() )
+        if ( !input.get().isEmpty() )
         {
             // Sort the stream, as this improves accuracy according to the API docs
             // See #71343
-            returnMe = input.getRawData()
+            returnMe = input.get()
                             .stream()
                             .mapToDouble( FunctionFactory.squareError() )
                             .sorted()
@@ -124,7 +124,7 @@ public class SumOfSquareError extends DecomposableScore<Pool<Pair<Double, Double
                 DoubleScoreStatistic.newBuilder()
                                     .setMetric( SumOfSquareError.BASIC_METRIC )
                                     .addStatistics( component )
-                                    .setSampleSize( input.getRawData().size() )
+                                    .setSampleSize( input.get().size() )
                                     .build();
 
         return DoubleScoreStatisticOuter.of( score, input.getMetadata() );

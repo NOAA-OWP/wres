@@ -37,7 +37,7 @@ import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDurati
  * <p>For multiple peaks with the same value, the peak with the latest {@link Instant} is chosen. A negative 
  * {@link Duration} indicates that the predicted peak was too early, i.e., occurred earlier than the observed peak.</p>
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public class TimeToPeakRelativeError extends TimingError
 {
@@ -93,7 +93,7 @@ public class TimeToPeakRelativeError extends TimingError
     }
 
     @Override
-    public DurationDiagramStatisticOuter apply( Pool<Pair<Double, Double>> s )
+    public DurationDiagramStatisticOuter apply( Pool<TimeSeries<Pair<Double, Double>>> s )
     {
         if ( Objects.isNull( s ) )
         {

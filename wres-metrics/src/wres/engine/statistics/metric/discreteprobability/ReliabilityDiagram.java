@@ -37,7 +37,7 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
  * and the sample sizes (sharpness) for each bin within the unit interval.
  * </p>
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class ReliabilityDiagram extends Diagram<Pool<Pair<Probability, Probability>>, DiagramStatisticOuter>
@@ -129,12 +129,12 @@ public class ReliabilityDiagram extends Diagram<Pool<Pair<Probability, Probabili
         double[] samples = new double[bins];
 
         // Some data available
-        if ( !s.getRawData().isEmpty() )
+        if ( !s.get().isEmpty() )
         {
             // Compute the average probabilities for samples > 0
 
             // Increment the reliability 
-            s.getRawData().forEach( this.getIncrementor( fProb, oProb, samples, constant ) );
+            s.get().forEach( this.getIncrementor( fProb, oProb, samples, constant ) );
 
             // Compute the average reliability
             List<Double> fProbFinal = new ArrayList<>(); //Forecast probs for samples > 0

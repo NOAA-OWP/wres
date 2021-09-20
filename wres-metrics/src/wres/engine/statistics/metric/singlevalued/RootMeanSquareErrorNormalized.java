@@ -24,7 +24,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * The Root Mean Square Error (RMSE) normalized by the standard deviation of the observations (SDO), also known as
  * the RMSE Standard Deviation Ratio (RSR): RSR = RMSE / SDO.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public class RootMeanSquareErrorNormalized extends DoubleErrorScore<Pool<Pair<Double, Double>>>
 {
@@ -86,7 +86,7 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<Pool<Pair<Do
         double returnMe = MissingValues.DOUBLE;
 
         // Data available
-        if ( !t.getRawData().isEmpty() )
+        if ( !t.get().isEmpty() )
         {
 
             double mse = super.apply( t ).getComponent( MetricConstants.MAIN )
@@ -94,7 +94,7 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<Pool<Pair<Do
                                          .getValue();
 
             //Compute the observation standard deviation
-            double[] obs = t.getRawData()
+            double[] obs = t.get()
                             .stream()
                             .mapToDouble( Pair::getLeft )
                             .toArray();

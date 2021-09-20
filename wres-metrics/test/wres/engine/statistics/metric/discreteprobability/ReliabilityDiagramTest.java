@@ -15,7 +15,6 @@ import org.junit.Test;
 import wres.datamodel.Probability;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.pools.BasicPool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DiagramStatisticOuter;
@@ -27,7 +26,7 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 /**
  * Tests the {@link ReliabilityDiagram}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class ReliabilityDiagramTest
 {
@@ -162,8 +161,7 @@ public final class ReliabilityDiagramTest
         data.add( Pair.of( Probability.ZERO, Probability.of( 0.0 ) ) );
         data.add( Pair.of( Probability.ZERO, Probability.of( 0.0 ) ) );
 
-        Pool<Pair<Probability, Probability>> input =
-                BasicPool.of( data,
+        Pool<Pair<Probability, Probability>> input = Pool.of( data,
                                     PoolMetadata.of() );
 
         //Check the results       
@@ -235,8 +233,7 @@ public final class ReliabilityDiagramTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        Pool<Pair<Probability, Probability>> input =
-                BasicPool.of( Arrays.asList(), PoolMetadata.of() );
+        Pool<Pair<Probability, Probability>> input = Pool.of( Arrays.asList(), PoolMetadata.of() );
 
         DiagramStatisticOuter actual = rel.apply( input );
 

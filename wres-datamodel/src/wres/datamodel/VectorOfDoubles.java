@@ -9,7 +9,7 @@ import java.util.stream.Stream;
  * implementation is immutable.
 
  * @author jesse
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public class VectorOfDoubles implements Comparable<VectorOfDoubles>
 {
@@ -51,7 +51,7 @@ public class VectorOfDoubles implements Comparable<VectorOfDoubles>
 
     public double[] getDoubles()
     {
-        return doubles.clone();
+        return this.doubles.clone();
     }
 
     /**
@@ -62,7 +62,7 @@ public class VectorOfDoubles implements Comparable<VectorOfDoubles>
 
     public int size()
     {
-        return doubles.length;
+        return this.doubles.length;
     }
 
     @Override
@@ -95,7 +95,7 @@ public class VectorOfDoubles implements Comparable<VectorOfDoubles>
     @Override
     public String toString()
     {
-        return Arrays.toString( doubles );
+        return Arrays.toString( this.doubles );
     }
 
     /**

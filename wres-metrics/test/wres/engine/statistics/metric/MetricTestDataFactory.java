@@ -24,9 +24,9 @@ import wres.datamodel.Probability;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.pools.BasicPool;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
+import wres.datamodel.pools.PoolSlicer;
+import wres.datamodel.pools.Pool.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
@@ -185,24 +185,21 @@ public final class MetricTestDataFactory
     public static wres.datamodel.pools.Pool<Pair<Double, Double>> getSingleValuedPairsOne()
     {
         //Construct some single-valued pairs
-        SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
+        List<Pair<Double, Double>> pairs = new ArrayList<>();
 
-        Instant start = Instant.parse( "1985-01-01T00:00:00Z" );
+        pairs.add( Pair.of( 22.9, 22.8 ) );
+        pairs.add( Pair.of( 75.2, 80.0 ) );
+        pairs.add( Pair.of( 63.2, 65.0 ) );
+        pairs.add( Pair.of( 29.0, 30.0 ) );
+        pairs.add( Pair.of( 5.0, 2.0 ) );
+        pairs.add( Pair.of( 2.1, 3.1 ) );
+        pairs.add( Pair.of( 35000.0, 37000.0 ) );
+        pairs.add( Pair.of( 8.0, 7.0 ) );
+        pairs.add( Pair.of( 12.0, 12.0 ) );
+        pairs.add( Pair.of( 93.0, 94.0 ) );
 
-        events.add( Event.of( start.plus( Duration.ofHours( 1 ) ), Pair.of( 22.9, 22.8 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 2 ) ), Pair.of( 75.2, 80.0 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 3 ) ), Pair.of( 63.2, 65.0 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 4 ) ), Pair.of( 29.0, 30.0 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 5 ) ), Pair.of( 5.0, 2.0 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 6 ) ), Pair.of( 2.1, 3.1 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 7 ) ), Pair.of( 35000.0, 37000.0 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 8 ) ), Pair.of( 8.0, 7.0 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 9 ) ), Pair.of( 12.0, 12.0 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 10 ) ), Pair.of( 93.0, 94.0 ) ) );
-
-        Builder<Double, Double> builder = new Builder<>();
-        builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
-                                              events ) )
+        wres.datamodel.pools.Pool.Builder<Pair<Double, Double>> builder = new wres.datamodel.pools.Pool.Builder<>();
+        builder.addData( pairs )
                .setMetadata( PoolMetadata.of() );
 
         return builder.build();
@@ -217,32 +214,30 @@ public final class MetricTestDataFactory
     public static wres.datamodel.pools.Pool<Pair<Double, Double>> getSingleValuedPairsTwo()
     {
         //Construct some single-valued pairs
-        SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
+        List<Pair<Double, Double>> pairs = new ArrayList<>();
 
-        Instant start = Instant.parse( "1985-01-01T00:00:00Z" );
+        pairs.add( Pair.of( 22.9, 22.8 ) );
+        pairs.add( Pair.of( 75.2, 80.0 ) );
+        pairs.add( Pair.of( 63.2, 65.0 ) );
+        pairs.add( Pair.of( 29.0, 30.0 ) );
+        pairs.add( Pair.of( 5.0, 2.0 ) );
+        pairs.add( Pair.of( 2.1, 3.1 ) );
+        pairs.add( Pair.of( 35000.0, 37000.0 ) );
+        pairs.add( Pair.of( 8.0, 7.0 ) );
+        pairs.add( Pair.of( 12.0, 12.0 ) );
+        pairs.add( Pair.of( 93.0, 94.0 ) );
 
-        events.add( Event.of( start.plus( Duration.ofHours( 1 ) ), Pair.of( 22.9, 22.8 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 2 ) ), Pair.of( 75.2, 80.0 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 3 ) ), Pair.of( 63.2, 65.0 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 4 ) ), Pair.of( 29.0, 30.0 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 5 ) ), Pair.of( 5.0, 2.0 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 6 ) ), Pair.of( 2.1, 3.1 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 7 ) ), Pair.of( 35000.0, 37000.0 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 8 ) ), Pair.of( 8.0, 7.0 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 9 ) ), Pair.of( 12.0, 12.0 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 10 ) ), Pair.of( 93.0, 94.0 ) ) );
-
-        SortedSet<Event<Pair<Double, Double>>> baseline = new TreeSet<>();
-        baseline.add( Event.of( start.plus( Duration.ofHours( 1 ) ), Pair.of( 20.9, 23.8 ) ) );
-        baseline.add( Event.of( start.plus( Duration.ofHours( 2 ) ), Pair.of( 71.2, 83.2 ) ) );
-        baseline.add( Event.of( start.plus( Duration.ofHours( 3 ) ), Pair.of( 69.2, 66.0 ) ) );
-        baseline.add( Event.of( start.plus( Duration.ofHours( 4 ) ), Pair.of( 20.0, 30.5 ) ) );
-        baseline.add( Event.of( start.plus( Duration.ofHours( 5 ) ), Pair.of( 5.8, 2.1 ) ) );
-        baseline.add( Event.of( start.plus( Duration.ofHours( 6 ) ), Pair.of( 1.1, 3.4 ) ) );
-        baseline.add( Event.of( start.plus( Duration.ofHours( 7 ) ), Pair.of( 33020.0, 37500.0 ) ) );
-        baseline.add( Event.of( start.plus( Duration.ofHours( 8 ) ), Pair.of( 8.8, 7.1 ) ) );
-        baseline.add( Event.of( start.plus( Duration.ofHours( 9 ) ), Pair.of( 12.1, 13.0 ) ) );
-        baseline.add( Event.of( start.plus( Duration.ofHours( 10 ) ), Pair.of( 93.2, 94.8 ) ) );
+        List<Pair<Double, Double>> baseline = new ArrayList<>();
+        baseline.add( Pair.of( 20.9, 23.8 ) );
+        baseline.add( Pair.of( 71.2, 83.2 ) );
+        baseline.add( Pair.of( 69.2, 66.0 ) );
+        baseline.add( Pair.of( 20.0, 30.5 ) );
+        baseline.add( Pair.of( 5.8, 2.1 ) );
+        baseline.add( Pair.of( 1.1, 3.4 ) );
+        baseline.add( Pair.of( 33020.0, 37500.0 ) );
+        baseline.add( Pair.of( 8.8, 7.1 ) );
+        baseline.add( Pair.of( 12.1, 13.0 ) );
+        baseline.add( Pair.of( 93.2, 94.8 ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "SQIN" )
@@ -263,12 +258,10 @@ public final class MetricTestDataFactory
 
         PoolMetadata base = PoolMetadata.of( evaluation, poolTwo );
 
-        Builder<Double, Double> builder = new Builder<>();
-        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
-                                                     events ) )
+        wres.datamodel.pools.Pool.Builder<Pair<Double, Double>> builder = new wres.datamodel.pools.Pool.Builder<>();
+        return builder.addData( pairs )
                       .setMetadata( main )
-                      .addTimeSeriesForBaseline( TimeSeries.of( getBoilerplateMetadata(),
-                                                                baseline ) )
+                      .addDataForBaseline( baseline )
                       .setMetadataForBaseline( base )
                       .build();
     }
@@ -293,13 +286,10 @@ public final class MetricTestDataFactory
     public static wres.datamodel.pools.Pool<Pair<Double, Double>> getSingleValuedPairsThree()
     {
         //Construct some single-valued pairs
-        SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
-
-        Instant start = Instant.parse( "1985-01-01T00:00:00Z" );
-
+        List<Pair<Double, Double>> pairs = new ArrayList<>();
         for ( int i = 0; i < 10000; i++ )
         {
-            events.add( Event.of( start.plus( Duration.ofHours( i ) ), Pair.of( 5.0, 10.0 ) ) );
+            pairs.add( Pair.of( 5.0, 10.0 ) );
         }
 
         Evaluation evaluation = Evaluation.newBuilder()
@@ -316,9 +306,8 @@ public final class MetricTestDataFactory
 
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
-        Builder<Double, Double> builder = new Builder<>();
-        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
-                                                     events ) )
+        wres.datamodel.pools.Pool.Builder<Pair<Double, Double>> builder = new wres.datamodel.pools.Pool.Builder<>();
+        return builder.addData( pairs )
                       .setMetadata( meta )
                       .build();
     }
@@ -334,18 +323,13 @@ public final class MetricTestDataFactory
     public static wres.datamodel.pools.Pool<Pair<Double, Double>> getSingleValuedPairsFour()
     {
         //Construct some single-valued pairs
-        SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
+        List<Pair<Double, Double>> pairs = new ArrayList<>();
 
-        Instant start = Instant.parse( "1985-01-01T00:00:00Z" );
-
-        int time = 0;
         for ( int i = 0; i < 5; i++ )
         {
             for ( int j = 0; j < 100; j++ )
             {
-                events.add( Event.of( start.plus( Duration.ofHours( time ) ), Pair.of( i + 1.0, i + 6.0 ) ) );
-
-                time++;
+                pairs.add( Pair.of( i + 1.0, i + 6.0 ) );
             }
         }
 
@@ -367,9 +351,8 @@ public final class MetricTestDataFactory
 
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
-        Builder<Double, Double> builder = new Builder<>();
-        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
-                                                     events ) )
+        wres.datamodel.pools.Pool.Builder<Pair<Double, Double>> builder = new wres.datamodel.pools.Pool.Builder<>();
+        return builder.addData( pairs )
                       .setMetadata( meta )
                       .build();
     }
@@ -430,7 +413,7 @@ public final class MetricTestDataFactory
 
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
-        return BasicPool.of( values, meta );
+        return wres.datamodel.pools.Pool.of( values, meta );
     }
 
     /**
@@ -443,7 +426,7 @@ public final class MetricTestDataFactory
     public static wres.datamodel.pools.Pool<Pair<Double, Double>> getSingleValuedPairsSix()
     {
         //Construct some single-valued pairs
-        SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
+        List<Pair<Double, Double>> pairs = new ArrayList<>();
 
         List<Event<Pair<Double, Double>>> values = new ArrayList<>();
         values.add( Event.of( Instant.parse( "1985-01-01T00:00:00Z" ), Pair.of( 22.9, 22.8 ) ) );
@@ -466,9 +449,8 @@ public final class MetricTestDataFactory
 
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
-        Builder<Double, Double> builder = new Builder<>();
-        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
-                                                     events ) )
+        wres.datamodel.pools.Pool.Builder<Pair<Double, Double>> builder = new wres.datamodel.pools.Pool.Builder<>();
+        return builder.addData( pairs )
                       .setMetadata( meta )
                       .build();
     }
@@ -501,12 +483,10 @@ public final class MetricTestDataFactory
 
         PoolMetadata base = PoolMetadata.of( evaluationTwo, pool );
 
-        Builder<Double, Double> builder = new Builder<>();
-        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
-                                                     Collections.emptySortedSet() ) )
+        wres.datamodel.pools.Pool.Builder<Pair<Double, Double>> builder = new wres.datamodel.pools.Pool.Builder<>();
+        return builder.addData( List.of() )
                       .setMetadata( main )
-                      .addTimeSeriesForBaseline( TimeSeries.of( getBoilerplateMetadata(),
-                                                                Collections.emptySortedSet() ) )
+                      .addDataForBaseline( List.of() )
                       .setMetadataForBaseline( base )
                       .build();
     }
@@ -520,178 +500,26 @@ public final class MetricTestDataFactory
     public static wres.datamodel.pools.Pool<Pair<Double, Double>> getSingleValuedPairsEight()
     {
         //Construct some single-valued pairs
-        SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
+        List<Pair<Double, Double>> pairs = new ArrayList<>();
 
-        Instant start = Instant.parse( "1985-01-01T00:00:00Z" );
+        pairs.add( Pair.of( 22.9, 22.8 ) );
+        pairs.add( Pair.of( 75.2, 80.0 ) );
+        pairs.add( Pair.of( 63.2, 65.0 ) );
+        pairs.add( Pair.of( 29.0, 30.0 ) );
+        pairs.add( Pair.of( 5.0, 2.0 ) );
+        pairs.add( Pair.of( 2.1, 3.1 ) );
+        pairs.add( Pair.of( 35000.0, 37000.0 ) );
+        pairs.add( Pair.of( 8.0, 7.0 ) );
+        pairs.add( Pair.of( 12.0, 12.0 ) );
+        pairs.add( Pair.of( 93.0, 94.0 ) );
+        pairs.add( Pair.of( Double.NaN, 94.0 ) );
+        pairs.add( Pair.of( 93.0, Double.NaN ) );
+        pairs.add( Pair.of( Double.NaN, Double.NaN ) );
 
-        events.add( Event.of( start.plus( Duration.ofHours( 1 ) ), Pair.of( 22.9, 22.8 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 2 ) ), Pair.of( 75.2, 80.0 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 3 ) ), Pair.of( 63.2, 65.0 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 4 ) ), Pair.of( 29.0, 30.0 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 5 ) ), Pair.of( 5.0, 2.0 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 6 ) ), Pair.of( 2.1, 3.1 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 7 ) ), Pair.of( 35000.0, 37000.0 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 8 ) ), Pair.of( 8.0, 7.0 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 9 ) ), Pair.of( 12.0, 12.0 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 10 ) ), Pair.of( 93.0, 94.0 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 11 ) ), Pair.of( Double.NaN, 94.0 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 12 ) ), Pair.of( 93.0, Double.NaN ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 13 ) ), Pair.of( Double.NaN, Double.NaN ) ) );
-
-        Builder<Double, Double> builder = new Builder<>();
-        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
-                                                     events ) )
+        wres.datamodel.pools.Pool.Builder<Pair<Double, Double>> builder = new wres.datamodel.pools.Pool.Builder<>();
+        return builder.addData( pairs )
                       .setMetadata( PoolMetadata.of() )
                       .build();
-    }
-
-    /**
-     * Returns a list of {@link Pool} with single-valued pairs which correspond to the pairs 
-     * associated with system test scenario504 as of commit e91b36a8f6b798d1987e78a0f37b38f3ca4501ae.
-     * The pairs are reproduced to 2 d.p. only.
-     * 
-     * @return a time series of single-valued pairs
-     */
-
-    public static wres.datamodel.pools.Pool<Pair<Double, Double>> getSingleValuedPairsNine()
-    {
-        Builder<Double, Double> tsBuilder = new Builder<>();
-
-        // Add the first time-series
-        Instant basisTimeOne = Instant.parse( "2551-03-17T12:00:00Z" );
-        SortedSet<Event<Pair<Double, Double>>> first = new TreeSet<>();
-
-        first.add( Event.of( Instant.parse( "2551-03-17T15:00:00Z" ),
-                             Pair.of( 409.67, 73.00 ) ) );
-        first.add( Event.of( Instant.parse( "2551-03-17T18:00:00Z" ),
-                             Pair.of( 428.33, 79.00 ) ) );
-        first.add( Event.of( Instant.parse( "2551-03-17T21:00:00Z" ),
-                             Pair.of( 443.67, 83.00 ) ) );
-        first.add( Event.of( Instant.parse( "2551-03-18T00:00:00Z" ),
-                             Pair.of( 460.33, 89.00 ) ) );
-        first.add( Event.of( Instant.parse( "2551-03-18T03:00:00Z" ),
-                             Pair.of( 477.67, 97.00 ) ) );
-        first.add( Event.of( Instant.parse( "2551-03-18T06:00:00Z" ),
-                             Pair.of( 497.67, 101.00 ) ) );
-        first.add( Event.of( Instant.parse( "2551-03-18T09:00:00Z" ),
-                             Pair.of( 517.67, 103.00 ) ) );
-        first.add( Event.of( Instant.parse( SEVENTH_TIME ),
-                             Pair.of( 548.33, 107.00 ) ) );
-        first.add( Event.of( Instant.parse( EIGHTH_TIME ),
-                             Pair.of( 567.67, 109.00 ) ) );
-        first.add( Event.of( Instant.parse( NINTH_TIME ),
-                             Pair.of( 585.67, 113.00 ) ) );
-        first.add( Event.of( Instant.parse( TENTH_TIME ),
-                             Pair.of( 602.33, 127.00 ) ) );
-
-        // Add second time-series
-        Instant basisTimeTwo = Instant.parse( "2551-03-18T00:00:00Z" );
-        SortedSet<Event<Pair<Double, Double>>> second = new TreeSet<>();
-
-        second.add( Event.of( Instant.parse( "2551-03-18T03:00:00Z" ),
-                              Pair.of( 477.67, 131.00 ) ) );
-        second.add( Event.of( Instant.parse( "2551-03-18T06:00:00Z" ),
-                              Pair.of( 497.67, 137.00 ) ) );
-        second.add( Event.of( Instant.parse( "2551-03-18T09:00:00Z" ),
-                              Pair.of( 517.67, 139.00 ) ) );
-        second.add( Event.of( Instant.parse( SEVENTH_TIME ),
-                              Pair.of( 548.33, 149.00 ) ) );
-        second.add( Event.of( Instant.parse( EIGHTH_TIME ),
-                              Pair.of( 567.67, 151.00 ) ) );
-        second.add( Event.of( Instant.parse( NINTH_TIME ),
-                              Pair.of( 585.67, 157.00 ) ) );
-        second.add( Event.of( Instant.parse( TENTH_TIME ),
-                              Pair.of( 602.33, 163.00 ) ) );
-        second.add( Event.of( Instant.parse( ELEVENTH_TIME ),
-                              Pair.of( 616.33, 167.00 ) ) );
-        second.add( Event.of( Instant.parse( TWELFTH_TIME ),
-                              Pair.of( 638.33, 173.00 ) ) );
-        second.add( Event.of( Instant.parse( THIRTEENTH_TIME ),
-                              Pair.of( 653.00, 179.00 ) ) );
-        second.add( Event.of( Instant.parse( FOURTEENTH_TIME ),
-                              Pair.of( 670.33, 181.00 ) ) );
-
-        // Add third time-series
-        Instant basisTimeThree = Instant.parse( SEVENTH_TIME );
-        SortedSet<Event<Pair<Double, Double>>> third = new TreeSet<>();
-
-        third.add( Event.of( Instant.parse( EIGHTH_TIME ),
-                             Pair.of( 567.67, 191.00 ) ) );
-        third.add( Event.of( Instant.parse( NINTH_TIME ),
-                             Pair.of( 585.67, 193.00 ) ) );
-        third.add( Event.of( Instant.parse( TENTH_TIME ),
-                             Pair.of( 602.33, 197.00 ) ) );
-        third.add( Event.of( Instant.parse( ELEVENTH_TIME ),
-                             Pair.of( 616.33, 199.00 ) ) );
-        third.add( Event.of( Instant.parse( TWELFTH_TIME ),
-                             Pair.of( 638.33, 211.00 ) ) );
-        third.add( Event.of( Instant.parse( THIRTEENTH_TIME ),
-                             Pair.of( 653.00, 223.00 ) ) );
-        third.add( Event.of( Instant.parse( FOURTEENTH_TIME ),
-                             Pair.of( 670.33, 227.00 ) ) );
-        third.add( Event.of( Instant.parse( "2551-03-19T12:00:00Z" ),
-                             Pair.of( 691.67, 229.00 ) ) );
-        third.add( Event.of( Instant.parse( "2551-03-19T15:00:00Z" ),
-                             Pair.of( 718.33, 233.00 ) ) );
-        third.add( Event.of( Instant.parse( "2551-03-19T18:00:00Z" ),
-                             Pair.of( 738.33, 239.00 ) ) );
-        third.add( Event.of( Instant.parse( "2551-03-19T21:00:00Z" ),
-                             Pair.of( 756.33, 241.00 ) ) );
-
-        // Add third time-series
-        Instant basisTimeFour = Instant.parse( ELEVENTH_TIME );
-        SortedSet<Event<Pair<Double, Double>>> fourth = new TreeSet<>();
-
-        fourth.add( Event.of( Instant.parse( TWELFTH_TIME ),
-                              Pair.of( 638.33, 251.00 ) ) );
-        fourth.add( Event.of( Instant.parse( THIRTEENTH_TIME ),
-                              Pair.of( 653.00, 257.00 ) ) );
-        fourth.add( Event.of( Instant.parse( FOURTEENTH_TIME ),
-                              Pair.of( 670.33, 263.00 ) ) );
-        fourth.add( Event.of( Instant.parse( "2551-03-19T12:00:00Z" ),
-                              Pair.of( 691.67, 269.00 ) ) );
-        fourth.add( Event.of( Instant.parse( "2551-03-19T15:00:00Z" ),
-                              Pair.of( 718.33, 271.00 ) ) );
-        fourth.add( Event.of( Instant.parse( "2551-03-19T18:00:00Z" ),
-                              Pair.of( 738.33, 277.00 ) ) );
-        fourth.add( Event.of( Instant.parse( "2551-03-19T21:00:00Z" ),
-                              Pair.of( 756.33, 281.00 ) ) );
-        fourth.add( Event.of( Instant.parse( "2551-03-20T00:00:00Z" ),
-                              Pair.of( 776.33, 283.00 ) ) );
-        fourth.add( Event.of( Instant.parse( "2551-03-20T03:00:00Z" ),
-                              Pair.of( 805.67, 293.00 ) ) );
-        fourth.add( Event.of( Instant.parse( "2551-03-20T06:00:00Z" ),
-                              Pair.of( 823.67, 307.00 ) ) );
-        fourth.add( Event.of( Instant.parse( "2551-03-20T09:00:00Z" ),
-                              Pair.of( 840.33, 311.00 ) ) );
-
-        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "2551-03-17T00:00:00Z" ),
-                                                           Instant.parse( "2551-03-20T00:00:00Z" ),
-                                                           Duration.ofSeconds( 10800 ),
-                                                           Duration.ofSeconds( 118800 ) );
-
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( "FAKE2" );
-
-        Evaluation evaluation = Evaluation.newBuilder()
-                                          .setRightVariableName( "DISCHARGE" )
-                                          .setMeasurementUnit( "CMS" )
-                                          .build();
-
-        Pool pool = MessageFactory.parse( featureGroup,
-                                          window,
-                                          null,
-                                          null,
-                                          false );
-
-        PoolMetadata metaData = PoolMetadata.of( evaluation, pool );
-
-        tsBuilder.setMetadata( metaData );
-
-        return tsBuilder.addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( basisTimeOne ), first ) )
-                        .addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( basisTimeTwo ), second ) )
-                        .addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( basisTimeThree ), third ) )
-                        .addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( basisTimeFour ), fourth ) )
-                        .build();
     }
 
     /**
@@ -704,72 +532,10 @@ public final class MetricTestDataFactory
 
     public static wres.datamodel.pools.Pool<Pair<Double, Ensemble>> getEnsemblePairsOne() throws IOException
     {
-        //Construct some ensemble pairs
-        SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
+        wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> pool =
+                MetricTestDataFactory.getTimeSeriesOfEnsemblePairsOne();
 
-        File file = new File( "testinput/metricTestDataFactory/getEnsemblePairsOne.asc" );
-        List<Double> climatology = new ArrayList<>();
-        try ( BufferedReader in =
-                new BufferedReader( new InputStreamReader( new FileInputStream( file ), StandardCharsets.UTF_8 ) ) )
-        {
-
-            Instant time = Instant.parse( "1981-12-01T00:00:00Z" );
-            String line = null;
-            while ( Objects.nonNull( line = in.readLine() ) && !line.isEmpty() )
-            {
-                double[] doubleValues =
-                        Arrays.stream( line.split( "\\s+" ) ).mapToDouble( Double::parseDouble ).toArray();
-                values.add( Event.of( time,
-                                      Pair.of( doubleValues[0],
-                                               Ensemble.of( Arrays.copyOfRange( doubleValues,
-                                                                                1,
-                                                                                doubleValues.length ) ) ) ) );
-                climatology.add( doubleValues[0] );
-                time = time.plus( Duration.ofHours( 1 ) );
-            }
-        }
-
-        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                     Instant.parse( SECOND_TIME ),
-                                                     Duration.ofHours( 24 ) );
-
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( DRRC2 );
-
-        Evaluation evaluation = Evaluation.newBuilder()
-                                          .setRightVariableName( "SQIN" )
-                                          .setRightDataName( "HEFS" )
-                                          .setBaselineDataName( "ESP" )
-                                          .setMeasurementUnit( "CMS" )
-                                          .build();
-
-        Pool pool = MessageFactory.parse( featureGroup,
-                                          window,
-                                          null,
-                                          null,
-                                          false );
-
-        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
-
-        Pool poolTwo = MessageFactory.parse( featureGroup,
-                                             window,
-                                             null,
-                                             null,
-                                             true );
-
-        PoolMetadata baseMeta = PoolMetadata.of( evaluation, poolTwo );
-
-        VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
-
-        Builder<Double, Ensemble> builder = new Builder<>();
-
-        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
-                                                     values ) )
-                      .setMetadata( meta )
-                      .addTimeSeriesForBaseline( TimeSeries.of( getBoilerplateMetadata(),
-                                                                values ) )
-                      .setMetadataForBaseline( baseMeta )
-                      .setClimatology( clim )
-                      .build();
+        return PoolSlicer.unpack( pool );
     }
 
     /**
@@ -783,78 +549,10 @@ public final class MetricTestDataFactory
 
     public static wres.datamodel.pools.Pool<Pair<Double, Ensemble>> getEnsemblePairsOneWithMissings() throws IOException
     {
-        //Construct some ensemble pairs
-        final SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
+        wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> pool =
+                MetricTestDataFactory.getTimeSeriesOfEnsemblePairsOneWithMissings();
 
-        File file = new File( "testinput/metricTestDataFactory/getEnsemblePairsOne.asc" );
-        List<Double> climatology = new ArrayList<>();
-
-        Instant time = Instant.parse( "1981-12-01T00:00:00Z" );
-
-        try ( BufferedReader in =
-                new BufferedReader( new InputStreamReader( new FileInputStream( file ), StandardCharsets.UTF_8 ) ) )
-        {
-            String line = null;
-            while ( Objects.nonNull( line = in.readLine() ) && !line.isEmpty() )
-            {
-                double[] doubleValues =
-                        Arrays.stream( line.split( "\\s+" ) ).mapToDouble( Double::parseDouble ).toArray();
-                values.add( Event.of( time,
-                                      Pair.of( doubleValues[0],
-                                               Ensemble.of( Arrays.copyOfRange( doubleValues,
-                                                                                1,
-                                                                                doubleValues.length ) ) ) ) );
-                climatology.add( doubleValues[0] );
-                time = time.plus( Duration.ofHours( 1 ) );
-            }
-        }
-        //Add some missing values
-        climatology.add( Double.NaN );
-        values.add( Event.of( time.plus( Duration.ofHours( 1 ) ),
-                              Pair.of( Double.NaN,
-                                       Ensemble.of( Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN ) ) ) );
-
-        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                     Instant.parse( SECOND_TIME ),
-                                                     Duration.ofHours( 24 ) );
-
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( DRRC2 );
-
-        Evaluation evaluation = Evaluation.newBuilder()
-                                          .setRightVariableName( "SQIN" )
-                                          .setRightDataName( "HEFS" )
-                                          .setBaselineDataName( "ESP" )
-                                          .setMeasurementUnit( "CMS" )
-                                          .build();
-
-        Pool pool = MessageFactory.parse( featureGroup,
-                                          window,
-                                          null,
-                                          null,
-                                          false );
-
-        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
-
-        Pool poolTwo = MessageFactory.parse( featureGroup,
-                                             window,
-                                             null,
-                                             null,
-                                             true );
-
-        PoolMetadata baseMeta = PoolMetadata.of( evaluation, poolTwo );
-
-        VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
-
-        Builder<Double, Ensemble> builder = new Builder<>();
-
-        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
-                                                     values ) )
-                      .setMetadata( meta )
-                      .addTimeSeriesForBaseline( TimeSeries.of( getBoilerplateMetadata(),
-                                                                values ) )
-                      .setMetadataForBaseline( baseMeta )
-                      .setClimatology( clim )
-                      .build();
+        return PoolSlicer.unpack( pool );
     }
 
     /**
@@ -867,61 +565,10 @@ public final class MetricTestDataFactory
 
     public static wres.datamodel.pools.Pool<Pair<Double, Ensemble>> getEnsemblePairsTwo() throws IOException
     {
-        //Construct some ensemble pairs
-        final SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
+        wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> pool =
+                MetricTestDataFactory.getTimeSeriesOfEnsemblePairsTwo();
 
-        File file = new File( "testinput/metricTestDataFactory/getEnsemblePairsTwo.asc" );
-        List<Double> climatology = new ArrayList<>();
-
-        Instant time = Instant.parse( "1981-12-01T00:00:00Z" );
-
-        try ( BufferedReader in =
-                new BufferedReader( new InputStreamReader( new FileInputStream( file ), StandardCharsets.UTF_8 ) ) )
-        {
-            String line = null;
-            while ( Objects.nonNull( line = in.readLine() ) && !line.isEmpty() )
-            {
-                double[] doubleValues =
-                        Arrays.stream( line.split( "\\s+" ) ).mapToDouble( Double::parseDouble ).toArray();
-                values.add( Event.of( time,
-                                      Pair.of( doubleValues[0],
-                                               Ensemble.of( Arrays.copyOfRange( doubleValues,
-                                                                                1,
-                                                                                doubleValues.length ) ) ) ) );
-                climatology.add( doubleValues[0] );
-                time = time.plus( Duration.ofHours( 1 ) );
-            }
-        }
-
-        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                           Instant.parse( SECOND_TIME ),
-                                                           Duration.ofHours( 24 ) );
-
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( DRRC2 );
-
-        Evaluation evaluation = Evaluation.newBuilder()
-                                          .setRightVariableName( "SQIN" )
-                                          .setRightDataName( "HEFS" )
-                                          .setMeasurementUnit( "CMS" )
-                                          .build();
-
-        Pool pool = MessageFactory.parse( featureGroup,
-                                          window,
-                                          null,
-                                          null,
-                                          false );
-
-        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
-
-        VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
-
-        Builder<Double, Ensemble> builder = new Builder<>();
-
-        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
-                                                     values ) )
-                      .setMetadata( meta )
-                      .setClimatology( clim )
-                      .build();
+        return PoolSlicer.unpack( pool );
     }
 
     /**
@@ -932,34 +579,10 @@ public final class MetricTestDataFactory
 
     public static wres.datamodel.pools.Pool<Pair<Double, Ensemble>> getEnsemblePairsThree()
     {
-        SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
-        values.add( Event.of( Instant.parse( "1985-03-12T00:00:00Z" ), Pair.of( 22.9, Ensemble.of( 22.8, 23.9 ) ) ) );
+        wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> pool =
+                MetricTestDataFactory.getTimeSeriesOfEnsemblePairsThree();
 
-        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                     Instant.parse( SECOND_TIME ),
-                                                     Duration.ofHours( 24 ) );
-
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( DRRC2 );
-
-        Evaluation evaluation = Evaluation.newBuilder()
-                                          .setRightVariableName( "MAP" )
-                                          .setMeasurementUnit( MM_DAY )
-                                          .build();
-
-        Pool pool = MessageFactory.parse( featureGroup,
-                                          window,
-                                          null,
-                                          null,
-                                          false );
-
-        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
-
-        Builder<Double, Ensemble> builder = new Builder<>();
-
-        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
-                                                     values ) )
-                      .setMetadata( meta )
-                      .build();
+        return PoolSlicer.unpack( pool );
     }
 
     /**
@@ -970,43 +593,10 @@ public final class MetricTestDataFactory
 
     public static wres.datamodel.pools.Pool<Pair<Double, Ensemble>> getEnsemblePairsFour()
     {
-        //Construct some ensemble pairs
-        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                           Instant.parse( SECOND_TIME ),
-                                                           Duration.ofHours( 24 ) );
+        wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> pool =
+                MetricTestDataFactory.getTimeSeriesOfEnsemblePairsFour();
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( DRRC2 );
-
-        Evaluation evaluation = Evaluation.newBuilder()
-                                          .setRightVariableName( "MAP" )
-                                          .setMeasurementUnit( MM_DAY )
-                                          .build();
-
-        Pool pool = MessageFactory.parse( featureGroup,
-                                          window,
-                                          null,
-                                          null,
-                                          false );
-
-        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
-
-        Pool basePool = MessageFactory.parse( featureGroup,
-                                              window,
-                                              null,
-                                              null,
-                                              true );
-
-        PoolMetadata base = PoolMetadata.of( evaluation, basePool );
-
-        Builder<Double, Ensemble> builder = new Builder<>();
-
-        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
-                                                     Collections.emptySortedSet() ) )
-                      .setMetadata( meta )
-                      .addTimeSeriesForBaseline( TimeSeries.of( getBoilerplateMetadata(),
-                                                                Collections.emptySortedSet() ) )
-                      .setMetadataForBaseline( base )
-                      .build();
+        return PoolSlicer.unpack( pool );
     }
 
     /**
@@ -1042,7 +632,7 @@ public final class MetricTestDataFactory
         }
 
         final PoolMetadata meta = Boilerplate.getSampleMetadata();
-        return BasicPool.of( values, meta ); //Construct the pairs
+        return wres.datamodel.pools.Pool.of( values, meta ); //Construct the pairs
     }
 
     /**
@@ -1121,7 +711,7 @@ public final class MetricTestDataFactory
 
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
-        return BasicPool.of( values, meta ); //Construct the pairs
+        return wres.datamodel.pools.Pool.of( values, meta ); //Construct the pairs
     }
 
     /**
@@ -1142,7 +732,7 @@ public final class MetricTestDataFactory
         values.add( Pair.of( Probability.ONE, Probability.of( 1.0 / 5.0 ) ) );
 
         final PoolMetadata meta = Boilerplate.getSampleMetadata();
-        return BasicPool.of( values, meta );
+        return wres.datamodel.pools.Pool.of( values, meta );
     }
 
     /**
@@ -1170,7 +760,7 @@ public final class MetricTestDataFactory
         baseline.add( Pair.of( Probability.ONE, Probability.of( 1.0 / 5.0 ) ) );
         final PoolMetadata main = Boilerplate.getSampleMetadata();
         final PoolMetadata base = Boilerplate.getSampleMetadata();
-        return BasicPool.of( values, main, baseline, base, null );
+        return wres.datamodel.pools.Pool.of( values, main, baseline, base, null );
     }
 
     /**
@@ -1539,7 +1129,7 @@ public final class MetricTestDataFactory
         values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
 
         final PoolMetadata main = Boilerplate.getSampleMetadata();
-        return BasicPool.of( values, main );
+        return wres.datamodel.pools.Pool.of( values, main );
     }
 
     /**
@@ -1559,7 +1149,7 @@ public final class MetricTestDataFactory
         values.add( Pair.of( Probability.ZERO, Probability.of( 1.0 / 5.0 ) ) );
 
         final PoolMetadata meta = Boilerplate.getSampleMetadata();
-        return BasicPool.of( values, meta );
+        return wres.datamodel.pools.Pool.of( values, meta );
     }
 
     /**
@@ -1568,10 +1158,10 @@ public final class MetricTestDataFactory
      * @return a time-series of single-valued pairs
      */
 
-    public static wres.datamodel.pools.Pool<Pair<Double, Double>> getTimeSeriesOfSingleValuedPairsOne()
+    public static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Double>>> getTimeSeriesOfSingleValuedPairsOne()
     {
         // Build an immutable regular time-series of single-valued pairs
-        Builder<Double, Double> builder =
+        Builder<TimeSeries<Pair<Double, Double>>> builder =
                 new Builder<>();
 
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
@@ -1614,10 +1204,10 @@ public final class MetricTestDataFactory
         PoolMetadata metaData = PoolMetadata.of( evaluation, pool );
 
         // Build the time-series
-        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( firstId ),
-                                                     firstValues ) )
-                      .addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( secondId ),
-                                                     secondValues ) )
+        return builder.addData( TimeSeries.of( getBoilerplateMetadataWithT0( firstId ),
+                                               firstValues ) )
+                      .addData( TimeSeries.of( getBoilerplateMetadataWithT0( secondId ),
+                                               secondValues ) )
                       .setMetadata( metaData )
                       .build();
     }
@@ -1628,10 +1218,10 @@ public final class MetricTestDataFactory
      * @return a time-series of single-valued pairs
      */
 
-    public static wres.datamodel.pools.Pool<Pair<Double, Double>> getTimeSeriesOfSingleValuedPairsTwo()
+    public static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Double>>> getTimeSeriesOfSingleValuedPairsTwo()
     {
         // Build an immutable regular time-series of single-valued pairs
-        Builder<Double, Double> builder =
+        Builder<TimeSeries<Pair<Double, Double>>> builder =
                 new Builder<>();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
         Instant firstId = Instant.parse( FIRST_TIME );
@@ -1663,8 +1253,8 @@ public final class MetricTestDataFactory
         PoolMetadata metaData = PoolMetadata.of( evaluation, pool );
 
         // Build the time-series
-        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( firstId ),
-                                                     firstValues ) )
+        return builder.addData( TimeSeries.of( getBoilerplateMetadataWithT0( firstId ),
+                                               firstValues ) )
                       .setMetadata( metaData )
                       .build();
     }
@@ -1675,10 +1265,10 @@ public final class MetricTestDataFactory
      * @return a time-series of single-valued pairs
      */
 
-    public static wres.datamodel.pools.Pool<Pair<Double, Double>> getTimeSeriesOfSingleValuedPairsThree()
+    public static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Double>>> getTimeSeriesOfSingleValuedPairsThree()
     {
         // Build an immutable regular time-series of single-valued pairs
-        Builder<Double, Double> builder =
+        Builder<TimeSeries<Pair<Double, Double>>> builder =
                 new Builder<>();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
 
@@ -1713,8 +1303,8 @@ public final class MetricTestDataFactory
         PoolMetadata metaData = PoolMetadata.of( evaluation, pool );
 
         // Build the time-series
-        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( secondId ),
-                                                     secondValues ) )
+        return builder.addData( TimeSeries.of( getBoilerplateMetadataWithT0( secondId ),
+                                               secondValues ) )
                       .setMetadata( metaData )
                       .build();
     }
@@ -1725,10 +1315,10 @@ public final class MetricTestDataFactory
      * @return a time-series of single-valued pairs
      */
 
-    public static wres.datamodel.pools.Pool<Pair<Double, Double>> getTimeSeriesOfSingleValuedPairsFour()
+    public static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Double>>> getTimeSeriesOfSingleValuedPairsFour()
     {
         // Build an immutable regular time-series of single-valued pairs
-        Builder<Double, Double> builder =
+        Builder<TimeSeries<Pair<Double, Double>>> builder =
                 new Builder<>();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
 
@@ -1762,10 +1352,10 @@ public final class MetricTestDataFactory
      * @return a time-series of single-valued pairs
      */
 
-    public static wres.datamodel.pools.Pool<Pair<Double, Double>> getTimeSeriesOfSingleValuedPairsFive()
+    public static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Double>>> getTimeSeriesOfSingleValuedPairsFive()
     {
         // Build an immutable regular time-series of single-valued pairs
-        Builder<Double, Double> builder =
+        Builder<TimeSeries<Pair<Double, Double>>> builder =
                 new Builder<>();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
 
@@ -1801,9 +1391,639 @@ public final class MetricTestDataFactory
 
         PoolMetadata metaData = PoolMetadata.of( evaluation, pool );
 
-        return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( secondId ),
-                                                     secondValues ) )
+        return builder.addData( TimeSeries.of( getBoilerplateMetadataWithT0( secondId ),
+                                               secondValues ) )
                       .setMetadata( metaData )
+                      .build();
+    }
+
+    /**
+     * Returns a moderately-sized test dataset of single-valued pairs without a baseline. The data are partitioned by
+     * observed values of {1,2,3,4,5} with 100-pair chunks and corresponding predicted values of {6,7,8,9,10}. The data
+     * are returned with a nominal lead time of 1.
+     * 
+     * @return single-valued pairs
+     */
+
+    public static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Double>>> getTimeSeriesOfSingleValuedPairsSix()
+    {
+        //Construct some single-valued pairs
+        SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
+
+        Instant start = Instant.parse( "1985-01-01T00:00:00Z" );
+
+        int time = 0;
+        for ( int i = 0; i < 5; i++ )
+        {
+            for ( int j = 0; j < 100; j++ )
+            {
+                events.add( Event.of( start.plus( Duration.ofHours( time ) ), Pair.of( i + 1.0, i + 6.0 ) ) );
+
+                time++;
+            }
+        }
+
+        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
+                                                           Instant.parse( SECOND_TIME ),
+                                                           Duration.ofHours( 1 ) );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "SQIN" )
+                                          .setRightDataName( "HEFS" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( Boilerplate.getFeatureGroup(),
+                                          window,
+                                          null,
+                                          null,
+                                          false );
+
+        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
+
+        Builder<TimeSeries<Pair<Double, Double>>> builder = new Builder<>();
+        return builder.addData( TimeSeries.of( getBoilerplateMetadata(),
+                                               events ) )
+                      .setMetadata( meta )
+                      .build();
+    }
+
+    /**
+     * Returns a set of single-valued pairs with a baseline, both empty.
+     * 
+     * @return single-valued pairs
+     */
+
+    public static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Double>>> getTimeSeriesOfSingleValuedPairsSeven()
+    {
+        //Construct some single-valued pairs
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "SQIN" )
+                                          .setRightDataName( "HEFS" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        PoolMetadata main = PoolMetadata.of( evaluation, Pool.getDefaultInstance() );
+        Pool pool = Pool.newBuilder()
+                        .setIsBaselinePool( true )
+                        .build();
+
+        Evaluation evaluationTwo = Evaluation.newBuilder()
+                                             .setRightVariableName( "SQIN" )
+                                             .setRightDataName( "ESP" )
+                                             .setMeasurementUnit( "CMS" )
+                                             .build();
+
+        PoolMetadata base = PoolMetadata.of( evaluationTwo, pool );
+
+        Builder<TimeSeries<Pair<Double, Double>>> builder = new Builder<>();
+        return builder.addData( TimeSeries.of( getBoilerplateMetadata(),
+                                               Collections.emptySortedSet() ) )
+                      .setMetadata( main )
+                      .addDataForBaseline( TimeSeries.of( getBoilerplateMetadata(),
+                                                          Collections.emptySortedSet() ) )
+                      .setMetadataForBaseline( base )
+                      .build();
+    }
+
+    /**
+     * Returns a set of single-valued pairs without a baseline and with some missing values.
+     * 
+     * @return single-valued pairs
+     */
+
+    public static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Double>>> getTimeSeriesOfSingleValuedPairsEight()
+    {
+        //Construct some single-valued pairs
+        SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
+
+        Instant start = Instant.parse( "1985-01-01T00:00:00Z" );
+
+        events.add( Event.of( start.plus( Duration.ofHours( 1 ) ), Pair.of( 22.9, 22.8 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 2 ) ), Pair.of( 75.2, 80.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 3 ) ), Pair.of( 63.2, 65.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 4 ) ), Pair.of( 29.0, 30.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 5 ) ), Pair.of( 5.0, 2.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 6 ) ), Pair.of( 2.1, 3.1 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 7 ) ), Pair.of( 35000.0, 37000.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 8 ) ), Pair.of( 8.0, 7.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 9 ) ), Pair.of( 12.0, 12.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 10 ) ), Pair.of( 93.0, 94.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 11 ) ), Pair.of( Double.NaN, 94.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 12 ) ), Pair.of( 93.0, Double.NaN ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 13 ) ), Pair.of( Double.NaN, Double.NaN ) ) );
+
+        Builder<TimeSeries<Pair<Double, Double>>> builder = new Builder<>();
+        return builder.addData( TimeSeries.of( getBoilerplateMetadata(),
+                                               events ) )
+                      .setMetadata( PoolMetadata.of() )
+                      .build();
+    }
+
+    /**
+     * Returns a list of {@link Pool} with single-valued pairs which correspond to the pairs 
+     * associated with system test scenario504 as of commit e91b36a8f6b798d1987e78a0f37b38f3ca4501ae.
+     * The pairs are reproduced to 2 d.p. only.
+     * 
+     * @return a time series of single-valued pairs
+     */
+
+    public static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Double>>> getTimeSeriesOfSingleValuedPairsNine()
+    {
+        Builder<TimeSeries<Pair<Double, Double>>> tsBuilder = new Builder<>();
+
+        // Add the first time-series
+        Instant basisTimeOne = Instant.parse( "2551-03-17T12:00:00Z" );
+        SortedSet<Event<Pair<Double, Double>>> first = new TreeSet<>();
+
+        first.add( Event.of( Instant.parse( "2551-03-17T15:00:00Z" ),
+                             Pair.of( 409.67, 73.00 ) ) );
+        first.add( Event.of( Instant.parse( "2551-03-17T18:00:00Z" ),
+                             Pair.of( 428.33, 79.00 ) ) );
+        first.add( Event.of( Instant.parse( "2551-03-17T21:00:00Z" ),
+                             Pair.of( 443.67, 83.00 ) ) );
+        first.add( Event.of( Instant.parse( "2551-03-18T00:00:00Z" ),
+                             Pair.of( 460.33, 89.00 ) ) );
+        first.add( Event.of( Instant.parse( "2551-03-18T03:00:00Z" ),
+                             Pair.of( 477.67, 97.00 ) ) );
+        first.add( Event.of( Instant.parse( "2551-03-18T06:00:00Z" ),
+                             Pair.of( 497.67, 101.00 ) ) );
+        first.add( Event.of( Instant.parse( "2551-03-18T09:00:00Z" ),
+                             Pair.of( 517.67, 103.00 ) ) );
+        first.add( Event.of( Instant.parse( SEVENTH_TIME ),
+                             Pair.of( 548.33, 107.00 ) ) );
+        first.add( Event.of( Instant.parse( EIGHTH_TIME ),
+                             Pair.of( 567.67, 109.00 ) ) );
+        first.add( Event.of( Instant.parse( NINTH_TIME ),
+                             Pair.of( 585.67, 113.00 ) ) );
+        first.add( Event.of( Instant.parse( TENTH_TIME ),
+                             Pair.of( 602.33, 127.00 ) ) );
+
+        // Add second time-series
+        Instant basisTimeTwo = Instant.parse( "2551-03-18T00:00:00Z" );
+        SortedSet<Event<Pair<Double, Double>>> second = new TreeSet<>();
+
+        second.add( Event.of( Instant.parse( "2551-03-18T03:00:00Z" ),
+                              Pair.of( 477.67, 131.00 ) ) );
+        second.add( Event.of( Instant.parse( "2551-03-18T06:00:00Z" ),
+                              Pair.of( 497.67, 137.00 ) ) );
+        second.add( Event.of( Instant.parse( "2551-03-18T09:00:00Z" ),
+                              Pair.of( 517.67, 139.00 ) ) );
+        second.add( Event.of( Instant.parse( SEVENTH_TIME ),
+                              Pair.of( 548.33, 149.00 ) ) );
+        second.add( Event.of( Instant.parse( EIGHTH_TIME ),
+                              Pair.of( 567.67, 151.00 ) ) );
+        second.add( Event.of( Instant.parse( NINTH_TIME ),
+                              Pair.of( 585.67, 157.00 ) ) );
+        second.add( Event.of( Instant.parse( TENTH_TIME ),
+                              Pair.of( 602.33, 163.00 ) ) );
+        second.add( Event.of( Instant.parse( ELEVENTH_TIME ),
+                              Pair.of( 616.33, 167.00 ) ) );
+        second.add( Event.of( Instant.parse( TWELFTH_TIME ),
+                              Pair.of( 638.33, 173.00 ) ) );
+        second.add( Event.of( Instant.parse( THIRTEENTH_TIME ),
+                              Pair.of( 653.00, 179.00 ) ) );
+        second.add( Event.of( Instant.parse( FOURTEENTH_TIME ),
+                              Pair.of( 670.33, 181.00 ) ) );
+
+        // Add third time-series
+        Instant basisTimeThree = Instant.parse( SEVENTH_TIME );
+        SortedSet<Event<Pair<Double, Double>>> third = new TreeSet<>();
+
+        third.add( Event.of( Instant.parse( EIGHTH_TIME ),
+                             Pair.of( 567.67, 191.00 ) ) );
+        third.add( Event.of( Instant.parse( NINTH_TIME ),
+                             Pair.of( 585.67, 193.00 ) ) );
+        third.add( Event.of( Instant.parse( TENTH_TIME ),
+                             Pair.of( 602.33, 197.00 ) ) );
+        third.add( Event.of( Instant.parse( ELEVENTH_TIME ),
+                             Pair.of( 616.33, 199.00 ) ) );
+        third.add( Event.of( Instant.parse( TWELFTH_TIME ),
+                             Pair.of( 638.33, 211.00 ) ) );
+        third.add( Event.of( Instant.parse( THIRTEENTH_TIME ),
+                             Pair.of( 653.00, 223.00 ) ) );
+        third.add( Event.of( Instant.parse( FOURTEENTH_TIME ),
+                             Pair.of( 670.33, 227.00 ) ) );
+        third.add( Event.of( Instant.parse( "2551-03-19T12:00:00Z" ),
+                             Pair.of( 691.67, 229.00 ) ) );
+        third.add( Event.of( Instant.parse( "2551-03-19T15:00:00Z" ),
+                             Pair.of( 718.33, 233.00 ) ) );
+        third.add( Event.of( Instant.parse( "2551-03-19T18:00:00Z" ),
+                             Pair.of( 738.33, 239.00 ) ) );
+        third.add( Event.of( Instant.parse( "2551-03-19T21:00:00Z" ),
+                             Pair.of( 756.33, 241.00 ) ) );
+
+        // Add third time-series
+        Instant basisTimeFour = Instant.parse( ELEVENTH_TIME );
+        SortedSet<Event<Pair<Double, Double>>> fourth = new TreeSet<>();
+
+        fourth.add( Event.of( Instant.parse( TWELFTH_TIME ),
+                              Pair.of( 638.33, 251.00 ) ) );
+        fourth.add( Event.of( Instant.parse( THIRTEENTH_TIME ),
+                              Pair.of( 653.00, 257.00 ) ) );
+        fourth.add( Event.of( Instant.parse( FOURTEENTH_TIME ),
+                              Pair.of( 670.33, 263.00 ) ) );
+        fourth.add( Event.of( Instant.parse( "2551-03-19T12:00:00Z" ),
+                              Pair.of( 691.67, 269.00 ) ) );
+        fourth.add( Event.of( Instant.parse( "2551-03-19T15:00:00Z" ),
+                              Pair.of( 718.33, 271.00 ) ) );
+        fourth.add( Event.of( Instant.parse( "2551-03-19T18:00:00Z" ),
+                              Pair.of( 738.33, 277.00 ) ) );
+        fourth.add( Event.of( Instant.parse( "2551-03-19T21:00:00Z" ),
+                              Pair.of( 756.33, 281.00 ) ) );
+        fourth.add( Event.of( Instant.parse( "2551-03-20T00:00:00Z" ),
+                              Pair.of( 776.33, 283.00 ) ) );
+        fourth.add( Event.of( Instant.parse( "2551-03-20T03:00:00Z" ),
+                              Pair.of( 805.67, 293.00 ) ) );
+        fourth.add( Event.of( Instant.parse( "2551-03-20T06:00:00Z" ),
+                              Pair.of( 823.67, 307.00 ) ) );
+        fourth.add( Event.of( Instant.parse( "2551-03-20T09:00:00Z" ),
+                              Pair.of( 840.33, 311.00 ) ) );
+
+        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "2551-03-17T00:00:00Z" ),
+                                                           Instant.parse( "2551-03-20T00:00:00Z" ),
+                                                           Duration.ofSeconds( 10800 ),
+                                                           Duration.ofSeconds( 118800 ) );
+
+        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( "FAKE2" );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "DISCHARGE" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( featureGroup,
+                                          window,
+                                          null,
+                                          null,
+                                          false );
+
+        PoolMetadata metaData = PoolMetadata.of( evaluation, pool );
+
+        tsBuilder.setMetadata( metaData );
+
+        return tsBuilder.addData( TimeSeries.of( getBoilerplateMetadataWithT0( basisTimeOne ), first ) )
+                        .addData( TimeSeries.of( getBoilerplateMetadataWithT0( basisTimeTwo ), second ) )
+                        .addData( TimeSeries.of( getBoilerplateMetadataWithT0( basisTimeThree ), third ) )
+                        .addData( TimeSeries.of( getBoilerplateMetadataWithT0( basisTimeFour ), fourth ) )
+                        .build();
+    }
+
+    /**
+     * Returns a set of single-valued pairs with a single pair and no baseline. This is useful for checking exceptional
+     * behavior due to an inadequate sample size.
+     * 
+     * @return single-valued pairs
+     */
+
+    public static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Double>>> getTimeSeriesOfSingleValuedPairsTen()
+    {
+        //Construct some single-valued pairs
+        SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
+
+        List<Event<Pair<Double, Double>>> values = new ArrayList<>();
+        values.add( Event.of( Instant.parse( "1985-01-01T00:00:00Z" ), Pair.of( 22.9, 22.8 ) ) );
+        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
+                                                     Instant.parse( SECOND_TIME ),
+                                                     Duration.ofHours( 24 ) );
+
+        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( "A" );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "MAP" )
+                                          .setMeasurementUnit( MM_DAY )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( featureGroup,
+                                          window,
+                                          null,
+                                          null,
+                                          false );
+
+        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
+
+        Builder<TimeSeries<Pair<Double, Double>>> builder = new Builder<>();
+        return builder.addData( TimeSeries.of( getBoilerplateMetadata(),
+                                               events ) )
+                      .setMetadata( meta )
+                      .build();
+    }
+
+    /**
+     * Returns a moderately-sized test dataset of ensemble pairs with the same dataset as a baseline. Reads the pairs 
+     * from testinput/metricTestDataFactory/getEnsemblePairsOne.asc. The inputs have a lead time of 24 hours.
+     * 
+     * @return ensemble pairs
+     * @throws IOException if the read fails
+     */
+
+    public static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> getTimeSeriesOfEnsemblePairsOne()
+            throws IOException
+    {
+        //Construct some ensemble pairs
+        SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
+
+        File file = new File( "testinput/metricTestDataFactory/getEnsemblePairsOne.asc" );
+        List<Double> climatology = new ArrayList<>();
+        try ( BufferedReader in =
+                new BufferedReader( new InputStreamReader( new FileInputStream( file ), StandardCharsets.UTF_8 ) ) )
+        {
+
+            Instant time = Instant.parse( "1981-12-01T00:00:00Z" );
+            String line = null;
+            while ( Objects.nonNull( line = in.readLine() ) && !line.isEmpty() )
+            {
+                double[] doubleValues =
+                        Arrays.stream( line.split( "\\s+" ) ).mapToDouble( Double::parseDouble ).toArray();
+                values.add( Event.of( time,
+                                      Pair.of( doubleValues[0],
+                                               Ensemble.of( Arrays.copyOfRange( doubleValues,
+                                                                                1,
+                                                                                doubleValues.length ) ) ) ) );
+                climatology.add( doubleValues[0] );
+                time = time.plus( Duration.ofHours( 1 ) );
+            }
+        }
+
+        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
+                                                     Instant.parse( SECOND_TIME ),
+                                                     Duration.ofHours( 24 ) );
+
+        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( DRRC2 );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "SQIN" )
+                                          .setRightDataName( "HEFS" )
+                                          .setBaselineDataName( "ESP" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( featureGroup,
+                                          window,
+                                          null,
+                                          null,
+                                          false );
+
+        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
+
+        Pool poolTwo = MessageFactory.parse( featureGroup,
+                                             window,
+                                             null,
+                                             null,
+                                             true );
+
+        PoolMetadata baseMeta = PoolMetadata.of( evaluation, poolTwo );
+
+        VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
+
+        Builder<TimeSeries<Pair<Double, Ensemble>>> builder = new Builder<>();
+
+        return builder.addData( TimeSeries.of( getBoilerplateMetadata(),
+                                               values ) )
+                      .setMetadata( meta )
+                      .addDataForBaseline( TimeSeries.of( getBoilerplateMetadata(),
+                                                          values ) )
+                      .setMetadataForBaseline( baseMeta )
+                      .setClimatology( clim )
+                      .build();
+    }
+
+    /**
+     * Returns a moderately-sized test dataset of ensemble pairs without a baseline. Reads the pairs from
+     * testinput/metricTestDataFactory/getEnsemblePairsOne.asc. The inputs have a lead time of 24 hours. Adds some
+     * missing values to the dataset, namely {@link Double#NaN}.
+     * 
+     * @return ensemble pairs
+     * @throws IOException if the read fails
+     */
+
+    public static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>>
+            getTimeSeriesOfEnsemblePairsOneWithMissings() throws IOException
+    {
+        //Construct some ensemble pairs
+        final SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
+
+        File file = new File( "testinput/metricTestDataFactory/getEnsemblePairsOne.asc" );
+        List<Double> climatology = new ArrayList<>();
+
+        Instant time = Instant.parse( "1981-12-01T00:00:00Z" );
+
+        try ( BufferedReader in =
+                new BufferedReader( new InputStreamReader( new FileInputStream( file ), StandardCharsets.UTF_8 ) ) )
+        {
+            String line = null;
+            while ( Objects.nonNull( line = in.readLine() ) && !line.isEmpty() )
+            {
+                double[] doubleValues =
+                        Arrays.stream( line.split( "\\s+" ) ).mapToDouble( Double::parseDouble ).toArray();
+                values.add( Event.of( time,
+                                      Pair.of( doubleValues[0],
+                                               Ensemble.of( Arrays.copyOfRange( doubleValues,
+                                                                                1,
+                                                                                doubleValues.length ) ) ) ) );
+                climatology.add( doubleValues[0] );
+                time = time.plus( Duration.ofHours( 1 ) );
+            }
+        }
+        //Add some missing values
+        climatology.add( Double.NaN );
+        values.add( Event.of( time.plus( Duration.ofHours( 1 ) ),
+                              Pair.of( Double.NaN,
+                                       Ensemble.of( Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN ) ) ) );
+
+        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
+                                                     Instant.parse( SECOND_TIME ),
+                                                     Duration.ofHours( 24 ) );
+
+        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( DRRC2 );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "SQIN" )
+                                          .setRightDataName( "HEFS" )
+                                          .setBaselineDataName( "ESP" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( featureGroup,
+                                          window,
+                                          null,
+                                          null,
+                                          false );
+
+        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
+
+        Pool poolTwo = MessageFactory.parse( featureGroup,
+                                             window,
+                                             null,
+                                             null,
+                                             true );
+
+        PoolMetadata baseMeta = PoolMetadata.of( evaluation, poolTwo );
+
+        VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
+
+        Builder<TimeSeries<Pair<Double, Ensemble>>> builder = new Builder<>();
+
+        return builder.addData( TimeSeries.of( getBoilerplateMetadata(),
+                                               values ) )
+                      .setMetadata( meta )
+                      .addDataForBaseline( TimeSeries.of( getBoilerplateMetadata(),
+                                                          values ) )
+                      .setMetadataForBaseline( baseMeta )
+                      .setClimatology( clim )
+                      .build();
+    }
+
+    /**
+     * Returns a small test dataset of ensemble pairs without a baseline. Reads the pairs from
+     * testinput/metricTestDataFactory/getEnsemblePairsTwo.asc. The inputs have a lead time of 24 hours.
+     * 
+     * @return ensemble pairs
+     * @throws IOException if the read fails
+     */
+
+    public static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> getTimeSeriesOfEnsemblePairsTwo()
+            throws IOException
+    {
+        //Construct some ensemble pairs
+        final SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
+
+        File file = new File( "testinput/metricTestDataFactory/getEnsemblePairsTwo.asc" );
+        List<Double> climatology = new ArrayList<>();
+
+        Instant time = Instant.parse( "1981-12-01T00:00:00Z" );
+
+        try ( BufferedReader in =
+                new BufferedReader( new InputStreamReader( new FileInputStream( file ), StandardCharsets.UTF_8 ) ) )
+        {
+            String line = null;
+            while ( Objects.nonNull( line = in.readLine() ) && !line.isEmpty() )
+            {
+                double[] doubleValues =
+                        Arrays.stream( line.split( "\\s+" ) ).mapToDouble( Double::parseDouble ).toArray();
+                values.add( Event.of( time,
+                                      Pair.of( doubleValues[0],
+                                               Ensemble.of( Arrays.copyOfRange( doubleValues,
+                                                                                1,
+                                                                                doubleValues.length ) ) ) ) );
+                climatology.add( doubleValues[0] );
+                time = time.plus( Duration.ofHours( 1 ) );
+            }
+        }
+
+        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
+                                                           Instant.parse( SECOND_TIME ),
+                                                           Duration.ofHours( 24 ) );
+
+        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( DRRC2 );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "SQIN" )
+                                          .setRightDataName( "HEFS" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( featureGroup,
+                                          window,
+                                          null,
+                                          null,
+                                          false );
+
+        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
+
+        VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
+
+        Builder<TimeSeries<Pair<Double, Ensemble>>> builder = new Builder<>();
+
+        return builder.addData( TimeSeries.of( getBoilerplateMetadata(),
+                                               values ) )
+                      .setMetadata( meta )
+                      .setClimatology( clim )
+                      .build();
+    }
+
+    /**
+     * Returns a set of ensemble pairs with a single pair and no baseline. 
+     * 
+     * @return ensemble pairs
+     */
+
+    public static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> getTimeSeriesOfEnsemblePairsThree()
+    {
+        SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
+        values.add( Event.of( Instant.parse( "1985-03-12T00:00:00Z" ), Pair.of( 22.9, Ensemble.of( 22.8, 23.9 ) ) ) );
+
+        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
+                                                     Instant.parse( SECOND_TIME ),
+                                                     Duration.ofHours( 24 ) );
+
+        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( DRRC2 );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "MAP" )
+                                          .setMeasurementUnit( MM_DAY )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( featureGroup,
+                                          window,
+                                          null,
+                                          null,
+                                          false );
+
+        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
+
+        Builder<TimeSeries<Pair<Double, Ensemble>>> builder = new Builder<>();
+
+        return builder.addData( TimeSeries.of( getBoilerplateMetadata(),
+                                               values ) )
+                      .setMetadata( meta )
+                      .build();
+    }
+
+    /**
+     * Returns a set of ensemble pairs with no data in the main input or baseline. 
+     * 
+     * @return ensemble pairs
+     */
+
+    public static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> getTimeSeriesOfEnsemblePairsFour()
+    {
+        //Construct some ensemble pairs
+        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
+                                                           Instant.parse( SECOND_TIME ),
+                                                           Duration.ofHours( 24 ) );
+
+        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( DRRC2 );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "MAP" )
+                                          .setMeasurementUnit( MM_DAY )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( featureGroup,
+                                          window,
+                                          null,
+                                          null,
+                                          false );
+
+        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
+
+        Pool basePool = MessageFactory.parse( featureGroup,
+                                              window,
+                                              null,
+                                              null,
+                                              true );
+
+        PoolMetadata base = PoolMetadata.of( evaluation, basePool );
+
+        Builder<TimeSeries<Pair<Double, Ensemble>>> builder = new Builder<>();
+
+        return builder.addData( TimeSeries.of( getBoilerplateMetadata(),
+                                               Collections.emptySortedSet() ) )
+                      .setMetadata( meta )
+                      .addDataForBaseline( TimeSeries.of( getBoilerplateMetadata(),
+                                                          Collections.emptySortedSet() ) )
+                      .setMetadataForBaseline( base )
                       .build();
     }
 

@@ -31,6 +31,7 @@ import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.ThresholdsByMetric;
+import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.processing.MetricProcessor;
@@ -194,7 +195,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                                                                                this.featureGroup,
                                                                                                this.unitMapper );
             
-            List<Supplier<Pool<Pair<Double, Ensemble>>>> pools =
+            List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> pools =
                     PoolFactory.getEnsemblePools( this.evaluation.getEvaluationDescription(),
                                                   this.project,
                                                   featureGroup,
@@ -214,7 +215,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                 basePairsWriter = this.sharedWriters.getBaselineSampleDataWriters().getEnsembleWriter();
             }
 
-            List<MetricProcessor<Pool<Pair<Double, Ensemble>>>> processors =
+            List<MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors =
                     this.getEnsembleProcessors( projectConfig,
                                                 metrics );
 
@@ -233,7 +234,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             RetrieverFactory<Double, Double> retrieverFactory = SingleValuedRetrieverFactory.of( this.project,
                                                                                                  this.unitMapper );
             
-            List<Supplier<Pool<Pair<Double, Double>>>> pools =
+            List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> pools =
                     PoolFactory.getSingleValuedPools( this.evaluation.getEvaluationDescription(),
                                                       this.project,
                                                       featureGroup,
@@ -253,7 +254,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                 basePairsWriter = this.sharedWriters.getBaselineSampleDataWriters().getSingleValuedWriter();
             }
 
-            List<MetricProcessor<Pool<Pair<Double, Double>>>> processors =
+            List<MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
                     this.getSingleValuedProcessors( projectConfig,
                                                     metrics );
 
@@ -284,11 +285,11 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
     private <L, R> FeatureProcessingResult processFeature( Evaluation evaluation,
                                                            ProjectConfig projectConfig,
-                                                           List<MetricProcessor<Pool<Pair<L, R>>>> processors,
-                                                           List<Supplier<Pool<Pair<L, R>>>> pools,
+                                                           List<MetricProcessor<Pool<TimeSeries<Pair<L, R>>>>> processors,
+                                                           List<Supplier<Pool<TimeSeries<Pair<L, R>>>>> pools,
                                                            PairsWriter<L, R> pairsWriter,
                                                            PairsWriter<L, R> basePairsWriter,
-                                                           ToIntFunction<Pool<Pair<L, R>>> traceCountEstimator )
+                                                           ToIntFunction<Pool<TimeSeries<Pair<L, R>>>> traceCountEstimator )
     {
         // Queue the various tasks by time window (time window is the pooling dimension for metric calculation here)
         List<CompletableFuture<Void>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
@@ -301,7 +302,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         // Something published?
         AtomicBoolean published = new AtomicBoolean();
 
-        for ( Supplier<Pool<Pair<L, R>>> poolSupplier : pools )
+        for ( Supplier<Pool<TimeSeries<Pair<L, R>>>> poolSupplier : pools )
         {
             // Behold, the feature processing pipeline
             final CompletableFuture<Void> pipeline =
@@ -433,7 +434,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @return a task that writes pairs
      */
 
-    private <L, R> UnaryOperator<Pool<Pair<L, R>>> getPairWritingTask( boolean useBaseline,
+    private <L, R> UnaryOperator<Pool<TimeSeries<Pair<L, R>>>> getPairWritingTask( boolean useBaseline,
                                                                        PairsWriter<L, R> sharedWriters,
                                                                        ProjectConfig projectConfig )
     {
@@ -468,10 +469,10 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @return a function that consumes a pool and produces one blob of statistics for each processor
      */
 
-    private <L, R> Function<Pool<Pair<L, R>>, List<StatisticsForProject>>
-            getStatisticsProcessingTask( List<MetricProcessor<Pool<Pair<L, R>>>> processors,
+    private <L, R> Function<Pool<TimeSeries<Pair<L, R>>>, List<StatisticsForProject>>
+            getStatisticsProcessingTask( List<MetricProcessor<Pool<TimeSeries<Pair<L, R>>>>> processors,
                                          ProjectConfig projectConfig,
-                                         ToIntFunction<Pool<Pair<L, R>>> traceCountEstimator )
+                                         ToIntFunction<Pool<TimeSeries<Pair<L, R>>>> traceCountEstimator )
     {
         return pool -> {
             Objects.requireNonNull( pool );
@@ -479,8 +480,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             List<StatisticsForProject> returnMe = new ArrayList<>();
 
             // No data in the composition
-            if ( pool.getRawData().isEmpty()
-                 && ( !pool.hasBaseline() || pool.getBaselineData().getRawData().isEmpty() ) )
+            if ( pool.get().isEmpty()
+                 && ( !pool.hasBaseline() || pool.getBaselineData().get().isEmpty() ) )
             {
                 LOGGER.debug( "Empty pool discovered for {}: no statistics will be produced.", pool.getMetadata() );
 
@@ -496,7 +497,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             try
             {
                 // One blob of statistics for each processor, one processor for each metrics declaration
-                for ( MetricProcessor<Pool<Pair<L, R>>> processor : processors )
+                for ( MetricProcessor<Pool<TimeSeries<Pair<L, R>>>> processor : processors )
                 {
                     StatisticsForProject statistics = processor.apply( pool );
                     StatisticsForProject.Builder builder = new StatisticsForProject.Builder();
@@ -508,7 +509,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                     int baselineTraceCount = 0;
                     if ( pool.hasBaseline() )
                     {
-                        Pool<Pair<L, R>> baseline = pool.getBaselineData();
+                        Pool<TimeSeries<Pair<L, R>>> baseline = pool.getBaselineData();
 
                         if ( projectConfig.getInputs().getBaseline().isSeparateMetrics() )
                         {
@@ -546,14 +547,14 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @throws MetricParameterException if any metric parameters are incorrect
      */
 
-    private List<MetricProcessor<Pool<Pair<Double, Ensemble>>>> getEnsembleProcessors( ProjectConfig projectConfig,
+    private List<MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> getEnsembleProcessors( ProjectConfig projectConfig,
                                                                                        List<Metrics> metrics )
     {
-        List<MetricProcessor<Pool<Pair<Double, Ensemble>>>> processors = new ArrayList<>();
+        List<MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors = new ArrayList<>();
 
         for ( Metrics nextMetrics : metrics )
         {
-            MetricProcessor<Pool<Pair<Double, Ensemble>>> nextProcessor =
+            MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> nextProcessor =
                     MetricFactory.ofMetricProcessorForEnsemblePairs( projectConfig,
                                                                      nextMetrics,
                                                                      this.executors.getThresholdExecutor(),
@@ -571,14 +572,14 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @throws MetricParameterException if any metric parameters are incorrect
      */
 
-    private List<MetricProcessor<Pool<Pair<Double, Double>>>> getSingleValuedProcessors( ProjectConfig projectConfig,
+    private List<MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> getSingleValuedProcessors( ProjectConfig projectConfig,
                                                                                          List<Metrics> metrics )
     {
-        List<MetricProcessor<Pool<Pair<Double, Double>>>> processors = new ArrayList<>();
+        List<MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors = new ArrayList<>();
 
         for ( Metrics nextMetrics : metrics )
         {
-            MetricProcessor<Pool<Pair<Double, Double>>> nextProcessor =
+            MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>> nextProcessor =
                     MetricFactory.ofMetricProcessorForSingleValuedPairs( projectConfig,
                                                                          nextMetrics,
                                                                          this.executors.getThresholdExecutor(),
@@ -618,7 +619,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @return a function that estimates the number of traces in a pool of single-valued time-series
      */
 
-    private ToIntFunction<Pool<Pair<Double, Double>>> getSingleValuedTraceCountEstimator()
+    private ToIntFunction<Pool<TimeSeries<Pair<Double, Double>>>> getSingleValuedTraceCountEstimator()
     {
         return pool -> 2 * pool.get().size();
     }
@@ -627,9 +628,18 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @return a function that estimates the number of traces in a pool of ensemble time-series
      */
 
-    private ToIntFunction<Pool<Pair<Double, Ensemble>>> getEnsembleTraceCountEstimator()
+    private ToIntFunction<Pool<TimeSeries<Pair<Double, Ensemble>>>> getEnsembleTraceCountEstimator()
     {
-        return pool -> pool.get().size() * ( pool.getRawData().get( 0 ).getRight().size() + 1 );
+        return pool -> pool.get()
+                           .size()
+                       * ( pool.get()
+                               .get( 0 )
+                               .getEvents()
+                               .first()
+                               .getValue()
+                               .getRight()
+                               .size()
+                           + 1 );
     }
 
 }

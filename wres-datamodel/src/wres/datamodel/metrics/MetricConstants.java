@@ -483,7 +483,7 @@ public enum MetricConstants
 
     private MetricConstants( SampleDataGroup inGroup, StatisticType outGroup, boolean isSkillMetric )
     {
-        this( new SampleDataGroup[] { inGroup }, outGroup, isSkillMetric, new MetricGroup[0] );
+        this( new SampleDataGroup[] { inGroup }, outGroup, isSkillMetric );
     }
 
     /**

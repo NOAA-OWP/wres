@@ -16,11 +16,13 @@ import jdk.jfr.Event;
 import jdk.jfr.Label;
 import jdk.jfr.Name;
 import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolSlicer;
+import wres.datamodel.time.TimeSeries;
 
 /**
  * A custom event for monitoring and exposing an evaluation to the Java Flight Recorder.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 @Name( "wres.control.EvaluationEvent" )
@@ -191,18 +193,18 @@ class EvaluationEvent extends Event
      * @param traceCountBaseline an estimate of the number of traces in the pool for left/baseline data
      */
 
-    <L, R> void registerPool( Pool<Pair<L, R>> pool, long traceCount, long traceCountBaseline )
+    <L, R> void registerPool( Pool<TimeSeries<Pair<L, R>>> pool, long traceCount, long traceCountBaseline )
     {
         if ( Objects.nonNull( pool ) )
         {
             this.seriesCountRightInternal.addAndGet( pool.get().size() );
-            this.pairCountRightInternal.addAndGet( pool.getRawData().size() );
+            this.pairCountRightInternal.addAndGet( PoolSlicer.getPairCount( pool ) );
             this.traceCountRightInternal.addAndGet( traceCount );
 
             if ( pool.hasBaseline() )
             {
                 this.seriesCountBaselineInternal.addAndGet( pool.getBaselineData().get().size() );
-                this.pairCountBaselineInternal.addAndGet( pool.getBaselineData().getRawData().size() );
+                this.pairCountBaselineInternal.addAndGet( PoolSlicer.getPairCount( pool.getBaselineData() ) );
                 this.traceCountBaselineInternal.addAndGet( traceCountBaseline );
             }
         }

@@ -27,7 +27,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * The Mean Square Error (MSE) Skill Score (SS) measures the reduction in MSE associated with one set of predictions
  * when compared to another. The MSE-SS is equivalent to the Nash-Sutcliffe Efficiency. The perfect MSE-SS is 1.0.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public class MeanSquareErrorSkillScore extends DecomposableScore<Pool<Pair<Double, Double>>>
         implements Collectable<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
@@ -99,7 +99,7 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<Pool<Pair<Doubl
         double result = Double.NaN;
 
         // Some data, proceed
-        if ( !s.getRawData().isEmpty() )
+        if ( !s.get().isEmpty() )
         {
             double numerator = this.sse.apply( s )
                                        .getComponent( MetricConstants.MAIN )
@@ -118,7 +118,7 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<Pool<Pair<Doubl
             {
                 double meanLeft =
                         FunctionFactory.mean().applyAsDouble( VectorOfDoubles.of( Slicer.getLeftSide( s ) ) );
-                for ( Pair<Double, Double> next : s.getRawData() )
+                for ( Pair<Double, Double> next : s.get() )
                 {
                     denominator += Math.pow( next.getLeft() - meanLeft, 2 );
                 }

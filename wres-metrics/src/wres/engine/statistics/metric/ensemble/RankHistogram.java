@@ -38,7 +38,7 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
  * {@link RankHistogram} is computed from the largest subset of pairs with an equal number of (non-missing) ensemble 
  * members.</p> 
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, DiagramStatisticOuter>
@@ -123,7 +123,7 @@ public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, Diagram
         }
 
         // Empty diagram
-        if ( s.getRawData().isEmpty() )
+        if ( s.get().isEmpty() )
         {
             DiagramStatisticComponent ro =
                     DiagramStatisticComponent.newBuilder()
@@ -149,7 +149,7 @@ public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, Diagram
 
         //Acquire subsets in case of missing data
         Map<Integer, List<Pair<Double, Ensemble>>> sliced =
-                Slicer.filterByRightSize( s.getRawData() );
+                Slicer.filterByRightSize( s.get() );
         //Find the subset with the most elements
         Optional<List<Pair<Double, Ensemble>>> useMe =
                 sliced.values().stream().max( Comparator.comparingInt( List::size ) );

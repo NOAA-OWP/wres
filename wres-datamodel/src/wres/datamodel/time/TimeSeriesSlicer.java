@@ -25,19 +25,20 @@ import java.util.stream.Collectors;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.pools.PoolSlicer;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A utility class for slicing/dicing and transforming time-series datasets. 
+ * A utility class for slicing/dicing and transforming time-series.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  * @see     Slicer
+ * @see     PoolSlicer
  */
 
 public final class TimeSeriesSlicer
@@ -704,14 +705,14 @@ public final class TimeSeriesSlicer
      * @throws NullPointerException if either input is null
      */
 
-    public static <L, R, P, Q> Pool<Pair<P, Q>> transform( Pool<Pair<L, R>> input,
-                                                           Function<Pair<L, R>, Pair<P, Q>> transformer )
+    public static <L, R, P, Q> Pool<TimeSeries<Pair<P, Q>>> transform( Pool<TimeSeries<Pair<L, R>>> input,
+                                                                       Function<Pair<L, R>, Pair<P, Q>> transformer )
     {
         Objects.requireNonNull( input );
 
         Objects.requireNonNull( transformer );
 
-        PoolOfPairs.Builder<P, Q> builder = new PoolOfPairs.Builder<>();
+        Pool.Builder<TimeSeries<Pair<P, Q>>> builder = new Pool.Builder<>();
 
         builder.setClimatology( input.getClimatology() )
                .setMetadata( input.getMetadata() );
@@ -719,17 +720,17 @@ public final class TimeSeriesSlicer
         // Add the main series
         for ( TimeSeries<Pair<L, R>> next : input.get() )
         {
-            builder.addTimeSeries( transform( next, transformer ) );
+            builder.addData( TimeSeriesSlicer.transform( next, transformer ) );
         }
 
         // Add the baseline series if available
         if ( input.hasBaseline() )
         {
-            Pool<Pair<L, R>> baseline = input.getBaselineData();
+            Pool<TimeSeries<Pair<L, R>>> baseline = input.getBaselineData();
 
             for ( TimeSeries<Pair<L, R>> nextBase : baseline.get() )
             {
-                builder.addTimeSeriesForBaseline( transform( nextBase, transformer ) );
+                builder.addDataForBaseline( TimeSeriesSlicer.transform( nextBase, transformer ) );
             }
 
             builder.setMetadataForBaseline( baseline.getMetadata() );
@@ -794,15 +795,15 @@ public final class TimeSeriesSlicer
      * @throws NullPointerException if either the input or condition is null
      */
 
-    public static <L, R> Pool<Pair<L, R>> filter( Pool<Pair<L, R>> input,
-                                                  Predicate<Pair<L, R>> condition,
-                                                  DoublePredicate applyToClimatology )
+    public static <L, R> Pool<TimeSeries<Pair<L, R>>> filter( Pool<TimeSeries<Pair<L, R>>> input,
+                                                              Predicate<Pair<L, R>> condition,
+                                                              DoublePredicate applyToClimatology )
     {
         Objects.requireNonNull( input );
 
         Objects.requireNonNull( condition );
 
-        PoolOfPairs.Builder<L, R> builder = new PoolOfPairs.Builder<>();
+        Pool.Builder<TimeSeries<Pair<L, R>>> builder = new Pool.Builder<>();
 
         builder.setMetadata( input.getMetadata() );
 
@@ -822,17 +823,17 @@ public final class TimeSeriesSlicer
         // Filter the main data
         for ( TimeSeries<Pair<L, R>> next : input.get() )
         {
-            builder.addTimeSeries( filter( next, condition ) );
+            builder.addData( TimeSeriesSlicer.filter( next, condition ) );
         }
 
         //Filter baseline as required
         if ( input.hasBaseline() )
         {
-            Pool<Pair<L, R>> baseline = input.getBaselineData();
+            Pool<TimeSeries<Pair<L, R>>> baseline = input.getBaselineData();
 
             for ( TimeSeries<Pair<L, R>> nextBase : baseline.get() )
             {
-                builder.addTimeSeriesForBaseline( filter( nextBase, condition ) );
+                builder.addDataForBaseline( TimeSeriesSlicer.filter( nextBase, condition ) );
             }
 
             builder.setMetadataForBaseline( baseline.getMetadata() );
@@ -855,15 +856,15 @@ public final class TimeSeriesSlicer
      * @throws NullPointerException if either the input or condition is null
      */
 
-    public static <L, R> Pool<Pair<L, R>> filterPerSeries( Pool<Pair<L, R>> input,
-                                                           Predicate<TimeSeries<Pair<L, R>>> condition,
-                                                           DoublePredicate applyToClimatology )
+    public static <L, R> Pool<TimeSeries<Pair<L, R>>> filterPerSeries( Pool<TimeSeries<Pair<L, R>>> input,
+                                                                       Predicate<TimeSeries<Pair<L, R>>> condition,
+                                                                       DoublePredicate applyToClimatology )
     {
         Objects.requireNonNull( input );
 
         Objects.requireNonNull( condition );
 
-        PoolOfPairs.Builder<L, R> builder = new PoolOfPairs.Builder<>();
+        Pool.Builder<TimeSeries<Pair<L, R>>> builder = new Pool.Builder<>();
 
         builder.setMetadata( input.getMetadata() );
 
@@ -885,20 +886,20 @@ public final class TimeSeriesSlicer
         {
             if ( condition.test( next ) )
             {
-                builder.addTimeSeries( next );
+                builder.addData( next );
             }
         }
 
         //Filter baseline as required
         if ( input.hasBaseline() )
         {
-            Pool<Pair<L, R>> baseline = input.getBaselineData();
+            Pool<TimeSeries<Pair<L, R>>> baseline = input.getBaselineData();
 
             for ( TimeSeries<Pair<L, R>> nextBase : baseline.get() )
             {
                 if ( condition.test( nextBase ) )
                 {
-                    builder.addTimeSeriesForBaseline( nextBase );
+                    builder.addDataForBaseline( nextBase );
                 }
             }
 

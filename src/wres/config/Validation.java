@@ -1517,6 +1517,8 @@ public class Validation
             
             // Non-unique group names?
             Set<String> duplicates = groups.stream()
+                                           // Remove groups without a declared name as the software will choose one
+                                           .filter( next -> Objects.nonNull( next.getName() ) )
                                            // Group by name and count instances
                                            .collect( Collectors.groupingBy( FeaturePool::getName,
                                                                             Collectors.counting() ) )

@@ -32,7 +32,7 @@ import com.google.common.jimfs.Jimfs;
 import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
+import wres.datamodel.pools.Pool.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.space.FeatureGroup;
@@ -80,26 +80,26 @@ public final class EnsemblePairsWriterTest
      * First set of pairs to use for writing.
      */
 
-    private static wres.datamodel.pools.Pool<Pair<Double, Ensemble>> pairs = null;
+    private static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> pairs = null;
 
     /**
      * Second set of pairs to use for writing.
      */
 
-    private static wres.datamodel.pools.Pool<Pair<Double, Ensemble>> pairsTwo = null;
+    private static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> pairsTwo = null;
 
     /**
      * Third set of pairs to use for writing.
      */
 
-    private static wres.datamodel.pools.Pool<Pair<Double, Ensemble>> pairsThree = null;
+    private static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> pairsThree = null;
 
     @BeforeClass
     public static void setUpBeforeAllTests()
     {
 
         // Create the pairs
-        Builder<Double, Ensemble> tsBuilder = new Builder<>();
+        Builder<TimeSeries<Pair<Double, Ensemble>>> tsBuilder = new Builder<>();
 
         SortedSet<Event<Pair<Double, Ensemble>>> setOfPairs = new TreeSet<>();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
@@ -134,10 +134,10 @@ public final class EnsemblePairsWriterTest
         TimeSeries<Pair<Double, Ensemble>> timeSeriesOne =
                 TimeSeries.of( metadata, setOfPairs );
 
-        EnsemblePairsWriterTest.pairs = tsBuilder.addTimeSeries( timeSeriesOne ).setMetadata( meta ).build();
+        EnsemblePairsWriterTest.pairs = tsBuilder.addData( timeSeriesOne ).setMetadata( meta ).build();
 
         // Create the second time-series of pairs
-        Builder<Double, Ensemble> tsBuilderTwo = new Builder<>();
+        Builder<TimeSeries<Pair<Double, Ensemble>>> tsBuilderTwo = new Builder<>();
         SortedSet<Event<Pair<Double, Ensemble>>> setOfPairsTwo = new TreeSet<>();
         Instant basisTimeTwo = Instant.parse( "1985-01-01T00:00:00Z" );
         setOfPairsTwo.add( Event.of( Instant.parse( "1985-01-01T04:00:00Z" ),
@@ -171,12 +171,12 @@ public final class EnsemblePairsWriterTest
         TimeSeries<Pair<Double, Ensemble>> timeSeriesTwo =
                 TimeSeries.of( metadataTwo, setOfPairsTwo );
 
-        EnsemblePairsWriterTest.pairsTwo = tsBuilderTwo.addTimeSeries( timeSeriesTwo )
+        EnsemblePairsWriterTest.pairsTwo = tsBuilderTwo.addData( timeSeriesTwo )
                                                        .setMetadata( metaTwo )
                                                        .build();
 
         // Create the third time-series of pairs
-        Builder<Double, Ensemble> tsBuilderThree = new Builder<>();
+        Builder<TimeSeries<Pair<Double, Ensemble>>> tsBuilderThree = new Builder<>();
         SortedSet<Event<Pair<Double, Ensemble>>> setOfPairsThree = new TreeSet<>();
         Instant basisTimeThree = Instant.parse( "1985-01-01T00:00:00Z" );
         setOfPairsThree.add( Event.of( Instant.parse( "1985-01-01T07:00:00Z" ),
@@ -212,7 +212,7 @@ public final class EnsemblePairsWriterTest
         TimeSeries<Pair<Double, Ensemble>> timeSeriesThree =
                 TimeSeries.of( metadataThree, setOfPairsThree );
 
-        EnsemblePairsWriterTest.pairsThree = tsBuilderThree.addTimeSeries( timeSeriesThree )
+        EnsemblePairsWriterTest.pairsThree = tsBuilderThree.addData( timeSeriesThree )
                                                            .setMetadata( metaThree )
                                                            .build();
 
@@ -238,7 +238,7 @@ public final class EnsemblePairsWriterTest
             try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, ChronoUnit.SECONDS ) )
             {
 
-                Builder<Double, Ensemble> tsBuilder = new Builder<>();
+                Builder<TimeSeries<Pair<Double, Ensemble>>> tsBuilder = new Builder<>();
 
                 // Set the measurement units and time scale
                 FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( "PINEAPPLE" ),
@@ -262,8 +262,8 @@ public final class EnsemblePairsWriterTest
                 TimeSeries<Pair<Double, Ensemble>> timeSeriesOne = TimeSeries.of( getBoilerplateMetadata(),
                                                                                   Collections.emptySortedSet() );
 
-                wres.datamodel.pools.Pool<Pair<Double, Ensemble>> emptyPairs =
-                        tsBuilder.addTimeSeries( timeSeriesOne ).setMetadata( meta ).build();
+                wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> emptyPairs =
+                        tsBuilder.addData( timeSeriesOne ).setMetadata( meta ).build();
 
                 // Write the pairs
                 writer.accept( emptyPairs );
@@ -299,7 +299,7 @@ public final class EnsemblePairsWriterTest
             try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, ChronoUnit.SECONDS, formatter ) )
             {
 
-                Builder<Double, Ensemble> tsBuilder = new Builder<>();
+                Builder<TimeSeries<Pair<Double, Ensemble>>> tsBuilder = new Builder<>();
 
                 SortedSet<Event<Pair<Double, Ensemble>>> setOfPairs = new TreeSet<>();
 
@@ -315,7 +315,7 @@ public final class EnsemblePairsWriterTest
 
                 TimeSeries<Pair<Double, Ensemble>> timeSeriesNaN = TimeSeries.of( metadata,
                                                                                   setOfPairs );
-                tsBuilder.addTimeSeries( timeSeriesNaN );
+                tsBuilder.addData( timeSeriesNaN );
 
                 // Set the measurement units and time scale
                 FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( "PINEAPPLE" ),
@@ -338,9 +338,10 @@ public final class EnsemblePairsWriterTest
                 TimeSeries<Pair<Double, Ensemble>> timeSeriesOne = TimeSeries.of( metadata,
                                                                                   Collections.emptySortedSet() );
 
-                wres.datamodel.pools.Pool<Pair<Double, Ensemble>> emptyPairs = tsBuilder.addTimeSeries( timeSeriesOne )
-                                                                                        .setMetadata( meta )
-                                                                                        .build();
+                wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> emptyPairs =
+                        tsBuilder.addData( timeSeriesOne )
+                                 .setMetadata( meta )
+                                 .build();
 
                 // Write the pairs
                 writer.accept( emptyPairs );

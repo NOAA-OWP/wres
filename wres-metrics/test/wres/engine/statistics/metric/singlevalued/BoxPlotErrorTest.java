@@ -7,7 +7,6 @@ import static org.junit.Assert.assertTrue;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -18,10 +17,8 @@ import org.junit.Test;
 
 import wres.datamodel.pools.Pool;
 import wres.datamodel.metrics.MetricConstants;
-import wres.datamodel.pools.BasicPool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -38,7 +35,7 @@ import wres.statistics.generated.BoxplotStatistic.Box;
 /**
  * Tests the {@link BoxPlotError}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class BoxPlotErrorTest
 {
@@ -78,9 +75,9 @@ public final class BoxPlotErrorTest
                      .build();
 
         BoxplotStatistic expected = BoxplotStatistic.newBuilder()
-                                                       .setMetric( metric )
-                                                       .addStatistics( box )
-                                                       .build();
+                                                    .setMetric( metric )
+                                                    .addStatistics( box )
+                                                    .build();
 
         assertEquals( expected, actual.getData() );
     }
@@ -89,7 +86,7 @@ public final class BoxPlotErrorTest
     public void testApplyAgainstSingleValuedPairsNine()
     {
         //Generate some data
-        Pool<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsNine();
+        Pool<TimeSeries<Pair<Double, Double>>> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsNine();
 
         List<BoxplotStatistic> actualRaw = new ArrayList<>();
 
@@ -112,12 +109,11 @@ public final class BoxPlotErrorTest
                 events.addAll( filtered.getEvents() );
             }
 
-            Builder<Double, Double> builder = new Builder<>();
+            Pool.Builder<Pair<Double, Double>> builder = new Pool.Builder<>();
             builder.setMetadata( input.getMetadata() );
             for ( Event<Pair<Double, Double>> next : events )
             {
-                builder.addTimeSeries( TimeSeries.of( MetricTestDataFactory.getBoilerplateMetadata(),
-                                                      new TreeSet<>( Collections.singleton( next ) ) ) );
+                builder.addData( next.getValue() );
             }
 
             actualRaw.add( this.boxPlotError.apply( builder.build() ).getData() );
@@ -253,7 +249,7 @@ public final class BoxPlotErrorTest
     {
         // Generate empty data
         Pool<Pair<Double, Double>> input =
-                BasicPool.of( Arrays.asList(), PoolMetadata.of() );
+                Pool.of( Arrays.asList(), PoolMetadata.of() );
 
         BoxplotStatisticOuter actual = this.boxPlotError.apply( input );
 
