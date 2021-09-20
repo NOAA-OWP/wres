@@ -10,11 +10,12 @@ import java.util.function.Function;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.pools.Pool;
+import wres.datamodel.time.TimeSeries;
 
 /**
  * Class for writing a {@link Pool} that contains single-valued pairs.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class SingleValuedPairsWriter extends PairsWriter<Double, Double>
@@ -53,7 +54,7 @@ public class SingleValuedPairsWriter extends PairsWriter<Double, Double>
     }
 
     @Override
-    StringJoiner getHeaderFromPairs( Pool<Pair<Double, Double>> pairs )
+    StringJoiner getHeaderFromPairs( Pool<TimeSeries<Pair<Double, Double>>> pairs )
     {
         StringJoiner joiner = super.getHeaderFromPairs( pairs );
 

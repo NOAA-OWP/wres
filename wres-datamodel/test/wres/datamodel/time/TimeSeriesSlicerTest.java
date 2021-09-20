@@ -27,7 +27,6 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
 
@@ -197,7 +196,7 @@ public final class TimeSeriesSlicerTest
         SortedSet<Event<Pair<Double, Double>>> first = new TreeSet<>();
         SortedSet<Event<Pair<Double, Double>>> second = new TreeSet<>();
         SortedSet<Event<Pair<Double, Double>>> third = new TreeSet<>();
-        PoolOfPairs.Builder<Double, Double> b = new PoolOfPairs.Builder<>();
+        Pool.Builder<TimeSeries<Pair<Double, Double>>> b = new Pool.Builder<>();
 
         Instant firstBasisTime = T1985_01_01T00_00_00Z;
         TimeSeriesMetadata firstMetadata = getBoilerplateMetadataWithT0( firstBasisTime );
@@ -217,13 +216,13 @@ public final class TimeSeriesSlicerTest
         PoolMetadata meta = PoolMetadata.of();
         PoolMetadata baseMeta = PoolMetadata.of( true );
         //Add the time-series, with only one for baseline
-        Pool<Pair<Double, Double>> ts = b.addTimeSeries( TimeSeries.of( firstMetadata, first ) )
-                                         .addTimeSeries( TimeSeries.of( secondMetadata, second ) )
-                                         .addTimeSeries( TimeSeries.of( thirdMetadata, third ) )
-                                         .addTimeSeriesForBaseline( TimeSeries.of( firstMetadata, first ) )
-                                         .setMetadata( meta )
-                                         .setMetadataForBaseline( baseMeta )
-                                         .build();
+        Pool<TimeSeries<Pair<Double, Double>>> ts = b.addData( TimeSeries.of( firstMetadata, first ) )
+                                                     .addData( TimeSeries.of( secondMetadata, second ) )
+                                                     .addData( TimeSeries.of( thirdMetadata, third ) )
+                                                     .addDataForBaseline( TimeSeries.of( firstMetadata, first ) )
+                                                     .setMetadata( meta )
+                                                     .setMetadataForBaseline( baseMeta )
+                                                     .build();
 
         //Iterate and test
         double nextValue = 1.0;
@@ -253,11 +252,10 @@ public final class TimeSeriesSlicerTest
         SortedSet<Event<Pair<Double, Double>>> fourth = new TreeSet<>();
         fourth.add( Event.of( T1985_01_03T03_00_00Z, Pair.of( 3.0, 3.0 ) ) );
 
-        PoolOfPairs.Builder<Double, Double> bu = new PoolOfPairs.Builder<>();
+        Pool.Builder<TimeSeries<Pair<Double, Double>>> bu = new Pool.Builder<>();
 
-        Pool<Pair<Double, Double>> durationCheck =
-                bu.addTimeSeries( TimeSeries.of( firstMetadata,
-                                                 fourth ) )
+        Pool<TimeSeries<Pair<Double, Double>>> durationCheck =
+                bu.addData( TimeSeries.of( firstMetadata, fourth ) )
                   .setMetadata( meta )
                   .build();
 
@@ -622,7 +620,7 @@ public final class TimeSeriesSlicerTest
         SortedSet<Event<Pair<Double, Double>>> first = new TreeSet<>();
         SortedSet<Event<Pair<Double, Double>>> second = new TreeSet<>();
         SortedSet<Event<Pair<Double, Double>>> third = new TreeSet<>();
-        PoolOfPairs.Builder<Double, Double> b = new PoolOfPairs.Builder<>();
+        Pool.Builder<TimeSeries<Pair<Double, Double>>> b = new Pool.Builder<>();
 
         Instant firstBasisTime = T1985_01_01T00_00_00Z;
         TimeSeriesMetadata firstMetadata = getBoilerplateMetadataWithT0( firstBasisTime );
@@ -647,25 +645,25 @@ public final class TimeSeriesSlicerTest
         PoolMetadata meta = PoolMetadata.of();
 
         //Add the time-series
-        Pool<Pair<Double, Double>> firstSeries = b.addTimeSeries( TimeSeries.of( firstMetadata,
-                                                                                 first ) )
-                                                  .addTimeSeries( TimeSeries.of( secondMetadata,
-                                                                                 second ) )
-                                                  .addTimeSeries( TimeSeries.of( thirdMetadata,
-                                                                                 third ) )
-                                                  .setMetadata( meta )
-                                                  .build();
+        Pool<TimeSeries<Pair<Double, Double>>> firstSeries = b.addData( TimeSeries.of( firstMetadata,
+                                                                                       first ) )
+                                                              .addData( TimeSeries.of( secondMetadata,
+                                                                                       second ) )
+                                                              .addData( TimeSeries.of( thirdMetadata,
+                                                                                       third ) )
+                                                              .setMetadata( meta )
+                                                              .build();
 
         // Filter all values where the left side is greater than 0
-        Pool<Pair<Double, Double>> firstResult =
+        Pool<TimeSeries<Pair<Double, Double>>> firstResult =
                 TimeSeriesSlicer.filter( firstSeries,
                                          Slicer.left( value -> value > 0 ),
                                          null );
 
-        assertTrue( firstResult.getRawData().equals( firstSeries.getRawData() ) );
+        assertEquals( firstSeries, firstResult );
 
         // Filter all values where the left side is greater than 3
-        Pool<Pair<Double, Double>> secondResult =
+        Pool<TimeSeries<Pair<Double, Double>>> secondResult =
                 TimeSeriesSlicer.filter( firstSeries,
                                          Slicer.left( value -> value > 3 ),
                                          clim -> clim > 0 );
@@ -676,7 +674,7 @@ public final class TimeSeriesSlicerTest
         secondBenchmark.addAll( second );
         secondBenchmark.addAll( third );
 
-        assertTrue( secondData.equals( secondBenchmark ) );
+        assertEquals( secondBenchmark, secondData );
 
         // Add climatology for later
         VectorOfDoubles climatology = VectorOfDoubles.of( 1, 2, 3, 4, 5, Double.NaN );
@@ -685,7 +683,7 @@ public final class TimeSeriesSlicerTest
         b.setClimatology( climatology );
 
         // Filter all values where the left and right sides are both greater than or equal to 7
-        Pool<Pair<Double, Double>> thirdResult =
+        Pool<TimeSeries<Pair<Double, Double>>> thirdResult =
                 TimeSeriesSlicer.filter( firstSeries,
                                          Slicer.leftAndRight( value -> value >= 7 ),
                                          null );
@@ -695,24 +693,24 @@ public final class TimeSeriesSlicerTest
         List<Event<Pair<Double, Double>>> thirdBenchmark = new ArrayList<>();
         thirdBenchmark.addAll( third );
 
-        assertTrue( thirdData.equals( thirdBenchmark ) );
+        assertEquals( thirdBenchmark, thirdData );
 
         // Filter on climatology simultaneously
-        Pool<Pair<Double, Double>> fourthResult =
+        Pool<TimeSeries<Pair<Double, Double>>> fourthResult =
                 TimeSeriesSlicer.filter( b.build(),
                                          Slicer.leftAndRight( value -> value > 7 ),
                                          Double::isFinite );
 
-        assertTrue( fourthResult.getClimatology().equals( climatologyExpected ) );
+        assertEquals( climatologyExpected, fourthResult.getClimatology() );
 
         // Also filter baseline data
         PoolMetadata baseMeta = PoolMetadata.of( true );
-        b.addTimeSeriesForBaseline( TimeSeries.of( firstMetadata, first ) )
-         .addTimeSeriesForBaseline( TimeSeries.of( secondMetadata, second ) )
+        b.addDataForBaseline( TimeSeries.of( firstMetadata, first ) )
+         .addDataForBaseline( TimeSeries.of( secondMetadata, second ) )
          .setMetadataForBaseline( baseMeta );
 
         // Filter all values where both sides are greater than or equal to 4
-        Pool<Pair<Double, Double>> fifthResult =
+        Pool<TimeSeries<Pair<Double, Double>>> fifthResult =
                 TimeSeriesSlicer.filter( b.build(),
                                          Slicer.left( value -> value >= 4 ),
                                          clim -> clim > 0 );
@@ -721,7 +719,7 @@ public final class TimeSeriesSlicerTest
         fifthResult.get().forEach( nextSeries -> nextSeries.getEvents().forEach( fifthData::add ) );
 
         // Same as second benchmark for main data
-        assertTrue( fifthData.equals( secondBenchmark ) );
+        assertEquals( secondBenchmark, fifthData );
 
         // Baseline data
         List<Event<Pair<Double, Double>>> fifthDataBase = new ArrayList<>();
@@ -731,8 +729,7 @@ public final class TimeSeriesSlicerTest
         List<Event<Pair<Double, Double>>> fifthBenchmarkBase = new ArrayList<>();
         fifthBenchmarkBase.addAll( second );
 
-        assertTrue( fifthDataBase.equals( fifthBenchmarkBase ) );
-
+        assertEquals( fifthBenchmarkBase, fifthDataBase );
     }
 
     @Test
@@ -972,16 +969,16 @@ public final class TimeSeriesSlicerTest
         Event<Ensemble> expected = Event.of( validTime, expectedEnsemble );
 
         assertEquals( expected, actual );
-        
+
         Instant validTimeTwo = Instant.parse( "1985-04-01T00:00:00Z" );
         Ensemble ensembleTwo = Ensemble.of( new double[] { 1, 2, 3 }, Labels.of( "1984", "1985", "1986" ) );
         Event<Ensemble> toFilterTwo = Event.of( validTimeTwo, ensembleTwo );
-        
+
         Event<Ensemble> actualTwo = TimeSeriesSlicer.filter( toFilterTwo, startOfYear );
-        
+
         Ensemble expectedEnsembleTwo = Ensemble.of( new double[] { 1, 3 }, Labels.of( "1984", "1986" ) );
         Event<Ensemble> expectedTwo = Event.of( validTimeTwo, expectedEnsembleTwo );
-        
+
         assertEquals( expectedTwo, actualTwo );
 
         // Test for event before 1 October

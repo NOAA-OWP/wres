@@ -15,7 +15,6 @@ import org.junit.Test;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.MetricGroup;
-import wres.datamodel.pools.BasicPool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -29,7 +28,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 /**
  * Tests the {@link MedianError}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class MedianErrorTest
 {
@@ -82,7 +81,7 @@ public final class MedianErrorTest
         //Generate some data
         List<Pair<Double, Double>> pairs = Arrays.asList( Pair.of( 1.0, 3.0 ),
                                                           Pair.of( 5.0, 9.0 ) );
-        Pool<Pair<Double, Double>> input = BasicPool.of( pairs, PoolMetadata.of() );
+        Pool<Pair<Double, Double>> input = Pool.of( pairs, PoolMetadata.of() );
 
         //Check the results
         DoubleScoreStatisticOuter actual = this.medianError.apply( input );
@@ -116,7 +115,7 @@ public final class MedianErrorTest
                                                           Pair.of( 12345.6789, 0.0 ),
                                                           Pair.of( 99999.0, 0.0 ) );
 
-        Pool<Pair<Double, Double>> input = BasicPool.of( pairs, PoolMetadata.of() );
+        Pool<Pair<Double, Double>> input = Pool.of( pairs, PoolMetadata.of() );
 
         //Check the results
         DoubleScoreStatisticOuter actual = this.medianError.apply( input );
@@ -146,8 +145,8 @@ public final class MedianErrorTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        BasicPool<Pair<Double, Double>> input =
-                BasicPool.of( Arrays.asList(), PoolMetadata.of() );
+        Pool<Pair<Double, Double>> input =
+                Pool.of( Arrays.asList(), PoolMetadata.of() );
 
         DoubleScoreStatisticOuter actual = this.medianError.apply( input );
 

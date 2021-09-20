@@ -34,9 +34,9 @@ import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
+import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.pools.pairs.CrossPairs;
 import wres.datamodel.pools.pairs.PairingException;
-import wres.datamodel.pools.pairs.PoolOfPairs;
 import wres.datamodel.scale.RescalingException;
 import wres.datamodel.scale.ScaleValidationEvent;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -61,7 +61,7 @@ import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 
 /**
- * <p>Supplies a {@link PoolOfPairs}, which is used to compute one or more verification statistics. The overall 
+ * <p>Supplies a {@link Pool}, which is used to compute one or more verification statistics. The overall 
  * responsibility of the {@link PoolSupplier} is to supply a {@link Pool} on request. This is fulfilled by completing 
  * several smaller activities in sequence, namely:</p> 
  * 
@@ -83,7 +83,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
  */
 
 @ThreadSafe
-public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
+public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>>
 {
 
     /**
@@ -251,7 +251,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
      */
 
     @Override
-    public Pool<Pair<L, R>> get()
+    public Pool<TimeSeries<Pair<L, R>>> get()
     {
         return this.createPool();
     }
@@ -266,7 +266,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
      * @return the pool
      */
 
-    private Pool<Pair<L, R>> createPool()
+    private Pool<TimeSeries<Pair<L, R>>> createPool()
     {
         LOGGER.debug( "Creating pool {}.", this.metadata );
         PoolCreationEvent poolMonitor = PoolCreationEvent.of( this.metadata ); // Monitor
@@ -318,13 +318,19 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
             return this.getEmptyPool( leftData.size(), rightData.size(), baselineData.size() );
         }
 
-        Pool<Pair<L, R>> returnMe = this.createPool( leftData, rightData, baselineData );
+        Pool<TimeSeries<Pair<L, R>>> returnMe = this.createPool( leftData, rightData, baselineData );
 
         poolMonitor.commit();
 
-        LOGGER.debug( "Finished creating pool {}, which contains {} pairs.",
-                      this.metadata,
-                      returnMe.getRawData().size() );
+        if ( LOGGER.isDebugEnabled() )
+        {
+            int pairCount = PoolSlicer.getPairCount( returnMe );
+
+            LOGGER.debug( "Finished creating pool {}, which contains {} time-series and {} pairs.",
+                          this.metadata,
+                          returnMe.get().size(),
+                          pairCount );
+        }
 
         return returnMe;
     }
@@ -657,12 +663,12 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
      * @return the pool
      */
 
-    private Pool<Pair<L, R>> createPool( List<TimeSeries<L>> leftData,
-                                         List<TimeSeries<R>> rightData,
-                                         List<TimeSeries<R>> baselineData )
+    private Pool<TimeSeries<Pair<L, R>>> createPool( List<TimeSeries<L>> leftData,
+                                                     List<TimeSeries<R>> rightData,
+                                                     List<TimeSeries<R>> baselineData )
     {
 
-        PoolOfPairs.Builder<L, R> builder = new PoolOfPairs.Builder<>();
+        Pool.Builder<TimeSeries<Pair<L, R>>> builder = new Pool.Builder<>();
 
         // Get the mapped series
         Map<FeatureKey, List<TimeSeries<L>>> mappedLeft =
@@ -701,8 +707,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
                     b = mappedBaseline.get( nextTuple.getBaseline() );
                 }
 
-                Pool<Pair<L, R>> miniPool = this.createPoolPerFeatureTuple( nextTuple, l, r, b );
-                builder.addPoolOfPairs( miniPool );
+                Pool<TimeSeries<Pair<L, R>>> miniPool = this.createPoolPerFeatureTuple( nextTuple, l, r, b );
+                builder.addPool( miniPool );
             }
         }
 
@@ -728,16 +734,16 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
      * @throws NullPointerException if any input is null
      */
 
-    private Pool<Pair<L, R>> createPoolPerFeatureTuple( FeatureTuple feature,
-                                                        List<TimeSeries<L>> leftData,
-                                                        List<TimeSeries<R>> rightData,
-                                                        List<TimeSeries<R>> baselineData )
+    private Pool<TimeSeries<Pair<L, R>>> createPoolPerFeatureTuple( FeatureTuple feature,
+                                                                    List<TimeSeries<L>> leftData,
+                                                                    List<TimeSeries<R>> rightData,
+                                                                    List<TimeSeries<R>> baselineData )
     {
         Objects.requireNonNull( feature, "A feature is expected for the creation of pool " + this.metadata + "." );
         Objects.requireNonNull( leftData, "Left data is expected for the creation of pool " + this.metadata + "." );
         Objects.requireNonNull( rightData, "Right data is expected for the creation of pool " + this.metadata + "." );
 
-        PoolOfPairs.Builder<L, R> builder = new PoolOfPairs.Builder<>();
+        Pool.Builder<TimeSeries<Pair<L, R>>> builder = new Pool.Builder<>();
 
         // Apply any time offsets immediately, in order to simplify further evaluation,
         // which is then in the target time system
@@ -817,22 +823,29 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
             }
 
             // Add baseline the pairs to the builder
-            basePairs.forEach( builder::addTimeSeriesForBaseline );
+            basePairs.forEach( builder::addDataForBaseline );
         }
 
         // Add the main pairs to the builder
-        mainPairs.forEach( builder::addTimeSeries );
+        mainPairs.forEach( builder::addData );
 
         VectorOfDoubles clim = this.getClimatology();
         builder.setClimatology( clim );
 
         // Create the pairs
-        PoolOfPairs<L, R> returnMe = builder.build();
+        Pool<TimeSeries<Pair<L, R>>> returnMe = builder.build();
 
-        LOGGER.debug( "Finished creating pool for feature tuple {}, which contains {} pairs and has this metadata: {}.",
-                      feature,
-                      returnMe.getRawData().size(),
-                      this.metadata );
+        if ( LOGGER.isDebugEnabled() )
+        {
+            int pairCount = PoolSlicer.getPairCount( returnMe );
+
+            LOGGER.debug( "Finished creating pool for feature tuple {}, which contains {} time-series and {} pairs "
+                          + "and has this metadata: {}.",
+                          feature,
+                          returnMe.get().size(),
+                          pairCount,
+                          this.metadata );
+        }
 
         return returnMe;
     }
@@ -1993,9 +2006,9 @@ public class PoolSupplier<L, R> implements Supplier<Pool<Pair<L, R>>>
      * @return an empty pool.
      */
 
-    private Pool<Pair<L, R>> getEmptyPool( int leftCount, int rightCount, int baselineCount )
+    private Pool<TimeSeries<Pair<L, R>>> getEmptyPool( int leftCount, int rightCount, int baselineCount )
     {
-        PoolOfPairs.Builder<L, R> builder = new PoolOfPairs.Builder<>();
+        Pool.Builder<TimeSeries<Pair<L, R>>> builder = new Pool.Builder<>();
 
         if ( LOGGER.isDebugEnabled() )
         {

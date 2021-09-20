@@ -25,6 +25,7 @@ import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsGenerator;
+import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.MetricCollection.Builder;
 import wres.engine.statistics.metric.categorical.ContingencyTable;
 import wres.engine.statistics.metric.categorical.EquitableThreatScore;
@@ -106,7 +107,7 @@ public final class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public static MetricProcessor<Pool<Pair<Double, Double>>>
+    public static MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>>
             ofMetricProcessorForSingleValuedPairs( final ProjectConfig config )
     {
         ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( config );
@@ -129,7 +130,7 @@ public final class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public static MetricProcessor<Pool<Pair<Double, Ensemble>>>
+    public static MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>
             ofMetricProcessorForEnsemblePairs( final ProjectConfig config )
     {
         ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( config );
@@ -152,7 +153,7 @@ public final class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public static MetricProcessor<Pool<Pair<Double, Double>>>
+    public static MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>>
             ofMetricProcessorForSingleValuedPairs( final ProjectConfig config,
                                                    final Metrics metrics )
     {
@@ -174,7 +175,7 @@ public final class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public static MetricProcessor<Pool<Pair<Double, Ensemble>>>
+    public static MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>
             ofMetricProcessorForEnsemblePairs( final ProjectConfig config,
                                                final Metrics metrics )
     {
@@ -199,7 +200,7 @@ public final class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public static MetricProcessor<Pool<Pair<Double, Double>>>
+    public static MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>>
             ofMetricProcessorForSingleValuedPairs( final ProjectConfig config,
                                                    final Metrics metrics,
                                                    final ExecutorService thresholdExecutor,
@@ -225,7 +226,7 @@ public final class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public static MetricProcessor<Pool<Pair<Double, Ensemble>>>
+    public static MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>
             ofMetricProcessorForEnsemblePairs( final ProjectConfig config,
                                                final Metrics metrics,
                                                final ExecutorService thresholdExecutor,
@@ -397,7 +398,7 @@ public final class MetricFactory
      */
 
     public static
-            MetricCollection<Pool<Pair<Double, Double>>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter>
+            MetricCollection<Pool<TimeSeries<Pair<Double, Double>>>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter>
             ofSingleValuedTimeSeriesCollection( MetricConstants... metric )
     {
         return MetricFactory.ofSingleValuedTimeSeriesCollection( ForkJoinPool.commonPool(), metric );
@@ -655,11 +656,11 @@ public final class MetricFactory
      */
 
     public static
-            MetricCollection<Pool<Pair<Double, Double>>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter>
+            MetricCollection<Pool<TimeSeries<Pair<Double, Double>>>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter>
             ofSingleValuedTimeSeriesCollection( ExecutorService executor,
                                                 MetricConstants... metric )
     {
-        final Builder<Pool<Pair<Double, Double>>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter> builder =
+        final Builder<Pool<TimeSeries<Pair<Double, Double>>>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter> builder =
                 Builder.of();
         for ( MetricConstants next : metric )
         {
@@ -959,7 +960,7 @@ public final class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public static Metric<Pool<Pair<Double, Double>>, DurationDiagramStatisticOuter>
+    public static Metric<Pool<TimeSeries<Pair<Double, Double>>>, DurationDiagramStatisticOuter>
             ofSingleValuedTimeSeries( MetricConstants metric )
     {
         // Use a random number generator with a fixed seed if required
@@ -1011,7 +1012,7 @@ public final class MetricFactory
      * @throws NullPointerException if any input is null
      */
 
-    public static Metric<Pool<Pair<Double, Double>>, DurationScoreStatisticOuter>
+    public static Metric<Pool<TimeSeries<Pair<Double, Double>>>, DurationScoreStatisticOuter>
             ofSummaryStatisticsForTimingErrorMetric( MetricConstants timingMetric,
                                                      Set<MetricConstants> summaryStatistics )
     {
@@ -1041,13 +1042,14 @@ public final class MetricFactory
      * @throws NullPointerException if the map of timing metrics is null
      */
 
-    public static MetricCollection<Pool<Pair<Double, Double>>, DurationScoreStatisticOuter, DurationScoreStatisticOuter>
+    public static
+            MetricCollection<Pool<TimeSeries<Pair<Double, Double>>>, DurationScoreStatisticOuter, DurationScoreStatisticOuter>
             ofSummaryStatisticsForTimingErrorMetrics( ExecutorService executor,
                                                       Map<MetricConstants, Set<MetricConstants>> timingMetrics )
     {
         Objects.requireNonNull( timingMetrics, "Specify a non-null map of timing error metrics." );
 
-        MetricCollection.Builder<Pool<Pair<Double, Double>>, DurationScoreStatisticOuter, DurationScoreStatisticOuter> builder =
+        MetricCollection.Builder<Pool<TimeSeries<Pair<Double, Double>>>, DurationScoreStatisticOuter, DurationScoreStatisticOuter> builder =
                 new MetricCollection.Builder<>();
         builder.setExecutorService( executor );
 
@@ -1056,7 +1058,7 @@ public final class MetricFactory
             MetricConstants nextTimingMetric = nextMetric.getKey();
             Set<MetricConstants> nextSummaryStatistics = nextMetric.getValue();
 
-            Metric<Pool<Pair<Double, Double>>, DurationScoreStatisticOuter> metric =
+            Metric<Pool<TimeSeries<Pair<Double, Double>>>, DurationScoreStatisticOuter> metric =
                     MetricFactory.ofSummaryStatisticsForTimingErrorMetric( nextTimingMetric, nextSummaryStatistics );
 
             builder.addMetric( metric );

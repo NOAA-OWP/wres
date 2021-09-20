@@ -26,7 +26,8 @@ import wres.datamodel.Slicer;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.BasicPool.Builder;
+import wres.datamodel.pools.PoolSlicer;
+import wres.datamodel.pools.Pool.Builder;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.Metrics;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
@@ -41,6 +42,7 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
+import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
@@ -58,7 +60,7 @@ import wres.engine.statistics.metric.processing.MetricFuturesByTime.MetricFuture
  * @author James Brown
  */
 
-public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Pool<Pair<Double, Ensemble>>>
+public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Pool<TimeSeries<Pair<Double, Ensemble>>>>
 {
     /**
      * Logger instance.
@@ -121,7 +123,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
     private final Function<Pair<Double, Ensemble>, Pair<Double, Double>> toSingleValues;
 
     @Override
-    public StatisticsForProject apply( Pool<Pair<Double, Ensemble>> input )
+    public StatisticsForProject apply( Pool<TimeSeries<Pair<Double, Ensemble>>> input )
     {
         Objects.requireNonNull( input, "Expected non-null input to the metric processor." );
 
@@ -134,8 +136,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         // Remove missing values. 
         // TODO: when time-series metrics are supported, leave missings in place for time-series
         // Also retain the time-series shape, where required
+        Pool<Pair<Double, Ensemble>> unpacked = PoolSlicer.unpack( input );
         Pool<Pair<Double, Ensemble>> inputNoMissing =
-                Slicer.transform( input, Slicer.leftAndEachOfRight( MetricProcessor.ADMISSABLE_DATA ) );
+                Slicer.transform( unpacked, Slicer.leftAndEachOfRight( MetricProcessor.ADMISSABLE_DATA ) );
 
         // Process the metrics that consume ensemble pairs
         if ( this.hasMetrics( SampleDataGroup.ENSEMBLE ) )
@@ -488,7 +491,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
             }
 
             Builder<Pair<Double, Ensemble>> builder = new Builder<>();
-            pairs = builder.addData( pairs )
+            pairs = builder.addPool( pairs )
                            .setMetadata( PoolMetadata.of( pairs.getMetadata(),
                                                           oneOrTwo ) )
                            .setMetadataForBaseline( baselineMeta )
@@ -516,7 +519,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                                        StatisticType outGroup )
     {
         // Don't waste cpu cycles computing statistics for empty pairs
-        if ( pairs.getRawData().isEmpty() )
+        if ( pairs.get().isEmpty() )
         {
             LOGGER.debug( "Skipping the calculation of statistics for an empty pool of pairs with metadata {}.",
                           pairs.getMetadata() );
@@ -628,7 +631,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
             }
 
             Builder<Pair<Probability, Probability>> builder = new Builder<>();
-            transformed = builder.addData( transformed )
+            transformed = builder.addPool( transformed )
                                  .setMetadata( PoolMetadata.of( transformed.getMetadata(), oneOrTwo ) )
                                  .setMetadataForBaseline( baselineMeta )
                                  .build();
@@ -654,7 +657,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                                                   StatisticType outGroup )
     {
         // Don't waste cpu cycles computing statistics for empty pairs
-        if ( pairs.getRawData().isEmpty() )
+        if ( pairs.get().isEmpty() )
         {
             LOGGER.debug( "Skipping the calculation of statistics for an empty pool of pairs with metadata {}.",
                           pairs.getMetadata() );
@@ -730,7 +733,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
 
         // More samples than the minimum sample size?
         int minimumSampleSize = super.getMetrics().getMinimumSampleSize();
-        int actualSampleSize = pairs.getRawData().size();
+        int actualSampleSize = pairs.get().size();
 
         // Log and return an empty result if the sample size is too small
         if ( actualSampleSize < minimumSampleSize )
@@ -826,7 +829,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                 }
 
                 Builder<Pair<Boolean, Boolean>> builder = new Builder<>();
-                dichotomous = builder.addData( dichotomous )
+                dichotomous = builder.addPool( dichotomous )
                                      .setMetadata( PoolMetadata.of( dichotomous.getMetadata(), compound ) )
                                      .setMetadataForBaseline( baselineMeta )
                                      .build();
@@ -897,7 +900,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         int occurrences = 0;
         int nonOccurrences = 0;
 
-        for ( Pair<Probability, Probability> next : pairs.getRawData() )
+        for ( Pair<Probability, Probability> next : pairs.get() )
         {
             if ( next.getLeft().equals( Probability.ONE ) )
             {

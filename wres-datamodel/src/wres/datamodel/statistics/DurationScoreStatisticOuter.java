@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -20,7 +21,7 @@ import wres.datamodel.statistics.BasicScoreStatistic.BasicScoreComponent;
 /**
  * An immutable score statistic that wraps a {@link DurationScoreStatistic}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 @Immutable
@@ -51,7 +52,7 @@ public class DurationScoreStatisticOuter
     /**
      * A wrapper for a {@link DurationScoreStatisticComponent}.
      * 
-     * @author james.brown@hydrosolved.com
+     * @author James Brown
      */
 
     public static class DurationScoreComponentOuter extends BasicScoreComponent<DurationScoreStatisticComponent>
@@ -97,6 +98,35 @@ public class DurationScoreStatisticOuter
         {
             return this.metricName;
         }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( !super.equals( o ) )
+            {
+                return false;
+            }
+
+            if ( ! ( o instanceof DurationScoreComponentOuter ) )
+            {
+                return false;
+            }
+
+            if ( o == this )
+            {
+                return true;
+            }
+
+            DurationScoreComponentOuter inner = (DurationScoreComponentOuter) o;
+
+            return Objects.equals( this.getMetricName(), inner.getMetricName() );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return 31 * this.getMetricName().hashCode() + super.hashCode();
+        }
     }
 
     @Override
@@ -117,6 +147,35 @@ public class DurationScoreStatisticOuter
         builder.append( "metadata", this.getMetadata() );
 
         return builder.toString();
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( !super.equals( o ) )
+        {
+            return false;
+        }
+
+        if ( ! ( o instanceof DurationScoreStatisticOuter ) )
+        {
+            return false;
+        }
+
+        if ( o == this )
+        {
+            return true;
+        }
+
+        DurationScoreStatisticOuter inner = (DurationScoreStatisticOuter) o;
+
+        return Objects.equals( this.getMetricName(), inner.getMetricName() );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return 31 * this.getMetricName().hashCode() + super.hashCode();
     }
 
     /**

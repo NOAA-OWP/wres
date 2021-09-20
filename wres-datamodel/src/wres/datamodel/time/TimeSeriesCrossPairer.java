@@ -200,7 +200,7 @@ public class TimeSeriesCrossPairer<L, R>
                               nearest.getMetadata(),
                               nearest.getEvents().size(),
                               events.size(),
-                              events.stream().map( nxt -> nxt.getTime() ).collect( Collectors.toSet() ) );
+                              events.stream().map( Event::getTime ).collect( Collectors.toSet() ) );
             }
 
             if ( !events.isEmpty() )

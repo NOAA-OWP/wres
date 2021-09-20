@@ -51,10 +51,10 @@ import wres.io.retrieval.RetrieverFactory;
 /**
  * Generates a collection of {@link PoolSupplier} that contain the pools for a particular evaluation.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
-public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L, R>>>>>
+public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSeries<Pair<L, R>>>>>>
 {
 
     /**
@@ -146,10 +146,10 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
      * The pool suppliers.
      */
 
-    private final List<Supplier<Pool<Pair<L, R>>>> pools;
+    private final List<Supplier<Pool<TimeSeries<Pair<L, R>>>>> pools;
 
     @Override
-    public List<Supplier<Pool<Pair<L, R>>>> get()
+    public List<Supplier<Pool<TimeSeries<Pair<L, R>>>>> get()
     {
         return this.pools;
     }
@@ -460,7 +460,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<Pair<L,
      * @throws PoolCreationException if the pools cannot be created for any other reason
      */
 
-    private List<Supplier<Pool<Pair<L, R>>>> createPools()
+    private List<Supplier<Pool<TimeSeries<Pair<L, R>>>>> createPools()
     {
         LOGGER.debug( "Creating pool suppliers for {} pools requests: {}.",
                       this.getPoolRequests().size(),

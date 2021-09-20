@@ -19,7 +19,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 /**
  * Score that applies a function to each side of a paired dataset and returns the score components.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 class UnivariateScore implements Function<Pool<Pair<Double, Double>>, DoubleScoreStatistic>
@@ -70,7 +70,7 @@ class UnivariateScore implements Function<Pool<Pair<Double, Double>>, DoubleScor
         double right = MissingValues.DOUBLE;
 
         // Data available?
-        List<Pair<Double, Double>> rawPairs = pairs.getRawData();
+        List<Pair<Double, Double>> rawPairs = pairs.get();
         if ( !rawPairs.isEmpty() )
         {
             double[] leftDoubles = new double[rawPairs.size()];
@@ -122,7 +122,7 @@ class UnivariateScore implements Function<Pool<Pair<Double, Double>>, DoubleScor
         if ( pairs.hasBaseline() )
         {
             Pool<Pair<Double, Double>> baselinePairs = pairs.getBaselineData();
-            List<Pair<Double, Double>> rawBaselinePairs = baselinePairs.getRawData();
+            List<Pair<Double, Double>> rawBaselinePairs = baselinePairs.get();
 
             double baseline = MissingValues.DOUBLE;
 

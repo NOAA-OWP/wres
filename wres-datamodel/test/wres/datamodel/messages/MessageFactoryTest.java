@@ -34,7 +34,6 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
@@ -170,7 +169,7 @@ public class MessageFactoryTest
      * Pairs to serialize.
      */
 
-    private wres.datamodel.pools.Pool<Pair<Double, Ensemble>> ensemblePairs = null;
+    private wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> ensemblePairs = null;
 
     /**
      * Output directory.
@@ -795,9 +794,10 @@ public class MessageFactoryTest
                         BoxplotStatisticOuter.of( boxplotTwo, metadata ) );
     }
 
-    private wres.datamodel.pools.Pool<Pair<Double, Ensemble>> getPoolOfEnsemblePairs()
+    private wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> getPoolOfEnsemblePairs()
     {
-        Builder<Double, Ensemble> b = new Builder<>();
+        wres.datamodel.pools.Pool.Builder<TimeSeries<Pair<Double, Ensemble>>> b =
+                new wres.datamodel.pools.Pool.Builder<>();
         SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
 
         Instant basisTime = FIRST_TIME;
@@ -808,7 +808,7 @@ public class MessageFactoryTest
         TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( basisTime, THIRD_TIME );
         TimeSeries<Pair<Double, Ensemble>> timeSeries = TimeSeries.of( metadata,
                                                                        values );
-        b.addTimeSeries( timeSeries ).setMetadata( meta );
+        b.addData( timeSeries ).setMetadata( meta );
 
         Instant basisTimeTwo = FIFTH_TIME;
         values.clear();
@@ -819,7 +819,7 @@ public class MessageFactoryTest
         TimeSeries<Pair<Double, Ensemble>> timeSeriesTwo = TimeSeries.of( metadataTwo,
                                                                           values );
 
-        b.addTimeSeries( timeSeriesTwo );
+        b.addData( timeSeriesTwo );
 
         return b.build();
     }

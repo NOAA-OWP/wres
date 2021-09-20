@@ -12,9 +12,8 @@ import org.junit.Test;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
-import wres.datamodel.pools.BasicPool;
-import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.statistics.generated.DiagramStatistic;
@@ -23,7 +22,7 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 /**
  * Tests the {@link EnsembleQuantileQuantileDiagram}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class EnsembleQuantileQuantileDiagramTest
@@ -55,7 +54,7 @@ public class EnsembleQuantileQuantileDiagramTest
         pairs.add( Pair.of( 12.1, Ensemble.of( new double[] { 9, 8 }, labels ) ) );
         pairs.add( Pair.of( 43.0, Ensemble.of( new double[] { 23, 12 }, labels ) ) );
 
-        Pool<Pair<Double, Ensemble>> pool = BasicPool.of( pairs, PoolMetadata.of() );
+        Pool<Pair<Double, Ensemble>> pool = Pool.of( pairs, PoolMetadata.of() );
 
         DiagramStatisticOuter actual = this.eqq.apply( pool );
 

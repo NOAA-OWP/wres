@@ -45,7 +45,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * operating levels (ROL) curves: Statistical significance and interpretation, Q. J. R. Meteorol. Soc. 128, 2145-2166.
  * </p>
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class RelativeOperatingCharacteristicScore
@@ -176,7 +176,7 @@ public class RelativeOperatingCharacteristicScore
         //Obtain the predicted probabilities when the event occurred and did not occur
         //Begin by collecting against occurrence/non-occurrence
         Map<Boolean, List<Pair<Probability, Probability>>> mapped =
-                pairs.getRawData()
+                pairs.get()
                      .stream()
                      .collect( Collectors.groupingBy( a -> DataFactory.doubleEquals( a.getLeft()
                                                                                       .getProbability(),

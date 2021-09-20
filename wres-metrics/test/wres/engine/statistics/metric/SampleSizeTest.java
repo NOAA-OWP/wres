@@ -19,7 +19,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 /**
  * Tests the {@link SampleSize}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class SampleSizeTest
 {
@@ -45,7 +45,7 @@ public final class SampleSizeTest
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setMetric( SampleSize.MAIN )
-                                                                               .setValue( input.getRawData().size() )
+                                                                               .setValue( input.get().size() )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()

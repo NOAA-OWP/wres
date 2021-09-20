@@ -344,9 +344,14 @@ public class PoolMetadata implements Comparable<PoolMetadata>
         // Pretty print the feature tuples
         Set<FeatureTuple> featureTuples = pool.getGeometryTuplesList()
                                               .stream()
-                                              .map( next -> new FeatureTuple( next ) )
+                                              .map( FeatureTuple::new )
                                               .collect( Collectors.toSet() );
-        FeatureGroup featureGroup = FeatureGroup.of( pool.getRegionName(), featureTuples );
+        FeatureGroup featureGroup = null;
+
+        if ( !featureTuples.isEmpty() )
+        {
+            featureGroup = FeatureGroup.of( pool.getRegionName(), featureTuples );
+        }
 
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
                                                                             .append( "leftDataName",

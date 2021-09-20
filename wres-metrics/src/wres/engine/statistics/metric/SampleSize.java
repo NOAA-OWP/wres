@@ -20,7 +20,7 @@ import wres.statistics.generated.MetricName;
 /**
  * Constructs a {@link Metric} that returns the sample size.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 class SampleSize<S extends Pool<?>> extends OrdinaryScore<S, DoubleScoreStatisticOuter>
 {
@@ -80,7 +80,7 @@ class SampleSize<S extends Pool<?>> extends OrdinaryScore<S, DoubleScoreStatisti
         }
 
         LOGGER.trace( "Found {} pairs in the input to the {} for '{}'.",
-                      s.getRawData().size(),
+                      s.get().size(),
                       this.getName(),
                       s.getMetadata() );
 
@@ -89,7 +89,7 @@ class SampleSize<S extends Pool<?>> extends OrdinaryScore<S, DoubleScoreStatisti
                                     .setMetric( SampleSize.BASIC_METRIC )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setMetric( SampleSize.MAIN )
-                                                                                 .setValue( (double) s.getRawData()
+                                                                                 .setValue( (double) s.get()
                                                                                                       .size() ) )
                                     .build();
 

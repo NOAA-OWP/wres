@@ -34,7 +34,7 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
  * computed for a discrete number of probability thresholds or classifiers that determine whether the forecast event
  * occurred, based on the forecast probability.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class RelativeOperatingCharacteristicDiagram
@@ -130,7 +130,7 @@ public class RelativeOperatingCharacteristicDiagram
         Arrays.fill( pOFD, MissingValues.DOUBLE );
 
         // Some data to process        
-        if ( !s.getRawData().isEmpty() )
+        if ( !s.get().isEmpty() )
         {
             for ( int i = 1; i < this.points; i++ )
             {

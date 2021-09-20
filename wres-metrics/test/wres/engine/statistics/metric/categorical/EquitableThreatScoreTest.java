@@ -14,7 +14,6 @@ import org.junit.Test;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.MetricGroup;
-import wres.datamodel.pools.BasicPool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -29,7 +28,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 /**
  * Tests the {@link EquitableThreatScore}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class EquitableThreatScoreTest
 {
@@ -49,8 +48,8 @@ public final class EquitableThreatScoreTest
     @Before
     public void setUpBeforeEachTest()
     {
-        ets = EquitableThreatScore.of();
-        meta = Boilerplate.getSampleMetadata();
+        this.ets = EquitableThreatScore.of();
+        this.meta = Boilerplate.getSampleMetadata();
     }
 
     /**
@@ -89,8 +88,7 @@ public final class EquitableThreatScoreTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        Pool<Pair<Boolean, Boolean>> input =
-                BasicPool.of( Arrays.asList(), PoolMetadata.of() );
+        Pool<Pair<Boolean, Boolean>> input = Pool.of( Arrays.asList(), PoolMetadata.of() );
 
         DoubleScoreStatisticOuter actual = this.ets.apply( input );
 

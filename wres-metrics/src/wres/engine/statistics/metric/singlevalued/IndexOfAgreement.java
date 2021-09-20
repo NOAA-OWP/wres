@@ -25,7 +25,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * computed with an exponent of one, in order to minimize the influence of extreme errors.</p>  
  * <p>Willmott, C. J. 1981. On the validation of models. <i>Physical Geography</i>, <b>2</b>, 184-194</p>
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public class IndexOfAgreement extends DoubleErrorScore<Pool<Pair<Double, Double>>>
 {
@@ -93,14 +93,14 @@ public class IndexOfAgreement extends DoubleErrorScore<Pool<Pair<Double, Double>
         double returnMe = MissingValues.DOUBLE;
 
         // Data available
-        if ( !s.getRawData().isEmpty() )
+        if ( !s.get().isEmpty() )
         {
             //Compute the average observation
-            double oBar = s.getRawData().stream().mapToDouble( Pair::getLeft ).average().getAsDouble();
+            double oBar = s.get().stream().mapToDouble( Pair::getLeft ).average().getAsDouble();
             //Compute the score
             double numerator = 0.0;
             double denominator = 0.0;
-            for ( Pair<Double, Double> nextPair : s.getRawData() )
+            for ( Pair<Double, Double> nextPair : s.get() )
             {
                 numerator += Math.pow( Math.abs( nextPair.getLeft() - nextPair.getRight() ), exponent );
                 denominator += ( Math.abs( nextPair.getRight() - oBar )

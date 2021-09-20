@@ -45,7 +45,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * from the per-forecast CRPS values.
  * </p>
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pair<Double, Ensemble>>>
         implements ProbabilityScore<Pool<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter>
@@ -119,13 +119,13 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
         }
 
         LOGGER.trace( "Found {} pairs in the input to the {} for '{}'.",
-                      s.getRawData().size(),
+                      s.get().size(),
                       this.getName(),
                       s.getMetadata() );
 
         //Slice the data into groups with an equal number of ensemble members
         Map<Integer, List<Pair<Double, Ensemble>>> grouped =
-                Slicer.filterByRightSize( s.getRawData() );
+                Slicer.filterByRightSize( s.get() );
 
         //CRPS, currently without decomposition
         //TODO: implement the decomposition
@@ -147,7 +147,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
         }
 
         //Compute the average (implicitly weighted by the number of pairs in each group)
-        crps[0] = FunctionFactory.finiteOrMissing().applyAsDouble( crps[0] / s.getRawData().size() );
+        crps[0] = FunctionFactory.finiteOrMissing().applyAsDouble( crps[0] / s.get().size() );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setMetric( ContinuousRankedProbabilityScore.MAIN )

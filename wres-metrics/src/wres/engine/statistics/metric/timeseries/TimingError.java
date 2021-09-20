@@ -7,14 +7,15 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.pools.Pool;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
+import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.Metric;
 
 /**
  * Abstract base class for timing error metrics.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
-public abstract class TimingError implements Metric<Pool<Pair<Double,Double>>, DurationDiagramStatisticOuter>
+public abstract class TimingError implements Metric<Pool<TimeSeries<Pair<Double,Double>>>, DurationDiagramStatisticOuter>
 {
 
     /**

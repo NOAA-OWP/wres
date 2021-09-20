@@ -23,7 +23,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 /**
  * Computes the mean error of a single-valued prediction as a fraction of the mean observed value.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public class BiasFraction extends DoubleErrorScore<Pool<Pair<Double, Double>>>
 {
@@ -79,7 +79,7 @@ public class BiasFraction extends DoubleErrorScore<Pool<Pair<Double, Double>>>
         DoubleAdder left = new DoubleAdder();
         DoubleAdder right = new DoubleAdder();
         DoubleErrorFunction error = FunctionFactory.error();
-        s.getRawData().forEach( pair -> {
+        s.get().forEach( pair -> {
             left.add( error.applyAsDouble( pair ) );
             right.add( pair.getLeft() );
         } );

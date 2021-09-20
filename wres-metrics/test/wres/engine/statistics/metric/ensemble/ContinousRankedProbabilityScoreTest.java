@@ -17,7 +17,6 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.MetricGroup;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.pools.BasicPool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -28,7 +27,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 /**
  * Tests the {@link ContinuousRankedProbabilityScore}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class ContinousRankedProbabilityScoreTest
 {
@@ -61,7 +60,7 @@ public final class ContinousRankedProbabilityScoreTest
         pairs.add( Pair.of( 47.0, Ensemble.of( 12, 54, 23, 54, 78 ) ) );
         pairs.add( Pair.of( 12.1, Ensemble.of( 9, 8, 5, 6, 12 ) ) );
         pairs.add( Pair.of( 43.0, Ensemble.of( 23, 12, 12, 34, 10 ) ) );
-        Pool<Pair<Double, Ensemble>> input = BasicPool.of( pairs, PoolMetadata.of() );
+        Pool<Pair<Double, Ensemble>> input = Pool.of( pairs, PoolMetadata.of() );
 
         //Metadata for the output
         PoolMetadata m1 = PoolMetadata.of();
@@ -101,7 +100,7 @@ public final class ContinousRankedProbabilityScoreTest
         pairs.add( Pair.of( 47.0, Ensemble.of( 12, 54, 23, 54 ) ) );
         pairs.add( Pair.of( 12.0, Ensemble.of( 9, 8, 5 ) ) );
         pairs.add( Pair.of( 43.0, Ensemble.of( 23, 12, 12 ) ) );
-        Pool<Pair<Double, Ensemble>> input = BasicPool.of( pairs, PoolMetadata.of() );
+        Pool<Pair<Double, Ensemble>> input = Pool.of( pairs, PoolMetadata.of() );
 
         //Check the results       
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
@@ -131,7 +130,7 @@ public final class ContinousRankedProbabilityScoreTest
         //Generate some data
         List<Pair<Double, Ensemble>> pairs = new ArrayList<>();
         pairs.add( Pair.of( 8.0, Ensemble.of( 23, 54, 23, 12, 32 ) ) );
-        Pool<Pair<Double, Ensemble>> input = BasicPool.of( pairs, PoolMetadata.of() );
+        Pool<Pair<Double, Ensemble>> input = Pool.of( pairs, PoolMetadata.of() );
 
         //Check the results       
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
@@ -162,7 +161,7 @@ public final class ContinousRankedProbabilityScoreTest
         //Generate some data
         List<Pair<Double, Ensemble>> pairs = new ArrayList<>();
         pairs.add( Pair.of( 32.0, Ensemble.of( 23, 54, 23, 12, 32 ) ) );
-        Pool<Pair<Double, Ensemble>> input = BasicPool.of( pairs, PoolMetadata.of() );
+        Pool<Pair<Double, Ensemble>> input = Pool.of( pairs, PoolMetadata.of() );
 
         //Check the results       
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
@@ -191,7 +190,7 @@ public final class ContinousRankedProbabilityScoreTest
     {
         // Generate empty data
         Pool<Pair<Double, Ensemble>> input =
-                BasicPool.of( Arrays.asList(), PoolMetadata.of() );
+                Pool.of( Arrays.asList(), PoolMetadata.of() );
 
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
 

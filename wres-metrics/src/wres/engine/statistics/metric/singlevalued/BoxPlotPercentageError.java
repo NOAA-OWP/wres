@@ -25,7 +25,7 @@ import wres.statistics.generated.BoxplotStatistic.Box;
  * A box plot of the errors associated with a pool of single-valued pairs where each error is expressed as a 
  * percentage of the left value.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class BoxPlotPercentageError extends Diagram<Pool<Pair<Double, Double>>, BoxplotStatisticOuter>
@@ -84,7 +84,7 @@ public class BoxPlotPercentageError extends Diagram<Pool<Pair<Double, Double>>, 
                                                            .setMetric( this.getMetric() );
 
         // Empty output for empty input
-        if ( s.getRawData().isEmpty() )
+        if ( s.get().isEmpty() )
         {
             // Add an empty box: #62863
             builder.addStatistics( Box.newBuilder().addAllQuantiles( BoxPlotPercentageError.EMPTY_BOX ) );
@@ -95,7 +95,7 @@ public class BoxPlotPercentageError extends Diagram<Pool<Pair<Double, Double>>, 
         // Get the sorted errors
         List<Double> probs = this.getMetric().getQuantilesList();
         double[] sortedPercentageErrors =
-                s.getRawData()
+                s.get()
                  .stream()
                  .mapToDouble( a -> ( ( a.getRight() - a.getLeft() ) / a.getLeft() ) * 100 )
                  .sorted()

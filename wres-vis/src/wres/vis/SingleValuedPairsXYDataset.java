@@ -34,19 +34,19 @@ class SingleValuedPairsXYDataset
     @Override
     public int getItemCount( final int series )
     {
-        return getPlotData().getRawData().size();
+        return getPlotData().get().size();
     }
 
     @Override
     public Number getX( final int series, final int item )
     {
-        return getPlotData().getRawData().get( item ).getLeft();
+        return getPlotData().get().get( item ).getLeft();
     }
 
     @Override
     public Number getY( final int series, final int item )
     {
-        return getPlotData().getRawData().get( item ).getRight();
+        return getPlotData().get().get( item ).getRight();
     }
 
     @Override

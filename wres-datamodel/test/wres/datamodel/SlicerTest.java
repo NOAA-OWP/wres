@@ -1,6 +1,7 @@
 package wres.datamodel;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -25,7 +26,6 @@ import org.junit.Test;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.pools.BasicPool;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -63,8 +63,8 @@ public final class SlicerTest
         values.add( Pair.of( 1.0, 1.0 / 5.0 ) );
         double[] expected = new double[] { 0, 0, 1, 1, 0, 1 };
 
-        assertTrue( Arrays.equals( Slicer.getLeftSide( BasicPool.of( values,
-                                                                     PoolMetadata.of() ) ),
+        assertTrue( Arrays.equals( Slicer.getLeftSide( Pool.of( values,
+                                                                PoolMetadata.of() ) ),
                                    expected ) );
     }
 
@@ -80,8 +80,8 @@ public final class SlicerTest
         values.add( Pair.of( 1.0, 1.0 / 5.0 ) );
 
         double[] expected = new double[] { 3.0 / 5.0, 1.0 / 5.0, 2.0 / 5.0, 3.0 / 5.0, 0.0 / 5.0, 1.0 / 5.0 };
-        assertTrue( Arrays.equals( Slicer.getRightSide( BasicPool.of( values,
-                                                                      PoolMetadata.of() ) ),
+        assertTrue( Arrays.equals( Slicer.getRightSide( Pool.of( values,
+                                                                 PoolMetadata.of() ) ),
                                    expected ) );
     }
 
@@ -100,13 +100,13 @@ public final class SlicerTest
                                                       Operator.GREATER,
                                                       ThresholdDataType.LEFT );
         PoolMetadata meta = PoolMetadata.of();
-        Pool<Pair<Double, Double>> pairs = BasicPool.of( values, meta, values, meta, null );
+        Pool<Pair<Double, Double>> pairs = Pool.of( values, meta, values, meta, null );
         Pool<Pair<Double, Double>> sliced =
                 Slicer.filter( pairs, Slicer.left( threshold::test ), threshold::test );
         //Test with baseline
         assertTrue( Arrays.equals( Slicer.getLeftSide( sliced.getBaselineData() ), expected ) );
         //Test without baseline
-        Pool<Pair<Double, Double>> pairsNoBase = BasicPool.of( values, meta );
+        Pool<Pair<Double, Double>> pairsNoBase = Pool.of( values, meta );
         Pool<Pair<Double, Double>> slicedNoBase =
                 Slicer.filter( pairsNoBase, Slicer.left( threshold::test ), threshold::test );
         assertTrue( Arrays.equals( Slicer.getLeftSide( slicedNoBase ), expected ) );
@@ -127,7 +127,7 @@ public final class SlicerTest
                                                       Operator.GREATER,
                                                       ThresholdDataType.LEFT );
         PoolMetadata meta = PoolMetadata.of();
-        Pool<Pair<Double, Ensemble>> pairs = BasicPool.of( values, meta, values, meta, null );
+        Pool<Pair<Double, Ensemble>> pairs = Pool.of( values, meta, values, meta, null );
         Pool<Pair<Double, Ensemble>> sliced =
                 Slicer.filter( pairs, Slicer.leftVector( threshold::test ), threshold::test );
 
@@ -135,7 +135,7 @@ public final class SlicerTest
         assertTrue( Arrays.equals( Slicer.getLeftSide( sliced.getBaselineData() ), expected ) );
 
         //Test without baseline
-        Pool<Pair<Double, Ensemble>> pairsNoBase = BasicPool.of( values, meta );
+        Pool<Pair<Double, Ensemble>> pairsNoBase = Pool.of( values, meta );
         Pool<Pair<Double, Ensemble>> slicedNoBase =
                 Slicer.filter( pairsNoBase, Slicer.leftVector( threshold::test ), threshold::test );
 
@@ -153,14 +153,14 @@ public final class SlicerTest
         values.add( Pair.of( 0.0, Ensemble.of( 21, 22, 23, 24, 25 ) ) );
         values.add( Pair.of( 1.0, Ensemble.of( 26, 27, 28, 29, 30 ) ) );
         PoolMetadata meta = PoolMetadata.of();
-        Pool<Pair<Double, Ensemble>> input = BasicPool.of( values, meta, values, meta, null );
+        Pool<Pair<Double, Ensemble>> input = Pool.of( values, meta, values, meta, null );
         Function<Pair<Double, Ensemble>, Pair<Double, Double>> mapper =
                 in -> Pair.of( in.getLeft(),
                                Arrays.stream( in.getRight().getMembers() ).average().getAsDouble() );
         double[] expected = new double[] { 3.0, 8.0, 13.0, 18.0, 23.0, 28.0 };
         //Test without baseline
         double[] actualNoBase =
-                Slicer.getRightSide( Slicer.transform( BasicPool.of( values, meta ), mapper ) );
+                Slicer.getRightSide( Slicer.transform( Pool.of( values, meta ), mapper ) );
         assertTrue( Arrays.equals( actualNoBase, expected ) );
         //Test baseline
         double[] actualBase = Slicer.getRightSide( Slicer.transform( input, mapper ).getBaselineData() );
@@ -188,23 +188,23 @@ public final class SlicerTest
         expectedValues.add( Pair.of( false, false ) );
         expectedValues.add( Pair.of( true, true ) );
 
-        Pool<Pair<Boolean, Boolean>> expectedNoBase = BasicPool.of( expectedValues, meta );
-        Pool<Pair<Boolean, Boolean>> expectedBase = BasicPool.of( expectedValues,
-                                                                  meta,
-                                                                  expectedValues,
-                                                                  meta,
-                                                                  null );
+        Pool<Pair<Boolean, Boolean>> expectedNoBase = Pool.of( expectedValues, meta );
+        Pool<Pair<Boolean, Boolean>> expectedBase = Pool.of( expectedValues,
+                                                             meta,
+                                                             expectedValues,
+                                                             meta,
+                                                             null );
 
         //Test without baseline
         Pool<Pair<Boolean, Boolean>> actualNoBase =
-                Slicer.transform( BasicPool.of( values, meta ), mapper );
-        assertTrue( actualNoBase.getRawData().equals( expectedNoBase.getRawData() ) );
+                Slicer.transform( Pool.of( values, meta ), mapper );
+        assertEquals( expectedNoBase.get(), actualNoBase.get() );
 
         //Test baseline
         Pool<Pair<Boolean, Boolean>> actualBase =
-                Slicer.transform( BasicPool.of( values, meta, values, meta, null ),
+                Slicer.transform( Pool.of( values, meta, values, meta, null ),
                                   mapper );
-        assertTrue( actualBase.getBaselineData().getRawData().equals( expectedBase.getBaselineData().getRawData() ) );
+        assertEquals( expectedBase.getBaselineData().get(), actualBase.getBaselineData().get() );
     }
 
     @Test
@@ -231,7 +231,7 @@ public final class SlicerTest
         expectedPairs.add( Pair.of( Probability.ONE, Probability.of( 3.0 / 5.0 ) ) );
 
         //Test without baseline
-        Pool<Pair<Double, Ensemble>> pairs = BasicPool.of( values, meta );
+        Pool<Pair<Double, Ensemble>> pairs = Pool.of( values, meta );
 
         Function<Pair<Double, Ensemble>, Pair<Probability, Probability>> mapper =
                 pair -> Slicer.toDiscreteProbabilityPair( pair, threshold );
@@ -239,13 +239,13 @@ public final class SlicerTest
         Pool<Pair<Probability, Probability>> sliced =
                 Slicer.transform( pairs, mapper );
 
-        assertTrue( sliced.getRawData().equals( expectedPairs ) );
+        assertEquals( expectedPairs, sliced.get() );
 
         //Test baseline
         Pool<Pair<Probability, Probability>> slicedWithBaseline =
-                Slicer.transform( BasicPool.of( values, meta, values, meta, null ), mapper );
-        assertTrue( slicedWithBaseline.getRawData().equals( expectedPairs ) );
-        assertTrue( slicedWithBaseline.getBaselineData().getRawData().equals( expectedPairs ) );
+                Slicer.transform( Pool.of( values, meta, values, meta, null ), mapper );
+        assertEquals( expectedPairs, slicedWithBaseline.get() );
+        assertEquals( expectedPairs, slicedWithBaseline.getBaselineData().get() );
     }
 
     @Test
@@ -421,25 +421,26 @@ public final class SlicerTest
         VectorOfDoubles climatologyExpected = VectorOfDoubles.of( 1, 2, 3, 4, 5 );
 
         PoolMetadata meta = PoolMetadata.of();
-        Pool<Pair<Double, Double>> pairs = BasicPool.of( values, meta, values, meta, climatology );
+        Pool<Pair<Double, Double>> pairs = Pool.of( values, meta, values, meta, climatology );
         Pool<Pair<Double, Double>> sliced =
                 Slicer.filter( pairs, Slicer.leftAndRight( Double::isFinite ), Double::isFinite );
 
         //Test with baseline
-        assertTrue( sliced.getRawData().equals( expectedValues ) );
-        assertTrue( sliced.getBaselineData().getRawData().equals( expectedValues ) );
+        assertEquals( expectedValues, sliced.get() );
+        assertEquals( expectedValues, sliced.getBaselineData().get() );
         assertTrue( Arrays.equals( sliced.getClimatology().getDoubles(), climatologyExpected.getDoubles() ) );
         assertTrue( !Arrays.equals( Slicer.filter( pairs, Slicer.leftAndRight( Double::isFinite ), null )
                                           .getClimatology()
                                           .getDoubles(),
                                     climatologyExpected.getDoubles() ) );
-        assertTrue( !sliced.getRawData().equals( values ) );
+        assertNotEquals( values, sliced.get() );
+
         //Test without baseline or climatology
-        Pool<Pair<Double, Double>> pairsNoBase = BasicPool.of( values, meta );
+        Pool<Pair<Double, Double>> pairsNoBase = Pool.of( values, meta );
         Pool<Pair<Double, Double>> slicedNoBase =
                 Slicer.filter( pairsNoBase, Slicer.leftAndRight( Double::isFinite ), null );
 
-        assertTrue( slicedNoBase.getRawData().equals( expectedValues ) );
+        assertEquals( expectedValues, slicedNoBase.get() );
     }
 
     @Test
@@ -462,21 +463,21 @@ public final class SlicerTest
         VectorOfDoubles climatology = VectorOfDoubles.of( 1, 2, 3, 4, 5 );
 
         PoolMetadata meta = PoolMetadata.of();
-        Pool<Pair<Double, Ensemble>> pairs = BasicPool.of( values, meta, values, meta, climatology );
+        Pool<Pair<Double, Ensemble>> pairs = Pool.of( values, meta, values, meta, climatology );
         Pool<Pair<Double, Ensemble>> sliced =
                 Slicer.transform( pairs, Slicer.leftAndEachOfRight( Double::isFinite ) );
 
         //Test with baseline
-        assertTrue( sliced.getRawData().equals( expectedValues ) );
-        assertTrue( sliced.getBaselineData().getRawData().equals( expectedValues ) );
-        assertTrue( !sliced.getRawData().equals( values ) );
+        assertEquals( expectedValues, sliced.get() );
+        assertEquals( expectedValues, sliced.getBaselineData().get() );
+        assertNotEquals( values, sliced.get() );
 
         //Test without baseline or climatology
-        Pool<Pair<Double, Ensemble>> pairsNoBase = BasicPool.of( values, meta );
+        Pool<Pair<Double, Ensemble>> pairsNoBase = Pool.of( values, meta );
         Pool<Pair<Double, Ensemble>> slicedNoBase =
                 Slicer.transform( pairsNoBase, Slicer.leftAndEachOfRight( Double::isFinite ) );
 
-        assertTrue( slicedNoBase.getRawData().equals( expectedValues ) );
+        assertEquals( expectedValues, slicedNoBase.get() );
     }
 
     @Test

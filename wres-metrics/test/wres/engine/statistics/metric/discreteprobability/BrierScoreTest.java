@@ -12,7 +12,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.pools.Pool;
-import wres.datamodel.pools.BasicPool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.Probability;
@@ -27,7 +26,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 /**
  * Tests the {@link BrierScore}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class BrierScoreTest
 {
@@ -82,8 +81,7 @@ public final class BrierScoreTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        Pool<Pair<Probability, Probability>> input =
-                BasicPool.of( Arrays.asList(), PoolMetadata.of() );
+        Pool<Pair<Probability, Probability>> input = Pool.of( Arrays.asList(), PoolMetadata.of() );
 
         DoubleScoreStatisticOuter actual = brierScore.apply( input );
 

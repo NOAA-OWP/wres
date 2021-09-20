@@ -14,7 +14,6 @@ import org.junit.Test;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.pools.BasicPool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.VectorOfDoubles;
@@ -32,7 +31,7 @@ import wres.statistics.generated.BoxplotStatistic.Box;
 /**
  * Tests the {@link BoxPlotErrorByForecast}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class BoxPlotErrorByForecastTest
 {
@@ -60,7 +59,7 @@ public final class BoxPlotErrorByForecastTest
         List<Pair<Double, Ensemble>> values = new ArrayList<>();
         values.add( Pair.of( 0.0, Ensemble.of( 0.0, 20.0, 30.0, 50.0, 100.0 ) ) );
 
-        Pool<Pair<Double, Ensemble>> input = BasicPool.of( values, PoolMetadata.of() );
+        Pool<Pair<Double, Ensemble>> input = Pool.of( values, PoolMetadata.of() );
 
         BoxplotStatisticOuter actual = this.bpe.apply( input );
 
@@ -99,7 +98,7 @@ public final class BoxPlotErrorByForecastTest
         List<Pair<Double, Ensemble>> values = new ArrayList<>();
         values.add( Pair.of( 0.0, Ensemble.of( 0.0, 20.0, 30.0, 50.0, 100.0 ) ) );
 
-        Pool<Pair<Double, Ensemble>> input = BasicPool.of( values, PoolMetadata.of() );
+        Pool<Pair<Double, Ensemble>> input = Pool.of( values, PoolMetadata.of() );
 
         //Build the metric
         BoxPlotErrorByForecast bpef = BoxPlotErrorByForecast.of( MetricDimension.ENSEMBLE_MEDIAN,
@@ -139,7 +138,7 @@ public final class BoxPlotErrorByForecastTest
     {
         // Generate empty data
         Pool<Pair<Double, Ensemble>> input =
-                BasicPool.of( Arrays.asList(), PoolMetadata.of() );
+                Pool.of( Arrays.asList(), PoolMetadata.of() );
 
         BoxplotStatisticOuter actual = this.bpe.apply( input );
 

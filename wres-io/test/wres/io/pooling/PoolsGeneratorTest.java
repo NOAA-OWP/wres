@@ -30,6 +30,7 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
+import wres.datamodel.time.TimeSeries;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.project.Project;
@@ -43,7 +44,7 @@ import wres.statistics.generated.Evaluation;
 /**
  * Tests the {@link PoolsGenerator}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public class PoolsGeneratorTest
 {
@@ -158,7 +159,7 @@ public class PoolsGeneratorTest
         FeatureGroup featureGroup = FeatureGroup.of( new FeatureTuple( feature, feature, null ) );
 
         // Create the actual output
-        List<Supplier<Pool<Pair<Double, Double>>>> actual =
+        List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> actual =
                 PoolFactory.getSingleValuedPools( evaluationDescription,
                                                   project,
                                                   featureGroup,
@@ -269,7 +270,7 @@ public class PoolsGeneratorTest
         FeatureGroup featureGroup = FeatureGroup.of( new FeatureTuple( feature, feature, null ) );
 
         // Create the actual output
-        List<Supplier<Pool<Pair<Double, Ensemble>>>> actual =
+        List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> actual =
                 PoolFactory.getEnsemblePools( evaluationDescription,
                                               project,
                                               featureGroup,

@@ -13,11 +13,13 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolSlicer;
+import wres.datamodel.time.TimeSeries;
 
 /**
  * Class for writing a {@link Pool} that contains ensemble forecasts.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
@@ -53,7 +55,7 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
     }
 
     @Override
-    StringJoiner getHeaderFromPairs( Pool<Pair<Double, Ensemble>> pairs )
+    StringJoiner getHeaderFromPairs( Pool<TimeSeries<Pair<Double, Ensemble>>> pairs )
     {
         StringJoiner joiner = super.getHeaderFromPairs( pairs );
 
@@ -63,7 +65,8 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
 
         joiner.add( "LEFT IN " + unit );
 
-        if ( !pairs.getRawData().isEmpty() )
+        int pairCount = PoolSlicer.getPairCount( pairs );
+        if ( pairCount > 0 )
         {
             int memberCount = this.getEnsembleMemberCount( pairs );
 
@@ -101,11 +104,12 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
      * @return the largest number of ensemble members
      */
 
-    private int getEnsembleMemberCount( Pool<Pair<Double, Ensemble>> pairs )
+    private int getEnsembleMemberCount( Pool<TimeSeries<Pair<Double, Ensemble>>> pairs )
     {
-        OptionalInt members = pairs.getRawData()
+        OptionalInt members = pairs.get()
                                    .stream()
-                                   .mapToInt( next -> next.getRight().getMembers().length )
+                                   .flatMap( next -> next.getEvents().stream() )
+                                   .mapToInt( next -> next.getValue().getRight().getMembers().length )
                                    .max();
 
         if ( members.isPresent() )

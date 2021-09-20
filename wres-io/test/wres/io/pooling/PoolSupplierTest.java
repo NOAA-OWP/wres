@@ -21,7 +21,7 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.pairs.PoolOfPairs;
+import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.space.FeatureGroup;
@@ -44,7 +44,7 @@ import wres.datamodel.time.TimeWindowOuter;
 /**
  * Tests the {@link PoolSupplier}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 @RunWith( MockitoJUnitRunner.class )
@@ -141,16 +141,6 @@ public class PoolSupplierTest
     private static final String VARIABLE_NAME = "STREAMFLOW";
     private static final FeatureKey FEATURE = FeatureKey.of( "DRRC2" );
     private static final String UNIT = "CMS";
-
-    private static TimeSeriesMetadata getBoilerplateMetadata()
-    {
-        return TimeSeriesMetadata.of( Collections.emptyMap(),
-                                      TimeScaleOuter.of( Duration.ofHours( 1 ) ),
-                                      VARIABLE_NAME,
-                                      FEATURE,
-                                      UNIT );
-    }
-
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithTimeScale( TimeScaleOuter timeScale )
     {
@@ -471,7 +461,7 @@ public class PoolSupplierTest
                                                         poolOneWindow,
                                                         this.desiredTimeScale );
 
-        Supplier<Pool<Pair<Double, Double>>> poolOneSupplier =
+        Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolOneSupplier =
                 new PoolSupplier.Builder<Double, Double>().setLeft( obsSupplier )
                                                           .setRight( forcSupplierOne )
                                                           .setLeftUpscaler( this.upscaler )
@@ -480,7 +470,7 @@ public class PoolSupplierTest
                                                           .setMetadata( poolOneMetadata )
                                                           .build();
 
-        Pool<Pair<Double, Double>> poolOneActual = poolOneSupplier.get();
+        Pool<TimeSeries<Pair<Double, Double>>> poolOneActual = poolOneSupplier.get();
 
         // Pool One expected
         TimeSeriesMetadata poolOneTimeSeriesMetadata =
@@ -512,10 +502,10 @@ public class PoolSupplierTest
                                                                                             103.0 ) ) )
                                                               .build();
 
-        Pool<Pair<Double, Double>> poolOneExpected =
-                new PoolOfPairs.Builder<Double, Double>().addTimeSeries( poolOneSeries )
-                                                         .setMetadata( poolOneMetadata )
-                                                         .build();
+        Pool<TimeSeries<Pair<Double, Double>>> poolOneExpected =
+                new Pool.Builder<TimeSeries<Pair<Double, Double>>>().addData( poolOneSeries )
+                                                                         .setMetadata( poolOneMetadata )
+                                                                         .build();
 
         assertEquals( poolOneExpected, poolOneActual );
     }
@@ -558,7 +548,7 @@ public class PoolSupplierTest
 
         PoolMetadata poolOneMetadataBaseline = PoolMetadata.of( poolOneMetadata.getEvaluation(), baselinePool );
 
-        Supplier<Pool<Pair<Double, Double>>> poolOneSupplier =
+        Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolOneSupplier =
                 new PoolSupplier.Builder<Double, Double>().setLeft( obsSupplier )
                                                           .setRight( forcSupplierOne )
                                                           .setBaseline( forcSupplierOne )
@@ -571,7 +561,7 @@ public class PoolSupplierTest
                                                           .build();
 
         // Acquire the pools for the baseline
-        Pool<Pair<Double, Double>> poolOneActual = poolOneSupplier.get().getBaselineData();
+        Pool<TimeSeries<Pair<Double, Double>>> poolOneActual = poolOneSupplier.get().getBaselineData();
 
         // Pool One expected
         TimeSeriesMetadata poolOneTimeSeriesMetadata =
@@ -610,11 +600,11 @@ public class PoolSupplierTest
 
         VectorOfDoubles expectedClimatology = VectorOfDoubles.of( climatologyArray );
 
-        Pool<Pair<Double, Double>> poolOneExpected =
-                new PoolOfPairs.Builder<Double, Double>().addTimeSeries( poolOneSeries )
-                                                         .setClimatology( expectedClimatology )
-                                                         .setMetadata( poolOneMetadataBaseline )
-                                                         .build();
+        Pool<TimeSeries<Pair<Double, Double>>> poolOneExpected =
+                new Pool.Builder<TimeSeries<Pair<Double, Double>>>().addData( poolOneSeries )
+                                                                         .setClimatology( expectedClimatology )
+                                                                         .setMetadata( poolOneMetadataBaseline )
+                                                                         .build();
 
         assertEquals( poolOneExpected, poolOneActual );
     }
@@ -645,7 +635,7 @@ public class PoolSupplierTest
                                                            poolElevenWindow,
                                                            this.desiredTimeScale );
 
-        Supplier<Pool<Pair<Double, Double>>> poolElevenSupplier =
+        Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolElevenSupplier =
                 new PoolSupplier.Builder<Double, Double>().setLeft( obsSupplier )
                                                           .setRight( forcSupplierEleven )
                                                           .setLeftUpscaler( this.upscaler )
@@ -654,7 +644,7 @@ public class PoolSupplierTest
                                                           .setMetadata( poolElevenMetadata )
                                                           .build();
 
-        Pool<Pair<Double, Double>> poolElevenActual = poolElevenSupplier.get();
+        Pool<TimeSeries<Pair<Double, Double>>> poolElevenActual = poolElevenSupplier.get();
 
         // Pool Eleven expected
         TimeSeriesMetadata poolTimeSeriesMetadata =
@@ -713,11 +703,11 @@ public class PoolSupplierTest
                                                               .setMetadata( poolTimeSeriesTwoMetadata )
                                                               .build();
 
-        Pool<Pair<Double, Double>> poolElevenExpected =
-                new PoolOfPairs.Builder<Double, Double>().addTimeSeries( poolElevenOneSeries )
-                                                         .addTimeSeries( poolElevenTwoSeries )
-                                                         .setMetadata( poolElevenMetadata )
-                                                         .build();
+        Pool<TimeSeries<Pair<Double, Double>>> poolElevenExpected =
+                new Pool.Builder<TimeSeries<Pair<Double, Double>>>().addData( poolElevenOneSeries )
+                                                                         .addData( poolElevenTwoSeries )
+                                                                         .setMetadata( poolElevenMetadata )
+                                                                         .build();
 
         assertEquals( poolElevenExpected, poolElevenActual );
     }
@@ -748,7 +738,7 @@ public class PoolSupplierTest
                                                              poolEighteenWindow,
                                                              this.desiredTimeScale );
 
-        Supplier<Pool<Pair<Double, Double>>> poolEighteenSupplier =
+        Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolEighteenSupplier =
                 new PoolSupplier.Builder<Double, Double>().setLeft( obsSupplier )
                                                           .setRight( forcSupplierEighteen )
                                                           .setLeftUpscaler( this.upscaler )
@@ -757,17 +747,11 @@ public class PoolSupplierTest
                                                           .setMetadata( poolEighteenMetadata )
                                                           .build();
 
-        Pool<Pair<Double, Double>> poolEighteenActual = poolEighteenSupplier.get();
+        Pool<TimeSeries<Pair<Double, Double>>> poolEighteenActual = poolEighteenSupplier.get();
 
-        // Pool Eighteen expected
-        TimeSeries<Pair<Double, Double>> poolEighteenSeries =
-                new TimeSeries.Builder<Pair<Double, Double>>().setMetadata( getBoilerplateMetadata() )
-                                                              .build();
-
-        Pool<Pair<Double, Double>> poolEighteenExpected =
-                new PoolOfPairs.Builder<Double, Double>().addTimeSeries( poolEighteenSeries )
-                                                         .setMetadata( poolEighteenMetadata )
-                                                         .build();
+        Pool<TimeSeries<Pair<Double, Double>>> poolEighteenExpected =
+                new Pool.Builder<TimeSeries<Pair<Double, Double>>>().setMetadata( poolEighteenMetadata )
+                                                                         .build();
 
         assertEquals( poolEighteenExpected, poolEighteenActual );
     }
@@ -838,7 +822,7 @@ public class PoolSupplierTest
                                                                        .setRight( geometry ) )
                                       .build() );
 
-        Supplier<Pool<Pair<Double, Double>>> poolSupplier =
+        Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolSupplier =
                 new PoolSupplier.Builder<Double, Double>().setLeft( obsSupplier )
                                                           .setRight( forcSupplier )
                                                           .setLeftUpscaler( this.upscaler )
@@ -847,9 +831,9 @@ public class PoolSupplierTest
                                                           .setMetadata( poolMetadata )
                                                           .build();
 
-        Pool<Pair<Double, Double>> poolActual = poolSupplier.get();
+        Pool<TimeSeries<Pair<Double, Double>>> poolActual = poolSupplier.get();
 
-        assertEquals( 28, poolActual.getRawData().size() );
+        assertEquals( 28, PoolSlicer.getPairCount( poolActual ) );
         assertEquals( 4, poolActual.get().size() );
     }
 

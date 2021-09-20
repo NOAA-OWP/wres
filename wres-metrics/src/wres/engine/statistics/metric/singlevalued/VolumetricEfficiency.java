@@ -24,7 +24,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * <p>A score of 1 denotes perfect efficiency and a score of 0 denotes a VP that matches the VO. The lower bound of 
  * the measure is <code>-Inf</code> and a score below zero indicates a VP that exceeds the VO.</p>
  *
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public class VolumetricEfficiency extends DoubleErrorScore<Pool<Pair<Double, Double>>>
 {
@@ -78,7 +78,7 @@ public class VolumetricEfficiency extends DoubleErrorScore<Pool<Pair<Double, Dou
         }
         Double vO = 0.0;
         double vP = 0.0;
-        for ( Pair<Double, Double> nextPair : s.getRawData() )
+        for ( Pair<Double, Double> nextPair : s.get() )
         {
             vO += Math.abs( nextPair.getLeft() );
             vP += Math.abs( nextPair.getLeft() - nextPair.getRight() );

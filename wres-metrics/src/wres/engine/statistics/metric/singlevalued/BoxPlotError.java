@@ -24,7 +24,7 @@ import wres.statistics.generated.MetricName;
 /**
  * A box plot of the errors associated with a pool of single-valued pairs.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class BoxPlotError extends Diagram<Pool<Pair<Double, Double>>, BoxplotStatisticOuter>
@@ -87,7 +87,7 @@ public class BoxPlotError extends Diagram<Pool<Pair<Double, Double>>, BoxplotSta
                                                                                        .toString() ) );
 
         // Empty output for empty input
-        if ( s.getRawData().isEmpty() )
+        if ( s.get().isEmpty() )
         {
             // Add an empty box: #62863
             builder.addStatistics( Box.newBuilder().addAllQuantiles( BoxPlotError.EMPTY_BOX ) );
@@ -97,7 +97,7 @@ public class BoxPlotError extends Diagram<Pool<Pair<Double, Double>>, BoxplotSta
 
         // Get the sorted errors
         List<Double> probs = this.getMetric().getQuantilesList();
-        double[] sortedErrors = s.getRawData()
+        double[] sortedErrors = s.get()
                                  .stream()
                                  .mapToDouble( a -> a.getRight() - a.getLeft() )
                                  .sorted()

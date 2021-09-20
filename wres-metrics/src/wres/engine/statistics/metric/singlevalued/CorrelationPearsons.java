@@ -28,7 +28,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * input. Implements {@link Collectable} to avoid repeated calculations of derivative metrics, such as the
  * {@link CoefficientOfDetermination} when both appear in a {@link MetricCollection}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public class CorrelationPearsons extends OrdinaryScore<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter>
         implements Collectable<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
@@ -91,7 +91,7 @@ public class CorrelationPearsons extends OrdinaryScore<Pool<Pair<Double, Double>
         double returnMe = Double.NaN;
 
         // Minimum sample size of 1
-        if ( s.getRawData().size() > 1 )
+        if ( s.get().size() > 1 )
         {
             returnMe = FunctionFactory.finiteOrMissing()
                                       .applyAsDouble( this.correlation.correlation( Slicer.getLeftSide( s ),

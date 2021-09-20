@@ -30,7 +30,7 @@ import com.google.common.jimfs.Jimfs;
 
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.pairs.PoolOfPairs.Builder;
+import wres.datamodel.pools.Pool.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.space.FeatureGroup;
@@ -47,7 +47,7 @@ import wres.statistics.generated.Pool;
 /**
  * Tests the {@link SingleValuedPairsWriter}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class SingleValuedPairsWriterTest
 {
@@ -56,19 +56,19 @@ public final class SingleValuedPairsWriterTest
      * First set of pairs to use for writing.
      */
 
-    private static wres.datamodel.pools.Pool<Pair<Double, Double>> pairs = null;
+    private static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Double>>> pairs = null;
 
     /**
      * Second set of pairs to use for writing.
      */
 
-    private static wres.datamodel.pools.Pool<Pair<Double, Double>> pairsTwo = null;
+    private static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Double>>> pairsTwo = null;
 
     /**
      * Third set of pairs to use for writing.
      */
 
-    private static wres.datamodel.pools.Pool<Pair<Double, Double>> pairsThree = null;
+    private static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Double>>> pairsThree = null;
 
     private static final String VARIABLE_NAME = "ARMS";
     private static final FeatureKey FEATURE = FeatureKey.of( "FRUIT" );
@@ -97,7 +97,7 @@ public final class SingleValuedPairsWriterTest
     {
 
         // Create the pairs
-        Builder<Double, Double> tsBuilder = new Builder<>();
+        Builder<TimeSeries<Pair<Double, Double>>> tsBuilder = new Builder<>();
 
         SortedSet<Event<Pair<Double, Double>>> setOfPairs = new TreeSet<>();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
@@ -132,12 +132,12 @@ public final class SingleValuedPairsWriterTest
         TimeSeries<Pair<Double, Double>> timeSeriesOne =
                 TimeSeries.of( metadata, setOfPairs );
 
-        SingleValuedPairsWriterTest.pairs = tsBuilder.addTimeSeries( timeSeriesOne )
+        SingleValuedPairsWriterTest.pairs = tsBuilder.addData( timeSeriesOne )
                                                      .setMetadata( meta )
                                                      .build();
 
         // Create the second time-series of pairs
-        Builder<Double, Double> tsBuilderTwo = new Builder<>();
+        Builder<TimeSeries<Pair<Double, Double>>> tsBuilderTwo = new Builder<>();
         SortedSet<Event<Pair<Double, Double>>> setOfPairsTwo = new TreeSet<>();
         Instant basisTimeTwo = Instant.parse( "1985-01-01T00:00:00Z" );
         setOfPairsTwo.add( Event.of( Instant.parse( "1985-01-01T04:00:00Z" ),
@@ -174,11 +174,11 @@ public final class SingleValuedPairsWriterTest
                 TimeSeries.of( metadataTwo, setOfPairsTwo );
 
         SingleValuedPairsWriterTest.pairsTwo =
-                tsBuilderTwo.addTimeSeries( timeSeriesTwo ).setMetadata( metaTwo ).build();
+                tsBuilderTwo.addData( timeSeriesTwo ).setMetadata( metaTwo ).build();
 
 
         // Create the third time-series of pairs
-        Builder<Double, Double> tsBuilderThree = new Builder<>();
+        Builder<TimeSeries<Pair<Double, Double>>> tsBuilderThree = new Builder<>();
         SortedSet<Event<Pair<Double, Double>>> setOfPairsThree = new TreeSet<>();
         Instant basisTimeThree = Instant.parse( "1985-01-01T00:00:00Z" );
         setOfPairsThree.add( Event.of( Instant.parse( "1985-01-01T07:00:00Z" ),
@@ -214,7 +214,7 @@ public final class SingleValuedPairsWriterTest
         TimeSeries<Pair<Double, Double>> timeSeriesThree =
                 TimeSeries.of( metadataThree, setOfPairsThree );
 
-        SingleValuedPairsWriterTest.pairsThree = tsBuilderThree.addTimeSeries( timeSeriesThree )
+        SingleValuedPairsWriterTest.pairsThree = tsBuilderThree.addData( timeSeriesThree )
                                                                .setMetadata( metaThree )
                                                                .build();
     }
@@ -239,7 +239,7 @@ public final class SingleValuedPairsWriterTest
             try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( csvPath, ChronoUnit.SECONDS ) )
             {
 
-                Builder<Double, Double> tsBuilder = new Builder<>();
+                Builder<TimeSeries<Pair<Double, Double>>> tsBuilder = new Builder<>();
 
                 // Set the measurement units and time scale
                 FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( "PINEAPPLE" ),
@@ -260,9 +260,9 @@ public final class SingleValuedPairsWriterTest
 
                 PoolMetadata metadata = PoolMetadata.of( evaluation, pool );
 
-                wres.datamodel.pools.Pool<Pair<Double, Double>> emptyPairs =
-                        tsBuilder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
-                                                                Collections.emptySortedSet() ) )
+                wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Double>>> emptyPairs =
+                        tsBuilder.addData( TimeSeries.of( getBoilerplateMetadata(),
+                                                          Collections.emptySortedSet() ) )
                                  .setMetadata( metadata )
                                  .build();
 
@@ -337,8 +337,8 @@ public final class SingleValuedPairsWriterTest
             {
 
                 // Create the pairs with a time window
-                Builder<Double, Double> tsBuilder = new Builder<>();
-                tsBuilder.addPoolOfPairs( SingleValuedPairsWriterTest.pairs );
+                Builder<TimeSeries<Pair<Double, Double>>> tsBuilder = new Builder<>();
+                tsBuilder.addPool( SingleValuedPairsWriterTest.pairs );
                 tsBuilder.setMetadata( PoolMetadata.of( SingleValuedPairsWriterTest.pairs.getMetadata(),
                                                         TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                             Instant.parse( "1990-01-01T00:00:00Z" ),

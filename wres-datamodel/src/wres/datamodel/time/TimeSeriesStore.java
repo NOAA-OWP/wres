@@ -26,7 +26,7 @@ import wres.datamodel.space.FeatureKey;
 public class TimeSeriesStore
 {
     /** Logger. */
-    private final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesStore.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesStore.class );
 
     /** Left-ish time-series of {@link Double}. **/
     private final List<TimeSeries<Double>> leftSingleValuedSeries;

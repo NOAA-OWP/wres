@@ -16,7 +16,6 @@ import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.pools.BasicPool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
@@ -57,7 +56,7 @@ public class Chart2DTestInput extends TestCase
 
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
-        final Pool<Pair<Double, Double>> pairs = BasicPool.of( values, meta );
+        final Pool<Pair<Double, Double>> pairs = Pool.of( values, meta );
 
         //Construct the source from the pairs assigning it a data source order index of 0.
         //The order index indicates the order in which the different sources are rendered.

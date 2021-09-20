@@ -18,7 +18,7 @@ import wres.engine.statistics.metric.MetricTestDataFactory;
 /**
  * Tests the {@link TimingErrorHelper}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class TimingErrorHelperTest
 {
@@ -28,11 +28,11 @@ public final class TimingErrorHelperTest
     {
 
         // Generate some data
-        Pool<Pair<Double, Double>> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
+        Pool<TimeSeries<Pair<Double, Double>>> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
-        Iterator<TimeSeries<Pair<Double,Double>>> iterator = input.get().iterator();
-        TimeSeries<Pair<Double,Double>> first = iterator.next();
-        TimeSeries<Pair<Double,Double>> second = iterator.next();
+        Iterator<TimeSeries<Pair<Double, Double>>> iterator = input.get().iterator();
+        TimeSeries<Pair<Double, Double>> first = iterator.next();
+        TimeSeries<Pair<Double, Double>> second = iterator.next();
 
         //Generate some data using an RNG for a uniform U[0,1] distribution with a fixed seed
         Random r = new Random( 12345678 );
@@ -56,9 +56,9 @@ public final class TimingErrorHelperTest
     public void testGetTimeToPeakWithTies()
     {
         // Generate some data
-        Pool<Pair<Double, Double>> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFive();
-        Iterator<TimeSeries<Pair<Double,Double>>> iterator = input.get().iterator();
-        TimeSeries<Pair<Double,Double>> first = iterator.next();
+        Pool<TimeSeries<Pair<Double, Double>>> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFive();
+        Iterator<TimeSeries<Pair<Double, Double>>> iterator = input.get().iterator();
+        TimeSeries<Pair<Double, Double>> first = iterator.next();
 
         //Generate some data using an RNG for a uniform U[0,1] distribution with a fixed seed
         Random r = new Random( 12345678 );

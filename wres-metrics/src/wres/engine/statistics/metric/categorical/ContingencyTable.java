@@ -25,7 +25,7 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.Co
  * table store the number of predicted outcomes and the columns store the number of observed outcomes.
  * </p>
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class ContingencyTable implements Metric<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter>,
@@ -139,7 +139,7 @@ public class ContingencyTable implements Metric<Pool<Pair<Boolean, Boolean>>, Do
         };
 
         // Increment the count in a serial stream as the lambda is stateful
-        s.getRawData().stream().forEach( f );
+        s.get().stream().forEach( f );
 
         // Name the outcomes for a 2x2 contingency table
         DoubleScoreStatistic table =
