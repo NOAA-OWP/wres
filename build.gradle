@@ -1075,7 +1075,7 @@ project(':wres-tasker')
         implementation 'org.apache.tika:tika-core:1.27'
 
         // To persist job metadata while keeping it relatively fast
-        implementation 'org.redisson:redisson:3.16.2'
+        implementation 'org.redisson:redisson:3.16.3'
 
         // For ToStringBuilder
         implementation 'org.apache.commons:commons-lang3:3.12.0'
