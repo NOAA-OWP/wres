@@ -20,6 +20,7 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
+import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Probability;
 import wres.datamodel.Slicer;
@@ -319,7 +320,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         Function<Pair<Double, Ensemble>, Pair<Probability, Probability>> mapper =
                 pair -> Slicer.toDiscreteProbabilityPair( pair, threshold );
 
-        Pool<Pair<Probability, Probability>> transPairs = Slicer.transform( pairs, mapper );
+        Pool<Pair<Probability, Probability>> transPairs = PoolSlicer.transform( pairs, mapper );
 
         assertEquals( "ESP",
                       this.rocScore.apply( transPairs )

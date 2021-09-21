@@ -5,7 +5,6 @@ import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Predicate;
 
 import wres.config.MetricConfigException;
 import wres.config.generated.MetricConfigName;
@@ -13,8 +12,6 @@ import wres.config.generated.MetricsConfig;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.SummaryStatisticsName;
-import wres.config.generated.TimeSeriesMetricConfig;
-import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.DataFactory;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
@@ -76,7 +73,7 @@ public final class MetricConfigHelper
         }
 
         // Lazy build the mapping
-        buildMetricConfigNameMap();
+        MetricConfigHelper.buildMetricConfigNameMap();
 
         return NAME_MAP.get( metricConfigName );
     }
@@ -103,7 +100,7 @@ public final class MetricConfigHelper
         }
 
         // Lazy build the name map
-        buildSummaryStatisticsNameMap();
+        MetricConfigHelper.buildSummaryStatisticsNameMap();
 
         return STATISTICS_NAME_MAP.get( statsName );
     }
@@ -129,74 +126,6 @@ public final class MetricConfigHelper
         returnMe.addAll( MetricConfigHelper.getTimeSeriesMetricsFromConfig( config ) );
 
         return Collections.unmodifiableSet( returnMe );
-    }
-
-    /**
-     * Returns true if the specified project configuration contains a metric of the specified type for which summary
-     * statistics are defined, false otherwise. The predicate must test for a named metric, not 
-     * {@link TimeSeriesMetricConfigName#ALL_VALID}. 
-     * 
-     * @param config the project configuration
-     * @param metric the predicate to find a metric whose summary statistics are required
-     * @return true if the configuration contains the specified type of metric, false otherwise
-     * @throws MetricConfigException if the configuration is invalid
-     * @throws IllegalArgumentException if the predicate tests for {@link TimeSeriesMetricConfigName#ALL_VALID}
-     */
-
-    public static boolean hasSummaryStatisticsFor( ProjectConfig config, Predicate<TimeSeriesMetricConfigName> metric )
-    {
-        return !MetricConfigHelper.getSummaryStatisticsFor( config, metric ).isEmpty();
-    }
-
-    /**
-     * Returns a list of summary statistics associated with the predicate for a named metric. The predicate must test 
-     * for a named metric, not {@link TimeSeriesMetricConfigName#ALL_VALID}. However, configuration that contains
-     * {@link TimeSeriesMetricConfigName#ALL_VALID} will be tested separately and an appropriate list of summary 
-     * statistics returned for that configuration.
-     * 
-     * @param config the project configuration
-     * @param metric the predicate to find a metric whose summary statistics are required
-     * @return the summary statistics associated with the named metric
-     * @throws MetricConfigException if the project contains an unmapped summary statistic
-     * @throws IllegalArgumentException if the predicate tests for {@link TimeSeriesMetricConfigName#ALL_VALID}
-     */
-
-    public static Set<MetricConstants> getSummaryStatisticsFor( ProjectConfig config,
-                                                                Predicate<TimeSeriesMetricConfigName> metric )
-    {
-        Objects.requireNonNull( config, "Specify a non-null project configuration to check for summary statistics" );
-
-        Objects.requireNonNull( metric, "Specify a non null metric to check for summary statistics." );
-
-        if ( metric.test( TimeSeriesMetricConfigName.ALL_VALID ) )
-        {
-            throw new IllegalArgumentException( "Cannot obtain summary statistics for the general type 'all valid' "
-                                                + "when a specific type is required: instead, provide a time-series "
-                                                + "metric that is specific." );
-        }
-
-        Set<MetricConstants> allStats = new HashSet<>();
-
-        // Iterate the metric groups
-        for ( MetricsConfig nextGroup : config.getMetrics() )
-        {
-            // Iterate the time-series metrics
-            for ( TimeSeriesMetricConfig next : nextGroup.getTimeSeriesMetric() )
-            {
-                // Match the name
-                if ( ( next.getName() == TimeSeriesMetricConfigName.ALL_VALID || metric.test( next.getName() ) )
-                     && Objects.nonNull( next.getSummaryStatistics() ) )
-                {
-                    // Return the summary statistics
-                    for ( SummaryStatisticsName nextStat : next.getSummaryStatistics().getName() )
-                    {
-                        allStats.addAll( MetricConfigHelper.getSummaryStatisticsFor( nextStat ) );
-                    }
-                }
-            }
-        }
-
-        return Collections.unmodifiableSet( allStats );
     }
 
     /**
@@ -282,37 +211,6 @@ public final class MetricConfigHelper
         for ( MetricsConfig metrics : projectConfig.getMetrics() )
         {
             returnMe.addAll( DataFactory.getTimeSeriesMetricsFromConfig( metrics, projectConfig ) );
-        }
-
-        return Collections.unmodifiableSet( returnMe );
-    }
-
-    /**
-     * Returns a a summary statistic for the named input and all valid statistics if the input is 
-     * {@link SummaryStatisticName#ALL_VALID}.
-     * 
-     * @param name the statistic name
-     * @return a set of summary statistics
-     * @throws MetricConfigException if the named statistic could not be mapped
-     * @throws NullPointerException if the input is null
-     */
-
-    private static Set<MetricConstants> getSummaryStatisticsFor( SummaryStatisticsName name )
-    {
-        Objects.requireNonNull( name, "Specify a non-null summary statistic name." );
-
-        // Lazy build
-        buildSummaryStatisticsNameMap();
-
-        Set<MetricConstants> returnMe = new HashSet<>();
-
-        if ( name == SummaryStatisticsName.ALL_VALID )
-        {
-            returnMe.addAll( STATISTICS_NAME_MAP.values() );
-        }
-        else
-        {
-            returnMe.add( MetricConfigHelper.from( name ) );
         }
 
         return Collections.unmodifiableSet( returnMe );

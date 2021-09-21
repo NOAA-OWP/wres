@@ -5,11 +5,11 @@ import java.util.Objects;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.Probability;
-import wres.datamodel.Slicer;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
+import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.ProbabilityScore;
@@ -95,7 +95,7 @@ public class BrierScore extends DecomposableScore<Pool<Pair<Probability, Probabi
 
         // Transform probabilities to double values
         Pool<Pair<Double, Double>> transformed =
-                Slicer.transform( s,
+                PoolSlicer.transform( s,
                                   pair -> Pair.of( pair.getLeft().getProbability(),
                                                    pair.getRight().getProbability() ) );
 

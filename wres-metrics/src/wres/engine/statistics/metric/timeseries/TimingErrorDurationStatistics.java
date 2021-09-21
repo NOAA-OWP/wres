@@ -170,7 +170,8 @@ public class TimingErrorDurationStatistics
             throw new MetricParameterException( "Specify a non-null container of summary statistics." );
         }
 
-        String attemptedName = timingError.getMetricName().name() + "_STATISTIC";
+        String parentMetricName = timingError.getMetricName().name();
+        String attemptedName = parentMetricName + "_STATISTIC";
         try
         {
             this.identifier = MetricConstants.valueOf( attemptedName );
@@ -194,6 +195,7 @@ public class TimingErrorDurationStatistics
 
         this.statistics = new TreeMap<>();
         this.components = new EnumMap<>( MetricConstants.class );
+        this.timingError = timingError;
 
         // Set and validate the copy
         for ( MetricConstants next : input )
@@ -202,13 +204,15 @@ public class TimingErrorDurationStatistics
             {
                 throw new MetricParameterException( "Cannot build the metric with a null statistic." );
             }
-            this.statistics.put( next, FunctionFactory.ofStatistic( next ) );
+
+            String nextSummaryStatisticName = next.name();
+            nextSummaryStatisticName = nextSummaryStatisticName.replace( parentMetricName + "_", "" );
+            MetricConstants nextSummaryStatistic = MetricConstants.valueOf( nextSummaryStatisticName );
+            this.statistics.put( next, FunctionFactory.ofStatistic( nextSummaryStatistic ) );
 
             DurationScoreMetricComponent component = this.getMetricDescription( next );
             this.components.put( next, component );
         }
-
-        this.timingError = timingError;
     }
 
     /**
@@ -221,11 +225,13 @@ public class TimingErrorDurationStatistics
 
     private DurationScoreMetricComponent getMetricDescription( MetricConstants identifier )
     {
-        ComponentName componentName = ComponentName.valueOf( identifier.name() );
+        String nameString = this.timingError.getMetricName().name() + "_";
+        String summaryNameString = identifier.name().replace( nameString, "" );
+        ComponentName componentName = ComponentName.valueOf( summaryNameString );
         DurationScoreMetricComponent.Builder builder = DurationScoreMetricComponent.newBuilder()
                                                                                    .setName( componentName );
 
-        switch ( identifier )
+        switch ( componentName )
         {
             case MEAN:
             case MEDIAN:

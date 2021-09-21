@@ -357,17 +357,6 @@ public final class MetricFactoryTest
     }
 
     /**
-     * Tests {@link MetricFactory#ofSummaryStatisticsForTimingErrorMetric(MetricConstants)}. 
-     */
-    @Test
-    public void testOfSummaryStatisticsForTimingErrorMetric()
-    {
-        assertTrue( Objects.nonNull( MetricFactory.ofSummaryStatisticsForTimingErrorMetric( MetricConstants.TIME_TO_PEAK_ERROR ) ) );
-        assertTrue( Objects.nonNull( MetricFactory.ofSummaryStatisticsForTimingErrorMetric( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ) ) );
-        assertTrue( Objects.isNull( MetricFactory.ofSummaryStatisticsForTimingErrorMetric( MetricConstants.MAIN ) ) );
-    }
-
-    /**
      * Tests the {@link MetricFactory#ofMetricProcessorForSingleValuedPairs(ProjectConfig, java.util.Set)}. 
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
@@ -405,8 +394,7 @@ public final class MetricFactoryTest
 
         Metrics metrics = Metrics.of( thresholdsByMetric, 0 );
 
-        assertTrue( MetricFactory.ofMetricProcessorForSingleValuedPairs( this.mockSingleValued,
-                                                                         metrics ) instanceof MetricProcessorByTimeSingleValuedPairs );
+        assertTrue( MetricFactory.ofMetricProcessorForSingleValuedPairs( metrics ) instanceof MetricProcessorByTimeSingleValuedPairs );
     }
 
     /**
@@ -423,8 +411,7 @@ public final class MetricFactoryTest
 
         Metrics metrics = Metrics.of( thresholdsByMetric, 0 );
 
-        assertTrue( MetricFactory.ofMetricProcessorForEnsemblePairs( this.mockEnsemble,
-                                                                     metrics ) instanceof MetricProcessorByTimeEnsemblePairs );
+        assertTrue( MetricFactory.ofMetricProcessorForEnsemblePairs( metrics ) instanceof MetricProcessorByTimeEnsemblePairs );
     }
 
     /**

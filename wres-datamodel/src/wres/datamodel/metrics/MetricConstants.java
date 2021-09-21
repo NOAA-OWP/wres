@@ -24,417 +24,264 @@ import wres.statistics.generated.BoxplotStatistic;
 public enum MetricConstants
 {
 
-    /**
-     * Identifier for fractional bias or relative mean error.
-     */
-
+    /** Fractional bias or relative mean error. */
     BIAS_FRACTION( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
-    /**
-     * Identifier for a Brier Score.
-     */
-
+    /** Brier Score. */
     BRIER_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE ),
 
-    /**
-     * Identifier for a Brier Skill Score.
-     */
-
+    /** Brier Skill Score. */
     BRIER_SKILL_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE, true ),
 
-    /**
-     * Identifier for a box plot of errors by observed value.
-     */
-
+    /** Box plot of errors by observed value. */
     BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE( SampleDataGroup.ENSEMBLE, StatisticType.BOXPLOT_PER_PAIR ),
 
-    /**
-     * Identifier for a box plot of errors by forecast value.
-     */
-
+    /** Box plot of errors by forecast value. */
     BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE( SampleDataGroup.ENSEMBLE, StatisticType.BOXPLOT_PER_PAIR ),
 
-    /**
-     * Identifier for a box plot of errors.
-     */
-
+    /** Box plot of errors. */
     BOX_PLOT_OF_ERRORS( SampleDataGroup.SINGLE_VALUED, StatisticType.BOXPLOT_PER_POOL ),
 
-    /**
-     * Identifier for a box plot of errors as a percentage of the left value.
-     */
-
+    /** Box plot of errors as a percentage of the left value.*/
     BOX_PLOT_OF_PERCENTAGE_ERRORS( SampleDataGroup.SINGLE_VALUED, StatisticType.BOXPLOT_PER_POOL ),
 
-    /**
-     * Identifier for coefficient of determination.
-     */
-
+    /** Coefficient of determination.*/
     COEFFICIENT_OF_DETERMINATION( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
-    /**
-     * Identifier for a Mean Continuous Ranked Probability Score
-     */
-
+    /** Mean Continuous Ranked Probability Score. */
     CONTINUOUS_RANKED_PROBABILITY_SCORE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE ),
 
-    /**
-     * Identifier for a Mean Continuous Ranked Probability Skill Score
-     */
-
+    /** Mean Continuous Ranked Probability Skill Score. */
     CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE, true ),
 
-    /**
-     * Identifier for a Contingency Table.
-     */
-
+    /** Contingency Table.*/
     CONTINGENCY_TABLE( new SampleDataGroup[] { SampleDataGroup.DICHOTOMOUS,
                                                SampleDataGroup.MULTICATEGORY },
-            StatisticType.DOUBLE_SCORE, false, MetricGroup.CONTINGENCY_TABLE ),
+            StatisticType.DOUBLE_SCORE, false, null,
+            MetricGroup.CONTINGENCY_TABLE ),
 
-    /**
-     * Identifier for Pearson's product-moment correlation coefficient.
-     */
-
+    /** Pearson's product-moment correlation coefficient.*/
     PEARSON_CORRELATION_COEFFICIENT( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
-    /**
-     * Identifier for a Threat Score.
-     */
-
+    /** Threat Score. */
     THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ),
 
-    /**
-     * Identifier for an Equitable Threat Score.
-     */
-
+    /** Equitable Threat Score.*/
     EQUITABLE_THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, true ),
 
-    /**
-     * Identifier for a Frequency Bias.
-     */
-
+    /** Frequency Bias.*/
     FREQUENCY_BIAS( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ),
 
-    /**
-     * Identifier for an Index of Agreement.
-     */
-
+    /** Index of Agreement. */
     INDEX_OF_AGREEMENT( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
-    /**
-     * Identifier for the Kling-Gupta Efficiency index.
-     */
-
+    /** Kling-Gupta Efficiency index. */
     KLING_GUPTA_EFFICIENCY( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true ),
 
-    /**
-     * Identifier for a Mean Absolute Error.
-     */
-
+    /** Mean Absolute Error.*/
     MEAN_ABSOLUTE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
-    /**
-     * Identifier for a Mean Error.
-     */
-
+    /** Mean Error. */
     MEAN_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
-    /**
-     * Identifier for a Mean Square Error.
-     */
-
+    /** Mean Square Error.*/
     MEAN_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
-    /**
-     * Identifier for a Mean Square Error Skill Score.
-     */
-
+    /** Mean Square Error Skill Score.*/
     MEAN_SQUARE_ERROR_SKILL_SCORE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true ),
 
-    /**
-     * Identifier for a Mean Square Error Skill Score, normalized.
-     */
-
+    /** Mean Square Error Skill Score, normalized. */
     MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true ),
 
-    /**
-     * Identifier for a Median Error.
-     */
-
+    /** Median Error.*/
     MEDIAN_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
-    /**
-     * Identifier for a Peirce Skill Score.
-     */
-
+    /** Peirce Skill Score. */
     PEIRCE_SKILL_SCORE( new SampleDataGroup[] { SampleDataGroup.DICHOTOMOUS, SampleDataGroup.MULTICATEGORY },
-            StatisticType.DOUBLE_SCORE, true ),
+            StatisticType.DOUBLE_SCORE, true, null ),
 
-    /**
-     * Identifier for a Probability Of Detection.
-     */
-
+    /** Probability Of Detection. */
     PROBABILITY_OF_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ),
 
-    /**
-     * Identifier for a Probability Of False Detection.
-     */
-
+    /** Probability Of False Detection.*/
     PROBABILITY_OF_FALSE_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ),
 
-    /**
-     * Quantile-quantile diagram.
-     */
-
+    /** Quantile-quantile diagram. */
     QUANTILE_QUANTILE_DIAGRAM( SampleDataGroup.SINGLE_VALUED, StatisticType.DIAGRAM ),
-    
-    /**
-     * Ensemble Quantile-quantile diagram.
-     */
 
+    /** Ensemble Quantile-quantile diagram. */
     ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM( SampleDataGroup.ENSEMBLE, StatisticType.DIAGRAM ),
 
-    /**
-     * Identifier for the Rank Histogram.
-     */
-
+    /** Rank Histogram. */
     RANK_HISTOGRAM( SampleDataGroup.ENSEMBLE, StatisticType.DIAGRAM ),
 
-    /**
-     * Identifier for the Relative Operating Characteristic.
-     */
-
+    /** Relative Operating Characteristic. */
     RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DIAGRAM ),
 
-    /**
-     * Identifier for the Relative Operating Characteristic Score.
-     */
-
+    /** Relative Operating Characteristic Score. */
     RELATIVE_OPERATING_CHARACTERISTIC_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE, true ),
 
-    /**
-     * Identifier for the Reliability Diagram.
-     */
-
+    /** Reliability Diagram. */
     RELIABILITY_DIAGRAM( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DIAGRAM ),
 
-    /**
-     * Identifier for a Root Mean Square Error.
-     */
-
+    /** Root Mean Square Error. */
     ROOT_MEAN_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
-    /**
-     * Identifier for a Root Mean Square Error normalized by the standard deviation of
-     * the left values.
-     */
-
+    /** Root Mean Square Error normalized by the standard deviation of the left values. */
     ROOT_MEAN_SQUARE_ERROR_NORMALIZED( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
-    /**
-     * Identifier for the sample size.
-     */
-
+    /** Sample size. */
     SAMPLE_SIZE( new SampleDataGroup[] { SampleDataGroup.SINGLE_VALUED,
                                          SampleDataGroup.ENSEMBLE },
-            StatisticType.DOUBLE_SCORE, false, MetricGroup.UNIVARIATE_STATISTIC ),
+            StatisticType.DOUBLE_SCORE, false, null, MetricGroup.UNIVARIATE_STATISTIC ),
 
-    /**
-     * Identifier for a Sum of Square Error.
-     */
-
+    /** Sum of Square Error. */
     SUM_OF_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
-    /**
-     * Identifier for the Volumetric Efficiency.
-     */
-
+    /** Volumetric Efficiency. */
     VOLUMETRIC_EFFICIENCY( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
-    /**
-     * Identifier for the Time-to-Peak Error.
-     */
-
+    /** Time-to-Peak Error. */
     TIME_TO_PEAK_ERROR( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_DIAGRAM ),
 
-    /**
-     * Identifier for a statistic derived from the Time-to-Peak Error.
-     */
-
+    /** A statistic derived from the {@link #TIME_TO_PEAK_ERROR}. */
     TIME_TO_PEAK_ERROR_STATISTIC( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE ),
 
-    /**
-     * Identifier for the Time-to-Peak Relative Error.
-     */
-
+    /** Time-to-Peak Relative Error. */
     TIME_TO_PEAK_RELATIVE_ERROR( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_DIAGRAM ),
 
-    /**
-     * Identifier for a statistic derived from the Time-to-Peak Relative Error.
-     */
-
+    /** A statistic derived from the {@link #TIME_TO_PEAK_RELATIVE_ERROR}. */
     TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE ),
 
-    /**
-     * Mean statistic.
-     */
+    /** Time to peak error, mean across all instances. */
+    TIME_TO_PEAK_ERROR_MEAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+            MetricConstants.TIME_TO_PEAK_ERROR ),
 
+    /** Time to peak error, median across all instances. */
+    TIME_TO_PEAK_ERROR_MEDIAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+            MetricConstants.TIME_TO_PEAK_ERROR ),
+
+    /** Time to peak error, minimum across all instances. */
+    TIME_TO_PEAK_ERROR_MINIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+            MetricConstants.TIME_TO_PEAK_ERROR ),
+
+    /** Time to peak error, maximum across all instances. */
+    TIME_TO_PEAK_ERROR_MAXIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+            MetricConstants.TIME_TO_PEAK_ERROR ),
+
+    /** Time to peak error, standard deviation across all instances. */
+    TIME_TO_PEAK_ERROR_STANDARD_DEVIATION( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+            MetricConstants.TIME_TO_PEAK_ERROR ),
+
+    /** Time to peak error, mean absolute value across all instances. */
+    TIME_TO_PEAK_ERROR_MEAN_ABSOLUTE( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+            MetricConstants.TIME_TO_PEAK_ERROR ),
+
+    /** Time to peak relative error, mean across all instances. */
+    TIME_TO_PEAK_RELATIVE_ERROR_MEAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+            MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ),
+
+    /** Time to peak relative error, median across all instances. */
+    TIME_TO_PEAK_RELATIVE_ERROR_MEDIAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+            MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ),
+
+    /** Time to peak relative error, minimum across all instances. */
+    TIME_TO_PEAK_RELATIVE_ERROR_MINIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+            MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ),
+
+    /** Time to peak relative error, maximum across all instances. */
+    TIME_TO_PEAK_RELATIVE_ERROR_MAXIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+            MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ),
+
+    /** Time to peak relative error, standard deviation across all instances. */
+    TIME_TO_PEAK_RELATIVE_ERROR_STANDARD_DEVIATION( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
+            StatisticType.DURATION_SCORE,
+            MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ),
+
+    /** Time to peak relative error, mean absolute value across all instances. */
+    TIME_TO_PEAK_RELATIVE_ERROR_MEAN_ABSOLUTE( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+            MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ),
+
+    /** Mean statistic. */
     MEAN( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, MetricGroup.UNIVARIATE_STATISTIC,
             MetricGroup.LRB ),
 
-    /**
-     * Median statistic.
-     */
-
+    /** Median statistic. */
     MEDIAN( MetricGroup.UNIVARIATE_STATISTIC ),
 
-    /**
-     * Standard deviation statistic.
-     */
-
+    /** Standard deviation statistic. */
     STANDARD_DEVIATION( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, MetricGroup.UNIVARIATE_STATISTIC,
             MetricGroup.LRB ),
 
-    /**
-     * Minimum statistic.
-     */
-
+    /** Minimum statistic. */
     MINIMUM( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, MetricGroup.UNIVARIATE_STATISTIC,
             MetricGroup.LRB ),
 
-    /**
-     * Maximum statistic.
-     */
-
+    /** Maximum statistic. */
     MAXIMUM( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, MetricGroup.UNIVARIATE_STATISTIC,
             MetricGroup.LRB ),
 
-    /**
-     * Mean absolute statistic.
-     */
-
+    /** Mean absolute statistic. */
     MEAN_ABSOLUTE( MetricGroup.UNIVARIATE_STATISTIC ),
 
-    /**
-     * Indicator for no decomposition.
-     */
-
+    /** Indicator for no decomposition. */
     NONE( MetricGroup.NONE ),
 
-    /**
-     * Identifier for a Calibration-Refinement (CR) factorization.
-     */
-
+    /** Identifier for a Calibration-Refinement (CR) factorization. */
     CR( MetricGroup.CR ),
 
-    /**
-     * Identifier for a Calibration-Refinement (CR) factorization, together with an additional potential score
-     * component.
-     */
-
+    /** A Calibration-Refinement (CR) factorization, together with an additional potential score component. */
     CR_POT( MetricGroup.CR_POT ),
 
-    /**
-     * Identifier for a Likelihood-Base-Rate (LBR) factorization.
-     */
-
+    /** A Likelihood-Base-Rate (LBR) factorization. */
     LBR( MetricGroup.LBR ),
 
-    /**
-     * Identifier for the score and components of both the CR and LBR factorizations.
-     */
-
+    /** The score and components of both the CR and LBR factorizations. */
     CR_AND_LBR( MetricGroup.CR_AND_LBR ),
 
-    /**
-     * Identifier for the main component of a metric, such as the overall score in a score decomposition.
-     */
-
+    /** The main component of a metric, such as the overall score in a score decomposition. */
     MAIN( MetricGroup.NONE, MetricGroup.CR, MetricGroup.CR_POT, MetricGroup.LBR, MetricGroup.CR_AND_LBR ),
 
-    /**
-     * Identifier for the reliability component of a score decomposition.
-     */
-
+    /** The reliability component of a score decomposition. */
     RELIABILITY( MetricGroup.CR, MetricGroup.CR_POT, MetricGroup.CR_AND_LBR ),
 
-    /**
-     * Identifier for the resolution component of a score decomposition.
-     */
-
+    /** The resolution component of a score decomposition. */
     RESOLUTION( MetricGroup.CR, MetricGroup.CR_POT, MetricGroup.CR_AND_LBR ),
 
-    /**
-     * Identifier for the uncertainty component of a score decomposition.
-     */
-
+    /** The uncertainty component of a score decomposition. */
     UNCERTAINTY( MetricGroup.CR, MetricGroup.CR_POT, MetricGroup.CR_AND_LBR ),
 
-    /**
-     * Identifier for the potential score value (perfect reliability).
-     */
-
+    /** The potential score value (perfect reliability). */
     POTENTIAL( MetricGroup.CR_POT ),
 
-    /**
-     * Identifier for the Type-II conditional bias component of a score decomposition.
-     */
-
+    /** The Type-II conditional bias component of a score decomposition. */
     TYPE_II_CONDITIONAL_BIAS( MetricGroup.LBR, MetricGroup.CR_AND_LBR ),
 
-    /**
-     * Identifier for the discrimination component of a score decomposition.
-     */
-
+    /** The discrimination component of a score decomposition. */
     DISCRIMINATION( MetricGroup.LBR, MetricGroup.CR_AND_LBR ),
 
-    /**
-     * Identifier for the sharpness component of a score decomposition.
-     */
-
+    /** The sharpness component of a score decomposition. */
     SHARPNESS( MetricGroup.LBR, MetricGroup.CR_AND_LBR ),
 
-    /**
-     * Identifier for true positives.
-     */
-
+    /** True positives. */
     TRUE_POSITIVES( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, MetricGroup.CONTINGENCY_TABLE ),
 
-    /**
-     * Identifier for false positives.
-     */
-
+    /** False positives.*/
     FALSE_POSITIVES( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, MetricGroup.CONTINGENCY_TABLE ),
 
-    /**
-     * Identifier for false negatives.
-     */
-
+    /** False negatives.*/
     FALSE_NEGATIVES( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, MetricGroup.CONTINGENCY_TABLE ),
 
-    /**
-     * Identifier for true negatives.
-     */
-
+    /** True negatives. */
     TRUE_NEGATIVES( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, MetricGroup.CONTINGENCY_TABLE ),
 
-    /**
-     * Identifier for the component of a univariate statistic that applies to the left-sided data within a pairing.
-     */
-
+    /** The component of a univariate statistic that applies to the left-sided data within a pairing. */
     LEFT( MetricGroup.LRB ),
 
-    /**
-     * Identifier for the component of a univariate statistic that applies to the right-sided data within a pairing.
-     */
-
+    /** The component of a univariate statistic that applies to the right-sided data within a pairing. */
     RIGHT( MetricGroup.LRB ),
 
-    /**
-     * Identifier for the component of a univariate statistic that applies to the baseline-sided data within a pairing.
-     */
-
+    /** The component of a univariate statistic that applies to the baseline-sided data within a pairing. */
     BASELINE( MetricGroup.LRB );
 
     /**
@@ -462,6 +309,12 @@ public enum MetricConstants
     private final boolean isSkillMetric;
 
     /**
+     * A parent metric, may be null.
+     */
+
+    private final MetricConstants parent;
+
+    /**
      * Default constructor
      */
 
@@ -471,6 +324,7 @@ public enum MetricConstants
         this.outGroup = null;
         this.metricGroups = new MetricGroup[0];
         this.isSkillMetric = false;
+        this.parent = null;
     }
 
     /**
@@ -483,7 +337,20 @@ public enum MetricConstants
 
     private MetricConstants( SampleDataGroup inGroup, StatisticType outGroup, boolean isSkillMetric )
     {
-        this( new SampleDataGroup[] { inGroup }, outGroup, isSkillMetric );
+        this( new SampleDataGroup[] { inGroup }, outGroup, isSkillMetric, null );
+    }
+
+    /**
+     * Construct with a {@link SampleDataGroup} and a {@link StatisticType} and whether the metric measures skill.
+     * 
+     * @param inputGroup the input group
+     * @param outputGroup the output group
+     * @param parent the parent metric
+     */
+
+    private MetricConstants( SampleDataGroup inGroup, StatisticType outGroup, MetricConstants parent )
+    {
+        this( new SampleDataGroup[] { inGroup }, outGroup, false, parent );
     }
 
     /**
@@ -496,7 +363,7 @@ public enum MetricConstants
 
     private MetricConstants( SampleDataGroup inGroup, StatisticType outGroup, MetricGroup... metricGroup )
     {
-        this( new SampleDataGroup[] { inGroup }, outGroup, false, metricGroup );
+        this( new SampleDataGroup[] { inGroup }, outGroup, false, null, metricGroup );
     }
 
     /**
@@ -511,12 +378,14 @@ public enum MetricConstants
     private MetricConstants( SampleDataGroup[] inGroups,
                              StatisticType outGroup,
                              boolean isSkillMetric,
+                             MetricConstants parent,
                              MetricGroup... metricGroup )
     {
         this.inGroups = inGroups;
         this.outGroup = outGroup;
         this.metricGroups = metricGroup;
         this.isSkillMetric = isSkillMetric;
+        this.parent = parent;
     }
 
     /**
@@ -530,6 +399,7 @@ public enum MetricConstants
         this.metricGroups = decGroup;
         this.inGroups = null;
         this.outGroup = null;
+        this.parent = null;
         this.isSkillMetric = false;
     }
 
@@ -621,6 +491,26 @@ public enum MetricConstants
         return this.outGroup;
     }
 
+    /**
+     * @return a parent metric or null if none is defined.
+     */
+
+    public MetricConstants getParent()
+    {
+        return this.parent;
+    }
+
+    /**
+     * @return all the children of this metric.
+     */
+
+    public Set<MetricConstants> getChildren()
+    {
+        return Arrays.stream( MetricConstants.values() )
+                     .filter( next -> next.getParent() == this )
+                     .collect( Collectors.toUnmodifiableSet() );
+    }
+    
     /**
      * Returns all metric components for all {@link MetricGroup} with which this constant is associated or
      * an empty set if none is defined.

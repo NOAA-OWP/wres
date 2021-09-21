@@ -46,7 +46,6 @@ import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilitySkillSc
 import wres.engine.statistics.metric.ensemble.EnsembleQuantileQuantileDiagram;
 import wres.engine.statistics.metric.ensemble.RankHistogram;
 import wres.engine.statistics.metric.processing.MetricProcessor;
-import wres.engine.statistics.metric.processing.MetricProcessorByTime;
 import wres.engine.statistics.metric.processing.MetricProcessorByTimeEnsemblePairs;
 import wres.engine.statistics.metric.processing.MetricProcessorByTimeSingleValuedPairs;
 import wres.engine.statistics.metric.singlevalued.BiasFraction;
@@ -102,7 +101,7 @@ public final class MetricFactory
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
      * @param config the project configuration
-     * @return the {@link MetricProcessorByTime}
+     * @return the processor
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
@@ -113,8 +112,7 @@ public final class MetricFactory
         ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( config );
         Metrics metrics = Metrics.of( thresholdsByMetric, 0 );
 
-        return MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
-                                                                    metrics,
+        return MetricFactory.ofMetricProcessorForSingleValuedPairs( metrics,
                                                                     ForkJoinPool.commonPool(),
                                                                     ForkJoinPool.commonPool() );
     }
@@ -125,7 +123,7 @@ public final class MetricFactory
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
      * @param config the project configuration
-     * @return the {@link MetricProcessorByTime}
+     * @return the processor
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
@@ -136,8 +134,7 @@ public final class MetricFactory
         ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( config );
         Metrics metrics = Metrics.of( thresholdsByMetric, 0 );
 
-        return MetricFactory.ofMetricProcessorForEnsemblePairs( config,
-                                                                metrics,
+        return MetricFactory.ofMetricProcessorForEnsemblePairs( metrics,
                                                                 ForkJoinPool.commonPool(),
                                                                 ForkJoinPool.commonPool() );
     }
@@ -147,18 +144,16 @@ public final class MetricFactory
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
-     * @param config the project configuration
      * @param metrics the metrics to process
+     * @return the processor
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     public static MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>>
-            ofMetricProcessorForSingleValuedPairs( final ProjectConfig config,
-                                                   final Metrics metrics )
+            ofMetricProcessorForSingleValuedPairs( final Metrics metrics )
     {
-        return MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
-                                                                    metrics,
+        return MetricFactory.ofMetricProcessorForSingleValuedPairs( metrics,
                                                                     ForkJoinPool.commonPool(),
                                                                     ForkJoinPool.commonPool() );
     }
@@ -168,19 +163,16 @@ public final class MetricFactory
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
-     * @param config the project configuration
      * @param metrics the metrics to process
-     * @return the {@link MetricProcessorByTime}
+     * @return the processor
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     public static MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>
-            ofMetricProcessorForEnsemblePairs( final ProjectConfig config,
-                                               final Metrics metrics )
+            ofMetricProcessorForEnsemblePairs( final Metrics metrics )
     {
-        return MetricFactory.ofMetricProcessorForEnsemblePairs( config,
-                                                                metrics,
+        return MetricFactory.ofMetricProcessorForEnsemblePairs( metrics,
                                                                 ForkJoinPool.commonPool(),
                                                                 ForkJoinPool.commonPool() );
     }
@@ -189,25 +181,22 @@ public final class MetricFactory
     /**
      * Returns an instance of a {@link MetricProcessor} for processing single-valued pairs.
      * 
-     * @param config the project configuration
      * @param metrics the metrics to process
      * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}
-     * @return the {@link MetricProcessorByTime}
+     * @return the processor
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     public static MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>>
-            ofMetricProcessorForSingleValuedPairs( final ProjectConfig config,
-                                                   final Metrics metrics,
+            ofMetricProcessorForSingleValuedPairs( final Metrics metrics,
                                                    final ExecutorService thresholdExecutor,
                                                    final ExecutorService metricExecutor )
     {
-        return new MetricProcessorByTimeSingleValuedPairs( config,
-                                                           metrics,
+        return new MetricProcessorByTimeSingleValuedPairs( metrics,
                                                            thresholdExecutor,
                                                            metricExecutor );
     }
@@ -215,25 +204,22 @@ public final class MetricFactory
     /**
      * Returns an instance of a {@link MetricProcessor} for processing single-valued pairs.
      * 
-     * @param config the project configuration
      * @param metrics the metrics to process
      * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}
-     * @return the {@link MetricProcessorByTime}
+     * @return the processor
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     public static MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>
-            ofMetricProcessorForEnsemblePairs( final ProjectConfig config,
-                                               final Metrics metrics,
+            ofMetricProcessorForEnsemblePairs( final Metrics metrics,
                                                final ExecutorService thresholdExecutor,
                                                final ExecutorService metricExecutor )
     {
-        return new MetricProcessorByTimeEnsemblePairs( config,
-                                                       metrics,
+        return new MetricProcessorByTimeEnsemblePairs( metrics,
                                                        thresholdExecutor,
                                                        metricExecutor );
     }
@@ -975,32 +961,6 @@ public final class MetricFactory
             default:
                 throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
-    }
-
-    /**
-     * Helper that returns the name of the summary statistics associated with the timing metric or null if no 
-     * summary statistics are defined for the specified input.
-     * 
-     * @param timingMetric the named timing metric
-     * @return the summary statistics name or null if no identifier is defined
-     * @throws NullPointerException if the input is null
-     */
-
-    public static MetricConstants ofSummaryStatisticsForTimingErrorMetric( MetricConstants timingMetric )
-    {
-        Objects.requireNonNull( timingMetric, "Specify a non-null metric identifier to map." );
-
-        if ( timingMetric == MetricConstants.TIME_TO_PEAK_ERROR )
-        {
-            return MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC;
-        }
-
-        if ( timingMetric == MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR )
-        {
-            return MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC;
-        }
-
-        return null;
     }
 
     /**

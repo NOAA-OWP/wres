@@ -6,9 +6,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -18,13 +15,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.config.ProjectConfigPlus;
-import wres.config.generated.MetricConfig;
-import wres.config.generated.MetricConfigName;
-import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
-import wres.config.generated.ThresholdOperator;
-import wres.config.generated.ThresholdType;
-import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.OneOrTwoDoubles;
@@ -100,93 +91,6 @@ public final class MetricProcessorTest
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config );
         //Check for existence of metrics
         assertTrue( processor.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ) );
-    }
-
-    @Test
-    public void testHasThresholdMetrics()
-            throws MetricParameterException
-    {
-
-        // Mock some metrics
-        List<MetricConfig> metrics = new ArrayList<>();
-        metrics.add( new MetricConfig( null, MetricConfigName.RELATIVE_OPERATING_CHARACTERISTIC_SCORE ) );
-
-        // Mock some thresholds
-        List<ThresholdsConfig> thresholds = new ArrayList<>();
-        thresholds.add( new ThresholdsConfig( ThresholdType.PROBABILITY,
-                                              wres.config.generated.ThresholdDataType.LEFT,
-                                              "0.1,0.2,0.3",
-                                              ThresholdOperator.GREATER_THAN ) );
-
-        // Check discrete probability metric
-        ProjectConfig discreteProbability =
-                new ProjectConfig( null,
-                                   null,
-                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
-                                   null,
-                                   null,
-                                   null );
-
-
-        MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processorWithDiscreteProbability =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( discreteProbability );
-
-        //Check for existence of metrics
-        assertTrue( processorWithDiscreteProbability.hasThresholdMetrics() );
-
-        // Check dichotomous metric
-        metrics.clear();
-        metrics.add( new MetricConfig( null, MetricConfigName.FREQUENCY_BIAS ) );
-        ProjectConfig dichotomous =
-                new ProjectConfig( null,
-                                   null,
-                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
-                                   null,
-                                   null,
-                                   null );
-
-
-        MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processorWithDichotomous =
-                MetricFactory.ofMetricProcessorForSingleValuedPairs( dichotomous );
-
-        //Check for existence of metrics
-        assertTrue( processorWithDichotomous.hasThresholdMetrics() );
-
-        // Check for single-valued metric
-        metrics.clear();
-        metrics.add( new MetricConfig( null, MetricConfigName.MEAN_ERROR ) );
-        ProjectConfig singleValued =
-                new ProjectConfig( null,
-                                   null,
-                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
-                                   null,
-                                   null,
-                                   null );
-
-
-        MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processorWithSingleValued =
-                MetricFactory.ofMetricProcessorForSingleValuedPairs( singleValued );
-
-        //Check for non-existence of metrics
-        assertFalse( processorWithSingleValued.hasThresholdMetrics() );
-
-        // Check multicategory metric
-        metrics.clear();
-        metrics.add( new MetricConfig( null, MetricConfigName.PEIRCE_SKILL_SCORE ) );
-        ProjectConfig multicategory =
-                new ProjectConfig( null,
-                                   null,
-                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
-                                   null,
-                                   null,
-                                   null );
-
-
-        MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processorWithMultiCat =
-                MetricFactory.ofMetricProcessorForSingleValuedPairs( multicategory );
-
-        //Check for existence of metrics
-        assertTrue( processorWithMultiCat.hasThresholdMetrics() );
     }
 
     @Test

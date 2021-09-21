@@ -10,9 +10,9 @@ import java.util.function.Function;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.Ensemble;
-import wres.datamodel.Slicer;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.engine.statistics.metric.Diagram;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -130,7 +130,7 @@ public class EnsembleQuantileQuantileDiagram extends Diagram<Pool<Pair<Double, E
             Function<Pair<Double, Ensemble>, Pair<Double, Double>> transformer = this.getTransformer( ensembleName );
 
             // Create the pool of pairs for the relevant member
-            Pool<Pair<Double, Double>> transformed = Slicer.transform( pairs, transformer );
+            Pool<Pair<Double, Double>> transformed = PoolSlicer.transform( pairs, transformer );
 
             // Create the qq diagram
             DiagramStatisticOuter qq = this.qqDiagram.apply( transformed );
