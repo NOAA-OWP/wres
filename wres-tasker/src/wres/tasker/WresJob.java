@@ -130,7 +130,11 @@ public class WresJob
                           // Triple the retry attempts to 9:
                           .setRetryAttempts( 9 )
                           // Triple the retry interval to 4.5 seconds:
-                          .setRetryInterval( 4500 );
+                          .setRetryInterval( 4500 )
+                          // PING ten times more frequently than default:
+                          .setPingConnectionInterval( 3000 )
+                          // Set SO_KEEPALIVE for what it's worth:
+                          .setKeepAlive( true );
 
             // The reasoning here is any server thread can cause access of an
             // object in redis (e.g. output, stdout, etc), regardless of whether
