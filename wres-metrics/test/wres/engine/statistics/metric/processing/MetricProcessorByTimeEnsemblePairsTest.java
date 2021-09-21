@@ -546,7 +546,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                      () -> MetricFactory.ofMetricProcessorForEnsemblePairs( config ) );
 
         assertEquals( "Cannot configure 'BRIER SCORE' without thresholds to define the events: "
-                      + "add one or more thresholds to the configuration.",
+                      + "add one or more thresholds to the configuration for each instance of 'BRIER SCORE'.",
                       actual.getMessage() );
     }
 
@@ -584,30 +584,6 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         assertEquals( "Unable to determine quantile threshold from probability threshold: no climatological "
                       + "observations were available in the input.",
-                      actual.getMessage() );
-    }
-
-    @Test
-    public void testApplyThrowsExceptionWhenBaselineIsMissing()
-            throws MetricParameterException
-    {
-        // Mock configuration
-        List<MetricConfig> metrics = new ArrayList<>();
-        metrics.add( new MetricConfig( null, MetricConfigName.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) );
-
-        ProjectConfig mockedConfig =
-                new ProjectConfig( new Inputs( null, null, null ),
-                                   null,
-                                   Arrays.asList( new MetricsConfig( null, 0, metrics, null ) ),
-                                   null,
-                                   null,
-                                   null );
-
-        MetricConfigException actual = assertThrows( MetricConfigException.class,
-                                                     () -> MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig ) );
-
-        assertEquals( "Specify a non-null baseline from which to generate the 'CONTINUOUS RANKED "
-                      + "PROBABILITY SKILL SCORE'.",
                       actual.getMessage() );
     }
 

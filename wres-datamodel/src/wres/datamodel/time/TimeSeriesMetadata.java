@@ -12,9 +12,18 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.FeatureTuple;
 
 /**
- * Value object the stores the metadata associated with an {@link TimeSeries}.
+ * Value object the stores the metadata associated with an {@link TimeSeries}. 
+ * 
+ * TODO: currently the time-series metadata is inflexible in how it represents geospatial information that is common to
+ * all events in the time-series. In practice, a time-series may have no common geospatial information (e.g., because
+ * that information is modeled per-event, such as for an environmental tracer or a time-series of inundation extent) or
+ * it may have more complex geospatial information than a {@link FeatureKey}. See #96033 for some discussion. One 
+ * option would be to add a nullable generic type. This would add flexibility at the expense of additional 
+ * parameterization. Another option would be to allow a geospatial representation that contained one of a small number 
+ * of possibilities, such as a {@link FeatureKey} or a {@link FeatureTuple}} and admitted an empty representation.  
  */
 
 public class TimeSeriesMetadata

@@ -48,7 +48,6 @@ import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.engine.statistics.metric.processing.MetricFuturesByTime.MetricFuturesByTimeBuilder;
 
 /**
@@ -138,7 +137,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         // Also retain the time-series shape, where required
         Pool<Pair<Double, Ensemble>> unpacked = PoolSlicer.unpack( input );
         Pool<Pair<Double, Ensemble>> inputNoMissing =
-                Slicer.transform( unpacked, Slicer.leftAndEachOfRight( MetricProcessor.ADMISSABLE_DATA ) );
+                PoolSlicer.transform( unpacked, Slicer.leftAndEachOfRight( MetricProcessor.ADMISSABLE_DATA ) );
 
         // Process the metrics that consume ensemble pairs
         if ( this.hasMetrics( SampleDataGroup.ENSEMBLE ) )
@@ -151,7 +150,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         {
             //Derive the single-valued pairs from the ensemble pairs using the configured mapper
             Pool<Pair<Double, Double>> singleValued =
-                    Slicer.transform( inputNoMissing, toSingleValues );
+                    PoolSlicer.transform( inputNoMissing, toSingleValues );
 
             super.processSingleValuedPairs( singleValued, futures );
         }
@@ -182,7 +181,6 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
     /**
      * Constructor.
      * 
-     * @param config the project configuration
      * @param metrics the metrics to process
      * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
      * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
@@ -191,12 +189,11 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
      * @throws NullPointerException if a required input is null
      */
 
-    public MetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
-                                               final Metrics metrics,
-                                               final ExecutorService thresholdExecutor,
-                                               final ExecutorService metricExecutor )
+    public MetricProcessorByTimeEnsemblePairs( Metrics metrics,
+                                               ExecutorService thresholdExecutor,
+                                               ExecutorService metricExecutor )
     {
-        super( config, metrics, thresholdExecutor, metricExecutor );
+        super( metrics, thresholdExecutor, metricExecutor );
 
         //Construct the metrics
         //Discrete probability input, vector output
@@ -301,7 +298,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
 
         // Finalize validation now all required parameters are available
         // This is also called by the constructor of the superclass, but local parameters must be validated too
-        this.validate( config );
+        this.validate();
     }
 
     /**
@@ -366,56 +363,6 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
 
     }
 
-    @Override
-    void validate( ProjectConfig config )
-    {
-        Objects.requireNonNull( config, MetricConfigHelper.NULL_CONFIGURATION_ERROR );
-
-        // Annotate any configuration error, if possible
-        String configurationLabel = ".";
-        if ( Objects.nonNull( config.getLabel() ) )
-        {
-            configurationLabel = " labelled '"
-                                 + config.getLabel()
-                                 + "'.";
-        }
-
-        // This method checks local parameters, so ensure they have been set.
-        // If null, this is being called by the superclass constructor, not the local constructor
-        if ( Objects.nonNull( this.toSingleValues ) )
-        {
-
-            // Thresholds required for dichotomous and probability metrics
-            for ( MetricConstants next : super.getMetrics().getMetrics() )
-            {
-                if ( ( next.isInGroup( SampleDataGroup.DICHOTOMOUS )
-                       || next.isInGroup( SampleDataGroup.DISCRETE_PROBABILITY ) )
-                     && !super.getMetrics().getThresholdsByMetric()
-                                           .hasThresholdsForThisMetricAndTheseTypes( next,
-                                                                                     ThresholdGroup.PROBABILITY,
-                                                                                     ThresholdGroup.VALUE ) )
-                {
-                    throw new MetricConfigException( "Cannot configure '" + next
-                                                     + "' without thresholds to define the events: "
-                                                     + "add one or more thresholds to the configuration"
-                                                     + configurationLabel );
-                }
-            }
-
-            this.validateCategoricalState();
-
-            //Ensemble input, vector output
-            if ( hasMetrics( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE )
-                 && this.getMetrics().getMetrics().contains( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
-                 && Objects.isNull( config.getInputs().getBaseline() ) )
-            {
-                throw new MetricConfigException( "Specify a non-null baseline from which to generate the '"
-                                                 + MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE
-                                                 + "'." );
-            }
-        }
-    }
-
     /**
      * Processes a set of metric futures that consume ensemble pairs, which are mapped from the input pairs,
      * ensemble pairs, using a configured mapping function.
@@ -460,7 +407,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         // Find the thresholds for this group and for the required types
         ThresholdsByMetric filtered = super.getMetrics().getThresholdsByMetric()
                                                         .filterByGroup( SampleDataGroup.ENSEMBLE, outGroup )
-                                                        .filterByType( ThresholdGroup.PROBABILITY,
+                                                        .filterByGroup( ThresholdGroup.PROBABILITY,
                                                                        ThresholdGroup.VALUE );
 
         // Find the union across metrics and filter out non-unique thresholds
@@ -487,7 +434,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                 Predicate<Pair<Double, Ensemble>> filter =
                         MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( threshold );
 
-                pairs = Slicer.filter( pairs, filter, null );
+                pairs = PoolSlicer.filter( pairs, filter, null );
             }
 
             Builder<Pair<Double, Ensemble>> builder = new Builder<>();
@@ -605,7 +552,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         // Find the thresholds for this group and for the required types
         ThresholdsByMetric filtered = super.getMetrics().getThresholdsByMetric()
                                                         .filterByGroup( SampleDataGroup.DISCRETE_PROBABILITY, outGroup )
-                                                        .filterByType( ThresholdGroup.PROBABILITY,
+                                                        .filterByGroup( ThresholdGroup.PROBABILITY,
                                                                        ThresholdGroup.VALUE );
 
         // Find the union across metrics and filter out non-unique thresholds
@@ -621,7 +568,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
             Function<Pair<Double, Ensemble>, Pair<Probability, Probability>> transformer =
                     pair -> Slicer.toDiscreteProbabilityPair( pair, threshold );
 
-            Pool<Pair<Probability, Probability>> transformed = Slicer.transform( input, transformer );
+            Pool<Pair<Probability, Probability>> transformed = PoolSlicer.transform( input, transformer );
 
             // Add the threshold to the metadata, in order to fully qualify the pairs
             PoolMetadata baselineMeta = null;
@@ -785,29 +732,22 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         ThresholdsByMetric filtered = super.getMetrics().getThresholdsByMetric()
                                                         .filterByGroup( SampleDataGroup.DICHOTOMOUS, outGroup );
 
-        // Find the thresholds filtered by outer type
-        ThresholdsByMetric filteredByOuter = filtered.filterByType( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
-
-        // Find the thresholds filtered by inner type
-        ThresholdsByMetric filteredByInner = filtered.filterByType( ThresholdGroup.PROBABILITY_CLASSIFIER );
-
         // Find the union across metrics and filter out non-unique thresholds
-        Set<ThresholdOuter> union = filteredByOuter.union();
+        Set<ThresholdOuter> union = filtered.union( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
         union = super.getUniqueThresholdsWithQuantiles( input, union );
 
         // Iterate the thresholds
         for ( ThresholdOuter outerThreshold : union )
         {
-
             // Transform the pairs to probabilities first
             // Transform the pairs
             Function<Pair<Double, Ensemble>, Pair<Probability, Probability>> transformer =
                     pair -> Slicer.toDiscreteProbabilityPair( pair, outerThreshold );
 
-            Pool<Pair<Probability, Probability>> transformed = Slicer.transform( input, transformer );
+            Pool<Pair<Probability, Probability>> transformed = PoolSlicer.transform( input, transformer );
 
             // Find the union of classifiers across all metrics   
-            Set<ThresholdOuter> classifiers = filteredByInner.union();
+            Set<ThresholdOuter> classifiers = filtered.union( ThresholdGroup.PROBABILITY_CLASSIFIER );
 
             for ( ThresholdOuter innerThreshold : classifiers )
             {
@@ -819,7 +759,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                         pair -> Pair.of( innerThreshold.test( pair.getLeft().getProbability() ),
                                          innerThreshold.test( pair.getRight().getProbability() ) );
                 //Transform the pairs
-                Pool<Pair<Boolean, Boolean>> dichotomous = Slicer.transform( transformed, mapper );
+                Pool<Pair<Boolean, Boolean>> dichotomous = PoolSlicer.transform( transformed, mapper );
 
                 // Add the threshold to the metadata, in order to fully qualify the pairs
                 PoolMetadata baselineMeta = null;
@@ -840,9 +780,68 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
     }
 
     /**
+     * @param pairs the pairs whose sample size is required
+     * @return the sample size for a pool of probability pairs, which is the smaller of left occurrences (Pr=1.0) and 
+     *            non-occurrences (Pr=0.0)
+     */
+
+    private int getSampleSizeForProbPairs( Pool<Pair<Probability, Probability>> pairs )
+    {
+        int occurrences = 0;
+        int nonOccurrences = 0;
+
+        for ( Pair<Probability, Probability> next : pairs.get() )
+        {
+            if ( next.getLeft().equals( Probability.ONE ) )
+            {
+                occurrences++;
+            }
+            else
+            {
+                nonOccurrences++;
+            }
+        }
+
+        return Math.min( occurrences, nonOccurrences );
+    }
+
+    /**
+     * Validates the internal state of the processor.
+     */
+
+    private void validate()
+    {
+        // This method checks local parameters, so ensure they have been set.
+        // If null, this is being called by the superclass constructor, not the local constructor
+        if ( Objects.nonNull( this.toSingleValues ) )
+        {
+
+            // Thresholds required for dichotomous and probability metrics
+            for ( MetricConstants next : super.getMetrics().getMetrics() )
+            {
+                if ( ( next.isInGroup( SampleDataGroup.DICHOTOMOUS )
+                       || next.isInGroup( SampleDataGroup.DISCRETE_PROBABILITY ) )
+                     && !super.getMetrics().getThresholdsByMetric()
+                                           .hasThresholdsForThisMetricAndTheseTypes( next,
+                                                                                     ThresholdGroup.PROBABILITY,
+                                                                                     ThresholdGroup.VALUE ) )
+                {
+                    throw new MetricConfigException( "Cannot configure '" + next
+                                                     + "' without thresholds to define the events: "
+                                                     + "add one or more thresholds to the configuration "
+                                                     + "for each instance of '"
+                                                     + next
+                                                     + "'." );
+                }
+            }
+
+            this.validateCategoricalState();
+        }
+    }
+
+    /**
      * Validates the current state for categorical metrics.
-     * 
-     * @throws MetricConfigException
+     * @throws MetricConfigException if the state is invalid for any reason
      */
 
     private void validateCategoricalState()
@@ -887,32 +886,6 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                                                  + "non-occurrences." );
             }
         }
-    }
-
-    /**
-     * @param pairs the pairs whose sample size is required
-     * @return the sample size for a pool of probability pairs, which is the smaller of left occurrences (Pr=1.0) and 
-     *            non-occurrences (Pr=0.0)
-     */
-
-    private int getSampleSizeForProbPairs( Pool<Pair<Probability, Probability>> pairs )
-    {
-        int occurrences = 0;
-        int nonOccurrences = 0;
-
-        for ( Pair<Probability, Probability> next : pairs.get() )
-        {
-            if ( next.getLeft().equals( Probability.ONE ) )
-            {
-                occurrences++;
-            }
-            else
-            {
-                nonOccurrences++;
-            }
-        }
-
-        return Math.min( occurrences, nonOccurrences );
     }
 
 }

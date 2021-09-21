@@ -9,6 +9,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -29,6 +30,7 @@ import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.SummaryStatisticsName;
 import wres.config.generated.ThresholdDataType;
 import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
@@ -165,7 +167,10 @@ public final class DataFactory
             }
             else
             {
-                returnMe.add( DataFactory.getMetricName( next.getName() ) );
+                MetricConstants metricName = DataFactory.getMetricName( next.getName() );
+                returnMe.add( metricName );
+                Set<MetricConstants> summaryStatistics = DataFactory.getSummaryStatisticsFor( next );
+                returnMe.addAll( summaryStatistics );
             }
         }
 
@@ -225,7 +230,8 @@ public final class DataFactory
             }
             else
             {
-                returnMe.add( DataFactory.getMetricName( next.getName() ) );
+                MetricConstants metricName = DataFactory.getMetricName( next.getName() );
+                returnMe.add( metricName );
             }
         }
 
@@ -613,7 +619,7 @@ public final class DataFactory
         // Geographic name
         String geoName = DataFactory.getGeographicName( pool );
         joinElements.add( geoName );
-        
+
         // Dataset name
         String dataName = DataFactory.getDatasetName( evaluation, pool );
 
@@ -736,6 +742,48 @@ public final class DataFactory
         }
 
         return removeMetricsDisallowedByOtherConfig( projectConfig, returnMe );
+    }
+
+    /**
+     * Returns a set of summary statistic for the input declaration.
+     * 
+     * @param config the statistic name
+     * @return a set of summary statistics
+     * @throws MetricConfigException if the named statistic could not be mapped
+     * @throws NullPointerException if the input is null
+     */
+
+    private static Set<MetricConstants> getSummaryStatisticsFor( TimeSeriesMetricConfig config )
+    {
+        if( Objects.isNull( config ) || Objects.isNull( config.getSummaryStatistics() ) )
+        {
+            LOGGER.debug( "No summary statistics found for the input declaration." );
+            
+            return Set.of();
+        }
+        
+        List<SummaryStatisticsName> summaryStats = config.getSummaryStatistics()
+                                                         .getName();
+
+        String outerNameString = config.getName().name();
+
+        if ( summaryStats.contains( SummaryStatisticsName.ALL_VALID ) )
+        {
+            MetricConstants outerName = MetricConstants.valueOf( outerNameString );
+            return outerName.getChildren();
+        }
+
+        Set<MetricConstants> returnMe = new HashSet<>();
+
+        // Find the summary statistic
+        for ( SummaryStatisticsName nextName : summaryStats )
+        {
+            String innerNameString = outerNameString + "_" + nextName.name();
+            MetricConstants innerName = MetricConstants.valueOf( innerNameString );
+            returnMe.add( innerName );
+        }
+
+        return Collections.unmodifiableSet( returnMe );
     }
 
     /**
@@ -881,6 +929,10 @@ public final class DataFactory
         {
             returnMe.addAll( SampleDataGroup.SINGLE_VALUED_TIME_SERIES.getMetrics() );
         }
+        
+        // Remove any general purpose timing error metrics that do not map to specific metric functions
+        returnMe.remove( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC );
+        returnMe.remove( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC );
 
         return DataFactory.removeMetricsDisallowedByOtherConfig( projectConfig, returnMe );
     }

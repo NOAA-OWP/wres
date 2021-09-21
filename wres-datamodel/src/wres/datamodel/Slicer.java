@@ -33,7 +33,6 @@ import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.Pool.Builder;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.statistics.ScoreStatistic.ScoreComponent;
 import wres.datamodel.statistics.Statistic;
@@ -63,13 +62,7 @@ public final class Slicer
     /**
      * Null input error message.
      */
-    public static final String NULL_INPUT_EXCEPTION = "Specify a non-null input.";
-
-    /**
-     * Null mapper function error message.
-     */
-
-    public static final String NULL_MAPPER_EXCEPTION = "Specify a non-null function to map the input to an output.";
+    private static final String NULL_INPUT_EXCEPTION = "Specify a non-null input.";
 
     /**
      * Failure to supply a non-null predicate.
@@ -344,61 +337,6 @@ public final class Slicer
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
         return input.get().stream().mapToDouble( Pair::getRight ).toArray();
-    }
-
-    /**
-     * Returns the subset of pairs where the condition is met. Applies to both the main pairs and any baseline pairs.
-     * Does not modify the metadata associated with the input.
-     * 
-     * @param <T> the type of data
-     * @param input the data to slice
-     * @param condition the condition on which to slice
-     * @param applyToClimatology an optional filter for the climatology, may be null
-     * @return the subset of pairs that meet the condition
-     * @throws NullPointerException if either the input or condition is null
-     */
-
-    public static <T> Pool<T> filter( Pool<T> input,
-                                      Predicate<T> condition,
-                                      DoublePredicate applyToClimatology )
-    {
-        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-
-        Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
-
-        Builder<T> builder = new Builder<>();
-
-        List<T> mainPairs = input.get();
-        List<T> mainPairsSubset =
-                mainPairs.stream().filter( condition ).collect( Collectors.toList() );
-
-        builder.addData( mainPairsSubset ).setMetadata( input.getMetadata() );
-
-        //Filter climatology as required
-        if ( input.hasClimatology() )
-        {
-            VectorOfDoubles climatology = input.getClimatology();
-
-            if ( Objects.nonNull( applyToClimatology ) )
-            {
-                climatology = Slicer.filter( input.getClimatology(), applyToClimatology );
-            }
-
-            builder.setClimatology( climatology );
-        }
-
-        //Filter baseline as required
-        if ( input.hasBaseline() )
-        {
-            Pool<T> baseline = input.getBaselineData();
-            List<T> basePairs = baseline.get();
-            List<T> basePairsSubset =
-                    basePairs.stream().filter( condition ).collect( Collectors.toList() );
-
-            builder.addDataForBaseline( basePairsSubset ).setMetadataForBaseline( baseline.getMetadata() );
-        }
-
-        return builder.build();
     }
 
     /**
@@ -684,58 +622,6 @@ public final class Slicer
         }
 
         return Collections.unmodifiableMap( returnMe );
-    }
-
-    /**
-     * Transforms the input type to another type.
-     * 
-     * @param <S> the input type
-     * @param <T> the output type
-     * @param input the input
-     * @param transformer the transformer
-     * @return the transformed type
-     * @throws NullPointerException if either input is null
-     */
-
-    public static <S, T> Pool<T> transform( Pool<S> input, Function<S, T> transformer )
-    {
-        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-
-        Objects.requireNonNull( transformer, NULL_MAPPER_EXCEPTION );
-
-        Builder<T> builder = new Builder<>();
-
-        builder.setClimatology( input.getClimatology() )
-               .setMetadata( input.getMetadata() );
-
-        // Add the main series
-        for ( S next : input.get() )
-        {
-            T transformed = transformer.apply( next );
-            if ( Objects.nonNull( transformed ) )
-            {
-                builder.addData( transformed );
-            }
-        }
-
-        // Add the baseline series if available
-        if ( input.hasBaseline() )
-        {
-            Pool<S> baseline = input.getBaselineData();
-
-            for ( S next : baseline.get() )
-            {
-                T transformed = transformer.apply( next );
-                if ( Objects.nonNull( transformed ) )
-                {
-                    builder.addDataForBaseline( transformed );
-                }
-            }
-
-            builder.setMetadataForBaseline( baseline.getMetadata() );
-        }
-
-        return builder.build();
     }
 
     /**

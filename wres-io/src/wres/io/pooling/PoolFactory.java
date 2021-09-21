@@ -327,12 +327,12 @@ public class PoolFactory
         List<PoolRequest> poolRequests = new ArrayList<>();
 
         // Iterate the features and time windows, creating metadata for each
-        for ( FeatureGroup nextFeatures : featureGroups )
+        for ( FeatureGroup featureGroup : featureGroups )
         {
             for ( TimeWindowOuter timeWindow : timeWindows )
             {
                 PoolMetadata mainMetadata = PoolFactory.createMetadata( evaluation,
-                                                                        nextFeatures,
+                                                                        featureGroup,
                                                                         timeWindow,
                                                                         desiredTimeScale,
                                                                         LeftOrRightOrBaseline.RIGHT );
@@ -342,7 +342,7 @@ public class PoolFactory
                 if ( ConfigHelper.hasBaseline( projectConfig ) )
                 {
                     baselineMetadata = PoolFactory.createMetadata( evaluation,
-                                                                   nextFeatures,
+                                                                   featureGroup,
                                                                    timeWindow,
                                                                    desiredTimeScale,
                                                                    LeftOrRightOrBaseline.BASELINE );

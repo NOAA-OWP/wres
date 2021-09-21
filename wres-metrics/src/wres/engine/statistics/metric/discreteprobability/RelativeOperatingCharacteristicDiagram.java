@@ -15,6 +15,7 @@ import wres.datamodel.Slicer;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
+import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.engine.statistics.metric.Diagram;
@@ -145,7 +146,7 @@ public class RelativeOperatingCharacteristicDiagram
                                        in.getRight().getProbability() > prob );
 
                 // Transformed pairs
-                Pool<Pair<Boolean, Boolean>> transformed = Slicer.transform( s, transformer );
+                Pool<Pair<Boolean, Boolean>> transformed = PoolSlicer.transform( s, transformer );
                 List<DoubleScoreStatisticOuter> out = this.roc.apply( transformed );
 
                 //Store

@@ -130,8 +130,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         Metrics metrics = Metrics.of( thresholdsByMetric, 0 );
 
         MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
-                                                                     metrics,
+                MetricFactory.ofMetricProcessorForSingleValuedPairs( metrics,
                                                                      Executors.newSingleThreadExecutor(),
                                                                      Executors.newSingleThreadExecutor() );
         Pool<TimeSeries<Pair<Double, Double>>> pairs = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsSix();
@@ -729,8 +728,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         Metrics metrics = Metrics.of( thresholdsByMetric, 0 );
 
         MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
-                                                                     metrics );
+                MetricFactory.ofMetricProcessorForSingleValuedPairs( metrics );
 
         Pool<TimeSeries<Pair<Double, Double>>> pairs = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsSix();
 
@@ -1026,7 +1024,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                               () -> MetricFactory.ofMetricProcessorForSingleValuedPairs( config ) );
 
         assertEquals( "Cannot configure 'FREQUENCY BIAS' without thresholds to define the "
-                      + "events: add one or more thresholds to the configuration.",
+                      + "events: add one or more thresholds to the configuration for each instance of "
+                      + "'FREQUENCY BIAS'.",
                       actual.getMessage() );
 
     }

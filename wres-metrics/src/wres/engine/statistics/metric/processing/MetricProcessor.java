@@ -37,7 +37,6 @@ import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.config.MetricConfigHelper;
 
 /**
  * <p>
@@ -144,71 +143,6 @@ public abstract class MetricProcessor<S extends Pool<?>>
     private static final int DECIMALS = 5;
 
     /**
-     * Returns true if metrics are available for the input {@link SampleDataGroup} and {@link StatisticType}, false
-     * otherwise.
-     * 
-     * @param inGroup the {@link SampleDataGroup}
-     * @param outGroup the {@link StatisticType}
-     * @return true if metrics are available for the input {@link SampleDataGroup} and {@link StatisticType}, false
-     *         otherwise
-     */
-
-    public boolean hasMetrics( SampleDataGroup inGroup, StatisticType outGroup )
-    {
-        return this.getMetrics( inGroup, outGroup ).length > 0;
-    }
-
-    /**
-     * Returns true if metrics are available for the input {@link SampleDataGroup}, false otherwise.
-     * 
-     * @param inGroup the {@link SampleDataGroup}
-     * @return true if metrics are available for the input {@link SampleDataGroup} false otherwise
-     */
-
-    public boolean hasMetrics( SampleDataGroup inGroup )
-    {
-        return this.metrics.getMetrics()
-                           .stream()
-                           .anyMatch( a -> a.isInGroup( inGroup ) );
-
-    }
-
-    /**
-     * Returns true if metrics are available for the input {@link StatisticType}, false otherwise.
-     * 
-     * @param outGroup the {@link StatisticType}
-     * @return true if metrics are available for the input {@link StatisticType} false otherwise
-     */
-
-    public boolean hasMetrics( StatisticType outGroup )
-    {
-        return this.metrics.getMetrics()
-                           .stream()
-                           .anyMatch( a -> a.isInGroup( outGroup ) );
-    }
-
-    /**
-     * <p>
-     * Returns true if metrics are available that require {@link ThresholdOuter}, in order to define a discrete event from a
-     * continuous variable, false otherwise. The metrics that require {@link ThresholdOuter} belong to one of:
-     * </p>
-     * <ol>
-     * <li>{@link SampleDataGroup#DISCRETE_PROBABILITY}</li>
-     * <li>{@link SampleDataGroup#DICHOTOMOUS}</li>
-     * <li>{@link SampleDataGroup#MULTICATEGORY}</li>
-     * </ol>
-     * 
-     * @return true if metrics are available that require {@link ThresholdOuter}, false otherwise
-     */
-
-    public boolean hasThresholdMetrics()
-    {
-        return this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY )
-               || this.hasMetrics( SampleDataGroup.MULTICATEGORY )
-               || this.hasMetrics( SampleDataGroup.DICHOTOMOUS );
-    }
-
-    /**
      * Returns the metrics to process.
      * 
      * @return the metrics
@@ -218,23 +152,49 @@ public abstract class MetricProcessor<S extends Pool<?>>
     {
         return this.metrics;
     }
-
+    
     /**
-     * Validates the configuration and throws a {@link MetricConfigException} if the configuration is invalid.
-     * When validating parameters that are set locally, ensure that: 1) this method is called on completion of the 
-     * subclass constructor; and 2) that it checks for the presence of local parameters, because this method is 
-     * initially called within the superclass constructor, i.e. before any local parameters have been set.
+     * Returns true if metrics are available for the input {@link SampleDataGroup} and {@link StatisticType}, false
+     * otherwise.
      * 
-     * @param config the configuration to validate
-     * @throws MetricConfigException if the configuration is invalid
+     * @param inGroup the {@link SampleDataGroup}
+     * @param outGroup the {@link StatisticType}
+     * @return true if metrics are available for the input {@link SampleDataGroup} and {@link StatisticType}, false
+     *         otherwise
      */
 
-    abstract void validate( ProjectConfig config );
+    boolean hasMetrics( SampleDataGroup inGroup, StatisticType outGroup )
+    {
+        return this.getMetrics().getThresholdsByMetric().hasMetrics( inGroup, outGroup );
+    }
+
+    /**
+     * Returns true if metrics are available for the input {@link SampleDataGroup}, false otherwise.
+     * 
+     * @param inGroup the {@link SampleDataGroup}
+     * @return true if metrics are available for the input {@link SampleDataGroup} false otherwise
+     */
+
+    boolean hasMetrics( SampleDataGroup inGroup )
+    {
+        return this.getMetrics().getThresholdsByMetric().hasMetrics( inGroup );
+    }
+
+    /**
+     * Returns true if metrics are available for the input {@link StatisticType}, false otherwise.
+     * 
+     * @param outGroup the {@link StatisticType}
+     * @return true if metrics are available for the input {@link StatisticType} false otherwise
+     */
+
+    boolean hasMetrics( StatisticType outGroup )
+    {
+        return this.getMetrics().getThresholdsByMetric().hasMetrics( outGroup );
+    }
 
     /**
      * Constructor.
      * 
-     * @param config the project configuration
      * @param metrics the metrics to process
      * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
      * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
@@ -243,14 +203,10 @@ public abstract class MetricProcessor<S extends Pool<?>>
      * @throws NullPointerException if a required input is null
      */
 
-    MetricProcessor( final ProjectConfig config,
-                     final Metrics metrics,
-                     final ExecutorService thresholdExecutor,
-                     final ExecutorService metricExecutor )
+    MetricProcessor( Metrics metrics,
+                     ExecutorService thresholdExecutor,
+                     ExecutorService metricExecutor )
     {
-
-        Objects.requireNonNull( config, MetricConfigHelper.NULL_CONFIGURATION_ERROR );
-
         Objects.requireNonNull( thresholdExecutor, "Specify a non-null threshold executor service." );
 
         Objects.requireNonNull( metricExecutor, "Specify a non-null metric executor service." );
@@ -327,9 +283,6 @@ public abstract class MetricProcessor<S extends Pool<?>>
         this.allDataThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                    Operator.GREATER,
                                                    ThresholdDataType.LEFT_AND_RIGHT );
-
-        //Finally, validate the configuration against the parameters set
-        this.validate( config );
     }
 
     /**
@@ -368,29 +321,17 @@ public abstract class MetricProcessor<S extends Pool<?>>
     MetricConstants[] getMetrics( SampleDataGroup inGroup,
                                   StatisticType outGroup )
     {
-
-        // Unconditional set
-        Set<MetricConstants> unconditional = new HashSet<>( this.metrics.getMetrics() );
-
-        // Remove metrics not in the input group
-        if ( Objects.nonNull( inGroup ) )
-        {
-            unconditional.removeIf( a -> !a.isInGroup( inGroup ) );
-        }
-
-        // Remove metrics not in the output group
-        if ( Objects.nonNull( outGroup ) )
-        {
-            unconditional.removeIf( a -> !a.isInGroup( outGroup ) );
-        }
+        Set<MetricConstants> returnMe = new HashSet<>( this.getMetrics()
+                                                           .getThresholdsByMetric()
+                                                           .getMetrics( inGroup, outGroup ) );
 
         // Remove contingency table elements
-        unconditional.remove( MetricConstants.TRUE_POSITIVES );
-        unconditional.remove( MetricConstants.FALSE_POSITIVES );
-        unconditional.remove( MetricConstants.FALSE_NEGATIVES );
-        unconditional.remove( MetricConstants.TRUE_NEGATIVES );
+        returnMe.remove( MetricConstants.TRUE_POSITIVES );
+        returnMe.remove( MetricConstants.FALSE_POSITIVES );
+        returnMe.remove( MetricConstants.FALSE_NEGATIVES );
+        returnMe.remove( MetricConstants.TRUE_NEGATIVES );
 
-        return unconditional.toArray( new MetricConstants[unconditional.size()] );
+        return returnMe.toArray( new MetricConstants[returnMe.size()] );
     }
 
     /**

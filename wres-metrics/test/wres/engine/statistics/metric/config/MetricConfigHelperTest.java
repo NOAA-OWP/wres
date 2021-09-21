@@ -29,14 +29,11 @@ import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Outputs;
-import wres.config.generated.SummaryStatisticsConfig;
 import wres.config.generated.SummaryStatisticsName;
 import wres.config.generated.ThresholdDataType;
 import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
-import wres.config.generated.TimeSeriesMetricConfig;
-import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.DataFactory;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.OneOrTwoDoubles;
@@ -365,138 +362,6 @@ public final class MetricConfigHelperTest
                                                                                  false,
                                                                                  null ) );
         assertEquals( exception.getCause().getClass(), MetricConfigException.class );
-    }
-
-    /**
-     * Tests the {@link MetricConfigHelper#hasSummaryStatisticsFor(ProjectConfig, java.util.function.Predicate)}.
-     * @throws MetricConfigException if the metric configuration is invalid
-     */
-
-    @Test
-    public void testHasSummaryStatisticsForNamedMetric()
-    {
-        // Mock some metrics
-        List<TimeSeriesMetricConfig> timeSeriesMetrics = new ArrayList<>();
-
-        // Mock some summary statistics
-        List<SummaryStatisticsName> stats = new ArrayList<>();
-        stats.add( SummaryStatisticsName.MAXIMUM );
-        stats.add( SummaryStatisticsName.MINIMUM );
-        stats.add( SummaryStatisticsName.MEAN );
-
-        SummaryStatisticsConfig statsConfig = new SummaryStatisticsConfig( stats );
-
-        timeSeriesMetrics.add( new TimeSeriesMetricConfig( null,
-                                                           TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR,
-                                                           statsConfig ) );
-
-        MetricsConfig metrics = new MetricsConfig( null, 0, null, timeSeriesMetrics );
-
-        ProjectConfig mockedConfig =
-                new ProjectConfig( null,
-                                   null,
-                                   Arrays.asList( metrics ),
-                                   null,
-                                   null,
-                                   null );
-
-        // Summary statistics expected
-        assertTrue( MetricConfigHelper.hasSummaryStatisticsFor( mockedConfig,
-                                                                next -> next.equals( TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR ) ) );
-
-        //No summary statistics expected
-        ProjectConfig mockedEmptyConfig =
-                new ProjectConfig( null,
-                                   null,
-                                   null,
-                                   null,
-                                   null,
-                                   null );
-
-        // Summary statistics expected
-        assertFalse( MetricConfigHelper.hasSummaryStatisticsFor( mockedEmptyConfig,
-                                                                 next -> next.equals( TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR ) ) );
-    }
-
-    /**
-     * Tests the {@link MetricConfigHelper#hasSummaryStatisticsFor(ProjectConfig, java.util.function.Predicate)} using
-     * configuration that has {@link TimeSeriesMetricConfigName#ALL_VALID }
-     * @throws MetricConfigException if the metric configuration is invalid
-     */
-
-    @Test
-    public void testHasSummaryStatisticsForAllValid()
-    {
-        // Mock some metrics
-        List<TimeSeriesMetricConfig> timeSeriesMetrics = new ArrayList<>();
-
-        // Mock some summary statistics
-        List<SummaryStatisticsName> stats = new ArrayList<>();
-        stats.add( SummaryStatisticsName.ALL_VALID );
-
-        SummaryStatisticsConfig statsConfig = new SummaryStatisticsConfig( stats );
-
-        timeSeriesMetrics.add( new TimeSeriesMetricConfig( null,
-                                                           TimeSeriesMetricConfigName.ALL_VALID,
-                                                           statsConfig ) );
-
-        MetricsConfig metrics = new MetricsConfig( null, 0, null, timeSeriesMetrics );
-
-        ProjectConfig mockedConfig =
-                new ProjectConfig( null,
-                                   null,
-                                   Arrays.asList( metrics ),
-                                   null,
-                                   null,
-                                   null );
-
-        // Summary statistics expected
-        assertTrue( MetricConfigHelper.hasSummaryStatisticsFor( mockedConfig,
-                                                                next -> next.equals( TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR ) ) );
-
-        // Null summary statistics
-        timeSeriesMetrics.clear();
-
-        timeSeriesMetrics.add( new TimeSeriesMetricConfig( null,
-                                                           TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR,
-                                                           null ) );
-
-        MetricsConfig metricsNullStats = new MetricsConfig( null, 0, null, timeSeriesMetrics );
-
-        ProjectConfig mockedConfigNullStats =
-                new ProjectConfig( null,
-                                   null,
-                                   Arrays.asList( metricsNullStats ),
-                                   null,
-                                   null,
-                                   null );
-
-        // No summary statistics expected
-        assertFalse( MetricConfigHelper.hasSummaryStatisticsFor( mockedConfigNullStats,
-                                                                 next -> next.equals( TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR ) ) );
-
-        // No summary statistics expected, because metric not there
-        assertFalse( MetricConfigHelper.hasSummaryStatisticsFor( mockedConfigNullStats,
-                                                                 next -> next.equals( TimeSeriesMetricConfigName.TIME_TO_PEAK_RELATIVE_ERROR ) ) );
-    }
-
-    /**
-     * Tests the {@link MetricConfigHelper#hasSummaryStatisticsFor(ProjectConfig, java.util.function.Predicate)} using
-     * a predicate that tests for {@link TimeSeriesMetricConfigName#ALL_VALID }, which is not allowed.
-     * @throws MetricConfigException if the metric configuration is invalid
-     */
-
-    @Test
-    public void testHasSummaryStatisticsThrowsExceptionOnAllValid()
-    {
-        IllegalArgumentException actual = assertThrows( IllegalArgumentException.class,
-                                                        () -> MetricConfigHelper.hasSummaryStatisticsFor( this.defaultMockedConfig,
-                                                                                                          next -> next.equals( TimeSeriesMetricConfigName.ALL_VALID ) ) );
-
-        assertEquals( "Cannot obtain summary statistics for the general type 'all valid' "
-                      + "when a specific type is required: instead, provide a time-series "
-                      + "metric that is specific.",
-                      actual.getMessage() );
     }
 
     /**

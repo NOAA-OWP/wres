@@ -14,9 +14,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConfigException;
-import wres.config.generated.ProjectConfig;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
+import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.pools.Pool.Builder;
 import wres.datamodel.Slicer;
 import wres.datamodel.metrics.Metrics;
@@ -41,7 +41,7 @@ import wres.engine.statistics.metric.MetricParameterException;
  * @author James Brown
  */
 
-public abstract class MetricProcessorByTime<S extends Pool<?>>
+abstract class MetricProcessorByTime<S extends Pool<?>>
         extends MetricProcessor<S>
 {
 
@@ -247,7 +247,6 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
     /**
      * Constructor.
      * 
-     * @param config the project configuration
      * @param metrics the metrics to process
      * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
      * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
@@ -256,12 +255,11 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
      * @throws NullPointerException if a required input is null
      */
 
-    MetricProcessorByTime( final ProjectConfig config,
-                           final Metrics metrics,
-                           final ExecutorService thresholdExecutor,
-                           final ExecutorService metricExecutor )
+    MetricProcessorByTime( Metrics metrics,
+                           ExecutorService thresholdExecutor,
+                           ExecutorService metricExecutor )
     {
-        super( config, metrics, thresholdExecutor, metricExecutor );
+        super( metrics, thresholdExecutor, metricExecutor );
     }
 
     /**
@@ -281,7 +279,7 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
         // Find the thresholds for this group and for the required types
         ThresholdsByMetric filtered = super.getMetrics().getThresholdsByMetric()
                                                         .filterByGroup( SampleDataGroup.SINGLE_VALUED, outGroup )
-                                                        .filterByType( ThresholdGroup.PROBABILITY,
+                                                        .filterByGroup( ThresholdGroup.PROBABILITY,
                                                                        ThresholdGroup.VALUE );
 
         // Find the union across metrics and filter out non-unique thresholds
@@ -314,7 +312,7 @@ public abstract class MetricProcessorByTime<S extends Pool<?>>
                 Predicate<Pair<Double, Double>> filter =
                         MetricProcessorByTime.getFilterForSingleValuedPairs( threshold );
 
-                pairs = Slicer.filter( pairs, filter, null );
+                pairs = PoolSlicer.filter( pairs, filter, null );
 
             }
 

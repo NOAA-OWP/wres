@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric.processing;
 
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -40,7 +41,6 @@ import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.engine.statistics.metric.processing.MetricFuturesByTime.MetricFuturesByTimeBuilder;
 
 /**
@@ -92,9 +92,9 @@ public class MetricProcessorByTimeSingleValuedPairs
                           MessageFactory.parse( input.getMetadata().getPool().getGeometryTuples( 0 ) ),
                           input.getMetadata().getTimeWindow() );
             Pool<Pair<Double, Double>> unpacked = PoolSlicer.unpack( input );
-            unpackedNoMissing = Slicer.filter( unpacked,
-                                               Slicer.leftAndRight( MetricProcessor.ADMISSABLE_DATA ),
-                                               MetricProcessor.ADMISSABLE_DATA );
+            unpackedNoMissing = PoolSlicer.filter( unpacked,
+                                                   Slicer.leftAndRight( MetricProcessor.ADMISSABLE_DATA ),
+                                                   MetricProcessor.ADMISSABLE_DATA );
         }
 
         //Metric futures 
@@ -130,7 +130,6 @@ public class MetricProcessorByTimeSingleValuedPairs
     /**
      * Hidden constructor.
      * 
-     * @param config the project configuration
      * @param metrics the metrics to process
      * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
      * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
@@ -139,19 +138,13 @@ public class MetricProcessorByTimeSingleValuedPairs
      * @throws NullPointerException if a required input is null
      */
 
-    public MetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
-                                                   final Metrics metrics,
-                                                   final ExecutorService thresholdExecutor,
-                                                   final ExecutorService metricExecutor )
+    public MetricProcessorByTimeSingleValuedPairs( Metrics metrics,
+                                                   ExecutorService thresholdExecutor,
+                                                   ExecutorService metricExecutor )
     {
-        super( config, metrics, thresholdExecutor, metricExecutor );
+        super( metrics, thresholdExecutor, metricExecutor );
 
         //Construct the metrics
-
-        //Time-series summary statistics
-        Map<MetricConstants, Set<MetricConstants>> localStatistics =
-                new EnumMap<>( MetricConstants.class );
-
         //Time-series 
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_DIAGRAM ) )
         {
@@ -161,79 +154,52 @@ public class MetricProcessorByTimeSingleValuedPairs
                                                                                 timingErrorMetrics );
 
             LOGGER.debug( "Created the timing-error metrics for processing. {}", this.timeSeries );
-
-            // Iterate the timing error metrics
-            for ( MetricConstants nextMetric : timingErrorMetrics )
-            {
-
-                if ( MetricConfigHelper.hasSummaryStatisticsFor( config,
-                                                                 name -> nextMetric.name().equals( name.name() ) ) )
-                {
-                    Set<MetricConstants> ts = MetricConfigHelper.getSummaryStatisticsFor( config,
-                                                                                          name -> nextMetric.name()
-                                                                                                            .equals( name.name() ) );
-
-                    localStatistics.put( nextMetric, ts );
-                }
-            }
         }
         else
         {
             this.timeSeries = null;
         }
 
-        if ( !localStatistics.isEmpty() )
+        //Time-series summary statistics
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE ) )
         {
+            Map<MetricConstants, Set<MetricConstants>> localStatistics =
+                    new EnumMap<>( MetricConstants.class );
+
+            MetricConstants[] timingErrorSummaryMetrics = this.getMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
+                                                                           StatisticType.DURATION_SCORE );
+
+            for ( MetricConstants next : timingErrorSummaryMetrics )
+            {
+                MetricConstants parent = next.getParent();
+
+                if ( Objects.isNull( parent ) )
+                {
+                    throw new MetricConfigException( "The timing error summary statistic '" + next
+                                                     + "' does not have a parent metric set, which is not allowed." );
+                }
+
+                Set<MetricConstants> nextStats = localStatistics.get( parent );
+                if ( Objects.isNull( nextStats ) )
+                {
+                    nextStats = new HashSet<>();
+                    localStatistics.put( parent, nextStats );
+                }
+
+                nextStats.add( next );
+            }
+
             this.timeSeriesStatistics = MetricFactory.ofSummaryStatisticsForTimingErrorMetrics( metricExecutor,
                                                                                                 localStatistics );
+
         }
         else
         {
             this.timeSeriesStatistics = null;
         }
 
-    }
-
-    @Override
-    void validate( ProjectConfig config )
-    {
-        Objects.requireNonNull( config, MetricConfigHelper.NULL_CONFIGURATION_ERROR );
-
-        // Annotate any configuration error, if possible
-        String configurationLabel = ".";
-        if ( Objects.nonNull( config.getLabel() ) )
-        {
-            configurationLabel = " labelled '"
-                                 + config.getLabel()
-                                 + "'.";
-        }
-
-        //Check the metrics individually, as some may belong to multiple groups
-        for ( MetricConstants next : super.getMetrics().getMetrics() )
-        {
-            if ( ! ( next.isInGroup( SampleDataGroup.SINGLE_VALUED )
-                     || next.isInGroup( SampleDataGroup.SINGLE_VALUED_TIME_SERIES )
-                     || next.isInGroup( SampleDataGroup.DICHOTOMOUS ) ) )
-            {
-                throw new MetricConfigException( "Cannot configure '" + next
-                                                 + "' for single-valued inputs: correct the configuration"
-                                                 + configurationLabel );
-            }
-
-            // Thresholds required for dichotomous metrics
-            if ( next.isInGroup( SampleDataGroup.DICHOTOMOUS )
-                 && !super.getMetrics().getThresholdsByMetric()
-                                       .hasThresholdsForThisMetricAndTheseTypes( next,
-                                                                                 ThresholdGroup.PROBABILITY,
-                                                                                 ThresholdGroup.VALUE ) )
-            {
-                throw new MetricConfigException( "Cannot configure '" + next
-                                                 + "' without thresholds to define the events: add one "
-                                                 + "or more thresholds to the configuration"
-                                                 + configurationLabel );
-            }
-
-        }
+        // Validate the state
+        this.validate();
     }
 
     /**
@@ -271,8 +237,8 @@ public class MetricProcessorByTimeSingleValuedPairs
         // Find the thresholds for this group and for the required types
         ThresholdsByMetric filtered = super.getMetrics().getThresholdsByMetric()
                                                         .filterByGroup( SampleDataGroup.DICHOTOMOUS, outGroup )
-                                                        .filterByType( ThresholdGroup.PROBABILITY,
-                                                                       ThresholdGroup.VALUE );
+                                                        .filterByGroup( ThresholdGroup.PROBABILITY,
+                                                                        ThresholdGroup.VALUE );
 
         // Find the union across metrics and filter out non-unique thresholds
         Set<ThresholdOuter> union = filtered.union();
@@ -288,7 +254,7 @@ public class MetricProcessorByTimeSingleValuedPairs
                     pair -> Pair.of( threshold.test( pair.getLeft() ),
                                      threshold.test( pair.getRight() ) );
             //Transform the pairs
-            Pool<Pair<Boolean, Boolean>> transformed = Slicer.transform( input, mapper );
+            Pool<Pair<Boolean, Boolean>> transformed = PoolSlicer.transform( input, mapper );
 
             // Add the threshold to the metadata, in order to fully qualify the pairs
             PoolMetadata baselineMeta = null;
@@ -328,8 +294,8 @@ public class MetricProcessorByTimeSingleValuedPairs
         ThresholdsByMetric filtered = super.getMetrics().getThresholdsByMetric()
                                                         .filterByGroup( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
                                                                         outGroup )
-                                                        .filterByType( ThresholdGroup.PROBABILITY,
-                                                                       ThresholdGroup.VALUE );
+                                                        .filterByGroup( ThresholdGroup.PROBABILITY,
+                                                                        ThresholdGroup.VALUE );
 
         // Find the union across metrics and filter out non-unique thresholds
         Set<ThresholdOuter> union = filtered.union();
@@ -457,6 +423,42 @@ public class MetricProcessorByTimeSingleValuedPairs
         }
 
         return this.processMetricsRequiredForThisPool( pairs, collection );
+    }
+
+    /**
+     * Validates the state of the processor.
+     * @throw MetricConfigException if the state is invalid for any reason
+     */
+
+    private void validate()
+    {
+        //Check the metrics individually, as some may belong to multiple groups
+        for ( MetricConstants next : super.getMetrics().getMetrics() )
+        {
+            if ( ! ( next.isInGroup( SampleDataGroup.SINGLE_VALUED )
+                     || next.isInGroup( SampleDataGroup.SINGLE_VALUED_TIME_SERIES )
+                     || next.isInGroup( SampleDataGroup.DICHOTOMOUS ) ) )
+            {
+                throw new MetricConfigException( "Cannot configure '"
+                                                 + next
+                                                 + "' for single-valued inputs: correct the configuration." );
+            }
+
+            // Thresholds required for dichotomous metrics
+            if ( next.isInGroup( SampleDataGroup.DICHOTOMOUS )
+                 && !super.getMetrics().getThresholdsByMetric()
+                                       .hasThresholdsForThisMetricAndTheseTypes( next,
+                                                                                 ThresholdGroup.PROBABILITY,
+                                                                                 ThresholdGroup.VALUE ) )
+            {
+                throw new MetricConfigException( "Cannot configure '"
+                                                 + next
+                                                 + "' without thresholds to define the events: add one "
+                                                 + "or more thresholds to the configuration for each instance of '"
+                                                 + next
+                                                 + "'." );
+            }
+        }
     }
 
 }

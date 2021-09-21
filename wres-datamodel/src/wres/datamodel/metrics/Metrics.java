@@ -13,7 +13,7 @@ import wres.datamodel.thresholds.ThresholdsByMetric;
  * determination of metric type from {@link MetricConstants} and the filtering or transformation of pairs with 
  * {@link ThresholdOuter}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 @Immutable
@@ -99,5 +99,5 @@ public class Metrics
                                                 + "." );
         }
     }
-
+    
 }
