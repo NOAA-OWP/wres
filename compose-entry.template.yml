@@ -70,7 +70,7 @@ services:
          # For certificates and keys that correspond to them:
          - /mnt/wres_keys:/wres_secrets:ro
         environment:
-         - RABBITMQ_CONFIG_FILE=rabbitmq.config
+         - RABBITMQ_CONFIG_FILE=rabbitmq.conf
         # rabbitmq.conf should have 360m specified as high watermark
         mem_limit: 720m
         cap_drop:

@@ -33,7 +33,7 @@ services:
     tasker:
         ports:
          - "443:8443"
-        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20210921-9fb1efc"
+        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20210922-e4891d5"
         restart: always
         depends_on:
             broker:
@@ -64,13 +64,13 @@ services:
         ports:
          - "5671:5671"
          - "15671:15671"
-        image: "${DOCKER_REGISTRY}/wres/wres-broker:20210802-4d42af8"
+        image: "${DOCKER_REGISTRY}/wres/wres-broker:20210922-e4891d5"
         restart: always
         volumes:
          # For certificates and keys that correspond to them:
          - /mnt/wres_keys:/wres_secrets:ro
         environment:
-         - RABBITMQ_CONFIG_FILE=rabbitmq.config
+         - RABBITMQ_CONFIG_FILE=rabbitmq.conf
         # rabbitmq.conf should have 360m specified as high watermark
         mem_limit: 720m
         cap_drop:
