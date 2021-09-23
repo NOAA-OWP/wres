@@ -1,18 +1,31 @@
 package wres.datamodel.pools;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.DoublePredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool.Builder;
+import wres.datamodel.space.FeatureGroup;
+import wres.datamodel.space.FeatureTuple;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeSeriesSlicer;
+import wres.datamodel.time.TimeWindowOuter;
 
 /**
  * A utility class for slicing/dicing and transforming pool-shaped datasets
@@ -24,24 +37,30 @@ import wres.datamodel.time.TimeSeriesSlicer;
 
 public class PoolSlicer
 {
-    
+
+    /**
+     * Logger.
+     */
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( PoolSlicer.class );
+
     /**
      * Failure to supply a non-null predicate.
      */
 
     private static final String NULL_PREDICATE_EXCEPTION = "Specify a non-null predicate.";
-    
+
     /**
      * Null mapper function error message.
      */
 
     private static final String NULL_MAPPER_EXCEPTION = "Specify a non-null function to map the input to an output.";
-    
+
     /**
      * Null input error message.
      */
     private static final String NULL_INPUT_EXCEPTION = "Specify a non-null input.";
-    
+
     /**
      * Transforms the input type to another type.
      * 
@@ -52,18 +71,18 @@ public class PoolSlicer
      * @return the transformed type
      * @throws NullPointerException if either input is null
      */
-    
+
     public static <S, T> Pool<T> transform( Pool<S> input, Function<S, T> transformer )
     {
         Objects.requireNonNull( input, PoolSlicer.NULL_INPUT_EXCEPTION );
-    
+
         Objects.requireNonNull( transformer, PoolSlicer.NULL_MAPPER_EXCEPTION );
-    
+
         Builder<T> builder = new Builder<>();
-    
+
         builder.setClimatology( input.getClimatology() )
                .setMetadata( input.getMetadata() );
-    
+
         // Add the main series
         for ( S next : input.get() )
         {
@@ -73,12 +92,12 @@ public class PoolSlicer
                 builder.addData( transformed );
             }
         }
-    
+
         // Add the baseline series if available
         if ( input.hasBaseline() )
         {
             Pool<S> baseline = input.getBaselineData();
-    
+
             for ( S next : baseline.get() )
             {
                 T transformed = transformer.apply( next );
@@ -87,13 +106,13 @@ public class PoolSlicer
                     builder.addDataForBaseline( transformed );
                 }
             }
-    
+
             builder.setMetadataForBaseline( baseline.getMetadata() );
         }
-    
+
         return builder.build();
     }
-
+    
     /**
      * Returns the subset of pairs where the condition is met. Applies to both the main pairs and any baseline pairs.
      * Does not modify the metadata associated with the input.
@@ -105,36 +124,36 @@ public class PoolSlicer
      * @return the subset of pairs that meet the condition
      * @throws NullPointerException if either the input or condition is null
      */
-    
+
     public static <T> Pool<T> filter( Pool<T> input,
                                       Predicate<T> condition,
                                       DoublePredicate applyToClimatology )
     {
         Objects.requireNonNull( input, PoolSlicer.NULL_INPUT_EXCEPTION );
-    
+
         Objects.requireNonNull( condition, PoolSlicer.NULL_PREDICATE_EXCEPTION );
-    
+
         Builder<T> builder = new Builder<>();
-    
+
         List<T> mainPairs = input.get();
         List<T> mainPairsSubset =
                 mainPairs.stream().filter( condition ).collect( Collectors.toList() );
-    
+
         builder.addData( mainPairsSubset ).setMetadata( input.getMetadata() );
-    
+
         //Filter climatology as required
         if ( input.hasClimatology() )
         {
             VectorOfDoubles climatology = input.getClimatology();
-    
+
             if ( Objects.nonNull( applyToClimatology ) )
             {
                 climatology = Slicer.filter( input.getClimatology(), applyToClimatology );
             }
-    
+
             builder.setClimatology( climatology );
         }
-    
+
         //Filter baseline as required
         if ( input.hasBaseline() )
         {
@@ -142,13 +161,13 @@ public class PoolSlicer
             List<T> basePairs = baseline.get();
             List<T> basePairsSubset =
                     basePairs.stream().filter( condition ).collect( Collectors.toList() );
-    
+
             builder.addDataForBaseline( basePairsSubset ).setMetadataForBaseline( baseline.getMetadata() );
         }
-    
+
         return builder.build();
-    }    
-    
+    }
+
     /**
      * Counts the number of pairs in a pool of time-series.
      * 
@@ -178,6 +197,201 @@ public class PoolSlicer
      */
 
     public static <U> Pool<U> unpack( Pool<TimeSeries<U>> pool )
+    {
+        Objects.requireNonNull( pool );
+
+        Pool.Builder<U> poolBuilder = new Pool.Builder<>();
+
+        // Preserve the mini pools if the pool was built from them
+        for ( Pool<TimeSeries<U>> nextMiniPool : pool.getMiniPools() )
+        {
+            Pool<U> nextUnpacked = PoolSlicer.unpackInner( nextMiniPool );
+            poolBuilder.addPool( nextUnpacked );
+        }
+
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Unpacked pool {}.", pool.getMetadata() );
+        }
+
+        return poolBuilder.build();
+    }
+
+    /**
+     * Decomposes a pool into a collection of mini-pools based on the mini-pools available and a prescribed attribute
+     * of the pool metadata.
+     * 
+     * @param <S> the key against which pools should be mapped
+     * @param <T> the type of pooled data
+     * @param metaMapper the metadata mapper
+     * @param pool the pool
+     * @return a decomposed list of mini-pools based on their metadata
+     * @throws IllegalArgumentException if multiple pools map to the same key
+     */
+
+    public static <S extends Comparable<S>, T> Map<S, Pool<T>> decompose( Function<PoolMetadata, S> metaMapper,
+                                                                          Pool<T> pool )
+    {
+        Objects.requireNonNull( metaMapper );
+        Objects.requireNonNull( pool );
+
+        Map<S, Pool<T>> returnMe = new HashMap<>();
+
+        for ( Pool<T> nextPool : pool.getMiniPools() )
+        {
+            S key = metaMapper.apply( nextPool.getMetadata() );
+
+            if ( returnMe.containsKey( key ) )
+            {
+                throw new IllegalArgumentException( "Could not decompose the input pool because several mini-pools all "
+                                                    + "map to the same key of '"
+                                                    + key
+                                                    + "'." );
+            }
+
+            returnMe.put( key, nextPool );
+        }
+
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Decomposed pool {} into {} mini-pools as follows: {}.",
+                          pool.getMetadata(),
+                          returnMe.size(),
+                          returnMe );
+        }
+
+        return Collections.unmodifiableMap( returnMe );
+    }
+
+    /**
+     * Returns <code>true</code> if the two metadatas are equal after ignoring the time windows, thresholds and 
+     * features.
+     * 
+     * @param first the first metadata to test for conditional equality with the second
+     * @param second the second metadata to test for conditional equality with the first
+     * @return true if the metadatas are conditionally equal
+     */
+
+    public static boolean equalsWithoutTimeWindowOrThresholdsOrFeatures( PoolMetadata first, PoolMetadata second )
+    {
+        if ( Objects.isNull( first ) != Objects.isNull( second ) )
+        {
+            return false;
+        }
+
+        if ( Objects.isNull( first ) )
+        {
+            return true;
+        }
+
+        // Adjust the pools to remove the time window and thresholds
+        wres.statistics.generated.Pool adjustedPoolFirst = first.getPool()
+                                                                .toBuilder()
+                                                                .clearTimeWindow()
+                                                                .clearEventThreshold()
+                                                                .clearDecisionThreshold()
+                                                                .clearGeometryTuples()
+                                                                .build();
+
+        wres.statistics.generated.Pool adjustedPoolSecond = second.getPool()
+                                                                  .toBuilder()
+                                                                  .clearTimeWindow()
+                                                                  .clearEventThreshold()
+                                                                  .clearDecisionThreshold()
+                                                                  .clearGeometryTuples()
+                                                                  .build();
+
+        return first.getEvaluation().equals( second.getEvaluation() )
+               && adjustedPoolFirst.equals( adjustedPoolSecond );
+    }
+
+    /**
+     * Returns the union of the supplied metadata. All components of the input must be equal in terms of 
+     * {@link #equalsWithoutTimeWindowOrThresholdsOrFeatures(PoolMetadata, PoolMetadata)}.
+     * 
+     * @param input the input metadata
+     * @return the union of the input
+     * @throws IllegalArgumentException if the input is empty
+     * @throws NullPointerException if the input is null
+     * @throws PoolMetadataException if the metadatas could not be merged
+     */
+
+    public static PoolMetadata unionOf( List<PoolMetadata> input )
+    {
+        String nullString = "Cannot find the union of null metadata.";
+
+        Objects.requireNonNull( input, nullString );
+
+        if ( input.isEmpty() )
+        {
+            throw new IllegalArgumentException( "Cannot find the union of empty input." );
+        }
+
+        Set<TimeWindowOuter> unionWindows = new HashSet<>();
+        Set<FeatureTuple> unionFeatures = new HashSet<>();
+        Set<OneOrTwoThresholds> thresholds = new HashSet<>();
+
+        // Test entry
+        PoolMetadata test = input.get( 0 );
+
+        // Validate for equivalence with the first entry and add window to list
+        for ( PoolMetadata next : input )
+        {
+            Objects.requireNonNull( next, nullString );
+
+            if ( !PoolSlicer.equalsWithoutTimeWindowOrThresholdsOrFeatures( next, test ) )
+            {
+                throw new PoolMetadataException( "Only the time window and thresholds and features can differ when "
+                                                 + "finding the union of metadata." );
+            }
+            if ( next.hasTimeWindow() )
+            {
+                unionWindows.add( next.getTimeWindow() );
+            }
+
+            unionFeatures.addAll( next.getFeatureTuples() );
+            thresholds.add( next.getThresholds() );
+        }
+
+        TimeWindowOuter unionWindow = null;
+        if ( !unionWindows.isEmpty() )
+        {
+            unionWindow = TimeWindowOuter.unionOf( unionWindows );
+        }
+
+        FeatureGroup featureGroup = null;
+
+        if ( !unionFeatures.isEmpty() )
+        {
+            featureGroup = FeatureGroup.of( unionFeatures );
+        }
+
+        OneOrTwoThresholds threshold = null;
+
+        if ( thresholds.size() == 1 )
+        {
+            threshold = thresholds.iterator().next();
+        }
+
+        wres.statistics.generated.Pool unionPool = MessageFactory.parse( featureGroup,
+                                                                         unionWindow,
+                                                                         test.getTimeScale(),
+                                                                         threshold,
+                                                                         test.getPool().getIsBaselinePool() );
+
+        return PoolMetadata.of( test.getEvaluation(), unionPool );
+    }
+
+    /**
+     * Unpacks a pool of time-series into their raw event values, eliminating the time-series view.
+     * 
+     * @param <U> the type of time-series data
+     * @param pool the pool
+     * @return the unpacked pool
+     * @throws NullPointerException if the input is null
+     */
+
+    private static <U> Pool<U> unpackInner( Pool<TimeSeries<U>> pool )
     {
         Objects.requireNonNull( pool );
 

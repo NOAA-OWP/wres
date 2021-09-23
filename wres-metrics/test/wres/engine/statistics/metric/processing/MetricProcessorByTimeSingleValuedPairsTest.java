@@ -54,6 +54,7 @@ import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -233,9 +234,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                             .size() );
 
         // Expected result
-        final TimeWindowOuter expectedWindow = TimeWindowOuter.of( Instant.MIN,
-                                                                   Instant.MAX,
-                                                                   Duration.ofHours( 1 ) );
+        TimeWindowOuter expectedWindow = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                             Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                             Instant.MIN,
+                                                             Instant.MAX,
+                                                             Duration.ofHours( 1 ),
+                                                             Duration.ofHours( 1 ) );
 
         OneOrTwoThresholds expectedThreshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
@@ -249,7 +253,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup( DRRC2 ),
+        wres.statistics.generated.Pool pool = MessageFactory.parse( Boilerplate.getFeatureGroup(),
                                                                     expectedWindow,
                                                                     null,
                                                                     expectedThreshold,
@@ -777,8 +781,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                             .size() );
 
         // Expected result
-        TimeWindowOuter expectedWindow = TimeWindowOuter.of( Instant.MIN,
+        TimeWindowOuter expectedWindow = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                             Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                             Instant.MIN,
                                                              Instant.MAX,
+                                                             Duration.ofHours( 1 ),
                                                              Duration.ofHours( 1 ) );
 
         OneOrTwoThresholds expectedThreshold =
@@ -792,7 +799,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup( DRRC2 ),
+        wres.statistics.generated.Pool pool = MessageFactory.parse( Boilerplate.getFeatureGroup(),
                                                                     expectedWindow,
                                                                     null,
                                                                     expectedThreshold,

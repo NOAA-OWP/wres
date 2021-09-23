@@ -1,7 +1,5 @@
 package wres.datamodel.pools;
 
-import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -244,61 +242,6 @@ public class PoolMetadata implements Comparable<PoolMetadata>
         return new PoolMetadata( evaluation, pool.build() );
     }
 
-    /**
-     * Finds the union of the input, based on the {@link TimeWindowOuter}. All components of the input must be equal, 
-     * except the {@link PoolMetadata#getTimeWindow()} and {@link PoolMetadata#getThresholds()}, otherwise an 
-     * exception is thrown. See also {@link TimeWindowOuter#unionOf(Set)}. No threshold information is represented in the 
-     * union.
-     * 
-     * @param input the input metadata
-     * @return the union of the input
-     * @throws IllegalArgumentException if the input is empty
-     * @throws NullPointerException if the input is null
-     * @throws PoolMetadataException if the input contains metadata whose differences extend beyond the time windows and
-     *            thresholds
-     */
-
-    public static PoolMetadata unionOf( List<PoolMetadata> input )
-    {
-        String nullString = "Cannot find the union of null metadata.";
-
-        Objects.requireNonNull( input, nullString );
-
-        if ( input.isEmpty() )
-        {
-            throw new IllegalArgumentException( "Cannot find the union of empty input." );
-        }
-        Set<TimeWindowOuter> unionWindow = new HashSet<>();
-
-        // Test entry
-        PoolMetadata test = input.get( 0 );
-
-        // Validate for equivalence with the first entry and add window to list
-        for ( PoolMetadata next : input )
-        {
-            Objects.requireNonNull( next, nullString );
-
-            if ( !next.equalsWithoutTimeWindowOrThresholds( test ) )
-            {
-                throw new PoolMetadataException( "Only the time window and thresholds can differ when finding the "
-                                                 + "union of metadata." );
-            }
-            if ( next.hasTimeWindow() )
-            {
-                unionWindow.add( next.getTimeWindow() );
-            }
-        }
-
-        // Remove any threshold information from the result
-        test = PoolMetadata.of( test, (OneOrTwoThresholds) null );
-
-        if ( !unionWindow.isEmpty() )
-        {
-            test = PoolMetadata.of( test, TimeWindowOuter.unionOf( unionWindow ) );
-        }
-        return test;
-    }
-
     @Override
     public int compareTo( PoolMetadata input )
     {
@@ -322,7 +265,9 @@ public class PoolMetadata implements Comparable<PoolMetadata>
         {
             return false;
         }
+        
         PoolMetadata p = (PoolMetadata) o;
+        
         return Objects.equals( this.getEvaluation(), p.getEvaluation() )
                && Objects.equals( this.getPool(), p.getPool() );
     }
@@ -408,39 +353,6 @@ public class PoolMetadata implements Comparable<PoolMetadata>
     public boolean hasTimeScale()
     {
         return Objects.nonNull( this.getTimeScale() );
-    }
-
-    /**
-     * Returns <code>true</code> if the input is equal to the current {@link PoolMetadata} without considering the 
-     * {@link #getTimeWindow()} or {@link #getThresholds()}.
-     * 
-     * @param input the input metadata
-     * @return true if the input is equal to the current metadata, without considering the time window or thresholds
-     */
-    public boolean equalsWithoutTimeWindowOrThresholds( final PoolMetadata input )
-    {
-        if ( Objects.isNull( input ) )
-        {
-            return false;
-        }
-
-        // Adjust the pools to remove the time window and thresholds
-        Pool adjustedPoolThis = this.getPool()
-                                    .toBuilder()
-                                    .clearTimeWindow()
-                                    .clearEventThreshold()
-                                    .clearDecisionThreshold()
-                                    .build();
-
-        Pool adjustedPoolIn = input.getPool()
-                                   .toBuilder()
-                                   .clearTimeWindow()
-                                   .clearEventThreshold()
-                                   .clearDecisionThreshold()
-                                   .build();
-
-        return Objects.equals( input.getEvaluation(), this.getEvaluation() )
-               && Objects.equals( adjustedPoolIn, adjustedPoolThis );
     }
 
     /**

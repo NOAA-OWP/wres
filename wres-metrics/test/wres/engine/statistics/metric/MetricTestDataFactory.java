@@ -1442,7 +1442,7 @@ public final class MetricTestDataFactory
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
         Builder<TimeSeries<Pair<Double, Double>>> builder = new Builder<>();
-        return builder.addData( TimeSeries.of( getBoilerplateMetadata(),
+        return builder.addData( TimeSeries.of( MetricTestDataFactory.getBoilerplateMetadata(),
                                                events ) )
                       .setMetadata( meta )
                       .build();
