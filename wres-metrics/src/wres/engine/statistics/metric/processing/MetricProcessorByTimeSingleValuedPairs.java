@@ -87,10 +87,8 @@ public class MetricProcessorByTimeSingleValuedPairs
         Pool<Pair<Double, Double>> unpackedNoMissing = null;
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED ) || this.hasMetrics( SampleDataGroup.DICHOTOMOUS ) )
         {
-            LOGGER.debug( "Removing any single-valued pairs with missing left or right values for feature {} at "
-                          + "time window {}.",
-                          MessageFactory.parse( input.getMetadata().getPool().getGeometryTuples( 0 ) ),
-                          input.getMetadata().getTimeWindow() );
+            LOGGER.debug( "Removing any single-valued pairs with missing left or right values for pool {}.",
+                          input.getMetadata() );
             Pool<Pair<Double, Double>> unpacked = PoolSlicer.unpack( input );
             unpackedNoMissing = PoolSlicer.filter( unpacked,
                                                    Slicer.leftAndRight( MetricProcessor.ADMISSABLE_DATA ),

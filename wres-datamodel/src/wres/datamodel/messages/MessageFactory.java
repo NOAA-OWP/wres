@@ -525,27 +525,15 @@ public class MessageFactory
     /**
      * Creates a {@link wres.statistics.generated.GeometryTuple} from a {@link wres.datamodel.space.FeatureTuple}.
      * 
-     * @param location the location from which to create a message
+     * @param featureTuple the feature tuple from which to create a message
      * @return the message
      */
 
-    public static GeometryTuple parse( FeatureTuple location )
+    public static GeometryTuple parse( FeatureTuple featureTuple )
     {
-        Objects.requireNonNull( location );
+        Objects.requireNonNull( featureTuple );
 
-        Geometry left = MessageFactory.parse( location.getLeft() );
-        Geometry right = MessageFactory.parse( location.getRight() );
-        GeometryTuple.Builder builder = GeometryTuple.newBuilder()
-                                                     .setLeft( left )
-                                                     .setRight( right );
-
-        if ( Objects.nonNull( location.getBaseline() ) )
-        {
-            Geometry baseline = MessageFactory.parse( location.getBaseline() );
-            builder.setBaseline( baseline );
-        }
-
-        return builder.build();
+        return featureTuple.getGeometryTuple();
     }
 
     /**

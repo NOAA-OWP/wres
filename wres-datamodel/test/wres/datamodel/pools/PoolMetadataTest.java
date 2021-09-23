@@ -1,16 +1,13 @@
 package wres.datamodel.pools;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Set;
 
 import org.junit.Test;
@@ -43,7 +40,7 @@ import wres.statistics.generated.Pool;
 /**
  * Tests the {@link PoolMetadata}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class PoolMetadataTest
@@ -57,146 +54,6 @@ public class PoolMetadataTest
     private static final String THIRD_TIME = "2000-02-02T00:00:00Z";
     private static final String SECOND_TIME = "1986-01-01T00:00:00Z";
     private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
-
-    /**
-     * Tests the {@link PoolMetadata#unionOf(java.util.List)} against a benchmark.
-     */
-    @Test
-    public void unionOf()
-    {
-        FeatureKey l1 = FeatureKey.of( DRRC2 );
-
-        Evaluation evaluation = Evaluation.newBuilder()
-                                          .setRightVariableName( SQIN )
-                                          .setRightDataName( HEFS )
-                                          .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
-                                          .build();
-
-        Pool poolOne = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l1, l1, l1 ) ),
-                                             TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                                 Instant.parse( "1985-12-31T23:59:59Z" ) ),
-                                             null,
-                                             null,
-                                             false );
-
-        PoolMetadata m1 = PoolMetadata.of( evaluation, poolOne );
-
-        FeatureKey l2 = FeatureKey.of( DRRC2 );
-
-        Pool poolTwo = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l2, l2, l2 ) ),
-                                             TimeWindowOuter.of( Instant.parse( SECOND_TIME ),
-                                                                 Instant.parse( "1986-12-31T23:59:59Z" ) ),
-                                             null,
-                                             null,
-                                             false );
-
-        PoolMetadata m2 = PoolMetadata.of( evaluation, poolTwo );
-
-        FeatureKey l3 = FeatureKey.of( DRRC2 );
-
-        Pool poolThree = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l3, l3, l3 ) ),
-                                               TimeWindowOuter.of( Instant.parse( "1987-01-01T00:00:00Z" ),
-                                                                   Instant.parse( "1988-01-01T00:00:00Z" ) ),
-                                               null,
-                                               null,
-                                               false );
-
-        PoolMetadata m3 = PoolMetadata.of( evaluation, poolThree );
-
-        FeatureKey benchmarkLocation = FeatureKey.of( DRRC2 );
-
-        Pool poolFour = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( benchmarkLocation,
-                                                                                 benchmarkLocation,
-                                                                                 benchmarkLocation ) ),
-                                              TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                                  Instant.parse( "1988-01-01T00:00:00Z" ) ),
-                                              null,
-                                              null,
-                                              false );
-
-
-        PoolMetadata benchmark = PoolMetadata.of( evaluation, poolFour );
-
-        assertEquals( "Unexpected difference between union of metadata and benchmark.",
-                      benchmark,
-                      PoolMetadata.unionOf( Arrays.asList( m1, m2, m3 ) ) );
-    }
-
-    /**
-     * Tests that the {@link PoolMetadata#unionOf(java.util.List)} throws an expected exception when the input is
-     * null.
-     */
-    @Test
-    public void testUnionOfThrowsExceptionWithNullInput()
-    {
-        NullPointerException actual = assertThrows( NullPointerException.class,
-                                                    () -> PoolMetadata.unionOf( null ) );
-
-        assertEquals( "Cannot find the union of null metadata.", actual.getMessage() );
-    }
-
-    /**
-     * Tests that the {@link PoolMetadata#unionOf(java.util.List)} throws an expected exception when the input is
-     * empty.
-     */
-    @Test
-    public void testUnionOfThrowsExceptionWithEmptyInput()
-    {
-        IllegalArgumentException actual = assertThrows( IllegalArgumentException.class,
-                                                        () -> PoolMetadata.unionOf( Collections.emptyList() ) );
-
-        assertEquals( "Cannot find the union of empty input.", actual.getMessage() );
-    }
-
-    /**
-     * Tests that the {@link PoolMetadata#unionOf(java.util.List)} throws an expected exception when the input is
-     * contains a null.
-     */
-    @Test
-    public void testUnionOfThrowsExceptionWithOneNullInput()
-    {
-        NullPointerException actual = assertThrows( NullPointerException.class,
-                                                    () -> PoolMetadata.unionOf( Arrays.asList( (PoolMetadata) null ) ) );
-
-        assertEquals( "Cannot find the union of null metadata.", actual.getMessage() );
-    }
-
-    /**
-     * Tests that the {@link PoolMetadata#unionOf(java.util.List)} throws an expected exception when the inputs are
-     * unequal on attributes that are expected to be equal.
-     */
-    @Test
-    public void testUnionOfThrowsExceptionWithUnequalInputs()
-    {
-        FeatureTuple drrc3 = new FeatureTuple( FeatureKey.of( DRRC3 ),
-                                               FeatureKey.of( DRRC3 ),
-                                               FeatureKey.of( DRRC3 ) );
-
-        Evaluation evaluation = Evaluation.newBuilder()
-                                          .setRightVariableName( SQIN )
-                                          .setRightDataName( HEFS )
-                                          .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
-                                          .build();
-
-        Pool poolOne = MessageFactory.parse( FeatureGroup.of( drrc3 ), null, null, null, false );
-
-        PoolMetadata failOne = PoolMetadata.of( evaluation, poolOne );
-
-        FeatureTuple a = new FeatureTuple( FeatureKey.of( "A" ),
-                                           FeatureKey.of( "A" ),
-                                           FeatureKey.of( "A" ) );
-
-        Pool poolTwo = MessageFactory.parse( FeatureGroup.of( a ), null, null, null, false );
-
-        PoolMetadata failTwo = PoolMetadata.of( evaluation, poolTwo );
-
-        PoolMetadataException actual = assertThrows( PoolMetadataException.class,
-                                                     () -> PoolMetadata.unionOf( Arrays.asList( failOne,
-                                                                                                failTwo ) ) );
-
-        assertEquals( "Only the time window and thresholds can differ when finding the union of metadata.",
-                      actual.getMessage() );
-    }
 
     /**
      * Tests construction of the {@link PoolMetadata} using the various construction options.
@@ -558,34 +415,6 @@ public class PoolMetadataTest
 
         // Other type check
         assertNotEquals( m6, Double.valueOf( 2 ) );
-    }
-
-    /**
-     * Test {@link PoolMetadata#equalsWithoutTimeWindowOrThresholds(PoolMetadata)}.
-     */
-
-    @Test
-    public void testEqualsWithoutTimeWindowOrThresholds()
-    {
-        // False if the input is null
-        assertFalse( PoolMetadata.of().equalsWithoutTimeWindowOrThresholds( null ) );
-
-        // Different evaluations
-        Evaluation evaluationOne = Evaluation.newBuilder()
-                                             .setRightVariableName( SQIN )
-                                             .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
-                                             .build();
-
-        Evaluation evaluationTwo = Evaluation.newBuilder()
-                                             .setRightVariableName( SQIN )
-                                             .setRightDataName( HEFS )
-                                             .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
-                                             .build();
-
-        PoolMetadata one = PoolMetadata.of( evaluationOne, Pool.getDefaultInstance() );
-        PoolMetadata two = PoolMetadata.of( evaluationTwo, Pool.getDefaultInstance() );
-
-        assertFalse( one.equalsWithoutTimeWindowOrThresholds( two ) );
     }
 
     /**

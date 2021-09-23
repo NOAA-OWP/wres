@@ -9,6 +9,8 @@ import java.util.function.Supplier;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.Immutable;
 import wres.datamodel.Slicer;
@@ -28,6 +30,12 @@ import wres.datamodel.VectorOfDoubles;
 @Immutable
 public class Pool<T> implements Supplier<List<T>>
 {
+
+    /**
+     * Logger.
+     */
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( Pool.class );
 
     /**
      * The verification pairs in an immutable list.
@@ -57,7 +65,24 @@ public class Pool<T> implements Supplier<List<T>>
      * Climatological dataset. May be null.
      */
 
-    private VectorOfDoubles climatology;
+    private final VectorOfDoubles climatology;
+
+    /**
+     * Provides a view of the mini-pools from which this pool was constructed, otherwise, a view of the overall pool, 
+     * i.e., the current pool, wrapped in a singleton list.
+     */
+
+    private final List<Pool<T>> miniPools;
+
+    /**
+     * Returns the pooled data.
+     * 
+     * @return the pooled data
+     */
+    public List<T> get()
+    {
+        return this.sampleData; // Immutable on construction
+    }
 
     /**
      * Returns <code>true</code> if the sample has a baseline for skill calculations, <code>false</code> otherwise.
@@ -105,6 +130,23 @@ public class Pool<T> implements Supplier<List<T>>
     }
 
     /**
+     * Returns a view of the miniature pools from which this pool was constructed, else this pool wrapped in a singleton
+     * list if this pool was built from raw data.
+     * 
+     * @return a view of the smaller pools from which this pool was built, else this pool, wrapped
+     */
+
+    public List<Pool<T>> getMiniPools()
+    {
+        if ( this.miniPools.isEmpty() )
+        {
+            return Collections.singletonList( this );
+        }
+
+        return this.miniPools; // Immutable on construction
+    }
+
+    /**
      * Returns the baseline data as a {@link Pool} or null if no baseline is defined.
      * 
      * @return the baseline
@@ -142,16 +184,6 @@ public class Pool<T> implements Supplier<List<T>>
     }
 
     /**
-     * Returns the pooled data.
-     * 
-     * @return the pooled data
-     */
-    public List<T> get()
-    {
-        return this.sampleData; // Immutable on construction
-    }
-
-    /**
      * Construct an instance.
      * 
      * @param <T> the type of data
@@ -178,13 +210,32 @@ public class Pool<T> implements Supplier<List<T>>
             return false;
         }
 
+        if ( o == this )
+        {
+            return true;
+        }
+
+        // The mini-pools represent a view of the underlying data and are not part of a test for equality.
         Pool<?> input = (Pool<?>) o;
 
-        boolean returnMe = input.get().equals( this.get() ) && input.getMetadata().equals( this.getMetadata() );
+        boolean returnMe = input.hasClimatology() == this.hasClimatology()
+                           && input.hasBaseline() == this.hasBaseline()
+                           && input.getMetadata().equals( this.getMetadata() );
 
-        returnMe = returnMe && input.hasClimatology() == this.hasClimatology()
-                   && input.hasBaseline() == this.hasBaseline();
+        if ( !returnMe )
+        {
+            return false;
+        }
 
+        // Start checking the actual data
+        returnMe = returnMe && input.get().equals( this.get() );
+
+        if ( !returnMe )
+        {
+            return false;
+        }
+
+        // Check the actual data        
         if ( this.hasClimatology() )
         {
             returnMe = returnMe && input.getClimatology().equals( this.getClimatology() );
@@ -203,6 +254,7 @@ public class Pool<T> implements Supplier<List<T>>
     @Override
     public int hashCode()
     {
+        // The mini-pools represent a view of the underlying data and are not part of the hash of the object.
         return Objects.hash( this.get(),
                              this.getMetadata(),
                              this.baselineSampleData,
@@ -255,6 +307,12 @@ public class Pool<T> implements Supplier<List<T>>
          * Pairs for baseline.
          */
         private final List<T> baselineSampleData = new ArrayList<>();
+
+        /**
+         * Mini-pools if this pool was built from smaller pools.
+         */
+
+        private final List<Pool<T>> miniPools = new ArrayList<>();
 
         /**
          * Climatology.
@@ -393,12 +451,17 @@ public class Pool<T> implements Supplier<List<T>>
         {
             Objects.requireNonNull( pool, "Cannot add a null pool to the builder." );
 
+            LOGGER.debug( "Adding pool {} to the builder.", pool.getMetadata() );
+
+            this.miniPools.add( pool );
             this.sampleData.addAll( pool.get() );
 
             // Merge metadata?
             if ( Objects.nonNull( this.mainMeta ) )
             {
-                this.mainMeta = PoolMetadata.unionOf( List.of( this.mainMeta, pool.getMetadata() ) );
+                LOGGER.debug( "Merging metadata for pool {} into pool {}.", pool, this.mainMeta );
+
+                this.mainMeta = PoolSlicer.unionOf( List.of( this.mainMeta, pool.getMetadata() ) );
             }
             else
             {
@@ -408,6 +471,8 @@ public class Pool<T> implements Supplier<List<T>>
             // Merge climatology?
             if ( Objects.nonNull( this.climatology ) && pool.hasClimatology() )
             {
+                LOGGER.debug( "Merging climatology for pool {} into pool {}.", pool, this.mainMeta );
+
                 this.climatology = Slicer.concatenate( this.climatology, pool.getClimatology() );
             }
             else
@@ -423,14 +488,16 @@ public class Pool<T> implements Supplier<List<T>>
                 // Merge metadata?
                 if ( Objects.nonNull( this.baselineMeta ) )
                 {
-                    this.baselineMeta = PoolMetadata.unionOf( List.of( this.baselineMeta,
-                                                                       pool.getBaselineData()
-                                                                           .getMetadata() ) );
+                    LOGGER.debug( "Merging metadata for baseline pool {} into baseline pool {}.",
+                                  base,
+                                  this.baselineMeta );
+
+                    this.baselineMeta = PoolSlicer.unionOf( List.of( this.baselineMeta,
+                                                                     base.getMetadata() ) );
                 }
                 else
                 {
-                    this.baselineMeta = pool.getBaselineData()
-                                            .getMetadata();
+                    this.baselineMeta = base.getMetadata();
                 }
             }
 
@@ -461,6 +528,7 @@ public class Pool<T> implements Supplier<List<T>>
     {
         //Ensure safe types
         this.sampleData = Collections.unmodifiableList( new ArrayList<>( b.sampleData ) );
+        this.miniPools = Collections.unmodifiableList( new ArrayList<>( b.miniPools ) );
         this.mainMeta = b.mainMeta;
         this.climatology = b.climatology;
 

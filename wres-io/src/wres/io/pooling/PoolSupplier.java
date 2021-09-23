@@ -755,8 +755,19 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         TimeScaleOuter desiredTimeScaleToUse =
                 this.getDesiredTimeScale( leftData, rightData, baselineData, this.inputs );
 
-        // Set the metadata, adjusted to include the desired time scale
-        PoolMetadata sampleMetadata = PoolMetadata.of( this.metadata, desiredTimeScaleToUse );
+        // Set the metadata, adjusted to include the desired time scale and feature tuple
+        wres.statistics.generated.Pool.Builder newMetadataBuilder =
+                this.metadata.getPool()
+                             .toBuilder()
+                             .clearGeometryTuples()
+                             .addAllGeometryTuples( List.of( feature.getGeometryTuple() ) );
+
+        if ( Objects.nonNull( desiredTimeScaleToUse ) )
+        {
+            newMetadataBuilder.setTimeScale( desiredTimeScaleToUse.getTimeScale() );
+        }
+
+        PoolMetadata sampleMetadata = PoolMetadata.of( this.metadata.getEvaluation(), newMetadataBuilder.build() );
         builder.setMetadata( sampleMetadata );
 
         // The left data is most likely to contain a large set of observations, such as climatology
@@ -784,8 +795,19 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         // Create the baseline pairs
         if ( this.hasBaseline() )
         {
-            PoolMetadata baselineSampleMetadata = PoolMetadata.of( this.baselineMetadata,
-                                                                   desiredTimeScaleToUse );
+            wres.statistics.generated.Pool.Builder newBaselineMetadataBuilder =
+                    this.baselineMetadata.getPool()
+                                         .toBuilder()
+                                         .clearGeometryTuples()
+                                         .addAllGeometryTuples( List.of( feature.getGeometryTuple() ) );
+
+            if ( Objects.nonNull( desiredTimeScaleToUse ) )
+            {
+                newBaselineMetadataBuilder.setTimeScale( desiredTimeScaleToUse.getTimeScale() );
+            }
+
+            PoolMetadata baselineSampleMetadata = PoolMetadata.of( this.baselineMetadata.getEvaluation(),
+                                                                   newBaselineMetadataBuilder.build() );
 
             builder.setMetadataForBaseline( baselineSampleMetadata );
 
@@ -1179,7 +1201,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     }
 
     /**
-     * Returns the desired time scale. In order of availability, this is:
+     * Returns the desired time scale, if known. In order of availability, this is:
      * 
      * <ol>
      * <li>The desired time scale provided on construction;</li>
@@ -1195,7 +1217,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      * @param rightData the right data
      * @param baselineData the baseline data
      * @param inputDeclaration the input declaration
-     * @return the desired time scale.
+     * @return the desired time scale or null if unknown
      */
 
     private TimeScaleOuter getDesiredTimeScale( List<TimeSeries<L>> leftData,

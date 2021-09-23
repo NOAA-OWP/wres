@@ -76,6 +76,14 @@ public class FeatureTuple implements Comparable<FeatureTuple>
         return returnMe;
     }
 
+    /**
+     * @return the geometry tuple
+     */
+    public GeometryTuple getGeometryTuple()
+    {
+        return this.geometryTuple;
+    }
+    
     @Override
     public boolean equals( Object o )
     {

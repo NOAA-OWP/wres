@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -268,7 +269,30 @@ class PoolTest
 
         assertEquals( expected, actual );
     }
+    
+    @Test
+    void testGetMiniPools()
+    {
+        assertEquals(Collections.singletonList( this.testPool ), this.testPool.getMiniPools() );
+        
+        Pool<String> anotherPool = new Builder<String>().addData( List.of( "d", "e", "f" ) )
+                                                        .setMetadata( PoolMetadata.of() )
+                                                        .addDataForBaseline( List.of( "a", "b", "c" ) )
+                                                        .setMetadataForBaseline( PoolMetadata.of() )
+                                                        .setClimatology( VectorOfDoubles.of( 4, 5, 6 ) )
+                                                        .build();
 
+        Pool<String> merged = new Builder<String>().addPool( this.testPool )
+                                                   .addPool( anotherPool )
+                                                   .build();
+
+        List<Pool<String>> actual = merged.getMiniPools(); 
+
+        List<Pool<String>> expected = List.of( this.testPool, anotherPool );
+        
+        assertEquals( expected, actual );       
+    }    
+    
     @Test
     void testToString()
     {
