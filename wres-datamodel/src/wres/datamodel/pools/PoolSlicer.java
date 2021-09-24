@@ -1,12 +1,13 @@
 package wres.datamodel.pools;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.DoublePredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -112,7 +113,82 @@ public class PoolSlicer
 
         return builder.build();
     }
-    
+
+    /**
+     * Applies an attribute-specific filter to the corresponding attribute-specific subset of pairs in the input and 
+     * returns the union of those filtered subsets for a metadata attribute that is extracted from the pool metadata
+     * with a mapper.
+     * 
+     * @param <S> the pooled data type
+     * @param <T> the metadata attribute
+     * @param pool the pool to filter
+     * @param filters the filters to use
+     * @param metaMapper the function to extract an attribute from the metadata
+     * @return the union of the subsets, each subset filtered by an attribute-specific predicate
+     * @throws NullPointerException if any input is null
+     * @throws PoolException if the pool could not be filtered for any reason
+     */
+
+    public static <S, T extends Comparable<T>> Pool<S> filter( Pool<S> pool,
+                                                               Map<T, Predicate<S>> filters,
+                                                               Function<PoolMetadata, T> metaMapper )
+    {
+        Objects.requireNonNull( pool );
+        Objects.requireNonNull( filters );
+        Objects.requireNonNull( metaMapper );
+
+        // Optimization for no data
+        if ( pool.get().isEmpty() && pool.getBaselineData().get().isEmpty()
+             && ( !pool.hasClimatology() || pool.getClimatology().size() == 0 ) )
+        {
+            return pool;
+        }
+
+        // Small pools
+        Map<T, Pool<S>> pools = PoolSlicer.decompose( metaMapper, pool );
+
+        // Iterate the pools and apply the filters
+        Set<T> keysWithoutAFilter = new HashSet<>();
+        Pool.Builder<S> poolBuilder = new Pool.Builder<>();
+        for ( Map.Entry<T, Pool<S>> nextEntry : pools.entrySet() )
+        {
+            T nextKey = nextEntry.getKey();
+
+            Pool<S> nextPool = nextEntry.getValue();
+            Predicate<S> nextPredicate = filters.get( nextKey );
+
+            if ( Objects.nonNull( nextPredicate ) )
+            {
+                Pool<S> filtered = PoolSlicer.filter( nextPool, nextPredicate, null );
+                poolBuilder.addPool( filtered );
+            }
+            else
+            {
+                keysWithoutAFilter.add( nextKey );
+            }
+        }
+
+        // Handle cases with no data or some missing data
+        if ( keysWithoutAFilter.size() == pools.size() )
+        {
+            throw new PoolException( "Failed to filter pool " + pool.getMetadata()
+                                     + ". After decomposing the pool into smaller pools by metadata attribute, failed "
+                                     + "to identify a filter for any of these attribute instances: "
+                                     + keysWithoutAFilter
+                                     + "." );
+        }
+        else if ( !keysWithoutAFilter.isEmpty() && LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "When filtering pool {} into smaller pools by metadata attribute, failed to correlate some "
+                         + "attributes with filters: {}. Consequently, no filtered pool was identified for any of "
+                         + "these attribute instances and they will not be included in the filtered pool.",
+                         pool.getMetadata(),
+                         keysWithoutAFilter );
+        }
+
+        return poolBuilder.build();
+    }
+
     /**
      * Returns the subset of pairs where the condition is met. Applies to both the main pairs and any baseline pairs.
      * Does not modify the metadata associated with the input.
@@ -166,6 +242,75 @@ public class PoolSlicer
         }
 
         return builder.build();
+    }
+
+    /**
+     * Applies an attribute-specific transformer  to the corresponding attribute-specific subset of pairs in the input 
+     * and returns the union of those transformed subsets for a metadata attribute that is extracted from the pool 
+     * metadata with a mapper.
+     * 
+     * @param <S> the pooled data type
+     * @param <T> the metadata attribute
+     * @param <U> the transformed pool data type
+     * @param pool the pool to transform
+     * @param transformers the transformers to use
+     * @param metaMapper the function to extract an attribute from the metadata
+     * @return the union of the subsets, each subset filtered by an attribute-specific predicate
+     * @throws NullPointerException if any input is null
+     * @throws PoolException if the pool could not be filtered for any reason
+     */
+
+    public static <S, T extends Comparable<T>, U> Pool<U> transform( Pool<S> pool,
+                                                                     Map<T, Function<S, U>> transformers,
+                                                                     Function<PoolMetadata, T> metaMapper )
+    {
+        Objects.requireNonNull( pool );
+        Objects.requireNonNull( transformers );
+        Objects.requireNonNull( metaMapper );
+
+        // Small pools
+        Map<T, Pool<S>> pools = PoolSlicer.decompose( metaMapper, pool );
+
+        // Iterate the pools and apply the transformers
+        Set<T> keysWithoutAFilter = new HashSet<>();
+        Pool.Builder<U> poolBuilder = new Pool.Builder<>();
+        for ( Map.Entry<T, Pool<S>> nextEntry : pools.entrySet() )
+        {
+            T nextKey = nextEntry.getKey();
+
+            Pool<S> nextPool = nextEntry.getValue();
+            Function<S, U> nextTransformer = transformers.get( nextKey );
+
+            if ( Objects.nonNull( nextTransformer ) )
+            {
+                Pool<U> transformed = PoolSlicer.transform( nextPool, nextTransformer );
+                poolBuilder.addPool( transformed );
+            }
+            else
+            {
+                keysWithoutAFilter.add( nextKey );
+            }
+        }
+
+        // Handle cases with no data or some missing data
+        if ( keysWithoutAFilter.size() == pools.size() )
+        {
+            throw new PoolException( "Failed to transform pool " + pool.getMetadata()
+                                     + ". After decomposing the pool into smaller pools by metadata attribute, failed "
+                                     + "to identify a transformer for any of these attribute instances: "
+                                     + keysWithoutAFilter
+                                     + "." );
+        }
+        else if ( !keysWithoutAFilter.isEmpty() && LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "When filtering pool {} into smaller pools by metadata attribute, failed to correlate some "
+                         + "attributes with transformers: {}. Consequently, no transformed pool was identified for any "
+                         + "of these attribute instances and they will not be included in the transformed pool.",
+                         pool.getMetadata(),
+                         keysWithoutAFilter );
+        }
+
+        return poolBuilder.build();
     }
 
     /**
@@ -235,7 +380,8 @@ public class PoolSlicer
         Objects.requireNonNull( metaMapper );
         Objects.requireNonNull( pool );
 
-        Map<S, Pool<T>> returnMe = new HashMap<>();
+        // Use a sorted map implementation to preserve order
+        Map<S, Pool<T>> returnMe = new TreeMap<>();
 
         for ( Pool<T> nextPool : pool.getMiniPools() )
         {
@@ -261,6 +407,33 @@ public class PoolSlicer
         }
 
         return Collections.unmodifiableMap( returnMe );
+    }
+
+    /**
+     * Returns a mapper for mapping {@link PoolMetadata} to a {@link FeatureTuple}. When applied, the function throws 
+     * an exception if the pool does not contain precisely one {@link FeatureTuple}.
+     * 
+     * @return a mapper
+     */
+
+    public static Function<PoolMetadata, FeatureTuple> getFeatureMapper()
+    {
+        return metadata -> {
+            Set<FeatureTuple> features = metadata.getFeatureTuples();
+
+            if ( features.size() != 1 )
+            {
+                throw new PoolException( "Could not filter the outer pool " + metadata
+                                         + " because the inner pool "
+                                         + metadata
+                                         + " does not compose a single "
+                                         + "feature, rather these features: "
+                                         + features
+                                         + "." );
+            }
+
+            return features.iterator().next();
+        };
     }
 
     /**
@@ -327,9 +500,10 @@ public class PoolSlicer
             throw new IllegalArgumentException( "Cannot find the union of empty input." );
         }
 
-        Set<TimeWindowOuter> unionWindows = new HashSet<>();
-        Set<FeatureTuple> unionFeatures = new HashSet<>();
-        Set<OneOrTwoThresholds> thresholds = new HashSet<>();
+        // Preserve order because the message models these as lists
+        Set<TimeWindowOuter> unionWindows = new TreeSet<>();
+        Set<FeatureTuple> unionFeatures = new TreeSet<>();
+        Set<OneOrTwoThresholds> thresholds = new TreeSet<>();
 
         // Test entry
         PoolMetadata test = input.get( 0 );
@@ -344,13 +518,18 @@ public class PoolSlicer
                 throw new PoolMetadataException( "Only the time window and thresholds and features can differ when "
                                                  + "finding the union of metadata." );
             }
+
             if ( next.hasTimeWindow() )
             {
                 unionWindows.add( next.getTimeWindow() );
             }
 
+            if ( next.hasThresholds() )
+            {
+                thresholds.add( next.getThresholds() );
+            }
+
             unionFeatures.addAll( next.getFeatureTuples() );
-            thresholds.add( next.getThresholds() );
         }
 
         TimeWindowOuter unionWindow = null;

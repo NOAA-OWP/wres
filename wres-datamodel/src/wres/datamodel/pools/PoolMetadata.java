@@ -267,7 +267,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
         }
         
         PoolMetadata p = (PoolMetadata) o;
-        
+
         return Objects.equals( this.getEvaluation(), p.getEvaluation() )
                && Objects.equals( this.getPool(), p.getPool() );
     }

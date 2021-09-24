@@ -247,7 +247,7 @@ public class Pool<T> implements Supplier<List<T>>
             returnMe = returnMe && input.baselineSampleData.equals( this.baselineSampleData )
                        && input.baselineMeta.equals( this.baselineMeta );
         }
-
+        
         return returnMe;
     }
 

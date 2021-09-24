@@ -72,6 +72,33 @@ public class ThresholdsByMetric
 
     private Map<MetricConstants, Set<ThresholdOuter>> quantiles = new EnumMap<>( MetricConstants.class );
 
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( ! ( o instanceof ThresholdsByMetric ) )
+        {
+            return false;
+        }
+
+        if ( o == this )
+        {
+            return true;
+        }
+
+        ThresholdsByMetric in = (ThresholdsByMetric) o;
+
+        return Objects.equals( this.probabilities, in.probabilities )
+               && Objects.equals( this.probabilityClassifiers, in.probabilityClassifiers )
+               && Objects.equals( this.values, in.values )
+               && Objects.equals( this.quantiles, in.quantiles );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( this.probabilities, this.probabilityClassifiers, this.values, this.quantiles );
+    }
+
     /**
      * Returns <code>true</code> if the store contains thresholds for the input metric with one or more of
      * the specified types, otherwise <code>false</code>. If no types are specified, returns false.
