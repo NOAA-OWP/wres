@@ -69,15 +69,15 @@ abstract class MetricProcessorByTime<S extends Pool<?>>
         switch ( input.getDataType() )
         {
             case LEFT:
-                return Slicer.left( input::test );
+                return Slicer.left( input );
             case LEFT_AND_RIGHT:
             case LEFT_AND_ANY_RIGHT:
             case LEFT_AND_RIGHT_MEAN:
-                return Slicer.leftAndRight( input::test );
+                return Slicer.leftAndRight( input );
             case RIGHT:
             case ANY_RIGHT:
             case RIGHT_MEAN:
-                return Slicer.right( input::test );
+                return Slicer.right( input );
             default:
                 throw new IllegalStateException( "Unrecognized threshold type '" + input.getDataType() + "'." );
         }

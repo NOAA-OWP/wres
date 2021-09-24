@@ -408,7 +408,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         ThresholdsByMetric filtered = super.getMetrics().getThresholdsByMetric()
                                                         .filterByGroup( SampleDataGroup.ENSEMBLE, outGroup )
                                                         .filterByGroup( ThresholdGroup.PROBABILITY,
-                                                                       ThresholdGroup.VALUE );
+                                                                        ThresholdGroup.VALUE );
 
         // Find the union across metrics and filter out non-unique thresholds
         Set<ThresholdOuter> union = filtered.union();
@@ -553,7 +553,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         ThresholdsByMetric filtered = super.getMetrics().getThresholdsByMetric()
                                                         .filterByGroup( SampleDataGroup.DISCRETE_PROBABILITY, outGroup )
                                                         .filterByGroup( ThresholdGroup.PROBABILITY,
-                                                                       ThresholdGroup.VALUE );
+                                                                        ThresholdGroup.VALUE );
 
         // Find the union across metrics and filter out non-unique thresholds
         Set<ThresholdOuter> union = filtered.union();

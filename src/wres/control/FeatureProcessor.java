@@ -198,7 +198,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> pools =
                     PoolFactory.getEnsemblePools( this.evaluation.getEvaluationDescription(),
                                                   this.project,
-                                                  featureGroup,
+                                                  this.featureGroup,
                                                   this.unitMapper,
                                                   retrieverFactory );
             this.monitor.setPoolCount( pools.size() );
@@ -237,7 +237,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> pools =
                     PoolFactory.getSingleValuedPools( this.evaluation.getEvaluationDescription(),
                                                       this.project,
-                                                      featureGroup,
+                                                      this.featureGroup,
                                                       this.unitMapper,
                                                       retrieverFactory );
             this.monitor.setPoolCount( pools.size() );

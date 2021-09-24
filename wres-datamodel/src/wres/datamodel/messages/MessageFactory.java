@@ -211,11 +211,11 @@ public class MessageFactory
         // Feature tuple
         if ( Objects.nonNull( featureGroup ) )
         {
-
-            Set<GeometryTuple> geoTuples = featureGroup.getFeatures()
-                                                       .stream()
-                                                       .map( MessageFactory::parse )
-                                                       .collect( Collectors.toSet() );
+            // If there is a natural ordering, preserve it, because the tuples are messaged as a list
+            List<GeometryTuple> geoTuples = featureGroup.getFeatures()
+                                                        .stream()
+                                                        .map( MessageFactory::parse )
+                                                        .collect( Collectors.toList() );
             poolBuilder.addAllGeometryTuples( geoTuples );
 
             // Region name?

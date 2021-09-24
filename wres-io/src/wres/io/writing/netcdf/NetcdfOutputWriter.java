@@ -65,6 +65,7 @@ import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.ThresholdSlicer;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.generators.TimeWindowGenerator;
@@ -952,7 +953,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     {
         Objects.requireNonNull( thresholds );
 
-        Comparator<OneOrTwoThresholds> thresholdComparator = this.getThresholdComparator();
+        Comparator<OneOrTwoThresholds> thresholdComparator = ThresholdSlicer.getLogicalThresholdComparator();
 
         // Create a set of thresholds for each metric in a map.        
         Map<MetricConstants, SortedSet<OneOrTwoThresholds>> thresholdsMap = new EnumMap<>( MetricConstants.class );
@@ -989,57 +990,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
         return new ThresholdsByMetric.Builder().addThresholds( thresholdsMap )
                                                .build();
-    }
-    
-    /**
-     * Returns a threshold comparator for determining which thresholds should generate distinct netcdf variables.
-     * 
-     * @return a threshold comparator
-     */
-    
-    private Comparator<OneOrTwoThresholds> getThresholdComparator()
-    {
-        // The metrics are constant across all features because metrics cannot be declared per feature. However, the
-        // thresholds can vary across features. 
-
-        // First, create a comparator that compares two threshold tuples.
-        Comparator<OneOrTwoThresholds> thresholdComparator = ( OneOrTwoThresholds one, OneOrTwoThresholds another ) -> {
-
-            // Compare the second/decision threshold first, which is compared on all content if it exists.
-            int compare = Objects.compare( one.second(),
-                                           another.second(),
-                                           Comparator.nullsFirst( Comparator.naturalOrder() ) );
-
-            if ( compare != 0 )
-            {
-                return compare;
-            }
-
-            // Compare the first threshold by label if both have a label. Thresholds with a label have the same meaning
-            // across features, so statistics should be stored accordingly.
-            if ( one.first().hasLabel() && another.first().hasLabel() )
-            {
-                return Objects.compare( one.first().getLabel(),
-                                        another.first().getLabel(),
-                                        Comparator.naturalOrder() );
-            }
-
-            // Compare by probability threshold if both are probability thresholds. Thresholds that are probability 
-            // thresholds have the same meaning across features, so should be stored accordingly.
-            if ( one.first().hasProbabilities() && another.first().hasProbabilities() )
-            {
-                return Objects.compare( one.first().getProbabilities(),
-                                        another.first().getProbabilities(),
-                                        Comparator.naturalOrder() );
-            }
-
-            // Resort to a full comparison.           
-            return Objects.compare( one,
-                                    another,
-                                    Comparator.nullsFirst( Comparator.naturalOrder() ) );
-        };
-
-        return thresholdComparator;
     }
     
     /**

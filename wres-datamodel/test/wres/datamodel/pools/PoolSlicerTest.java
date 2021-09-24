@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
@@ -316,12 +317,12 @@ class PoolSlicerTest
                 PoolSlicer.decompose( next -> next.getFeatureTuples().iterator().next(), merged );
 
         assertEquals( 2, actual.size() );
-        
+
         Map<FeatureTuple, Pool<String>> expected = new HashMap<>();
-        
+
         expected.put( new FeatureTuple( FeatureKey.of( "foo" ), FeatureKey.of( "bar" ), null ), aPool );
         expected.put( new FeatureTuple( FeatureKey.of( "baz" ), FeatureKey.of( "qux" ), null ), anotherPool );
-        
+
         assertEquals( expected, actual );
     }
 
@@ -503,6 +504,159 @@ class PoolSlicerTest
                 PoolMetadata.of( evaluationOne, poolTwo );
 
         assertTrue( PoolSlicer.equalsWithoutTimeWindowOrThresholdsOrFeatures( poolMetaThree, poolMetaFour ) );
+    }
+
+    @Test
+    void testFilterMultipleFeaturesByThreshold()
+    {
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setMeasurementUnit( "unit" )
+                                          .build();
+
+        wres.statistics.generated.Pool.Builder builder = wres.statistics.generated.Pool.newBuilder();
+        GeometryTuple geoTupleOne = GeometryTuple.newBuilder()
+                                                 .setLeft( Geometry.newBuilder().setName( "baz" ) )
+                                                 .setRight( Geometry.newBuilder().setName( "qux" ) )
+                                                 .build();
+        builder.addGeometryTuples( geoTupleOne );
+
+        Pool<Pair<Double, Double>> aPool =
+                new Builder<Pair<Double, Double>>().addData( Pair.of( 1.0, 2.0 ) )
+                                                   .addData( Pair.of( 3.0, 4.0 ) )
+                                                   .addData( Pair.of( 5.0, 6.0 ) )
+                                                   .setMetadata( PoolMetadata.of( evaluation,
+                                                                                  builder.build() ) )
+                                                   .build();
+
+        wres.statistics.generated.Pool.Builder anotherBuilder = wres.statistics.generated.Pool.newBuilder();
+        GeometryTuple geoTupleTwo = GeometryTuple.newBuilder()
+                                                 .setLeft( Geometry.newBuilder().setName( "foo" ) )
+                                                 .setRight( Geometry.newBuilder().setName( "bar" ) )
+                                                 .build();
+        anotherBuilder.addGeometryTuples( geoTupleTwo );
+
+        Pool<Pair<Double, Double>> anotherPool =
+                new Builder<Pair<Double, Double>>().addData( Pair.of( 7.0, 8.0 ) )
+                                                   .addData( Pair.of( 9.0, 10.0 ) )
+                                                   .addData( Pair.of( 11.0, 12.0 ) )
+                                                   .setMetadata( PoolMetadata.of( evaluation,
+                                                                                  anotherBuilder.build() ) )
+                                                   .build();
+
+        Pool<Pair<Double, Double>> merged = new Builder<Pair<Double, Double>>().addPool( aPool )
+                                                                               .addPool( anotherPool )
+                                                                               .build();
+
+        Map<FeatureTuple, Predicate<Pair<Double, Double>>> predicates = new HashMap<>();
+        ThresholdOuter thresholdOne = ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
+                                                         Operator.GREATER_EQUAL,
+                                                         ThresholdDataType.LEFT );
+        ThresholdOuter thresholdTwo = ThresholdOuter.of( OneOrTwoDoubles.of( 9.0 ),
+                                                         Operator.GREATER_EQUAL,
+                                                         ThresholdDataType.LEFT );
+        Predicate<Pair<Double, Double>> predicateOne = Slicer.left( thresholdOne );
+        Predicate<Pair<Double, Double>> predicateTwo = Slicer.left( thresholdTwo );
+
+
+        predicates.put( MessageFactory.parse( geoTupleOne ), predicateOne );
+        predicates.put( MessageFactory.parse( geoTupleTwo ), predicateTwo );
+
+        Pool<Pair<Double, Double>> actual = PoolSlicer.filter( merged, predicates, PoolSlicer.getFeatureMapper() );
+
+        wres.statistics.generated.Pool expectedPool = wres.statistics.generated.Pool.newBuilder()
+                                                                                    .addGeometryTuples( geoTupleOne )
+                                                                                    .addGeometryTuples( geoTupleTwo )
+                                                                                    .build();
+
+        // Note the order, which is the same order as the comparable key used to decompose the pool, in this case a 
+        // FeatureTuple
+        Pool<Pair<Double, Double>> expected =
+                new Builder<Pair<Double, Double>>().addData( Pair.of( 3.0, 4.0 ) )
+                                                   .addData( Pair.of( 5.0, 6.0 ) )
+                                                   .addData( Pair.of( 9.0, 10.0 ) )
+                                                   .addData( Pair.of( 11.0, 12.0 ) )
+                                                   .setMetadata( PoolMetadata.of( evaluation,
+                                                                                  expectedPool ) )
+                                                   .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testTransformMultipleFeaturesByThreshold()
+    {
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setMeasurementUnit( "unit" )
+                                          .build();
+
+        wres.statistics.generated.Pool.Builder builder = wres.statistics.generated.Pool.newBuilder();
+        GeometryTuple geoTupleOne = GeometryTuple.newBuilder()
+                                                 .setLeft( Geometry.newBuilder().setName( "baz" ) )
+                                                 .setRight( Geometry.newBuilder().setName( "qux" ) )
+                                                 .build();
+        builder.addGeometryTuples( geoTupleOne );
+
+        Pool<Pair<Double, Double>> aPool =
+                new Builder<Pair<Double, Double>>().addData( Pair.of( 1.0, 2.0 ) )
+                                                   .addData( Pair.of( 3.0, 4.0 ) )
+                                                   .addData( Pair.of( 5.0, 6.0 ) )
+                                                   .setMetadata( PoolMetadata.of( evaluation,
+                                                                                  builder.build() ) )
+                                                   .build();
+
+        wres.statistics.generated.Pool.Builder anotherBuilder = wres.statistics.generated.Pool.newBuilder();
+        GeometryTuple geoTupleTwo = GeometryTuple.newBuilder()
+                                                 .setLeft( Geometry.newBuilder().setName( "foo" ) )
+                                                 .setRight( Geometry.newBuilder().setName( "bar" ) )
+                                                 .build();
+        anotherBuilder.addGeometryTuples( geoTupleTwo );
+
+        Pool<Pair<Double, Double>> anotherPool =
+                new Builder<Pair<Double, Double>>().addData( Pair.of( 7.0, 8.0 ) )
+                                                   .addData( Pair.of( 9.0, 10.0 ) )
+                                                   .addData( Pair.of( 11.0, 12.0 ) )
+                                                   .setMetadata( PoolMetadata.of( evaluation,
+                                                                                  anotherBuilder.build() ) )
+                                                   .build();
+
+        Pool<Pair<Double, Double>> merged = new Builder<Pair<Double, Double>>().addPool( aPool )
+                                                                               .addPool( anotherPool )
+                                                                               .build();
+
+        Map<FeatureTuple, Function<Pair<Double, Double>, Pair<Boolean, Boolean>>> transformers = new HashMap<>();
+
+        Function<Pair<Double, Double>, Pair<Boolean, Boolean>> transformerOne =
+                pair -> Pair.of( pair.getLeft() > 3.0, pair.getRight() > 3.0 );
+
+        Function<Pair<Double, Double>, Pair<Boolean, Boolean>> transformerTwo =
+                pair -> Pair.of( pair.getLeft() > 9.0, pair.getRight() > 9.0 );
+
+        transformers.put( MessageFactory.parse( geoTupleOne ), transformerOne );
+        transformers.put( MessageFactory.parse( geoTupleTwo ), transformerTwo );
+
+        Pool<Pair<Boolean, Boolean>> actual =
+                PoolSlicer.transform( merged, transformers, PoolSlicer.getFeatureMapper() );
+
+        wres.statistics.generated.Pool expectedPool = wres.statistics.generated.Pool.newBuilder()
+                                                                                    .addGeometryTuples( geoTupleOne )
+                                                                                    .addGeometryTuples( geoTupleTwo )
+                                                                                    .build();
+
+        // Note the order, which is the same order as the comparable key used to decompose the pool, in this case a 
+        // FeatureTuple
+        Pool<Pair<Boolean, Boolean>> expected =
+                new Builder<Pair<Boolean, Boolean>>().addData( Pair.of( false, false ) )
+                                                     .addData( Pair.of( false, true ) )
+                                                     .addData( Pair.of( true, true ) )
+                                                     .addData( Pair.of( false, false ) )
+                                                     .addData( Pair.of( false, true ) )
+                                                     .addData( Pair.of( true, true ) )
+                                                     .setMetadata( PoolMetadata.of( evaluation,
+                                                                                    expectedPool ) )
+                                                     .build();
+
+        assertEquals( expected, actual );
     }
 
 }

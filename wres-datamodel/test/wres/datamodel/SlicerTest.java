@@ -111,7 +111,7 @@ public final class SlicerTest
     }
 
     @Test
-    public void testGetInverseCumulativeProbability()
+    public void testGetQuantileFromProbability()
     {
         double[] sorted = new double[] { 1.5, 4.9, 6.3, 27, 43.3, 433.9, 1012.6, 2009.8, 7001.4, 12038.5, 17897.2 };
         double[] sortedB = new double[] { -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50 };

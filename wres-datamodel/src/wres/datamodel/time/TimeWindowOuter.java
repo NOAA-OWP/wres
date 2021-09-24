@@ -2,6 +2,7 @@ package wres.datamodel.time;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -262,7 +263,7 @@ public class TimeWindowOuter implements Comparable<TimeWindowOuter>
             throw new IllegalArgumentException( "Cannot determine the union of time windows for empty input." );
         }
 
-        if ( input.contains( null ) )
+        if ( new HashSet<>( input ).contains( null ) )
         {
             throw new IllegalArgumentException( "Cannot determine the union of time windows for input that contains "
                                                 + "one or more null time windows." );
