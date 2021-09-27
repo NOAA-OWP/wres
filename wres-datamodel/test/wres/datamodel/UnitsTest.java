@@ -6,6 +6,7 @@ import javax.measure.Unit;
 import javax.measure.UnitConverter;
 import javax.measure.format.MeasurementParseException;
 import javax.measure.format.UnitFormat;
+import javax.measure.quantity.Length;
 import javax.measure.quantity.Time;
 import javax.measure.quantity.Volume;
 import javax.measure.spi.ServiceProvider;
@@ -15,12 +16,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import si.uom.quantity.VolumetricFlowRate;
 import tech.units.indriya.AbstractUnit;
+import tech.units.indriya.format.EBNFUnitFormat;
 import tech.units.indriya.quantity.Quantities;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static systems.uom.common.USCustomary.GALLON_LIQUID;
+import static systems.uom.common.USCustomary.INCH;
 import static tech.units.indriya.unit.Units.CUBIC_METRE;
 import static tech.units.indriya.unit.Units.DAY;
 import static wres.datamodel.Units.CUBIC_FOOT_PER_SECOND;
@@ -40,7 +43,9 @@ public class UnitsTest
                      "metre", "metre/second", "second", "m³", "m³/s", "CFS",
                      "CMS", "cubic metre per second", "m^2", "m^3/s", "meter",
                      "feet", "foot", "inches", "inch", "ft", "in", "FT", "IN",
-                     "cms", "cfs" );
+                     "cms", "cfs", "m3 s-1", "m3/s", "ft^3/s", "kilo ft^3/s",
+                     "cubic foot / second", "Foot^3/Second", "Kft", "KFoot",
+                     "Foot", "ft^3*1000/s" );
 
     @Test
     public void testConvertFlow()
@@ -161,6 +166,50 @@ public class UnitsTest
             {
                 // Apparently identical to the implementation gotten from SPI.
                 Unit<?> unit = AbstractUnit.parse( stringToParse );
+                LOGGER.debug(
+                        "Indriya parsed '{}' into '{}', name='{}', symbol='{}', dimension='{}'",
+                        stringToParse,
+                        unit,
+                        unit.getName(),
+                        unit.getSymbol(),
+                        unit.getDimension() );
+            }
+            catch ( MeasurementParseException mpe )
+            {
+                LOGGER.debug( "Exception while parsing '{}': {}",
+                              stringToParse, mpe.getMessage() );
+            }
+        }
+    }
+
+    @Test
+    public void exploreIndriyaKiloCubicFeetPerSecond()
+    {
+        // Even though "inch" is unused, it causes the USCustomary units to load
+        Unit<Length> inch = INCH;
+        String stringToParse = "ft^3*1000/s";
+        Unit<VolumetricFlowRate> unit = (Unit<VolumetricFlowRate>) AbstractUnit.parse( stringToParse );
+        LOGGER.debug( "Parsed '{}' into '{}', name='{}', symbol='{}', dimension='{}'",
+                      stringToParse,
+                      unit,
+                      unit.getName(),
+                      unit.getSymbol(),
+                      unit.getDimension() );
+        Quantity<VolumetricFlowRate> someKcfs = Quantities.getQuantity( 50.0, unit );
+        LOGGER.debug( someKcfs.to( CUBIC_FOOT_PER_SECOND ).toString() );
+    }
+
+    @Test
+    public void exploreEBNFUnitParsing()
+    {
+        UnitFormat unitFormat = EBNFUnitFormat.getInstance();
+
+        for ( String stringToParse : UNITS_TO_PARSE )
+        {
+            try
+            {
+                // Apparently identical to the implementation gotten from SPI.
+                Unit<?> unit = unitFormat.parse( stringToParse );
                 LOGGER.debug(
                         "Indriya parsed '{}' into '{}', name='{}', symbol='{}', dimension='{}'",
                         stringToParse,
