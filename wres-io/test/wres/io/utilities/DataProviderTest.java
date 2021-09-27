@@ -1,10 +1,7 @@
 package wres.io.utilities;
 
-import java.beans.PropertyVetoException;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URI;
-import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -18,24 +15,11 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.internal.runners.statements.ExpectException;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.modules.junit4.PowerMockRunner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-@RunWith(PowerMockRunner.class)
-@PowerMockIgnore( { "javax.management.*", "javax.xml.*", "com.sun.*", "ch.qos.*", "org.slf4j.*" } ) // thanks https://stackoverflow.com/questions/16520699/mockito-powermock-linkageerror-while-mocking-system-class#21268013
 public class DataProviderTest
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( DataProviderTest.class);
-
     // TODO: Add test for URL -> URI conversion tests
     // TODO: Add test for String -> URI conversion tests
     // TODO: Add number -> Duration conversion tests
