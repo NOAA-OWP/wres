@@ -443,11 +443,12 @@ public class Pool<T> implements Supplier<List<T>>
          * Adds a pool of pairs to the builder.
          * 
          * @param pool the pool to add
+         * @param mergeClimatology is true to merge the climatology of the input with any existing climatology
          * @return the builder
          * @throws NullPointerException if the input is null
          */
 
-        public Builder<T> addPool( Pool<T> pool )
+        public Builder<T> addPool( Pool<T> pool, boolean mergeClimatology )
         {
             Objects.requireNonNull( pool, "Cannot add a null pool to the builder." );
 
@@ -459,7 +460,7 @@ public class Pool<T> implements Supplier<List<T>>
             // Merge metadata?
             if ( Objects.nonNull( this.mainMeta ) )
             {
-                LOGGER.debug( "Merging metadata for pool {} into pool {}.", pool, this.mainMeta );
+                LOGGER.debug( "Merging metadata for pool {} into pool {}.", pool.getMetadata(), this.mainMeta );
 
                 this.mainMeta = PoolSlicer.unionOf( List.of( this.mainMeta, pool.getMetadata() ) );
             }
@@ -469,9 +470,9 @@ public class Pool<T> implements Supplier<List<T>>
             }
 
             // Merge climatology?
-            if ( Objects.nonNull( this.climatology ) && pool.hasClimatology() )
+            if ( mergeClimatology && Objects.nonNull( this.climatology ) && pool.hasClimatology() )
             {
-                LOGGER.debug( "Merging climatology for pool {} into pool {}.", pool, this.mainMeta );
+                LOGGER.debug( "Merging climatology for pool {} into pool {}.", pool.getMetadata(), this.mainMeta );
 
                 this.climatology = Slicer.concatenate( this.climatology, pool.getClimatology() );
             }
@@ -489,7 +490,7 @@ public class Pool<T> implements Supplier<List<T>>
                 if ( Objects.nonNull( this.baselineMeta ) )
                 {
                     LOGGER.debug( "Merging metadata for baseline pool {} into baseline pool {}.",
-                                  base,
+                                  base.getMetadata(),
                                   this.baselineMeta );
 
                     this.baselineMeta = PoolSlicer.unionOf( List.of( this.baselineMeta,
@@ -528,7 +529,19 @@ public class Pool<T> implements Supplier<List<T>>
     {
         //Ensure safe types
         this.sampleData = Collections.unmodifiableList( new ArrayList<>( b.sampleData ) );
-        this.miniPools = Collections.unmodifiableList( new ArrayList<>( b.miniPools ) );
+        
+        // If there is only one mini-pool, elide. The mini-pools view adds a reference for each data item and the 
+        // default view is a single pool, so there is no need for the duplicate references.
+        List<Pool<T>> miniPoolsInner = Collections.unmodifiableList( new ArrayList<>( b.miniPools ) );
+        if( miniPoolsInner.size() == 1 )
+        {
+            this.miniPools = Collections.emptyList();   
+        }
+        else
+        {
+            this.miniPools = miniPoolsInner;
+        }
+        
         this.mainMeta = b.mainMeta;
         this.climatology = b.climatology;
 

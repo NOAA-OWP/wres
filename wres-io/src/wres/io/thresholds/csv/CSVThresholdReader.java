@@ -13,6 +13,7 @@ import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
+import wres.datamodel.thresholds.ThresholdException;
 import wres.io.retrieval.UnitMapper;
 import wres.io.thresholds.exceptions.AllThresholdsMissingException;
 import wres.io.thresholds.exceptions.LabelInconsistencyException;
@@ -51,7 +52,7 @@ public class CSVThresholdReader
      * @return a map of thresholds by feature
      * @throws IOException if the source cannot be read or contains unexpected input
      * @throws NullPointerException if the source is null or the condition is null
-     * @throws IllegalArgumentException if one or more features failed with expected problems, such as
+     * @throws ThresholdException if one or more features failed with expected problems, such as
      *            all thresholds missing, thresholds that contain non-numeric input and thresholds that
      *            are invalid (e.g. probability thresholds that are out-of-bounds).
      */
@@ -234,7 +235,7 @@ public class CSVThresholdReader
                 {
                     featuresThatFailedWithNonNumericInput.add( nextFeature );
                 }
-                catch ( IllegalArgumentException e )
+                catch ( ThresholdException | IllegalArgumentException e )
                 {
                     featuresThatFailedWithOtherWrongInput.add( nextFeature );
                 }
@@ -249,11 +250,11 @@ public class CSVThresholdReader
 
         // Propagate any exceptions that were caught to avoid drip-feeding
         CSVThresholdReader.throwExceptionIfOneOrMoreFailed( totalFeatures,
-                                                         commaSeparated,
-                                                         featuresThatFailedWithLabelInconsistency,
-                                                         featuresThatFailedWithAllThresholdsMissing,
-                                                         featuresThatFailedWithNonNumericInput,
-                                                         featuresThatFailedWithOtherWrongInput );
+                                                            commaSeparated,
+                                                            featuresThatFailedWithLabelInconsistency,
+                                                            featuresThatFailedWithAllThresholdsMissing,
+                                                            featuresThatFailedWithNonNumericInput,
+                                                            featuresThatFailedWithOtherWrongInput );
 
         return returnMe;
     }
@@ -406,7 +407,7 @@ public class CSVThresholdReader
      * @param featuresThatFailedWithAllThresholdsMissing features that failed with all thresholds missing
      * @param featuresThatFailedWithNonNumericInput features that failed with non-numeric input
      * @param featuresThatFailedWithOtherWrongInput features that failed with other wrong input
-     * @throws IllegalArgumentException if one or more features failed
+     * @throws ThresholdException if one or more features failed
      */
 
     private static void throwExceptionIfOneOrMoreFailed( int totalFeatures,
@@ -473,7 +474,7 @@ public class CSVThresholdReader
         // Throw exception if required
         if ( exceptionMessage.length() > 0 )
         {
-            throw new IllegalArgumentException( exceptionMessage.toString() );
+            throw new ThresholdException( exceptionMessage.toString() );
         }
     }
 

@@ -328,6 +328,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
         for ( OneOrTwoThresholds t : thresholds )
         {
             String column = name + HEADER_DELIMITER + t;
+
             headerRow.add( column );
             // Loop across time windows
             for ( TimeWindowOuter timeWindow : timeWindows )

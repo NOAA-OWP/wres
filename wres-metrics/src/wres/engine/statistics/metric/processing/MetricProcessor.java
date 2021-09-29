@@ -1,6 +1,5 @@
 package wres.engine.statistics.metric.processing;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -16,10 +15,11 @@ import org.slf4j.LoggerFactory;
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.Slicer;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.MetricConstants;
-import wres.datamodel.metrics.Metrics;
+import wres.datamodel.metrics.ThresholdsByMetricAndFeature;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
@@ -29,14 +29,15 @@ import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.thresholds.ThresholdOuter;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
+import wres.statistics.generated.Threshold;
 
 /**
  * <p>
@@ -128,7 +129,7 @@ public abstract class MetricProcessor<S extends Pool<?>>
      * The metrics to process.
      */
 
-    final Metrics metrics;
+    final ThresholdsByMetricAndFeature metrics;
 
     /**
      * An {@link ExecutorService} used to process the thresholds.
@@ -137,22 +138,16 @@ public abstract class MetricProcessor<S extends Pool<?>>
     final ExecutorService thresholdExecutor;
 
     /**
-     * The number of decimal places to use when rounding.
-     */
-
-    private static final int DECIMALS = 5;
-
-    /**
      * Returns the metrics to process.
      * 
      * @return the metrics
      */
 
-    public Metrics getMetrics()
+    public ThresholdsByMetricAndFeature getMetrics()
     {
         return this.metrics;
     }
-    
+
     /**
      * Returns true if metrics are available for the input {@link SampleDataGroup} and {@link StatisticType}, false
      * otherwise.
@@ -165,7 +160,11 @@ public abstract class MetricProcessor<S extends Pool<?>>
 
     boolean hasMetrics( SampleDataGroup inGroup, StatisticType outGroup )
     {
-        return this.getMetrics().getThresholdsByMetric().hasMetrics( inGroup, outGroup );
+        return this.getMetrics()
+                   .getThresholdsByMetricAndFeature()
+                   .values()
+                   .stream()
+                   .anyMatch( next -> next.hasMetrics( inGroup, outGroup ) );
     }
 
     /**
@@ -177,7 +176,11 @@ public abstract class MetricProcessor<S extends Pool<?>>
 
     boolean hasMetrics( SampleDataGroup inGroup )
     {
-        return this.getMetrics().getThresholdsByMetric().hasMetrics( inGroup );
+        return this.getMetrics()
+                   .getThresholdsByMetricAndFeature()
+                   .values()
+                   .stream()
+                   .anyMatch( next -> next.hasMetrics( inGroup ) );
     }
 
     /**
@@ -189,7 +192,11 @@ public abstract class MetricProcessor<S extends Pool<?>>
 
     boolean hasMetrics( StatisticType outGroup )
     {
-        return this.getMetrics().getThresholdsByMetric().hasMetrics( outGroup );
+        return this.getMetrics()
+                   .getThresholdsByMetricAndFeature()
+                   .values()
+                   .stream()
+                   .anyMatch( next -> next.hasMetrics( outGroup ) );
     }
 
     /**
@@ -203,7 +210,7 @@ public abstract class MetricProcessor<S extends Pool<?>>
      * @throws NullPointerException if a required input is null
      */
 
-    MetricProcessor( Metrics metrics,
+    MetricProcessor( ThresholdsByMetricAndFeature metrics,
                      ExecutorService thresholdExecutor,
                      ExecutorService metricExecutor )
     {
@@ -321,89 +328,74 @@ public abstract class MetricProcessor<S extends Pool<?>>
     MetricConstants[] getMetrics( SampleDataGroup inGroup,
                                   StatisticType outGroup )
     {
-        Set<MetricConstants> returnMe = new HashSet<>( this.getMetrics()
-                                                           .getThresholdsByMetric()
-                                                           .getMetrics( inGroup, outGroup ) );
+        Set<MetricConstants> filtered = this.getMetrics()
+                                            .getThresholdsByMetricAndFeature()
+                                            .values()
+                                            .stream()
+                                            .flatMap( next -> next.getMetrics( inGroup, outGroup ).stream() )
+                                            .collect( Collectors.toCollection( HashSet::new ) );
 
         // Remove contingency table elements
-        returnMe.remove( MetricConstants.TRUE_POSITIVES );
-        returnMe.remove( MetricConstants.FALSE_POSITIVES );
-        returnMe.remove( MetricConstants.FALSE_NEGATIVES );
-        returnMe.remove( MetricConstants.TRUE_NEGATIVES );
+        filtered.remove( MetricConstants.TRUE_POSITIVES );
+        filtered.remove( MetricConstants.FALSE_POSITIVES );
+        filtered.remove( MetricConstants.FALSE_NEGATIVES );
+        filtered.remove( MetricConstants.TRUE_NEGATIVES );
 
-        return returnMe.toArray( new MetricConstants[returnMe.size()] );
+        return filtered.toArray( new MetricConstants[filtered.size()] );
     }
 
     /**
-     * Adds quantiles to the input thresholds and filters out any thresholds that differ by probability values only.
-     * @param input the pool
-     * @param thresholds the thresholds
-     * @return the filtered quantile thresholds
+     * Adds the prescribed threshold to the pool metadata.
+     * @param pool the pool
+     * @param threshold the threshold
+     * @return the pool with the input threshold in the metadata
+     * @throws NullPointerException if either input is null
      */
 
-    Set<ThresholdOuter> getUniqueThresholdsWithQuantiles( Pool<?> pool, Set<ThresholdOuter> thresholds )
+    <T> Pool<T> addThresholdToPoolMetadata( Pool<T> pool, OneOrTwoThresholds threshold )
     {
-        // Find the union across metrics and filter out non-unique thresholds
-        double[] sorted = this.getSortedClimatology( pool, thresholds );
-        Set<ThresholdOuter> returnMe = thresholds.stream()
-                                                 .map( next -> this.addQuantilesToThreshold( next, sorted ) )
-                                                 .collect( Collectors.toUnmodifiableSet() );
-        return Slicer.filter( returnMe );
-    }
+        Objects.requireNonNull( pool );
+        Objects.requireNonNull( threshold );
 
-    /**
-     * <p>Helper that inspects the {@link Pool#getClimatology()} and returns a sorted set of values when the 
-     * following two conditions are both met, otherwise <code>null</code>:
-     * 
-     * <ol>
-     * <li>The {@link Pool#hasClimatology()} returns <code>true</code>; and</li>
-     * <li>One or more of the input thresholds is a probability threshold according to 
-     * {@link ThresholdOuter#hasProbabilities()}.</li>
-     * </ol>
-     * 
-     * @param input the inputs pairs
-     * @param thresholds the thresholds to test
-     * @return a sorted array of values or null
-     */
+        PoolMetadata unadjustedMetadata = pool.getMetadata();
+        Threshold eventThreshold = MessageFactory.parse( threshold.first() );
+        wres.statistics.generated.Pool.Builder poolBuilder = unadjustedMetadata.getPool()
+                                                                               .toBuilder()
+                                                                               .setEventThreshold( eventThreshold );
 
-    private double[] getSortedClimatology( Pool<?> input, Set<ThresholdOuter> thresholds )
-    {
-        double[] sorted = null;
-        if ( this.hasProbabilityThreshold( thresholds ) && input.hasClimatology() )
+        Threshold decisionThreshold = null;
+        if ( threshold.hasTwo() )
         {
-            sorted = input.getClimatology().getDoubles();
-            Arrays.sort( sorted );
-        }
-        return sorted;
-    }
-
-    /**
-     * Adds the quantile values to the input threshold if the threshold contains probability values. This method is
-     * lenient with regard to the input type, returning the input threshold if it is not a 
-     * {@link ThresholdType#PROBABILITY_ONLY} type.
-     * 
-     * @param threshold the input threshold
-     * @param sorted a sorted set of values from which to determine the quantiles
-     * @return the threshold with quantiles added, if required
-     * @throws MetricCalculationException if the sorted array is null and quantiles are required
-     */
-
-    private ThresholdOuter addQuantilesToThreshold( ThresholdOuter threshold, double[] sorted )
-    {
-        if ( threshold.getType() != ThresholdType.PROBABILITY_ONLY )
-        {
-            return threshold;
-        }
-        if ( Objects.isNull( sorted ) )
-        {
-            throw new MetricCalculationException( "Unable to determine quantile threshold from probability "
-                                                  + "threshold: no climatological observations were available in "
-                                                  + "the input." );
+            decisionThreshold = MessageFactory.parse( threshold.second() );
+            poolBuilder.setDecisionThreshold( decisionThreshold );
         }
 
-        return Slicer.getQuantileFromProbability( threshold,
-                                                  sorted,
-                                                  DECIMALS );
+        PoolMetadata adjustedMetadata = PoolMetadata.of( unadjustedMetadata.getEvaluation(),
+                                                         poolBuilder.build() );
+        Pool.Builder<T> builder = new Pool.Builder<T>().addData( pool.get() )
+                                                       .setMetadata( adjustedMetadata )
+                                                       .setClimatology( pool.getClimatology() );
+
+        if ( pool.hasBaseline() )
+        {
+            wres.statistics.generated.Pool.Builder baselinePoolBuilder = pool.getBaselineData()
+                                                                             .getMetadata()
+                                                                             .getPool()
+                                                                             .toBuilder()
+                                                                             .setEventThreshold( eventThreshold );
+
+            if ( threshold.hasTwo() )
+            {
+                baselinePoolBuilder.setDecisionThreshold( decisionThreshold );
+            }
+            PoolMetadata adjustedMetadataForBaseline = PoolMetadata.of( unadjustedMetadata.getEvaluation(),
+                                                                        baselinePoolBuilder.build() );
+            builder.addDataForBaseline( pool.getBaselineData().get() )
+                   .setMetadataForBaseline( adjustedMetadataForBaseline );
+
+        }
+
+        return builder.build();
     }
 
 }

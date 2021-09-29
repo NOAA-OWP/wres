@@ -892,12 +892,14 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
         List<TimeSeries<L>> climData = climatologySupplier.get()
                                                           .collect( Collectors.toList() );
 
-        TimeSeries.Builder<L> builder = new TimeSeries.Builder<>();
-
         TimeSeriesMetadata existingMetadata = null;
+
+        List<TimeSeries<L>> returnMe = new ArrayList<>();
 
         for ( TimeSeries<L> next : climData )
         {
+            TimeSeries.Builder<L> builder = new TimeSeries.Builder<>();
+
             TimeSeries<L> nextSeries = next;
             TimeScaleOuter nextScale = nextSeries.getMetadata()
                                                  .getTimeScale();
@@ -940,20 +942,20 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
 
             existingMetadata = nextSeries.getMetadata();
             builder.addEvents( nextSeries.getEvents() );
+
+            TimeSeriesMetadata metadata =
+                    new TimeSeriesMetadata.Builder( existingMetadata ).setTimeScale( desiredTimeScale )
+                                                                      .build();
+            builder.setMetadata( metadata );
+
+            TimeSeries<L> climatologyAtScale = builder.build();
+
+            returnMe.add( climatologyAtScale );
         }
 
-        TimeSeriesMetadata metadata =
-                new TimeSeriesMetadata.Builder( existingMetadata ).setTimeScale( desiredTimeScale )
-                                                                  .build();
-        builder.setMetadata( metadata );
+        LOGGER.debug( "Created {} climatological time-series.", returnMe.size() );
 
-        TimeSeries<L> climatologyAtScale = builder.build();
-
-        LOGGER.debug( "Created a new climatological time-series {} with {} climatological values.",
-                      climatologyAtScale.hashCode(),
-                      climatologyAtScale.getEvents().size() );
-
-        return () -> Stream.of( climatologyAtScale );
+        return returnMe::stream;
     }
 
 }

@@ -182,7 +182,7 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<Pool<Pair<Doubl
     MeanSquareErrorSkillScore()
     {
         super();
-        sse = SumOfSquareError.of();
+        this.sse = SumOfSquareError.of();
     }
 
 }

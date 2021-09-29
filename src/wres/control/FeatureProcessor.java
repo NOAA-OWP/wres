@@ -21,20 +21,19 @@ import wres.config.generated.DatasourceType;
 import wres.config.generated.ProjectConfig;
 import wres.control.ProcessorHelper.EvaluationDetails;
 import wres.control.ProcessorHelper.Executors;
-import wres.control.ProcessorHelper.MetricsAndThresholds;
 import wres.control.ProcessorHelper.SharedWriters;
 import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.metrics.Metrics;
+import wres.datamodel.metrics.ThresholdsByMetricAndFeature;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.statistics.StatisticsForProject;
-import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.time.TimeSeries;
-import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.processing.MetricProcessor;
+import wres.engine.statistics.metric.processing.MetricProcessorByTimeEnsemblePairs;
+import wres.engine.statistics.metric.processing.MetricProcessorByTimeSingleValuedPairs;
 import wres.events.Evaluation;
 import wres.events.EvaluationEventUtilities;
 import wres.io.concurrency.Pipelines;
@@ -171,13 +170,11 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
     public FeatureProcessingResult get()
     {
         // Report
-        LOGGER.debug( "Started feature group '{}'", this.featureGroup );
+        LOGGER.debug( "Started feature group '{}'", this.getFeatureGroup() );
 
         ProjectConfig projectConfig = this.resolvedProject.getProjectConfig();
-        List<MetricsAndThresholds> metricsAndThresholds = this.resolvedProject.getMetricsAndThresholds();
-
-        // Get the metrics to process
-        List<Metrics> metrics = this.getMetrics( metricsAndThresholds );
+        List<ThresholdsByMetricAndFeature> thresholdsByMetricAndFeature =
+                this.resolvedProject.getThresholdsByMetricAndFeature();
 
         // TODO: do NOT rely on the declared type. Instead, determine it, post-ingest,
         // from the ResolvedProject. See #57301.
@@ -192,13 +189,13 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
             // Create a feature-shaped retriever factory to support retrieval for this project
             RetrieverFactory<Double, Ensemble> retrieverFactory = EnsembleRetrieverFactory.of( this.project,
-                                                                                               this.featureGroup,
+                                                                                               this.getFeatureGroup(),
                                                                                                this.unitMapper );
 
             List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> pools =
                     PoolFactory.getEnsemblePools( this.evaluation.getEvaluationDescription(),
                                                   this.project,
-                                                  this.featureGroup,
+                                                  this.getFeatureGroup(),
                                                   this.unitMapper,
                                                   retrieverFactory );
             this.monitor.setPoolCount( pools.size() );
@@ -216,8 +213,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             }
 
             List<MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors =
-                    this.getEnsembleProcessors( projectConfig,
-                                                metrics );
+                    this.getEnsembleProcessors( thresholdsByMetricAndFeature );
 
             return this.processFeature( this.evaluation,
                                         projectConfig,
@@ -255,8 +251,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             }
 
             List<MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
-                    this.getSingleValuedProcessors( projectConfig,
-                                                    metrics );
+                    this.getSingleValuedProcessors( thresholdsByMetricAndFeature );
 
             return this.processFeature( this.evaluation,
                                         projectConfig,
@@ -296,7 +291,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
         LOGGER.debug( "Submitting {} pools in group {} with identifier {} for asynchronous processing.",
                       pools.size(),
-                      this.featureGroup.getName(),
+                      this.getFeatureGroup().getName(),
                       this.getGroupIdForMessaging() );
 
         // Something published?
@@ -541,24 +536,24 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
     }
 
     /**
-     * @param projectConfig the project configuration
      * @param metrics the metrics
      * @return the ensemble processors
      * @throws MetricParameterException if any metric parameters are incorrect
      */
 
     private List<MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>>
-            getEnsembleProcessors( ProjectConfig projectConfig,
-                                   List<Metrics> metrics )
+            getEnsembleProcessors( List<ThresholdsByMetricAndFeature> metrics )
     {
         List<MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors = new ArrayList<>();
 
-        for ( Metrics nextMetrics : metrics )
+        for ( ThresholdsByMetricAndFeature nextMetrics : metrics )
         {
+            FeatureGroup featureGroup = this.getFeatureGroup();
+            ThresholdsByMetricAndFeature nextGroup = nextMetrics.getThresholdsByMetricAndFeature( featureGroup );
             MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> nextProcessor =
-                    MetricFactory.ofMetricProcessorForEnsemblePairs( nextMetrics,
-                                                                     this.executors.getThresholdExecutor(),
-                                                                     this.executors.getMetricExecutor() );
+                    new MetricProcessorByTimeEnsemblePairs( nextGroup,
+                                                            this.executors.getThresholdExecutor(),
+                                                            this.executors.getMetricExecutor() );
             processors.add( nextProcessor );
         }
 
@@ -566,53 +561,28 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
     }
 
     /**
-     * @param projectConfig the project configuration
      * @param metrics the metrics
      * @return the single-valued processors
      * @throws MetricParameterException if any metric parameters are incorrect
      */
 
     private List<MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>>>
-            getSingleValuedProcessors( ProjectConfig projectConfig,
-                                       List<Metrics> metrics )
+            getSingleValuedProcessors( List<ThresholdsByMetricAndFeature> metrics )
     {
         List<MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors = new ArrayList<>();
 
-        for ( Metrics nextMetrics : metrics )
+        for ( ThresholdsByMetricAndFeature nextMetrics : metrics )
         {
+            FeatureGroup featureGroup = this.getFeatureGroup();
+            ThresholdsByMetricAndFeature nextGroup = nextMetrics.getThresholdsByMetricAndFeature( featureGroup );
             MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>> nextProcessor =
-                    MetricFactory.ofMetricProcessorForSingleValuedPairs( nextMetrics,
-                                                                         this.executors.getThresholdExecutor(),
-                                                                         this.executors.getMetricExecutor() );
+                    new MetricProcessorByTimeSingleValuedPairs( nextGroup,
+                                                                this.executors.getThresholdExecutor(),
+                                                                this.executors.getMetricExecutor() );
             processors.add( nextProcessor );
         }
 
         return Collections.unmodifiableList( processors );
-    }
-
-    /**
-     * @param metricsAndThresholds the metrics and thresholds
-     * @return the metrics from the thresholds and metrics 
-     */
-
-    private List<Metrics> getMetrics( List<MetricsAndThresholds> metricsAndThresholds )
-    {
-        List<Metrics> metrics = new ArrayList<>();
-
-        // Select the first feature in the group to determine the thresholds. TODO: relax this assumption for
-        // feature pooling
-        FeatureTuple featureTuple = this.featureGroup.getFeatures()
-                                                     .iterator()
-                                                     .next();
-
-        for ( MetricsAndThresholds next : metricsAndThresholds )
-        {
-            ThresholdsByMetric thresholds = next.getThresholdsByMetric( featureTuple );
-            Metrics nextMetrics = Metrics.of( thresholds, next.getMinimumSampleSize() );
-            metrics.add( nextMetrics );
-        }
-
-        return Collections.unmodifiableList( metrics );
     }
 
     /**
@@ -640,6 +610,15 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                .getRight()
                                .size()
                            + 1 );
+    }
+
+    /**
+     * @return the feature group
+     */
+
+    private FeatureGroup getFeatureGroup()
+    {
+        return this.featureGroup;
     }
 
 }

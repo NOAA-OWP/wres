@@ -9,22 +9,17 @@ import java.util.concurrent.ForkJoinPool;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.config.MetricConfigException;
-import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.Ensemble;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.Probability;
 import wres.datamodel.metrics.MetricConstants;
-import wres.datamodel.metrics.Metrics;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
-import wres.datamodel.thresholds.ThresholdsByMetric;
-import wres.datamodel.thresholds.ThresholdsGenerator;
 import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.MetricCollection.Builder;
 import wres.engine.statistics.metric.categorical.ContingencyTable;
@@ -45,9 +40,6 @@ import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilityScore;
 import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilitySkillScore;
 import wres.engine.statistics.metric.ensemble.EnsembleQuantileQuantileDiagram;
 import wres.engine.statistics.metric.ensemble.RankHistogram;
-import wres.engine.statistics.metric.processing.MetricProcessor;
-import wres.engine.statistics.metric.processing.MetricProcessorByTimeEnsemblePairs;
-import wres.engine.statistics.metric.processing.MetricProcessorByTimeSingleValuedPairs;
 import wres.engine.statistics.metric.singlevalued.BiasFraction;
 import wres.engine.statistics.metric.singlevalued.BoxPlotError;
 import wres.engine.statistics.metric.singlevalued.BoxPlotPercentageError;
@@ -94,135 +86,6 @@ public final class MetricFactory
      */
 
     private static final String TEST_SEED_PROPERTY = "wres.systemTestSeed";
-
-    /**
-     * <p>Returns an instance of a {@link MetricProcessor} for processing single-valued pairs.
-     * 
-     * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
-     * 
-     * @param config the project configuration
-     * @return the processor
-     * @throws MetricConfigException if the metrics are configured incorrectly
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
-
-    public static MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>>
-            ofMetricProcessorForSingleValuedPairs( final ProjectConfig config )
-    {
-        ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( config );
-        Metrics metrics = Metrics.of( thresholdsByMetric, 0 );
-
-        return MetricFactory.ofMetricProcessorForSingleValuedPairs( metrics,
-                                                                    ForkJoinPool.commonPool(),
-                                                                    ForkJoinPool.commonPool() );
-    }
-
-    /**
-     * <p>Returns an instance of a {@link MetricProcessor} for processing ensemble pairs.
-     * 
-     * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
-     * 
-     * @param config the project configuration
-     * @return the processor
-     * @throws MetricConfigException if the metrics are configured incorrectly
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
-
-    public static MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>
-            ofMetricProcessorForEnsemblePairs( final ProjectConfig config )
-    {
-        ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( config );
-        Metrics metrics = Metrics.of( thresholdsByMetric, 0 );
-
-        return MetricFactory.ofMetricProcessorForEnsemblePairs( metrics,
-                                                                ForkJoinPool.commonPool(),
-                                                                ForkJoinPool.commonPool() );
-    }
-
-    /**
-     * <p>Returns an instance of a {@link MetricProcessor} for processing single-valued pairs.
-     * 
-     * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
-     * 
-     * @param metrics the metrics to process
-     * @return the processor
-     * @throws MetricConfigException if the metrics are configured incorrectly
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
-
-    public static MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>>
-            ofMetricProcessorForSingleValuedPairs( final Metrics metrics )
-    {
-        return MetricFactory.ofMetricProcessorForSingleValuedPairs( metrics,
-                                                                    ForkJoinPool.commonPool(),
-                                                                    ForkJoinPool.commonPool() );
-    }
-
-    /**
-     * <p>Returns an instance of a {@link MetricProcessor} for processing ensemble pairs.
-     * 
-     * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
-     * 
-     * @param metrics the metrics to process
-     * @return the processor
-     * @throws MetricConfigException if the metrics are configured incorrectly
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
-
-    public static MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>
-            ofMetricProcessorForEnsemblePairs( final Metrics metrics )
-    {
-        return MetricFactory.ofMetricProcessorForEnsemblePairs( metrics,
-                                                                ForkJoinPool.commonPool(),
-                                                                ForkJoinPool.commonPool() );
-    }
-
-
-    /**
-     * Returns an instance of a {@link MetricProcessor} for processing single-valued pairs.
-     * 
-     * @param metrics the metrics to process
-     * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
-     *            {@link ForkJoinPool#commonPool()}
-     * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
-     *            {@link ForkJoinPool#commonPool()}
-     * @return the processor
-     * @throws MetricConfigException if the metrics are configured incorrectly
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
-
-    public static MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>>
-            ofMetricProcessorForSingleValuedPairs( final Metrics metrics,
-                                                   final ExecutorService thresholdExecutor,
-                                                   final ExecutorService metricExecutor )
-    {
-        return new MetricProcessorByTimeSingleValuedPairs( metrics,
-                                                           thresholdExecutor,
-                                                           metricExecutor );
-    }
-
-    /**
-     * Returns an instance of a {@link MetricProcessor} for processing single-valued pairs.
-     * 
-     * @param metrics the metrics to process
-     * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
-     *            {@link ForkJoinPool#commonPool()}
-     * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
-     *            {@link ForkJoinPool#commonPool()}
-     * @return the processor
-     * @throws MetricConfigException if the metrics are configured incorrectly
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
-
-    public static MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>
-            ofMetricProcessorForEnsemblePairs( final Metrics metrics,
-                                               final ExecutorService thresholdExecutor,
-                                               final ExecutorService metricExecutor )
-    {
-        return new MetricProcessorByTimeEnsemblePairs( metrics,
-                                                       thresholdExecutor,
-                                                       metricExecutor );
-    }
 
     /**
      * <p>Returns a {@link MetricCollection} of metrics that consume single-valued pairs and produce

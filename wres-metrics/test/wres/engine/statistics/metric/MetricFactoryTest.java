@@ -4,32 +4,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
-import org.junit.Before;
 import org.junit.Test;
 
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DatasourceType;
-import wres.config.generated.DestinationConfig;
-import wres.config.generated.MetricConfig;
-import wres.config.generated.MetricConfigName;
-import wres.config.generated.MetricsConfig;
-import wres.config.generated.OutputTypeSelection;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.ProjectConfig.Inputs;
-import wres.config.generated.ProjectConfig.Outputs;
-import wres.config.generated.ThresholdDataType;
-import wres.config.generated.ThresholdOperator;
-import wres.config.generated.ThresholdType;
-import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.metrics.MetricConstants;
-import wres.datamodel.metrics.Metrics;
-import wres.datamodel.thresholds.ThresholdsByMetric;
-import wres.datamodel.thresholds.ThresholdsGenerator;
 import wres.engine.statistics.metric.categorical.EquitableThreatScore;
 import wres.engine.statistics.metric.categorical.PeirceSkillScore;
 import wres.engine.statistics.metric.categorical.ProbabilityOfDetection;
@@ -45,8 +23,6 @@ import wres.engine.statistics.metric.ensemble.BoxPlotErrorByObserved;
 import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilityScore;
 import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilitySkillScore;
 import wres.engine.statistics.metric.ensemble.RankHistogram;
-import wres.engine.statistics.metric.processing.MetricProcessorByTimeEnsemblePairs;
-import wres.engine.statistics.metric.processing.MetricProcessorByTimeSingleValuedPairs;
 import wres.engine.statistics.metric.singlevalued.BiasFraction;
 import wres.engine.statistics.metric.singlevalued.CoefficientOfDetermination;
 import wres.engine.statistics.metric.singlevalued.CorrelationPearsons;
@@ -75,24 +51,6 @@ public final class MetricFactoryTest
 
     private static final String UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN =
             "Unrecognized metric for identifier. 'MAIN'.";
-
-    /**
-     * Mocked single-valued configuration.
-     */
-
-    private ProjectConfig mockSingleValued;
-
-    /**
-     * Mocked single-valued configuration.
-     */
-
-    private ProjectConfig mockEnsemble;
-
-    @Before
-    public void setupBeforeEachTest()
-    {
-        setMockConfiguration();
-    }
 
     /**
      * Tests {@link MetricFactory#ofSingleValuedScore(MetricConstants)}. 
@@ -354,136 +312,6 @@ public final class MetricFactoryTest
     {
         assertTrue( Objects.nonNull( MetricFactory.ofSingleValuedTimeSeriesCollection( MetricConstants.TIME_TO_PEAK_ERROR ) ) );
         assertTrue( Objects.nonNull( MetricFactory.ofSingleValuedTimeSeriesCollection( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ) ) );
-    }
-
-    /**
-     * Tests the {@link MetricFactory#ofMetricProcessorForSingleValuedPairs(ProjectConfig, java.util.Set)}. 
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
-
-    @Test
-    public void testOfMetricProcessorByTimeSingleValuedPairs() throws MetricParameterException
-    {
-        assertTrue( MetricFactory.ofMetricProcessorForSingleValuedPairs( this.mockSingleValued ) instanceof MetricProcessorByTimeSingleValuedPairs );
-    }
-
-    /**
-     * Tests the {@link MetricFactory#ofMetricProcessorForEnsemblePairs(ProjectConfig, 
-     * wres.datamodel.ThresholdsByMetric, java.util.Set)}. 
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
-
-    @Test
-    public void testOfMetricProcessorByTimeEnsemblePairs() throws MetricParameterException
-    {
-        assertTrue( MetricFactory.ofMetricProcessorForEnsemblePairs( this.mockEnsemble ) instanceof MetricProcessorByTimeEnsemblePairs );
-    }
-
-    /**
-     * Tests the {@link MetricFactory#ofMetricProcessorForSingleValuedPairs(ProjectConfig, 
-     * wres.datamodel.ThresholdsByMetric, java.util.Set)}. 
-     * @throws IOException if the input configuration could not be read
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
-
-    @Test
-    public void testOfMetricProcessorByTimeSingleValuedPairsWithExternalThresholds()
-            throws MetricParameterException
-    {
-        ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( this.mockSingleValued );
-
-        Metrics metrics = Metrics.of( thresholdsByMetric, 0 );
-
-        assertTrue( MetricFactory.ofMetricProcessorForSingleValuedPairs( metrics ) instanceof MetricProcessorByTimeSingleValuedPairs );
-    }
-
-    /**
-     * Tests the {@link MetricFactory#ofMetricProcessorForEnsemblePairs(ProjectConfig, 
-     * wres.datamodel.ThresholdsByMetric, java.util.Set)}. 
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
-
-    @Test
-    public void testOfMetricProcessorByTimeEnsemblePairsWithExternalThresholds()
-            throws MetricParameterException
-    {
-        ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( this.mockEnsemble );
-
-        Metrics metrics = Metrics.of( thresholdsByMetric, 0 );
-
-        assertTrue( MetricFactory.ofMetricProcessorForEnsemblePairs( metrics ) instanceof MetricProcessorByTimeEnsemblePairs );
-    }
-
-    /**
-     * Generates mock configuration for testing.
-     */
-
-    private void setMockConfiguration()
-    {
-        // Mock several project configurations
-        List<MetricConfig> metrics = new ArrayList<>();
-        metrics.add( new MetricConfig( null, MetricConfigName.BIAS_FRACTION ) );
-        metrics.add( new MetricConfig( null, MetricConfigName.VOLUMETRIC_EFFICIENCY ) );
-        metrics.add( new MetricConfig( null, MetricConfigName.SUM_OF_SQUARE_ERROR ) );
-        metrics.add( new MetricConfig( null, MetricConfigName.MEAN_SQUARE_ERROR ) );
-        metrics.add( new MetricConfig( null, MetricConfigName.ROOT_MEAN_SQUARE_ERROR ) );
-        metrics.add( new MetricConfig( null, MetricConfigName.PEARSON_CORRELATION_COEFFICIENT ) );
-        metrics.add( new MetricConfig( null, MetricConfigName.COEFFICIENT_OF_DETERMINATION ) );
-
-        mockSingleValued =
-                new ProjectConfig( new Inputs( null,
-                                               new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null ),
-                                               null ),
-                                   null,
-                                   Arrays.asList( new MetricsConfig( null, 0, metrics, null ) ),
-                                   null,
-                                   null,
-                                   null );
-
-        // Add a threshold-dependent metric for the ensemble mock
-        metrics.add( new MetricConfig( null, MetricConfigName.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM ) );
-
-        // Mock some thresholds
-        List<ThresholdsConfig> thresholds = new ArrayList<>();
-        thresholds.add( new ThresholdsConfig( ThresholdType.PROBABILITY,
-                                              ThresholdDataType.LEFT,
-                                              "0.1,0.2,0.3",
-                                              ThresholdOperator.GREATER_THAN ) );
-
-        mockEnsemble =
-                new ProjectConfig( new Inputs( null,
-                                               new DataSourceConfig( DatasourceType.ENSEMBLE_FORECASTS,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null ),
-                                               null ),
-                                   null,
-                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
-                                   new Outputs( Arrays.asList( new DestinationConfig( OutputTypeSelection.THRESHOLD_LEAD,
-                                                                                      null,
-                                                                                      null,
-                                                                                      null,
-                                                                                      null ) ),
-                                                null ),
-                                   null,
-                                   null );
     }
 
 }

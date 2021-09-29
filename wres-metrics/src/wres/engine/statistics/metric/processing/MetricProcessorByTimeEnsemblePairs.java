@@ -25,11 +25,10 @@ import wres.datamodel.Probability;
 import wres.datamodel.Slicer;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
-import wres.datamodel.pools.Pool.Builder;
+import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.metrics.MetricConstants;
-import wres.datamodel.metrics.Metrics;
+import wres.datamodel.metrics.ThresholdsByMetricAndFeature;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
@@ -40,6 +39,7 @@ import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
+import wres.datamodel.thresholds.ThresholdSlicer;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.time.TimeSeries;
@@ -150,7 +150,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         {
             //Derive the single-valued pairs from the ensemble pairs using the configured mapper
             Pool<Pair<Double, Double>> singleValued =
-                    PoolSlicer.transform( inputNoMissing, toSingleValues );
+                    PoolSlicer.transform( inputNoMissing, this.toSingleValues );
 
             super.processSingleValuedPairs( singleValued, futures );
         }
@@ -189,7 +189,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
      * @throws NullPointerException if a required input is null
      */
 
-    public MetricProcessorByTimeEnsemblePairs( Metrics metrics,
+    public MetricProcessorByTimeEnsemblePairs( ThresholdsByMetricAndFeature metrics,
                                                ExecutorService thresholdExecutor,
                                                ExecutorService metricExecutor )
     {
@@ -394,61 +394,55 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
      * Processes all thresholds for metrics that consume ensemble pairs and produce a specified 
      * {@link StatisticType}. 
      * 
-     * @param input the input pairs
+     * @param pool the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processEnsemblePairsByThreshold( Pool<Pair<Double, Ensemble>> input,
+    private void processEnsemblePairsByThreshold( Pool<Pair<Double, Ensemble>> pool,
                                                   MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                   StatisticType outGroup )
     {
-        // Find the thresholds for this group and for the required types
-        ThresholdsByMetric filtered = super.getMetrics().getThresholdsByMetric()
-                                                        .filterByGroup( SampleDataGroup.ENSEMBLE, outGroup )
-                                                        .filterByGroup( ThresholdGroup.PROBABILITY,
-                                                                        ThresholdGroup.VALUE );
 
-        // Find the union across metrics and filter out non-unique thresholds
-        Set<ThresholdOuter> union = filtered.union();
-        union = super.getUniqueThresholdsWithQuantiles( input, union );
+        // Filter the thresholds for this group and for the required types
+        Map<FeatureTuple, ThresholdsByMetric> filtered = super.getMetrics().getThresholdsByMetricAndFeature();
+        filtered = ThresholdSlicer.filterByGroup( filtered,
+                                                  SampleDataGroup.ENSEMBLE,
+                                                  outGroup,
+                                                  ThresholdGroup.PROBABILITY,
+                                                  ThresholdGroup.VALUE );
+
+        // Unpack the thresholds and add the quantiles
+        Map<FeatureTuple, Set<ThresholdOuter>> unpacked = ThresholdSlicer.unpack( filtered );
+        Map<FeatureTuple, Set<ThresholdOuter>> withQuantiles =
+                ThresholdSlicer.addQuantiles( unpacked, pool, PoolSlicer.getFeatureMapper() );
+
+        // Find the unique thresholds by value
+        Map<FeatureTuple, Set<ThresholdOuter>> unique =
+                ThresholdSlicer.filter( withQuantiles, ThresholdSlicer::filter );
+
+        // Decompose the thresholds by common type across features
+        List<Map<FeatureTuple, ThresholdOuter>> decomposedThresholds = ThresholdSlicer.decompose( unique );
 
         // Iterate the thresholds
-        for ( ThresholdOuter threshold : union )
+        for ( Map<FeatureTuple, ThresholdOuter> thresholds : decomposedThresholds )
         {
-            OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( threshold );
+            Map<FeatureTuple, Predicate<Pair<Double, Ensemble>>> slicers =
+                    ThresholdSlicer.getFiltersFromThresholds( thresholds,
+                                                              MetricProcessorByTimeEnsemblePairs::getFilterForEnsemblePairs );
 
-            // Add the threshold to the metadata, in order to fully qualify the pairs
-            PoolMetadata baselineMeta = null;
-            if ( input.hasBaseline() )
-            {
-                baselineMeta = PoolMetadata.of( input.getBaselineData().getMetadata(), oneOrTwo );
-            }
+            Pool<Pair<Double, Ensemble>> sliced = PoolSlicer.filter( pool,
+                                                                     slicers,
+                                                                     PoolSlicer.getFeatureMapper() );
 
-            //Filter the pairs if required
-            Pool<Pair<Double, Ensemble>> pairs = input;
+            // Add the threshold to the metadata
+            ThresholdOuter composed = ThresholdSlicer.compose( Set.copyOf( thresholds.values() ) );
+            sliced = this.addThresholdToPoolMetadata( sliced, OneOrTwoThresholds.of( composed ) );
 
-            if ( threshold.isFinite() )
-            {
-                Predicate<Pair<Double, Ensemble>> filter =
-                        MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( threshold );
-
-                pairs = PoolSlicer.filter( pairs, filter, null );
-            }
-
-            Builder<Pair<Double, Ensemble>> builder = new Builder<>();
-            pairs = builder.addPool( pairs )
-                           .setMetadata( PoolMetadata.of( pairs.getMetadata(),
-                                                          oneOrTwo ) )
-                           .setMetadataForBaseline( baselineMeta )
-                           .build();
-
-
-            this.processEnsemblePairs( pairs,
+            this.processEnsemblePairs( sliced,
                                        futures,
                                        outGroup );
-
         }
     }
 
@@ -539,54 +533,59 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
      * Processes all thresholds for metrics that consume discrete probability pairs for a given {@link StatisticType}. 
      * The discrete probability pairs are produced from ensemble pairs using a configured transformation. 
      * 
-     * @param input the input pairs
+     * @param pool the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processDiscreteProbabilityPairsByThreshold( Pool<Pair<Double, Ensemble>> input,
+    private void processDiscreteProbabilityPairsByThreshold( Pool<Pair<Double, Ensemble>> pool,
                                                              MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                              StatisticType outGroup )
     {
-        // Find the thresholds for this group and for the required types
-        ThresholdsByMetric filtered = super.getMetrics().getThresholdsByMetric()
-                                                        .filterByGroup( SampleDataGroup.DISCRETE_PROBABILITY, outGroup )
-                                                        .filterByGroup( ThresholdGroup.PROBABILITY,
-                                                                        ThresholdGroup.VALUE );
+        // Filter the thresholds for this group and for the required types
+        Map<FeatureTuple, ThresholdsByMetric> filtered = super.getMetrics().getThresholdsByMetricAndFeature();
+        filtered = ThresholdSlicer.filterByGroup( filtered,
+                                                  SampleDataGroup.DISCRETE_PROBABILITY,
+                                                  outGroup,
+                                                  ThresholdGroup.PROBABILITY,
+                                                  ThresholdGroup.VALUE );
 
-        // Find the union across metrics and filter out non-unique thresholds
-        Set<ThresholdOuter> union = filtered.union();
-        union = super.getUniqueThresholdsWithQuantiles( input, union );
+        // Unpack the thresholds and add the quantiles
+        Map<FeatureTuple, Set<ThresholdOuter>> unpacked = ThresholdSlicer.unpack( filtered );
+        Map<FeatureTuple, Set<ThresholdOuter>> withQuantiles =
+                ThresholdSlicer.addQuantiles( unpacked, pool, PoolSlicer.getFeatureMapper() );
+
+        // Find the unique thresholds by value
+        Map<FeatureTuple, Set<ThresholdOuter>> unique =
+                ThresholdSlicer.filter( withQuantiles, ThresholdSlicer::filter );
+
+        // Decompose the thresholds by common type across features
+        List<Map<FeatureTuple, ThresholdOuter>> decomposedThresholds = ThresholdSlicer.decompose( unique );
+
+        //Define a mapper to convert the single-valued pairs to dichotomous pairs
+        Function<ThresholdOuter, Function<Pair<Double, Ensemble>, Pair<Probability, Probability>>> transformerGenerator =
+                threshold -> pair -> Slicer.toDiscreteProbabilityPair( pair, threshold );
 
         // Iterate the thresholds
-        for ( ThresholdOuter threshold : union )
+        for ( Map<FeatureTuple, ThresholdOuter> thresholds : decomposedThresholds )
         {
-            OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( threshold );
+            Map<FeatureTuple, Function<Pair<Double, Ensemble>, Pair<Probability, Probability>>> transformers =
+                    ThresholdSlicer.getTransformersFromThresholds( thresholds,
+                                                                   transformerGenerator );
 
-            // Transform the pairs
-            Function<Pair<Double, Ensemble>, Pair<Probability, Probability>> transformer =
-                    pair -> Slicer.toDiscreteProbabilityPair( pair, threshold );
+            //Transform the pairs
+            Pool<Pair<Probability, Probability>> transformed = PoolSlicer.transform( pool,
+                                                                                     transformers,
+                                                                                     PoolSlicer.getFeatureMapper() );
 
-            Pool<Pair<Probability, Probability>> transformed = PoolSlicer.transform( input, transformer );
-
-            // Add the threshold to the metadata, in order to fully qualify the pairs
-            PoolMetadata baselineMeta = null;
-            if ( input.hasBaseline() )
-            {
-                baselineMeta = PoolMetadata.of( transformed.getBaselineData().getMetadata(), oneOrTwo );
-            }
-
-            Builder<Pair<Probability, Probability>> builder = new Builder<>();
-            transformed = builder.addPool( transformed )
-                                 .setMetadata( PoolMetadata.of( transformed.getMetadata(), oneOrTwo ) )
-                                 .setMetadataForBaseline( baselineMeta )
-                                 .build();
+            // Add the threshold to the metadata
+            ThresholdOuter composed = ThresholdSlicer.compose( Set.copyOf( thresholds.values() ) );
+            transformed = this.addThresholdToPoolMetadata( transformed, OneOrTwoThresholds.of( composed ) );
 
             this.processDiscreteProbabilityPairs( transformed,
                                                   futures,
                                                   outGroup );
-
         }
     }
 
@@ -718,61 +717,86 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
      * Processes all thresholds for metrics that consume dichotomous pairs for a given {@link StatisticType}. The 
      * dichotomous pairs are produced from the input ensemble pairs using a configured transformation. 
      * 
-     * @param input the input pairs
+     * @param pool the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processDichotomousPairsByThreshold( Pool<Pair<Double, Ensemble>> input,
+    private void processDichotomousPairsByThreshold( Pool<Pair<Double, Ensemble>> pool,
                                                      MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                      StatisticType outGroup )
     {
-        // Find the thresholds filtered by group
-        ThresholdsByMetric filtered = super.getMetrics().getThresholdsByMetric()
-                                                        .filterByGroup( SampleDataGroup.DICHOTOMOUS, outGroup );
+        // Filter the thresholds for this group and for the required types
+        Map<FeatureTuple, ThresholdsByMetric> filtered = super.getMetrics().getThresholdsByMetricAndFeature();
+        filtered = ThresholdSlicer.filterByGroup( filtered,
+                                                  SampleDataGroup.DICHOTOMOUS,
+                                                  outGroup,
+                                                  ThresholdGroup.PROBABILITY,
+                                                  ThresholdGroup.VALUE );
 
-        // Find the union across metrics and filter out non-unique thresholds
-        Set<ThresholdOuter> union = filtered.union( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
-        union = super.getUniqueThresholdsWithQuantiles( input, union );
+        // Unpack the thresholds and add the quantiles
+        Map<FeatureTuple, Set<ThresholdOuter>> unpacked = ThresholdSlicer.unpack( filtered );
+        Map<FeatureTuple, Set<ThresholdOuter>> withQuantiles =
+                ThresholdSlicer.addQuantiles( unpacked, pool, PoolSlicer.getFeatureMapper() );
+
+        // Find the unique thresholds by value
+        Map<FeatureTuple, Set<ThresholdOuter>> unique =
+                ThresholdSlicer.filter( withQuantiles, ThresholdSlicer::filter );
+
+        // Decompose the thresholds by common type across features
+        List<Map<FeatureTuple, ThresholdOuter>> decomposedThresholds = ThresholdSlicer.decompose( unique );
+
+        //Define a mapper to convert the single-valued pairs to dichotomous pairs
+        Function<ThresholdOuter, Function<Pair<Double, Ensemble>, Pair<Probability, Probability>>> transformerGenerator =
+                threshold -> pair -> Slicer.toDiscreteProbabilityPair( pair, threshold );
 
         // Iterate the thresholds
-        for ( ThresholdOuter outerThreshold : union )
+        for ( Map<FeatureTuple, ThresholdOuter> thresholds : decomposedThresholds )
         {
-            // Transform the pairs to probabilities first
-            // Transform the pairs
-            Function<Pair<Double, Ensemble>, Pair<Probability, Probability>> transformer =
-                    pair -> Slicer.toDiscreteProbabilityPair( pair, outerThreshold );
+            Map<FeatureTuple, Function<Pair<Double, Ensemble>, Pair<Probability, Probability>>> transformers =
+                    ThresholdSlicer.getTransformersFromThresholds( thresholds,
+                                                                   transformerGenerator );
 
-            Pool<Pair<Probability, Probability>> transformed = PoolSlicer.transform( input, transformer );
+            // Transform the outer pairs
+            Pool<Pair<Probability, Probability>> transformed = PoolSlicer.transform( pool,
+                                                                                     transformers,
+                                                                                     PoolSlicer.getFeatureMapper() );
 
-            // Find the union of classifiers across all metrics   
-            Set<ThresholdOuter> classifiers = filtered.union( ThresholdGroup.PROBABILITY_CLASSIFIER );
+            // Get the composed threshold for the metadata
+            ThresholdOuter composedOuter = ThresholdSlicer.compose( Set.copyOf( thresholds.values() ) );
 
-            for ( ThresholdOuter innerThreshold : classifiers )
+            // Filter the thresholds for this group and for the required types
+            Map<FeatureTuple, ThresholdsByMetric> classifiers = super.getMetrics().getThresholdsByMetricAndFeature();
+
+            classifiers = ThresholdSlicer.filterByGroup( classifiers,
+                                                         SampleDataGroup.DICHOTOMOUS,
+                                                         outGroup,
+                                                         ThresholdGroup.PROBABILITY_CLASSIFIER );
+            
+            Map<FeatureTuple, Set<ThresholdOuter>> unpackedInner = ThresholdSlicer.unpack( classifiers );
+            List<Map<FeatureTuple, ThresholdOuter>> decomposedInner = ThresholdSlicer.decompose( unpackedInner );
+
+            //Define a mapper to convert the discrete probability pairs to dichotomous pairs
+            Function<ThresholdOuter, Function<Pair<Probability, Probability>, Pair<Boolean, Boolean>>> innerTransformerGenerator =
+                    threshold -> pair -> Pair.of( threshold.test( pair.getLeft().getProbability() ),
+                                                  threshold.test( pair.getRight().getProbability() ) );
+
+            for ( Map<FeatureTuple, ThresholdOuter> innerThresholds : decomposedInner )
             {
-                // Derive compound threshold from outerThreshold and innerThreshold
-                OneOrTwoThresholds compound = OneOrTwoThresholds.of( outerThreshold, innerThreshold );
+                Map<FeatureTuple, Function<Pair<Probability, Probability>, Pair<Boolean, Boolean>>> innerTransformers =
+                        ThresholdSlicer.getTransformersFromThresholds( innerThresholds,
+                                                                       innerTransformerGenerator );
 
-                //Define a mapper to convert the discrete probability pairs to dichotomous pairs
-                Function<Pair<Probability, Probability>, Pair<Boolean, Boolean>> mapper =
-                        pair -> Pair.of( innerThreshold.test( pair.getLeft().getProbability() ),
-                                         innerThreshold.test( pair.getRight().getProbability() ) );
-                //Transform the pairs
-                Pool<Pair<Boolean, Boolean>> dichotomous = PoolSlicer.transform( transformed, mapper );
+                //Transform the inner pairs
+                Pool<Pair<Boolean, Boolean>> dichotomous = PoolSlicer.transform( transformed,
+                                                                                 innerTransformers,
+                                                                                 PoolSlicer.getFeatureMapper() );
 
-                // Add the threshold to the metadata, in order to fully qualify the pairs
-                PoolMetadata baselineMeta = null;
-                if ( input.hasBaseline() )
-                {
-                    baselineMeta = PoolMetadata.of( dichotomous.getBaselineData().getMetadata(), compound );
-                }
-
-                Builder<Pair<Boolean, Boolean>> builder = new Builder<>();
-                dichotomous = builder.addPool( dichotomous )
-                                     .setMetadata( PoolMetadata.of( dichotomous.getMetadata(), compound ) )
-                                     .setMetadataForBaseline( baselineMeta )
-                                     .build();
+                // Add the threshold to the metadata
+                ThresholdOuter composedInner = ThresholdSlicer.compose( Set.copyOf( innerThresholds.values() ) );
+                dichotomous = this.addThresholdToPoolMetadata( dichotomous,
+                                                               OneOrTwoThresholds.of( composedOuter, composedInner ) );
 
                 super.processDichotomousPairs( dichotomous, futures, outGroup );
             }
@@ -819,12 +843,15 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
             // Thresholds required for dichotomous and probability metrics
             for ( MetricConstants next : super.getMetrics().getMetrics() )
             {
+                // Thresholds required for dichotomous metrics
                 if ( ( next.isInGroup( SampleDataGroup.DICHOTOMOUS )
                        || next.isInGroup( SampleDataGroup.DISCRETE_PROBABILITY ) )
-                     && !super.getMetrics().getThresholdsByMetric()
-                                           .hasThresholdsForThisMetricAndTheseTypes( next,
-                                                                                     ThresholdGroup.PROBABILITY,
-                                                                                     ThresholdGroup.VALUE ) )
+                     && super.getMetrics().getThresholdsByMetricAndFeature()
+                                          .values()
+                                          .stream()
+                                          .noneMatch( thresholds -> thresholds.hasThresholdsForThisMetricAndTheseTypes( next,
+                                                                                                                        ThresholdGroup.PROBABILITY,
+                                                                                                                        ThresholdGroup.VALUE ) ) )
                 {
                     throw new MetricConfigException( "Cannot configure '" + next
                                                      + "' without thresholds to define the events: "
@@ -851,8 +878,13 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         // have thresholds of type ThresholdType.PROBABILITY_CLASSIFIER
         // Check that the relevant parameters have been set first
         Map<MetricConstants, Set<ThresholdOuter>> probabilityClassifiers =
-                super.getMetrics().getThresholdsByMetric()
-                                  .getThresholds( ThresholdGroup.PROBABILITY_CLASSIFIER );
+                super.getMetrics().getThresholdsByMetricAndFeature()
+                                  .values()
+                                  .stream()
+                                  .flatMap( next -> next.getThresholds( ThresholdGroup.PROBABILITY_CLASSIFIER )
+                                                        .entrySet()
+                                                        .stream() )
+                                  .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
 
         // Multicategory
         if ( this.hasMetrics( SampleDataGroup.MULTICATEGORY ) )

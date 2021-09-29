@@ -673,10 +673,7 @@ public class WriterTestHelper
 
         TimeWindowOuter timeOne = TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
 
-        OneOrTwoThresholds thresholdOne =
-                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
+        OneOrTwoThresholds thresholdOne = OneOrTwoThresholds.of( ThresholdOuter.ALL_DATA );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "HEFS" )

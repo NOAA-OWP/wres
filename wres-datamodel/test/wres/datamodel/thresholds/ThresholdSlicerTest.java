@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,6 +41,9 @@ import wres.statistics.generated.GeometryTuple;
 class ThresholdSlicerTest
 {
 
+    private static final String CMS = "CMS";
+    private static final String FLOOD = "FLOOD";
+
     @Test
     void testDecompose()
     {
@@ -50,13 +54,13 @@ class ThresholdSlicerTest
                                                          Operator.GREATER,
                                                          ThresholdDataType.LEFT,
                                                          "ACTION",
-                                                         MeasurementUnit.of( "CMS" ) );
+                                                         MeasurementUnit.of( CMS ) );
 
         ThresholdOuter anotherThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( 2.0 ),
                                                              Operator.GREATER,
                                                              ThresholdDataType.LEFT,
-                                                             "FLOOD",
-                                                             MeasurementUnit.of( "CMS" ) );
+                                                             FLOOD,
+                                                             MeasurementUnit.of( CMS ) );
 
         Set<ThresholdOuter> someThresholds = Set.of( oneThreshold, anotherThreshold );
 
@@ -64,13 +68,13 @@ class ThresholdSlicerTest
                                                              Operator.GREATER,
                                                              ThresholdDataType.LEFT,
                                                              "ACTION",
-                                                             MeasurementUnit.of( "CMS" ) );
+                                                             MeasurementUnit.of( CMS ) );
 
         ThresholdOuter yetAnotherThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( 4.0 ),
                                                                 Operator.GREATER,
                                                                 ThresholdDataType.LEFT,
-                                                                "FLOOD",
-                                                                MeasurementUnit.of( "CMS" ) );
+                                                                FLOOD,
+                                                                MeasurementUnit.of( CMS ) );
 
         Set<ThresholdOuter> someMoreThresholds = Set.of( oneMoreThreshold, yetAnotherThreshold );
 
@@ -229,6 +233,190 @@ class ThresholdSlicerTest
                                                                     ThresholdDataType.LEFT ) ) );
 
         assertEquals( expected, actual );
+    }
+
+    @Test
+    void testCompose()
+    {
+        ThresholdOuter first = ThresholdOuter.of( OneOrTwoDoubles.of( 100.0 ),
+                                                  Operator.GREATER,
+                                                  ThresholdDataType.RIGHT,
+                                                  FLOOD,
+                                                  MeasurementUnit.of( CMS ) );
+
+        ThresholdOuter second = ThresholdOuter.of( OneOrTwoDoubles.of( 1000.0 ),
+                                                   Operator.GREATER,
+                                                   ThresholdDataType.RIGHT,
+                                                   FLOOD,
+                                                   MeasurementUnit.of( CMS ) );
+
+        ThresholdOuter actual = ThresholdSlicer.compose( Set.of( first, second ) );
+
+        ThresholdOuter expected = ThresholdOuter.of( OneOrTwoDoubles.of( Double.NaN ),
+                                                     Operator.GREATER,
+                                                     ThresholdDataType.RIGHT,
+                                                     FLOOD,
+                                                     MeasurementUnit.of( CMS ) );
+
+        assertEquals( expected, actual );
+
+        ThresholdOuter third = ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
+                                                                      Operator.GREATER,
+                                                                      ThresholdDataType.RIGHT,
+                                                                      "aThreshold" );
+
+        ThresholdOuter fourth = ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
+                                                                       Operator.GREATER,
+                                                                       ThresholdDataType.RIGHT,
+                                                                       "anotherThreshold" );
+
+        ThresholdOuter actualTwo = ThresholdSlicer.compose( Set.of( third, fourth ) );
+
+        ThresholdOuter expectedTwo = ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
+                                                                            Operator.GREATER,
+                                                                            ThresholdDataType.RIGHT );
+
+        assertEquals( expectedTwo, actualTwo );
+
+        ThresholdOuter fifth = ThresholdOuter.of( OneOrTwoDoubles.of( 1269.0 ),
+                                                  Operator.LESS,
+                                                  ThresholdDataType.RIGHT,
+                                                  "aThreshold",
+                                                  MeasurementUnit.of( CMS ) );
+
+        ThresholdOuter sixth = ThresholdOuter.of( OneOrTwoDoubles.of( 1269.0 ),
+                                                  Operator.LESS,
+                                                  ThresholdDataType.RIGHT,
+                                                  "anotherThreshold",
+                                                  MeasurementUnit.of( CMS ) );
+
+        ThresholdOuter actualThree = ThresholdSlicer.compose( Set.of( fifth, sixth ) );
+
+        ThresholdOuter expectedThree = ThresholdOuter.of( OneOrTwoDoubles.of( 1269.0 ),
+                                                          Operator.LESS,
+                                                          ThresholdDataType.RIGHT,
+                                                          MeasurementUnit.of( CMS ) );
+
+        assertEquals( expectedThree, actualThree );
+
+        ThresholdOuter seventh = ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 1269.0 ),
+                                                                     OneOrTwoDoubles.of( 0.83 ),
+                                                                     Operator.LESS,
+                                                                     ThresholdDataType.RIGHT,
+                                                                     "aThreshold",
+                                                                     MeasurementUnit.of( CMS ) );
+
+        ThresholdOuter eighth = ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 1269.0 ),
+                                                                    OneOrTwoDoubles.of( 0.83 ),
+                                                                    Operator.LESS,
+                                                                    ThresholdDataType.RIGHT,
+                                                                    "anotherThreshold",
+                                                                    MeasurementUnit.of( CMS ) );
+
+        ThresholdOuter actualFour = ThresholdSlicer.compose( Set.of( seventh, eighth ) );
+
+        ThresholdOuter expectedFour = ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 1269.0 ),
+                                                                          OneOrTwoDoubles.of( 0.83 ),
+                                                                          Operator.LESS,
+                                                                          ThresholdDataType.RIGHT,
+                                                                          null,
+                                                                          MeasurementUnit.of( CMS ) );
+
+        assertEquals( expectedFour, actualFour );
+    }
+
+    @Test
+    public void testFilterByThresholdValuesAndNames()
+    {
+        // Same values, different probabilities
+        Set<ThresholdOuter> input = new HashSet<>();
+        ThresholdOuter first = new ThresholdOuter.Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
+                                                           .setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
+                                                           .setOperator( Operator.GREATER_EQUAL )
+                                                           .setDataType( ThresholdDataType.LEFT )
+                                                           .build();
+        ThresholdOuter second = new ThresholdOuter.Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
+                                                            .setProbabilities( OneOrTwoDoubles.of( 0.3 ) )
+                                                            .setOperator( Operator.GREATER_EQUAL )
+                                                            .setDataType( ThresholdDataType.LEFT )
+                                                            .build();
+
+        input.add( first );
+        input.add( second );
+
+        Set<ThresholdOuter> actual = ThresholdSlicer.filter( Collections.unmodifiableSet( input ) );
+        Set<ThresholdOuter> expected = Set.of( second );
+
+        assertEquals( expected, actual );
+
+        // Same values with different units and different probabilities
+        Set<ThresholdOuter> anotherInput = new HashSet<>();
+        ThresholdOuter anotherFirst = new ThresholdOuter.Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
+                                                                  .setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
+                                                                  .setUnits( MeasurementUnit.of( "UNIT" ) )
+                                                                  .setOperator( Operator.GREATER_EQUAL )
+                                                                  .setDataType( ThresholdDataType.LEFT )
+                                                                  .build();
+        ThresholdOuter anotherSecond = new ThresholdOuter.Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
+                                                                   .setProbabilities( OneOrTwoDoubles.of( 0.3 ) )
+                                                                   .setUnits( MeasurementUnit.of( "OTHER_UNIT" ) )
+                                                                   .setOperator( Operator.GREATER_EQUAL )
+                                                                   .setDataType( ThresholdDataType.LEFT )
+                                                                   .build();
+
+        anotherInput.add( anotherFirst );
+        anotherInput.add( anotherSecond );
+
+        Set<ThresholdOuter> anotherActual = ThresholdSlicer.filter( Collections.unmodifiableSet( anotherInput ) );
+        Set<ThresholdOuter> anotherExpected = Set.of( anotherFirst, anotherSecond );
+
+        assertEquals( anotherExpected, anotherActual );
+
+        // Same values with same units and different probabilities and names
+        Set<ThresholdOuter> yetAnotherInput = new HashSet<>();
+        ThresholdOuter yetAnotherFirst = new ThresholdOuter.Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
+                                                                     .setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
+                                                                     .setUnits( MeasurementUnit.of( "UNIT" ) )
+                                                                     .setOperator( Operator.GREATER_EQUAL )
+                                                                     .setDataType( ThresholdDataType.LEFT )
+                                                                     .setLabel( "name" )
+                                                                     .build();
+        ThresholdOuter yetAnotherSecond = new ThresholdOuter.Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
+                                                                      .setProbabilities( OneOrTwoDoubles.of( 0.3 ) )
+                                                                      .setUnits( MeasurementUnit.of( "UNIT" ) )
+                                                                      .setOperator( Operator.GREATER_EQUAL )
+                                                                      .setDataType( ThresholdDataType.LEFT )
+                                                                      .setLabel( "anotherName" )
+                                                                      .build();
+
+        yetAnotherInput.add( yetAnotherFirst );
+        yetAnotherInput.add( yetAnotherSecond );
+
+        Set<ThresholdOuter> yetAnotherActual = ThresholdSlicer.filter( Collections.unmodifiableSet( yetAnotherInput ) );
+        Set<ThresholdOuter> yetAnotherExpected = Set.of( yetAnotherFirst, yetAnotherSecond );
+
+        assertEquals( yetAnotherExpected, yetAnotherActual );
+
+        // No values with different probabilities
+        Set<ThresholdOuter> oneMoreInput = new HashSet<>();
+        ThresholdOuter oneMoreFirst = new ThresholdOuter.Builder().setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
+                                                                  .setUnits( MeasurementUnit.of( "UNIT" ) )
+                                                                  .setOperator( Operator.GREATER_EQUAL )
+                                                                  .setDataType( ThresholdDataType.LEFT )
+                                                                  .build();
+        ThresholdOuter oneMoreSecond = new ThresholdOuter.Builder().setProbabilities( OneOrTwoDoubles.of( 0.3 ) )
+                                                                   .setUnits( MeasurementUnit.of( "UNIT" ) )
+                                                                   .setOperator( Operator.GREATER_EQUAL )
+                                                                   .setDataType( ThresholdDataType.LEFT )
+                                                                   .build();
+
+        oneMoreInput.add( oneMoreFirst );
+        oneMoreInput.add( oneMoreSecond );
+
+        Set<ThresholdOuter> oneMoreActual = ThresholdSlicer.filter( Collections.unmodifiableSet( oneMoreInput ) );
+        Set<ThresholdOuter> oneMoreExpected = Set.of( oneMoreFirst, oneMoreSecond );
+
+        assertEquals( oneMoreExpected, oneMoreActual );
     }
 
 }

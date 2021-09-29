@@ -255,8 +255,8 @@ class PoolTest
                                                         .setClimatology( VectorOfDoubles.of( 4, 5, 6 ) )
                                                         .build();
 
-        Pool<String> actual = new Builder<String>().addPool( this.testPool )
-                                                   .addPool( anotherPool )
+        Pool<String> actual = new Builder<String>().addPool( this.testPool, true )
+                                                   .addPool( anotherPool, true )
                                                    .build();
 
         Pool<String> expected =
@@ -282,12 +282,11 @@ class PoolTest
                                                         .setClimatology( VectorOfDoubles.of( 4, 5, 6 ) )
                                                         .build();
 
-        Pool<String> merged = new Builder<String>().addPool( this.testPool )
-                                                   .addPool( anotherPool )
+        Pool<String> merged = new Builder<String>().addPool( this.testPool, true )
+                                                   .addPool( anotherPool, true )
                                                    .build();
 
         List<Pool<String>> actual = merged.getMiniPools(); 
-
         List<Pool<String>> expected = List.of( this.testPool, anotherPool );
         
         assertEquals( expected, actual );       
