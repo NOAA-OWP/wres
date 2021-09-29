@@ -1,4 +1,4 @@
-package wres.datamodel.metrics;
+package wres.datamodel.thresholds;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -12,11 +12,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
-import wres.datamodel.thresholds.ThresholdOuter;
-import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;

@@ -1,4 +1,4 @@
-package wres.datamodel.metrics;
+package wres.datamodel.thresholds;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -9,10 +9,9 @@ import java.util.stream.Collectors;
 
 import net.jcip.annotations.Immutable;
 import wres.config.generated.MetricsConfig;
+import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
-import wres.datamodel.thresholds.ThresholdOuter;
-import wres.datamodel.thresholds.ThresholdsByMetric;
 
 /**
  * There is one {@link ThresholdsByMetricAndFeature} for each {@link MetricsConfig}. Abstractions within this class 

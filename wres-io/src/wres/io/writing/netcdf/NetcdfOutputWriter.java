@@ -57,7 +57,6 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.MissingValues;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metrics.MetricConstants;
-import wres.datamodel.metrics.ThresholdsByMetricAndFeature;
 import wres.datamodel.metrics.MetricConstants.MetricGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -68,6 +67,7 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentO
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdSlicer;
 import wres.datamodel.thresholds.ThresholdsByMetric;
+import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.io.concurrency.Executor;
