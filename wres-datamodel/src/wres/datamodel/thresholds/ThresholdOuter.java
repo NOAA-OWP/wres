@@ -552,7 +552,6 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     @Override
     public String toString()
     {
-
         // Label not used for all data
         if ( this.isAllDataThreshold() )
         {
