@@ -557,14 +557,14 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         {
             return "All data";
         }
-        
+
         String append = "";
         if ( this.hasLabel() )
         {
             append = " (" + this.getLabel() + ")";
         }
 
-        final String c = this.getConditionString();
+        final String conditionString = this.getConditionString();
 
         String stringUnits = "";
         if ( this.hasUnits() )
@@ -575,48 +575,17 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         // Quantile
         if ( this.isQuantile() )
         {
-            String common = " [Pr = ";
-            if ( this.hasBetweenCondition() )
-            {
-                return ">= " + this.getValues().first()
-                       + stringUnits
-                       + common
-                       + this.getProbabilities().first()
-                       + "] AND < "
-                       + this.getValues().second()
-                       + stringUnits
-                       + common
-                       + this.getProbabilities().second()
-                       + "]"
-                       + append;
-            }
-            return c + this.getValues().first() + stringUnits + common + this.getProbabilities().first() + "]" + append;
+            return this.getQuantileString( conditionString, stringUnits, append );
         }
         // Real value only
         else if ( this.hasValues() )
         {
-            if ( this.hasBetweenCondition() )
-            {
-                return ">= " + this.getValues().first()
-                       + stringUnits
-                       + " AND < "
-                       + this.getValues().second()
-                       + stringUnits
-                       + append;
-            }
-            return c + this.getValues().first() + stringUnits + append;
+            return this.getValueString( conditionString, stringUnits, append );
         }
         // Probability only
         else
         {
-            if ( this.hasBetweenCondition() )
-            {
-                return "Pr >= " + this.getProbabilities().first()
-                       + " AND < "
-                       + this.getProbabilities().second()
-                       + append;
-            }
-            return "Pr " + c + this.getProbabilities().first() + append;
+            return this.getProbabilityString( conditionString, append );
         }
     }
 
@@ -1144,7 +1113,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
             case EQUAL:
                 return "= ";
             default:
-                return null;
+                return "";
         }
     }
 
@@ -1189,6 +1158,102 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
             return returnMe;
         }
         return 0;
+    }
+
+
+    /**
+     * @param conditionString the condition string
+     * @param stringUnits the units string
+     * @param append a string to append
+     * @return a string representation of a quantile threshold
+     */
+
+    private String getQuantileString( String conditionString, String stringUnits, String append )
+    {
+        String common = " [Pr = ";
+
+        if ( this.hasBetweenCondition() )
+        {
+            if ( !this.getValues().first().isNaN() && !this.getValues().second().isNaN() )
+            {
+                return ">= " + this.getValues().first()
+                       + stringUnits
+                       + common
+                       + this.getProbabilities().first()
+                       + "] AND < "
+                       + this.getValues().second()
+                       + stringUnits
+                       + common
+                       + this.getProbabilities().second()
+                       + "]"
+                       + append;
+            }
+
+            return ">= Pr = " +
+                   +this.getProbabilities().first()
+                   + " AND < Pr = "
+                   + this.getProbabilities().second()
+                   + append;
+        }
+
+        if ( !this.getValues().first().isNaN() )
+        {
+            return conditionString + this.getValues().first()
+                   + stringUnits
+                   + common
+                   + this.getProbabilities().first()
+                   + "]"
+                   + append;
+        }
+
+        return conditionString
+               + "Pr = "
+               + this.getProbabilities().first()
+               + append;
+    }
+
+    /**
+     * @param conditionString the condition string
+     * @param stringUnits the units string
+     * @param append a string to append
+     * @return a string representation of a value threshold
+     */
+
+    private String getValueString( String conditionString, String stringUnits, String append )
+    {
+        if ( this.hasBetweenCondition() && !this.getValues().first().isNaN() && !this.getValues().second().isNaN() )
+        {
+            return ">= " + this.getValues().first()
+                   + stringUnits
+                   + " AND < "
+                   + this.getValues().second()
+                   + stringUnits
+                   + append;
+        }
+        else if ( !this.getValues().first().isNaN() )
+        {
+            return conditionString + this.getValues().first() + stringUnits + append;
+        }
+
+        return conditionString + append.replace( " (", "" ).replace( ")", "" );
+    }
+
+    /**
+     * @param conditionString the condition string
+     * @param append a string to append
+     * @return a string representation of a probability threshold
+     */
+
+    private String getProbabilityString( String conditionString, String append )
+    {
+        if ( this.hasBetweenCondition() )
+        {
+            return "Pr >= " + this.getProbabilities().first()
+                   + " AND < "
+                   + this.getProbabilities().second()
+                   + append;
+        }
+        return "Pr " + conditionString + this.getProbabilities().first() + append;
     }
 
 }
