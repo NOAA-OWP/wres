@@ -671,16 +671,9 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         Pool.Builder<TimeSeries<Pair<L, R>>> builder = new Pool.Builder<>();
 
         // Get the mapped series
-        Map<FeatureKey, List<TimeSeries<L>>> mappedLeft =
-                this.getMappedSeries( leftData );
-        Map<FeatureKey, List<TimeSeries<R>>> mappedRight =
-                this.getMappedSeries( rightData );
-        Map<FeatureKey, List<TimeSeries<R>>> mappedBaseline = null;
-
-        if ( Objects.nonNull( baselineData ) )
-        {
-            mappedBaseline = this.getMappedSeries( baselineData );
-        }
+        Map<FeatureKey, List<TimeSeries<L>>> mappedLeft = this.getMappedSeries( leftData );
+        Map<FeatureKey, List<TimeSeries<R>>> mappedRight = this.getMappedSeries( rightData );
+        Map<FeatureKey, List<TimeSeries<R>>> mappedBaseline = this.getMappedSeries( baselineData );
 
         // Iterate the tuples
         Set<FeatureTuple> tuples = this.metadata.getFeatureTuples();
@@ -688,28 +681,37 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         LOGGER.debug( "Discovered the following feature tuples to iterate: {}.", tuples );
 
         Set<FeatureTuple> noData = new HashSet<>();
-
+        TimeScaleOuter timeScale = null;
         for ( FeatureTuple nextTuple : tuples )
         {
-            if ( !mappedLeft.containsKey( nextTuple.getLeft() )
-                 || !mappedRight.containsKey( nextTuple.getRight() ) )
+            List<TimeSeries<L>> l = mappedLeft.get( nextTuple.getLeft() );
+            List<TimeSeries<R>> r = mappedRight.get( nextTuple.getRight() );
+            List<TimeSeries<R>> b = mappedBaseline.get( nextTuple.getBaseline() );
+
+            if ( Objects.nonNull( l ) && Objects.nonNull( r ) )
             {
-                noData.add( nextTuple );
+                Pool<TimeSeries<Pair<L, R>>> miniPool = this.createPoolPerFeatureTuple( nextTuple, l, r, b );
+
+                timeScale = miniPool.getMetadata()
+                                    .getTimeScale();
+
+                // Add the pool and merge the climatology
+                builder.addPool( miniPool, true );
             }
             else
             {
-                List<TimeSeries<L>> l = mappedLeft.get( nextTuple.getLeft() );
-                List<TimeSeries<R>> r = mappedRight.get( nextTuple.getRight() );
-                List<TimeSeries<R>> b = null;
-
-                if ( Objects.nonNull( baselineData ) )
-                {
-                    b = mappedBaseline.get( nextTuple.getBaseline() );
-                }
-
-                Pool<TimeSeries<Pair<L, R>>> miniPool = this.createPoolPerFeatureTuple( nextTuple, l, r, b );
-                builder.addPool( miniPool );
+                noData.add( nextTuple );
             }
+        }
+
+        // Set the metadata for the overall pool using the updated time scale information
+        PoolMetadata adjusted = PoolMetadata.of( this.metadata, timeScale );
+        builder.setMetadata( adjusted );
+
+        if ( this.hasBaseline() )
+        {
+            PoolMetadata adjustedBaseline = PoolMetadata.of( this.baselineMetadata, timeScale );
+            builder.setMetadataForBaseline( adjustedBaseline );
         }
 
         if ( LOGGER.isWarnEnabled() && !noData.isEmpty() )
@@ -851,7 +853,11 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         // Add the main pairs to the builder
         mainPairs.forEach( builder::addData );
 
-        VectorOfDoubles clim = this.getClimatology();
+        // Is valid as long as the climatology originates from the left side of the declaration. This assumption will 
+        // need to be revised if it becomes possible to declare a climatology explicitly
+        FeatureKey climatologyFeatureKey = feature.getLeft();
+
+        VectorOfDoubles clim = this.getClimatology( climatologyFeatureKey );
         builder.setClimatology( clim );
 
         // Create the pairs
@@ -1125,30 +1131,42 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     }
 
     /**
-     * Creates the climatological data as needed.
+     * Creates the climatological data as needed. Currently uses 
      * 
+     * @param climatologyFeatureKey the feature for which the climatology is needed, not null
      * @return the climatological data or null if no climatology is defined
      */
 
-    private VectorOfDoubles getClimatology()
+    private VectorOfDoubles getClimatology( FeatureKey climatologyFeatureKey )
     {
+        Objects.requireNonNull( climatologyFeatureKey );
+
         if ( Objects.isNull( this.climatology ) )
         {
             return null;
         }
 
         List<TimeSeries<L>> climData = this.climatology.get()
+                                                       .filter( next -> next.getMetadata()
+                                                                            .getFeature()
+                                                                            .equals( climatologyFeatureKey ) )
                                                        .collect( Collectors.toList() );
 
         DoubleStream climatologyStream = DoubleStream.of();
+
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Discovered {} climatological time-series for feature {} within pool {}.",
+                          climData.size(),
+                          climatologyFeatureKey,
+                          this.metadata );
+        }
 
         LOGGER.debug( "Adding climatolology to pool {}.", this.metadata );
 
         for ( TimeSeries<L> next : climData )
         {
-            TimeSeries<L> nextSeries = next;
-
-            TimeSeries<Double> transformed = TimeSeriesSlicer.transform( nextSeries,
+            TimeSeries<Double> transformed = TimeSeriesSlicer.transform( next,
                                                                          this.climatologyMapper::applyAsDouble );
 
             // Extract the doubles
@@ -2015,6 +2033,11 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
     private <T> Map<FeatureKey, List<TimeSeries<T>>> getMappedSeries( List<TimeSeries<T>> timeSeries )
     {
+        if ( Objects.isNull( timeSeries ) )
+        {
+            return Collections.emptyMap();
+        }
+
         return timeSeries.stream()
                          .collect( Collectors.groupingBy( next -> next.getMetadata().getFeature(),
                                                           Collectors.mapping( Functions.identity(),

@@ -16,7 +16,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -32,6 +31,7 @@ import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
 import wres.control.Evaluator.DatabaseServices;
 import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.metrics.ThresholdsByMetricAndFeature;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdsByMetric;
@@ -404,7 +404,7 @@ class ProcessorHelper
             // to wres-metrics, given that they are resolved by project configuration that is
             // passed separately to wres-metrics. Options include moving MetricProcessor* to
             // wres-control, since they make processing decisions, or passing ResolvedProject onwards
-            List<MetricsAndThresholds> metricsAndThresholds = new ArrayList<>();
+            List<ThresholdsByMetricAndFeature> thresholdsByMetricAndFeature = new ArrayList<>();
             Set<FeatureTuple> havingThresholds = new TreeSet<>();
             for ( MetricsConfig metricsConfig : projectConfig.getMetrics() )
             {
@@ -417,14 +417,15 @@ class ProcessorHelper
 
                 Map<FeatureTuple, ThresholdsByMetric> nextThresholds = thresholdReader.read();
                 Set<FeatureTuple> features = thresholdReader.getEvaluatableFeatures();
-                MetricsAndThresholds nextMetrics = new MetricsAndThresholds( nextThresholds,
-                                                                             metricsConfig.getMinimumSampleSize() );
-                metricsAndThresholds.add( nextMetrics );
+                int minimumSampleSize = ProcessorHelper.getMinimumSampleSize( metricsConfig.getMinimumSampleSize() );
+                ThresholdsByMetricAndFeature nextMetrics = ThresholdsByMetricAndFeature.of( nextThresholds,
+                                                                                            minimumSampleSize );
+                thresholdsByMetricAndFeature.add( nextMetrics );
                 havingThresholds.addAll( features );
             }
 
             // Render the bags of thresholds and features immutable
-            metricsAndThresholds = Collections.unmodifiableList( metricsAndThresholds );
+            thresholdsByMetricAndFeature = Collections.unmodifiableList( thresholdsByMetricAndFeature );
             featuresForThresholds = Collections.unmodifiableSet( havingThresholds );
 
             if ( featuresForThresholds.isEmpty() )
@@ -439,14 +440,10 @@ class ProcessorHelper
             // Create any netcdf blobs for writing. See #80267-137.
             if ( !netcdfWriters.isEmpty() )
             {
-                List<Map<FeatureTuple, ThresholdsByMetric>> thresholds = metricsAndThresholds.stream()
-                                                                                             .map( MetricsAndThresholds::getThresholdsByMetric )
-                                                                                             .collect( Collectors.toList() );
-
                 for ( NetcdfOutputWriter writer : netcdfWriters )
                 {
                     writer.createBlobsForWriting( featuresForThresholds,
-                                                  thresholds );
+                                                  thresholdsByMetricAndFeature );
                 }
             }
 
@@ -457,7 +454,7 @@ class ProcessorHelper
                                                                   projectConfigPlus,
                                                                   featuresForThresholds,
                                                                   projectIdentifier,
-                                                                  metricsAndThresholds,
+                                                                  thresholdsByMetricAndFeature,
                                                                   outputDirectory );
             evaluationDetails.setResolvedProject( resolvedProject );
 
@@ -956,69 +953,6 @@ class ProcessorHelper
     }
 
     /**
-     * Small class to collect together resolved metrics and thresholds for evaluation.
-     */
-
-    static class MetricsAndThresholds
-    {
-        /** Thresholds by metric. */
-        private final Map<FeatureTuple, ThresholdsByMetric> thresholdsByMetric;
-        /** Minimum sample size. */
-        private final int minimumSampleSize;
-
-        /**
-         * @param featureTuple the feature
-         * @return the thresholds by metric
-         */
-        ThresholdsByMetric getThresholdsByMetric( FeatureTuple featureTuple )
-        {
-            return this.thresholdsByMetric.get( featureTuple );
-        }
-
-        /**
-         * @return the minimum sample size
-         */
-        int getMinimumSampleSize()
-        {
-            return this.minimumSampleSize;
-        }
-
-        /**
-         * @param featureTuple the feature
-         * @return the thresholds by metric
-         */
-        Map<FeatureTuple, ThresholdsByMetric> getThresholdsByMetric()
-        {
-            return this.thresholdsByMetric;
-        }
-
-        /**
-         * Create an instance.
-         * 
-         * @param thresholdsByMetric the thresholds by metric
-         * @param minimumSampleSize the minimum sample size, which is optional and defaults to zero
-         */
-        private MetricsAndThresholds( Map<FeatureTuple, ThresholdsByMetric> thresholdsByMetric,
-                                      Integer minimumSampleSize )
-        {
-            Objects.requireNonNull( thresholdsByMetric );
-
-            this.thresholdsByMetric = Collections.unmodifiableMap( thresholdsByMetric );
-
-            // Defaults to zero
-            if ( Objects.isNull( minimumSampleSize ) )
-            {
-                LOGGER.debug( "Setting the minimum sample size to zero for metrics instance {}. ", this );
-                this.minimumSampleSize = 0;
-            }
-            else
-            {
-                this.minimumSampleSize = minimumSampleSize;
-            }
-        }
-    }
-
-    /**
      * Returns a set of formats that are delivered by external subscribers, according to relevant system properties.
      * 
      * @return the formats delivered by external subscribers
@@ -1144,6 +1078,25 @@ class ProcessorHelper
         }
 
         return Collections.unmodifiableSet( adjustedGroups );
+    }
+    
+    /**
+     * Obtain the minimum sample size from a possible null input. If null, return zero.
+     * 
+     * @param minimumSampleSize the minimum sample size, which is nullable and defaults to zero
+     */
+    private static int getMinimumSampleSize( Integer minimumSampleSize )
+    {
+        // Defaults to zero
+        if ( Objects.isNull( minimumSampleSize ) )
+        {
+            LOGGER.debug( "Setting the minimum sample size to zero. " );
+            return 0;
+        }
+        else
+        {
+            return minimumSampleSize;
+        }
     }
     
     /**

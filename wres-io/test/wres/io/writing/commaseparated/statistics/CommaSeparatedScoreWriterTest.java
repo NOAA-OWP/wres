@@ -200,13 +200,14 @@ public class CommaSeparatedScoreWriterTest
                                               ChronoUnit.SECONDS,
                                               this.outputDirectory,
                                               next -> Double.toString( next.getData().getValue() ) );
-        Set<Path> pathsToFile = writer.apply( WriterTestHelper.getScoreStatisticsForThreePoolsWithMissings() );
 
+        Set<Path> pathsToFile = writer.apply( WriterTestHelper.getScoreStatisticsForThreePoolsWithMissings() );
+        
         // Check the expected number of paths: #61841
         assertTrue( pathsToFile.size() == 1 );
 
         Path pathToFile = pathsToFile.iterator().next();
-
+        
         // Check the expected path: #61841
         assertEquals( "FTSC1_FTSC1_HEFS_MEAN_SQUARE_ERROR.csv", pathToFile.toFile().getName() );
 

@@ -20,22 +20,22 @@ import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.MetricConstants;
-import wres.datamodel.metrics.Metrics;
+import wres.datamodel.metrics.ThresholdsByMetricAndFeature;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
+import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
+import wres.datamodel.thresholds.ThresholdSlicer;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeriesSlicer;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
@@ -76,11 +76,11 @@ public class MetricProcessorByTimeSingleValuedPairs
     private final MetricCollection<Pool<TimeSeries<Pair<Double, Double>>>, DurationScoreStatisticOuter, DurationScoreStatisticOuter> timeSeriesStatistics;
 
     @Override
-    public StatisticsForProject apply( Pool<TimeSeries<Pair<Double, Double>>> input )
+    public StatisticsForProject apply( Pool<TimeSeries<Pair<Double, Double>>> pool )
     {
-        Objects.requireNonNull( input, "Expected non-null input to the metric processor." );
+        Objects.requireNonNull( pool, "Expected non-null input to the metric processor." );
 
-        Objects.requireNonNull( input.getMetadata().getTimeWindow(),
+        Objects.requireNonNull( pool.getMetadata().getTimeWindow(),
                                 "Expected a non-null time window in the input metadata." );
 
         //Remove missing values from pairs that do not preserver time order
@@ -88,8 +88,8 @@ public class MetricProcessorByTimeSingleValuedPairs
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED ) || this.hasMetrics( SampleDataGroup.DICHOTOMOUS ) )
         {
             LOGGER.debug( "Removing any single-valued pairs with missing left or right values for pool {}.",
-                          input.getMetadata() );
-            Pool<Pair<Double, Double>> unpacked = PoolSlicer.unpack( input );
+                          pool.getMetadata() );
+            Pool<Pair<Double, Double>> unpacked = PoolSlicer.unpack( pool );
             unpackedNoMissing = PoolSlicer.filter( unpacked,
                                                    Slicer.leftAndRight( MetricProcessor.ADMISSABLE_DATA ),
                                                    MetricProcessor.ADMISSABLE_DATA );
@@ -109,15 +109,15 @@ public class MetricProcessorByTimeSingleValuedPairs
         }
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES ) )
         {
-            this.processTimeSeriesPairs( input,
+            this.processTimeSeriesPairs( pool,
                                          futures,
                                          StatisticType.DURATION_DIAGRAM );
         }
 
         // Log
         LOGGER.debug( PROCESSING_COMPLETE_MESSAGE,
-                      MessageFactory.parse( input.getMetadata().getPool().getGeometryTuples( 0 ) ),
-                      input.getMetadata().getTimeWindow() );
+                      MessageFactory.parse( pool.getMetadata().getPool().getGeometryTuples( 0 ) ),
+                      pool.getMetadata().getTimeWindow() );
 
         //Process and return the result       
         MetricFuturesByTime futureResults = futures.build();
@@ -136,7 +136,7 @@ public class MetricProcessorByTimeSingleValuedPairs
      * @throws NullPointerException if a required input is null
      */
 
-    public MetricProcessorByTimeSingleValuedPairs( Metrics metrics,
+    public MetricProcessorByTimeSingleValuedPairs( ThresholdsByMetricAndFeature metrics,
                                                    ExecutorService thresholdExecutor,
                                                    ExecutorService metricExecutor )
     {
@@ -222,118 +222,113 @@ public class MetricProcessorByTimeSingleValuedPairs
      * Processes a set of metric futures that consume dichotomous pairs, which are mapped from single-valued pairs 
      * using a configured mapping function. 
      * 
-     * @param input the input pairs
+     * @param pool the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processDichotomousPairsByThreshold( Pool<Pair<Double, Double>> input,
+    private void processDichotomousPairsByThreshold( Pool<Pair<Double, Double>> pool,
                                                      MetricFuturesByTimeBuilder futures,
                                                      StatisticType outGroup )
     {
-        // Find the thresholds for this group and for the required types
-        ThresholdsByMetric filtered = super.getMetrics().getThresholdsByMetric()
-                                                        .filterByGroup( SampleDataGroup.DICHOTOMOUS, outGroup )
-                                                        .filterByGroup( ThresholdGroup.PROBABILITY,
-                                                                        ThresholdGroup.VALUE );
+        // Filter the thresholds for this group and for the required types
+        Map<FeatureTuple, ThresholdsByMetric> filtered = super.getMetrics().getThresholdsByMetricAndFeature();
+        filtered = ThresholdSlicer.filterByGroup( filtered,
+                                                  SampleDataGroup.DICHOTOMOUS,
+                                                  outGroup,
+                                                  ThresholdGroup.PROBABILITY,
+                                                  ThresholdGroup.VALUE );
 
-        // Find the union across metrics and filter out non-unique thresholds
-        Set<ThresholdOuter> union = filtered.union();
-        union = super.getUniqueThresholdsWithQuantiles( input, union );
+        // Unpack the thresholds and add the quantiles
+        Map<FeatureTuple, Set<ThresholdOuter>> unpacked = ThresholdSlicer.unpack( filtered );
+        Map<FeatureTuple, Set<ThresholdOuter>> withQuantiles =
+                ThresholdSlicer.addQuantiles( unpacked, pool, PoolSlicer.getFeatureMapper() );
+
+        // Find the unique thresholds by value
+        Map<FeatureTuple, Set<ThresholdOuter>> unique =
+                ThresholdSlicer.filter( withQuantiles, ThresholdSlicer::filter );
+        
+        // Decompose the thresholds by common type across features
+        List<Map<FeatureTuple, ThresholdOuter>> decomposedThresholds = ThresholdSlicer.decompose( unique );
+
+        //Define a mapper to convert the single-valued pairs to dichotomous pairs
+        Function<ThresholdOuter, Function<Pair<Double, Double>, Pair<Boolean, Boolean>>> transformerGenerator =
+                threshold -> pair -> Pair.of( threshold.test( pair.getLeft() ),
+                                              threshold.test( pair.getRight() ) );
 
         // Iterate the thresholds
-        for ( ThresholdOuter threshold : union )
+        for ( Map<FeatureTuple, ThresholdOuter> thresholds : decomposedThresholds )
         {
-            OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( threshold );
+            Map<FeatureTuple, Function<Pair<Double, Double>, Pair<Boolean, Boolean>>> transformers =
+                    ThresholdSlicer.getTransformersFromThresholds( thresholds,
+                                                                   transformerGenerator );
 
-            //Define a mapper to convert the single-valued pairs to dichotomous pairs
-            Function<Pair<Double, Double>, Pair<Boolean, Boolean>> mapper =
-                    pair -> Pair.of( threshold.test( pair.getLeft() ),
-                                     threshold.test( pair.getRight() ) );
             //Transform the pairs
-            Pool<Pair<Boolean, Boolean>> transformed = PoolSlicer.transform( input, mapper );
-
-            // Add the threshold to the metadata, in order to fully qualify the pairs
-            PoolMetadata baselineMeta = null;
-            if ( input.hasBaseline() )
-            {
-                baselineMeta = PoolMetadata.of( transformed.getBaselineData().getMetadata(), oneOrTwo );
-            }
-
-            Pool.Builder<Pair<Boolean, Boolean>> builder = new Pool.Builder<>();
-
-            transformed = builder.addPool( transformed )
-                                 .setMetadata( PoolMetadata.of( input.getMetadata(), oneOrTwo ) )
-                                 .setMetadataForBaseline( baselineMeta )
-                                 .build();
+            Pool<Pair<Boolean, Boolean>> transformed = PoolSlicer.transform( pool,
+                                                                             transformers,
+                                                                             PoolSlicer.getFeatureMapper() );
+            
+            // Add the threshold to the metadata
+            ThresholdOuter composed = ThresholdSlicer.compose( Set.copyOf( thresholds.values() ) );
+            transformed = this.addThresholdToPoolMetadata( transformed, OneOrTwoThresholds.of( composed ) );
 
             super.processDichotomousPairs( transformed,
                                            futures,
                                            outGroup );
-
         }
     }
 
     /**
      * Processes a set of metric futures that consume {@link Pool} with single-valued pairs. 
      * 
-     * @param input the input pairs
+     * @param pool the input pairs
      * @param futures the metric futures
      * @param outGroup the output group
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processTimeSeriesPairs( Pool<TimeSeries<Pair<Double, Double>>> input,
+    private void processTimeSeriesPairs( Pool<TimeSeries<Pair<Double, Double>>> pool,
                                          MetricFuturesByTimeBuilder futures,
                                          StatisticType outGroup )
     {
-        // Find the thresholds for this group and for the required types
-        ThresholdsByMetric filtered = super.getMetrics().getThresholdsByMetric()
-                                                        .filterByGroup( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
-                                                                        outGroup )
-                                                        .filterByGroup( ThresholdGroup.PROBABILITY,
-                                                                        ThresholdGroup.VALUE );
+        // Filter the thresholds for this group and for the required types
+        Map<FeatureTuple, ThresholdsByMetric> filtered = super.getMetrics().getThresholdsByMetricAndFeature();
+        filtered = ThresholdSlicer.filterByGroup( filtered,
+                                                  SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
+                                                  outGroup,
+                                                  ThresholdGroup.PROBABILITY,
+                                                  ThresholdGroup.VALUE );
 
-        // Find the union across metrics and filter out non-unique thresholds
-        Set<ThresholdOuter> union = filtered.union();
-        union = super.getUniqueThresholdsWithQuantiles( input, union );
+        // Unpack the thresholds and add the quantiles
+        Map<FeatureTuple, Set<ThresholdOuter>> unpacked = ThresholdSlicer.unpack( filtered );
+        Map<FeatureTuple, Set<ThresholdOuter>> withQuantiles =
+                ThresholdSlicer.addQuantiles( unpacked, pool, PoolSlicer.getFeatureMapper() );
+
+        // Find the unique thresholds by value
+        Map<FeatureTuple, Set<ThresholdOuter>> unique =
+                ThresholdSlicer.filter( withQuantiles, ThresholdSlicer::filter );
+        
+        // Decompose the thresholds by common type across features
+        List<Map<FeatureTuple, ThresholdOuter>> decomposedThresholds = ThresholdSlicer.decompose( unique );
 
         // Iterate the thresholds
-        for ( ThresholdOuter threshold : union )
+        for ( Map<FeatureTuple, ThresholdOuter> thresholds : decomposedThresholds )
         {
-            OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( threshold );
+            Map<FeatureTuple, Predicate<TimeSeries<Pair<Double, Double>>>> slicers =
+                    ThresholdSlicer.getFiltersFromThresholds( thresholds,
+                                                              MetricProcessorByTime::getFilterForTimeSeriesOfSingleValuedPairs );
 
-            Pool<TimeSeries<Pair<Double, Double>>> pairs;
-
-            // Filter the data if required
-            if ( threshold.isFinite() )
-            {
-                Predicate<TimeSeries<Pair<Double, Double>>> filter =
-                        MetricProcessorByTime.getFilterForTimeSeriesOfSingleValuedPairs( threshold );
-
-                pairs = TimeSeriesSlicer.filterPerSeries( input, filter, null );
-            }
-            else
-            {
-                pairs = input;
-            }
-
-            // Add the threshold to the metadata, in order to fully qualify the pairs
-            PoolMetadata baselineMeta = null;
-            if ( input.hasBaseline() )
-            {
-                baselineMeta = PoolMetadata.of( pairs.getBaselineData().getMetadata(), oneOrTwo );
-            }
-
-            Pool.Builder<TimeSeries<Pair<Double, Double>>> builder = new Pool.Builder<>();
-            pairs = builder.addPool( pairs )
-                           .setMetadata( PoolMetadata.of( pairs.getMetadata(), oneOrTwo ) )
-                           .setMetadataForBaseline( baselineMeta )
-                           .build();
+            Pool<TimeSeries<Pair<Double, Double>>> sliced = PoolSlicer.filter( pool, 
+                                                                               slicers, 
+                                                                               PoolSlicer.getFeatureMapper() );
+            
+            // Add the threshold to the metadata
+            ThresholdOuter composed = ThresholdSlicer.compose( Set.copyOf( thresholds.values() ) );
+            sliced = this.addThresholdToPoolMetadata( sliced, OneOrTwoThresholds.of( composed ) );
 
             // Build the future result
-            Future<List<DurationDiagramStatisticOuter>> output = this.processTimeSeriesPairs( pairs,
+            Future<List<DurationDiagramStatisticOuter>> output = this.processTimeSeriesPairs( sliced,
                                                                                               this.timeSeries );
 
             // Add the future result to the store
@@ -342,9 +337,8 @@ public class MetricProcessorByTimeSingleValuedPairs
             // Summary statistics?
             if ( Objects.nonNull( this.timeSeriesStatistics ) )
             {
-                Future<List<DurationScoreStatisticOuter>> summary = this.processTimeSeriesSummaryPairs( pairs,
+                Future<List<DurationScoreStatisticOuter>> summary = this.processTimeSeriesSummaryPairs( sliced,
                                                                                                         this.timeSeriesStatistics );
-
 
                 futures.addDurationScoreOutput( summary );
             }
@@ -444,10 +438,12 @@ public class MetricProcessorByTimeSingleValuedPairs
 
             // Thresholds required for dichotomous metrics
             if ( next.isInGroup( SampleDataGroup.DICHOTOMOUS )
-                 && !super.getMetrics().getThresholdsByMetric()
-                                       .hasThresholdsForThisMetricAndTheseTypes( next,
-                                                                                 ThresholdGroup.PROBABILITY,
-                                                                                 ThresholdGroup.VALUE ) )
+                 && super.getMetrics().getThresholdsByMetricAndFeature()
+                                      .values()
+                                      .stream()
+                                      .noneMatch( thresholds -> thresholds.hasThresholdsForThisMetricAndTheseTypes( next,
+                                                                                                                    ThresholdGroup.PROBABILITY,
+                                                                                                                    ThresholdGroup.VALUE ) ) )
             {
                 throw new MetricConfigException( "Cannot configure '"
                                                  + next

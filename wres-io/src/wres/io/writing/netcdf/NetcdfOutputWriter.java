@@ -57,6 +57,7 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.MissingValues;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.metrics.ThresholdsByMetricAndFeature;
 import wres.datamodel.metrics.MetricConstants.MetricGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -247,16 +248,16 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      * Creates the blobs into which outputs will be written.
      *
      * @param features The super-set of features used in the evaluation.
-     * @param thresholds Thresholds imposed upon input data
+     * @param thresholdsByMetricAndFeature Thresholds imposed upon input data
      * @throws WriteException if the blobs have already been created
      * @throws IOException if the blobs could not be created for any reason
      */
 
     public void createBlobsForWriting( Set<FeatureTuple> features,
-                                       List<Map<FeatureTuple, ThresholdsByMetric>> thresholds )
+                                       List<ThresholdsByMetricAndFeature> thresholdsByMetricAndFeature )
             throws IOException
     {
-        Objects.requireNonNull( thresholds );
+        Objects.requireNonNull( thresholdsByMetricAndFeature );
 
         if ( this.getIsReadyToWrite().get() )
         {
@@ -269,7 +270,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         Set<TimeWindowOuter> timeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairConfig );
 
         // Find the thresholds-by-metric for which blobs should be created
-        ThresholdsByMetric thresholdsToWrite = this.getUniqueThresholdsForScoreMetrics( thresholds );
+        ThresholdsByMetric thresholdsToWrite = this.getUniqueThresholdsForScoreMetrics( thresholdsByMetricAndFeature );
         
         // Should be at least one metric with at least one threshold
         if( thresholdsToWrite.getMetrics().isEmpty() )
@@ -945,22 +946,23 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      * <p>Removes any metrics that do not produce {@link MetricConstants.StatisticType#DOUBLE_SCORE} because this writer
      * currently only handles scores.
      * 
-     * @param thresholds the thresholds to search
+     * @param thresholdsByMetricAndFeature the thresholds to search
      * @return the unique thresholds for which blobs should be created
      */
 
-    private ThresholdsByMetric getUniqueThresholdsForScoreMetrics( List<Map<FeatureTuple, ThresholdsByMetric>> thresholds )
+    private ThresholdsByMetric
+            getUniqueThresholdsForScoreMetrics( List<ThresholdsByMetricAndFeature> thresholdsByMetricAndFeature )
     {
-        Objects.requireNonNull( thresholds );
+        Objects.requireNonNull( thresholdsByMetricAndFeature );
 
         Comparator<OneOrTwoThresholds> thresholdComparator = ThresholdSlicer.getLogicalThresholdComparator();
 
         // Create a set of thresholds for each metric in a map.        
         Map<MetricConstants, SortedSet<OneOrTwoThresholds>> thresholdsMap = new EnumMap<>( MetricConstants.class );
 
-        for ( Map<FeatureTuple, ThresholdsByMetric> map : thresholds )
+        for ( ThresholdsByMetricAndFeature thresholds : thresholdsByMetricAndFeature )
         {
-            for ( ThresholdsByMetric next : map.values() )
+            for ( ThresholdsByMetric next : thresholds.getThresholdsByMetricAndFeature().values() )
             {
                 Map<MetricConstants, SortedSet<OneOrTwoThresholds>> nextMapping = next.getOneOrTwoThresholds();
 

@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Function;
@@ -309,8 +310,8 @@ class PoolSlicerTest
                                                                                        anotherBuilder.build() ) )
                                                         .build();
 
-        Pool<String> merged = new Builder<String>().addPool( aPool )
-                                                   .addPool( anotherPool )
+        Pool<String> merged = new Builder<String>().addPool( aPool, false )
+                                                   .addPool( anotherPool, false )
                                                    .build();
 
         Map<FeatureTuple, Pool<String>> actual =
@@ -327,7 +328,7 @@ class PoolSlicerTest
     }
 
     @Test
-    public void testUnionOf()
+    void testUnionOf()
     {
         FeatureKey l1 = FeatureKey.of( DRRC2 );
 
@@ -391,7 +392,7 @@ class PoolSlicerTest
     }
 
     @Test
-    public void testUnionOfThrowsExceptionWithNullInput()
+    void testUnionOfThrowsExceptionWithNullInput()
     {
         NullPointerException actual = assertThrows( NullPointerException.class,
                                                     () -> PoolSlicer.unionOf( null ) );
@@ -400,7 +401,7 @@ class PoolSlicerTest
     }
 
     @Test
-    public void testUnionOfThrowsExceptionWithEmptyInput()
+    void testUnionOfThrowsExceptionWithEmptyInput()
     {
         IllegalArgumentException actual = assertThrows( IllegalArgumentException.class,
                                                         () -> PoolSlicer.unionOf( Collections.emptyList() ) );
@@ -409,7 +410,7 @@ class PoolSlicerTest
     }
 
     @Test
-    public void testUnionOfThrowsExceptionWithOneNullInput()
+    void testUnionOfThrowsExceptionWithOneNullInput()
     {
         NullPointerException actual = assertThrows( NullPointerException.class,
                                                     () -> PoolSlicer.unionOf( Arrays.asList( (PoolMetadata) null ) ) );
@@ -418,7 +419,7 @@ class PoolSlicerTest
     }
 
     @Test
-    public void testUnionOfThrowsExceptionWithUnequalInputs()
+    void testUnionOfThrowsExceptionWithUnequalInputs()
     {
         FeatureTuple drrc3 = new FeatureTuple( FeatureKey.of( DRRC3 ),
                                                FeatureKey.of( DRRC3 ),
@@ -444,12 +445,14 @@ class PoolSlicerTest
         PoolMetadataException actual = assertThrows( PoolMetadataException.class,
                                                      () -> PoolSlicer.unionOf( list ) );
 
-        assertEquals( "Only the time window and thresholds and features can differ when finding the union of metadata.",
-                      actual.getMessage() );
+        assertTrue( Objects.nonNull( actual.getMessage() ) && actual.getMessage()
+                                                                    .startsWith( "Only the time window and thresholds "
+                                                                                 + "and features can differ when "
+                                                                                 + "finding the union of metadata." ) );
     }
 
     @Test
-    public void testEqualsWithoutTimeWindowOrThresholdsOrFeatures()
+    void testEqualsWithoutTimeWindowOrThresholdsOrFeatures()
     {
         // False if the input is null
         assertFalse( PoolSlicer.equalsWithoutTimeWindowOrThresholdsOrFeatures( PoolMetadata.of(), null ) );
@@ -544,8 +547,8 @@ class PoolSlicerTest
                                                                                   anotherBuilder.build() ) )
                                                    .build();
 
-        Pool<Pair<Double, Double>> merged = new Builder<Pair<Double, Double>>().addPool( aPool )
-                                                                               .addPool( anotherPool )
+        Pool<Pair<Double, Double>> merged = new Builder<Pair<Double, Double>>().addPool( aPool, false )
+                                                                               .addPool( anotherPool, false )
                                                                                .build();
 
         Map<FeatureTuple, Predicate<Pair<Double, Double>>> predicates = new HashMap<>();
@@ -620,8 +623,8 @@ class PoolSlicerTest
                                                                                   anotherBuilder.build() ) )
                                                    .build();
 
-        Pool<Pair<Double, Double>> merged = new Builder<Pair<Double, Double>>().addPool( aPool )
-                                                                               .addPool( anotherPool )
+        Pool<Pair<Double, Double>> merged = new Builder<Pair<Double, Double>>().addPool( aPool, false )
+                                                                               .addPool( anotherPool, false )
                                                                                .build();
 
         Map<FeatureTuple, Function<Pair<Double, Double>, Pair<Boolean, Boolean>>> transformers = new HashMap<>();

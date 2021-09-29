@@ -10,8 +10,8 @@ import java.util.Set;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
-import wres.control.ProcessorHelper.MetricsAndThresholds;
 import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.metrics.ThresholdsByMetricAndFeature;
 import wres.datamodel.space.FeatureTuple;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 
@@ -33,32 +33,32 @@ class ResolvedProject
     private final ProjectConfigPlus projectConfigPlus;
     private final Set<FeatureTuple> decomposedFeatures;
     private final String projectIdentifier;
-    private final List<MetricsAndThresholds> metricsAndThresholds;
+    private final List<ThresholdsByMetricAndFeature> thresholdsByMetricAndFeature;
     private final Path outputDirectory;
 
     private ResolvedProject( ProjectConfigPlus projectConfigPlus,
                              Set<FeatureTuple> decomposedFeatures,
                              String projectIdentifier,
-                             List<MetricsAndThresholds> thresholds,
+                             List<ThresholdsByMetricAndFeature> thresholdsByMetricAndFeature,
                              Path outputDirectory )
     {
         this.projectConfigPlus = projectConfigPlus;
         this.decomposedFeatures = Collections.unmodifiableSet( decomposedFeatures );
         this.projectIdentifier = projectIdentifier;
-        this.metricsAndThresholds = Collections.unmodifiableList( thresholds );
+        this.thresholdsByMetricAndFeature = Collections.unmodifiableList( thresholdsByMetricAndFeature );
         this.outputDirectory = outputDirectory;
     }
 
     static ResolvedProject of( ProjectConfigPlus projectConfigPlus,
                                Set<FeatureTuple> decomposedFeatures,
                                String projectIdentifier,
-                               List<MetricsAndThresholds> thresholds,
+                               List<ThresholdsByMetricAndFeature> thresholdsByMetricAndFeature,
                                Path outputDirectory )
     {
         return new ResolvedProject( projectConfigPlus,
                                     decomposedFeatures,
                                     projectIdentifier,
-                                    thresholds,
+                                    thresholdsByMetricAndFeature,
                                     outputDirectory );
 
     }
@@ -135,12 +135,12 @@ class ResolvedProject
     }
     
     /**
-     * @return the metrics and thresholds.
+     * @return the thresholds and metrics by feature.
      */
 
-    List<MetricsAndThresholds> getMetricsAndThresholds()
+    List<ThresholdsByMetricAndFeature> getThresholdsByMetricAndFeature()
     {
-        return this.metricsAndThresholds;
+        return this.thresholdsByMetricAndFeature;
     }
 
     /**

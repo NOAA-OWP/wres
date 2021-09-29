@@ -10,7 +10,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -26,7 +25,6 @@ import org.junit.Test;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -647,100 +645,6 @@ public final class SlicerTest
         Ensemble expected = Ensemble.of( new double[] { 3 }, Labels.of( "8" ) );
 
         assertEquals( expected, actual );
-    }
-
-    @Test
-    public void testFilterByThresholdValuesAndNames()
-    {
-        // Same values, different probabilities
-        Set<ThresholdOuter> input = new HashSet<>();
-        ThresholdOuter first = new ThresholdOuter.Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
-                                                           .setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
-                                                           .setCondition( Operator.GREATER_EQUAL )
-                                                           .setDataType( ThresholdDataType.LEFT )
-                                                           .build();
-        ThresholdOuter second = new ThresholdOuter.Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
-                                                            .setProbabilities( OneOrTwoDoubles.of( 0.3 ) )
-                                                            .setCondition( Operator.GREATER_EQUAL )
-                                                            .setDataType( ThresholdDataType.LEFT )
-                                                            .build();
-
-        input.add( first );
-        input.add( second );
-
-        Set<ThresholdOuter> actual = Slicer.filter( Collections.unmodifiableSet( input ) );
-        Set<ThresholdOuter> expected = Set.of( second );
-
-        assertEquals( expected, actual );
-
-        // Same values with different units and different probabilities
-        Set<ThresholdOuter> anotherInput = new HashSet<>();
-        ThresholdOuter anotherFirst = new ThresholdOuter.Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
-                                                                  .setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
-                                                                  .setUnits( MeasurementUnit.of( "UNIT" ) )
-                                                                  .setCondition( Operator.GREATER_EQUAL )
-                                                                  .setDataType( ThresholdDataType.LEFT )
-                                                                  .build();
-        ThresholdOuter anotherSecond = new ThresholdOuter.Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
-                                                                   .setProbabilities( OneOrTwoDoubles.of( 0.3 ) )
-                                                                   .setUnits( MeasurementUnit.of( "OTHER_UNIT" ) )
-                                                                   .setCondition( Operator.GREATER_EQUAL )
-                                                                   .setDataType( ThresholdDataType.LEFT )
-                                                                   .build();
-
-        anotherInput.add( anotherFirst );
-        anotherInput.add( anotherSecond );
-
-        Set<ThresholdOuter> anotherActual = Slicer.filter( Collections.unmodifiableSet( anotherInput ) );
-        Set<ThresholdOuter> anotherExpected = Set.of( anotherFirst, anotherSecond );
-
-        assertEquals( anotherExpected, anotherActual );
-
-        // Same values with same units and different probabilities and names
-        Set<ThresholdOuter> yetAnotherInput = new HashSet<>();
-        ThresholdOuter yetAnotherFirst = new ThresholdOuter.Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
-                                                                     .setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
-                                                                     .setUnits( MeasurementUnit.of( "UNIT" ) )
-                                                                     .setCondition( Operator.GREATER_EQUAL )
-                                                                     .setDataType( ThresholdDataType.LEFT )
-                                                                     .setLabel( "name" )
-                                                                     .build();
-        ThresholdOuter yetAnotherSecond = new ThresholdOuter.Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
-                                                                      .setProbabilities( OneOrTwoDoubles.of( 0.3 ) )
-                                                                      .setUnits( MeasurementUnit.of( "UNIT" ) )
-                                                                      .setCondition( Operator.GREATER_EQUAL )
-                                                                      .setDataType( ThresholdDataType.LEFT )
-                                                                      .setLabel( "anotherName" )
-                                                                      .build();
-
-        yetAnotherInput.add( yetAnotherFirst );
-        yetAnotherInput.add( yetAnotherSecond );
-
-        Set<ThresholdOuter> yetAnotherActual = Slicer.filter( Collections.unmodifiableSet( yetAnotherInput ) );
-        Set<ThresholdOuter> yetAnotherExpected = Set.of( yetAnotherFirst, yetAnotherSecond );
-
-        assertEquals( yetAnotherExpected, yetAnotherActual );
-
-        // No values with different probabilities
-        Set<ThresholdOuter> oneMoreInput = new HashSet<>();
-        ThresholdOuter oneMoreFirst = new ThresholdOuter.Builder().setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
-                                                                  .setUnits( MeasurementUnit.of( "UNIT" ) )
-                                                                  .setCondition( Operator.GREATER_EQUAL )
-                                                                  .setDataType( ThresholdDataType.LEFT )
-                                                                  .build();
-        ThresholdOuter oneMoreSecond = new ThresholdOuter.Builder().setProbabilities( OneOrTwoDoubles.of( 0.3 ) )
-                                                                   .setUnits( MeasurementUnit.of( "UNIT" ) )
-                                                                   .setCondition( Operator.GREATER_EQUAL )
-                                                                   .setDataType( ThresholdDataType.LEFT )
-                                                                   .build();
-
-        oneMoreInput.add( oneMoreFirst );
-        oneMoreInput.add( oneMoreSecond );
-
-        Set<ThresholdOuter> oneMoreActual = Slicer.filter( Collections.unmodifiableSet( oneMoreInput ) );
-        Set<ThresholdOuter> oneMoreExpected = Set.of( oneMoreFirst, oneMoreSecond );
-
-        assertEquals( oneMoreExpected, oneMoreActual );
     }
 
     @Test

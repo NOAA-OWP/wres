@@ -1237,7 +1237,7 @@ public final class MetricTestDataFactory
                                                            Duration.ofHours( 6 ),
                                                            Duration.ofHours( 18 ) );
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( "A" );
+        FeatureGroup featureGroup = Boilerplate.getFeatureGroup();
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( STREAMFLOW )
@@ -1287,7 +1287,7 @@ public final class MetricTestDataFactory
                                                            Duration.ofHours( 6 ),
                                                            Duration.ofHours( 18 ) );
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( "A" );
+        FeatureGroup featureGroup = Boilerplate.getFeatureGroup();
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( STREAMFLOW )
@@ -1326,7 +1326,7 @@ public final class MetricTestDataFactory
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
                                                            Instant.MAX );
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( "A" );
+        FeatureGroup featureGroup = Boilerplate.getFeatureGroup();
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( STREAMFLOW )
@@ -1514,9 +1514,27 @@ public final class MetricTestDataFactory
         events.add( Event.of( start.plus( Duration.ofHours( 13 ) ), Pair.of( Double.NaN, Double.NaN ) ) );
 
         Builder<TimeSeries<Pair<Double, Double>>> builder = new Builder<>();
-        return builder.addData( TimeSeries.of( getBoilerplateMetadata(),
+
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( Instant.MIN,
+                                                         Instant.MAX,
+                                                         Duration.ZERO );
+
+        FeatureGroup featureGroup = Boilerplate.getFeatureGroup();
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "SQIN" )
+                                          .setRightDataName( "AHPS" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( featureGroup,
+                                          timeWindow,
+                                          null,
+                                          null,
+                                          false );
+        return builder.addData( TimeSeries.of( MetricTestDataFactory.getBoilerplateMetadata(),
                                                events ) )
-                      .setMetadata( PoolMetadata.of() )
+                      .setMetadata( PoolMetadata.of( evaluation, pool ) )
                       .build();
     }
 
@@ -1749,7 +1767,7 @@ public final class MetricTestDataFactory
                                                      Instant.parse( SECOND_TIME ),
                                                      Duration.ofHours( 24 ) );
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( DRRC2 );
+        FeatureGroup featureGroup = Boilerplate.getFeatureGroup();
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "SQIN" )
@@ -1835,7 +1853,7 @@ public final class MetricTestDataFactory
                                                      Instant.parse( SECOND_TIME ),
                                                      Duration.ofHours( 24 ) );
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( DRRC2 );
+        FeatureGroup featureGroup = Boilerplate.getFeatureGroup();
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "SQIN" )
@@ -1915,7 +1933,7 @@ public final class MetricTestDataFactory
                                                            Instant.parse( SECOND_TIME ),
                                                            Duration.ofHours( 24 ) );
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( DRRC2 );
+        FeatureGroup featureGroup = Boilerplate.getFeatureGroup();
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "SQIN" )
@@ -1993,7 +2011,7 @@ public final class MetricTestDataFactory
                                                            Instant.parse( SECOND_TIME ),
                                                            Duration.ofHours( 24 ) );
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( DRRC2 );
+        FeatureGroup featureGroup = Boilerplate.getFeatureGroup();
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "MAP" )

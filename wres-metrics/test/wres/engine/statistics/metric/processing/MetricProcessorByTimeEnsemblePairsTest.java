@@ -12,7 +12,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ForkJoinPool;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
@@ -33,12 +35,11 @@ import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.metrics.ThresholdsByMetricAndFeature;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
@@ -46,12 +47,14 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
+import wres.datamodel.thresholds.ThresholdsByMetric;
+import wres.datamodel.thresholds.ThresholdsGenerator;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
+import wres.datamodel.thresholds.ThresholdException;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.engine.statistics.metric.MetricCalculationException;
-import wres.engine.statistics.metric.MetricFactory;
+import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.categorical.ContingencyTable;
@@ -66,6 +69,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  */
 public final class MetricProcessorByTimeEnsemblePairsTest
 {
+
     /**
      * Test source.
      */
@@ -114,7 +118,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithoutThresholds.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( config );
+                MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( config );
         StatisticsForProject results =
                 processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsOne() );
         DoubleScoreStatisticOuter bias =
@@ -168,7 +172,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( config );
+                MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( config );
         StatisticsForProject statistics = processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsOne() );
 
         //Validate bias
@@ -338,7 +342,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null );
 
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig );
+                MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( mockedConfig );
 
         StatisticsForProject statistics = processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsOne() );
 
@@ -370,7 +374,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( config );
+                MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( config );
         StatisticsForProject statistics = processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsOne() );
 
         //Obtain the results
@@ -512,12 +516,12 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     public void testExceptionOnNullInput() throws MetricParameterException
     {
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( new ProjectConfig( null,
-                                                                                    null,
-                                                                                    null,
-                                                                                    null,
-                                                                                    null,
-                                                                                    null ) );
+                MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( new ProjectConfig( null,
+                                                                                                             null,
+                                                                                                             null,
+                                                                                                             null,
+                                                                                                             null,
+                                                                                                             null ) );
 
         NullPointerException actual = assertThrows( NullPointerException.class,
                                                     () -> processor.apply( null ) );
@@ -543,7 +547,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                   null );
 
         MetricConfigException actual = assertThrows( MetricConfigException.class,
-                                                     () -> MetricFactory.ofMetricProcessorForEnsemblePairs( config ) );
+                                                     () -> MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( config ) );
 
         assertEquals( "Cannot configure 'BRIER SCORE' without thresholds to define the events: "
                       + "add one or more thresholds to the configuration for each instance of 'BRIER SCORE'.",
@@ -575,15 +579,22 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null );
 
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig );
+                MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( mockedConfig );
 
         Pool<TimeSeries<Pair<Double, Ensemble>>> pairs = MetricTestDataFactory.getTimeSeriesOfEnsemblePairsThree();
 
-        MetricCalculationException actual = assertThrows( MetricCalculationException.class,
-                                                          () -> processor.apply( pairs ) );
+        ThresholdException actual = assertThrows( ThresholdException.class,
+                                                  () -> processor.apply( pairs ) );
 
-        assertEquals( "Unable to determine quantile threshold from probability threshold: no climatological "
-                      + "observations were available in the input.",
+        assertEquals( "Cannot add quantiles to probability thresholds without a climatological data source. Add a "
+                      + "climatological data source to pool PoolMetadata[leftDataName=,rightDataName=,"
+                      + "baselineDataName=,leftVariableName=,rightVariableName=MAP,baselineVariableName=,"
+                      + "isBaselinePool=false,features=FeatureGroup[name=,features=[FeatureTuple[left="
+                      + "FeatureKey[name=DRRC2,description=,srid=0,wkt=],right=FeatureKey[name=DRRC2,"
+                      + "description=,srid=0,wkt=],baseline=FeatureKey[name=DRRC2,description=,srid=0,wkt=]]]],"
+                      + "timeWindow=[1985-01-01T00:00:00Z,2010-12-31T11:59:59Z,-1000000000-01-01T00:00:00Z,"
+                      + "+1000000000-12-31T23:59:59.999999999Z,PT24H,PT24H],thresholds=<null>,timeScale=<null>,"
+                      + "measurementUnit=MM/DAY] and try again.",
                       actual.getMessage() );
     }
 
@@ -612,7 +623,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
 
         MetricConfigException actual = assertThrows( MetricConfigException.class,
-                                                     () -> MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig ) );
+                                                     () -> MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( mockedConfig ) );
 
         assertEquals( "In order to configure dichotomous metrics for ensemble inputs, every metric group "
                       + "that contains dichotomous metrics must also contain thresholds for classifying the forecast "
@@ -644,7 +655,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null );
 
         MetricConfigException actual = assertThrows( MetricConfigException.class,
-                                                     () -> MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig ) );
+                                                     () -> MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( mockedConfig ) );
 
         assertEquals( "In order to configure multicategory metrics for ensemble inputs, every metric "
                       + "group that contains multicategory metrics must also contain thresholds for classifying the "
@@ -659,7 +670,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( config );
+                MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( config );
 
         //Check for the expected number of metrics
         //One fewer than total, as sample size appears in both ensemble and single-valued
@@ -678,7 +689,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( config );
+                MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( config );
 
         StatisticsForProject statistics =
                 processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsOneWithMissings() );
@@ -826,7 +837,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( config );
+                MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( config );
         StatisticsForProject statistics = processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsTwo() );
 
         // Expected result
@@ -834,16 +845,13 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                    Instant.parse( "2010-12-31T11:59:59Z" ),
                                                                    Duration.ofHours( 24 ) );
 
-        FeatureKey featureKey = FeatureKey.of( "DRRC2" );
-        FeatureTuple featureTuple = new FeatureTuple( featureKey, featureKey, featureKey );
-
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "SQIN" )
                                           .setRightDataName( "HEFS" )
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( FeatureGroup.of( featureTuple ),
+        wres.statistics.generated.Pool pool = MessageFactory.parse( Boilerplate.getFeatureGroup(),
                                                                     expectedWindow,
                                                                     null,
                                                                     null,
@@ -1082,7 +1090,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( config );
+                MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( config );
         StatisticsForProject statistics = processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsFour() );
 
         //Obtain the results
@@ -1127,7 +1135,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null );
 
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( mock );
+                MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( mock );
 
         Set<MetricConstants> actualSingleValuedScores =
                 Set.of( processor.getMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ) );
@@ -1148,7 +1156,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     }
 
     @Test
-    public void testThatSampleSizeIsConstructedForEnsembleInputWhenProbailityScoreExists()
+    public void testThatSampleSizeIsConstructedForEnsembleInputWhenProbabilityScoreExists()
             throws MetricParameterException
     {
         List<MetricConfig> metrics = new ArrayList<>();
@@ -1184,7 +1192,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null );
 
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( mock );
+                MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( mock );
 
         Set<MetricConstants> actualSingleValuedScores =
                 Set.of( processor.getMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ) );
@@ -1207,7 +1215,24 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         Set<MetricConstants> expectedProbabilityScores = Set.of( MetricConstants.BRIER_SCORE );
 
         assertEquals( expectedProbabilityScores, actualProbabilityScores );
+    }
 
+    /**
+     * @param config project declaration
+     * @return an ensemble processor instance
+     */
+
+    private static MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>
+            ofMetricProcessorForEnsemblePairs( ProjectConfig config )
+    {
+        ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( config );
+        FeatureTuple featureTuple = Boilerplate.getFeatureTuple();
+        Map<FeatureTuple, ThresholdsByMetric> thresholds = Map.of( featureTuple, thresholdsByMetric );
+        ThresholdsByMetricAndFeature metrics = ThresholdsByMetricAndFeature.of( thresholds, 0 );
+
+        return new MetricProcessorByTimeEnsemblePairs( metrics,
+                                                       ForkJoinPool.commonPool(),
+                                                       ForkJoinPool.commonPool() );
     }
 
 }

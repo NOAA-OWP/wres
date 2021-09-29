@@ -6,8 +6,10 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.After;
@@ -18,14 +20,18 @@ import wres.config.ProjectConfigPlus;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.pools.Pool;
+import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.metrics.ThresholdsByMetricAndFeature;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.thresholds.ThresholdOuter;
+import wres.datamodel.thresholds.ThresholdsByMetric;
+import wres.datamodel.thresholds.ThresholdsGenerator;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
-import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -66,7 +72,7 @@ public final class MetricProcessorTest
         String configPath = TEST_SOURCE;
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                MetricFactory.ofMetricProcessorForSingleValuedPairs( config );
+                MetricProcessorTest.ofMetricProcessorForSingleValuedPairs( config );
         //Check for existence of metrics
         assertTrue( processor.hasMetrics( SampleDataGroup.SINGLE_VALUED ) );
     }
@@ -77,7 +83,7 @@ public final class MetricProcessorTest
         String configPath = TEST_SOURCE;
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                MetricFactory.ofMetricProcessorForSingleValuedPairs( config );
+                MetricProcessorTest.ofMetricProcessorForSingleValuedPairs( config );
         //Check for existence of metrics
         assertTrue( processor.hasMetrics( StatisticType.DOUBLE_SCORE ) );
     }
@@ -88,7 +94,7 @@ public final class MetricProcessorTest
         String configPath = TEST_SOURCE;
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                MetricFactory.ofMetricProcessorForSingleValuedPairs( config );
+                MetricProcessorTest.ofMetricProcessorForSingleValuedPairs( config );
         //Check for existence of metrics
         assertTrue( processor.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ) );
     }
@@ -101,7 +107,7 @@ public final class MetricProcessorTest
         String configPathSingleValued = "testinput/metricProcessorTest/testSingleValued.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                MetricFactory.ofMetricProcessorForSingleValuedPairs( config );
+                MetricProcessorTest.ofMetricProcessorForSingleValuedPairs( config );
 
         //Check that score metrics are defined 
         assertTrue( "Expected metrics for '" + StatisticType.DOUBLE_SCORE
@@ -128,8 +134,16 @@ public final class MetricProcessorTest
         //Ensemble case
         String configPathEnsemble = "testinput/metricProcessorTest/testDisallowNonScores.xml";
         ProjectConfig configEnsemble = ProjectConfigPlus.from( Paths.get( configPathEnsemble ) ).getProjectConfig();
+
+        ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( configEnsemble );
+        FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( "DRRC2" ), FeatureKey.of( "DRRC2" ), null );
+        Map<FeatureTuple, ThresholdsByMetric> thresholds = Map.of( featureTuple, thresholdsByMetric );
+        ThresholdsByMetricAndFeature metrics = ThresholdsByMetricAndFeature.of( thresholds, 0 );
+
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processorEnsemble =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( configEnsemble );
+                new MetricProcessorByTimeEnsemblePairs( metrics,
+                                                        ForkJoinPool.commonPool(),
+                                                        ForkJoinPool.commonPool() );
         //Check that score metrics are defined 
         assertTrue( "Expected metrics for '" + StatisticType.DOUBLE_SCORE
                     + "'.",
@@ -152,7 +166,7 @@ public final class MetricProcessorTest
     {
         ProjectConfig config = new ProjectConfig( null, null, null, null, null, null );
         MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                MetricFactory.ofMetricProcessorForSingleValuedPairs( config );
+                MetricProcessorTest.ofMetricProcessorForSingleValuedPairs( config );
 
         ThresholdOuter expected = ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
@@ -166,6 +180,24 @@ public final class MetricProcessorTest
     {
         this.thresholdExecutor.shutdownNow();
         this.metricExecutor.shutdownNow();
+    }
+
+    /**
+     * @param config project declaration
+     * @return a single-valued processor instance
+     */
+
+    private static MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>>
+            ofMetricProcessorForSingleValuedPairs( ProjectConfig config )
+    {
+        ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( config );
+        FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( "DRRC2" ), FeatureKey.of( "DRRC2" ), null );
+        Map<FeatureTuple, ThresholdsByMetric> thresholds = Map.of( featureTuple, thresholdsByMetric );
+        ThresholdsByMetricAndFeature metrics = ThresholdsByMetricAndFeature.of( thresholds, 0 );
+
+        return new MetricProcessorByTimeSingleValuedPairs( metrics,
+                                                           ForkJoinPool.commonPool(),
+                                                           ForkJoinPool.commonPool() );
     }
 
 }

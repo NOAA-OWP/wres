@@ -101,7 +101,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
                                      MeasurementUnit units )
     {
         return new Builder().setValues( values )
-                            .setCondition( condition )
+                            .setOperator( condition )
                             .setDataType( dataType )
                             .setLabel( label )
                             .setUnits( units )
@@ -147,7 +147,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     {
         return new Builder().setValues( values )
                             .setProbabilities( probabilities )
-                            .setCondition( condition )
+                            .setOperator( condition )
                             .setDataType( dataType )
                             .setLabel( label )
                             .setUnits( units )
@@ -224,7 +224,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
                                                          MeasurementUnit units )
     {
         return new Builder().setProbabilities( probabilities )
-                            .setCondition( condition )
+                            .setOperator( condition )
                             .setDataType( dataType )
                             .setLabel( label )
                             .setUnits( units )
@@ -554,10 +554,11 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     {
 
         // Label not used for all data
-        if ( !this.isFinite() )
+        if ( this.isAllDataThreshold() )
         {
             return "All data";
         }
+        
         String append = "";
         if ( this.hasLabel() )
         {
@@ -779,7 +780,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
          * @return the builder
          */
 
-        public Builder setCondition( Operator condition )
+        public Builder setOperator( Operator condition )
         {
             this.condition = condition;
             return this;
@@ -937,11 +938,14 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
         Threshold.Builder thresholdBuilder = Threshold.newBuilder();
 
-        if ( Objects.nonNull( operator ) )
-        {
-            ThresholdOperator anOperator = ThresholdOperator.valueOf( operator.name() );
-            thresholdBuilder.setOperator( anOperator );
-        }
+        Objects.requireNonNull( operator, "Cannot build a threshold without an operator." );
+        Objects.requireNonNull( dataType, "Cannot build a threshold without a threshold data type." );
+
+        ThresholdOperator anOperator = ThresholdOperator.valueOf( operator.name() );
+        thresholdBuilder.setOperator( anOperator );
+
+        Threshold.ThresholdDataType aDataType = Threshold.ThresholdDataType.valueOf( dataType.name() );
+        thresholdBuilder.setDataType( aDataType );
 
         if ( Objects.nonNull( label ) )
         {
@@ -951,12 +955,6 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         if ( Objects.nonNull( units ) )
         {
             thresholdBuilder.setThresholdValueUnits( units.getUnit() );
-        }
-
-        if ( Objects.nonNull( dataType ) )
-        {
-            Threshold.ThresholdDataType aDataType = Threshold.ThresholdDataType.valueOf( dataType.name() );
-            thresholdBuilder.setDataType( aDataType );
         }
 
         if ( Objects.nonNull( localValues ) )
@@ -990,18 +988,18 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     {
         if ( this.threshold.getOperator() == ThresholdOperator.UNRECOGNIZED )
         {
-            throw new IllegalArgumentException( "Specify a recognized threshold operator." );
+            throw new ThresholdException( "Specify a recognized threshold operator." );
         }
 
         if ( this.threshold.getDataType() == Threshold.ThresholdDataType.UNRECOGNIZED )
         {
-            throw new IllegalArgumentException( "Specify a recognized threshold data type." );
+            throw new ThresholdException( "Specify a recognized threshold data type." );
         }
 
         // Do not allow only an upper threshold or all null thresholds
         if ( !this.hasValues() && !this.hasProbabilities() )
         {
-            throw new IllegalArgumentException( "Specify one or more values for the threshold." );
+            throw new ThresholdException( "Specify one or more values for the threshold." );
         }
 
         // Check the probability
@@ -1018,14 +1016,6 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         {
             this.validateOneSidedThreshold();
         }
-
-        // Check for no label when setting threshold as "all data"
-        if ( !this.isFinite() && this.hasLabel() )
-        {
-            throw new IllegalArgumentException( "Cannot set a label for an infinite threshold, as the label is "
-                                                + "reserved. Requested label: "
-                                                + this.getLabel() );
-        }
     }
 
     /**
@@ -1041,22 +1031,22 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
             if ( !this.getProbabilities().first().equals( Double.NEGATIVE_INFINITY )
                  && ( this.getProbabilities().first() < 0.0 || this.getProbabilities().first() > 1.0 ) )
             {
-                throw new IllegalArgumentException( "The threshold probability is out of bounds [0,1]: "
-                                                    + this.getProbabilities().first() );
+                throw new ThresholdException( "The threshold probability is out of bounds [0,1]: "
+                                              + this.getProbabilities().first() );
             }
 
             // Cannot have LESS_THAN on the lower bound
             if ( Math.abs( this.getProbabilities().first() - 0.0 ) < .00000001 && this.getOperator() == Operator.LESS )
             {
-                throw new IllegalArgumentException( "Cannot apply a threshold operator of '<' to the lower bound "
-                                                    + "probability of 0.0." );
+                throw new ThresholdException( "Cannot apply a threshold operator of '<' to the lower bound "
+                                              + "probability of 0.0." );
             }
             // Cannot have GREATER_THAN on the upper bound
             if ( Math.abs( this.getProbabilities().first() - 1.0 ) < .00000001
                  && this.getOperator() == Operator.GREATER )
             {
-                throw new IllegalArgumentException( "Cannot apply a threshold operator of '>' to the upper bound "
-                                                    + "probability of 1.0." );
+                throw new ThresholdException( "Cannot apply a threshold operator of '>' to the upper bound "
+                                              + "probability of 1.0." );
             }
         }
     }
@@ -1072,13 +1062,13 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
         if ( this.hasValues() && Objects.nonNull( this.getValues().second() ) )
         {
-            throw new IllegalArgumentException( "Specify a null upper threshold or define an appropriate "
-                                                + "BETWEEN condition." );
+            throw new ThresholdException( "Specify a null upper threshold or define an appropriate "
+                                          + "BETWEEN condition." );
         }
         if ( this.hasProbabilities() && Objects.nonNull( this.getProbabilities().second() ) )
         {
-            throw new IllegalArgumentException( "Specify a non-null upper threshold probability or define an "
-                                                + "appropriate BETWEEN condition." );
+            throw new ThresholdException( "Specify a non-null upper threshold probability or define an "
+                                          + "appropriate BETWEEN condition." );
         }
     }
 
@@ -1097,36 +1087,36 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         if ( ( this.hasProbabilities() && !this.getProbabilities().hasTwo() )
              || ( this.hasValues() && !this.getValues().hasTwo() ) )
         {
-            throw new IllegalArgumentException( "When constructing a BETWEEN condition, thresholds must be defined "
-                                                + "in pairs." );
+            throw new ThresholdException( "When constructing a BETWEEN condition, thresholds must be defined "
+                                          + "in pairs." );
         }
 
         if ( this.hasValues() && Objects.nonNull( values.first() ) && values.second() <= values.first() )
         {
-            throw new IllegalArgumentException( "The upper threshold must be greater than the lower threshold: ["
-                                                + values.first()
-                                                + ","
-                                                + values.second()
-                                                + "]." );
+            throw new ThresholdException( "The upper threshold must be greater than the lower threshold: ["
+                                          + values.first()
+                                          + ","
+                                          + values.second()
+                                          + "]." );
         }
         // Upper bound is less than or equal to lower bound
         if ( this.hasProbabilities() && Objects.nonNull( probabilities.first() )
              && probabilities.second() <= probabilities.first() )
         {
-            throw new IllegalArgumentException( "The upper threshold probability must be greater than the "
-                                                + "lower threshold probability: ["
-                                                + probabilities.first()
-                                                + ","
-                                                + probabilities.second()
-                                                + "]." );
+            throw new ThresholdException( "The upper threshold probability must be greater than the "
+                                          + "lower threshold probability: ["
+                                          + probabilities.first()
+                                          + ","
+                                          + probabilities.second()
+                                          + "]." );
         }
         // Upper bound is finite and invalid
         if ( this.hasProbabilities() && this.getProbabilities().hasTwo()
              && !probabilities.second().equals( Double.POSITIVE_INFINITY )
              && probabilities.second() > 1.0 )
         {
-            throw new IllegalArgumentException( "The upper threshold probability is out of bounds [0,1]: "
-                                                + probabilities.second() );
+            throw new ThresholdException( "The upper threshold probability is out of bounds [0,1]: "
+                                          + probabilities.second() );
         }
 
     }
