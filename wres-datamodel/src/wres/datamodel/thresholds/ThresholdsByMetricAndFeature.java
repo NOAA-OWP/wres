@@ -7,6 +7,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
 import net.jcip.annotations.Immutable;
 import wres.config.generated.MetricsConfig;
 import wres.datamodel.metrics.MetricConstants;
@@ -128,6 +131,16 @@ public class ThresholdsByMetricAndFeature
     public int hashCode()
     {
         return Objects.hash( this.getThresholdsByMetricAndFeature(), this.getMinimumSampleSize() );
+    }
+
+    @Override
+    public String toString()
+    {
+        return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE ).append( "thresholdsByMetricAndFeature",
+                                                                                     this.getThresholdsByMetricAndFeature() )
+                                                                            .append( "minimumSampleSize",
+                                                                                     this.getMinimumSampleSize() )
+                                                                            .toString();
     }
 
     /**

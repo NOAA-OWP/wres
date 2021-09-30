@@ -42,7 +42,7 @@ import wres.statistics.generated.MetricName;
 /**
  * Tests the {@link MetricFuturesByTime}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class MetricFuturesByTimeTest
 {

@@ -11,9 +11,11 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -268,13 +270,20 @@ public final class MetricTestDataFactory
 
     /**
      * @param featureId the feature name
+     * @param baseline is true to include a baseline
      * @return a singleton feature group containing the named feature
      */
 
-    public static FeatureGroup getFeatureGroup( final String featureId )
+    public static FeatureGroup getFeatureGroup( final String featureId, boolean baseline )
     {
         FeatureKey featureKey = new FeatureKey( featureId, null, null, null );
-        return FeatureGroup.of( new FeatureTuple( featureKey, featureKey, featureKey ) );
+        
+        if( baseline )
+        {
+            return FeatureGroup.of( new FeatureTuple( featureKey, featureKey, featureKey ) );
+        }
+        
+        return FeatureGroup.of( new FeatureTuple( featureKey, featureKey, null ) );
     }
 
     /**
@@ -397,7 +406,7 @@ public final class MetricTestDataFactory
                                                            Instant.parse( SECOND_TIME ),
                                                            Duration.ofHours( 24 ) );
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( "103.1" );
+        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( "103.1", false );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "QME" )
@@ -434,7 +443,7 @@ public final class MetricTestDataFactory
                                                      Instant.parse( SECOND_TIME ),
                                                      Duration.ofHours( 24 ) );
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( "A" );
+        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( "A", false );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "MAP" )
@@ -707,7 +716,7 @@ public final class MetricTestDataFactory
                                           .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
                                           .build();
 
-        Pool pool = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup( DRRC2 ), null, null, null, false );
+        Pool pool = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup( DRRC2, false ), null, null, null, false );
 
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
@@ -1188,7 +1197,7 @@ public final class MetricTestDataFactory
                                                            Duration.ofHours( 6 ),
                                                            Duration.ofHours( 18 ) );
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( "A" );
+        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( "A", false );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( STREAMFLOW )
@@ -1376,7 +1385,7 @@ public final class MetricTestDataFactory
                                                            Duration.ofHours( 6 ),
                                                            Duration.ofHours( 30 ) );
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( "A" );
+        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( "A", false );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( STREAMFLOW )
@@ -1658,12 +1667,12 @@ public final class MetricTestDataFactory
         fourth.add( Event.of( Instant.parse( "2551-03-20T09:00:00Z" ),
                               Pair.of( 840.33, 311.00 ) ) );
 
-        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "2551-03-17T00:00:00Z" ),
-                                                           Instant.parse( "2551-03-20T00:00:00Z" ),
-                                                           Duration.ofSeconds( 10800 ),
-                                                           Duration.ofSeconds( 118800 ) );
+        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "2551-03-17T00:00:00Z" ),
+                                                     Instant.parse( "2551-03-20T00:00:00Z" ),
+                                                     Duration.ofSeconds( 10800 ),
+                                                     Duration.ofSeconds( 118800 ) );
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( "FAKE2" );
+        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( "FAKE2", false );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "DISCHARGE" )
@@ -1705,7 +1714,7 @@ public final class MetricTestDataFactory
                                                      Instant.parse( SECOND_TIME ),
                                                      Duration.ofHours( 24 ) );
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( "A" );
+        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( "A", false );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "MAP" )
@@ -1726,6 +1735,63 @@ public final class MetricTestDataFactory
                       .setMetadata( meta )
                       .build();
     }
+    
+    /**
+     * Returns a set of single-valued pairs without a baseline and with some missing values.
+     * 
+     * @return single-valued pairs
+     */
+
+    public static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Double>>> getTimeSeriesOfSingleValuedPairsEleven()
+    {
+        //Construct some single-valued pairs
+        SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
+
+        Instant start = Instant.parse( "1985-01-01T00:00:00Z" );
+
+        events.add( Event.of( start.plus( Duration.ofHours( 1 ) ), Pair.of( 22.9, 22.8 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 2 ) ), Pair.of( 75.2, 80.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 3 ) ), Pair.of( 63.2, 65.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 4 ) ), Pair.of( 29.0, 30.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 5 ) ), Pair.of( 5.0, 2.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 6 ) ), Pair.of( 2.1, 3.1 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 7 ) ), Pair.of( 35000.0, 37000.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 8 ) ), Pair.of( 8.0, 7.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 9 ) ), Pair.of( 12.0, 12.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 10 ) ), Pair.of( 93.0, 94.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 11 ) ), Pair.of( Double.NaN, 94.0 ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 12 ) ), Pair.of( 93.0, Double.NaN ) ) );
+        events.add( Event.of( start.plus( Duration.ofHours( 13 ) ), Pair.of( Double.NaN, Double.NaN ) ) );
+
+        Builder<TimeSeries<Pair<Double, Double>>> builder = new Builder<>();
+
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( Instant.MIN,
+                                                         Instant.MAX,
+                                                         Duration.ZERO );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "SQIN" )
+                                          .setRightDataName( "AHPS" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        FeatureGroup groupOne = MetricTestDataFactory.getFeatureGroup( DRRC2, false );
+        FeatureGroup groupTwo = MetricTestDataFactory.getFeatureGroup( "DRRC3", false );
+        Set<FeatureTuple> features = new HashSet<>();
+        features.addAll( groupOne.getFeatures() );
+        features.addAll( groupTwo.getFeatures() );
+        FeatureGroup featureGroup = FeatureGroup.of( features );
+        
+        Pool pool = MessageFactory.parse( featureGroup,
+                                          timeWindow,
+                                          null,
+                                          null,
+                                          false );
+        return builder.addData( TimeSeries.of( MetricTestDataFactory.getBoilerplateMetadata(),
+                                               events ) )
+                      .setMetadata( PoolMetadata.of( evaluation, pool ) )
+                      .build();
+    }    
 
     /**
      * Returns a moderately-sized test dataset of ensemble pairs with the same dataset as a baseline. Reads the pairs 
@@ -1975,7 +2041,7 @@ public final class MetricTestDataFactory
                                                      Instant.parse( SECOND_TIME ),
                                                      Duration.ofHours( 24 ) );
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( DRRC2 );
+        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( DRRC2, false );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "MAP" )

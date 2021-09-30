@@ -202,7 +202,8 @@ public class PoolSlicer
                                      + ". After decomposing the pool into smaller pools by metadata attribute, failed "
                                      + "to identify a filter for any of these attribute instances: "
                                      + keysWithoutAFilter
-                                     + "." );
+                                     + ". These filters were available: "
+                                     + filters );
         }
         else if ( !keysWithoutAFilter.isEmpty() && LOGGER.isWarnEnabled() )
         {

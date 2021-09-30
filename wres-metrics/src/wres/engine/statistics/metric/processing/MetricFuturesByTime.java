@@ -61,8 +61,8 @@ class MetricFuturesByTime
      * {@link BoxplotStatisticOuter} results per pool.
      */
 
-    private final List<Future<List<BoxplotStatisticOuter>>> boxplotPerPool = new ArrayList<>();    
-    
+    private final List<Future<List<BoxplotStatisticOuter>>> boxplotPerPool = new ArrayList<>();
+
     /**
      * {@link DurationDiagramStatisticOuter} results.
      */
@@ -81,12 +81,12 @@ class MetricFuturesByTime
                 DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
 
         //Add outputs for current futures
-        doubleScore.forEach( builder::addDoubleScoreStatistics );
-        durationScore.forEach( builder::addDurationScoreStatistics );
-        diagrams.forEach( builder::addDiagramStatistics );
-        boxplotPerPair.forEach( builder::addBoxPlotStatisticsPerPair );
-        boxplotPerPool.forEach( builder::addBoxPlotStatisticsPerPool );
-        paired.forEach( builder::addInstantDurationPairStatistics );
+        this.doubleScore.forEach( builder::addDoubleScoreStatistics );
+        this.durationScore.forEach( builder::addDurationScoreStatistics );
+        this.diagrams.forEach( builder::addDiagramStatistics );
+        this.boxplotPerPair.forEach( builder::addBoxPlotStatisticsPerPair );
+        this.boxplotPerPool.forEach( builder::addBoxPlotStatisticsPerPool );
+        this.paired.forEach( builder::addInstantDurationPairStatistics );
         return builder.build();
     }
 
@@ -119,7 +119,7 @@ class MetricFuturesByTime
         {
             returnMe.add( StatisticType.BOXPLOT_PER_PAIR );
         }
-        
+
         if ( !this.boxplotPerPool.isEmpty() )
         {
             returnMe.add( StatisticType.BOXPLOT_PER_POOL );
@@ -178,7 +178,7 @@ class MetricFuturesByTime
 
         private final ConcurrentLinkedQueue<Future<List<BoxplotStatisticOuter>>> boxplotPerPair =
                 new ConcurrentLinkedQueue<>();
-        
+
         /**
          * {@link BoxplotStatisticOuter} results per pool.
          */
@@ -248,7 +248,7 @@ class MetricFuturesByTime
 
             return this;
         }
-        
+
         /**
          * Adds a set of future {@link BoxplotStatisticOuter} per pool to the appropriate internal store.
          * 
@@ -261,7 +261,7 @@ class MetricFuturesByTime
             this.boxplotPerPool.add( value );
 
             return this;
-        }        
+        }
 
         /**
          * Adds a set of future {@link DurationDiagramStatisticOuter} to the appropriate internal store.
@@ -288,7 +288,7 @@ class MetricFuturesByTime
                                                          Future<List<DoubleScoreStatisticOuter>> value )
         {
             Objects.requireNonNull( key.getLeft() );
-            
+
             this.doubleScore.add( value );
 
             return this;
