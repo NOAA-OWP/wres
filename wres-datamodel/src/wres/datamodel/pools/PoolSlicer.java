@@ -167,7 +167,7 @@ public class PoolSlicer
         Map<T, Pool<S>> pools = PoolSlicer.decompose( metaMapper, pool );
 
         // Iterate the pools and apply the filters
-        Set<T> keysWithoutAFilter = new HashSet<>();
+        Set<T> keysWithoutFilter = new HashSet<>();
 
         Pool.Builder<S> poolBuilder = new Pool.Builder<S>().setMetadata( pool.getMetadata() );
 
@@ -191,27 +191,27 @@ public class PoolSlicer
             }
             else
             {
-                keysWithoutAFilter.add( nextKey );
+                keysWithoutFilter.add( nextKey );
             }
         }
 
         // Handle cases with no data or some missing data
-        if ( keysWithoutAFilter.size() == pools.size() )
+        if ( keysWithoutFilter.size() == pools.size() )
         {
             throw new PoolException( "Failed to filter pool " + pool.getMetadata()
                                      + ". After decomposing the pool into smaller pools by metadata attribute, failed "
                                      + "to identify a filter for any of these attribute instances: "
-                                     + keysWithoutAFilter
+                                     + keysWithoutFilter
                                      + ". These filters were available: "
                                      + filters );
         }
-        else if ( !keysWithoutAFilter.isEmpty() && LOGGER.isWarnEnabled() )
+        else if ( !keysWithoutFilter.isEmpty() && LOGGER.isDebugEnabled() )
         {
-            LOGGER.warn( "When filtering pool {} into smaller pools by metadata attribute, failed to correlate some "
-                         + "attributes with filters: {}. Consequently, no filtered pool was identified for any of "
-                         + "these attribute instances and they will not be included in the filtered pool.",
-                         pool.getMetadata(),
-                         keysWithoutAFilter );
+            LOGGER.debug( "When filtering pool {} into smaller pools by metadata attribute, failed to correlate some "
+                          + "attributes with filters: {}. Consequently, no filtered pool was identified for any of "
+                          + "these attribute instances and they will not be included in the evaluation.",
+                          pool.getMetadata(),
+                          keysWithoutFilter );
         }
 
         return poolBuilder.build();
@@ -245,7 +245,7 @@ public class PoolSlicer
         Map<T, Pool<S>> pools = PoolSlicer.decompose( metaMapper, pool );
 
         // Iterate the pools and apply the transformers
-        Set<T> keysWithoutAFilter = new HashSet<>();
+        Set<T> keysWithoutTransformer = new HashSet<>();
 
         Pool.Builder<U> poolBuilder = new Pool.Builder<U>().setMetadata( pool.getMetadata() );
 
@@ -269,26 +269,27 @@ public class PoolSlicer
             }
             else
             {
-                keysWithoutAFilter.add( nextKey );
+                keysWithoutTransformer.add( nextKey );
             }
         }
 
         // Handle cases with no data or some missing data
-        if ( keysWithoutAFilter.size() == pools.size() )
+        if ( keysWithoutTransformer.size() == pools.size() )
         {
             throw new PoolException( "Failed to transform pool " + pool.getMetadata()
                                      + ". After decomposing the pool into smaller pools by metadata attribute, failed "
                                      + "to identify a transformer for any of these attribute instances: "
-                                     + keysWithoutAFilter
-                                     + "." );
+                                     + keysWithoutTransformer
+                                     + ". These transfomers were available: "
+                                     + transformers );
         }
-        else if ( !keysWithoutAFilter.isEmpty() && LOGGER.isWarnEnabled() )
+        else if ( !keysWithoutTransformer.isEmpty() && LOGGER.isDebugEnabled() )
         {
-            LOGGER.warn( "When filtering pool {} into smaller pools by metadata attribute, failed to correlate some "
-                         + "attributes with transformers: {}. Consequently, no transformed pool was identified for any "
-                         + "of these attribute instances and they will not be included in the transformed pool.",
-                         pool.getMetadata(),
-                         keysWithoutAFilter );
+            LOGGER.debug( "When transforming pool {} into smaller pools by metadata attribute, failed to correlate "
+                          + "some attributes with transformers: {}. Consequently, no transformed pool was identified "
+                          + "for any of these attribute instances and they will not be included in the evaluation.",
+                          pool.getMetadata(),
+                          keysWithoutTransformer );
         }
 
         return poolBuilder.build();

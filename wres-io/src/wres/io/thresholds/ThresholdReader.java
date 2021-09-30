@@ -62,6 +62,11 @@ public class ThresholdReader
         return Collections.unmodifiableMap( this.builders.build() );
     }
 
+    /**
+     * @return the set of features with thresholds, not including the "all data" threshold, which is added for every
+     * feature.
+     */
+    
     public Set<FeatureTuple> getEvaluatableFeatures()
     {
         if ( this.encounteredFeatures.isEmpty() )

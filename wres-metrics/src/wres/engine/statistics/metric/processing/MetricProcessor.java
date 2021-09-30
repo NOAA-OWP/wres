@@ -357,6 +357,25 @@ public abstract class MetricProcessor<S extends Pool<?>>
         Objects.requireNonNull( pool );
         Objects.requireNonNull( threshold );
 
+        Pool.Builder<T> builder = new Pool.Builder<T>();
+        for ( Pool<T> nextPool : pool.getMiniPools() )
+        {
+            Pool<T> inner = this.addThresholdToPoolMetadataInner( nextPool, threshold );
+            builder.addPool( inner, false );
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Adds the prescribed threshold to the pool metadata.
+     * @param pool the pool
+     * @param threshold the threshold
+     * @return the pool with the input threshold in the metadata
+     */
+
+    private <T> Pool<T> addThresholdToPoolMetadataInner( Pool<T> pool, OneOrTwoThresholds threshold )
+    {
         PoolMetadata unadjustedMetadata = pool.getMetadata();
         Threshold eventThreshold = MessageFactory.parse( threshold.first() );
         wres.statistics.generated.Pool.Builder poolBuilder = unadjustedMetadata.getPool()
