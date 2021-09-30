@@ -62,6 +62,7 @@ public class NwmRootDocument
     private final List<NwmForecast> forecasts;
     private final Map<String,String> variable;
     private final ParameterCodes parameterCodes;
+    private final List<String> warnings;
 
     @JsonCreator( mode = JsonCreator.Mode.PROPERTIES )
     public NwmRootDocument( @JsonProperty( "forecasts" )
@@ -69,11 +70,14 @@ public class NwmRootDocument
                             @JsonProperty( "variable" )
                             Map<String,String> variable,
                             @JsonProperty( "parameter_codes" )
-                            ParameterCodes parameterCodes )
+                            ParameterCodes parameterCodes,
+                            @JsonProperty( "_warnings" )
+                            List<String> warnings )
     {
         this.forecasts = forecasts;
         this.variable = variable;
         this.parameterCodes = parameterCodes;
+        this.warnings = warnings;
     }
 
     public List<NwmForecast> getForecasts()
@@ -90,12 +94,20 @@ public class NwmRootDocument
     {
         return this.parameterCodes;
     }
-    
+
+    public List<String> getWarnings()
+    {
+        return this.warnings;
+    }
+
     @Override
     public String toString()
     {
         return new ToStringBuilder( this )
                 .append( "forecasts", forecasts )
+                .append( "variable", variable )
+                .append( "parameterCodes", parameterCodes )
+                .append( "warnings", warnings )
                 .toString();
     }
 }
