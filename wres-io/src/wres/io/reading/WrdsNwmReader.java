@@ -294,6 +294,14 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                           ioe );
         }
 
+        List<String> wrdsWarnings = document.getWarnings();
+
+        if ( wrdsWarnings != null && !wrdsWarnings.isEmpty() )
+        {
+            LOGGER.warn( "These warnings were in the document from {}: {}",
+                         uri, wrdsWarnings );
+        }
+
         Map<String,String> variable = document.getVariable();
 
         if ( variable == null
@@ -339,7 +347,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                          " discovered a time scale of ",
                          timeScale );
         }
-        
+
         // Is this a hack or not? Translate "meter^3 / sec" to "CMS"
         if ( measurementUnit.equals( "meter^3 / sec") )
         {
