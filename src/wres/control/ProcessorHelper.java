@@ -16,6 +16,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -462,9 +463,9 @@ class ProcessorHelper
             List<CompletableFuture<Void>> featureTasks = new ArrayList<>();
 
             // Create the feature groups
-            Set<FeatureGroup> featureGroups = ProcessorHelper.getFeatureGroups( project, 
+            Set<FeatureGroup> featureGroups = ProcessorHelper.getFeatureGroups( project,
                                                                                 featuresForThresholds );
-            
+
             // Report on the completion state of all features
             // Report detailed state by default (final arg = true)
             // TODO: demote to summary report (final arg = false) for >> feature count
@@ -473,7 +474,7 @@ class ProcessorHelper
             // Deactivate progress monitoring within features, as features are processed asynchronously - the internal
             // completion state of features has no value when reported in this way
             ProgressMonitor.deactivate();
-            
+
             // Create one task per feature group
             for ( FeatureGroup nextGroup : featureGroups )
             {
@@ -1040,7 +1041,7 @@ class ProcessorHelper
 
         return pathString;
     }
-    
+
     /**
      * @param project the project
      * @param featuresWithThresholds the features that have thresholds
@@ -1055,31 +1056,47 @@ class ProcessorHelper
         // Get the baseline groups
         Set<FeatureGroup> featureGroups = project.getFeatureGroups();
 
-        Set<FeatureGroup> adjustedGroups = new HashSet<>( featureGroups );
-        Set<FeatureGroup> removed = new HashSet<>();
-
-        // Check that every group has one or more thresholds for every tuple, else warn and filter them out
-        for ( FeatureGroup nextGroup : featureGroups )
+        // Log any discrepancies between features with thresholds and features to evaluate
+        if ( LOGGER.isWarnEnabled() )
         {
-            if ( nextGroup.getFeatures().size() > 1 && !featuresWithThresholds.containsAll( nextGroup.getFeatures() ) )
+            Map<String, Set<String>> missing = new HashMap<>();
+
+            // Check that every group has one or more thresholds for every tuple, else warn and filter them out
+            for ( FeatureGroup nextGroup : featureGroups )
             {
-                adjustedGroups.remove( nextGroup );
-                removed.add( nextGroup );
+                if ( nextGroup.getFeatures().size() > 1
+                     && !featuresWithThresholds.containsAll( nextGroup.getFeatures() ) )
+                {
+                    Set<FeatureTuple> missingFeatures = new HashSet<>();
+                    missingFeatures.addAll( nextGroup.getFeatures() );
+                    missingFeatures.removeAll( featuresWithThresholds );
+
+                    // Show abbreviated information only
+                    missing.put( nextGroup.getName(),
+                                 missingFeatures.stream()
+                                                .map( FeatureTuple::toStringShort )
+                                                .collect( Collectors.toSet() ) );
+                }
+            }
+
+            // Warn about groups without thresholds, which will be skipped
+            if ( !missing.isEmpty() )
+            {
+                LOGGER.warn( "While correlating thresholds with the features contained in feature groups, "
+                             + "discovered {} feature groups that did not have thresholds for every feature within the "
+                             + "group. These groups will be evaluated, but the grouped statistics will not include the "
+                             + "pairs associated with the features that have missing thresholds. The features with "
+                             + "missing thresholds and their associated feature groups are: {}. By default, the \"all "
+                             + "data\" threshold is added to every feature and the statistics for this threshold "
+                             + "will not be impacted.",
+                             missing.size(),
+                             missing );
             }
         }
 
-        // Warn about groups without thresholds, which will be skipped
-        if ( !removed.isEmpty() && LOGGER.isWarnEnabled() )
-        {
-            LOGGER.warn( "While correlating thresholds with the feature tuples that belong to feature groups, "
-                         + "discovered {} feature groups without thresholds for one or more of their feature "
-                         + "tuples. These groups will not be evaluated. The groups are: {}.",
-                         removed );
-        }
-
-        return Collections.unmodifiableSet( adjustedGroups );
+        return Collections.unmodifiableSet( featureGroups );
     }
-    
+
     /**
      * Obtain the minimum sample size from a possible null input. If null, return zero.
      * 
@@ -1098,7 +1115,7 @@ class ProcessorHelper
             return minimumSampleSize;
         }
     }
-    
+
     /**
      * Small value class to collect together variables needed to instantiate an evaluation.
      */

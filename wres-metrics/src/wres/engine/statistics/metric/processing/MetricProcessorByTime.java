@@ -293,14 +293,14 @@ abstract class MetricProcessorByTime<S extends Pool<?>>
 
         Map<FeatureTuple, Set<ThresholdOuter>> withQuantiles =
                 ThresholdSlicer.addQuantiles( unpacked, pool, PoolSlicer.getFeatureMapper() );
-        
+
         // Find the unique thresholds by value
         Map<FeatureTuple, Set<ThresholdOuter>> unique =
                 ThresholdSlicer.filter( withQuantiles, ThresholdSlicer::filter );
 
         // Decompose the thresholds by common type across features
         List<Map<FeatureTuple, ThresholdOuter>> decomposedThresholds = ThresholdSlicer.decompose( unique );
-        
+
         // Iterate the thresholds
         for ( Map<FeatureTuple, ThresholdOuter> thresholds : decomposedThresholds )
         {
@@ -308,11 +308,12 @@ abstract class MetricProcessorByTime<S extends Pool<?>>
                     ThresholdSlicer.getFiltersFromThresholds( thresholds,
                                                               MetricProcessorByTime::getFilterForSingleValuedPairs );
 
-            Pool<Pair<Double, Double>> sliced = PoolSlicer.filter( pool, slicers, PoolSlicer.getFeatureMapper() );
-
-            // Add the threshold to the metadata            
+            // Add the threshold to the pool metadata            
             ThresholdOuter composed = ThresholdSlicer.compose( Set.copyOf( thresholds.values() ) );
-            sliced = this.addThresholdToPoolMetadata( sliced, OneOrTwoThresholds.of( composed ) );
+            Pool<Pair<Double, Double>> innerPool = this.addThresholdToPoolMetadata( pool,
+                                                                                    OneOrTwoThresholds.of( composed ) );
+
+            Pool<Pair<Double, Double>> sliced = PoolSlicer.filter( innerPool, slicers, PoolSlicer.getFeatureMapper() );
 
             this.processSingleValuedPairs( sliced,
                                            futures,
