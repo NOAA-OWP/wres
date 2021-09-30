@@ -6,7 +6,6 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -21,7 +20,6 @@ import org.apache.commons.math3.util.Precision;
 import org.junit.Test;
 
 import wres.config.MetricConfigException;
-import wres.config.ProjectConfigPlus;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.MetricConfig;
@@ -70,13 +68,6 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 public final class MetricProcessorByTimeEnsemblePairsTest
 {
 
-    /**
-     * Test source.
-     */
-
-    private static final String TEST_SOURCE =
-            "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithValueThresholds.xml";
-
     @Test
     public void testGetFilterForEnsemblePairs()
     {
@@ -115,8 +106,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     @Test
     public void testApplyWithoutThresholds() throws IOException, MetricParameterException, InterruptedException
     {
-        String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithoutThresholds.xml";
-        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+        ProjectConfig config = TestDeclarationGenerator.getDeclarationForEnsembleForecastsWithoutThresholds();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
                 MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( config );
         StatisticsForProject results =
@@ -168,9 +158,8 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     public void testApplyWithValueThresholds()
             throws IOException, MetricParameterException, InterruptedException
     {
-        String configPath = TEST_SOURCE;
-
-        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+        ProjectConfig config =
+                TestDeclarationGenerator.getDeclarationForEnsembleForecastsWithAllValidMetricsAndValueThresholds();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
                 MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( config );
         StatisticsForProject statistics = processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsOne() );
@@ -317,12 +306,12 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     public void testApplyWithValueThresholdsAndCategoricalMeasures()
             throws MetricParameterException, IOException, InterruptedException
     {
-        // Mock configuration
+        // Create configuration
         List<MetricConfig> metrics = new ArrayList<>();
         metrics.add( new MetricConfig( null, MetricConfigName.THREAT_SCORE ) );
         metrics.add( new MetricConfig( null, MetricConfigName.PEIRCE_SKILL_SCORE ) );
 
-        // Mock some thresholds
+        // Add some thresholds
         List<ThresholdsConfig> thresholds = new ArrayList<>();
         thresholds.add( new ThresholdsConfig( ThresholdType.VALUE,
                                               wres.config.generated.ThresholdDataType.LEFT,
@@ -370,9 +359,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     public void testApplyWithProbabilityThresholds()
             throws IOException, MetricParameterException, InterruptedException
     {
-        String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithProbabilityThresholds.xml";
-
-        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+        ProjectConfig config = TestDeclarationGenerator.getDeclarationForEnsembleForecastsWithProbabilityThresholds();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
                 MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( config );
         StatisticsForProject statistics = processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsOne() );
@@ -590,11 +577,10 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                       + "climatological data source to pool PoolMetadata[leftDataName=,rightDataName=,"
                       + "baselineDataName=,leftVariableName=,rightVariableName=MAP,baselineVariableName=,"
                       + "isBaselinePool=false,features=FeatureGroup[name=,features=[FeatureTuple[left="
-                      + "FeatureKey[name=DRRC2,description=,srid=0,wkt=],right=FeatureKey[name=DRRC2,"
-                      + "description=,srid=0,wkt=],baseline=FeatureKey[name=DRRC2,description=,srid=0,wkt=]]]],"
-                      + "timeWindow=[1985-01-01T00:00:00Z,2010-12-31T11:59:59Z,-1000000000-01-01T00:00:00Z,"
-                      + "+1000000000-12-31T23:59:59.999999999Z,PT24H,PT24H],thresholds=<null>,timeScale=<null>,"
-                      + "measurementUnit=MM/DAY] and try again.",
+                      + "FeatureKey[name=DRRC2,description=,srid=0,wkt=],right=FeatureKey[name=DRRC2,description=,"
+                      + "srid=0,wkt=],baseline=<null>]]],timeWindow=[1985-01-01T00:00:00Z,2010-12-31T11:59:59Z,"
+                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT24H,PT24H],"
+                      + "thresholds=<null>,timeScale=<null>,measurementUnit=MM/DAY] and try again.",
                       actual.getMessage() );
     }
 
@@ -666,9 +652,8 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     @Test
     public void testApplyWithAllValidMetrics() throws IOException, MetricParameterException
     {
-        String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testAllValid.xml";
-
-        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+        ProjectConfig config =
+                TestDeclarationGenerator.getDeclarationForEnsembleForecastsWithAllValidMetrics();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
                 MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( config );
 
@@ -685,9 +670,9 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     public void testApplyWithValueThresholdsAndMissings()
             throws IOException, MetricParameterException, InterruptedException
     {
-        String configPath = TEST_SOURCE;
+        ProjectConfig config =
+                TestDeclarationGenerator.getDeclarationForEnsembleForecastsWithAllValidMetricsAndValueThresholds();
 
-        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
                 MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( config );
 
@@ -833,9 +818,8 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     public void testContingencyTable()
             throws IOException, MetricParameterException, InterruptedException
     {
-        String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testContingencyTable.xml";
-
-        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+        ProjectConfig config =
+                TestDeclarationGenerator.getDeclarationForEnsembleForecastsWithContingencyTableAndValueThresholds();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
                 MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( config );
         StatisticsForProject statistics = processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsTwo() );
@@ -1086,9 +1070,9 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     public void testApplyWithValueThresholdsAndNoData()
             throws IOException, MetricParameterException, InterruptedException
     {
-        String configPath = TEST_SOURCE;
+        ProjectConfig config =
+                TestDeclarationGenerator.getDeclarationForEnsembleForecastsWithAllValidMetricsAndValueThresholds();
 
-        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
                 MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( config );
         StatisticsForProject statistics = processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsFour() );

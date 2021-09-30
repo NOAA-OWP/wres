@@ -37,7 +37,7 @@ public class FeatureTuple implements Comparable<FeatureTuple>
     /**
      * @param feature a declared feature from which to build the instance, not null
      */
-    
+
     public FeatureTuple( Feature feature )
     {
         Objects.requireNonNull( feature );
@@ -83,7 +83,7 @@ public class FeatureTuple implements Comparable<FeatureTuple>
     {
         return this.geometryTuple;
     }
-    
+
     @Override
     public boolean equals( Object o )
     {
@@ -130,21 +130,22 @@ public class FeatureTuple implements Comparable<FeatureTuple>
             return rightComparison;
         }
 
-        if ( Objects.nonNull( this.getBaseline() ) )
-        {
-            if ( Objects.nonNull( o.getBaseline() ) )
-            {
-                return this.getBaseline()
-                           .compareTo( o.getBaseline() );
-            }
+        int baselinePresence = Boolean.compare( this.geometryTuple.hasBaseline(), o.geometryTuple.hasBaseline() );
 
-            return 1;
+        if ( baselinePresence != 0 )
+        {
+            return baselinePresence;
         }
 
-        throw new IllegalStateException( "Could not find the difference between FeatureTuple "
-                                         + this
-                                         + " and FeatureTuple "
-                                         + o );
+        int baselineComparison = 0;
+
+        if ( Objects.nonNull( this.getBaseline() ) )
+        {
+            baselineComparison = this.getBaseline()
+                                     .compareTo( o.getBaseline() );
+        }
+
+        return baselineComparison;
     }
 
     @Override
@@ -164,13 +165,13 @@ public class FeatureTuple implements Comparable<FeatureTuple>
     public String toStringShort()
     {
         String separator = "-";
-        
+
         // Other sides likely to use similar naming convention, such as coordinate pairs, which may be negative, '-'
-        if( Objects.nonNull( this.getLeft().getName() ) && this.getLeft().getName().contains( "-" ) )
+        if ( Objects.nonNull( this.getLeft().getName() ) && this.getLeft().getName().contains( "-" ) )
         {
             separator = ", ";
         }
-        
+
         StringJoiner joiner = new StringJoiner( separator );
 
         joiner.add( this.getLeftName() ).add( this.getRightName() );
@@ -254,7 +255,7 @@ public class FeatureTuple implements Comparable<FeatureTuple>
             throw new UnsupportedOperationException( "Cannot handle non-Left/Right/Baseline" );
         }
     }
-    
+
     /**
      * @param left the left feature key, not null
      * @param right the right feature key, not null
@@ -262,7 +263,7 @@ public class FeatureTuple implements Comparable<FeatureTuple>
      * @return the geometry
      * @throws NullPointerException if the left or right features are null
      */
-    
+
     private GeometryTuple getGeometryFromFeatureKeys( FeatureKey left, FeatureKey right, FeatureKey baseline )
     {
         Objects.requireNonNull( left );
@@ -282,5 +283,5 @@ public class FeatureTuple implements Comparable<FeatureTuple>
 
         return builder.build();
     }
-    
+
 }

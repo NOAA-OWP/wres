@@ -12,14 +12,10 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 /**
  * Tests the {@link MetricProcessorByTime}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class MetricProcessorByTimeTest
 {
-
-    /**
-     * Tests the {@link MetricProcessorByTime#getFilterForSingleValuedPairs(wres.datamodel.thresholds.ThresholdOuter)}.
-     */
 
     @Test
     public void testGetFilterForSingleValuedPairs()

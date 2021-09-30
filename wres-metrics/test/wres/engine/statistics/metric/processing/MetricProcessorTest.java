@@ -5,7 +5,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -16,7 +15,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import wres.config.ProjectConfigPlus;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.pools.Pool;
@@ -41,11 +39,8 @@ import wres.engine.statistics.metric.MetricParameterException;
  */
 public final class MetricProcessorTest
 {
-    /**
-     * Source for testing.
-     */
 
-    private static final String TEST_SOURCE = "testinput/metricProcessorTest/testAllValid.xml";
+    private static final String DRRC2 = "DRRC2";
 
     /**
      * Threshold executor service.
@@ -69,8 +64,7 @@ public final class MetricProcessorTest
     @Test
     public void testHasMetricsForMetricInputGroup() throws MetricParameterException, IOException
     {
-        String configPath = TEST_SOURCE;
-        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+        ProjectConfig config = TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithAllValidMetricsAndIssuedDatePools();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
                 MetricProcessorTest.ofMetricProcessorForSingleValuedPairs( config );
         //Check for existence of metrics
@@ -80,8 +74,7 @@ public final class MetricProcessorTest
     @Test
     public void testHasMetricsForMetricOutputGroup() throws MetricParameterException, IOException
     {
-        String configPath = TEST_SOURCE;
-        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+        ProjectConfig config = TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithAllValidMetricsAndIssuedDatePools();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
                 MetricProcessorTest.ofMetricProcessorForSingleValuedPairs( config );
         //Check for existence of metrics
@@ -91,8 +84,7 @@ public final class MetricProcessorTest
     @Test
     public void testHasMetricsForMetricInputGroupAndMetricOutputGroup() throws MetricParameterException, IOException
     {
-        String configPath = TEST_SOURCE;
-        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+        ProjectConfig config = TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithAllValidMetricsAndIssuedDatePools();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
                 MetricProcessorTest.ofMetricProcessorForSingleValuedPairs( config );
         //Check for existence of metrics
@@ -103,9 +95,7 @@ public final class MetricProcessorTest
     public void testDisallowNonScoresWithSingleValuedInput()
             throws IOException, MetricParameterException
     {
-        //Single-valued case
-        String configPathSingleValued = "testinput/metricProcessorTest/testSingleValued.xml";
-        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
+        ProjectConfig config = TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithAllValidMetricsAndIssuedDatePools();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
                 MetricProcessorTest.ofMetricProcessorForSingleValuedPairs( config );
 
@@ -131,12 +121,11 @@ public final class MetricProcessorTest
     public void testDisallowNonScoresForEnsembleInput()
             throws IOException, MetricParameterException
     {
-        //Ensemble case
-        String configPathEnsemble = "testinput/metricProcessorTest/testDisallowNonScores.xml";
-        ProjectConfig configEnsemble = ProjectConfigPlus.from( Paths.get( configPathEnsemble ) ).getProjectConfig();
+        ProjectConfig configEnsemble =
+                TestDeclarationGenerator.getDeclarationForEnsembleForecastsWithAllValidMetricsAndIssuedDatePools();
 
         ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( configEnsemble );
-        FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( "DRRC2" ), FeatureKey.of( "DRRC2" ), null );
+        FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( DRRC2 ), FeatureKey.of( DRRC2 ), null );
         Map<FeatureTuple, ThresholdsByMetric> thresholds = Map.of( featureTuple, thresholdsByMetric );
         ThresholdsByMetricAndFeature metrics = ThresholdsByMetricAndFeature.of( thresholds, 0 );
 
@@ -191,7 +180,7 @@ public final class MetricProcessorTest
             ofMetricProcessorForSingleValuedPairs( ProjectConfig config )
     {
         ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( config );
-        FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( "DRRC2" ), FeatureKey.of( "DRRC2" ), null );
+        FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( DRRC2 ), FeatureKey.of( DRRC2 ), null );
         Map<FeatureTuple, ThresholdsByMetric> thresholds = Map.of( featureTuple, thresholdsByMetric );
         ThresholdsByMetricAndFeature metrics = ThresholdsByMetricAndFeature.of( thresholds, 0 );
 
