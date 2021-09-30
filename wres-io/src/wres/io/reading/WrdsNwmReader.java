@@ -294,9 +294,39 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                           ioe );
         }
 
-        String variableName = document.getVariable().get( "name" );
-        String measurementUnit = document.getVariable().get( "unit" );
-        
+        Map<String,String> variable = document.getVariable();
+
+        if ( variable == null
+             || variable.isEmpty()
+             || !variable.containsKey( "name" )
+             || !variable.containsKey( "unit" ) )
+        {
+            throw new PreIngestException( "Invalid document from WRDS (variable"
+                                          + " and/or unit missing): check the "
+                                          + "WRDS and WRES documentation to "
+                                          + "ensure the most up-to-date base "
+                                          + "URL is declared in the source tag."
+                                          + " The invalid document was from "
+                                          + uri );
+        }
+
+        String variableName = variable.get( "name" );
+        String measurementUnit = variable.get( "unit" );
+
+        if ( variableName == null
+             || variableName.isBlank()
+             || measurementUnit == null
+             || measurementUnit.isBlank() )
+        {
+            throw new PreIngestException( "Invalid document from WRDS (variable"
+                                          + " and/or unit value was missing): "
+                                          + "check the WRDS and WRES "
+                                          + "documentation to ensure the most "
+                                          + "up-to-date base URL is declared in"
+                                          + " the source tag. The invalid "
+                                          + "document was from " + uri );
+        }
+
         // Time scale if available
         TimeScaleOuter timeScale = null;
  
