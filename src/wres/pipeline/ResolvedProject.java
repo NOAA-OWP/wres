@@ -1,4 +1,4 @@
-package wres.control;
+package wres.pipeline;
 
 import java.nio.file.Path;
 import java.util.Collections;

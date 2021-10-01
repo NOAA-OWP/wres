@@ -1,4 +1,4 @@
-package wres.control;
+package wres.pipeline;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -29,10 +29,10 @@ import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.ProjectConfig;
 import wres.config.Validation;
-import wres.control.ProcessorHelper.Executors;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.io.concurrency.Executor;
 import wres.io.utilities.Database;
+import wres.pipeline.ProcessorHelper.Executors;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 

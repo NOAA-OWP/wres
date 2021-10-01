@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.ExecutionResult;
-import wres.control.Evaluator;
+import wres.pipeline.Evaluator;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.io.concurrency.Executor;
 import wres.io.utilities.Database;
