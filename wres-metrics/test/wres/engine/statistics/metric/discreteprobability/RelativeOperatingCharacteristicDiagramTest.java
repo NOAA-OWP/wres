@@ -54,7 +54,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
         Pool<Pair<Probability, Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsThree();
 
         //Metadata for the output
-        PoolMetadata m1 = Boilerplate.getSampleMetadata();
+        PoolMetadata m1 = Boilerplate.getPoolMetadata();
 
         //Check the results       
         DiagramStatisticOuter actual = this.roc.apply( input );

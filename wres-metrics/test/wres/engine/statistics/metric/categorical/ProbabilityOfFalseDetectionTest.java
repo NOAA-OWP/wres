@@ -49,7 +49,7 @@ public final class ProbabilityOfFalseDetectionTest
     public void setUpBeforeEachTest()
     {
         pofd = ProbabilityOfFalseDetection.of();
-        meta = Boilerplate.getSampleMetadata();
+        meta = Boilerplate.getPoolMetadata();
     }
 
     /**

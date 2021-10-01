@@ -1,4 +1,4 @@
-package wres.engine.statistics.metric.processing;
+package wres.pipeline.statistics;
 
 /**
  * An unchecked exception associated with a {@link MetricProcessor}.

@@ -31,9 +31,6 @@ import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;
 import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.processing.MetricProcessor;
-import wres.engine.statistics.metric.processing.MetricProcessorByTimeEnsemblePairs;
-import wres.engine.statistics.metric.processing.MetricProcessorByTimeSingleValuedPairs;
 import wres.events.Evaluation;
 import wres.events.EvaluationEventUtilities;
 import wres.io.concurrency.Pipelines;
@@ -44,6 +41,9 @@ import wres.io.retrieval.RetrieverFactory;
 import wres.io.retrieval.SingleValuedRetrieverFactory;
 import wres.io.retrieval.UnitMapper;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
+import wres.pipeline.statistics.MetricProcessor;
+import wres.pipeline.statistics.MetricProcessorByTimeEnsemblePairs;
+import wres.pipeline.statistics.MetricProcessorByTimeSingleValuedPairs;
 import wres.statistics.generated.Statistics;
 
 /**

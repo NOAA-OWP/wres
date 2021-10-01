@@ -49,7 +49,7 @@ public final class ThreatScoreTest
     public void setUpBeforeEachTest()
     {
         this.ts = ThreatScore.of();
-        meta = Boilerplate.getSampleMetadata();
+        meta = Boilerplate.getPoolMetadata();
     }
 
     /**

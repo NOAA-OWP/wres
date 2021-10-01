@@ -1,4 +1,4 @@
-package wres.engine.statistics.metric.processing;
+package wres.pipeline.statistics;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
@@ -54,9 +54,7 @@ import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.categorical.ContingencyTable;
 import wres.engine.statistics.metric.timeseries.TimeToPeakError;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -114,7 +112,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     {
         ProjectConfig config = TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithoutThresholds();
         ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( config );
-        FeatureTuple featureTuple = Boilerplate.getFeatureTuple();
+        FeatureTuple featureTuple = MetricTestDataFactory.getFeatureTuple();
         Map<FeatureTuple, ThresholdsByMetric> thresholdsByMetricAndFeature = Map.of( featureTuple, thresholdsByMetric );
         ThresholdsByMetricAndFeature metrics = ThresholdsByMetricAndFeature.of( thresholdsByMetricAndFeature, 0 );
 
@@ -233,7 +231,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                           ThresholdDataType.LEFT,
                                                           MeasurementUnit.of( "CMS" ) ) );
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( Boilerplate.getFeatureGroup(),
+        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup(),
                                                                     expectedWindow,
                                                                     null,
                                                                     expectedThreshold,
@@ -343,7 +341,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( Boilerplate.getFeatureGroup(),
+        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup(),
                                                                     firstWindow,
                                                                     null,
                                                                     thresholds,
@@ -351,7 +349,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         PoolMetadata m1 = PoolMetadata.of( evaluation, pool );
 
-        wres.statistics.generated.Pool poolTwo = MessageFactory.parse( Boilerplate.getFeatureGroup(),
+        wres.statistics.generated.Pool poolTwo = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup(),
                                                                        secondWindow,
                                                                        null,
                                                                        thresholds,
@@ -458,7 +456,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( Boilerplate.getFeatureGroup(),
+        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup(),
                                                                     null,
                                                                     null,
                                                                     null,
@@ -574,7 +572,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( Boilerplate.getFeatureGroup(),
+        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup(),
                                                                     timeWindow,
                                                                     null,
                                                                     thresholds,
@@ -705,7 +703,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         builder.addThresholds( ThresholdsGenerator.getThresholdsFromConfig( config ).getOneOrTwoThresholds() );
 
         ThresholdsByMetric thresholdsByMetric = builder.build();
-        FeatureTuple featureTuple = Boilerplate.getFeatureTuple();
+        FeatureTuple featureTuple = MetricTestDataFactory.getFeatureTuple();
         Map<FeatureTuple, ThresholdsByMetric> thresholdsByMetricAndFeature = Map.of( featureTuple, thresholdsByMetric );
         ThresholdsByMetricAndFeature metrics = ThresholdsByMetricAndFeature.of( thresholdsByMetricAndFeature, 0 );
 
@@ -724,7 +722,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                          Instant.MAX,
                                                          Duration.ofHours( i ) );
 
-            FeatureGroup featureGroup = Boilerplate.getFeatureGroup();
+            FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup();
 
             Evaluation evaluation = Evaluation.newBuilder()
                                               .setRightVariableName( "SQIN" )
@@ -779,7 +777,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( Boilerplate.getFeatureGroup(),
+        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup(),
                                                                     expectedWindow,
                                                                     null,
                                                                     expectedThreshold,
@@ -835,7 +833,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                          Instant.MAX,
                                                          Duration.ofHours( i ) );
 
-            FeatureGroup featureGroup = Boilerplate.getFeatureGroup();
+            FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup();
 
             Evaluation evaluation = Evaluation.newBuilder()
                                               .setRightVariableName( "SQIN" )
@@ -895,7 +893,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( Boilerplate.getFeatureGroup(),
+        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup(),
                                                                     timeWindow,
                                                                     null,
                                                                     thresholds,
@@ -930,7 +928,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      Instant.MAX,
                                                      Duration.ZERO );
 
-        FeatureGroup featureGroup = Boilerplate.getFeatureGroup();
+        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup();
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "SQIN" )
@@ -1248,7 +1246,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             ofMetricProcessorForSingleValuedPairs( ProjectConfig config )
     {
         ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( config );
-        FeatureTuple featureTuple = Boilerplate.getFeatureTuple();
+        FeatureTuple featureTuple = MetricTestDataFactory.getFeatureTuple();
         Map<FeatureTuple, ThresholdsByMetric> thresholds = Map.of( featureTuple, thresholdsByMetric );
         ThresholdsByMetricAndFeature metrics = ThresholdsByMetricAndFeature.of( thresholds, 0 );
 

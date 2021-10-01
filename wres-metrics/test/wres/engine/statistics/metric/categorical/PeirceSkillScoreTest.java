@@ -51,7 +51,7 @@ public final class PeirceSkillScoreTest
     public void setUpBeforeEachTest()
     {
         this.pss = PeirceSkillScore.of();
-        this.meta = Boilerplate.getSampleMetadata();
+        this.meta = Boilerplate.getPoolMetadata();
     }
 
     /**

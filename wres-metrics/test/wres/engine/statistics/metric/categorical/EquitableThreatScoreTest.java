@@ -50,7 +50,7 @@ public final class EquitableThreatScoreTest
     public void setUpBeforeEachTest()
     {
         this.ets = EquitableThreatScore.of();
-        this.meta = Boilerplate.getSampleMetadata();
+        this.meta = Boilerplate.getPoolMetadata();
     }
 
     /**
