@@ -1,4 +1,4 @@
-package wres.control;
+package wres.pipeline;
 
 /**
  * A high-level exception indicating WRES software, configuration, or server was

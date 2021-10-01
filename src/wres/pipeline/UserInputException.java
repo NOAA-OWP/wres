@@ -1,4 +1,4 @@
-package wres.control;
+package wres.pipeline;
 
 /**
  * A high-level exception indicating that user input was responsible for failure.

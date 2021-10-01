@@ -1,4 +1,4 @@
-package wres.control;
+package wres.pipeline;
 
 import java.io.Closeable;
 import java.io.IOException;

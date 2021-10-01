@@ -1,4 +1,4 @@
-package wres.control;
+package wres.pipeline;
 
 import java.util.Objects;
 import wres.config.generated.Feature;

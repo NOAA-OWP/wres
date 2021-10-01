@@ -1,4 +1,4 @@
-package wres.control;
+package wres.pipeline;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -19,9 +19,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DatasourceType;
 import wres.config.generated.ProjectConfig;
-import wres.control.ProcessorHelper.EvaluationDetails;
-import wres.control.ProcessorHelper.Executors;
-import wres.control.ProcessorHelper.SharedWriters;
 import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
@@ -41,6 +38,9 @@ import wres.io.retrieval.RetrieverFactory;
 import wres.io.retrieval.SingleValuedRetrieverFactory;
 import wres.io.retrieval.UnitMapper;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
+import wres.pipeline.ProcessorHelper.EvaluationDetails;
+import wres.pipeline.ProcessorHelper.Executors;
+import wres.pipeline.ProcessorHelper.SharedWriters;
 import wres.pipeline.statistics.MetricProcessor;
 import wres.pipeline.statistics.MetricProcessorByTimeEnsemblePairs;
 import wres.pipeline.statistics.MetricProcessorByTimeSingleValuedPairs;

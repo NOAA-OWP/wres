@@ -1,4 +1,4 @@
-package wres.control;
+package wres.pipeline;
 
 /**
      * An exception representing that execution of a step failed.

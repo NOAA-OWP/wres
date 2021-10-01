@@ -1,4 +1,4 @@
-package wres.control;
+package wres.pipeline;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -30,7 +30,6 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
-import wres.control.Evaluator.DatabaseServices;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
@@ -55,6 +54,7 @@ import wres.io.writing.SharedSampleDataWriters;
 import wres.io.writing.WriteException;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
+import wres.pipeline.Evaluator.DatabaseServices;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Consumer.Format;
 import wres.system.ProgressMonitor;
@@ -400,11 +400,6 @@ class ProcessorHelper
             Set<FeatureTuple> featuresForThresholds = project.getFeatures();
 
             // Read external thresholds from the configuration, per feature
-            // Compare on left dataset's feature name only.
-            // TODO: consider how better to transmit these thresholds
-            // to wres-metrics, given that they are resolved by project configuration that is
-            // passed separately to wres-metrics. Options include moving MetricProcessor* to
-            // wres-control, since they make processing decisions, or passing ResolvedProject onwards
             List<ThresholdsByMetricAndFeature> thresholdsByMetricAndFeature = new ArrayList<>();
             Set<FeatureTuple> havingThresholds = new TreeSet<>();
             for ( MetricsConfig metricsConfig : projectConfig.getMetrics() )
