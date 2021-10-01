@@ -1,4 +1,4 @@
-package wres.engine.statistics.metric.processing;
+package wres.pipeline.statistics;
 
 import static org.junit.Assert.assertNotNull;
 

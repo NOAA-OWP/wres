@@ -1,4 +1,4 @@
-package wres.engine.statistics.metric.processing;
+package wres.pipeline.statistics;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -8,14 +8,12 @@ import java.util.Objects;
 
 import org.junit.Test;
 
-import wres.engine.statistics.metric.MetricParameterException;
-
 /**
- * Tests the {@link MetricProcessorException}.
+ * Tests the {@link MetricOutputMergeException}.
  * 
  * @author james.brown@hydrosolved.com
  */
-public final class MetricProcessorExceptionTest
+public final class MetricOutputMergeExceptionTest
 {
 
     /**
@@ -25,19 +23,19 @@ public final class MetricProcessorExceptionTest
     private static final String TEST_EXCEPTION = "Test exception.";
 
     /**
-     * Constructs and tests a {@link MetricParameterException}.
+     * Constructs and tests a {@link MetricOutputMergeException}.
      */
 
     @Test
-    public void testMetricConfigurationException()
+    public void testMetricOutputMergeExceptionException()
     {
-        assertTrue( Objects.nonNull( new MetricProcessorException() ) );
+        assertTrue( Objects.nonNull( new MetricOutputMergeException() ) );
 
-        MetricProcessorException f = new MetricProcessorException( TEST_EXCEPTION );
+        MetricOutputMergeException f = new MetricOutputMergeException( TEST_EXCEPTION );
         assertNotNull( f );
         assertEquals( TEST_EXCEPTION, f.getMessage() );
 
-        MetricProcessorException g = new MetricProcessorException( f.getMessage(), f );
+        MetricOutputMergeException g = new MetricOutputMergeException( f.getMessage(), f );
 
         assertNotNull( g );
         assertEquals( TEST_EXCEPTION, g.getMessage() );

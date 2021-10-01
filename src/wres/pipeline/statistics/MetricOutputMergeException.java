@@ -1,4 +1,4 @@
-package wres.engine.statistics.metric.processing;
+package wres.pipeline.statistics;
 
 /**
  * A runtime exception that indicates a failure to merge results across successive calls
