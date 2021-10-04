@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="scenario511">
+
+    <inputs>
+        <left>
+            <type>observations</type>
+            <source>smalldata/25510317T00_FAKE2_observations.xml</source>
+            <source>smalldata/25510317T00_FAKE3_observations.xml</source>
+        </left>
+        <right>
+            <type>single valued forecasts</type>
+            <source>smalldata/25510317T12_FAKE2_forecast.xml</source>
+            <source>smalldata/25510318T00_FAKE2_forecast.xml</source>
+            <source>smalldata/25510318T12_FAKE2_forecast.xml</source>
+            <source>smalldata/25510319T00_FAKE2_forecast.xml</source>
+            <source>smalldata/25510317T12_FAKE3_forecast.xml</source>
+            <source>smalldata/25510318T00_FAKE3_forecast.xml</source>
+            <source>smalldata/25510318T12_FAKE3_forecast.xml</source>
+            <source>smalldata/25510319T00_FAKE3_forecast.xml</source>
+        </right>
+    </inputs>
+
+    <pair>
+        <unit>CMS</unit>
+        <feature left="FAKE2" right="FAKE2" />
+        <feature left="FAKE3" right="FAKE3" />
+        <featureGroup name = "A FAKE FEATURE GROUP">
+            <feature left="FAKE2" right="FAKE2" />
+            <feature left="FAKE3" right="FAKE3" />
+        </featureGroup>
+        <leadHours minimum="3" maximum="33" />  
+        <issuedDates earliest="2551-03-17T00:00:00Z" latest="2551-03-20T00:00:00Z" />
+        <desiredTimeScale>
+            <function>mean</function>
+            <period>6</period>
+            <unit>hours</unit>
+        </desiredTimeScale>
+        <leadTimesPoolingWindow>
+            <period>6</period>
+            <unit>hours</unit>
+        </leadTimesPoolingWindow>
+    </pair>
+
+    <metrics>
+        <thresholds>
+            <type>value</type>
+            <source format = "csv">thresholds/scenario511/thresholds.csv</source>
+        </thresholds>
+        <metric><name>sample size</name></metric>
+    </metrics>
+
+    <outputs>
+        <destination type="csv" />
+        <destination type="pairs" />
+    </outputs>
+
+</project>
