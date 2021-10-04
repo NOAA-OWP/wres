@@ -132,10 +132,24 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
 
             if ( LOGGER.isInfoEnabled() )
             {
-                LOGGER.info( "[{}/{}] Completed statistics for feature group '{}'",
-                             currentFeature,
-                             this.totalFeatures,
-                             result.getFeatureGroup().getName() );
+                if ( result.getFeatureGroup().getFeatures().size() == 1 )
+                {
+                    LOGGER.info( "[{}/{}] Completed statistics for feature group '{}'.",
+                                 currentFeature,
+                                 this.totalFeatures,
+                                 result.getFeatureGroup().getName(),
+                                 result.getFeatureGroup().getFeatures().size() );
+                }
+                else
+                {
+                    LOGGER.info( "[{}/{}] Completed statistics for feature group '{}', which contained {} features of "
+                                 + "which {} features had some pairs.",
+                                 currentFeature,
+                                 this.totalFeatures,
+                                 result.getFeatureGroup().getName(),
+                                 result.getFeatureGroup().getFeatures().size(),
+                                 result.getFeaturesWithData().size() );
+                }
             }
         }
     }
@@ -157,7 +171,7 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
              &&
              !successfulFeaturesToReport.isEmpty() )
         {
-            LOGGER.info( "Statistics were created for these feature groups: {}",
+            LOGGER.info( "Statistics were created for these features groups: {}",
                          FeatureReporter.getFeaturesDescription( successfulFeaturesToReport ) );
         }
 
@@ -166,8 +180,8 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
         // exceptional behavior
         if ( successfulFeaturesToReport.isEmpty() )
         {
-            throw new WresProcessingException( "Statistics could not be produced for any feature tuples. This probably "
-                                               + "occurred because none of the feature tuples contained any pools with "
+            throw new WresProcessingException( "Statistics could not be produced for any feature groups. This probably "
+                                               + "occurred because none of the features contained any pools with "
                                                + "valid pairs. Check that the declaration contains some pools whose "
                                                + "boundaries (e.g., earliest and latest issued times, earliest and "
                                                + "latest valid times and earliest and latest lead durations) are "

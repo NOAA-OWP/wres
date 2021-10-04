@@ -369,19 +369,10 @@ class ProcessorHelper
             UnitMapper unitMapper = UnitMapper.of( databaseServices.getDatabase(), desiredMeasurementUnit );
 
             // Update the evaluation description with any analyzed units and variable names
-            String baselineName = "";
-            if ( project.hasBaseline() )
-            {
-                baselineName = project.getBaselineVariableName();
-            }
             wres.statistics.generated.Evaluation evaluationDescription =
-                    evaluationDetails.getEvaluationDescription()
-                                     .toBuilder()
-                                     .setMeasurementUnit( desiredMeasurementUnit )
-                                     .setLeftVariableName( project.getLeftVariableName() )
-                                     .setRightVariableName( project.getRightVariableName() )
-                                     .setBaselineVariableName( baselineName )
-                                     .build();
+                    ProcessorHelper.setAnalyzedUnitsAndVariableNames( evaluationDetails.getEvaluationDescription(),
+                                                                      desiredMeasurementUnit,
+                                                                      project );
 
             // Build the evaluation. In future, there may be a desire to build the evaluation prior to ingest, in order 
             // to message the status of ingest. In order to build an evaluation before ingest, those parts of the 
@@ -973,7 +964,7 @@ class ProcessorHelper
     /**
      * @param projectConfigPlus the project declaration with graphics information
      * @return a description of the evaluation.
-     * @deprecated for removal in 5.1 where templates should not be configurable
+     * @deprecated for removal as templates should not be configurable
      */
 
     @Deprecated( since = "5.0", forRemoval = true )
@@ -1275,6 +1266,38 @@ class ProcessorHelper
             this.connections = connections;
             this.monitor = monitor;
         }
+    }
+
+    /**
+     * @param evaluation the evaluation description
+     * @param desiredMeasurementUnit the desired measurement units
+     * @param project the project
+     * @return an evaluation description with analyzed measurement units and variables, as needed
+     */
+
+    private static wres.statistics.generated.Evaluation
+            setAnalyzedUnitsAndVariableNames( wres.statistics.generated.Evaluation evaluation,
+                                              String desiredMeasurementUnit,
+                                              Project project )
+    {
+        wres.statistics.generated.Evaluation.Builder builder = evaluation.toBuilder()
+                                                                         .setMeasurementUnit( desiredMeasurementUnit );
+
+        // Only set the names with analyzed names if the existing names are empty
+        if ( "".equals( evaluation.getLeftVariableName() ) )
+        {
+            builder.setLeftVariableName( project.getLeftVariableName() );
+        }
+        if ( "".equals( evaluation.getRightVariableName() ) )
+        {
+            builder.setLeftVariableName( project.getRightVariableName() );
+        }
+        if ( project.hasBaseline() && "".equals( evaluation.getBaselineVariableName() ) )
+        {
+            builder.setBaselineVariableName( project.getBaselineVariableName() );
+        }
+
+        return builder.build();
     }
 
     private ProcessorHelper()

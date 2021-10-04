@@ -3,15 +3,19 @@ package wres.pipeline;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -296,6 +300,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
         // Something published?
         AtomicBoolean published = new AtomicBoolean();
+        AtomicReference<Set<FeatureTuple>> featuresWithData = new AtomicReference<>( new HashSet<>() );
 
         for ( Supplier<Pool<TimeSeries<Pair<L, R>>>> poolSupplier : pools )
         {
@@ -310,7 +315,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                      // Compute the statistics
                                      .thenApply( this.getStatisticsProcessingTask( processors,
                                                                                    projectConfig,
-                                                                                   traceCountEstimator ) )
+                                                                                   traceCountEstimator,
+                                                                                   featuresWithData ) )
                                      // Publish the statistics for awaiting format consumers
                                      .thenAcceptAsync( statistics -> {
 
@@ -356,7 +362,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             throw new WresProcessingException( this.errorMessage, e );
         }
 
-        return new FeatureProcessingResult( this.featureGroup, published.get() );
+        return new FeatureProcessingResult( this.featureGroup, featuresWithData.get(), published.get() );
     }
 
     /**
@@ -374,7 +380,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                              String groupId )
     {
         Objects.requireNonNull( evaluation, "Cannot publish statistics without an evaluation." );
-        Objects.requireNonNull( statistics, "Cannot publis null statistics." );
+        Objects.requireNonNull( statistics, "Cannot publish null statistics." );
         Objects.requireNonNull( groupId, "Cannot publish statistics without a group identifier." );
 
         boolean returnMe = false;
@@ -461,13 +467,15 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @param processors the metric processors
      * @param projectConfig the project declaration
      * @param traceCountEstimator a function that estimates trace count, in order to help with monitoring
+     * @param featuresWithData an atomic reference to update that includes the features with some data
      * @return a function that consumes a pool and produces one blob of statistics for each processor
      */
 
     private <L, R> Function<Pool<TimeSeries<Pair<L, R>>>, List<StatisticsForProject>>
             getStatisticsProcessingTask( List<MetricProcessor<Pool<TimeSeries<Pair<L, R>>>>> processors,
                                          ProjectConfig projectConfig,
-                                         ToIntFunction<Pool<TimeSeries<Pair<L, R>>>> traceCountEstimator )
+                                         ToIntFunction<Pool<TimeSeries<Pair<L, R>>>> traceCountEstimator,
+                                         AtomicReference<Set<FeatureTuple>> featuresWithData )
     {
         return pool -> {
             Objects.requireNonNull( pool );
@@ -481,13 +489,15 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                 LOGGER.debug( "Empty pool discovered for {}: no statistics will be produced.", pool.getMetadata() );
 
                 // Empty container
-
                 StatisticsForProject empty = new StatisticsForProject.Builder().build();
                 returnMe.add( empty );
 
                 return returnMe;
             }
 
+            // Register features with data
+            this.registerFeaturesWithData( pool, featuresWithData );
+            
             // Implement all processing and store the results
             try
             {
@@ -535,6 +545,32 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         };
     }
 
+    /**
+     * Registers features that produced some data.
+     * @param <L> the left pair type
+     * @param <R> the right pair type
+     * @param pool the pool
+     * @param featuresWithData an atomic reference to update with the set of features that produced some data
+     */
+    
+    private <L, R> void registerFeaturesWithData( Pool<TimeSeries<Pair<L, R>>> pool,
+                                                  AtomicReference<Set<FeatureTuple>> featuresWithData )
+    {
+        UnaryOperator<Set<FeatureTuple>> operator = tuples -> {
+            Set<FeatureTuple> returnMe = new HashSet<>( tuples );
+            Set<FeatureTuple> existingTuples = pool.getMiniPools()
+                                                   .stream()
+                                                   .filter( next -> !next.get().isEmpty() )
+                                                   .flatMap( next -> next.getMetadata().getFeatureTuples().stream() )
+                                                   .collect( Collectors.toSet() );
+            returnMe.addAll( existingTuples );
+
+            return returnMe;
+        };
+
+        featuresWithData.getAndUpdate( operator );
+    }
+    
     /**
      * @param metrics the metrics
      * @return the ensemble processors
