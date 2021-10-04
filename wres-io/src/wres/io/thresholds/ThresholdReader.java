@@ -69,11 +69,6 @@ public class ThresholdReader
     
     public Set<FeatureTuple> getEvaluatableFeatures()
     {
-        if ( this.encounteredFeatures.isEmpty() )
-        {
-            return this.features;
-        }
-
         return Collections.unmodifiableSet( this.encounteredFeatures );
     }
 

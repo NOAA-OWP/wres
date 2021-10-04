@@ -11,7 +11,6 @@ import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.metrics.MetricConstants;
-import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 
@@ -31,32 +30,27 @@ import wres.engine.statistics.metric.config.MetricConfigHelper;
 class ResolvedProject
 {
     private final ProjectConfigPlus projectConfigPlus;
-    private final Set<FeatureTuple> decomposedFeatures;
     private final String projectIdentifier;
     private final List<ThresholdsByMetricAndFeature> thresholdsByMetricAndFeature;
     private final Path outputDirectory;
 
     private ResolvedProject( ProjectConfigPlus projectConfigPlus,
-                             Set<FeatureTuple> decomposedFeatures,
                              String projectIdentifier,
                              List<ThresholdsByMetricAndFeature> thresholdsByMetricAndFeature,
                              Path outputDirectory )
     {
         this.projectConfigPlus = projectConfigPlus;
-        this.decomposedFeatures = Collections.unmodifiableSet( decomposedFeatures );
         this.projectIdentifier = projectIdentifier;
         this.thresholdsByMetricAndFeature = Collections.unmodifiableList( thresholdsByMetricAndFeature );
         this.outputDirectory = outputDirectory;
     }
 
     static ResolvedProject of( ProjectConfigPlus projectConfigPlus,
-                               Set<FeatureTuple> decomposedFeatures,
                                String projectIdentifier,
                                List<ThresholdsByMetricAndFeature> thresholdsByMetricAndFeature,
                                Path outputDirectory )
     {
         return new ResolvedProject( projectConfigPlus,
-                                    decomposedFeatures,
                                     projectIdentifier,
                                     thresholdsByMetricAndFeature,
                                     outputDirectory );
@@ -82,22 +76,6 @@ class ResolvedProject
         return this.getProjectConfigPlus()
                    .getProjectConfig();
     }
-
-
-    /**
-     * Get the decomposed features that the system calculated from the given
-     * project config.
-     * In the future, hopefully we can figure out a different representation for
-     * feature besides the object that implies something came from a config.
-     * Once we figure that out, the return type will change.
-     * @return a Set of features resolved from the project
-     */
-
-    Set<FeatureTuple> getDecomposedFeatures()
-    {
-        return this.decomposedFeatures;
-    }
-
 
     /**
      * Get the wres identifier generated for this project.

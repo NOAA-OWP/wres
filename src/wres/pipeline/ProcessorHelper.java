@@ -49,7 +49,6 @@ import wres.io.geography.FeatureFinder;
 import wres.io.project.Project;
 import wres.io.retrieval.UnitMapper;
 import wres.io.thresholds.ThresholdReader;
-import wres.io.utilities.NoDataException;
 import wres.io.writing.SharedSampleDataWriters;
 import wres.io.writing.WriteException;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
@@ -388,11 +387,11 @@ class ProcessorHelper
             ProgressMonitor.setShowStepDescription( false );
 
             // Acquire the individual feature tuples to correlate with thresholds
-            Set<FeatureTuple> featuresForThresholds = project.getFeatures();
+            Set<FeatureTuple> features = project.getFeatures();
 
             // Read external thresholds from the configuration, per feature
             List<ThresholdsByMetricAndFeature> thresholdsByMetricAndFeature = new ArrayList<>();
-            Set<FeatureTuple> havingThresholds = new TreeSet<>();
+            Set<FeatureTuple> featuresWithExplicitThresholds = new TreeSet<>();
             for ( MetricsConfig metricsConfig : projectConfig.getMetrics() )
             {
                 ThresholdReader thresholdReader = new ThresholdReader(
@@ -400,36 +399,38 @@ class ProcessorHelper
                                                                        projectConfig,
                                                                        metricsConfig,
                                                                        unitMapper,
-                                                                       featuresForThresholds );
+                                                                       features );
 
                 Map<FeatureTuple, ThresholdsByMetric> nextThresholds = thresholdReader.read();
-                Set<FeatureTuple> features = thresholdReader.getEvaluatableFeatures();
+                Set<FeatureTuple> innerFeaturesWithExplicitThresholds = thresholdReader.getEvaluatableFeatures();
+
                 int minimumSampleSize = ProcessorHelper.getMinimumSampleSize( metricsConfig.getMinimumSampleSize() );
                 ThresholdsByMetricAndFeature nextMetrics = ThresholdsByMetricAndFeature.of( nextThresholds,
                                                                                             minimumSampleSize );
                 thresholdsByMetricAndFeature.add( nextMetrics );
-                havingThresholds.addAll( features );
+                featuresWithExplicitThresholds.addAll( innerFeaturesWithExplicitThresholds );
             }
 
             // Render the bags of thresholds and features immutable
             thresholdsByMetricAndFeature = Collections.unmodifiableList( thresholdsByMetricAndFeature );
-            featuresForThresholds = Collections.unmodifiableSet( havingThresholds );
+            featuresWithExplicitThresholds = Collections.unmodifiableSet( featuresWithExplicitThresholds );
 
-            if ( featuresForThresholds.isEmpty() )
-            {
-                throw new NoDataException( "There were data correlated by "
-                                           + "geographic features specified "
-                                           + "available for evaluation but "
-                                           + "there were no thresholds available "
-                                           + "for any of those features." );
-            }
+            // Create the feature groups
+            Set<FeatureGroup> featureGroups = ProcessorHelper.getFeatureGroups( project,
+                                                                                featuresWithExplicitThresholds );
 
             // Create any netcdf blobs for writing. See #80267-137.
             if ( !netcdfWriters.isEmpty() )
             {
+                Set<FeatureTuple> featuresForNetcdf = features;
+                if ( !featuresWithExplicitThresholds.isEmpty() )
+                {
+                    featuresForNetcdf = featuresWithExplicitThresholds;
+                }
+
                 for ( NetcdfOutputWriter writer : netcdfWriters )
                 {
-                    writer.createBlobsForWriting( featuresForThresholds,
+                    writer.createBlobsForWriting( featuresForNetcdf,
                                                   thresholdsByMetricAndFeature );
                 }
             }
@@ -439,7 +440,6 @@ class ProcessorHelper
 
             ResolvedProject resolvedProject = ResolvedProject.of(
                                                                   projectConfigPlus,
-                                                                  featuresForThresholds,
                                                                   projectIdentifier,
                                                                   thresholdsByMetricAndFeature,
                                                                   outputDirectory );
@@ -447,10 +447,6 @@ class ProcessorHelper
 
             // Tasks for features
             List<CompletableFuture<Void>> featureTasks = new ArrayList<>();
-
-            // Create the feature groups
-            Set<FeatureGroup> featureGroups = ProcessorHelper.getFeatureGroups( project,
-                                                                                featuresForThresholds );
 
             // Report on the completion state of all features
             // Report detailed state by default (final arg = true)
@@ -1030,14 +1026,15 @@ class ProcessorHelper
 
     /**
      * @param project the project
-     * @param featuresWithThresholds the features that have thresholds
+     * @param featuresWithExplicitThresholds features with explicit thresholds (not the implicit "all data" threshold)
      * @return the feature groups
      */
 
-    private static Set<FeatureGroup> getFeatureGroups( Project project, Set<FeatureTuple> featuresWithThresholds )
+    private static Set<FeatureGroup> getFeatureGroups( Project project,
+                                                       Set<FeatureTuple> featuresWithExplicitThresholds )
     {
         Objects.requireNonNull( project );
-        Objects.requireNonNull( featuresWithThresholds );
+        Objects.requireNonNull( featuresWithExplicitThresholds );
 
         // Get the baseline groups
         Set<FeatureGroup> featureGroups = project.getFeatureGroups();
@@ -1051,11 +1048,11 @@ class ProcessorHelper
             for ( FeatureGroup nextGroup : featureGroups )
             {
                 if ( nextGroup.getFeatures().size() > 1
-                     && !featuresWithThresholds.containsAll( nextGroup.getFeatures() ) )
+                     && !featuresWithExplicitThresholds.containsAll( nextGroup.getFeatures() ) )
                 {
                     Set<FeatureTuple> missingFeatures = new HashSet<>();
                     missingFeatures.addAll( nextGroup.getFeatures() );
-                    missingFeatures.removeAll( featuresWithThresholds );
+                    missingFeatures.removeAll( featuresWithExplicitThresholds );
 
                     // Show abbreviated information only
                     missing.put( nextGroup.getName(),
