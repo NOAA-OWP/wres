@@ -51,7 +51,12 @@ import ucar.nc2.NetcdfFiles;
 import ucar.nc2.Variable;
 import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
-import wres.config.generated.*;
+import wres.config.generated.DestinationConfig;
+import wres.config.generated.DestinationType;
+import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.generated.NetcdfType;
+import wres.config.generated.PairConfig;
+import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.MissingValues;
@@ -60,8 +65,8 @@ import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.MetricGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
-import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -75,6 +80,7 @@ import wres.io.utilities.NoDataException;
 import wres.io.writing.WriteException;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
+import wres.statistics.generated.Pool;
 import wres.system.SystemSettings;
 import wres.util.FutureQueue;
 import wres.util.Strings;
@@ -99,6 +105,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
     private static final String DEFAULT_VECTOR_TEMPLATE = "vector_template.nc";
     private static final String DEFAULT_GRID_TEMPLATE = "lcc_grid_template.nc";
+    private static final String FEATURE_TUPLE_VARIABLE_NAME = "lid";
+    private static final String FEATURE_GROUP_VARIABLE_NAME = "feature_group_name";
     private static final int VALUE_SAVE_LIMIT = 500;
 
     // TODO: it is very unlikely that classloading datetime should be used here.
@@ -247,13 +255,13 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     /**
      * Creates the blobs into which outputs will be written.
      *
-     * @param features The super-set of features used in the evaluation.
+     * @param featureGroups The super-set of feature groups used in the evaluation.
      * @param thresholdsByMetricAndFeature Thresholds imposed upon input data
      * @throws WriteException if the blobs have already been created
      * @throws IOException if the blobs could not be created for any reason
      */
 
-    public void createBlobsForWriting( Set<FeatureTuple> features,
+    public void createBlobsForWriting( Set<FeatureGroup> featureGroups,
                                        List<ThresholdsByMetricAndFeature> thresholdsByMetricAndFeature )
             throws IOException
     {
@@ -297,7 +305,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         {
             Set<Path> pathsCreated = this.createBlobsAndBlobWriters( this.getProjectConfig()
                                                                          .getInputs(),
-                                                                     features,
+                                                                     featureGroups,
                                                                      timeWindows,
                                                                      thresholdsToWrite,
                                                                      units,
@@ -335,7 +343,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      * Creates the blobs into which outputs will be written.
      * 
      * @param inputs the inputs declaration
-     * @param features The super-set of features used in this evaluation.
+     * @param featureGroups The super-set of feature groups used in this evaluation.
      * @param timeWindows the time windows
      * @param thresholds the thresholds
      * @param units the measurement units, if available
@@ -346,7 +354,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      */
 
     private Set<Path> createBlobsAndBlobWriters( Inputs inputs,
-                                                 Set<FeatureTuple> features,
+                                                 Set<FeatureGroup> featureGroups,
                                                  Set<TimeWindowOuter> timeWindows,
                                                  ThresholdsByMetric thresholds,
                                                  String units,
@@ -382,7 +390,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 pathActuallyWritten =
                         NetcdfOutputFileCreator2.create( this.getProjectConfig(),
                                                          targetPath,
-                                                         features,
+                                                         featureGroups,
                                                          nextWindow,
                                                          NetcdfOutputWriter.ANALYSIS_TIME,
                                                          variables );
@@ -1046,63 +1054,126 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
                 for ( MetricConstants nextComponent : components )
                 {
-                    DoubleScoreComponentOuter componentScore = score.getComponent( nextComponent );
-
-                    String name = this.getVariableName( score.getMetricName(), componentScore );
-
-                    // Figure out the location of all values and build the origin in each variable grid
-                    GeometryTuple location = score.getMetadata()
-                                                  .getPool()
-                                                  .getGeometryTuplesList()
-                                                  .get( 0 );
-
-                    int[] origin;
-
-                    try
-                    {
-                        if ( !this.isDeprecatedWriter )
-                        {
-                            origin = this.getOrigin( location );
-                        }
-                        else
-                        {
-                            // TODO remove this block, remove if/else
-                            origin = this.getOrigin( name, location );
-                        }
-                    }
-                    catch ( CoordinateNotFoundException e )
-                    {
-                        throw new CoordinateNotFoundException( "While trying to write the statistic " + componentScore
-                                                               + " to the variable "
-                                                               + name
-                                                               + " at path "
-                                                               + this.outputPath
-                                                               + ", failed to identify a required coordinate for one "
-                                                               + "or more features.",
-                                                               e );
-                    }
-
-                    double actualValue = componentScore.getData()
-                                                       .getValue();
-
-                    if ( !isDeprecatedWriter )
-                    {
-                        if ( actualValue == MissingValues.DOUBLE
-                             || ( Double.isNaN( MissingValues.DOUBLE )
-                                  && Double.isNaN( actualValue ) ) )
-                        {
-                            actualValue = NetcdfOutputFileCreator2.DOUBLE_FILL_VALUE;
-                        }
-                    }
-
-                    LOGGER.trace( "Actual value found for {}: {}",
-                                  componentScore.getMetricName(),
-                                  actualValue );
-                    this.saveValues( name, origin, actualValue );
+                    this.writeInner( score, nextComponent );
                 }
             }
         }
 
+        /**
+         * @param score the score to write
+         * @param nextComponent the score component to write
+         * @throws CoordinateNotFoundException if the geographic feature could not be found
+         * @throws InvalidRangeException if the data range could not be reconciled
+         * @throws IOException if the write fails for any other reason
+         */
+        
+        private void writeInner( DoubleScoreStatisticOuter score, MetricConstants nextComponent )
+                throws CoordinateNotFoundException, IOException, InvalidRangeException
+        { 
+            // Remove clause when the deprecated netcdf format is removed
+            if ( this.isDeprecatedWriter )
+            {
+                this.writeInnerWithoutGroup( score, nextComponent );
+                return;
+            }
+
+            DoubleScoreComponentOuter componentScore = score.getComponent( nextComponent );
+
+            String name = this.getVariableName( score.getMetricName(), componentScore );
+
+            // Figure out the location of all values and build the origin in each variable grid
+            Pool pool = score.getMetadata()
+                             .getPool();
+            List<GeometryTuple> geometries = pool.getGeometryTuplesList();
+            String featureGroupName = pool.getRegionName();
+
+            // Iterate the features, writing the statistics for each tuple in the group
+            for ( GeometryTuple nextGeometry : geometries )
+            {
+                int[] origin;
+
+                try
+                {
+                    origin = this.getOrigin( nextGeometry, featureGroupName );
+
+                }
+                catch ( CoordinateNotFoundException e )
+                {
+                    throw new CoordinateNotFoundException( "While trying to write the statistic " + componentScore
+                                                           + " to the variable "
+                                                           + name
+                                                           + " at path "
+                                                           + this.outputPath
+                                                           + ", failed to identify a required coordinate for one "
+                                                           + "or more features.",
+                                                           e );
+                }
+
+                double actualValue = componentScore.getData()
+                                                   .getValue();
+
+                if ( actualValue == MissingValues.DOUBLE
+                     || ( Double.isNaN( MissingValues.DOUBLE )
+                          && Double.isNaN( actualValue ) ) )
+                {
+                    actualValue = NetcdfOutputFileCreator2.DOUBLE_FILL_VALUE;
+                }
+
+                LOGGER.trace( "Actual value found for {}: {}",
+                              componentScore.getMetricName(),
+                              actualValue );
+                this.saveValues( name, origin, actualValue );
+            }
+        }
+        
+        /**
+         * @param score the score to write
+         * @param nextComponent the score component to write
+         * @throws CoordinateNotFoundException if the geographic feature could not be found
+         * @throws InvalidRangeException if the data range could not be reconciled
+         * @throws IOException if the write fails for any other reason
+         * @deprecated to remove when the deprecated format is removed
+         */
+        @Deprecated(since="5.14", forRemoval = true)
+        private void writeInnerWithoutGroup( DoubleScoreStatisticOuter score, MetricConstants nextComponent )
+                throws CoordinateNotFoundException, IOException, InvalidRangeException
+        {
+            DoubleScoreComponentOuter componentScore = score.getComponent( nextComponent );
+
+            String name = this.getVariableName( score.getMetricName(), componentScore );
+
+            // Figure out the location of all values and build the origin in each variable grid
+            Pool pool = score.getMetadata()
+                             .getPool();
+            GeometryTuple geometry = pool.getGeometryTuplesList().get( 0 );
+
+            int[] origin;
+
+            try
+            {
+                origin = this.getOrigin( name, geometry );
+            }
+            catch ( CoordinateNotFoundException e )
+            {
+                throw new CoordinateNotFoundException( "While trying to write the statistic " + componentScore
+                                                       + " to the variable "
+                                                       + name
+                                                       + " at path "
+                                                       + this.outputPath
+                                                       + ", failed to identify a required coordinate for one "
+                                                       + "or more features.",
+                                                       e );
+            }
+
+            double actualValue = componentScore.getData()
+                                               .getValue();
+
+            LOGGER.trace( "Actual value found for {}: {}",
+                          componentScore.getMetricName(),
+                          actualValue );
+            this.saveValues( name, origin, actualValue );
+        }
+        
         private void writeMetricResults() throws IOException, InvalidRangeException
         {
             this.writeLock.lock();
@@ -1363,27 +1434,31 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
         /**
          * Finds the origin index(es) of the location in the netcdf variables
-         * @param location The location specification detailing where to place a value
+         * @param feature The location specification detailing where to place a value
+         * @param featureGroupName the name of the feature group that contains the feature
          * @return The coordinates for the location within the Netcdf variable describing where to place data
          */
-        private int[] getOrigin( GeometryTuple location ) throws IOException, CoordinateNotFoundException
+        private int[] getOrigin( GeometryTuple feature, String featureGroupName )
+                throws IOException, CoordinateNotFoundException
         {
             int[] origin;
-            LOGGER.trace( "Looking for the origin of {}", location );
-            Integer vectorIndex = this.getVectorCoordinate( location,
-                                                            "lid" );
+            LOGGER.trace( "Looking for the origin of {} in feature group {}.", feature, featureGroupName );
+            Integer vectorIndex = this.getVectorCoordinate( feature,
+                                                            featureGroupName );
 
             if ( vectorIndex == null )
             {
                 throw new CoordinateNotFoundException( "An index for the vector coordinate could not "
                                                        + "be evaluated. [value = "
-                                                       + NetcdfOutputFileCreator2.getGeometryTupleName( location )
+                                                       + NetcdfOutputFileCreator2.getGeometryTupleName( feature )
                                                        + "]. The location was "
-                                                       + location );
+                                                       + feature
+                                                       + " and the feature group name was "
+                                                       + featureGroupName );
             }
 
             origin = new int[] { vectorIndex };
-            LOGGER.trace( "The origin of {} was at {}", location, origin );
+            LOGGER.trace( "The origin of {} was at {}", feature, origin );
             return origin;
         }
 
@@ -1441,10 +1516,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             else
             {
                 // Only contains the vector id
-                Integer vectorIndex = this.getVectorCoordinate(
-                                                                tuple,
-                                                                this.outputWriter.getNetcdfConfiguration()
-                                                                                 .getVectorVariable() );
+                Integer vectorIndex = this.getVectorCoordinate( tuple, null );
 
                 if ( vectorIndex == null )
                 {
@@ -1464,85 +1536,39 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         }
 
 
-        private Integer getVectorCoordinate( GeometryTuple location, String vectorVariableName )
+        private Integer getVectorCoordinate( GeometryTuple feature, 
+                                             String featureGroupName )
                 throws IOException, CoordinateNotFoundException
         {
-            synchronized ( vectorCoordinatesMap )
+            synchronized ( this.vectorCoordinatesMap )
             {
-                if ( vectorCoordinatesMap.size() == 0 )
+                // Mapped coordinates already?
+                if ( this.vectorCoordinatesMap.isEmpty() )
                 {
-                    try ( NetcdfFile outputFile = NetcdfFiles.open( this.outputPath ) )
-                    {
-                        Variable coordinate = outputFile.findVariable( vectorVariableName );
-
-                        if ( this.isDeprecatedWriter )
-                        {
-                            // TODO remove this whole block
-
-                            if ( coordinate.getDataType() == DataType.CHAR )
-                            {
-                                this.useLidForLocationIdentifier = true;
-                            }
-                            else
-                            {
-                                this.useLidForLocationIdentifier = false;
-                                Array values = coordinate.read();
-
-                                for ( int index = 0; index < values.getSize(); ++index )
-                                {
-                                    vectorCoordinatesMap.put( values.getObject( index ), index );
-                                }
-                            }
-                        }
-
-                        if ( !this.isDeprecatedWriter || this.useLidForLocationIdentifier )
-                        {
-                            // It's probably not necessary to load in everything
-                            // We're loading everything in at the moment because we
-                            // don't really know what to expect
-                            List<Dimension> dimensions =
-                                    coordinate.getDimensions();
-
-                            for ( int wordIndex = 0;
-                                  wordIndex < dimensions.get( 0 ).getLength();
-                                  wordIndex++ )
-                            {
-                                int[] origin = new int[] { wordIndex, 0 };
-                                int[] shape = new int[] { 1,
-                                                          dimensions.get( 1 ).getLength() };
-                                char[] characters =
-                                        (char[]) coordinate.read( origin,
-                                                                  shape )
-                                                           .get1DJavaArray( DataType.CHAR );
-                                String word =
-                                        String.valueOf( characters ).trim();
-                                vectorCoordinatesMap.put( word, wordIndex );
-                            }
-                        }
-                    }
-                    catch ( InvalidRangeException e )
-                    {
-                        throw new IOException( "A coordinate could not be read.", e );
-                    }
+                    // No, map 'em
+                    this.populateCoordinateMap();
                 }
 
                 if ( !this.isDeprecatedWriter )
                 {
-                    String tupleNameInNetcdfFile = NetcdfOutputFileCreator2.getGeometryTupleName( location );
-                    this.checkForCoordinateAndThrowExceptionIfNotFound( tupleNameInNetcdfFile, true );
-                    return vectorCoordinatesMap.get( tupleNameInNetcdfFile );
+                    String tupleNameInNetcdfFile = NetcdfOutputFileCreator2.getGeometryTupleName( feature );
+                    
+                    // Qualify the feature tuple name with the group name, as mapped
+                    String tupleNameInNetcdfFilePlusGroupName = tupleNameInNetcdfFile + "_" + featureGroupName;
+                    
+                    this.checkForCoordinateAndThrowExceptionIfNotFound( tupleNameInNetcdfFilePlusGroupName, true );
+                    return this.vectorCoordinatesMap.get( tupleNameInNetcdfFilePlusGroupName );
                 }
                 else
                 {
                     // TODO remove this whole block, remove the "if/else"
-                    String loc = location.getRight()
+                    String loc = feature.getRight()
                                          .getName();
 
                     if ( this.useLidForLocationIdentifier )
                     {
                         this.checkForCoordinateAndThrowExceptionIfNotFound( loc, true );
-
-                        return vectorCoordinatesMap.get( loc );
+                        return this.vectorCoordinatesMap.get( loc );
                     }
                     else
                     {
@@ -1553,6 +1579,118 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             }
         }
 
+        /**
+         * Populates a map of coordinates with those in the netcdf blob.
+         * @throws IOException if blob could not be inspected
+         */
+        
+        private void populateCoordinateMap() throws IOException
+        {
+            try ( NetcdfFile outputFile = NetcdfFiles.open( this.outputPath ) )
+            {
+                Variable coordinate = null;
+
+                if ( this.isDeprecatedWriter )
+                {
+                    // TODO remove this whole block
+                    String nameToUse = this.outputWriter.getNetcdfConfiguration()
+                                                        .getVectorVariable();
+
+                    LOGGER.debug( "Using {} as the name of the vector variable with the location information.",
+                                  nameToUse );
+                    
+                    coordinate = outputFile.findVariable( nameToUse );
+
+                    if ( coordinate.getDataType() == DataType.CHAR )
+                    {
+                        this.useLidForLocationIdentifier = true;
+                    }
+                    else
+                    {
+                        this.useLidForLocationIdentifier = false;
+                        Array values = coordinate.read();
+
+                        for ( int index = 0; index < values.getSize(); ++index )
+                        {
+                            this.vectorCoordinatesMap.put( values.getObject( index ), index );
+                        }
+                    }
+                }
+                else
+                {
+                    coordinate = outputFile.findVariable( FEATURE_TUPLE_VARIABLE_NAME );
+                }
+
+                if ( !this.isDeprecatedWriter )
+                {
+                    Variable featureGroupVariable = outputFile.findVariable( FEATURE_GROUP_VARIABLE_NAME );
+
+                    // It's probably not necessary to load in everything
+                    // We're loading everything in at the moment because we
+                    // don't really know what to expect
+                    List<Dimension> dimensions =
+                            coordinate.getDimensions();
+                    List<Dimension> groupDimensions =
+                            featureGroupVariable.getDimensions();
+
+                    for ( int wordIndex = 0;
+                          wordIndex < dimensions.get( 0 ).getLength();
+                          wordIndex++ )
+                    {
+                        int[] origin = new int[] { wordIndex, 0 };
+                        int[] shape = new int[] { 1,
+                                                  dimensions.get( 1 ).getLength() };
+                        char[] characters =
+                                (char[]) coordinate.read( origin,
+                                                          shape )
+                                                   .get1DJavaArray( DataType.CHAR );
+                        String word = String.valueOf( characters ).trim();
+
+                        // Get the corresponding feature group name, same index different shape
+                        int[] groupShape = new int[] { 1,
+                                                       groupDimensions.get( 1 ).getLength() };
+                        char[] groupCharacters =
+                                (char[]) featureGroupVariable.read( origin,
+                                                                    groupShape )
+                                                             .get1DJavaArray( DataType.CHAR );
+                        String groupName = String.valueOf( groupCharacters ).trim();
+
+                        String wordWithGroup = word + "_" + groupName;
+                        this.vectorCoordinatesMap.put( wordWithGroup, wordIndex );
+                    }
+                }
+                // TODO: remove the switch below for the deprecated writer where the lid is used
+                else if ( this.useLidForLocationIdentifier )
+                {
+                    // It's probably not necessary to load in everything
+                    // We're loading everything in at the moment because we
+                    // don't really know what to expect
+                    List<Dimension> dimensions =
+                            coordinate.getDimensions();
+
+                    for ( int wordIndex = 0;
+                          wordIndex < dimensions.get( 0 ).getLength();
+                          wordIndex++ )
+                    {
+                        int[] origin = new int[] { wordIndex, 0 };
+                        int[] shape = new int[] { 1,
+                                                  dimensions.get( 1 ).getLength() };
+                        char[] characters =
+                                (char[]) coordinate.read( origin,
+                                                          shape )
+                                                   .get1DJavaArray( DataType.CHAR );
+                        String word = String.valueOf( characters ).trim();
+
+                        this.vectorCoordinatesMap.put( word, wordIndex );
+                    }
+                }
+            }
+            catch ( InvalidRangeException e )
+            {
+                throw new IOException( "A coordinate could not be read.", e );
+            }
+        }
+        
         /**
          * Checks for the presence of a coordinate corresponding to the prescribed location and throws an exception
          * if the coordinate cannot be found.
