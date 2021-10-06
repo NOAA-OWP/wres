@@ -583,6 +583,8 @@ public class Validation
         boolean foundScratchNetcdf = false;
         Locator locator = null;
 
+        boolean isValid = true;
+        
         for ( DestinationConfig destination : projectConfigPlus.getProjectConfig()
                                                                .getOutputs()
                                                                .getDestination() )
@@ -614,10 +616,28 @@ public class Validation
                          projectConfigPlus.getOrigin(),
                          locator.getLineNumber(),
                          locator.getColumnNumber() );
-            return false;
+            isValid = false;
         }
 
-        return true;
+        // Legacy netcdf not supported with feature groups
+        if ( foundTemplateNetcdf && !projectConfigPlus.getProjectConfig()
+                                                      .getPair()
+                                                      .getFeatureGroup()
+                                                      .isEmpty() )
+        {
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                         + " In this version of WRES, \"netcdf\" cannot "
+                         + "be declared in combination with \"featureGroup\". "
+                         + "Declare one or the other, but not both "
+                         + "simultaneously. Hint: the \"netcdf2\" format is "
+                         + "supported alongside \"featureGroup\".",
+                         projectConfigPlus.getOrigin(),
+                         locator.getLineNumber(),
+                         locator.getColumnNumber() );
+            isValid = false;
+        }
+
+        return isValid;
     }
 
 
@@ -1472,6 +1492,7 @@ public class Validation
      * Validates any feature groups in the pair declaration.
      * @param projectConfigPlus the project declaration
      * @param pairConfig the pair declaration
+     * @param outputsConfig the outputs declaration
      * @return true when the feature group declaration is valid, otherwise false
      */
 
@@ -1491,9 +1512,9 @@ public class Validation
                 valid = false;
 
                 String msg = FILE_LINE_COLUMN_BOILERPLATE
-                             + " Feature grouping is an experimental feature for developers and cannot be used without the "
-                             + "'wres.featureGroups=true' system property. Please set the system property or remove the "
-                             + "<featureGroup> declaration and try again.";
+                             + " Feature grouping is an experimental feature for developers and cannot be used without "
+                             + "the 'wres.featureGroups=true' system property. Please set the system property or "
+                             + "remove the <featureGroup> declaration and try again.";
 
                 LOGGER.warn( msg,
                              projectConfigPlus.getOrigin(),
