@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -34,6 +35,7 @@ import wres.config.generated.FeatureDimension;
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.TimeWindowOuter;
@@ -58,12 +60,15 @@ class NetcdfOutputFileCreator2
 
     /** The length of strings to use for lid variable in the file. */
     private static final int FEATURE_TUPLE_STRING_LENGTH = FEATURE_STRING_LENGTH * 3 + 2;
+    
+    /** The length of string to use for each feature group in the file. */
+    private static final int FEATURE_GROUP_STRING_LENGTH = 32;
 
     private static final String NOTE_REGARDING_UNITS_AND_GDAL = "Purposely avoided setting true units and standard_name attributes to maintain compatibility with GDAL/OGR 3.0.4 and QGIS 3.10.5.";
 
     static String create( ProjectConfig projectDeclaration,
                           Path targetPath,
-                          Set<FeatureTuple> features,
+                          Set<FeatureGroup> featureGroups,
                           TimeWindowOuter window,
                           ZonedDateTime analysisTime,
                           Collection<MetricVariable> metricVariables )
@@ -81,7 +86,7 @@ class NetcdfOutputFileCreator2
         NetcdfFileWriter writer =
                 NetcdfOutputFileCreator2.initializeBlob( projectDeclaration,
                                                          targetPath,
-                                                         features,
+                                                         featureGroups,
                                                          window,
                                                          analysisTime,
                                                          metricVariables );
@@ -122,7 +127,7 @@ class NetcdfOutputFileCreator2
     /**
      * Create and set up dimensions of the NetCDF files for a given project.
      * @param targetPath The path into which to write.
-     * @param features The features to write (netCDF lib needs it)
+     * @param featureGroups The feature groups to write (netCDF lib needs it)
      * @param window The outermost time window (TODO: support N windows)
      * @param analysisTime A time to label as "analysis time" in the blob.
      * @param metricVariables The variables to add to this blob.
@@ -133,13 +138,13 @@ class NetcdfOutputFileCreator2
 
     private static NetcdfFileWriter initializeBlob( ProjectConfig projectDeclaration,
                                                     Path targetPath,
-                                                    Set<FeatureTuple> features,
+                                                    Set<FeatureGroup> featureGroups,
                                                     TimeWindowOuter window,
                                                     ZonedDateTime analysisTime,
                                                     Collection<MetricVariable> metricVariables )
     {
         Objects.requireNonNull( projectDeclaration );
-        Objects.requireNonNull( features );
+        Objects.requireNonNull( featureGroups );
         Objects.requireNonNull( window );
         Objects.requireNonNull( analysisTime );
         Objects.requireNonNull( metricVariables );
@@ -155,7 +160,7 @@ class NetcdfOutputFileCreator2
             writer.addGlobalAttribute( "featureType", "point" );
             NetcdfOutputFileCreator2.setDimensionsAndVariables( projectDeclaration,
                                                                 writer,
-                                                                features,
+                                                                featureGroups,
                                                                 window,
                                                                 analysisTime,
                                                                 metricVariables );
@@ -173,6 +178,9 @@ class NetcdfOutputFileCreator2
     /**
      * Given a writer to use and the context needed, set up the dimensions of
      * the netcdf file. Calls create() which makes writer out of define mode.
+     * 
+     * TODO: Refactor this into several smaller methods.
+     * 
      * @throws IllegalStateException when writer is not in define mode
      * @throws NullPointerException when any non-primitive arg is null
      * @throws WriteException when netCDF is whiny
@@ -180,16 +188,21 @@ class NetcdfOutputFileCreator2
 
     private static void setDimensionsAndVariables( ProjectConfig projectDeclaration,
                                                    NetcdfFileWriter writer,
-                                                   Set<FeatureTuple> features,
+                                                   Set<FeatureGroup> featureGroups,
                                                    TimeWindowOuter window,
                                                    ZonedDateTime analysisTime,
                                                    Collection<MetricVariable> metricVariables )
     {
         Objects.requireNonNull( writer );
-        Objects.requireNonNull( features );
+        Objects.requireNonNull( featureGroups );
         Objects.requireNonNull( window );
         Objects.requireNonNull( analysisTime );
         Objects.requireNonNull( metricVariables );
+        
+        // Total number of features
+        int featureCount = featureGroups.stream()
+                                        .mapToInt( next -> next.getFeatures().size() )
+                                        .sum();
 
         if ( !writer.isDefineMode() )
         {
@@ -198,7 +211,8 @@ class NetcdfOutputFileCreator2
 
         Dimension featureDimension = writer.addDimension( null,
                                                           "geo_feature_tuple",
-                                                          features.size() );
+                                                          featureCount );
+
         Dimension timeDimension = writer.addDimension( null,
                                                        "time",
                                                        1 );
@@ -212,6 +226,9 @@ class NetcdfOutputFileCreator2
         Dimension lidStringDimension = writer.addDimension( null,
                                                             "string7",
                                                             FEATURE_TUPLE_STRING_LENGTH );
+        Dimension featureGroupStringDimension = writer.addDimension( null,
+                                                            "feature_group_string_len",
+                                                            FEATURE_GROUP_STRING_LENGTH );
 
         List<Dimension> stationDimension = List.of( featureDimension );
 
@@ -307,7 +324,16 @@ class NetcdfOutputFileCreator2
                                                    lidDimensions );
         Attribute lidLongName = new Attribute( "long_name", "The geographic feature names of left, right, and optionally baseline concatenated with underscore." );
         lidVariable.addAll( List.of( coordinates, gridMapping, lidLongName ) );
-
+        
+        List<Dimension> featureGroupDimensions = List.of( featureDimension,
+                                                          featureGroupStringDimension );
+        Variable featureGroupVariable = writer.addVariable( null,
+                                                   "feature_group_name",
+                                                   DataType.CHAR,
+                                                   featureGroupDimensions );
+        Attribute featureGroupLongName = new Attribute( "long_name", "The name of the feature group that contains one or more geographic feature tuples." );
+        featureGroupVariable.addAll( List.of( coordinates, gridMapping, featureGroupLongName ) );
+        
         List<Dimension> featureNameDimensions = List.of( featureDimension,
                                                          featureNameDimension );
         Variable leftFeatureNameVariable = writer.addVariable( null,
@@ -399,37 +425,48 @@ class NetcdfOutputFileCreator2
                                       + " failed: ", e );
         }
 
-        List<Array> namesToWrite = features.stream()
-                                           .map( NetcdfOutputFileCreator2::getFeatureTupleName )
-                                           .map( s -> stringToD2( s,
-                                                                  FEATURE_TUPLE_STRING_LENGTH ) )
-                                           .collect( Collectors.toList() );
-
-        LOGGER.debug( "Here are feature names to write: {}", namesToWrite );
-
-        for ( int i = 0; i < namesToWrite.size(); i++ )
+        // Order the tuples and write the names
+        List<FeatureTuple> orderedTuples = new ArrayList<>();
+        
+        int writeIndex = 0;
+        for ( FeatureGroup nextGroup : featureGroups )
         {
-            ArrayChar.D2 toWrite = (ArrayChar.D2) namesToWrite.get( i );
-            int[] index = { i , 0 };
+            ArrayChar.D2 nextGroupName = NetcdfOutputFileCreator2.stringToD2( nextGroup.getName(),
+                                                                              FEATURE_GROUP_STRING_LENGTH );
+            for ( FeatureTuple nextTuple : nextGroup.getFeatures() )
+            {
+                orderedTuples.add( nextTuple );
+                String nextTupleString = NetcdfOutputFileCreator2.getFeatureTupleName( nextTuple );
+                ArrayChar.D2 nextTupleName = NetcdfOutputFileCreator2.stringToD2( nextTupleString,
+                                                                                  FEATURE_TUPLE_STRING_LENGTH );
 
-            try
-            {
-                LOGGER.debug( "About to call write on {}, {}, {}",
-                              lidVariable, index, toWrite );
-                writer.write( lidVariable, index, toWrite );
-            }
-            catch ( IOException | InvalidRangeException e )
-            {
-                throw new WriteException( "Writing netCDF at "
-                                          + writer.getNetcdfFile().getLocation()
-                                          + " failed: ", e );
+                int[] index = { writeIndex , 0 };
+
+                try
+                {
+                    LOGGER.debug( "About to call write on {}, {}, {}",
+                                  lidVariable, index, nextTupleName );
+                    writer.write( lidVariable, index, nextTupleName );
+                    
+                    LOGGER.debug( "About to call write on {}, {}, {}",
+                                  featureGroupVariable, index, nextGroupName );
+                    writer.write( featureGroupVariable, index, nextGroupName );
+                }
+                catch ( IOException | InvalidRangeException e )
+                {
+                    throw new WriteException( "Writing netCDF at "
+                                              + writer.getNetcdfFile().getLocation()
+                                              + " failed: ", e );
+                }
+                
+                writeIndex++;
             }
         }
 
         // Write the left, right, baseline names independently.
         int featureIndex = 0;
 
-        for ( FeatureTuple featureTuple : features )
+        for ( FeatureTuple featureTuple : orderedTuples )
         {
             ArrayChar.D2 leftToWrite = stringToD2( featureTuple.getLeftName(),
                                                    FEATURE_STRING_LENGTH );
@@ -474,7 +511,7 @@ class NetcdfOutputFileCreator2
             featureIndex++;
         }
 
-        FeatureTuple first = features.stream()
+        FeatureTuple first = orderedTuples.stream()
                                      .findFirst()
                                      .orElseThrow();
 
@@ -494,7 +531,7 @@ class NetcdfOutputFileCreator2
             {
                 srid = first.getLeft()
                             .getSrid();
-                points = features.stream()
+                points = orderedTuples.stream()
                                  .map( FeatureTuple::getLeft )
                                  .map( FeatureKey::getWkt )
                                  .map( FeatureKey::getLonLatOrNullFromWkt )
@@ -504,7 +541,7 @@ class NetcdfOutputFileCreator2
             {
                 srid = first.getRight()
                             .getSrid();
-                points = features.stream()
+                points = orderedTuples.stream()
                                  .map( FeatureTuple::getRight )
                                  .map( FeatureKey::getWkt )
                                  .map( FeatureKey::getLonLatOrNullFromWkt )
@@ -514,7 +551,7 @@ class NetcdfOutputFileCreator2
             {
                 srid = first.getBaseline()
                             .getSrid();
-                points = features.stream()
+                points = orderedTuples.stream()
                                  .map( FeatureTuple::getBaseline )
                                  .map( FeatureKey::getWkt )
                                  .map( FeatureKey::getLonLatOrNullFromWkt )
@@ -634,7 +671,7 @@ class NetcdfOutputFileCreator2
         {
             int index = 0;
 
-            for ( FeatureTuple featureTuple : features )
+            for ( FeatureTuple featureTuple : orderedTuples )
             {
                 String name = featureTuple.getNameFor( nwmDataset );
                 int nwmFeatureId;
@@ -973,7 +1010,7 @@ class NetcdfOutputFileCreator2
                 break;
             }
         }
-        else if ( distinctInterfaces.size() == 0
+        else if ( distinctInterfaces.isEmpty()
                   && Objects.nonNull( config.getFeatureDimension() ) )
         {
             return config.getFeatureDimension();

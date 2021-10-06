@@ -422,15 +422,9 @@ class ProcessorHelper
             // Create any netcdf blobs for writing. See #80267-137.
             if ( !netcdfWriters.isEmpty() )
             {
-                Set<FeatureTuple> featuresForNetcdf = features;
-                if ( !featuresWithExplicitThresholds.isEmpty() )
-                {
-                    featuresForNetcdf = featuresWithExplicitThresholds;
-                }
-
                 for ( NetcdfOutputWriter writer : netcdfWriters )
                 {
-                    writer.createBlobsForWriting( featuresForNetcdf,
+                    writer.createBlobsForWriting( featureGroups,
                                                   thresholdsByMetricAndFeature );
                 }
             }
