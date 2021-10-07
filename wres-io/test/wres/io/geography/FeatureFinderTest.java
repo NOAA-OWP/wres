@@ -13,6 +13,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.Feature;
 import wres.config.generated.FeatureDimension;
+import wres.config.generated.FeaturePool;
 import wres.config.generated.FeatureService;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
@@ -150,12 +151,13 @@ public class FeatureFinderTest
             new Feature( null, null, FEATURE_NAME_THREE );
 
     private static PairConfig getBoilerplatePairConfigWith( List<Feature> features,
+                                                            List<FeaturePool> featureGroups,
                                                             FeatureService featureService )
     {
         return new PairConfig( "CMS",
                                featureService,
                                features,
-                               null,
+                               featureGroups,
                                null,
                                null,
                                null,
@@ -171,6 +173,7 @@ public class FeatureFinderTest
                                null,
                                null );
     }
+    
 
     /**
      * When all features are fully declared (no baseline), meaning both left and
@@ -185,6 +188,7 @@ public class FeatureFinderTest
                                           FULLY_DECLARED_FEATURE_TWO_NO_BASELINE );
         ProjectConfig projectConfig = new ProjectConfig( BOILERPLATE_INPUTS_NO_BASELINE,
                                                          getBoilerplatePairConfigWith( features,
+                                                                                       null,
                                                                                        null ),
                                                          null,
                                                          null,
@@ -209,6 +213,7 @@ public class FeatureFinderTest
                                           FULLY_DECLARED_FEATURE_TWO_WITH_BASELINE );
         ProjectConfig projectConfig = new ProjectConfig( BOILERPLATE_INPUTS_WITH_BASELINE,
                                                          getBoilerplatePairConfigWith( features,
+                                                                                       null,
                                                                                        null ),
                                                          null,
                                                          null,
@@ -234,6 +239,7 @@ public class FeatureFinderTest
         List<Feature> features = List.of( RIGHT_NAME_ONE_DECLARED_FEATURE,
                                           RIGHT_NAME_TWO_DECLARED_FEATURE );
         PairConfig pairConfig = FeatureFinderTest.getBoilerplatePairConfigWith( features,
+                                                                                null,
                                                                                 null );
         ProjectConfig projectConfig = new ProjectConfig( inputs,
                                                          pairConfig,
@@ -270,6 +276,7 @@ public class FeatureFinderTest
         List<Feature> features = List.of( LEFT_NAME_ONE_DECLARED_FEATURE,
                                           LEFT_NAME_TWO_DECLARED_FEATURE );
         PairConfig pairConfig = FeatureFinderTest.getBoilerplatePairConfigWith( features,
+                                                                                null,
                                                                                 null );
         ProjectConfig projectConfig = new ProjectConfig( inputs,
                                                          pairConfig,
@@ -305,6 +312,7 @@ public class FeatureFinderTest
         List<Feature> features = List.of( LEFT_NAME_ONE_DECLARED_FEATURE,
                                           LEFT_NAME_TWO_DECLARED_FEATURE );
         PairConfig pairConfig = FeatureFinderTest.getBoilerplatePairConfigWith( features,
+                                                                                null,
                                                                                 null );
         ProjectConfig projectConfig = new ProjectConfig( inputs,
                                                          pairConfig,
@@ -341,6 +349,7 @@ public class FeatureFinderTest
         List<Feature> features = List.of( BASELINE_NAME_ONE_DECLARED_FEATURE,
                                           BASELINE_NAME_TWO_DECLARED_FEATURE );
         PairConfig pairConfig = FeatureFinderTest.getBoilerplatePairConfigWith( features,
+                                                                                null,
                                                                                 null );
         ProjectConfig projectConfig = new ProjectConfig( inputs,
                                                          pairConfig,
@@ -376,6 +385,7 @@ public class FeatureFinderTest
         List<Feature> features = List.of( BASELINE_NAME_ONE_DECLARED_FEATURE,
                                           BASELINE_NAME_TWO_DECLARED_FEATURE );
         PairConfig pairConfig = FeatureFinderTest.getBoilerplatePairConfigWith( features,
+                                                                                null,
                                                                                 null );
         ProjectConfig projectConfig = new ProjectConfig( inputs,
                                                          pairConfig,
@@ -414,6 +424,7 @@ public class FeatureFinderTest
                                           RIGHT_NAME_TWO_DECLARED_FEATURE,
                                           BASELINE_NAME_THREE_DECLARED_FEATURE );
         PairConfig pairConfig = FeatureFinderTest.getBoilerplatePairConfigWith( features,
+                                                                                null,
                                                                                 null );
         ProjectConfig projectConfig = new ProjectConfig( inputs,
                                                          pairConfig,
@@ -433,4 +444,95 @@ public class FeatureFinderTest
         assertTrue( resultFeatures.contains( FULLY_DECLARED_FEATURE_ALL_NAME_THREE_WITH_BASELINE ) );
         assertEquals( 3, resultFeatures.size() );
     }
+    
+    /**
+     * Test filling out left from declared right when both use same dimension and the features are declared in a grouped
+     * context. No service required.
+     */
+    @Test
+    public void fillOutLeftFromDeclaredRightWhenSameDimensionAndGrouped()
+    {
+        ProjectConfig.Inputs inputs =
+                new ProjectConfig.Inputs( BOILERPLATE_LEFT_DATASOURCE_CUSTOM_DIMENSION,
+                                          BOILERPLATE_RIGHT_DATASOURCE_CUSTOM_DIMENSION,
+                                          null );
+
+        // Pass in sparsely declared features
+        List<Feature> features = List.of( RIGHT_NAME_ONE_DECLARED_FEATURE,
+                                          RIGHT_NAME_TWO_DECLARED_FEATURE );
+        String groupName = "A GROUP!";
+        FeaturePool featureGroup = new FeaturePool( features, groupName );
+
+        PairConfig pairConfig = FeatureFinderTest.getBoilerplatePairConfigWith( null,
+                                                                                List.of( featureGroup ),
+                                                                                null );
+        ProjectConfig projectConfig = new ProjectConfig( inputs,
+                                                         pairConfig,
+                                                         null,
+                                                         null,
+                                                         null,
+                                                         null );
+
+        ProjectConfig result = FeatureFinder.fillFeatures( projectConfig );
+
+        List<FeaturePool> actual = result.getPair()
+                                         .getFeatureGroup();
+
+        List<Feature> expectedFeatures = List.of( FULLY_DECLARED_FEATURE_ALL_NAME_ONE_NO_BASELINE,
+                                                  FULLY_DECLARED_FEATURE_ALL_NAME_TWO_NO_BASELINE );
+
+        FeaturePool expectedFeatureGroup = new FeaturePool( expectedFeatures, groupName );
+        List<FeaturePool> expected = List.of( expectedFeatureGroup );
+
+        assertEquals( expected, actual );
+    }
+    
+    /**
+     * Test filling out left from declared right when both use same dimension and the features are declared in both a 
+     * singleton context and a grouped context. No service required.
+     */
+    @Test
+    public void fillOutLeftFromDeclaredRightWhenSameDimensionAndBothSingletonAndGrouped()
+    {
+        ProjectConfig.Inputs inputs =
+                new ProjectConfig.Inputs( BOILERPLATE_LEFT_DATASOURCE_CUSTOM_DIMENSION,
+                                          BOILERPLATE_RIGHT_DATASOURCE_CUSTOM_DIMENSION,
+                                          null );
+
+        // Pass in sparsely declared features
+        List<Feature> features = List.of( RIGHT_NAME_ONE_DECLARED_FEATURE,
+                                          RIGHT_NAME_TWO_DECLARED_FEATURE );
+        String groupName = "A GROUP!";
+        FeaturePool featureGroup = new FeaturePool( features, groupName );
+
+        PairConfig pairConfig = FeatureFinderTest.getBoilerplatePairConfigWith( features,
+                                                                                List.of( featureGroup ),
+                                                                                null );
+        ProjectConfig projectConfig = new ProjectConfig( inputs,
+                                                         pairConfig,
+                                                         null,
+                                                         null,
+                                                         null,
+                                                         null );
+
+        ProjectConfig result = FeatureFinder.fillFeatures( projectConfig );
+
+        // Assert against the singleton features
+        List<Feature> actualFeatures = result.getPair()
+                                             .getFeature();
+        List<Feature> expectedFeatures = List.of( FULLY_DECLARED_FEATURE_ALL_NAME_ONE_NO_BASELINE,
+                                                  FULLY_DECLARED_FEATURE_ALL_NAME_TWO_NO_BASELINE );
+        
+        assertEquals( expectedFeatures, actualFeatures );
+        
+        // Assert against the single group
+        List<FeaturePool> actualGroups = result.getPair()
+                                         .getFeatureGroup();
+
+        FeaturePool expectedFeatureGroup = new FeaturePool( expectedFeatures, groupName );
+        List<FeaturePool> expectedGroups = List.of( expectedFeatureGroup );
+
+        assertEquals( expectedGroups, actualGroups );
+    }    
+    
 }

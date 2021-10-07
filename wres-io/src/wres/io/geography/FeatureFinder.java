@@ -20,6 +20,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.config.generated.FeatureDimension;
 import wres.config.generated.FeatureGroup;
+import wres.config.generated.FeaturePool;
 import wres.config.generated.FeatureService;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
@@ -41,6 +42,10 @@ import wres.io.reading.PreIngestException;
 
 public class FeatureFinder
 {
+    private static final String DELIMITER = "/";
+
+    private static final String WRES_NOT_READY_TO_LOOK_UP = "WRES not ready to look up ";
+
     private static final Logger LOGGER = LoggerFactory.getLogger( FeatureFinder.class );
 
     private static final String EXPLANATION_OF_WHY_AND_WHAT_TO_DO =
@@ -104,9 +109,10 @@ public class FeatureFinder
         // In many cases, no need to declare features, such as evaluations where
         // all the feature names are identical in sources on both sides or in
         // gridded evaluations.
-        if ( projectDeclaration.getPair()
-                               .getFeature()
-                               .isEmpty()
+        if ( pairConfig.getFeature()
+                       .isEmpty()
+             && pairConfig.getFeatureGroup()
+                          .isEmpty()
              && !requiresFeatureRequests )
         {
             LOGGER.debug( "No need to fill features: empty features and no requests required." );
@@ -148,25 +154,45 @@ public class FeatureFinder
             return projectDeclaration;
         }
 
-        List<Feature> filledFeatures =
-                FeatureFinder.fillFeatures( projectDeclaration,
-                                            projectDeclaration.getPair()
-                                                              .getFeatureService(),
-                                            projectDeclaration.getPair()
-                                                              .getFeature(),
-                                            hasBaseline );
+        // Figure out if the same authority is used on multiple sides. If so,
+        // consolidate lists.
+        FeatureDimension leftDimension =
+                FeatureFinder.determineDimension( projectDeclaration.getInputs().getLeft() );
+        FeatureDimension rightDimension =
+                FeatureFinder.determineDimension( projectDeclaration.getInputs().getRight() );
+        FeatureDimension baselineDimension = null;
+        
+        if ( hasBaseline )
+        {
+            baselineDimension = FeatureFinder.determineDimension( projectDeclaration.getInputs().getBaseline() );
+        }
 
-        if ( filledFeatures.isEmpty() )
+        PairConfig originalPairDeclaration = projectDeclaration.getPair();
+        FeatureService featureService = originalPairDeclaration.getFeatureService();
+
+        // Explicitly declared singleton features, plus any implicitly declared with "group" declaration
+        List<Feature> filledSingletonFeatures = FeatureFinder.fillSingletonFeatures( projectDeclaration,
+                                                                                     featureService,
+                                                                                     leftDimension,
+                                                                                     rightDimension,
+                                                                                     baselineDimension );
+
+        // Explicitly declared feature groups
+        List<FeaturePool> filledGroupedFeatures = FeatureFinder.fillGroupedFeatures( projectDeclaration,
+                                                                                     featureService,
+                                                                                     leftDimension,
+                                                                                     rightDimension,
+                                                                                     baselineDimension );
+
+        if ( filledSingletonFeatures.isEmpty() && filledGroupedFeatures.isEmpty() )
         {
             throw new PreIngestException( "No geographic features found to evaluate." );
         }
 
-        PairConfig originalPairDeclaration = projectDeclaration.getPair();
-
         PairConfig featurefulPairDeclaration = new PairConfig( originalPairDeclaration.getUnit(),
                                                                originalPairDeclaration.getFeatureService(),
-                                                               filledFeatures,
-                                                               originalPairDeclaration.getFeatureGroup(),
+                                                               filledSingletonFeatures,
+                                                               filledGroupedFeatures,
                                                                originalPairDeclaration.getGridSelection(),
                                                                originalPairDeclaration.isByTimeSeries(),
                                                                originalPairDeclaration.getLeadHours(),
@@ -189,7 +215,94 @@ public class FeatureFinder
                                   projectDeclaration.getName() );
     }
 
+    /**
+     * Densifies singleton feature groups obtained from {@link PairConfig#getFeature()}.
+     *
+     * @param projectDeclaration The project declaration.
+     * @param featureService The element containing location service details.
+     * @param leftDimension The left dimension, not null.
+     * @param rightDimension The right dimension, not null.
+     * @param baselineDimension The baseline dimension, possibly null.
+     * @return A new list of features based on the given args.
+     */
+    
+    private static List<Feature> fillSingletonFeatures( ProjectConfig projectDeclaration,
+                                                        FeatureService featureService,
+                                                        FeatureDimension leftDimension,
+                                                        FeatureDimension rightDimension,
+                                                        FeatureDimension baselineDimension )
+    {
+        List<Feature> features = projectDeclaration.getPair()
+                                                   .getFeature();
 
+        List<Feature> filledFeatures =
+                FeatureFinder.fillFeatures( projectDeclaration,
+                                            featureService,
+                                            features,
+                                            leftDimension,
+                                            rightDimension,
+                                            baselineDimension );
+
+        // Add in group requests from the feature service
+        List<Feature> consolidatedFeatures = new ArrayList<>( filledFeatures );
+        List<Feature> featuresFromGroups =
+                FeatureFinder.getFeatureGroups( featureService,
+                                                leftDimension,
+                                                rightDimension,
+                                                baselineDimension );
+        
+        consolidatedFeatures.addAll( featuresFromGroups );
+
+        return Collections.unmodifiableList( consolidatedFeatures );
+    }
+
+    /**
+     * Densifies any explicitly declared feature groups obtained from {@link PairConfig#getFeatureGroup()}.
+     *
+     * @param projectDeclaration The project declaration.
+     * @param featureService The element containing location service details.
+     * @param leftDimension The left dimension, not null.
+     * @param rightDimension The right dimension, not null.
+     * @param baselineDimension The baseline dimension, possibly null.
+     * @return A new list of grouped features based on the given args.
+     */
+
+    private static List<FeaturePool> fillGroupedFeatures( ProjectConfig projectDeclaration,
+                                                          FeatureService featureService,
+                                                          FeatureDimension leftDimension,
+                                                          FeatureDimension rightDimension,
+                                                          FeatureDimension baselineDimension )
+    {
+        List<FeaturePool> featureGroups = projectDeclaration.getPair()
+                                                            .getFeatureGroup();
+
+        LOGGER.debug( "Discovered {} feature groups with features to densify.", featureGroups.size() );
+        
+        List<FeaturePool> densifiedGroups = new ArrayList<>();
+
+        // Iterate through the groups and densify them
+        for ( FeaturePool nextGroup : featureGroups )
+        {
+            List<Feature> features = nextGroup.getFeature();
+
+            List<Feature> filledFeatures =
+                    FeatureFinder.fillFeatures( projectDeclaration,
+                                                featureService,
+                                                features,
+                                                leftDimension,
+                                                rightDimension,
+                                                baselineDimension );
+
+            LOGGER.debug( "Densified feature group {}.", nextGroup.getName() );
+            
+            FeaturePool densifiedGroup = new FeaturePool( filledFeatures, nextGroup.getName() );
+
+            densifiedGroups.add( densifiedGroup );
+        }
+
+        return Collections.unmodifiableList( densifiedGroups );
+    }
+    
     /**
      * Given a base uri and sparse features, generate fully-specified features,
      * using the service to correlate features that are not fully specified.
@@ -197,14 +310,18 @@ public class FeatureFinder
      * @param projectConfig The project declaration.
      * @param featureService The element containing location service details.
      * @param sparseFeatures The declared/sparse features.
-     * @param projectHasBaseline Whether the project declaration has a baseline.
+     * @param leftDimension The left dimension, not null.
+     * @param rightDimension The right dimension, not null.
+     * @param baselineDimension The baseline dimension, possibly null.
      * @return A new list of features based on the given args.
      */
 
     private static List<Feature> fillFeatures( ProjectConfig projectConfig,
                                                FeatureService featureService,
                                                List<Feature> sparseFeatures,
-                                               boolean projectHasBaseline )
+                                               FeatureDimension leftDimension,
+                                               FeatureDimension rightDimension,
+                                               FeatureDimension baselineDimension )
     {
         List<Feature> hasLeftNeedsRight = new ArrayList<>();
         List<Feature> hasLeftNeedsBaseline = new ArrayList<>();
@@ -213,20 +330,8 @@ public class FeatureFinder
         List<Feature> hasBaselineNeedsLeft = new ArrayList<>();
         List<Feature> hasBaselineNeedsRight = new ArrayList<>();
 
-        // Figure out if the same authority is used on multiple sides. If so,
-        // consolidate lists.
-        FeatureDimension leftDimension =
-                FeatureFinder.determineDimension( projectConfig.getInputs().getLeft() );
-        FeatureDimension rightDimension =
-                FeatureFinder.determineDimension( projectConfig.getInputs().getRight() );
-        FeatureDimension baselineDimension = null;
-
-        if ( projectHasBaseline )
-        {
-            baselineDimension = FeatureFinder.determineDimension( projectConfig.getInputs().getBaseline() );
-        }
-
-
+        boolean projectHasBaseline = Objects.nonNull( baselineDimension );
+        
         // Go through the features, finding what was declared and not.
         for ( Feature feature : sparseFeatures )
         {
@@ -402,9 +507,10 @@ public class FeatureFinder
 
         LOGGER.debug( "These need lookups: {}", needsLookup );
 
-        for ( Pair<FeatureDimension,FeatureDimension> fromAndTo : needsLookup.keySet() )
+        for ( Map.Entry<Pair<FeatureDimension,FeatureDimension>, Set<String>> nextEntry : needsLookup.entrySet() )
         {
-            Set<String> namesToLookUp = needsLookup.get( fromAndTo );
+            Pair<FeatureDimension,FeatureDimension> fromAndTo = nextEntry.getKey();
+            Set<String> namesToLookUp = nextEntry.getValue();
             FeatureDimension from = fromAndTo.getKey();
             FeatureDimension to = fromAndTo.getValue();
             Map<String,String> found = FeatureFinder.bulkLookup( projectConfig,
@@ -629,13 +735,6 @@ public class FeatureFinder
             consolidatedFeatures.add( newFeature );
         }
 
-        // Add in feature groups requested
-        List<Feature> featuresFromGroups =
-                FeatureFinder.getFeatureGroups( featureService,
-                                                leftDimension,
-                                                rightDimension,
-                                                baselineDimension );
-        consolidatedFeatures.addAll( featuresFromGroups );
         return Collections.unmodifiableList( consolidatedFeatures );
     }
 
@@ -683,8 +782,8 @@ public class FeatureFinder
             }
 
             String path = featureServiceBaseUri.getPath();
-            String fullPath = path + "/" + group.getType()
-                              + "/" + group.getValue();
+            String fullPath = path + DELIMITER + group.getType()
+                              + DELIMITER + group.getValue();
             URI uri = featureServiceBaseUri.resolve( fullPath )
                                            .normalize();
 
@@ -724,7 +823,7 @@ public class FeatureFinder
                 }
                 else
                 {
-                    throw new UnsupportedOperationException( "WRES not ready to look up "
+                    throw new UnsupportedOperationException( WRES_NOT_READY_TO_LOOK_UP
                                                              + leftDimension.value() );
                 }
 
@@ -749,7 +848,7 @@ public class FeatureFinder
                 }
                 else
                 {
-                    throw new UnsupportedOperationException( "WRES not ready to look up "
+                    throw new UnsupportedOperationException( WRES_NOT_READY_TO_LOOK_UP
                                                              + rightDimension.value() );
                 }
 
@@ -777,7 +876,7 @@ public class FeatureFinder
                     else
                     {
                         throw new UnsupportedOperationException(
-                                "WRES not ready to look up "
+                                WRES_NOT_READY_TO_LOOK_UP
                                 + baselineDimension.value() );
                     }
 
@@ -1034,9 +1133,9 @@ public class FeatureFinder
 
         // Add to request set. (Request directly for now)
         String path = featureServiceBaseUri.getPath();
-        String fullPath = path + "/" + from.toString()
+        String fullPath = path + DELIMITER + from.toString()
                                            .toLowerCase()
-                          + "/" + commaDelimitedFeatures;
+                          + DELIMITER + commaDelimitedFeatures;
         URI uri = featureServiceBaseUri.resolve( fullPath )
                                        .normalize();
 
