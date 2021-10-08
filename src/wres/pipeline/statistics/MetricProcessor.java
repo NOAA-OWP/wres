@@ -32,11 +32,11 @@ import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
-import wres.engine.statistics.metric.Metric;
-import wres.engine.statistics.metric.MetricCalculationException;
-import wres.engine.statistics.metric.MetricCollection;
-import wres.engine.statistics.metric.MetricFactory;
-import wres.engine.statistics.metric.MetricParameterException;
+import wres.metrics.Metric;
+import wres.metrics.MetricCalculationException;
+import wres.metrics.MetricCollection;
+import wres.metrics.MetricFactory;
+import wres.metrics.MetricParameterException;
 import wres.statistics.generated.Threshold;
 
 /**

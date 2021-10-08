@@ -12,7 +12,7 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;
-import wres.engine.statistics.metric.config.MetricConfigHelper;
+import wres.metrics.config.MetricConfigHelper;
 
 /**
  * <p>Represents a project that has been "resolved", i.e. any kind of translation
