@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -38,6 +39,9 @@ import wres.io.reading.PreIngestException;
  * When a group of features is declared with a feature service, this class makes
  * the requests needed and adds the found features to the declaration used by
  * the rest of the WRES pipeline.
+ * 
+ * TODO: decouple this implementation from a particular feature service, 
+ * currently {@link WrdsFeatureService}, by injecting a service interface.
  */
 
 public class FeatureFinder
@@ -48,22 +52,11 @@ public class FeatureFinder
 
     private static final Logger LOGGER = LoggerFactory.getLogger( FeatureFinder.class );
 
-    private static final String EXPLANATION_OF_WHY_AND_WHAT_TO_DO =
-           "By declaring a feature, WRES interprets it as an intent to use that"
-           + " feature in the evaluation. If the corresponding feature cannot "
-           + "be found or has no correlation from the featureService, WRES "
-           + "prefers to inform you that the declared evaluation including that"
-           + " feature cannot be started. Options to resolve include any of: "
-           + "investigate the URL above in a web browser, report to the "
-           + "geographic feature service team the service issue or the data "
-           + "issue (e.g. expected correlation), omit this feature from the "
-           + "declaration, include a complete feature correlation declaration, "
-           + "or contact the WRES team for help.";
     private static final int MAX_SAFE_URL_LENGTH = 2000;
 
     private FeatureFinder()
     {
-        // Static helper functions, no construction.
+        // Do not construct
     }
 
     /**
@@ -168,18 +161,18 @@ public class FeatureFinder
         }
 
         PairConfig originalPairDeclaration = projectDeclaration.getPair();
-        FeatureService featureService = originalPairDeclaration.getFeatureService();
+        FeatureService declaredFeatureService = originalPairDeclaration.getFeatureService();
 
         // Explicitly declared singleton features, plus any implicitly declared with "group" declaration
         List<Feature> filledSingletonFeatures = FeatureFinder.fillSingletonFeatures( projectDeclaration,
-                                                                                     featureService,
+                                                                                     declaredFeatureService,
                                                                                      leftDimension,
                                                                                      rightDimension,
                                                                                      baselineDimension );
 
         // Explicitly declared feature groups
         List<FeaturePool> filledGroupedFeatures = FeatureFinder.fillGroupedFeatures( projectDeclaration,
-                                                                                     featureService,
+                                                                                     declaredFeatureService,
                                                                                      leftDimension,
                                                                                      rightDimension,
                                                                                      baselineDimension );
@@ -245,19 +238,44 @@ public class FeatureFinder
 
         // Add in group requests from the feature service
         List<Feature> consolidatedFeatures = new ArrayList<>( filledFeatures );
-        List<Feature> featuresFromGroups =
-                FeatureFinder.getFeatureGroups( featureService,
-                                                leftDimension,
-                                                rightDimension,
-                                                baselineDimension );
-        
-        consolidatedFeatures.addAll( featuresFromGroups );
+
+        // Add any implicitly declared features
+        if ( Objects.nonNull( featureService ) && Objects.nonNull( featureService.getGroup() ) )
+        {
+            // Combine all the features from groups that are not to be pooled
+            List<Feature> fromGroups =
+                    featureService.getGroup()
+                                  .stream()
+                                  .filter( next -> !next.isPool() )
+                                  .flatMap( nextGroup -> FeatureFinder.getFeatureGroup( featureService,
+                                                                                        nextGroup,
+                                                                                        leftDimension,
+                                                                                        rightDimension,
+                                                                                        baselineDimension )
+                                                                      .stream() )
+                                  .collect( Collectors.toList() );
+
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Found {} features within groups that should be treated as singletons.",
+                              fromGroups.size() );
+            }
+
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "Found the following features within groups that should be treated as singletons: {}.",
+                              fromGroups );
+            }
+
+            consolidatedFeatures.addAll( fromGroups );
+        }
 
         return Collections.unmodifiableList( consolidatedFeatures );
     }
 
     /**
-     * Densifies any explicitly declared feature groups obtained from {@link PairConfig#getFeatureGroup()}.
+     * Densifies any explicitly declared feature groups obtained from {@link PairConfig#getFeatureGroup()} and adds any
+     * implicitly declared groups.
      *
      * @param projectDeclaration The project declaration.
      * @param featureService The element containing location service details.
@@ -277,7 +295,7 @@ public class FeatureFinder
                                                             .getFeatureGroup();
 
         LOGGER.debug( "Discovered {} feature groups with features to densify.", featureGroups.size() );
-        
+
         List<FeaturePool> densifiedGroups = new ArrayList<>();
 
         // Iterate through the groups and densify them
@@ -294,10 +312,40 @@ public class FeatureFinder
                                                 baselineDimension );
 
             LOGGER.debug( "Densified feature group {}.", nextGroup.getName() );
-            
+
             FeaturePool densifiedGroup = new FeaturePool( filledFeatures, nextGroup.getName() );
 
             densifiedGroups.add( densifiedGroup );
+        }
+
+        // Add any implicitly declared feature groups
+        if ( Objects.nonNull( featureService ) && Objects.nonNull( featureService.getGroup() ) )
+        {
+            // Combine all the features from groups that are not to be pooled
+            for ( FeatureGroup nextGroup : featureService.getGroup() )
+            {
+                if ( nextGroup.isPool() )
+                {
+                    List<Feature> featuresToGroup = FeatureFinder.getFeatureGroup( featureService,
+                                                                                   nextGroup,
+                                                                                   leftDimension,
+                                                                                   rightDimension,
+                                                                                   baselineDimension );
+
+                    FeaturePool pool = new FeaturePool( featuresToGroup, nextGroup.getValue() );
+
+                    if ( LOGGER.isDebugEnabled() )
+                    {
+                        LOGGER.debug( "Found implicit declaration for a feature pool called {} with type {}, which "
+                                      + "contained {} features.",
+                                      nextGroup.getValue(),
+                                      nextGroup.getType(),
+                                      featuresToGroup.size() );
+                    }
+
+                    densifiedGroups.add( pool );
+                }
+            }
         }
 
         return Collections.unmodifiableList( densifiedGroups );
@@ -513,11 +561,11 @@ public class FeatureFinder
             Set<String> namesToLookUp = nextEntry.getValue();
             FeatureDimension from = fromAndTo.getKey();
             FeatureDimension to = fromAndTo.getValue();
-            Map<String,String> found = FeatureFinder.bulkLookup( projectConfig,
-                                                                 featureService,
-                                                                 from,
-                                                                 to,
-                                                                 namesToLookUp );
+            Map<String, String> found = WrdsFeatureService.bulkLookup( projectConfig,
+                                                                       featureService,
+                                                                       from,
+                                                                       to,
+                                                                       namesToLookUp );
             // Go through the has-this-needs-that lists
             if ( from.equals( leftDimension ) )
             {
@@ -739,163 +787,164 @@ public class FeatureFinder
     }
 
     /**
-     * Get features requested within the given feature service, or empty list
-     * if none are requested.
-     * @param featureService The feature service to use, optional.
+     * Get features requested within the given feature service for a specified 
+     * feature group.
+     * @param featureService The feature service to use with a base url, both required.
+     * @param featureGroup the feature group, required.
      * @param leftDimension The left dimension discovered, required.
      * @param rightDimension The right dimension discovered, required.
      * @param baselineDimension The baseline dimension discovered, null if none.
-     * @return A list of fully populated features or empty list.
+     * @return A list of fully populated features.
      */
-    private static List<Feature> getFeatureGroups( FeatureService featureService,
-                                                   FeatureDimension leftDimension,
-                                                   FeatureDimension rightDimension,
-                                                   FeatureDimension baselineDimension )
+    private static List<Feature> getFeatureGroup( FeatureService featureService,
+                                                  FeatureGroup featureGroup,
+                                                  FeatureDimension leftDimension,
+                                                  FeatureDimension rightDimension,
+                                                  FeatureDimension baselineDimension )
     {
-        if ( Objects.isNull( featureService )
-             || Objects.isNull( featureService.getGroup() )
-             || featureService.getGroup()
-                              .isEmpty() )
-        {
-            LOGGER.debug( "No feature groups found declared, returning empty." );
-            return Collections.emptyList();
-        }
-
+        Objects.requireNonNull( featureGroup );
+        Objects.requireNonNull( featureService, "Cannot declare a feature service group without a feature service." );
+        Objects.requireNonNull( featureService.getBaseUrl(), "Cannot declare a feature service group without a base "
+                + "url." );
+        Objects.requireNonNull( leftDimension );
+        Objects.requireNonNull( rightDimension );
+        
         URI featureServiceBaseUri = featureService.getBaseUrl();
 
         List<Feature> features = new ArrayList<>();
 
-        for ( FeatureGroup group : featureService.getGroup() )
+        if ( Objects.isNull( featureGroup.getType() )
+             || Objects.isNull( featureGroup.getValue() )
+             || featureGroup.getType()
+                     .isBlank()
+             || featureGroup.getValue()
+                     .isBlank() )
         {
-            if ( Objects.isNull( group.getType() )
-                 || Objects.isNull( group.getValue() )
-                 || group.getType()
-                         .isBlank()
-                 || group.getValue()
-                         .isBlank() )
+            throw new ProjectConfigException( featureGroup,
+                                              "The type and value "
+                                                     + "of each feature "
+                                                     + "group must be "
+                                                     + "specified. Instead,"
+                                                     + " saw "
+                                                     + featureGroup );
+        }
+
+        String path = featureServiceBaseUri.getPath();
+        String fullPath = path + DELIMITER
+                          + featureGroup.getType()
+                          + DELIMITER
+                          + featureGroup.getValue();
+        URI uri = featureServiceBaseUri.resolve( fullPath )
+                                       .normalize();
+
+        if ( uri.toString()
+                .length() > MAX_SAFE_URL_LENGTH )
+        {
+            throw new ProjectConfigException( featureGroup,
+                                              "The URL to be created using "
+                                                     + "this configuration would "
+                                                     + "be greater than "
+                                                     + MAX_SAFE_URL_LENGTH
+                                                     + "characters. Please use a "
+                                                     + "shorter base URL or group "
+                                                     + "type or group value." );
+        }
+
+        //Read the features from either V3 or older API.
+        List<WrdsLocation> wrdsLocations = WrdsFeatureService.read( uri );
+
+        for ( WrdsLocation wrdsLocation : wrdsLocations )
+        {
+            String leftName;
+            String rightName;
+            String baselineName = null;
+
+            if ( leftDimension.equals( FeatureDimension.NWS_LID ) )
             {
-                throw new ProjectConfigException( group, "The type and value "
-                                                         + "of each feature "
-                                                         + "group must be "
-                                                         + "specified. Instead,"
-                                                         + " saw " + group );
+                leftName = wrdsLocation.getNwsLid();
+            }
+            else if ( leftDimension.equals( FeatureDimension.USGS_SITE_CODE ) )
+            {
+                leftName = wrdsLocation.getUsgsSiteCode();
+            }
+            else if ( leftDimension.equals( FeatureDimension.NWM_FEATURE_ID ) )
+            {
+                leftName = wrdsLocation.getNwmFeatureId();
+            }
+            else
+            {
+                throw new UnsupportedOperationException( WRES_NOT_READY_TO_LOOK_UP
+                                                         + leftDimension.value() );
             }
 
-            String path = featureServiceBaseUri.getPath();
-            String fullPath = path + DELIMITER + group.getType()
-                              + DELIMITER + group.getValue();
-            URI uri = featureServiceBaseUri.resolve( fullPath )
-                                           .normalize();
-
-            if ( uri.toString()
-                    .length() > MAX_SAFE_URL_LENGTH )
+            if ( Objects.isNull( leftName ) || leftName.isBlank() )
             {
-                throw new ProjectConfigException( group,
-                                                  "The URL to be created using "
-                                                  + "this configuration would "
-                                                  + "be greater than "
-                                                  + MAX_SAFE_URL_LENGTH
-                                                  + "characters. Please use a "
-                                                  + "shorter base URL or group "
-                                                  + "type or group value." );
+                LOGGER.debug( "Found null or blank for left of location {}, not adding.",
+                              wrdsLocation );
+                continue;
             }
 
-            //Read the features from either V3 or older API.
-            List<WrdsLocation> wrdsLocations = WrdsLocationReader.read( uri );
-
-            for ( WrdsLocation wrdsLocation : wrdsLocations )
+            if ( rightDimension.equals( FeatureDimension.NWS_LID ) )
             {
-                String leftName;
-                String rightName;
-                String baselineName = null;
+                rightName = wrdsLocation.getNwsLid();
+            }
+            else if ( rightDimension.equals( FeatureDimension.USGS_SITE_CODE ) )
+            {
+                rightName = wrdsLocation.getUsgsSiteCode();
+            }
+            else if ( rightDimension.equals( FeatureDimension.NWM_FEATURE_ID ) )
+            {
+                rightName = wrdsLocation.getNwmFeatureId();
+            }
+            else
+            {
+                throw new UnsupportedOperationException( WRES_NOT_READY_TO_LOOK_UP
+                                                         + rightDimension.value() );
+            }
 
-                if ( leftDimension.equals( FeatureDimension.NWS_LID ) )
+            if ( Objects.isNull( rightName ) || rightName.isBlank() )
+            {
+                LOGGER.debug( "Found null or blank for right of location {}, not adding.",
+                              wrdsLocation );
+                continue;
+            }
+
+            if ( Objects.nonNull( baselineDimension ) )
+            {
+                if ( baselineDimension.equals( FeatureDimension.NWS_LID ) )
                 {
-                    leftName = wrdsLocation.getNwsLid();
+                    baselineName = wrdsLocation.getNwsLid();
                 }
-                else if ( leftDimension.equals( FeatureDimension.USGS_SITE_CODE ) )
+                else if ( baselineDimension.equals( FeatureDimension.USGS_SITE_CODE ) )
                 {
-                    leftName = wrdsLocation.getUsgsSiteCode();
+                    baselineName = wrdsLocation.getUsgsSiteCode();
                 }
-                else if ( leftDimension.equals( FeatureDimension.NWM_FEATURE_ID ) )
+                else if ( baselineDimension.equals( FeatureDimension.NWM_FEATURE_ID ) )
                 {
-                    leftName = wrdsLocation.getNwmFeatureId();
+                    baselineName = wrdsLocation.getNwmFeatureId();
                 }
                 else
                 {
-                    throw new UnsupportedOperationException( WRES_NOT_READY_TO_LOOK_UP
-                                                             + leftDimension.value() );
+                    throw new UnsupportedOperationException(
+                                                             WRES_NOT_READY_TO_LOOK_UP
+                                                             + baselineDimension.value() );
                 }
 
-                if ( Objects.isNull( leftName ) || leftName.isBlank() )
+                if ( Objects.isNull( baselineName ) || baselineName.isBlank() )
                 {
-                    LOGGER.debug( "Found null or blank for left of location {}, not adding.",
+                    LOGGER.debug( "Found null or blank for baseline of location {}, not adding.",
                                   wrdsLocation );
                     continue;
                 }
-
-                if ( rightDimension.equals( FeatureDimension.NWS_LID ) )
-                {
-                    rightName = wrdsLocation.getNwsLid();
-                }
-                else if ( rightDimension.equals( FeatureDimension.USGS_SITE_CODE ) )
-                {
-                    rightName = wrdsLocation.getUsgsSiteCode();
-                }
-                else if ( rightDimension.equals( FeatureDimension.NWM_FEATURE_ID ) )
-                {
-                    rightName = wrdsLocation.getNwmFeatureId();
-                }
-                else
-                {
-                    throw new UnsupportedOperationException( WRES_NOT_READY_TO_LOOK_UP
-                                                             + rightDimension.value() );
-                }
-
-                if ( Objects.isNull( rightName ) || rightName.isBlank() )
-                {
-                    LOGGER.debug( "Found null or blank for right of location {}, not adding.",
-                                  wrdsLocation );
-                    continue;
-                }
-
-                if ( Objects.nonNull( baselineDimension ) )
-                {
-                    if ( baselineDimension.equals( FeatureDimension.NWS_LID ) )
-                    {
-                        baselineName = wrdsLocation.getNwsLid();
-                    }
-                    else if ( baselineDimension.equals( FeatureDimension.USGS_SITE_CODE ) )
-                    {
-                        baselineName = wrdsLocation.getUsgsSiteCode();
-                    }
-                    else if ( baselineDimension.equals( FeatureDimension.NWM_FEATURE_ID ) )
-                    {
-                        baselineName = wrdsLocation.getNwmFeatureId();
-                    }
-                    else
-                    {
-                        throw new UnsupportedOperationException(
-                                WRES_NOT_READY_TO_LOOK_UP
-                                + baselineDimension.value() );
-                    }
-
-                    if ( Objects.isNull( baselineName ) || baselineName.isBlank() )
-                    {
-                        LOGGER.debug( "Found null or blank for baseline of location {}, not adding.",
-                                      wrdsLocation );
-                        continue;
-                    }
-                }
-
-                Feature featureFromGroup = new Feature( leftName, rightName, baselineName );
-                features.add( featureFromGroup );
             }
+
+            Feature featureFromGroup = new Feature( leftName, rightName, baselineName );
+            features.add( featureFromGroup );
         }
 
         return Collections.unmodifiableList( features );
-    }
-
+    }  
+    
     private static boolean isFullyDeclared( Feature potentiallySparseFeature,
                                             boolean projectHasBaseline )
     {
@@ -954,314 +1003,6 @@ public class FeatureFinder
         }
 
         return featureDimension;
-    }
-
-
-    /**
-     * Given a dimension "from" and dimension "to", look up the set of features.
-     * @param projectConfig The declaration to use when printing error message.
-     * @param featureService The featureService element, optional unless lookup
-     *                       ends up being required.
-     * @param from The known feature dimension, in which "featureNames" exist.
-     * @param to The unknown feature dimension, the dimension to search in.
-     * @param featureNames The names in the "from" dimension to look for in "to"
-     * @return The Set of name pairs: "from" as key, "to" as value.
-     * @throws ProjectConfigException When a feature service was needed but null
-     * @throws PreIngestException When the count of features in response differs
-     *                            from the count of feature names requested, or
-     *                            when the requested "to" was not found in the
-     *                            response.
-     * @throws UnsupportedOperationException When unknown "from" or "to" given.
-     * @throws NullPointerException When projectConfig or featureNames is null.
-     */
-
-    private static Map<String,String> bulkLookup( ProjectConfig projectConfig,
-                                                  FeatureService featureService,
-                                                  FeatureDimension from,
-                                                  FeatureDimension to,
-                                                  Set<String> featureNames )
-    {
-        Objects.requireNonNull( projectConfig );
-        Objects.requireNonNull( featureNames );
-
-        Map<String,String> locations = new HashMap<>( featureNames.size() );
-
-        if ( from.equals( to ) )
-        {
-            // In the case where the original dimension is same as the new
-            // dimension, no lookup is needed. Fill out directly.
-            for ( String feature : featureNames )
-            {
-                locations.put( feature, feature );
-            }
-
-            LOGGER.debug( "Did not ask a service because from={}, to={}, returned {}",
-                          from, to, locations );
-            return Collections.unmodifiableMap( locations );
-        }
-
-        if ( from.equals( FeatureDimension.CUSTOM ) )
-        {
-            // We will have no luck asking for features based on an unknown
-            // dimension. But this call will happen sometimes, so return empty.
-            LOGGER.debug( "Did not ask a service because from={}", from );
-            return Collections.emptyMap();
-        }
-
-        if ( Objects.isNull( featureService ) )
-        {
-            throw new ProjectConfigException( projectConfig.getPair(),
-                                              "Attempted to look up features "
-                                              + "with " + from.value()
-                                              + " and missing " + to.value()
-                                              + ", but could not because the "
-                                              + "'featureService' declaration "
-                                              + "was either missing. "
-                                              + "Add a <featureService><baseUrl>..."
-                                              + "</baseUrl></featureService> with "
-                                              + "the non-varying part of the "
-                                              + "URL of the feature service to "
-                                              + "have WRES ask it for features." );
-        }
-
-        if ( Objects.isNull( featureService.getBaseUrl() ) )
-        {
-            throw new ProjectConfigException( featureService,
-                                              "Attempted to look up features "
-                                              + "with " + from.value()
-                                              + " and missing " + to.value()
-                                              + ", but could not because the "
-                                              + "'featureService' declaration "
-                                              + "was missing a 'baseUrl' tag. "
-                                              + "Add a <baseUrl>...</baseUrl> with "
-                                              + "the non-varying part of the "
-                                              + "URL of the feature service ("
-                                              + "inside the <featureService>) "
-                                              + "to have WRES ask it for"
-                                              + " features." );
-        }
-
-        URI featureServiceBaseUri = featureService.getBaseUrl();
-        Set<String> batchOfFeatureNames = new HashSet<>();
-
-        // Track how large the URL gets. Base uri, from, plus 2 for the slashes.
-        int baseLength = 2 + featureServiceBaseUri.toString()
-                                                  .length()
-                         + from.toString()
-                               .length();
-        int totalLength = baseLength;
-
-        for ( String featureName : featureNames )
-        {
-            int addedLength = featureName.length() + 1;
-
-            if ( totalLength + addedLength <= MAX_SAFE_URL_LENGTH )
-            {
-                LOGGER.trace( "totalLength {} + addedLength {} <= MAX_SAFE_URL_LENGTH {}",
-                              totalLength, addedLength, MAX_SAFE_URL_LENGTH );
-                batchOfFeatureNames.add( featureName );
-                totalLength += addedLength;
-                continue;
-            }
-
-            LOGGER.debug( "One more feature name would be unsafe length URL: {}",
-                          batchOfFeatureNames );
-            // At this point there are more features to go, but we hit the safe
-            // URL length limit.
-            Map<String,String> batchOfResults =
-                    FeatureFinder.getBatchOfFeatures( from,
-                                                      to,
-                                                      featureServiceBaseUri,
-                                                      batchOfFeatureNames );
-            locations.putAll( batchOfResults );
-            batchOfFeatureNames = new HashSet<>();
-            totalLength = baseLength;
-        }
-
-        LOGGER.debug( "Last of the feature names to request: {}",
-                      batchOfFeatureNames );
-        // Get the remaining features.
-        Map<String,String> batchOfResults =
-                FeatureFinder.getBatchOfFeatures( from,
-                                                  to,
-                                                  featureServiceBaseUri,
-                                                  batchOfFeatureNames );
-        locations.putAll( batchOfResults );
-
-        LOGGER.debug( "For from={} and to={}, found these: {}",
-                      from, to, locations );
-        return Collections.unmodifiableMap( locations );
-    }
-
-
-    /**
-     * Make a request for the complete given featureNames, already vetted to be
-     * less than the maximum safe URL length when to, featureServiceBaseUri,
-     * and featureNames are joined together with slashes and commas.
-     * @param from The known feature dimension, in which "featureNames" exist.
-     * @param to The unknown feature dimension, the dimension to search in.
-     * @param featureServiceBaseUri The base URI from which to build a full URI.
-     * @param featureNames The names in the "from" dimension to look for in "to"
-     * @return The Set of name pairs: "from" as key, "to" as value.
-     * @throws PreIngestException When the count of features in response differs
-     *                            from the count of feature names requested, or
-     *                            when the requested "to" was not found in the
-     *                            response.
-     * @throws NullPointerException When any argument is null.
-     * @throws UnsupportedOperationException When unknown "from" or "to" given.
-     * @throws IllegalArgumentException When any arg is null.
-     */
-    private static Map<String,String> getBatchOfFeatures( FeatureDimension from,
-                                                          FeatureDimension to,
-                                                          URI featureServiceBaseUri,
-                                                          Set<String> featureNames )
-    {
-        Objects.requireNonNull( from );
-        Objects.requireNonNull( to );
-        Objects.requireNonNull( featureServiceBaseUri );
-        Objects.requireNonNull( featureNames );
-
-        if ( featureNames.isEmpty() )
-        {
-            throw new IllegalArgumentException( "Encountered an empty batch of feature names." );
-        }
-
-        Map<String,String> batchOfLocations = new HashMap<>( featureNames.size() );
-        StringJoiner joiner = new StringJoiner( "," );
-        featureNames.forEach( joiner::add );
-        String commaDelimitedFeatures = joiner.toString();
-
-        // Add to request set. (Request directly for now)
-        String path = featureServiceBaseUri.getPath();
-        String fullPath = path + DELIMITER + from.toString()
-                                           .toLowerCase()
-                          + DELIMITER + commaDelimitedFeatures;
-        URI uri = featureServiceBaseUri.resolve( fullPath )
-                                       .normalize();
-
-        //Read features from either V3 or the older API.
-        List<WrdsLocation> wrdsLocations = WrdsLocationReader.read( uri );
-        int countOfLocations = wrdsLocations.size();
-
-        if ( countOfLocations != featureNames.size() )
-        {
-            throw new PreIngestException( "Response from WRDS at " + uri
-                                          + " did not include exactly "
-                                          + featureNames.size() + " locations, "
-                                          + " but had "
-                                          + countOfLocations
-                                          + ". "
-                                          + EXPLANATION_OF_WHY_AND_WHAT_TO_DO );
-        }
-
-        List<WrdsLocation> fromWasNullOrBlank = new ArrayList<>( 2 );
-        List<WrdsLocation> toWasNullOrBlank = new ArrayList<>( 2 );
-
-        for ( WrdsLocation location : wrdsLocations )
-        {
-            String original;
-            String found;
-
-            if ( from.equals( FeatureDimension.NWS_LID ) )
-            {
-                String nwsLid = location.getNwsLid();
-
-                if ( Objects.isNull( nwsLid ) || nwsLid.isBlank() )
-                {
-                    fromWasNullOrBlank.add( location );
-                }
-
-                original = nwsLid;
-            }
-            else if ( from.equals( FeatureDimension.USGS_SITE_CODE ) )
-            {
-                String usgsSiteCode = location.getUsgsSiteCode();
-
-                if ( Objects.isNull( usgsSiteCode )
-                     || usgsSiteCode.isBlank() )
-                {
-                    fromWasNullOrBlank.add( location );
-                }
-
-                original = usgsSiteCode;
-            }
-            else if ( from.equals( FeatureDimension.NWM_FEATURE_ID ) )
-            {
-                String nwmFeatureId = location.getNwmFeatureId();
-
-                if ( Objects.isNull( nwmFeatureId )
-                     || nwmFeatureId.isBlank() )
-                {
-                    fromWasNullOrBlank.add( location );
-                }
-
-                original = nwmFeatureId;
-            }
-            else
-            {
-                throw new UnsupportedOperationException( "Unknown geographic feature dimension "
-                                                         + from );
-            }
-
-            if ( to.equals( FeatureDimension.NWS_LID ) )
-            {
-                String nwsLid = location.getNwsLid();
-
-                if ( Objects.isNull( nwsLid ) || nwsLid.isBlank() )
-                {
-                    toWasNullOrBlank.add( location );
-                }
-
-                found = nwsLid;
-            }
-            else if ( to.equals( FeatureDimension.USGS_SITE_CODE ) )
-            {
-                String usgsSiteCode = location.getUsgsSiteCode();
-
-                if ( Objects.isNull( usgsSiteCode )
-                     || usgsSiteCode.isBlank() )
-                {
-                    toWasNullOrBlank.add( location );
-                }
-
-                found = usgsSiteCode;
-            }
-            else if ( to.equals( FeatureDimension.NWM_FEATURE_ID ) )
-            {
-                String nwmFeatureId = location.getNwmFeatureId();
-
-                if ( Objects.isNull( nwmFeatureId )
-                     || nwmFeatureId.isBlank() )
-                {
-                    toWasNullOrBlank.add( location );
-                }
-
-                found = nwmFeatureId;
-            }
-            else
-            {
-                throw new UnsupportedOperationException( "Unknown geographic feature dimension"
-                                                         + to );
-            }
-
-            batchOfLocations.put( original, found );
-        }
-
-        if ( !fromWasNullOrBlank.isEmpty()
-             || !toWasNullOrBlank.isEmpty() )
-        {
-            throw new PreIngestException( "From the response at " + uri
-                                          + " the following were missing "
-                                          + from.value() + " (from) values: "
-                                          + fromWasNullOrBlank + " and/or "
-                                          + "the following were missing "
-                                          + to.value() + " (to) values: "
-                                          + toWasNullOrBlank
-                                          + ". "
-                                          + EXPLANATION_OF_WHY_AND_WHAT_TO_DO );
-        }
-
-        return Collections.unmodifiableMap( batchOfLocations );
     }
 
     /**

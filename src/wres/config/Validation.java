@@ -42,7 +42,9 @@ import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
+import wres.config.generated.FeatureGroup;
 import wres.config.generated.FeaturePool;
+import wres.config.generated.FeatureService;
 import wres.config.generated.IntBoundsType;
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
@@ -79,6 +81,12 @@ import wres.system.SystemSettings;
 
 public class Validation
 {
+    private static final String TRY_AGAIN = "try again.";
+
+    private static final String POOLING_WINDOWS = "pooling windows:";
+
+    private static final String AND_TRY_AGAIN = "and try again.";
+
     private static final String THIS_EVALUATION_APPEARS_TO_CONTAIN_GRIDDED_DATA = " This evaluation appears to contain "
                                                                                   + "gridded data because it declares a "
                                                                                   + "<gridSelection>. For gridded "
@@ -87,7 +95,7 @@ public class Validation
                                                                                   + "<variable> declaration was "
                                                                                   + "discovered for the {} data. "
                                                                                   + "Please add this declaration and "
-                                                                                  + "try again.";
+                                                                                  + TRY_AGAIN;
 
     private static final String NOT_APPEAR_TO_BE_VALID_PLEASE_USE_NUMERIC =
             "not appear to be valid. Please use numeric ";
@@ -452,11 +460,9 @@ public class Validation
         result = result && Validation.isNetcdfOutputConfigValid( projectConfigPlus.toString(),
                                                                  projectConfigPlus.getProjectConfig()
                                                                                   .getOutputs()
-                                                                                  .getDestination() )
-                 && result;
+                                                                                  .getDestination() );
 
-        result = Validation.areNetcdfOutputsValid( projectConfigPlus )
-                 && result;
+        result = result && Validation.areNetcdfOutputsValid( projectConfigPlus );
 
         return result;
     }
@@ -1021,7 +1027,7 @@ public class Validation
                              ThresholdType.PROBABILITY.name(),
                              ThresholdType.PROBABILITY_CLASSIFIER.name() );
             }
-            else if ( !eventThresholds && decisionThresholds )
+            else if ( !eventThresholds )
             {
                 isValid = false;
 
@@ -1452,7 +1458,7 @@ public class Validation
                 String msg = FILE_LINE_COLUMN_BOILERPLATE
                              + " In the pair configuration, the grid selection contains a <coordinate> filter, which "
                              + "is not currently supported. Please replace this declaration with a <polygon> filter "
-                             + "and try again.";
+                             + AND_TRY_AGAIN;
 
                 LOGGER.warn( msg,
                              projectConfigPlus.getOrigin(),
@@ -1469,9 +1475,7 @@ public class Validation
 
     static boolean areFeaturesValid( List<Feature> features )
     {
-        boolean valid = true;
-        
-        valid = valid && Validation.doesEachFeatureHaveSomethingDeclared( features );
+        boolean valid = Validation.doesEachFeatureHaveSomethingDeclared( features );
         List<String> leftRawNames = Validation.getFeatureNames( features,
                                                                 LeftOrRightOrBaseline.LEFT );
         List<String> rightRawNames = Validation.getFeatureNames( features,
@@ -1479,12 +1483,12 @@ public class Validation
         List<String> baselineRawNames = getFeatureNames( features,
                                                          LeftOrRightOrBaseline.BASELINE );
         valid = valid && Validation.validateFeatureNames( leftRawNames,
-                                                 LeftOrRightOrBaseline.LEFT );
+                                                          LeftOrRightOrBaseline.LEFT );
         valid = valid && Validation.validateFeatureNames( rightRawNames,
-                                                 LeftOrRightOrBaseline.RIGHT );
+                                                          LeftOrRightOrBaseline.RIGHT );
         valid = valid && Validation.validateFeatureNames( baselineRawNames,
-                                                 LeftOrRightOrBaseline.BASELINE );
-        
+                                                          LeftOrRightOrBaseline.BASELINE );
+
         return valid;
     }
 
@@ -1564,6 +1568,32 @@ public class Validation
                              pairConfig.sourceLocation().getLineNumber(),
                              pairConfig.sourceLocation().getColumnNumber(),
                              duplicates );
+            }
+        }
+        
+        FeatureService featureService = pairConfig.getFeatureService();
+
+        if ( Objects.nonNull( featureService ) )
+        {
+            List<FeatureGroup> featureGroupsToPool = pairConfig.getFeatureService()
+                                                               .getGroup()
+                                                               .stream()
+                                                               .filter( FeatureGroup::isPool )
+                                                               .collect( Collectors.toList() );
+
+            if ( !featureGroupsToPool.isEmpty() && !"true".equalsIgnoreCase( allowGroups ) )
+            {
+                valid = false;
+
+                String msg = FILE_LINE_COLUMN_BOILERPLATE
+                             + " Feature grouping is an experimental feature for developers and cannot be used without "
+                             + "the 'wres.featureGroups=true' system property. Please set the system property or "
+                             + "remove the pool=\"true\" declaration on each featureService group and try again.";
+
+                LOGGER.warn( msg,
+                             projectConfigPlus.getOrigin(),
+                             pairConfig.sourceLocation().getLineNumber(),
+                             pairConfig.sourceLocation().getColumnNumber() );
             }
         }
 
@@ -2381,7 +2411,7 @@ public class Validation
             PoolingWindowConfig validDatesPoolingConfig = pairConfig.getValidDatesPoolingWindow();
 
             String validBoiler = " Error when evaluating the declaration for valid dates "
-                                 + "pooling windows:";
+                                 + POOLING_WINDOWS;
 
             // Check that the valid dates are defined
             if ( Objects.isNull( pairConfig.getDates() ) )
@@ -2405,7 +2435,7 @@ public class Validation
 
                     LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                                  + "{} the earliest valid date is required, but was not found. Please add this date "
-                                 + "and try again.",
+                                 + AND_TRY_AGAIN,
                                  projectConfigPlus.getOrigin(),
                                  pairConfig.getDates().sourceLocation().getLineNumber(),
                                  pairConfig.getDates().sourceLocation().getColumnNumber(),
@@ -2419,7 +2449,7 @@ public class Validation
 
                     LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                                  + "{} the latest valid date is required, but was not found. Please add this date and"
-                                 + "try again.",
+                                 + TRY_AGAIN,
                                  projectConfigPlus.getOrigin(),
                                  pairConfig.getDates().sourceLocation().getLineNumber(),
                                  pairConfig.getDates().sourceLocation().getColumnNumber(),
@@ -2488,7 +2518,7 @@ public class Validation
             PoolingWindowConfig issuedDatesPoolingConfig = pairConfig.getIssuedDatesPoolingWindow();
 
             String issuedBoiler = " Error when evaluating the declaration for issued dates "
-                                  + "pooling windows:";
+                                  + POOLING_WINDOWS;
 
             // Check that the issued dates are defined
             if ( Objects.isNull( pairConfig.getIssuedDates() ) )
@@ -2512,7 +2542,7 @@ public class Validation
 
                     LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                                  + "{} the earliest issued date is required, but was not found. Please add this date "
-                                 + "and try again.",
+                                 + AND_TRY_AGAIN,
                                  projectConfigPlus.getOrigin(),
                                  pairConfig.getIssuedDates().sourceLocation().getLineNumber(),
                                  pairConfig.getIssuedDates().sourceLocation().getColumnNumber(),
@@ -2526,7 +2556,7 @@ public class Validation
 
                     LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                                  + "{} the latest issued date is required, but was not found. Please add this date and "
-                                 + "try again.",
+                                 + TRY_AGAIN,
                                  projectConfigPlus.getOrigin(),
                                  pairConfig.getIssuedDates().sourceLocation().getLineNumber(),
                                  pairConfig.getIssuedDates().sourceLocation().getColumnNumber(),
@@ -2595,7 +2625,7 @@ public class Validation
             PoolingWindowConfig leadTimesPoolingConfig = pairConfig.getLeadTimesPoolingWindow();
 
             String leadBoiler = " Error when evaluating the declaration for lead times " +
-                                "pooling windows:";
+                                POOLING_WINDOWS;
 
             // Check that the lead times are defined
             if ( Objects.isNull( pairConfig.getLeadHours() ) )
@@ -2885,22 +2915,16 @@ public class Validation
                                           DataSourceConfig dataSourceConfig,
                                           DataSourceConfig.Source source )
     {
-        boolean sourceValid = true;
-
-        sourceValid = Validation.isDateConfigValid( projectConfigPlus, source )
-                      && sourceValid;
-
-        sourceValid = Validation.isURIDefinedInSourceWhenExpected( projectConfigPlus, source )
-                      && sourceValid;
+        boolean sourceValid = Validation.isDateConfigValid( projectConfigPlus, source )
+                              && Validation.isURIDefinedInSourceWhenExpected( projectConfigPlus, source );
 
         if ( source.getInterface() != null
              && source.getInterface()
                       .equals( InterfaceShortHand.WRDS_AHPS ) )
         {
-            sourceValid = Validation.isWRDSSourceValid( projectConfigPlus,
-                                                        dataSourceConfig,
-                                                        source )
-                          && sourceValid;
+            sourceValid = sourceValid && Validation.isWRDSSourceValid( projectConfigPlus,
+                                                                       dataSourceConfig,
+                                                                       source );
         }
 
         return sourceValid;

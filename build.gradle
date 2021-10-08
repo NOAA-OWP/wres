@@ -412,7 +412,7 @@ project(':wres-io')
         testImplementation 'org.liquibase:liquibase-core:4.4.3'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:3.12.4'
+        testImplementation 'org.mockito:mockito-inline:3.12.4'
 
         // Use mockserver as a mock server for mock API responses
         testImplementation 'org.mock-server:mockserver-netty:5.11.2'
