@@ -854,7 +854,10 @@ time scale within a single class, rather than two classes.
             <xs:documentation>
                 Used with featureService, a featureGroup has a "type" and a
                 "value" that are passed through to the "select_by" and
-                "selector" URL paths of the service, respectively.
+                "selector" URL paths of the service, respectively. There is
+                also a "pool" that indicates whether the features within the
+                group should be pooled together into an N-feature group or 
+                treated as singletons.
             </xs:documentation>
         </xs:annotation>
 
@@ -862,6 +865,7 @@ time scale within a single class, rather than two classes.
             <xs:element name="type" type="xs:string" />
             <xs:element name="value" type="xs:string" />
         </xs:all>
+        <xs:attribute name="pool" type="xs:boolean" default="false" />
     </xs:complexType>
 
     <xs:complexType name="featureService">

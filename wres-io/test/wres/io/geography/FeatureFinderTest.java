@@ -1,9 +1,13 @@
 package wres.io.geography;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
 
 import org.junit.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -13,10 +17,12 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.Feature;
 import wres.config.generated.FeatureDimension;
+import wres.config.generated.FeatureGroup;
 import wres.config.generated.FeaturePool;
 import wres.config.generated.FeatureService;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
+import wres.io.geography.wrds.WrdsLocation;
 
 public class FeatureFinderTest
 {
@@ -101,6 +107,34 @@ public class FeatureFinderTest
                                           null,
                                           FeatureDimension.CUSTOM,
                                           true );
+    private static final DataSourceConfig BOILERPLATE_LEFT_DATASOURCE_USGS_SITE_CODE_DIMENSION =
+            new DataSourceConfig( DatasourceType.SIMULATIONS,
+                                  Collections.emptyList(),
+                                  new DataSourceConfig.Variable( "discharge",
+                                                                 null ),
+                                  null,
+                                  null,
+                                  null,
+                                  null,
+                                  null,
+                                  null,
+                                  null,
+                                  FeatureDimension.USGS_SITE_CODE );
+    
+    private static final DataSourceConfig BOILERPLATE_RIGHT_DATASOURCE_NWS_LID_DIMENSION =
+            new DataSourceConfig( DatasourceType.SIMULATIONS,
+                                  Collections.emptyList(),
+                                  new DataSourceConfig.Variable( "streamflow",
+                                                                 null ),
+                                  null,
+                                  null,
+                                  null,
+                                  null,
+                                  null,
+                                  null,
+                                  null,
+                                  FeatureDimension.NWS_LID );
+    
     private static final ProjectConfig.Inputs BOILERPLATE_INPUTS_NO_BASELINE =
             new ProjectConfig.Inputs( BOILERPLATE_LEFT_DATASOURCE_NO_DIMENSION,
                                       BOILERPLATE_RIGHT_DATASOURCE_NO_DIMENSION,
@@ -173,7 +207,6 @@ public class FeatureFinderTest
                                null,
                                null );
     }
-    
 
     /**
      * When all features are fully declared (no baseline), meaning both left and
@@ -533,6 +566,46 @@ public class FeatureFinderTest
         List<FeaturePool> expectedGroups = List.of( expectedFeatureGroup );
 
         assertEquals( expectedGroups, actualGroups );
-    }    
+    }
+    
+    @Test
+    public void fillOutImplicitFeatureGroupUsingMockedFeatureService() throws URISyntaxException
+    {
+        ProjectConfig.Inputs inputs =
+                new ProjectConfig.Inputs( BOILERPLATE_LEFT_DATASOURCE_USGS_SITE_CODE_DIMENSION,
+                                          BOILERPLATE_RIGHT_DATASOURCE_NWS_LID_DIMENSION,
+                                          null );
+
+        URI uri = new URI( "https://some_fake_uri" );
+        FeatureGroup featureGroup = new FeatureGroup( "state", "AL", true );
+        FeatureService featureService = new FeatureService( uri, List.of( featureGroup ) );
+
+        PairConfig pairConfig = FeatureFinderTest.getBoilerplatePairConfigWith( null,
+                                                                                null,
+                                                                                featureService );
+        ProjectConfig projectConfig = new ProjectConfig( inputs,
+                                                         pairConfig,
+                                                         null,
+                                                         null,
+                                                         null,
+                                                         null );
+
+        try ( MockedStatic<WrdsFeatureService> utilities = Mockito.mockStatic( WrdsFeatureService.class ) )
+        {
+            utilities.when( () -> WrdsFeatureService.read( Mockito.any() ) )
+                     .thenReturn( List.of( new WrdsLocation( "foo", "bar", "baz" ) ) );
+
+            ProjectConfig result = FeatureFinder.fillFeatures( projectConfig );
+
+            List<FeaturePool> actual = result.getPair()
+                                             .getFeatureGroup();
+
+            FeaturePool expectedPool = new FeaturePool( List.of( new Feature( "bar", "baz", null ) ), "AL" );
+
+            List<FeaturePool> expected = List.of( expectedPool );
+
+            assertEquals( expected, actual );
+        }
+    }
     
 }
