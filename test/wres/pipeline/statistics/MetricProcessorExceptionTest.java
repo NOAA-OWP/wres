@@ -8,7 +8,7 @@ import java.util.Objects;
 
 import org.junit.Test;
 
-import wres.engine.statistics.metric.MetricParameterException;
+import wres.metrics.MetricParameterException;
 
 /**
  * Tests the {@link MetricProcessorException}.

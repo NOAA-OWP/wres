@@ -67,8 +67,8 @@ import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.io.config.ConfigHelper;
+import wres.metrics.config.MetricConfigHelper;
 import wres.system.SystemSettings;
 
 

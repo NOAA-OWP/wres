@@ -28,9 +28,9 @@ import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;
 import wres.datamodel.thresholds.ThresholdsGenerator;
 import wres.datamodel.time.TimeSeries;
+import wres.metrics.MetricParameterException;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
-import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * Tests the {@link MetricProcessor}.

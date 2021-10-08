@@ -33,9 +33,9 @@ import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.engine.statistics.metric.MetricCalculationException;
-import wres.engine.statistics.metric.MetricCollection;
-import wres.engine.statistics.metric.MetricParameterException;
+import wres.metrics.MetricCalculationException;
+import wres.metrics.MetricCollection;
+import wres.metrics.MetricParameterException;
 
 /**
  * A {@link MetricProcessor} that processes and stores metric results by {@link TimeWindowOuter}.
