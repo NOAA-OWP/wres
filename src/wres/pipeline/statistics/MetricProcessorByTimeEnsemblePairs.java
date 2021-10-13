@@ -318,7 +318,6 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
     @Override
     MetricConstants[] getMetrics( SampleDataGroup inGroup, StatisticType outGroup )
     {
-
         Set<MetricConstants> metrics = new HashSet<>( Arrays.asList( super.getMetrics( inGroup, outGroup ) ) );
 
         if ( inGroup == SampleDataGroup.SINGLE_VALUED && metrics.contains( MetricConstants.SAMPLE_SIZE ) )
@@ -327,6 +326,46 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         }
 
         return metrics.toArray( new MetricConstants[metrics.size()] );
+    }
+    
+    /**
+     * Returns true if metrics are available for the input {@link SampleDataGroup} and {@link StatisticType}, false
+     * otherwise.
+     * 
+     * @param inGroup the {@link SampleDataGroup}
+     * @param outGroup the {@link StatisticType}
+     * @return true if metrics are available for the input {@link SampleDataGroup} and {@link StatisticType}, false
+     *         otherwise
+     */
+
+    @Override
+    boolean hasMetrics( SampleDataGroup inGroup, StatisticType outGroup )
+    {
+        return this.getMetrics( inGroup, outGroup ).length > 0;
+    }
+    
+    /**
+     * Returns true if metrics are available for the input {@link SampleDataGroup}, false otherwise.
+     * 
+     * @param inGroup the {@link SampleDataGroup}
+     * @return true if metrics are available for the input {@link SampleDataGroup} false otherwise
+     */
+    @Override
+    boolean hasMetrics( SampleDataGroup inGroup )
+    {
+        return this.getMetrics( inGroup, null ).length > 0;
+    }
+
+    /**
+     * Returns true if metrics are available for the input {@link StatisticType}, false otherwise.
+     * 
+     * @param outGroup the {@link StatisticType}
+     * @return true if metrics are available for the input {@link StatisticType} false otherwise
+     */
+    @Override
+    boolean hasMetrics( StatisticType outGroup )
+    {
+        return this.getMetrics( null, outGroup ).length > 0;
     }
 
     /**

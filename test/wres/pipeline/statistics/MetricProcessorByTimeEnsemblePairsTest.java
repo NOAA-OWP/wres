@@ -1190,7 +1190,6 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         assertEquals( expectedEnsembleScores, actualEnsembleScores );
 
-
         Set<MetricConstants> actualProbabilityScores =
                 Set.of( processor.getMetrics( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE ) );
 
