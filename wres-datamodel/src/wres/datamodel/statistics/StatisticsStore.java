@@ -14,18 +14,12 @@ import java.util.concurrent.Future;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 
 /**
- * <p>An immutable store of {@link Statistic} associated with a verification project. This is the top-level
- * container of statistics within an evaluation, but does not require any particular shape of statistics
- * such as one pool or all pools.</p>
+ * An immutable store of statistics.
  * 
- * <p>Retrieve the statistics using the instance methods for particular {@link StatisticType}. If no statistics
- * exist, the instance methods return null. The store is built with {@link Future} of the {@link Statistic} and the 
- * instance methods call {@link Future#get()}.</p>
- * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
-public class StatisticsForProject
+public class StatisticsStore
 {
 
     /**
@@ -386,7 +380,7 @@ public class StatisticsForProject
          * @throws NullPointerException if the input is null
          */
 
-        public Builder addStatistics( StatisticsForProject project ) throws InterruptedException
+        public Builder addStatistics( StatisticsStore project ) throws InterruptedException
         {
             Objects.requireNonNull( project );
 
@@ -437,14 +431,14 @@ public class StatisticsForProject
         }
         
         /**
-         * Returns a {@link StatisticsForProject}.
+         * Returns a {@link StatisticsStore}.
          * 
-         * @return a {@link StatisticsForProject}
+         * @return a {@link StatisticsStore}
          */
 
-        public StatisticsForProject build()
+        public StatisticsStore build()
         {
-            return new StatisticsForProject( this );
+            return new StatisticsStore( this );
         }
 
     }
@@ -455,7 +449,7 @@ public class StatisticsForProject
      * @param builder the builder
      */
 
-    private StatisticsForProject( Builder builder )
+    private StatisticsStore( Builder builder )
     {
         this.doubleScores.addAll( builder.doubleScoreInternal );
         this.durationScores.addAll( builder.durationScoreInternal );

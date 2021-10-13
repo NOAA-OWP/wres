@@ -21,7 +21,8 @@ final class ProjectScriptGenerator
     private ProjectScriptGenerator(){}
 
     /**
-     * Creates a script that retrieves a mapping between forecasted and observed features
+     * Creates a script that retrieves a mapping between forecasted and observed features.
+     * 
      * @param database The database to use
      * @param projectId The wres.project row id to look for intersecting data.
      * @param featureDeclarations Original or generated feature declarations.
@@ -316,6 +317,7 @@ final class ProjectScriptGenerator
     /**
      * Create an insert statement for feature correlations. May be two or three
      * columns, depending on no-baseline vs has-baseline respectively.
+     * 
      * @param tempTableName The name of the temporary table to use.
      * @param features The list of features declared (or generated).
      * @param hasBaseline True if baseline is used, false otherwise.

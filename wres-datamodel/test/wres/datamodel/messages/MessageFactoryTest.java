@@ -43,7 +43,7 @@ import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
-import wres.datamodel.statistics.StatisticsForProject;
+import wres.datamodel.statistics.StatisticsStore;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -193,8 +193,8 @@ public class MessageFactoryTest
             throws IOException, InterruptedException
     {
         // Create a statistics message
-        StatisticsForProject statistics =
-                new StatisticsForProject.Builder().addDoubleScoreStatistics( CompletableFuture.completedFuture( this.scores ) )
+        StatisticsStore statistics =
+                new StatisticsStore.Builder().addDoubleScoreStatistics( CompletableFuture.completedFuture( this.scores ) )
                                                   .addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
                                                   .build();
 
@@ -228,8 +228,8 @@ public class MessageFactoryTest
             throws IOException, InterruptedException
     {
         // Create a statistics message
-        StatisticsForProject statistics =
-                new StatisticsForProject.Builder().addDoubleScoreStatistics( CompletableFuture.completedFuture( this.scores ) )
+        StatisticsStore statistics =
+                new StatisticsStore.Builder().addDoubleScoreStatistics( CompletableFuture.completedFuture( this.scores ) )
                                                   .addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
                                                   .build();
 
@@ -265,8 +265,8 @@ public class MessageFactoryTest
     public void testCreationOfOneStatisticsMessageWithTwoBoxPlots() throws IOException, InterruptedException
     {
         // Create a statistics message
-        StatisticsForProject statistics =
-                new StatisticsForProject.Builder().addBoxPlotStatisticsPerPair( CompletableFuture.completedFuture( this.boxplots ) )
+        StatisticsStore statistics =
+                new StatisticsStore.Builder().addBoxPlotStatisticsPerPair( CompletableFuture.completedFuture( this.boxplots ) )
                                                   .build();
 
         // Create a statistics message
@@ -298,8 +298,8 @@ public class MessageFactoryTest
     public void testCreationOfOneStatisticsMessageWithSeveralDurationScores() throws IOException, InterruptedException
     {
         // Create a statistics message
-        StatisticsForProject statistics =
-                new StatisticsForProject.Builder().addDurationScoreStatistics( CompletableFuture.completedFuture( this.durationScores ) )
+        StatisticsStore statistics =
+                new StatisticsStore.Builder().addDurationScoreStatistics( CompletableFuture.completedFuture( this.durationScores ) )
                                                   .build();
 
         // Create a statistics message
@@ -330,8 +330,8 @@ public class MessageFactoryTest
     public void testCreationOfOneStatisticsMessageWithOneDurationDiagram() throws IOException, InterruptedException
     {
         // Create a statistics message
-        StatisticsForProject statistics =
-                new StatisticsForProject.Builder().addInstantDurationPairStatistics( CompletableFuture.completedFuture( this.durationDiagrams ) )
+        StatisticsStore statistics =
+                new StatisticsStore.Builder().addInstantDurationPairStatistics( CompletableFuture.completedFuture( this.durationDiagrams ) )
                                                   .build();
 
         // Create a statistics message
@@ -362,8 +362,8 @@ public class MessageFactoryTest
     public void testParseByPool() throws InterruptedException
     {
         // Create a statistics message composed of scores and diagrams
-        StatisticsForProject statistics =
-                new StatisticsForProject.Builder().addDoubleScoreStatistics( CompletableFuture.completedFuture( this.scores ) )
+        StatisticsStore statistics =
+                new StatisticsStore.Builder().addDoubleScoreStatistics( CompletableFuture.completedFuture( this.scores ) )
                                                   .addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
                                                   .build();
 
@@ -372,12 +372,12 @@ public class MessageFactoryTest
 
         assertEquals( 2, actual.size() );
 
-        StatisticsForProject scores =
-                new StatisticsForProject.Builder().addDoubleScoreStatistics( CompletableFuture.completedFuture( this.scores ) )
+        StatisticsStore scores =
+                new StatisticsStore.Builder().addDoubleScoreStatistics( CompletableFuture.completedFuture( this.scores ) )
                                                   .build();
 
-        StatisticsForProject diagrams =
-                new StatisticsForProject.Builder().addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
+        StatisticsStore diagrams =
+                new StatisticsStore.Builder().addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
                                                   .build();
 
         Statistics expectedScores = MessageFactory.parseOnePool( scores );

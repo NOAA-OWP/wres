@@ -432,8 +432,7 @@ class ProcessorHelper
             // The project code - ideally project hash
             String projectIdentifier = project.getHash();
 
-            ResolvedProject resolvedProject = ResolvedProject.of(
-                                                                  projectConfigPlus,
+            ResolvedProject resolvedProject = ResolvedProject.of( projectConfigPlus,
                                                                   projectIdentifier,
                                                                   thresholdsByMetricAndFeature,
                                                                   outputDirectory );

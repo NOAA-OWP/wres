@@ -12,7 +12,7 @@ import wres.datamodel.statistics.ScoreStatistic.ScoreComponent;
  * 
  * @param <T> the raw type of the score
  * @param <U> the type of score component
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public interface ScoreStatistic<T, U extends ScoreComponent<?>> extends Statistic<T>, Iterable<U>

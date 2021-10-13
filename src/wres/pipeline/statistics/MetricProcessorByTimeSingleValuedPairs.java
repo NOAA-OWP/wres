@@ -28,7 +28,7 @@ import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
-import wres.datamodel.statistics.StatisticsForProject;
+import wres.datamodel.statistics.StatisticsStore;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdSlicer;
@@ -76,7 +76,7 @@ public class MetricProcessorByTimeSingleValuedPairs
     private final MetricCollection<Pool<TimeSeries<Pair<Double, Double>>>, DurationScoreStatisticOuter, DurationScoreStatisticOuter> timeSeriesStatistics;
 
     @Override
-    public StatisticsForProject apply( Pool<TimeSeries<Pair<Double, Double>>> pool )
+    public StatisticsStore apply( Pool<TimeSeries<Pair<Double, Double>>> pool )
     {
         Objects.requireNonNull( pool, "Expected non-null input to the metric processor." );
 

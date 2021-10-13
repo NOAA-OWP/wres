@@ -35,7 +35,7 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.statistics.Statistic;
-import wres.datamodel.statistics.StatisticsForProject;
+import wres.datamodel.statistics.StatisticsStore;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdSlicer;
@@ -122,7 +122,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
     private final Function<Pair<Double, Ensemble>, Pair<Double, Double>> toSingleValues;
 
     @Override
-    public StatisticsForProject apply( Pool<TimeSeries<Pair<Double, Ensemble>>> input )
+    public StatisticsStore apply( Pool<TimeSeries<Pair<Double, Ensemble>>> input )
     {
         Objects.requireNonNull( input, "Expected non-null input to the metric processor." );
 

@@ -48,7 +48,7 @@ import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
-import wres.datamodel.statistics.StatisticsForProject;
+import wres.datamodel.statistics.StatisticsStore;
 import wres.datamodel.thresholds.*;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
@@ -122,7 +122,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                             Executors.newSingleThreadExecutor() );
         Pool<TimeSeries<Pair<Double, Double>>> pairs = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsSix();
 
-        StatisticsForProject results = processor.apply( pairs );
+        StatisticsStore results = processor.apply( pairs );
 
         List<DoubleScoreStatisticOuter> bias =
                 Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.BIAS_FRACTION );
@@ -205,7 +205,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                         .setMetadata( meta )
                                                                         .build();
 
-            StatisticsForProject statistics = processor.apply( next );
+            StatisticsStore statistics = processor.apply( next );
             scores.addAll( statistics.getDoubleScoreStatistics() );
         }
 
@@ -312,8 +312,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         //Compute the metrics
         List<DurationDiagramStatisticOuter> actual = new ArrayList<>();
-        StatisticsForProject some = processor.apply( first );
-        StatisticsForProject more = processor.apply( second );
+        StatisticsStore some = processor.apply( first );
+        StatisticsStore more = processor.apply( second );
         actual.addAll( some.getInstantDurationPairStatistics() );
         actual.addAll( more.getInstantDurationPairStatistics() );
 
@@ -424,8 +424,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         //Compute the metrics
         List<DurationDiagramStatisticOuter> actual = new ArrayList<>();
-        StatisticsForProject some = processor.apply( first );
-        StatisticsForProject more = processor.apply( second );
+        StatisticsStore some = processor.apply( first );
+        StatisticsStore more = processor.apply( second );
         actual.addAll( some.getInstantDurationPairStatistics() );
         actual.addAll( more.getInstantDurationPairStatistics() );
 
@@ -541,7 +541,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                     .build();
 
         //Compute the metrics
-        StatisticsForProject project = processor.apply( aggPool );
+        StatisticsStore project = processor.apply( aggPool );
 
         //Validate the outputs
         //Compare the errors against the benchmark
@@ -743,7 +743,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                         .setMetadata( meta )
                                                                         .build();
 
-            StatisticsForProject some = processor.apply( next );
+            StatisticsStore some = processor.apply( next );
             statistics.addAll( some.getDoubleScoreStatistics() );
         }
 
@@ -854,7 +854,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                         .setMetadata( meta )
                                                                         .build();
 
-            StatisticsForProject statistics = processor.apply( next );
+            StatisticsStore statistics = processor.apply( next );
             assertTrue( statistics.getDoubleScoreStatistics().isEmpty() );
         }
     }
@@ -873,7 +873,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                 MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFour();
 
         //Compute the metrics
-        StatisticsForProject statistics = processor.apply( pairs );
+        StatisticsStore statistics = processor.apply( pairs );
 
         //Validate the outputs
         List<DurationScoreStatisticOuter> actualScores = statistics.getDurationScoreStatistics();
@@ -949,7 +949,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                     .setMetadata( meta )
                                                                     .build();
 
-        StatisticsForProject statistics = processor.apply( next );
+        StatisticsStore statistics = processor.apply( next );
 
         // Check the sample size
         double size = Slicer.filter( statistics.getDoubleScoreStatistics(),
@@ -1165,7 +1165,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                     .addPool( poolTwo, false )
                                                                     .build();
 
-        StatisticsForProject statistics = processor.apply( combinedPool );
+        StatisticsStore statistics = processor.apply( combinedPool );
         scores.addAll( statistics.getDoubleScoreStatistics() );
 
         // Validate a subset of the data 
