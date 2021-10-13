@@ -190,10 +190,8 @@ public abstract class MetricProcessor<S extends Pool<?>> implements Function<S, 
         //Construct the metrics that are common to more than one type of input pairs
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ) )
         {
-            this.singleValuedScore =
-                    MetricFactory.ofSingleValuedScoreCollection( metricExecutor,
-                                                                 this.getMetrics( SampleDataGroup.SINGLE_VALUED,
-                                                                                  StatisticType.DOUBLE_SCORE ) );
+            MetricConstants[] scores = this.getMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE );
+            this.singleValuedScore = MetricFactory.ofSingleValuedScoreCollection( metricExecutor, scores );
 
             LOGGER.debug( "Created the single-valued scores for processing. {}", this.singleValuedScore );
         }
@@ -205,10 +203,8 @@ public abstract class MetricProcessor<S extends Pool<?>> implements Function<S, 
         // Diagrams
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DIAGRAM ) )
         {
-            this.singleValuedDiagrams =
-                    MetricFactory.ofSingleValuedDiagramCollection( metricExecutor,
-                                                                   this.getMetrics( SampleDataGroup.SINGLE_VALUED,
-                                                                                    StatisticType.DIAGRAM ) );
+            MetricConstants[] diagrams = this.getMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DIAGRAM );
+            this.singleValuedDiagrams = MetricFactory.ofSingleValuedDiagramCollection( metricExecutor, diagrams );
 
             LOGGER.debug( "Created the single-valued diagrams for processing. {}", this.singleValuedDiagrams );
         }
@@ -220,10 +216,8 @@ public abstract class MetricProcessor<S extends Pool<?>> implements Function<S, 
         //Dichotomous scores
         if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ) )
         {
-            this.dichotomousScalar =
-                    MetricFactory.ofDichotomousScoreCollection( metricExecutor,
-                                                                this.getMetrics( SampleDataGroup.DICHOTOMOUS,
-                                                                                 StatisticType.DOUBLE_SCORE ) );
+            MetricConstants[] scores = this.getMetrics( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE );
+            this.dichotomousScalar = MetricFactory.ofDichotomousScoreCollection( metricExecutor, scores );
 
             LOGGER.debug( "Created the dichotomous scores for processing. {}", this.dichotomousScalar );
         }
@@ -235,10 +229,9 @@ public abstract class MetricProcessor<S extends Pool<?>> implements Function<S, 
         //Box plots
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.BOXPLOT_PER_POOL ) )
         {
-            this.singleValuedBoxPlot =
-                    MetricFactory.ofSingleValuedBoxPlotCollection( metricExecutor,
-                                                                   this.getMetrics( SampleDataGroup.SINGLE_VALUED,
-                                                                                    StatisticType.BOXPLOT_PER_POOL ) );
+            MetricConstants[] boxplots = this.getMetrics( SampleDataGroup.SINGLE_VALUED, 
+                                                          StatisticType.BOXPLOT_PER_POOL );
+            this.singleValuedBoxPlot = MetricFactory.ofSingleValuedBoxPlotCollection( metricExecutor, boxplots );
 
             LOGGER.debug( "Created the single-valued box plots for processing. {}", this.singleValuedBoxPlot );
         }
@@ -303,10 +296,10 @@ public abstract class MetricProcessor<S extends Pool<?>> implements Function<S, 
         filtered.remove( MetricConstants.FALSE_POSITIVES );
         filtered.remove( MetricConstants.FALSE_NEGATIVES );
         filtered.remove( MetricConstants.TRUE_NEGATIVES );
-
+        
         return filtered.toArray( new MetricConstants[filtered.size()] );
     }
-
+    
     /**
      * Adds the prescribed threshold to the pool metadata.
      * @param pool the pool
