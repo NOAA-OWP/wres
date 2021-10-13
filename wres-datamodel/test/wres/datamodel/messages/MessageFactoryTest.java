@@ -195,8 +195,8 @@ public class MessageFactoryTest
         // Create a statistics message
         StatisticsStore statistics =
                 new StatisticsStore.Builder().addDoubleScoreStatistics( CompletableFuture.completedFuture( this.scores ) )
-                                                  .addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
-                                                  .build();
+                                             .addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
+                                             .build();
 
         Statistics statisticsOut =
                 MessageFactory.parseOnePool( statistics, this.ensemblePairs );
@@ -230,8 +230,8 @@ public class MessageFactoryTest
         // Create a statistics message
         StatisticsStore statistics =
                 new StatisticsStore.Builder().addDoubleScoreStatistics( CompletableFuture.completedFuture( this.scores ) )
-                                                  .addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
-                                                  .build();
+                                             .addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
+                                             .build();
 
         Statistics firstOut = MessageFactory.parseOnePool( statistics, this.ensemblePairs );
 
@@ -267,7 +267,7 @@ public class MessageFactoryTest
         // Create a statistics message
         StatisticsStore statistics =
                 new StatisticsStore.Builder().addBoxPlotStatisticsPerPair( CompletableFuture.completedFuture( this.boxplots ) )
-                                                  .build();
+                                             .build();
 
         // Create a statistics message
         Statistics statisticsOut = MessageFactory.parseOnePool( statistics,
@@ -300,7 +300,7 @@ public class MessageFactoryTest
         // Create a statistics message
         StatisticsStore statistics =
                 new StatisticsStore.Builder().addDurationScoreStatistics( CompletableFuture.completedFuture( this.durationScores ) )
-                                                  .build();
+                                             .build();
 
         // Create a statistics message
         Statistics statisticsOut = MessageFactory.parseOnePool( statistics );
@@ -332,7 +332,7 @@ public class MessageFactoryTest
         // Create a statistics message
         StatisticsStore statistics =
                 new StatisticsStore.Builder().addInstantDurationPairStatistics( CompletableFuture.completedFuture( this.durationDiagrams ) )
-                                                  .build();
+                                             .build();
 
         // Create a statistics message
         Statistics statisticsOut = MessageFactory.parseOnePool( statistics );
@@ -364,8 +364,8 @@ public class MessageFactoryTest
         // Create a statistics message composed of scores and diagrams
         StatisticsStore statistics =
                 new StatisticsStore.Builder().addDoubleScoreStatistics( CompletableFuture.completedFuture( this.scores ) )
-                                                  .addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
-                                                  .build();
+                                             .addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
+                                             .build();
 
         // Scores and diagrams should be split due to threshold difference
         Collection<Statistics> actual = MessageFactory.parse( statistics );
@@ -374,11 +374,11 @@ public class MessageFactoryTest
 
         StatisticsStore scores =
                 new StatisticsStore.Builder().addDoubleScoreStatistics( CompletableFuture.completedFuture( this.scores ) )
-                                                  .build();
+                                             .build();
 
         StatisticsStore diagrams =
                 new StatisticsStore.Builder().addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
-                                                  .build();
+                                             .build();
 
         Statistics expectedScores = MessageFactory.parseOnePool( scores );
         Statistics expectedDiagrams = MessageFactory.parseOnePool( diagrams );
@@ -389,6 +389,13 @@ public class MessageFactoryTest
         assertTrue( expected.containsAll( actual ) );
         assertTrue( actual.containsAll( expected ) );
     }
+
+    /**
+     * TODO: make this depend on a ProjectConfig when the factory depends on that. A ProjectConfigPlus is awkward.
+     * 
+     * @throws InterruptedException if the test was interrupted
+     * @throws IOException if the test failed to parse a declaration string
+     */
 
     @Test
     public void testParseProjectToEvaluation() throws InterruptedException, IOException
@@ -502,8 +509,6 @@ public class MessageFactoryTest
         Evaluation actual = MessageFactory.parse( projectConfigPlus );
 
         // Create the expected evaluation
-        Evaluation.Builder expected = Evaluation.newBuilder();
-
         Outputs.Builder outputs = Outputs.newBuilder();
         outputs.setCsv( CsvFormat.newBuilder()
                                  .setOptions( NumericFormat.newBuilder()
@@ -518,15 +523,126 @@ public class MessageFactoryTest
                                                            .setConfiguration( "fake drawing parameters" )
                                                            .setShape( GraphicShape.LEAD_THRESHOLD ) ) );
 
-        expected.setRightDataName( "HEFS" )
-                .setDefaultBaseline( DefaultData.OBSERVED_CLIMATOLOGY )
-                .setLeftVariableName( "discharge1" )
-                .setRightVariableName( "discharge2" )
-                .setMeasurementUnit( "CMS" )
-                .setMetricCount( 2 )
-                .setOutputs( outputs );
+        Evaluation expected = Evaluation.newBuilder()
+                                        .setRightDataName( "HEFS" )
+                                        .setDefaultBaseline( DefaultData.OBSERVED_CLIMATOLOGY )
+                                        .setLeftVariableName( "discharge1" )
+                                        .setRightVariableName( "discharge2" )
+                                        .setMeasurementUnit( "CMS" )
+                                        .setMetricCount( 2 )
+                                        .setOutputs( outputs )
+                                        .build();
 
-        assertEquals( expected.build(), actual );
+        assertEquals( expected, actual );
+    }
+
+    /**
+     * Redmine issue #97372. 
+     * 
+     * TODO: make this depend on a ProjectConfig when the factory depends on that. A ProjectConfigPlus is awkward.
+     * 
+     * @throws InterruptedException if the test was interrupted
+     * @throws IOException if the test failed to parse a declaration string
+     */
+
+    @Test
+    public void testParseOutputsCapturesGraphicsShape() throws InterruptedException, IOException
+    {
+        String projectString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" +
+                               "\r\n"
+                               +
+                               "<project label=\"ExampleProject\" name=\"scenario007\">\r\n"
+                               +
+                               "\r\n"
+                               +
+                               "    <inputs>\r\n"
+                               +
+                               "        <left label=\"\">\r\n"
+                               +
+                               "            <type>observations</type>\r\n"
+                               +
+                               "            <source format=\"PI-XML\">data/DRRC2QINE.xml</source>\r\n"
+                               +
+                               "            <variable label=\"discharge1\">QINE</variable>\r\n"
+                               +
+                               "        </left>\r\n"
+                               +
+                               "        <right label=\"HEFS\">\r\n"
+                               +
+                               "            <type>ensemble forecasts</type>\r\n"
+                               +
+                               "            <source format=\"PI-XML\">data/drrc2ForecastsOneMonth/</source>\r\n"
+                               +
+                               "            <variable label=\"discharge2\">SQIN</variable>\r\n"
+                               +
+                               "        </right>\r\n"
+                               +
+                               "    </inputs>\r\n"
+                               +
+                               "\r\n"
+                               +
+                               "    <pair label=\"Pairs by location and lead time\"> \r\n"
+                               +
+                               "        <unit>CMS</unit>\r\n"
+                               +
+                               "        <feature left=\"DRRC2HSF\" right=\"DRRC2HSF\" />\r\n"
+                               +
+                               "    </pair>\r\n"
+                               +
+                               "\r\n"
+                               +
+                               "    <metrics>\r\n"
+                               +
+                               "        <thresholds>\r\n"
+                               +
+                               "            <applyTo>left</applyTo>\r\n"
+                               +
+                               "            <commaSeparatedValues>0.1,0.25,0.5,0.75,0.9,0.95</commaSeparatedValues>\r\n"
+                               +
+                               "            <operator>greater than or equal to</operator>\r\n"
+                               +
+                               "        </thresholds>\r\n"
+                               +
+                               "        <metric><name>mean error</name></metric>\r\n"
+                               +
+                               "        <metric><name>sample size</name></metric>\r\n"
+                               +
+                               "    </metrics>\r\n"
+                               +
+                               "    <outputs>\r\n"
+                               +
+                               "        <destination type=\"graphic\">\r\n"
+                               +
+                               "            <outputType>threshold lead</outputType>\r\n"
+                               +
+                               "        </destination>"
+                               +
+                               "    </outputs>\r\n"
+                               +
+                               "\r\n"
+                               +
+                               "</project>\r\n";
+
+
+        ProjectConfigPlus projectConfigPlus = ProjectConfigPlus.from( projectString, "unitTest" );
+        Evaluation actual = MessageFactory.parse( projectConfigPlus );
+
+        Outputs.Builder outputs = Outputs.newBuilder()
+                                         .setPng( PngFormat.newBuilder()
+                                                           .setOptions( GraphicFormat.newBuilder()
+                                                                                     .setShape( GraphicShape.THRESHOLD_LEAD ) ) );
+
+        Evaluation expected = Evaluation.newBuilder()
+                                        .setRightDataName( "HEFS" )
+                                        .setDefaultBaseline( DefaultData.OBSERVED_CLIMATOLOGY )
+                                        .setLeftVariableName( "discharge1" )
+                                        .setRightVariableName( "discharge2" )
+                                        .setMeasurementUnit( "CMS" )
+                                        .setMetricCount( 2 )
+                                        .setOutputs( outputs )
+                                        .build();
+
+        assertEquals( expected, actual );
     }
 
     @Test

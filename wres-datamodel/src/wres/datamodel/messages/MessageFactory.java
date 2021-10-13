@@ -1437,48 +1437,34 @@ public class MessageFactory
 
         GraphicFormat.Builder generalOptions = GraphicFormat.newBuilder();
 
-        // No graphics options declared, so return default options
-        if ( Objects.isNull( graphics ) )
+        // Graphics options available?
+        if ( Objects.nonNull( graphics ) )
         {
-            if ( issuedDatesPools )
+            if ( Objects.nonNull( graphics.getHeight() ) )
             {
-                return generalOptions.setShape( GraphicShape.ISSUED_DATE_POOLS )
-                                     .build();
-            }
-            else if ( validDatesPools )
-            {
-                return generalOptions.setShape( GraphicShape.VALID_DATE_POOLS )
-                                     .build();
+                generalOptions.setHeight( graphics.getHeight() );
             }
 
-            return generalOptions.setShape( GraphicShape.LEAD_THRESHOLD )
-                                 .build();
-        }
+            if ( Objects.nonNull( graphics.getWidth() ) )
+            {
+                generalOptions.setWidth( graphics.getWidth() );
+            }
 
-        if ( Objects.nonNull( graphics.getHeight() ) )
-        {
-            generalOptions.setHeight( graphics.getHeight() );
-        }
+            if ( Objects.nonNull( graphics.getTemplate() ) )
+            {
+                generalOptions.setTemplateName( graphics.getTemplate() );
+            }
 
-        if ( Objects.nonNull( graphics.getWidth() ) )
-        {
-            generalOptions.setWidth( graphics.getWidth() );
-        }
-
-        // Add any metrics to ignore
-        for ( MetricConfigName ignore : graphics.getSuppressMetric() )
-        {
-            generalOptions.addIgnore( MetricName.valueOf( ignore.name() ) );
+            // Add any metrics to ignore
+            for ( MetricConfigName ignore : graphics.getSuppressMetric() )
+            {
+                generalOptions.addIgnore( MetricName.valueOf( ignore.name() ) );
+            }
         }
 
         if ( Objects.nonNull( override ) )
         {
             generalOptions.setConfiguration( override );
-        }
-
-        if ( Objects.nonNull( graphics.getTemplate() ) )
-        {
-            generalOptions.setTemplateName( graphics.getTemplate() );
         }
 
         if ( Objects.nonNull( durationFormat ) )
@@ -1496,7 +1482,13 @@ public class MessageFactory
         }
         else if ( Objects.nonNull( destination.getOutputType() ) )
         {
-            generalOptions.setShape( GraphicShape.valueOf( destination.getOutputType().name() ) );
+            GraphicShape shape = GraphicShape.valueOf( destination.getOutputType().name() );
+            
+            LOGGER.info( "Detected a shape of {} for the graphics output format in destination {}.", 
+                          shape,
+                          destination );
+            
+            generalOptions.setShape( shape );
         }
         else
         {
