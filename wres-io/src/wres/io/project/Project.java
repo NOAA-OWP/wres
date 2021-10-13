@@ -55,6 +55,8 @@ import wres.util.CalculationException;
  */
 public class Project
 {
+    private static final String FAILED_TO_MATCH_ANY_FEATURES_WITH_TIME_SERIES_DATA_FOR_DECLARED_FEATURE_WHEN = "Failed to match any features with time-series data for declared feature {} when ";
+
     private static final String DATA_SOURCES_TO_DISAMBIGUATE = " data sources to disambiguate.";
 
     private static final String NAME_FOR_THE = "name for the ";
@@ -106,9 +108,9 @@ public class Project
     /**
      * The feature groups related to the project.
      */
-    
+
     private Set<FeatureGroup> featureGroups;
-    
+
     /**
      * Indicates whether or not this project was inserted on upon this
      * execution of the project
@@ -273,8 +275,8 @@ public class Project
         if ( this.features.isEmpty() && this.featureGroups.isEmpty() )
         {
             throw new NoDataException( "Failed to identify any features with data on both the left and right sides for "
-                    + "the variables and other declaration supplied. Please check that the declaration is expected to "
-                    + "produce some features with time-series data on both sides of the pairing." );
+                                       + "the variables and other declaration supplied. Please check that the declaration is expected to "
+                                       + "produce some features with time-series data on both sides of the pairing." );
         }
 
         // Validate any ensemble conditions
@@ -294,9 +296,9 @@ public class Project
     {
         LOGGER.debug( "Setting the features and feature groups for project {}.", this.getId() );
         Pair<Set<FeatureTuple>, Set<FeatureGroup>> innerFeatures = this.getIntersectingFeatures( db );
-        
+
         this.featureGroups = innerFeatures.getRight();
-        
+
         LOGGER.debug( "Finished setting the feature groups for project {}. Discovered {} feature groups: {}.",
                       this.getId(),
                       this.featureGroups.size(),
@@ -314,7 +316,7 @@ public class Project
                       this.features.size(),
                       this.features );
     }
-    
+
     /**
      * Checks that the union of ensemble conditions will select some data, otherwise throws an exception.
      * 
@@ -456,12 +458,12 @@ public class Project
         {
             throw new ProjectConfigException( this.getRight(),
                                               WHILE_ATTEMPTING_TO_DETECT_THE + LeftOrRightOrBaseline.RIGHT
-                                                              + VARIABLE
-                                                              + NAME_FROM_THE_DATA_FAILED_TO_IDENTIFY_ANY
-                                                              + POSSIBILITIES_PLEASE_DECLARE_AN_EXPLICIT_VARIABLE
-                                                              + NAME_FOR_THE
-                                                              + LeftOrRightOrBaseline.RIGHT
-                                                              + DATA_SOURCES_TO_DISAMBIGUATE );
+                                                               + VARIABLE
+                                                               + NAME_FROM_THE_DATA_FAILED_TO_IDENTIFY_ANY
+                                                               + POSSIBILITIES_PLEASE_DECLARE_AN_EXPLICIT_VARIABLE
+                                                               + NAME_FOR_THE
+                                                               + LeftOrRightOrBaseline.RIGHT
+                                                               + DATA_SOURCES_TO_DISAMBIGUATE );
         }
 
         if ( this.hasBaseline() && baseline.isEmpty() )
@@ -469,12 +471,12 @@ public class Project
 
             throw new ProjectConfigException( this.getBaseline(),
                                               WHILE_ATTEMPTING_TO_DETECT_THE + LeftOrRightOrBaseline.BASELINE
-                                                              + VARIABLE
-                                                              + NAME_FROM_THE_DATA_FAILED_TO_IDENTIFY_ANY
-                                                              + POSSIBILITIES_PLEASE_DECLARE_AN_EXPLICIT_VARIABLE
-                                                              + NAME_FOR_THE
-                                                              + LeftOrRightOrBaseline.BASELINE
-                                                              + DATA_SOURCES_TO_DISAMBIGUATE );
+                                                                  + VARIABLE
+                                                                  + NAME_FROM_THE_DATA_FAILED_TO_IDENTIFY_ANY
+                                                                  + POSSIBILITIES_PLEASE_DECLARE_AN_EXPLICIT_VARIABLE
+                                                                  + NAME_FOR_THE
+                                                                  + LeftOrRightOrBaseline.BASELINE
+                                                                  + DATA_SOURCES_TO_DISAMBIGUATE );
 
         }
 
@@ -491,14 +493,14 @@ public class Project
                 this.baselineVariable = baseline.iterator()
                                                 .next();
             }
-            
-            LOGGER.debug( "Discovered one variable name for all data sources. The variable name is {}.", 
+
+            LOGGER.debug( "Discovered one variable name for all data sources. The variable name is {}.",
                           this.leftVariable );
         }
         // More than one for some, need to intersect
         else
         {
-             this.setVariableNamesFromIntersection( left, right, baseline );
+            this.setVariableNamesFromIntersection( left, right, baseline );
         }
 
         this.validateVariableNames();
@@ -561,7 +563,7 @@ public class Project
                                                                 + "each required data source to disambiguate." );
         }
     }
-    
+
     /**
      * Validates the variable names and emits a warning if assumptions have been made by the software.
      */
@@ -700,7 +702,7 @@ public class Project
     {
         Set<FeatureTuple> singletons = new HashSet<>(); // Singleton feature tuples
         Set<FeatureTuple> grouped = new HashSet<>(); // Multi-tuple groups
-        
+
         Features fCache = this.getFeaturesCache();
 
         // Gridded features? #74266
@@ -708,7 +710,7 @@ public class Project
         if ( this.usesGriddedData( this.getRight() ) )
         {
             // Feature grouping not currently supported for gridded evaluations
-            
+
             LOGGER.debug( "Getting details of intersecting features for gridded data." );
             singletons.addAll( fCache.getGriddedFeatures() );
         }
@@ -743,7 +745,9 @@ public class Project
                 LOGGER.debug( "getIntersectingFeatures will run for singleton features: {}", script );
                 Set<FeatureTuple> innerSingletons = this.readFeaturesFromScript( script, fCache );
                 singletons.addAll( innerSingletons );
-                LOGGER.debug( "getIntersectingFeatures completed for singleton features." );
+                LOGGER.debug( "getIntersectingFeatures completed for singleton features, which identified "
+                        + "{} features.",
+                        innerSingletons.size() );
             }
 
             // Now deal with feature groups that contain one or more
@@ -763,7 +767,8 @@ public class Project
                 LOGGER.debug( "getIntersectingFeatures will run for grouped features: {}", scriptForGroups );
                 Set<FeatureTuple> innerGroups = this.readFeaturesFromScript( scriptForGroups, fCache );
                 grouped.addAll( innerGroups );
-                LOGGER.debug( "getIntersectingFeatures completed for grouped features." );
+                LOGGER.debug( "getIntersectingFeatures completed for grouped features, which identified {} features",
+                              innerGroups.size() );
             }
         }
 
@@ -771,7 +776,7 @@ public class Project
         Set<FeatureGroup> groups = this.getFeatureGroups( Collections.unmodifiableSet( singletons ),
                                                           Collections.unmodifiableSet( grouped ),
                                                           this.getProjectConfig().getPair() );
-        
+
         return Pair.of( Collections.unmodifiableSet( singletons ), Collections.unmodifiableSet( groups ) );
     }
 
@@ -825,7 +830,7 @@ public class Project
 
         return Collections.unmodifiableSet( featureTuples );
     }
-     
+
     /**
      * Returns the set of {@link FeatureTuple} for the project. If none have been
      * created yet, then it is evaluated. If there is no specification within
@@ -836,14 +841,14 @@ public class Project
      */
     public Set<FeatureTuple> getFeatures()
     {
-        if( Objects.isNull( this.features ) )
+        if ( Objects.isNull( this.features ) )
         {
             throw new IllegalStateException( "The features have not been set." );
         }
 
         return Collections.unmodifiableSet( this.features );
     }
-    
+
     /**
      * Returns the set of {@link FeatureGroup} for the project.
      * @return A set of all feature groups involved in the project
@@ -851,11 +856,11 @@ public class Project
      */
     public Set<FeatureGroup> getFeatureGroups()
     {
-        if( Objects.isNull( this.featureGroups ) )
+        if ( Objects.isNull( this.featureGroups ) )
         {
             throw new IllegalStateException( "The feature groups have not been set." );
         }
-        
+
         return Collections.unmodifiableSet( this.featureGroups );
     }
 
@@ -1186,6 +1191,21 @@ public class Project
         // Add the multi-feature groups
         List<FeaturePool> declaredGroups = pairConfig.getFeatureGroup();
 
+        // Some groups declared, but no fully qualified features available to correlate with the declared features
+        if ( !declaredGroups.isEmpty() && featuresForGroups.isEmpty() )
+        {
+            throw new ProjectConfigException( pairConfig,
+                                              "Discovered "
+                                                          + declaredGroups.size()
+                                                          + " feature group in the project declaration, but could not "
+                                                          + "find any features with time-series data to correlate with "
+                                                          + "the declared features in these groups. If the feature "
+                                                          + "names are missing for some sides of data, it may help to "
+                                                          + "qualify them, else to use an explicit "
+                                                          + "\"featureDimension\" for all sides of data, in order to "
+                                                          + "aid interpolation of the feature names." );
+        }
+
         AtomicInteger groupNumber = new AtomicInteger( 1 ); // For naming when no name is present        
         for ( FeaturePool nextGroup : declaredGroups )
         {
@@ -1207,7 +1227,7 @@ public class Project
                 }
             }
 
-            String groupName = this.getFeatureGroupNameFrom( groupedTuples, nextGroup, groupNumber );
+            String groupName = this.getFeatureGroupNameFrom( nextGroup, groupNumber );
 
             if ( !groupedTuples.isEmpty() )
             {
@@ -1241,53 +1261,51 @@ public class Project
 
         return Collections.unmodifiableSet( innerGroups );
     }
-    
+
     /**
-     * @param groupedTuples the groupedTuples
-     * @param declaredGroup the declared group
+     * @param declaredGroup the declared group, not null
      * @param groupNumber the group number to increment when choosing a default group name
      * @return a group name
      */
 
-    private String getFeatureGroupNameFrom( Set<FeatureTuple> groupedTuples,
-                                            FeaturePool declaredGroup,
+    private String getFeatureGroupNameFrom( FeaturePool declaredGroup,
                                             AtomicInteger groupNumber )
     {
+        // Explicit name, use it
         if ( Objects.nonNull( declaredGroup.getName() ) )
         {
             return declaredGroup.getName();
         }
-        else if ( groupedTuples.size() == 1 )
-        {
-            return groupedTuples.iterator()
-                                .next()
-                                .toStringShort();
-        }
+
         else
         {
             return "GROUP_" + groupNumber.getAndIncrement();
         }
     }
-    
+
     /**
      * Searches for a matching feature tuple and throws an exception if more than one is found.
-     * @param featureToFind
-     * @param tuplesToSearch
-     * @param nextGroup the group context to assist when an error occurs
+     * @param featureToFind the declared feature to find
+     * @param featuresToSearch the fully elaborated feature tuples to search
      * @return a matching tuple or null if no tuple was found
      * @throws ProjectConfigException if more than one matching tuple was found
      */
 
-    private FeatureTuple findFeature( Feature featureToFind, Set<FeatureTuple> tuplesToSearch, FeaturePool nextGroup )
+    private FeatureTuple findFeature( Feature featureToFind, Set<FeatureTuple> featuresToSearch, FeaturePool nextGroup )
     {
         // Find the left-name matching features first.
-        Set<FeatureTuple> leftMatched = tuplesToSearch.stream()
-                                                      .filter( next -> Objects.equals( featureToFind.getLeft(),
-                                                                                       next.getLeft().getName() ) )
-                                                      .collect( Collectors.toSet() );
+        Set<FeatureTuple> leftMatched = featuresToSearch.stream()
+                                                        .filter( next -> Objects.equals( featureToFind.getLeft(),
+                                                                                         next.getLeft().getName() ) )
+                                                        .collect( Collectors.toSet() );
 
         if ( leftMatched.isEmpty() )
         {
+            LOGGER.debug( FAILED_TO_MATCH_ANY_FEATURES_WITH_TIME_SERIES_DATA_FOR_DECLARED_FEATURE_WHEN
+                          + "considering the left name. The available features were: {}.",
+                          featureToFind,
+                          featuresToSearch );
+
             return null;
         }
         else if ( leftMatched.size() == 1 )
@@ -1303,6 +1321,11 @@ public class Project
 
         if ( rightMatched.isEmpty() )
         {
+            LOGGER.debug( FAILED_TO_MATCH_ANY_FEATURES_WITH_TIME_SERIES_DATA_FOR_DECLARED_FEATURE_WHEN
+                          + "considering both the left and right names. The available features were: {}.",
+                          featureToFind,
+                          featuresToSearch );
+
             return null;
         }
         else if ( rightMatched.size() == 1 )
@@ -1319,6 +1342,11 @@ public class Project
 
         if ( baselineMatched.isEmpty() )
         {
+            LOGGER.debug( FAILED_TO_MATCH_ANY_FEATURES_WITH_TIME_SERIES_DATA_FOR_DECLARED_FEATURE_WHEN
+                          + "considering the left, right and baseline names. The available features were: {}.",
+                          featureToFind,
+                          featuresToSearch );
+
             return null;
         }
         else if ( baselineMatched.size() == 1 )

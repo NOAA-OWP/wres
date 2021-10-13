@@ -13,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConfigException;
-import wres.config.generated.ProjectConfig;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.OneOrTwoDoubles;
@@ -23,8 +22,7 @@ import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.Statistic;
-import wres.datamodel.statistics.StatisticsForProject;
+import wres.datamodel.statistics.StatisticsStore;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -33,53 +31,18 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.metrics.Metric;
-import wres.metrics.MetricCalculationException;
 import wres.metrics.MetricCollection;
 import wres.metrics.MetricFactory;
 import wres.metrics.MetricParameterException;
 import wres.statistics.generated.Threshold;
 
 /**
- * <p>
- * Builds and processes all {@link MetricCollection} associated with a {@link ProjectConfig} for all configured
- * {@link ThresholdOuter}. Typically, this will represent a single forecast lead time within a processing pipeline. The
- * {@link MetricCollection} are computed by calling {@link #apply(Object)}.
- * </p>
- * <p>
- * The current implementation adopts the following simplifying assumptions:
- * </p>
- * <ol>
- * <li>That a global set of {@link ThresholdOuter} is defined for all {@link Metric} within a {@link ProjectConfig} and 
- * hence {@link MetricCollection}. Using metric-specific thresholds will require additional logic to disaggregate a
- * {@link MetricCollection} into {@link Metric} for which common thresholds are defined.</li>
- * <li>If the {@link ThresholdOuter#hasProbabilities()}, the corresponding quantiles are derived from the 
- * observations associated with the {@link Pool} at runtime, i.e. upon calling
- * {@link #apply(Object)}</li>
- * </ol>
- * <p>
- * Upon construction, the {@link ProjectConfig} is validated to ensure that appropriate {@link Metric} are configured
- * for the type of {@link Pool} consumed. These metrics are stored in a series of {@link MetricCollection} that
- * consume a given {@link Pool} and produce a given {@link Statistic}. If the type of {@link Pool}
- * consumed by any given {@link MetricCollection} differs from the {@link Pool} for which the
- * {@link MetricProcessor} is primed, a transformation must be applied. For example, {@link Metric} that consume
- * single-valued pairs may be computed for ensemble pairs if an appropriate transformation is configured.
- * Subclasses must define and apply any transformation required. If inappropriate {@link Pool} are provided to
- * {@link #apply(Object)} for the {@link MetricCollection} configured, an unchecked {@link MetricCalculationException}
- * will be thrown. If metrics are configured incorrectly, a checked {@link MetricConfigException} will be thrown.
- * </p>
- * <p>
- * Upon calling {@link #apply(Object)} with a concrete {@link Pool}, the configured {@link Metric} are computed
- * asynchronously for each {@link ThresholdOuter}.
- * </p>
- * <p>
- * The {@link Statistic} are computed and stored by {@link StatisticType}.
- * </p>
+ * Creates statistics by computing {@link Metric} with {@link Pool} and stores them in a {@link StatisticsStore}.
  * 
  * @author James Brown
  */
 
-public abstract class MetricProcessor<S extends Pool<?>>
-        implements Function<S, StatisticsForProject>
+public abstract class MetricProcessor<S extends Pool<?>> implements Function<S, StatisticsStore>
 {
     /**
      * Logger instance.

@@ -18,14 +18,14 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
-import wres.datamodel.statistics.StatisticsForProject;
-import wres.datamodel.statistics.StatisticsForProject.Builder;
+import wres.datamodel.statistics.StatisticsStore;
+import wres.datamodel.statistics.StatisticsStore.Builder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 
 /**
  * Store of metric futures for each output type. Use {@link #getMetricOutput()} to obtain the processed
- * {@link StatisticsForProject}.
+ * {@link StatisticsStore}.
  * 
  * @author James Brown
  */
@@ -75,10 +75,9 @@ class MetricFuturesByTime
      * @return the metric results
      */
 
-    StatisticsForProject getMetricOutput()
+    StatisticsStore getMetricOutput()
     {
-        Builder builder =
-                DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
+        Builder builder = new StatisticsStore.Builder();
 
         //Add outputs for current futures
         this.doubleScore.forEach( builder::addDoubleScoreStatistics );

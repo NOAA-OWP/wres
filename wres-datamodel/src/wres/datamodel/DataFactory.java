@@ -43,8 +43,8 @@ import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
-import wres.datamodel.statistics.StatisticsForProject;
-import wres.datamodel.statistics.StatisticsForProject.Builder;
+import wres.datamodel.statistics.StatisticsStore;
+import wres.datamodel.statistics.StatisticsStore.Builder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -472,18 +472,6 @@ public final class DataFactory
                 return VectorOfDoubles.of( right );
             }
         };
-    }
-
-    /**
-     * Returns a builder for a {@link StatisticsForProject}.
-     * 
-     * @return a {@link Builder} for a map of metric outputs by time window and
-     *         threshold
-     */
-
-    public static Builder ofMetricOutputForProjectByTimeAndThreshold()
-    {
-        return new StatisticsForProject.Builder();
     }
 
     /**

@@ -41,7 +41,7 @@ import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticsForProject;
+import wres.datamodel.statistics.StatisticsStore;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdsByMetric;
@@ -107,7 +107,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         ProjectConfig config = TestDeclarationGenerator.getDeclarationForEnsembleForecastsWithoutThresholds();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
                 MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( config );
-        StatisticsForProject results =
+        StatisticsStore results =
                 processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsOne() );
         DoubleScoreStatisticOuter bias =
                 Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.BIAS_FRACTION ).get( 0 );
@@ -160,7 +160,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                 TestDeclarationGenerator.getDeclarationForEnsembleForecastsWithAllValidMetricsAndValueThresholds();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
                 MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( config );
-        StatisticsForProject statistics = processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsOne() );
+        StatisticsStore statistics = processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsOne() );
 
         //Validate bias
         List<DoubleScoreStatisticOuter> bias = Slicer.filter( statistics.getDoubleScoreStatistics(),
@@ -331,7 +331,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
                 MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( mockedConfig );
 
-        StatisticsForProject statistics = processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsOne() );
+        StatisticsStore statistics = processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsOne() );
 
         // Obtain the results
         List<DoubleScoreStatisticOuter> actual = statistics.getDoubleScoreStatistics();
@@ -360,7 +360,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         ProjectConfig config = TestDeclarationGenerator.getDeclarationForEnsembleForecastsWithProbabilityThresholds();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
                 MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( config );
-        StatisticsForProject statistics = processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsOne() );
+        StatisticsStore statistics = processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsOne() );
 
         //Obtain the results
         List<DoubleScoreStatisticOuter> results = statistics.getDoubleScoreStatistics();
@@ -674,7 +674,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
                 MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( config );
 
-        StatisticsForProject statistics =
+        StatisticsStore statistics =
                 processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsOneWithMissings() );
 
         //Obtain the results
@@ -820,7 +820,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                 TestDeclarationGenerator.getDeclarationForEnsembleForecastsWithContingencyTableAndValueThresholds();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
                 MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( config );
-        StatisticsForProject statistics = processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsTwo() );
+        StatisticsStore statistics = processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsTwo() );
 
         // Expected result
         final TimeWindowOuter expectedWindow = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
@@ -1073,7 +1073,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
                 MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( config );
-        StatisticsForProject statistics = processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsFour() );
+        StatisticsStore statistics = processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsFour() );
 
         //Obtain the results
         List<DoubleScoreStatisticOuter> results = statistics.getDoubleScoreStatistics();

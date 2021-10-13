@@ -9,7 +9,7 @@ import wres.datamodel.pools.PoolMetadata;
  * it originates.</p>
  * 
  * @param <U> the type of statistic data
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public interface Statistic<U>
 {

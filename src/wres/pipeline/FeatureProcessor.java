@@ -28,7 +28,7 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
-import wres.datamodel.statistics.StatisticsForProject;
+import wres.datamodel.statistics.StatisticsStore;
 import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;
 import wres.datamodel.time.TimeSeries;
 import wres.events.Evaluation;
@@ -376,7 +376,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      */
 
     private boolean publish( Evaluation evaluation,
-                             List<StatisticsForProject> statistics,
+                             List<StatisticsStore> statistics,
                              String groupId )
     {
         Objects.requireNonNull( evaluation, "Cannot publish statistics without an evaluation." );
@@ -387,7 +387,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
         try
         {
-            for ( StatisticsForProject nextStatistics : statistics )
+            for ( StatisticsStore nextStatistics : statistics )
             {
                 Collection<Statistics> publishMe = MessageFactory.parse( nextStatistics );
 
@@ -460,7 +460,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
     }
 
     /**
-     * Returns a function that consumes a {@link Pool} and produces {@link StatisticsForProject}.
+     * Returns a function that consumes a {@link Pool} and produces {@link StatisticsStore}.
      * 
      * @param <L> the left data type
      * @param <R> the right data type
@@ -471,7 +471,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @return a function that consumes a pool and produces one blob of statistics for each processor
      */
 
-    private <L, R> Function<Pool<TimeSeries<Pair<L, R>>>, List<StatisticsForProject>>
+    private <L, R> Function<Pool<TimeSeries<Pair<L, R>>>, List<StatisticsStore>>
             getStatisticsProcessingTask( List<MetricProcessor<Pool<TimeSeries<Pair<L, R>>>>> processors,
                                          ProjectConfig projectConfig,
                                          ToIntFunction<Pool<TimeSeries<Pair<L, R>>>> traceCountEstimator,
@@ -480,7 +480,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         return pool -> {
             Objects.requireNonNull( pool );
 
-            List<StatisticsForProject> returnMe = new ArrayList<>();
+            List<StatisticsStore> returnMe = new ArrayList<>();
 
             // No data in the composition
             if ( pool.get().isEmpty()
@@ -489,7 +489,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                 LOGGER.debug( "Empty pool discovered for {}: no statistics will be produced.", pool.getMetadata() );
 
                 // Empty container
-                StatisticsForProject empty = new StatisticsForProject.Builder().build();
+                StatisticsStore empty = new StatisticsStore.Builder().build();
                 returnMe.add( empty );
 
                 return returnMe;
@@ -504,8 +504,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                 // One blob of statistics for each processor, one processor for each metrics declaration
                 for ( MetricProcessor<Pool<TimeSeries<Pair<L, R>>>> processor : processors )
                 {
-                    StatisticsForProject statistics = processor.apply( pool );
-                    StatisticsForProject.Builder builder = new StatisticsForProject.Builder();
+                    StatisticsStore statistics = processor.apply( pool );
+                    StatisticsStore.Builder builder = new StatisticsStore.Builder();
 
                     builder.addStatistics( statistics )
                            .setMinimumSampleSize( processor.getMetrics().getMinimumSampleSize() );
@@ -521,14 +521,14 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                             LOGGER.debug( "Computing separate statistics for the baseline pairs associated with pool {}.",
                                           baseline.getMetadata() );
 
-                            StatisticsForProject baselineStatistics = processor.apply( baseline );
+                            StatisticsStore baselineStatistics = processor.apply( baseline );
                             builder.addStatistics( baselineStatistics );
                         }
 
                         baselineTraceCount = traceCountEstimator.applyAsInt( baseline );
                     }
 
-                    StatisticsForProject nextStatistics = builder.build();
+                    StatisticsStore nextStatistics = builder.build();
                     returnMe.add( nextStatistics );
 
                     this.monitor.registerPool( pool, traceCountEstimator.applyAsInt( pool ), baselineTraceCount );

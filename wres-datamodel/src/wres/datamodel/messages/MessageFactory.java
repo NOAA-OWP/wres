@@ -42,7 +42,7 @@ import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
-import wres.datamodel.statistics.StatisticsForProject;
+import wres.datamodel.statistics.StatisticsStore;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -97,7 +97,7 @@ public class MessageFactory
 
     /**
      * Creates a collection of {@link wres.statistics.generated.Statistics} by pool from a
-     * {@link wres.datamodel.statistics.StatisticsForProject}.
+     * {@link wres.datamodel.statistics.StatisticsStore}.
      *
      * @param project the project statistics
      * @return the statistics message
@@ -106,16 +106,16 @@ public class MessageFactory
      * @throws InterruptedException if the statistics could not be retrieved from the project
      */
 
-    public static Collection<Statistics> parse( StatisticsForProject project )
+    public static Collection<Statistics> parse( StatisticsStore project )
             throws InterruptedException
     {
         Objects.requireNonNull( project );
 
-        Collection<StatisticsForProject> decomposedStatistics = MessageFactory.getStatisticsPerPool( project );
+        Collection<StatisticsStore> decomposedStatistics = MessageFactory.getStatisticsPerPool( project );
 
         Collection<Statistics> returnMe = new ArrayList<>();
 
-        for ( StatisticsForProject next : decomposedStatistics )
+        for ( StatisticsStore next : decomposedStatistics )
         {
             Statistics statistics = MessageFactory.parseOnePool( next );
 
@@ -661,7 +661,7 @@ public class MessageFactory
 
     /**
      * Creates a collection of {@link wres.statistics.generated.Statistics} by pool from a
-     * {@link wres.datamodel.statistics.StatisticsForProject}.
+     * {@link wres.datamodel.statistics.StatisticsStore}.
      * 
      * @param project the project statistics
      * @param pairs the optional pairs
@@ -671,7 +671,7 @@ public class MessageFactory
      * @throws InterruptedException if the statistics could not be retrieved from the project
      */
 
-    static Statistics parseOnePool( StatisticsForProject project,
+    static Statistics parseOnePool( StatisticsStore project,
                                     wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> pairs )
             throws InterruptedException
     {
@@ -692,7 +692,7 @@ public class MessageFactory
 
     /**
      * Creates a {@link wres.statistics.generated.Statistics} from a 
-     * {@link wres.datamodel.statistics.StatisticsForProject}.
+     * {@link wres.datamodel.statistics.StatisticsStore}.
      * 
      * @param onePool the pool-shaped statistics
      * @return the statistics message or null
@@ -701,7 +701,7 @@ public class MessageFactory
      * @throws InterruptedException if the statistics could not be retrieved from the project
      */
 
-    static Statistics parseOnePool( StatisticsForProject onePool )
+    static Statistics parseOnePool( StatisticsStore onePool )
             throws InterruptedException
     {
         Objects.requireNonNull( onePool );
@@ -810,12 +810,12 @@ public class MessageFactory
      * @throws NullPointerException if the input is null
      */
 
-    private static Collection<StatisticsForProject> getStatisticsPerPool( StatisticsForProject project )
+    private static Collection<StatisticsStore> getStatisticsPerPool( StatisticsStore project )
             throws InterruptedException
     {
         Objects.requireNonNull( project );
 
-        Map<PoolBoundaries, StatisticsForProject.Builder> mappedStatistics = new HashMap<>();
+        Map<PoolBoundaries, StatisticsStore.Builder> mappedStatistics = new HashMap<>();
 
         // Double scores
         if ( project.hasStatistic( StatisticType.DOUBLE_SCORE ) )
@@ -861,12 +861,12 @@ public class MessageFactory
             MessageFactory.addPairedStatisticsToPool( statistics, mappedStatistics );
         }
 
-        Collection<StatisticsForProject> returnMe = new ArrayList<>();
+        Collection<StatisticsStore> returnMe = new ArrayList<>();
 
         // Build the per-pool statistics
-        for ( StatisticsForProject.Builder builder : mappedStatistics.values() )
+        for ( StatisticsStore.Builder builder : mappedStatistics.values() )
         {
-            StatisticsForProject statistics = builder.setMinimumSampleSize( project.getMinimumSampleSize() )
+            StatisticsStore statistics = builder.setMinimumSampleSize( project.getMinimumSampleSize() )
                                                      .build();
             returnMe.add( statistics );
         }
@@ -958,7 +958,7 @@ public class MessageFactory
      */
 
     private static void addDoubleScoreStatisticsToPool( List<DoubleScoreStatisticOuter> statistics,
-                                                        Map<PoolBoundaries, StatisticsForProject.Builder> mappedStatistics )
+                                                        Map<PoolBoundaries, StatisticsStore.Builder> mappedStatistics )
     {
         Objects.requireNonNull( mappedStatistics );
 
@@ -967,11 +967,11 @@ public class MessageFactory
             PoolMetadata metadata = next.getMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
 
-            StatisticsForProject.Builder another = mappedStatistics.get( poolBoundaries );
+            StatisticsStore.Builder another = mappedStatistics.get( poolBoundaries );
 
             if ( Objects.isNull( another ) )
             {
-                another = new StatisticsForProject.Builder();
+                another = new StatisticsStore.Builder();
                 mappedStatistics.put( poolBoundaries, another );
             }
 
@@ -990,7 +990,7 @@ public class MessageFactory
 
     private static void
             addDurationScoreStatisticsToPool( List<wres.datamodel.statistics.DurationScoreStatisticOuter> statistics,
-                                              Map<PoolBoundaries, StatisticsForProject.Builder> mappedStatistics )
+                                              Map<PoolBoundaries, StatisticsStore.Builder> mappedStatistics )
     {
         Objects.requireNonNull( mappedStatistics );
 
@@ -999,11 +999,11 @@ public class MessageFactory
             PoolMetadata metadata = next.getMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
 
-            StatisticsForProject.Builder another = mappedStatistics.get( poolBoundaries );
+            StatisticsStore.Builder another = mappedStatistics.get( poolBoundaries );
 
             if ( Objects.isNull( another ) )
             {
-                another = new StatisticsForProject.Builder();
+                another = new StatisticsStore.Builder();
                 mappedStatistics.put( poolBoundaries, another );
             }
 
@@ -1023,7 +1023,7 @@ public class MessageFactory
      */
 
     private static void addBoxPlotStatisticsToPool( List<wres.datamodel.statistics.BoxplotStatisticOuter> statistics,
-                                                    Map<PoolBoundaries, StatisticsForProject.Builder> mappedStatistics,
+                                                    Map<PoolBoundaries, StatisticsStore.Builder> mappedStatistics,
                                                     boolean perPool )
     {
         Objects.requireNonNull( mappedStatistics );
@@ -1033,11 +1033,11 @@ public class MessageFactory
             PoolMetadata metadata = next.getMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
 
-            StatisticsForProject.Builder another = mappedStatistics.get( poolBoundaries );
+            StatisticsStore.Builder another = mappedStatistics.get( poolBoundaries );
 
             if ( Objects.isNull( another ) )
             {
-                another = new StatisticsForProject.Builder();
+                another = new StatisticsStore.Builder();
                 mappedStatistics.put( poolBoundaries, another );
             }
 
@@ -1063,7 +1063,7 @@ public class MessageFactory
      */
 
     private static void addDiagramStatisticsToPool( List<wres.datamodel.statistics.DiagramStatisticOuter> statistics,
-                                                    Map<PoolBoundaries, StatisticsForProject.Builder> mappedStatistics )
+                                                    Map<PoolBoundaries, StatisticsStore.Builder> mappedStatistics )
     {
         Objects.requireNonNull( mappedStatistics );
 
@@ -1072,11 +1072,11 @@ public class MessageFactory
             PoolMetadata metadata = next.getMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
 
-            StatisticsForProject.Builder another = mappedStatistics.get( poolBoundaries );
+            StatisticsStore.Builder another = mappedStatistics.get( poolBoundaries );
 
             if ( Objects.isNull( another ) )
             {
-                another = new StatisticsForProject.Builder();
+                another = new StatisticsStore.Builder();
                 mappedStatistics.put( poolBoundaries, another );
             }
 
@@ -1095,7 +1095,7 @@ public class MessageFactory
      */
 
     private static void addPairedStatisticsToPool( List<DurationDiagramStatisticOuter> statistics,
-                                                   Map<PoolBoundaries, StatisticsForProject.Builder> mappedStatistics )
+                                                   Map<PoolBoundaries, StatisticsStore.Builder> mappedStatistics )
     {
         Objects.requireNonNull( mappedStatistics );
 
@@ -1104,11 +1104,11 @@ public class MessageFactory
             PoolMetadata metadata = next.getMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
 
-            StatisticsForProject.Builder another = mappedStatistics.get( poolBoundaries );
+            StatisticsStore.Builder another = mappedStatistics.get( poolBoundaries );
 
             if ( Objects.isNull( another ) )
             {
-                another = new StatisticsForProject.Builder();
+                another = new StatisticsStore.Builder();
                 mappedStatistics.put( poolBoundaries, another );
             }
 

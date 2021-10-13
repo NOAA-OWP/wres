@@ -11,8 +11,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import wres.datamodel.Ensemble;
 import wres.datamodel.pools.Pool;
 import wres.io.writing.commaseparated.pairs.EnsemblePairsWriter;
+import wres.io.writing.commaseparated.pairs.PairsWriter;
 import wres.io.writing.commaseparated.pairs.SingleValuedPairsWriter;
 
 /**
@@ -34,13 +36,13 @@ public class SharedSampleDataWriters implements Supplier<Set<Path>>, Closeable
      * The shared writer for single-valued pairs.
      */
 
-    private final SingleValuedPairsWriter singleValuedWriter;
+    private final PairsWriter<Double, Double> singleValuedWriter;
 
     /**
      * The shared writer for ensemble pairs.
      */
 
-    private final EnsemblePairsWriter ensembleWriter;
+    private final PairsWriter<Double, Ensemble> ensembleWriter;
 
     /**
      * Return an instance.
@@ -104,7 +106,7 @@ public class SharedSampleDataWriters implements Supplier<Set<Path>>, Closeable
      * @return the single-valued writer
      */
 
-    public SingleValuedPairsWriter getSingleValuedWriter()
+    public PairsWriter<Double, Double> getSingleValuedWriter()
     {
         return this.singleValuedWriter;
     }
@@ -115,7 +117,7 @@ public class SharedSampleDataWriters implements Supplier<Set<Path>>, Closeable
      * @return the single-valued writer
      */
 
-    public EnsemblePairsWriter getEnsembleWriter()
+    public PairsWriter<Double, Ensemble> getEnsembleWriter()
     {
         return this.ensembleWriter;
     }
