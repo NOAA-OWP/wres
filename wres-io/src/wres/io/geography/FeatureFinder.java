@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -112,38 +113,13 @@ public class FeatureFinder
             return projectDeclaration;
         }
 
-        Set<String> leftNames = ConfigHelper.getFeatureNamesForSource( projectDeclaration,
-                                                                       projectDeclaration.getInputs()
-                                                                                         .getLeft() );
-        Set<String> rightNames = ConfigHelper.getFeatureNamesForSource( projectDeclaration,
-                                                                        projectDeclaration.getInputs()
-                                                                                          .getRight() );
-        Set<String> baselineNames = ConfigHelper.getFeatureNamesForSource( projectDeclaration,
-                                                                           projectDeclaration.getInputs()
-                                                                                             .getBaseline() );
-        List<Feature> featureList = projectDeclaration.getPair()
-                                                      .getFeature();
-
-        // Common case: features are already declared fully, do no more!
-        if ( !hasBaseline
-             && leftNames.size() == featureList.size()
-             && leftNames.size() == rightNames.size()
-             && !requiresFeatureRequests )
+        // Determine whether there are any sparse features either in a grouped or singleton context
+        if ( !requiresFeatureRequests
+             && FeatureFinder.getSparseFeatures( pairConfig, hasBaseline )
+                             .isEmpty() )
         {
-            LOGGER.debug( "No baseline, left and right feature count {}",
-                          "matches original list. No need to fill features." );
-            // There is no baseline. If the three name counts all match, OK.
-            return projectDeclaration;
-        }
-        else if ( hasBaseline
-                  && leftNames.size() == featureList.size()
-                  && leftNames.size() == rightNames.size()
-                  && leftNames.size() == baselineNames.size()
-                  && !requiresFeatureRequests )
-        {
-            LOGGER.debug( "Baseline, left, and right feature count {}",
-                          "matches original list. No need to fill features." );
-            // There is a baseline. If the four name counts all match, OK.
+            LOGGER.debug( "No need to fill features, no sparse features and no requests needed, returning the input "
+                          + "declaration." );
             return projectDeclaration;
         }
 
@@ -208,6 +184,46 @@ public class FeatureFinder
                                   projectDeclaration.getName() );
     }
 
+    /**
+     * @param pairConfig the pair declaration, not null
+     * @param hasBaseline is true if the declaration contains a baseline
+     * @return the sparse features, including singletons and grouped features
+     */
+
+    private static List<Feature> getSparseFeatures( PairConfig pairConfig, boolean hasBaseline )
+    {
+        List<Feature> featureList = pairConfig.getFeature();
+        Predicate<Feature> filter = null;
+
+        // Determine the correct type of filter for the feature
+        if ( hasBaseline )
+        {
+            filter = feature -> Objects.isNull( feature.getLeft() )
+                                || Objects.isNull( feature.getRight() )
+                                || Objects.isNull( feature.getBaseline() );
+        }
+        else
+        {
+            filter = feature -> Objects.isNull( feature.getLeft() )
+                                || Objects.isNull( feature.getRight() );
+        }
+
+        // Find sparse singletons
+        List<Feature> sparseFeatures = featureList.stream()
+                                                  .filter( filter )
+                                                  .collect( Collectors.toList() );
+
+        // Find sparse grouped features
+        List<Feature> sparseGroupedFeatures = pairConfig.getFeatureGroup()
+                                                        .stream()
+                                                        .flatMap( nextGroup -> nextGroup.getFeature().stream() )
+                                                        .filter( filter )
+                                                        .collect( Collectors.toList() );
+        sparseFeatures.addAll( sparseGroupedFeatures );
+
+        return Collections.unmodifiableList( sparseFeatures );
+    }
+    
     /**
      * Densifies singleton feature groups obtained from {@link PairConfig#getFeature()}.
      *

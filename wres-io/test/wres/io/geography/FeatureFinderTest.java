@@ -608,4 +608,57 @@ public class FeatureFinderTest
         }
     }
     
+    /**
+     * Test filling out left from declared right when both use same dimension and the features are declared in both a 
+     * singleton context and a grouped context, but the features are complete in a singleton context. No service 
+     * required.
+     */
+    @Test
+    public void fillOutLeftFromDeclaredRightWhenSameDimensionAndSingletonFeaturesDenseAndGroupedFeaturesSparse()
+    {
+        ProjectConfig.Inputs inputs =
+                new ProjectConfig.Inputs( BOILERPLATE_LEFT_DATASOURCE_CUSTOM_DIMENSION,
+                                          BOILERPLATE_RIGHT_DATASOURCE_CUSTOM_DIMENSION,
+                                          null );
+
+        // Densely declared singletons
+        List<Feature> features = List.of( RIGHT_NAME_ONE_DECLARED_FEATURE,
+                                          RIGHT_NAME_TWO_DECLARED_FEATURE );
+        
+        // Pass in sparsely declared features
+        List<Feature> singletons = List.of( FULLY_DECLARED_FEATURE_ALL_NAME_ONE_NO_BASELINE,
+                                            FULLY_DECLARED_FEATURE_ALL_NAME_TWO_NO_BASELINE );
+        String groupName = "A GROUP!";
+        FeaturePool featureGroup = new FeaturePool( features, groupName );
+
+        PairConfig pairConfig = FeatureFinderTest.getBoilerplatePairConfigWith( singletons,
+                                                                                List.of( featureGroup ),
+                                                                                null );
+        ProjectConfig projectConfig = new ProjectConfig( inputs,
+                                                         pairConfig,
+                                                         null,
+                                                         null,
+                                                         null,
+                                                         null );
+
+        ProjectConfig result = FeatureFinder.fillFeatures( projectConfig );
+
+        // Assert against the singleton features
+        List<Feature> actualFeatures = result.getPair()
+                                             .getFeature();
+        List<Feature> expectedFeatures = List.of( FULLY_DECLARED_FEATURE_ALL_NAME_ONE_NO_BASELINE,
+                                                  FULLY_DECLARED_FEATURE_ALL_NAME_TWO_NO_BASELINE );
+
+        assertEquals( expectedFeatures, actualFeatures );
+
+        // Assert against the single group
+        List<FeaturePool> actualGroups = result.getPair()
+                                               .getFeatureGroup();
+
+        FeaturePool expectedFeatureGroup = new FeaturePool( expectedFeatures, groupName );
+        List<FeaturePool> expectedGroups = List.of( expectedFeatureGroup );
+
+        assertEquals( expectedGroups, actualGroups );
+    }
+    
 }
