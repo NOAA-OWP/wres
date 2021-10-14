@@ -2,73 +2,114 @@ package wres.io.data.caching;
 
 import java.sql.SQLException;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+
 import wres.io.data.details.MeasurementDetails;
+import wres.io.retrieval.DataAccessException;
+import wres.io.utilities.DataProvider;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 
 /**
  * Caches details mapping units of measurements to their IDs
  * @author Christopher Tubbs
  */
-public class MeasurementUnits extends Cache<MeasurementDetails, String>
+public class MeasurementUnits
 {
     private static final int MAX_DETAILS = 100;
-
-    private final Object detailLock = new Object();
-    private final Object keyLock = new Object();
     private final Database database;
+
+    private volatile boolean onlyReadFromDatabase = false;
+    private final Cache<Long,String> keyToValue = Caffeine.newBuilder()
+                                                          .maximumSize( MAX_DETAILS )
+                                                          .build();
+    private final Cache<String,Long> valueToKey = Caffeine.newBuilder()
+                                                          .maximumSize( MAX_DETAILS )
+                                                          .build();
 
     public MeasurementUnits( Database database )
     {
         this.database = database;
     }
 
-    @Override
-    protected Database getDatabase()
+    private Database getDatabase()
     {
         return this.database;
     }
 
-    @Override
-    protected Object getDetailLock()
+    /**
+     * Mark this instance as only being allowed to read from the database, in
+     * other words, not being allowed to add new features, but allowed to look
+     * for existing features. During ingest, read and create. During retrieval,
+     * read only.
+     */
+
+    public void setOnlyReadFromDatabase()
     {
-        return this.detailLock;
+        this.onlyReadFromDatabase = true;
     }
 
-    @Override
-    protected Object getKeyLock()
+
+    public Long getOrCreateMeasurementUnitId( String unit ) throws SQLException
     {
-        return this.keyLock;
+        if ( this.onlyReadFromDatabase )
+        {
+            throw new IllegalStateException( "This instance now allows no new units, call another method!" );
+        }
+
+        Long id = this.valueToKey.getIfPresent( unit );
+
+        if ( id == null )
+        {
+            MeasurementDetails unitDetails = new MeasurementDetails();
+            unitDetails.setUnit( unit );
+            unitDetails.save( this.getDatabase() );
+            id = unitDetails.getId();
+
+            if ( id == null )
+            {
+                throw new IllegalStateException( "Issue getting id from FeatureDetails" );
+            }
+
+            this.valueToKey.put( unit, id );
+            this.keyToValue.put( id, unit );
+        }
+
+        return id;
     }
 
 
-	/**
-	 * Returns the ID of a unit of measurement from the global cache based on the name of the measurement
-	 * @param unit The name of the unit of measurement
-	 * @return The ID of the unit of measurement
-	 * @throws SQLException Thrown if the ID could not be retrieved from the database 
-	 */
-	public Long getMeasurementUnitID( String unit ) throws SQLException
+    public String getUnit( long id )
     {
-        Long id = null;
+        String unit = keyToValue.getIfPresent( id );
 
-        if (unit != null && !unit.trim().isEmpty())
+        if ( unit == null )
         {
-            id = this.getID(unit.toLowerCase());
+            Database database = this.getDatabase();
+            DataScripter dataScripter = new DataScripter( database );
+            dataScripter.addLine( "SELECT unit_name" );
+            dataScripter.addLine( "FROM wres.MeasurementUnit" );
+            dataScripter.addLine( "WHERE measurementunit_id = ?" );
+            dataScripter.addArgument( id );
+            dataScripter.setMaxRows( 1 );
+            dataScripter.setUseTransaction( false );
+            dataScripter.setHighPriority( true );
+
+            try ( DataProvider dataProvider = dataScripter.getData() )
+            {
+                unit = dataProvider.getString( "unit_name" );
+            }
+            catch ( SQLException se )
+            {
+                throw new DataAccessException( "Could not get MeasurementUnit data.",
+                                               se );
+            }
+
+            this.keyToValue.put( id, unit );
+            this.valueToKey.put( unit, id );
         }
 
-        if (id == null)
-        {
-            MeasurementDetails details = new MeasurementDetails();
-            details.setUnit( unit );
-            id = this.getID(details);
-        }
-
-	    return id;
-	}
-
-	@Override
-	protected int getMaxDetails() {
-		return MAX_DETAILS;
-	}
-	
+        return unit;
+    }
 }

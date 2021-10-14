@@ -248,6 +248,22 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:complexType name="unitAlias">
+        <xs:annotation>
+            <xs:documentation>Declares that the value for "alias" should be
+                interpreted as the value for "unit" by the software. The "unit"
+                should be parseable by the indriya measurement units library.
+                For example, 'mm/s' is parseable but 'millimeters per second' is
+                not. To treat 'millimeters per second' as 'mm/s' set alias to
+                the former and unit to the latter.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:all>
+            <xs:element name="alias" type="xs:string" />
+            <xs:element name="unit" type="xs:string" />
+        </xs:all>
+    </xs:complexType>
+
     <xs:complexType name="datasource">
 
         <!-- for class naming using xjc-->
@@ -900,6 +916,7 @@ time scale within a single class, rather than two classes.
 
         <xs:sequence>
             <xs:element name="unit" type="xs:string" minOccurs="0" maxOccurs="1" />
+            <xs:element name="unitAlias" type="unitAlias" minOccurs="0" maxOccurs="unbounded" />
             <xs:element name="featureService" type="featureService" minOccurs="0" maxOccurs="1" />
             <xs:element name="feature" type="feature" minOccurs="0" maxOccurs="unbounded"/>
             <xs:element name="featureGroup" type="featurePool" minOccurs="0" maxOccurs="unbounded"/>

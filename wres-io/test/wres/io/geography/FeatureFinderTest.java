@@ -22,6 +22,7 @@ import wres.config.generated.FeaturePool;
 import wres.config.generated.FeatureService;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.UnitAlias;
 import wres.io.geography.wrds.WrdsLocation;
 
 public class FeatureFinderTest
@@ -189,6 +190,7 @@ public class FeatureFinderTest
                                                             FeatureService featureService )
     {
         return new PairConfig( "CMS",
+                               List.of( new UnitAlias( "CMS", "m^3/s" ) ),
                                featureService,
                                features,
                                featureGroups,

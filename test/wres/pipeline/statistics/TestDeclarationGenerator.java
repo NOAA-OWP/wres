@@ -50,6 +50,7 @@ class TestDeclarationGenerator
                                                  null,
                                                  null,
                                                  null,
+                                                 null,
                                                  issuedDatesConfig,
                                                  null,
                                                  null,
@@ -169,6 +170,7 @@ class TestDeclarationGenerator
                                                  null,
                                                  null,
                                                  null,
+                                                 null,
                                                  null );
 
         DataSourceConfig left = new DataSourceConfig( DatasourceType.fromValue( "observations" ),
@@ -222,6 +224,7 @@ class TestDeclarationGenerator
     static ProjectConfig getDeclarationForSingleValuedForecastsWithThresholds()
     {
         PairConfig pairsConfig = new PairConfig( "CMS",
+                                                 null,
                                                  null,
                                                  null,
                                                  null,
@@ -317,6 +320,7 @@ class TestDeclarationGenerator
                                                  null,
                                                  null,
                                                  null,
+                                                 null,
                                                  null );
 
         DataSourceConfig left = new DataSourceConfig( DatasourceType.fromValue( "observations" ),
@@ -370,6 +374,7 @@ class TestDeclarationGenerator
     static ProjectConfig getDeclarationForSingleValuedForecastsWithTimeSeriesSummaryStatistics()
     {
         PairConfig pairsConfig = new PairConfig( "CFS",
+                                                 null,
                                                  null,
                                                  null,
                                                  null,
@@ -553,6 +558,7 @@ class TestDeclarationGenerator
                                                  null,
                                                  null,
                                                  null,
+                                                 null,
                                                  null );
 
         return new ProjectConfig( projectConfig.getInputs(),
@@ -573,6 +579,7 @@ class TestDeclarationGenerator
                 TestDeclarationGenerator.getDeclarationForEnsembleForecastsWithAllValidMetricsAndIssuedDatePools();
 
         PairConfig pairsConfig = new PairConfig( null,
+                                                 null,
                                                  null,
                                                  null,
                                                  null,

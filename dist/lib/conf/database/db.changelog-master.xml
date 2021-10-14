@@ -28,24 +28,16 @@
     <include file="wres.Ensemble_v3.xml" relativeToChangelogFile="true" />
     <include file="wres.Ensemble_v4.xml" relativeToChangelogFile="true" />
     <include file="wres.TimeSeries_v4.xml" relativeToChangelogFile="true" />
-    <include file="wres.unitconversion_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.TimeSeriesValue_v2.xml" relativeToChangelogFile="true" />
     <include file="wres.gridprojection_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.netcdfcoordinate_v1.xml" relativeToChangelogFile="true" />
-    <include file="wres.conversions_v1.xml" relativeToChangelogFile="true" />
     <include file="Obsolete_tables_v1.xml" relativeToChangelogFile="true" />
     <include file="keys_v1.0.xml" relativeToChangelogFile="true" />
-    <include file="add_measurementunit_kcfs.xml" relativeToChangelogFile="true" />
-    <include file="add_identity_conversions.xml" relativeToChangelogFile="true" />
-    <include file="fix_null_conversions.xml" relativeToChangelogFile="true" />
-    <include file="set_default_unitconversion_values.xml" relativeToChangelogFile="true" />
     <include file="wres.netcdfcoordinate_add_grid_projection.xml" relativeToChangelogFile="true" />
     <include file="wres.executionlog_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.TimeSeriesValue_generated_partitions_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.TimeSeriesValue_generated_partitions_v2.xml" relativeToChangelogFile="true" />
     <include file="wres.VariableFeature_v2.xml" relativeToChangelogFile="true" />
-    <include file="add_measurementunit_in_per_hour.xml" relativeToChangelogFile="true" />
-    <include file="add_daily_flow_measurementunits.xml" relativeToChangelogFile="true" />
     <include file="wres.TimeSeries_v5.xml" relativeToChangelogFile="true" />
     <include file="wres.Observation_v5.xml" relativeToChangelogFile="true" />
     <include file="wres.IndexQueue_v2.xml" relativeToChangelogFile="true" />
@@ -61,8 +53,6 @@
          created after the 7 file but must run before the 7 file. Shrug. -->
     <include file="wres.TimeSeries_v8.xml" relativeToChangelogFile="true" />
     <include file="wres.TimeSeries_v7.xml" relativeToChangelogFile="true" />
-    <include file="add_measurementunit_degc.xml" relativeToChangelogFile="true" />
-    <include file="add_distance_conversions.xml" relativeToChangelogFile="true" />
-    <include file="add_measurementunit_degf.xml" relativeToChangelogFile="true" />
-    <include file="update_flow_conversions.xml" relativeToChangelogFile="true" />
+    <include file="wres.UnitConversion_v3.xml" relativeToChangelogFile="true" />
+    <include file="wres.Conversions_v2.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>

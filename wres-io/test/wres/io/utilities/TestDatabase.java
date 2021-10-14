@@ -299,14 +299,10 @@ public class TestDatabase
     public void createMeasurementUnitTable( Database liquibaseDatabase )
             throws LiquibaseException
     {
-        Liquibase liquibase = new Liquibase( "database/wres.MeasurementUnit_v3.xml",
+        Liquibase liquibase = new Liquibase( "database/wres.MeasurementUnit_v1.xml",
                                              new ClassLoaderResourceAccessor(),
                                              liquibaseDatabase );
         liquibase.update( new Contexts() );
-        Liquibase liquibase2 = new Liquibase( "database/wres.MeasurementUnit_data_v1.xml",
-                                             new ClassLoaderResourceAccessor(),
-                                             liquibaseDatabase );
-        liquibase2.update( new Contexts() );
     }
 
 
@@ -326,48 +322,6 @@ public class TestDatabase
             statement.execute( "DROP TABLE wres.MeasurementUnit" );
         }
     }
-    
-    
-    /**
-     * Create the WRES unitconversion table using given liquibase database.
-     * Expected to be called within a test requiring the unitconversion table. 
-     * If you call createUnitConversionTable at the beginning of a test, you 
-     * must call dropUnitConversionTable at the end of the test. You must also call
-     * dropLiquibaseChangeTables at the end of the test.
-     * @param liquibaseDatabase the Liquibase Database instance to use
-     * @throws LiquibaseException when liquibase migration fails
-     */
-
-    public void createUnitConversionTable( Database liquibaseDatabase )
-            throws LiquibaseException
-    {
-        Liquibase liquibase = new Liquibase( "database/wres.unitconversion_v1.xml",
-                                             new ClassLoaderResourceAccessor(),
-                                             liquibaseDatabase );
-        liquibase.update( new Contexts() );
-        Liquibase liquibase2 = new Liquibase( "database/wres.UnitConversion_v2.xml",
-                                             new ClassLoaderResourceAccessor(),
-                                             liquibaseDatabase );
-        liquibase2.update( new Contexts() );
-    }
-
-
-    /**
-     * Drop the WRES unitconversion table using given connection.
-     * Expected to be called at the same level as createUnitConversionTable, 
-     * namely within a test that requires the unitconversion table, at the end 
-     * of the test.
-     * @param connection the connection to use
-     * @throws SQLException when drop fails
-     */
-
-    public void dropUnitConversionTable( Connection connection ) throws SQLException
-    {
-        try ( Statement statement = connection.createStatement() )
-        {
-            statement.execute( "DROP TABLE wres.UnitConversion" );
-        }
-    }       
 
 
     /**

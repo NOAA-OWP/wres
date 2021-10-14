@@ -21,6 +21,7 @@ import org.mockito.MockitoAnnotations;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
+import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.details.MeasurementDetails;
 import wres.io.utilities.TestDatabase;
 import wres.system.SystemSettings;
@@ -29,7 +30,6 @@ import wres.system.SystemSettings;
  * Tests the {@link UnitMapper}.
  * @author james.brown@hydrosolved.com
  */
-
 public class UnitMapperTest
 {
     @Mock
@@ -38,6 +38,7 @@ public class UnitMapperTest
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
     private Connection rawConnection;
+    private MeasurementUnits measurementUnitsCache;
 
     @BeforeClass
     public static void oneTimeSetup()
@@ -69,6 +70,7 @@ public class UnitMapperTest
                .thenReturn( 10 );
 
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
+        this.measurementUnitsCache = new MeasurementUnits( this.wresDatabase );
 
         // Create the tables
         this.addTheDatabaseAndTables();
@@ -78,7 +80,7 @@ public class UnitMapperTest
     public void testConversionOfCFSToCMS() throws SQLException
     {
         // Create the unit mapper for CMS
-        UnitMapper mapper = UnitMapper.of( this.wresDatabase, "CMS" );
+        UnitMapper mapper = UnitMapper.of( this.measurementUnitsCache, "CMS" );
 
         // Obtain the measurement units for CFS
         MeasurementDetails measurement = new MeasurementDetails();
@@ -105,7 +107,7 @@ public class UnitMapperTest
     public void testIdentityConversionOfCMSToCMS() throws SQLException
     {
         // Create the unit mapper for CMS
-        UnitMapper mapper = UnitMapper.of( this.wresDatabase, "CMS" );
+        UnitMapper mapper = UnitMapper.of( this.measurementUnitsCache, "CMS" );
 
         // Obtain the measurement units for CMS
         MeasurementDetails measurement = new MeasurementDetails();
@@ -126,10 +128,10 @@ public class UnitMapperTest
     public void constructWithBlankUnitThrowsExpectedException()
     {
         assertThrows( NoSuchUnitConversionException.class,
-                      () -> UnitMapper.of( this.wresDatabase, "" ) );
+                      () -> UnitMapper.of( this.measurementUnitsCache, "" ) );
 
         assertThrows( NoSuchUnitConversionException.class,
-                      () -> UnitMapper.of( this.wresDatabase, "   " ) );
+                      () -> UnitMapper.of( this.measurementUnitsCache, "   " ) );
     }
 
     @After
@@ -156,7 +158,6 @@ public class UnitMapperTest
                 this.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
 
         this.testDatabase.createMeasurementUnitTable( liquibaseDatabase );
-        this.testDatabase.createUnitConversionTable( liquibaseDatabase );
     }
 
     /**

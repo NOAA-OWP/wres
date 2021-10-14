@@ -1040,7 +1040,8 @@ public class Database {
                                        "wres.Ensemble",
                                        "wres.Project",
                                        "wres.ProjectSource",
-                                       "wres.Feature" );
+                                       "wres.Feature",
+                                       "wres.MeasurementUnit" );
 
         for ( String table : tables )
         {

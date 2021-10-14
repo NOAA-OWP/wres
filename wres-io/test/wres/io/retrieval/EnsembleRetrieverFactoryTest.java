@@ -54,6 +54,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
+import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.details.EnsembleDetails;
 import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.MeasurementDetails;
@@ -76,6 +77,7 @@ public class EnsembleRetrieverFactoryTest
     @Mock
     private Executor mockExecutor;
     private Features featuresCache;
+    private MeasurementUnits measurementUnitsCache;
     private Ensembles ensemblesCache;
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
@@ -169,6 +171,7 @@ public class EnsembleRetrieverFactoryTest
 
         // Project depends on features cache. With ensemblesCache up here, NPE!
         this.featuresCache = new Features( this.wresDatabase );
+        this.measurementUnitsCache = new MeasurementUnits( this.wresDatabase );
 
         // Add some data for testing
         this.addTwoForecastTimeSeriesEachWithFiveEventsToTheDatabase();
@@ -390,7 +393,6 @@ public class EnsembleRetrieverFactoryTest
                 this.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
 
         this.testDatabase.createMeasurementUnitTable( liquibaseDatabase );
-        this.testDatabase.createUnitConversionTable( liquibaseDatabase );
         this.testDatabase.createSourceTable( liquibaseDatabase );
         this.testDatabase.createProjectTable( liquibaseDatabase );
         this.testDatabase.createProjectSourceTable( liquibaseDatabase );
@@ -419,6 +421,7 @@ public class EnsembleRetrieverFactoryTest
     {
         // Mock the sufficient elements of the ProjectConfig
         PairConfig pairsConfig = new PairConfig( CFS,
+                                                 null,
                                                  null,
                                                  null,
                                                  null,
@@ -490,7 +493,7 @@ public class EnsembleRetrieverFactoryTest
 
         // Create the factory instance
         FeatureGroup featureGroup = FeatureGroup.of( allFeatures );
-        UnitMapper unitMapper = UnitMapper.of( this.wresDatabase, CFS );
+        UnitMapper unitMapper = UnitMapper.of( this.measurementUnitsCache, CFS );
         this.factoryToTest = EnsembleRetrieverFactory.of( project, featureGroup, unitMapper );
     }
 

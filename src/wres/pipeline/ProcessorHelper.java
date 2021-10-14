@@ -45,6 +45,7 @@ import wres.io.Operations;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.Pipelines;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.MeasurementUnits;
 import wres.io.geography.FeatureFinder;
 import wres.io.project.Project;
 import wres.io.retrieval.UnitMapper;
@@ -365,8 +366,11 @@ class ProcessorHelper
 
             // Get a unit mapper for the declared or analyzed measurement units
             String desiredMeasurementUnit = project.getMeasurementUnit();
-            UnitMapper unitMapper = UnitMapper.of( databaseServices.getDatabase(), desiredMeasurementUnit );
-
+            MeasurementUnits measurementUnitsCache =
+                    new MeasurementUnits( databaseServices.getDatabase() );
+            UnitMapper unitMapper = UnitMapper.of( measurementUnitsCache,
+                                                   desiredMeasurementUnit,
+                                                   projectConfig );
             // Update the evaluation description with any analyzed units and variable names
             wres.statistics.generated.Evaluation evaluationDescription =
                     ProcessorHelper.setAnalyzedUnitsAndVariableNames( evaluationDetails.getEvaluationDescription(),

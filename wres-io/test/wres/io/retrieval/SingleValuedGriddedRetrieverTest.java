@@ -35,6 +35,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.data.caching.Features;
+import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.details.SourceDetails;
 import wres.io.project.Project;
 import wres.io.utilities.DataScripter;
@@ -54,6 +55,7 @@ public class SingleValuedGriddedRetrieverTest
     @Mock
     private Executor mockExecutor;
     private TestDatabase testDatabase;
+    private MeasurementUnits measurementUnitsCache;
     private HikariDataSource dataSource;
     private Connection rawConnection;
 
@@ -111,6 +113,7 @@ public class SingleValuedGriddedRetrieverTest
                .thenReturn( 10 );
 
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
+        this.measurementUnitsCache = new MeasurementUnits( this.wresDatabase );
 
         // Create the tables
         this.addTheDatabaseAndTables();
@@ -124,7 +127,7 @@ public class SingleValuedGriddedRetrieverTest
     public void testGetFormsRequestForThreeOfFiveSources() throws Exception
     {
         // Desired units are the same as the existing units
-        UnitMapper mapper = UnitMapper.of( this.wresDatabase, UNITS );
+        UnitMapper mapper = UnitMapper.of( this.measurementUnitsCache, UNITS );
 
         // Set the time window filter, aka pool boundaries to select a subset of sources
 
@@ -189,7 +192,6 @@ public class SingleValuedGriddedRetrieverTest
                 this.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
 
         this.testDatabase.createMeasurementUnitTable( liquibaseDatabase );
-        this.testDatabase.createUnitConversionTable( liquibaseDatabase );
         this.testDatabase.createSourceTable( liquibaseDatabase );
         this.testDatabase.createProjectTable( liquibaseDatabase );
         this.testDatabase.createProjectSourceTable( liquibaseDatabase );

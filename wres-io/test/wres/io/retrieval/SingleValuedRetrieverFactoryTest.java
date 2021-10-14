@@ -52,6 +52,7 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.data.caching.Features;
+import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.details.EnsembleDetails;
 import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.MeasurementDetails;
@@ -74,6 +75,7 @@ public class SingleValuedRetrieverFactoryTest
     @Mock
     private Executor mockExecutor;
     private Features featuresCache;
+    private MeasurementUnits measurementUnitsCache;
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
     private Connection rawConnection;
@@ -150,6 +152,7 @@ public class SingleValuedRetrieverFactoryTest
 
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
         this.featuresCache = new Features( this.wresDatabase );
+        this.measurementUnitsCache = new MeasurementUnits( this.wresDatabase );
 
         // Create the tables
         this.addTheDatabaseAndTables();
@@ -344,7 +347,6 @@ public class SingleValuedRetrieverFactoryTest
                 this.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
 
         this.testDatabase.createMeasurementUnitTable( liquibaseDatabase );
-        this.testDatabase.createUnitConversionTable( liquibaseDatabase );
         this.testDatabase.createSourceTable( liquibaseDatabase );
         this.testDatabase.createProjectTable( liquibaseDatabase );
         this.testDatabase.createProjectSourceTable( liquibaseDatabase );
@@ -373,6 +375,7 @@ public class SingleValuedRetrieverFactoryTest
     {
         // Mock the sufficient elements of the ProjectConfig
         PairConfig pairsConfig = new PairConfig( CFS,
+                                                 null,
                                                  null,
                                                  null,
                                                  null,
@@ -440,7 +443,7 @@ public class SingleValuedRetrieverFactoryTest
         Mockito.when( project.getFeaturesCache() ).thenReturn( this.featuresCache );
 
         // Create the factory instance
-        UnitMapper unitMapper = UnitMapper.of( this.wresDatabase, CFS );
+        UnitMapper unitMapper = UnitMapper.of( this.measurementUnitsCache, CFS );
         this.factoryToTest = SingleValuedRetrieverFactory.of( project,
                                                               unitMapper );
     }

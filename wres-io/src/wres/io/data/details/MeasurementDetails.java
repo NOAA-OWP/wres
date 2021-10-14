@@ -1,10 +1,12 @@
 package wres.io.data.details;
 
+import java.sql.SQLException;
 import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 
@@ -18,9 +20,6 @@ public final class MeasurementDetails extends CachedDetail<MeasurementDetails, S
     private static final Logger
             LOGGER = LoggerFactory.getLogger( MeasurementDetails.class );
 
-	// Prevents asynchronous saving of identical measurementunits
-	private static final Object MEASUREMENTUNIT_SAVE_LOCK = new Object();
-
 	private String unit = null;
 	private Long measurementUnitID = null;
 
@@ -31,21 +30,21 @@ public final class MeasurementDetails extends CachedDetail<MeasurementDetails, S
 	public void setUnit(String unit)
 	{
 		if ( Objects.nonNull( unit ) && !unit.isBlank()
-			 && ( this.unit == null || !this.unit.equalsIgnoreCase( unit) ) )
+             && ( this.unit == null || !this.unit.equals( unit ) ) )
 		{
-			this.unit = unit.toLowerCase();
+            this.unit = unit;
 			this.measurementUnitID = null;
 		}
 	}
 
 	@Override
 	public int compareTo(MeasurementDetails other) {
-		return this.unit.toLowerCase().compareTo(other.unit.toLowerCase());
+        return this.unit.compareTo( other.unit );
 	}
 
 	@Override
 	public String getKey() {
-		return this.unit.toLowerCase();
+        return this.unit;
 	}
 
 	@Override
@@ -79,16 +78,60 @@ public final class MeasurementDetails extends CachedDetail<MeasurementDetails, S
 	protected DataScripter getInsertSelect( Database database )
 	{
         DataScripter script = new DataScripter( database );
-		script.addLine("SELECT measurementunit_id");
-		script.addLine("FROM wres.MeasurementUnit");
-		script.addLine("WHERE LOWER(unit_name) = LOWER(?);");
+        script.addLine( "INSERT INTO wres.MeasurementUnit ( unit_name ) ");
+        script.addTab().addLine( "SELECT ?" );
 		script.addArgument( this.unit );
+        script.addTab().addLine( "WHERE NOT EXISTS" );
+        script.addTab().addLine( "(" );
+        script.addTab( 2 ).addLine( "SELECT 1" );
+        script.addTab( 2 ).addLine( "FROM wres.MeasurementUnit" );
+        script.addTab( 2 ).addLine( "WHERE unit_name = ?");
+        script.addArgument( this.unit );
+        script.addTab().addLine( ")" );
+        script.setUseTransaction( true );
+        script.retryOnSerializationFailure();
+        script.retryOnUniqueViolation();
+        script.setHighPriority( true );
 		return script;
 	}
+
+    @Override
+    public void save( Database database ) throws SQLException
+    {
+        DataScripter script = this.getInsertSelect( database );
+        boolean performedInsert = script.execute() > 0;
+
+        if ( performedInsert )
+        {
+            this.measurementUnitID = script.getInsertedIds()
+                                           .get( 0 );
+        }
+        else
+        {
+            DataScripter scriptWithId = new DataScripter( database );
+            scriptWithId.setHighPriority( true );
+            scriptWithId.setUseTransaction( false );
+            scriptWithId.addLine( "SELECT measurementunit_id" );
+            scriptWithId.addLine( "FROM wres.MeasurementUnit" );
+            scriptWithId.addLine( "WHERE unit_name = ? ");
+            scriptWithId.addArgument( this.unit );
+            scriptWithId.setMaxRows( 1 );
+
+            try ( DataProvider data = scriptWithId.getData() )
+            {
+                this.update( data );
+            }
+        }
+
+        LOGGER.trace( "Did I create MeasurementUnit ID {}? {}",
+                      this.measurementUnitID,
+                      performedInsert );
+    }
 
 	@Override
 	protected Object getSaveLock()
 	{
-		return MEASUREMENTUNIT_SAVE_LOCK;
+        // Locking is done in the insert/select on db side instead of here.
+        return new Object();
 	}
 }

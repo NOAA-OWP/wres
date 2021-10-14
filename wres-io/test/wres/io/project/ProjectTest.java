@@ -175,7 +175,6 @@ class ProjectTest
                 this.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
 
         this.testDatabase.createMeasurementUnitTable( liquibaseDatabase );
-        this.testDatabase.createUnitConversionTable( liquibaseDatabase );
         this.testDatabase.createSourceTable( liquibaseDatabase );
         this.testDatabase.createProjectTable( liquibaseDatabase );
         this.testDatabase.createProjectSourceTable( liquibaseDatabase );
@@ -358,6 +357,7 @@ class ProjectTest
 
         return new ProjectConfig( inputs,
                                   new PairConfig( null,
+                                                  null,
                                                   null,
                                                   features,
                                                   featureGroups,

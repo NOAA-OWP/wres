@@ -159,6 +159,7 @@ public class FeatureFinder
         }
 
         PairConfig featurefulPairDeclaration = new PairConfig( originalPairDeclaration.getUnit(),
+                                                               originalPairDeclaration.getUnitAlias(),
                                                                originalPairDeclaration.getFeatureService(),
                                                                filledSingletonFeatures,
                                                                filledGroupedFeatures,

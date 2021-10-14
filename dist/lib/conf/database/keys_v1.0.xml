@@ -64,17 +64,4 @@
         </createIndex>
         <comment>Added an index on wres.TimeSeriesValue.timeseries_id</comment>
     </changeSet>
-    <changeSet id="Add UnitConversion Index - MeasurementUnit" author="">
-        <preConditions onFail="MARK_RAN">
-            <not>
-                <indexExists schemaName="wres" tableName="UnitConversion"
-                             columnNames="from_unit,to_unit" indexName="unitconversion_measurement_uix" />
-            </not>
-        </preConditions>
-        <createIndex tableName="UnitConversion" schemaName="wres" indexName="unitconversion_measurement_uix" unique="true">
-            <column name="from_unit" type="smallint" />
-            <column name="to_unit" type="smallint" />
-        </createIndex>
-        <comment>Added an index on wres.UnitConversion to_unit and from_unit</comment>
-    </changeSet>
 </databaseChangeLog>
