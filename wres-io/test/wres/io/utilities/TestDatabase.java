@@ -299,7 +299,7 @@ public class TestDatabase
     public void createMeasurementUnitTable( Database liquibaseDatabase )
             throws LiquibaseException
     {
-        Liquibase liquibase = new Liquibase( "database/wres.MeasurementUnit_v1.xml",
+        Liquibase liquibase = new Liquibase( "database/wres.measurementunit_v1.xml",
                                              new ClassLoaderResourceAccessor(),
                                              liquibaseDatabase );
         liquibase.update( new Contexts() );
