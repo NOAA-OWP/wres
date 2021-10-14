@@ -201,6 +201,7 @@ test
     def splittedTestJvmProperties = testJvmPropertiesRaw.trim().split( " " )
     println( "Test JVM System Properties split: ${splittedTestJvmProperties}" )
     def furtherSplittedTestJvmProperties = [:]
+    def lastSysProp = ""
 
     // Without the findall, a seemingly empty array still evaluates the "each"
     splittedTestJvmProperties.findAll().each{ s ->
@@ -209,10 +210,18 @@ test
             def noPrefix = s.substring( 2 )
             def pair = noPrefix.split( "=", 2 )
             furtherSplittedTestJvmProperties[pair[0]] = pair[1]
+            lastSysProp = pair[0]
         }
         else if ( s.startsWith( "-" ) )
         {
             jvmArgs += s
+        }
+        else
+        {
+            // Assume that another word after a space was meant to be applied
+            // to the previously-started system property. This helps with H2
+            // when setting the wres.databaseJdbcUrl string with spaces.
+            furtherSplittedTestJvmProperties[lastSysProp] = furtherSplittedTestJvmProperties[lastSysProp] + " " + s
         }
     }
 
