@@ -18,16 +18,18 @@ import si.uom.quantity.VolumetricFlowRate;
 import tech.units.indriya.AbstractUnit;
 import tech.units.indriya.format.EBNFUnitFormat;
 import tech.units.indriya.quantity.Quantities;
+import tech.units.indriya.unit.ProductUnit;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static systems.uom.common.USCustomary.FOOT;
 import static systems.uom.common.USCustomary.GALLON_LIQUID;
 import static systems.uom.common.USCustomary.INCH;
+import static systems.uom.common.USCustomary.CUBIC_FOOT;
 import static tech.units.indriya.unit.Units.CUBIC_METRE;
 import static tech.units.indriya.unit.Units.DAY;
-import static wres.datamodel.Units.CUBIC_FOOT_PER_SECOND;
-import static wres.datamodel.Units.CUBIC_METRE_PER_SECOND;
+import static tech.units.indriya.unit.Units.SECOND;
 
 /**
  * Experimental/exploratory as of 2021-02-17 commits
@@ -35,8 +37,13 @@ import static wres.datamodel.Units.CUBIC_METRE_PER_SECOND;
 
 public class UnitsTest
 {
+    static final Unit<VolumetricFlowRate> CUBIC_METRE_PER_SECOND =
+            new ProductUnit<>( CUBIC_METRE.divide( SECOND ) );
+    static final Unit<VolumetricFlowRate> CUBIC_FOOT_PER_SECOND =
+            new ProductUnit<>( CUBIC_FOOT.divide( SECOND ) );
     private static final Logger LOGGER =
             LoggerFactory.getLogger( UnitsTest.class );
+
     private static final List<String> UNITS_TO_PARSE =
             List.of( "g/l", "m", "m/s", "metre per second", "square foot",
                      "gallon", "gal", "sec", "m3", "litre", "kilograms", "kg",
@@ -44,8 +51,13 @@ public class UnitsTest
                      "CMS", "cubic metre per second", "m^2", "m^3/s", "meter",
                      "feet", "foot", "inches", "inch", "ft", "in", "FT", "IN",
                      "cms", "cfs", "m3 s-1", "m3/s", "ft^3/s", "kilo ft^3/s",
-                     "cubic foot / second", "Foot^3/Second", "Kft", "KFoot",
-                     "Foot", "ft^3*1000/s" );
+                     "cubic foot / second", "Foot^3/Second", "kft", "KFoot",
+                     "Foot", "ft^3*1000/s", "K", "degc", "C", "F", "c", "f",
+                     "°C", "°F", "MM", "CM", "mm", "cm", "celsius",
+                     "fahrenheit", "\u2103", "\u2109", "\u00b0F", "GALLON",
+                     "gi.us", "METRE", "fm", "fth_us", "pt_br", "DEGF",
+                     "gal/min", "ac-ft", "ac", "ac ft", "gal*1000000/d",
+                     "mm s^-1", "kg/m^2/h" );
 
     @Test
     public void testConvertFlow()
@@ -160,6 +172,8 @@ public class UnitsTest
     @Test
     public void exploreIndriyaUnitParsing()
     {
+        Unit<Length> foot = FOOT;
+
         for ( String stringToParse : UNITS_TO_PARSE )
         {
             try
@@ -218,10 +232,10 @@ public class UnitsTest
                         unit.getSymbol(),
                         unit.getDimension() );
             }
-            catch ( MeasurementParseException mpe )
+            catch ( MeasurementParseException | IllegalArgumentException e )
             {
                 LOGGER.debug( "Exception while parsing '{}': {}",
-                              stringToParse, mpe.getMessage() );
+                              stringToParse, e.getMessage() );
             }
         }
     }
@@ -245,5 +259,16 @@ public class UnitsTest
     {
         assertThrows( Units.UnsupportedUnitException.class,
                       () -> Units.getUnit( "pears/parsec" ) );
+    }
+
+    @Test
+    public void verifyAllConvenienceUnitsCanBeParsed()
+    {
+        for ( String stringToParse : Units.getAllConvenienceUnits() )
+        {
+            Unit<?> unit = AbstractUnit.parse( stringToParse );
+            LOGGER.debug( "Successfully parsed unit {} from string {}",
+                          unit, stringToParse );
+        }
     }
 }

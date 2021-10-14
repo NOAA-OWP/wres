@@ -590,7 +590,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
     private long getMeasurementUnitId( String measurementUnit ) throws SQLException
     {
         MeasurementUnits measurementUnitsCache = this.getMeasurementUnitsCache();
-        return measurementUnitsCache.getMeasurementUnitID( measurementUnit );
+        return measurementUnitsCache.getOrCreateMeasurementUnitId( measurementUnit );
     }
 
 

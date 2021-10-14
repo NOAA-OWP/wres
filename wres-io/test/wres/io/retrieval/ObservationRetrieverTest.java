@@ -45,6 +45,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.data.caching.Features;
+import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.details.EnsembleDetails;
 import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.MeasurementDetails;
@@ -73,6 +74,7 @@ public class ObservationRetrieverTest
     @Mock
     private Executor mockExecutor;
     private Features featuresCache;
+    private MeasurementUnits measurementUnitsCache;
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
     private Connection rawConnection;
@@ -131,6 +133,7 @@ public class ObservationRetrieverTest
 
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
         this.featuresCache = new Features( this.wresDatabase );
+        this.measurementUnitsCache = new MeasurementUnits( this.wresDatabase );
 
         // Create the connection and schema
         this.createTheConnectionAndSchema();
@@ -141,7 +144,7 @@ public class ObservationRetrieverTest
         // Add some data for testing
         this.addAnObservedTimeSeriesWithTenEventsToTheDatabase();
 
-        this.unitMapper = UnitMapper.of( this.wresDatabase, UNITS );
+        this.unitMapper = UnitMapper.of( this.measurementUnitsCache, UNITS );
     }
 
     @Test
@@ -351,7 +354,6 @@ public class ObservationRetrieverTest
         this.testDatabase.createFeatureTable( liquibaseDatabase );
         this.testDatabase.createEnsembleTable( liquibaseDatabase );
         this.testDatabase.createMeasurementUnitTable( liquibaseDatabase );
-        this.testDatabase.createUnitConversionTable( liquibaseDatabase );
         this.testDatabase.createTimeSeriesTable( liquibaseDatabase );
         this.testDatabase.createTimeSeriesValueTable( liquibaseDatabase );
     }

@@ -94,6 +94,7 @@ public class WriterTestHelper
 
         PairConfig pairConfig = new PairConfig( null,
                                                 null,
+                                                null,
                                                 features,
                                                 null,
                                                 null,

@@ -49,6 +49,7 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
+import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.details.EnsembleDetails;
 import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.MeasurementDetails;
@@ -72,6 +73,7 @@ public class EnsembleForecastRetrieverTest
     @Mock
     private Executor mockExecutor;
     private Features featuresCache;
+    private MeasurementUnits measurementUnitsCache;
     private Ensembles ensemblesCache;
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
@@ -162,12 +164,13 @@ public class EnsembleForecastRetrieverTest
 
         // Project depends on features cache. With ensemblesCache up here, NPE!
         this.featuresCache = new Features( this.wresDatabase );
+        this.measurementUnitsCache = new MeasurementUnits( this.wresDatabase );
 
         // Add some data for testing
         this.addOneForecastTimeSeriesWithFiveEventsAndThreeMembersToTheDatabase();
 
         // Create the unit mapper
-        this.unitMapper = UnitMapper.of( this.wresDatabase, UNITS );
+        this.unitMapper = UnitMapper.of( this.measurementUnitsCache, UNITS );
 
         // Create the orms
         this.ensemblesCache = new Ensembles( this.wresDatabase );
@@ -371,7 +374,6 @@ public class EnsembleForecastRetrieverTest
                 this.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
 
         this.testDatabase.createMeasurementUnitTable( liquibaseDatabase );
-        this.testDatabase.createUnitConversionTable( liquibaseDatabase );
         this.testDatabase.createSourceTable( liquibaseDatabase );
         this.testDatabase.createProjectTable( liquibaseDatabase );
         this.testDatabase.createProjectSourceTable( liquibaseDatabase );
