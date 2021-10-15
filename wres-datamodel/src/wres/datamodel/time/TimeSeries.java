@@ -2,6 +2,7 @@ package wres.datamodel.time;
 
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -224,7 +225,7 @@ public class TimeSeries<T>
          */
 
         private SortedSet<Event<T>> events =
-                new TreeSet<>( ( e1, e2 ) -> e1.getTime().compareTo( e2.getTime() ) );
+                new TreeSet<>( Comparator.comparing( Event::getTime ) );
 
         /**
          * The time-series metadata.
@@ -295,7 +296,9 @@ public class TimeSeries<T>
         {
             Objects.requireNonNull( event );
 
-            if ( this.hasEventAtThisTime( event ) )
+            boolean successfullyAdded = this.events.add( event );
+
+            if ( !successfullyAdded )
             {
                 throw new IllegalArgumentException( "Attempted to add an event at the same valid datetime as an "
                                                     + "existing event, which is not allowed. The duplicate event "
@@ -303,8 +306,6 @@ public class TimeSeries<T>
                                                     + event
                                                     + "'." );
             }
-
-            this.events.add( event );
 
             return this;
         }
