@@ -268,7 +268,7 @@ final class ProjectScriptGenerator
         script.addArgument( projectId );
         script.addTab( 2 ).addLine( "AND E.ensemble_name ", condition, " ?" );
         script.addArgument( ensembleName );
-        script.addLine( ");" );
+        script.addLine( ") as data_exists" );
 
         return script;
     }

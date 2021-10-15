@@ -665,7 +665,7 @@ public class Project
                 {
                     while ( dataProvider.next() )
                     {
-                        boolean dataExists = dataProvider.getBoolean( "exists" );
+                        boolean dataExists = dataProvider.getBoolean( "data_exists" );
 
                         if ( !dataExists )
                         {
