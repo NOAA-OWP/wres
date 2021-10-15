@@ -388,7 +388,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         {
             String columnName = this.getTimeColumnName();
 
-            String dateTemplate = "MAKE_DATE( CAST( EXTRACT( YEAR FROM " + columnName + " ) AS INTEGER ), ?, ?)";
+            String monthOfYearTemplate = "EXTRACT( MONTH FROM " + columnName + " )";
+            String dayOfMonthTemplate = "EXTRACT( DAY FROM " + columnName + " )";
 
             // Seasons can wrap, so order the start and end correctly
             MonthDay earliestDay = this.seasonStart;
@@ -402,9 +403,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 daysFlipped = true;
             }
 
-            String earliestConstraint = dateTemplate;
-            String latestConstraint = dateTemplate;
-
             if ( daysFlipped )
             {
                 script.addTab( tabsIn )
@@ -412,20 +410,18 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                                 "so we're going to check for values before the latest ",
                                 "date and after the earliest" );
                 script.addTab( tabsIn + 1 )
-                      .addLine( "CAST ("
-                                + columnName
-                                + " AS DATE ) <= ",
-                                earliestConstraint,
+                      .addLine( "( " + monthOfYearTemplate + " < ? OR ( ",
+                                monthOfYearTemplate + " = ? AND ",
+                                dayOfMonthTemplate + " <= ? ) )",
                                 " -- In the set [1/1, ",
                                 earliestDay.getMonthValue(),
                                 "/",
                                 earliestDay.getDayOfMonth(),
                                 "]" );
                 script.addTab( tabsIn + 1 )
-                      .addLine( "OR CAST (",
-                                columnName,
-                                " AS DATE ) >= ",
-                                latestConstraint,
+                      .addLine( "OR ( " + monthOfYearTemplate + " > ? OR ( ",
+                                monthOfYearTemplate + " = ? AND ",
+                                dayOfMonthTemplate + " >= ? ) )",
                                 " -- Or in the set [",
                                 latestDay.getMonthValue(),
                                 "/",
@@ -435,13 +431,19 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             }
             else
             {
-                script.addTab().addLine( "AND CAST (", columnName + " AS DATE ) >= ", earliestConstraint );
-                script.addTab().addLine( "AND CAST (", columnName, " AS DATE ) <= ", latestConstraint );
+                script.addTab().addLine( "AND ( " + monthOfYearTemplate + " > ? OR ( ",
+                                         monthOfYearTemplate + " = ? AND ",
+                                         dayOfMonthTemplate + " >= ? ) )" );
+                script.addTab().addLine( "AND ( " + monthOfYearTemplate + " < ? OR ( ",
+                                         monthOfYearTemplate + " = ? ",
+                                         "AND " + dayOfMonthTemplate + " <= ? ) )" );
             }
 
             // Add the parameters in order
             script.addArgument( earliestDay.getMonthValue() )
+                  .addArgument( earliestDay.getMonthValue() )
                   .addArgument( earliestDay.getDayOfMonth() )
+                  .addArgument( latestDay.getMonthValue() )
                   .addArgument( latestDay.getMonthValue() )
                   .addArgument( latestDay.getDayOfMonth() );
         }
