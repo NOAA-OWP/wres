@@ -17,6 +17,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.datamodel.MissingValues;
 import wres.util.TimeHelper;
 
@@ -28,6 +31,7 @@ import wres.util.TimeHelper;
  */
 public class DataSetProvider implements DataProvider
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( DataSetProvider.class );
     private Map<String, Integer> columnNames;
     private List<Object[]> rows;
     private int currentRow = -1;
@@ -49,7 +53,8 @@ public class DataSetProvider implements DataProvider
 
         DataSetProvider dataSetProvider = new DataSetProvider(  );
 
-        Iterable<String> columns = provider.getColumnNames();
+        List<String> columns = provider.getColumnNames();
+        LOGGER.debug( "Created DataSetProvider (1) with columns {}", columns );
 
         int columnIndex = 0;
 
@@ -58,6 +63,9 @@ public class DataSetProvider implements DataProvider
             dataSetProvider.columnNames.put( columnName, columnIndex );
             columnIndex++;
         }
+
+        LOGGER.debug( "DataSetProvider (1) now has columnNames {}",
+                      dataSetProvider.columnNames );
 
         while (provider.next())
         {
@@ -70,7 +78,11 @@ public class DataSetProvider implements DataProvider
     static DataSetProvider from(final Map<String, Integer> columnNames, final List<Object[]> rows )
     {
         DataSetProvider provider = new DataSetProvider();
+        LOGGER.debug( "Created DataSetProvider (2) with columnNames {}",
+                      columnNames );
         provider.columnNames.putAll( columnNames );
+        LOGGER.debug( "DataSetProvider (2) now has columnNames {}",
+                      provider.columnNames );
         provider.rows.addAll(rows);
         return provider;
     }

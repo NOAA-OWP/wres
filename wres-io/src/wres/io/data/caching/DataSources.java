@@ -115,7 +115,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         Database database = this.getDatabase();
         DataScripter script = new DataScripter( database );
         script.setHighPriority( true );
-        script.addLine( "SELECT source_id, path, output_time::text, lead, hash, is_point_data" );
+        script.addLine( "SELECT source_id, path, output_time::text as output_time, lead, hash, is_point_data" );
         script.addLine( "FROM wres.Source" );
         script.addLine( "WHERE source_id = ?" );
         script.addArgument( id );
@@ -194,7 +194,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
             DataScripter script = new DataScripter( database );
             script.setHighPriority( true );
 
-            script.addLine("SELECT source_id, path, output_time::text, lead, hash, is_point_data");
+            script.addLine("SELECT source_id, path, output_time::text as output_time, lead, hash, is_point_data");
             script.addLine("FROM wres.Source");
             script.addLine("WHERE hash = ?");
             script.addArgument( hash );
@@ -238,7 +238,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         {
             Database database = this.getDatabase();
             DataScripter script = new DataScripter( database );
-            script.addLine("SELECT source_id, path, output_time::text, lead, hash, is_point_data");
+            script.addLine("SELECT source_id, path, output_time::text as output_time, lead, hash, is_point_data");
             script.addLine("FROM wres.Source");
             script.addLine( "WHERE hash = ?" );
             script.addArgument( hash );
