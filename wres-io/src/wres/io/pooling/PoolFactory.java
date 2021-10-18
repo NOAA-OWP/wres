@@ -23,7 +23,6 @@ import wres.config.generated.CrossPair;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DoubleBoundsType;
-import wres.config.generated.Feature;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
@@ -57,7 +56,6 @@ import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
 import wres.io.retrieval.RetrieverFactory;
-import wres.io.retrieval.UnitMapper;
 import wres.statistics.generated.Evaluation;
 
 /**
@@ -89,29 +87,26 @@ public class PoolFactory
     private static final String WHICH_IS_NOT_ALLOWED = "', which is not allowed.";
 
     /**
-     * Create pools for single-valued data from a prescribed {@link Project} and {@link FeatureGroup}.
+     * Create pools for single-valued data. This method will attempt to retrieve and re-use data that is common to 
+     * multiple pools. Thus, it is generally better to provide a list of pool requests that represent connected pools, 
+     * such as pools that all belong to the same feature group, rather than supplying a long list of unconnected pools, 
+     * such as pools that belong to many feature groups.
      * 
-     * @param evaluation the evaluation description
-     * @param project the project for which pools are required
-     * @param featureGroup the feature group for which pools are required
-     * @param unitMapper the mapper to convert measurement units
-     * @param retrieverFactory the retriever factory
+     * @param project the project for which pools are required, not null
+     * @param poolRequests the pool requests, not null
+     * @param retrieverFactory the retriever factory, not null
      * @return a list of suppliers that supply pools of pairs
      * @throws NullPointerException if any input is null
      * @throws IllegalArgumentException if the project is not consistent with the generation of pools for single-valued
      *            data
      */
 
-    public static List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> getSingleValuedPools( Evaluation evaluation,
-                                                                                               Project project,
-                                                                                               FeatureGroup featureGroup,
-                                                                                               UnitMapper unitMapper,
+    public static List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> getSingleValuedPools( Project project,
+                                                                                               List<PoolRequest> poolRequests,
                                                                                                RetrieverFactory<Double, Double> retrieverFactory )
     {
-        Objects.requireNonNull( evaluation, "Cannot create pools from a null evaluation." );
         Objects.requireNonNull( project, "Cannot create pools from a null project." );
-        Objects.requireNonNull( unitMapper, "Cannot create pools without a measurement unit mapper." );
-        Objects.requireNonNull( featureGroup, "Cannot create pools without a feature group description." );
+        Objects.requireNonNull( poolRequests, "Cannot create pools without list of pool requests." );
         Objects.requireNonNull( retrieverFactory, "Cannot create pools without a retriever factory." );
 
         // Validate the project declaration for the required data type
@@ -125,12 +120,8 @@ public class PoolFactory
 
         long projectId = project.getId();
 
-        LOGGER.debug( "Creating pool suppliers for project '{}' and feature group '{}'.",
-                      projectId,
-                      featureGroup );
-
-        // Get the times scale
-        TimeScaleOuter desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
+        LOGGER.debug( "Creating pool suppliers for project '{}'.",
+                      projectId );
 
         // Create a default pairer for finite left and right values
         TimePairingType timePairingType = PoolFactory.getTimePairingTypeFromInputsConfig( inputsConfig );
@@ -154,21 +145,13 @@ public class PoolFactory
         // Generated baseline declared?
         if ( ConfigHelper.hasGeneratedBaseline( baselineConfig ) )
         {
-            LOGGER.debug( "While creating pools for project '{}' and feature group '{}', discovered a baseline "
+            LOGGER.debug( "While creating pools for project '{}', discovered a baseline "
                           + "to generate from a data source.",
-                          projectId,
-                          featureGroup );
-
-            PoolMetadata baselineMetadata = PoolFactory.createMetadata( evaluation,
-                                                                        featureGroup,
-                                                                        TimeWindowOuter.of(),
-                                                                        desiredTimeScale,
-                                                                        LeftOrRightOrBaseline.BASELINE );
+                          projectId );
 
             baselineGenerator = PoolFactory.getGeneratedBaseline( baselineConfig,
                                                                   retrieverFactory,
                                                                   upscaler,
-                                                                  baselineMetadata,
                                                                   Double::isFinite );
         }
 
@@ -178,11 +161,6 @@ public class PoolFactory
         // Right transformer may consider the encapsulating event
         UnaryOperator<Event<Double>> rightTransformer =
                 next -> Event.of( next.getTime(), leftTransformer.applyAsDouble( next.getValue() ) );
-
-        // Create the pool requests
-        List<PoolRequest> poolRequests = PoolFactory.getPoolRequests( evaluation,
-                                                                      projectConfig,
-                                                                      Set.of( featureGroup ) );
 
         // Build and return the pool suppliers
         return new PoolsGenerator.Builder<Double, Double>().setProject( project )
@@ -202,29 +180,26 @@ public class PoolFactory
     }
 
     /**
-     * Create pools for ensemble data from a prescribed {@link Project} and {@link Feature}.
+     * Create pools for ensemble data. This method will attempt to retrieve and re-use data that is common to multiple 
+     * pools. Thus, it is generally better to provide a list of pool requests that represent connected pools, such as 
+     * pools that all belong to the same feature group, rather than supplying a long list of unconnected pools, such 
+     * as pools that belong to many feature groups.
      * 
-     * @param evaluation the evaluation description
-     * @param project the project for which pools are required
-     * @param featureGroup the feature group for which pools are required
-     * @param unitMapper the mapper to convert measurement units
-     * @param retrieverFactory the retriever factory
+     * @param project the project for which pools are required, not null
+     * @param poolRequests the pool requests, not null
+     * @param retrieverFactory the retriever factory, not null
      * @return a list of suppliers that supply pools of pairs
      * @throws NullPointerException if the input is null
      * @throws IllegalArgumentException if the project is not consistent with the generation of pools for single-valued
      *            data
      */
 
-    public static List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> getEnsemblePools( Evaluation evaluation,
-                                                                                             Project project,
-                                                                                             FeatureGroup featureGroup,
-                                                                                             UnitMapper unitMapper,
+    public static List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> getEnsemblePools( Project project,
+                                                                                             List<PoolRequest> poolRequests,
                                                                                              RetrieverFactory<Double, Ensemble> retrieverFactory )
     {
-        Objects.requireNonNull( evaluation, "Cannot create pools from a null evaluation." );
         Objects.requireNonNull( project, "Cannot create pools from a null project." );
-        Objects.requireNonNull( unitMapper, "Cannot create pools without a measurement unit mapper." );
-        Objects.requireNonNull( featureGroup, "Cannot create pools without a feature group description." );
+        Objects.requireNonNull( poolRequests, "Cannot create pools without list of pool requests." );
         Objects.requireNonNull( retrieverFactory, "Cannot create pools without a retriever factory." );
 
         // Validate the project declaration for the required data type
@@ -237,9 +212,8 @@ public class PoolFactory
 
         long projectId = project.getId();
 
-        LOGGER.debug( "Creating pool suppliers for project '{}' and feature group '{}'.",
-                      projectId,
-                      featureGroup );
+        LOGGER.debug( "Creating pool suppliers for project '{}'.",
+                      projectId );
 
         // Create a default pairer for finite left values and one or more finite right values
         TimePairingType timePairingType = PoolFactory.getTimePairingTypeFromInputsConfig( inputsConfig );
@@ -274,11 +248,6 @@ public class PoolFactory
         UnaryOperator<Event<Ensemble>> baselineTransformer = PoolFactory.getEnsembleTransformer( leftTransformer,
                                                                                                  removeMemberByValidYearBaseline );
 
-        // Create the pool requests
-        List<PoolRequest> poolRequests = PoolFactory.getPoolRequests( evaluation,
-                                                                      projectConfig,
-                                                                      Set.of( featureGroup ) );
-
         // Build and return the pool suppliers
         return new PoolsGenerator.Builder<Double, Ensemble>().setProject( project )
                                                              .setRetrieverFactory( retrieverFactory )
@@ -297,11 +266,12 @@ public class PoolFactory
     }
 
     /**
-     * Generates the {@link PoolRequest} associated with a project in order to drive pool creation.
+     * Generates the {@link PoolRequest} associated with a particular {@link FeatureGroup} in order to drive pool 
+     * creation.
      * 
      * @param evaluation the evaluation description
      * @param projectConfig the project declaration
-     * @param featureGroups the feature groups
+     * @param featureGroup the feature group
      * @return the pool requests
      * @throws NullPointerException if the input is null
      * @throws PoolCreationException if the pool could not be created for any other reason
@@ -309,11 +279,11 @@ public class PoolFactory
 
     public static List<PoolRequest> getPoolRequests( Evaluation evaluation,
                                                      ProjectConfig projectConfig,
-                                                     Set<FeatureGroup> featureGroups )
+                                                     FeatureGroup featureGroup )
     {
         Objects.requireNonNull( evaluation );
         Objects.requireNonNull( projectConfig );
-        Objects.requireNonNull( featureGroups );
+        Objects.requireNonNull( featureGroup );
 
         PairConfig pairConfig = projectConfig.getPair();
 
@@ -326,32 +296,29 @@ public class PoolFactory
 
         List<PoolRequest> poolRequests = new ArrayList<>();
 
-        // Iterate the features and time windows, creating metadata for each
-        for ( FeatureGroup featureGroup : featureGroups )
+        // Iterate the time windows, creating metadata for each
+        for ( TimeWindowOuter timeWindow : timeWindows )
         {
-            for ( TimeWindowOuter timeWindow : timeWindows )
+            PoolMetadata mainMetadata = PoolFactory.createMetadata( evaluation,
+                                                                    featureGroup,
+                                                                    timeWindow,
+                                                                    desiredTimeScale,
+                                                                    LeftOrRightOrBaseline.RIGHT );
+
+            // Create the basic metadata
+            PoolMetadata baselineMetadata = null;
+            if ( ConfigHelper.hasBaseline( projectConfig ) )
             {
-                PoolMetadata mainMetadata = PoolFactory.createMetadata( evaluation,
-                                                                        featureGroup,
-                                                                        timeWindow,
-                                                                        desiredTimeScale,
-                                                                        LeftOrRightOrBaseline.RIGHT );
-
-                // Create the basic metadata
-                PoolMetadata baselineMetadata = null;
-                if ( ConfigHelper.hasBaseline( projectConfig ) )
-                {
-                    baselineMetadata = PoolFactory.createMetadata( evaluation,
-                                                                   featureGroup,
-                                                                   timeWindow,
-                                                                   desiredTimeScale,
-                                                                   LeftOrRightOrBaseline.BASELINE );
-                }
-
-                PoolRequest request = PoolRequest.of( mainMetadata, baselineMetadata );
-
-                poolRequests.add( request );
+                baselineMetadata = PoolFactory.createMetadata( evaluation,
+                                                               featureGroup,
+                                                               timeWindow,
+                                                               desiredTimeScale,
+                                                               LeftOrRightOrBaseline.BASELINE );
             }
+
+            PoolRequest request = PoolRequest.of( mainMetadata, baselineMetadata );
+
+            poolRequests.add( request );
         }
 
         return Collections.unmodifiableList( poolRequests );
@@ -562,17 +529,15 @@ public class PoolFactory
             getGeneratedBaseline( DataSourceConfig baselineConfig,
                                   RetrieverFactory<L, R> retrieverFactory,
                                   TimeSeriesUpscaler<R> upscaler,
-                                  PoolMetadata baselineMeta,
                                   Predicate<R> admissibleValue )
     {
         Objects.requireNonNull( baselineConfig );
         Objects.requireNonNull( retrieverFactory );
-        Objects.requireNonNull( baselineMeta );
 
         // Persistence is supported
         if ( baselineConfig.getTransformation() == SourceTransformationType.PERSISTENCE )
         {
-            LOGGER.trace( "Creating a persistence generator for pool {}.", baselineMeta );
+            LOGGER.trace( "Creating a persistence generator for data source {}.", baselineConfig );
 
             // Map from the input data type to the required type
             return features -> {

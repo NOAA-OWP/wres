@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -34,7 +33,7 @@ import wres.statistics.generated.Evaluation;
 class PoolFactoryTest
 {
     @Test
-    public void testGetPoolRequestsForEighteenTimeWindowsAndTwoFeatureGroupsProducesThirtySixPoolRequests()
+    public void testGetPoolRequestsForEighteenTimeWindowsAndOneFeatureGroupsProducesEighteenPoolRequests()
     {
         // Mock the sufficient elements of the ProjectConfig
         IntBoundsType leadBoundsConfig = new IntBoundsType( 0, 40 );
@@ -106,17 +105,10 @@ class PoolFactoryTest
         FeatureKey keyThree = new FeatureKey( "DRRC2HSF", null, null, null );
         FeatureTuple aTuple = new FeatureTuple( keyOne, keyTwo, keyThree );
         
-        FeatureKey keyFour = new FeatureKey( "DOSC1", null, null, null );
-        FeatureKey keyFive = new FeatureKey( "DOSC1HSF", null, null, null );
-        FeatureKey keySix = new FeatureKey( "DOSC1HSF", null, null, null );
-        FeatureTuple anotherTuple = new FeatureTuple( keyFour, keyFive, keySix );
-        
         FeatureGroup groupOne = FeatureGroup.of( aTuple );
-        FeatureGroup groupTwo = FeatureGroup.of( anotherTuple );
-        Set<FeatureGroup> featureGroups = Set.of( groupOne, groupTwo );
         
-        List<PoolRequest> actual = PoolFactory.getPoolRequests( evaluationDescription, projectConfig, featureGroups );
+        List<PoolRequest> actual = PoolFactory.getPoolRequests( evaluationDescription, projectConfig, groupOne );
 
-        assertEquals( 36, actual.size() );
+        assertEquals( 18, actual.size() );
     }
 }

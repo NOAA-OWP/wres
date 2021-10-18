@@ -26,6 +26,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.statistics.StatisticsStore;
@@ -186,21 +187,22 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                            .getRight()
                                            .getType();
 
+        // Create feature-shaped pool requests
+        List<PoolRequest> poolRequests = PoolFactory.getPoolRequests( this.evaluation.getEvaluationDescription(),
+                                                                      projectConfig,
+                                                                      this.getFeatureGroup() );
+
         // In future, other types of pools may be handled here
         // Pairs that contain ensemble forecasts
         if ( type == DatasourceType.ENSEMBLE_FORECASTS )
         {
-
-            // Create a feature-shaped retriever factory to support retrieval for this project
+            // Create a retriever factory to support retrieval for this project
             RetrieverFactory<Double, Ensemble> retrieverFactory = EnsembleRetrieverFactory.of( this.project,
-                                                                                               this.getFeatureGroup(),
                                                                                                this.unitMapper );
 
             List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> pools =
-                    PoolFactory.getEnsemblePools( this.evaluation.getEvaluationDescription(),
-                                                  this.project,
-                                                  this.getFeatureGroup(),
-                                                  this.unitMapper,
+                    PoolFactory.getEnsemblePools( this.project,
+                                                  poolRequests,
                                                   retrieverFactory );
             this.monitor.setPoolCount( pools.size() );
 
@@ -230,15 +232,13 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         // All other types
         else
         {
-            // Create a feature-shaped retriever factory to support retrieval for this project
+            // Create a retriever factory to support retrieval for this project
             RetrieverFactory<Double, Double> retrieverFactory = SingleValuedRetrieverFactory.of( this.project,
                                                                                                  this.unitMapper );
 
             List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> pools =
-                    PoolFactory.getSingleValuedPools( this.evaluation.getEvaluationDescription(),
-                                                      this.project,
-                                                      this.featureGroup,
-                                                      this.unitMapper,
+                    PoolFactory.getSingleValuedPools( this.project,
+                                                      poolRequests,
                                                       retrieverFactory );
             this.monitor.setPoolCount( pools.size() );
 
@@ -497,7 +497,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
             // Register features with data
             this.registerFeaturesWithData( pool, featuresWithData );
-            
+
             // Implement all processing and store the results
             try
             {
@@ -552,7 +552,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @param pool the pool
      * @param featuresWithData an atomic reference to update with the set of features that produced some data
      */
-    
+
     private <L, R> void registerFeaturesWithData( Pool<TimeSeries<Pair<L, R>>> pool,
                                                   AtomicReference<Set<FeatureTuple>> featuresWithData )
     {
@@ -570,7 +570,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
         featuresWithData.getAndUpdate( operator );
     }
-    
+
     /**
      * @param metrics the metrics
      * @return the ensemble processors

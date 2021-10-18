@@ -22,7 +22,6 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.Ensemble;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -38,7 +37,7 @@ import wres.io.utilities.Database;
  * evaluation. This factory takes a "per-feature-view" of retrieval whereby a feature is supplied on construction. In 
  * future, other implementations may not take a per-feature view (e.g., a multiple-feature-view or a grid-view).
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemble>
@@ -102,17 +101,15 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
      * Returns an instance.
      *
      * @param project the project
-     * @param featureGroup a feature group to evaluate
      * @param unitMapper the unit mapper
      * @return a factory instance
      * @throws NullPointerException if any input is null
      */
 
     public static EnsembleRetrieverFactory of( Project project,
-                                               FeatureGroup featureGroup,
                                                UnitMapper unitMapper )
     {
-        return new EnsembleRetrieverFactory( project, featureGroup, unitMapper );
+        return new EnsembleRetrieverFactory( project, unitMapper );
     }
 
     @Override
@@ -378,18 +375,15 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
      * Hidden constructor.
      * 
      * @param project the project
-     * @param feature a feature group to evaluate
      * @param unitMapper the unit mapper
      * @throws NullPointerException if any input is null
      */
 
     private EnsembleRetrieverFactory( Project project,
-                                      FeatureGroup featureGroup,
                                       UnitMapper unitMapper )
     {
         Objects.requireNonNull( project );
         Objects.requireNonNull( unitMapper );
-        Objects.requireNonNull( featureGroup );
 
         this.project = project;
         this.unitMapper = unitMapper;
