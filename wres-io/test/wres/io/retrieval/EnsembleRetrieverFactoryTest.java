@@ -45,7 +45,6 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
-import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.Event;
@@ -492,9 +491,8 @@ public class EnsembleRetrieverFactoryTest
         Mockito.when( project.getEnsemblesCache() ).thenReturn( this.ensemblesCache );
 
         // Create the factory instance
-        FeatureGroup featureGroup = FeatureGroup.of( allFeatures );
         UnitMapper unitMapper = UnitMapper.of( this.measurementUnitsCache, CFS );
-        this.factoryToTest = EnsembleRetrieverFactory.of( project, featureGroup, unitMapper );
+        this.factoryToTest = EnsembleRetrieverFactory.of( project, unitMapper );
     }
 
     /**

@@ -27,6 +27,7 @@ import wres.config.generated.DataSourceConfig.Variable;
 import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
@@ -159,12 +160,14 @@ public class PoolsGeneratorTest
 
         FeatureGroup featureGroup = FeatureGroup.of( new FeatureTuple( feature, feature, null ) );
 
+        List<PoolRequest> poolRequests = PoolFactory.getPoolRequests( evaluationDescription,
+                                                                      projectConfig,
+                                                                      featureGroup );
+
         // Create the actual output
         List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> actual =
-                PoolFactory.getSingleValuedPools( evaluationDescription,
-                                                  project,
-                                                  featureGroup,
-                                                  this.unitMapper,
+                PoolFactory.getSingleValuedPools( project,
+                                                  poolRequests,
                                                   retrieverFactory );
 
         // Assert expected number of suppliers
@@ -271,12 +274,14 @@ public class PoolsGeneratorTest
 
         FeatureGroup featureGroup = FeatureGroup.of( new FeatureTuple( feature, feature, null ) );
 
+        List<PoolRequest> poolRequests = PoolFactory.getPoolRequests( evaluationDescription,
+                                                                      projectConfig,
+                                                                      featureGroup );
+        
         // Create the actual output
         List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> actual =
-                PoolFactory.getEnsemblePools( evaluationDescription,
-                                              project,
-                                              featureGroup,
-                                              this.unitMapper,
+                PoolFactory.getEnsemblePools( project,
+                                              poolRequests,
                                               retrieverFactory );
 
         // Assert expected number of suppliers
