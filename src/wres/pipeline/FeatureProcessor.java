@@ -73,6 +73,12 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
     private final FeatureGroup featureGroup;
 
     /**
+     * The pool requests associated with the feature group.
+     */
+    
+    private final List<PoolRequest> poolRequests;
+    
+    /**
      * The project.
      */
 
@@ -131,6 +137,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * 
      * @param evaluationDetails the evaluation details
      * @param featureGroup the feature group to evaluate
+     * @param poolRequests the pool requests associated with the feature group
      * @param unitMapper the unit mapper
      * @param executors the executors for pairs, thresholds, and metrics
      * @param sharedWriters shared writers
@@ -139,6 +146,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
     FeatureProcessor( EvaluationDetails evaluationDetails,
                       FeatureGroup featureGroup,
+                      List<PoolRequest> poolRequests,
                       UnitMapper unitMapper,
                       Executors executors,
                       SharedWriters sharedWriters )
@@ -156,8 +164,10 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         Objects.requireNonNull( sharedWriters );
         Objects.requireNonNull( localEvaluation );
         Objects.requireNonNull( localMonitor );
+        Objects.requireNonNull( poolRequests );
 
         this.featureGroup = featureGroup;
+        this.poolRequests = poolRequests;
         this.resolvedProject = localResolvedProject;
         this.project = localProject;
         this.unitMapper = unitMapper;
@@ -187,11 +197,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                            .getRight()
                                            .getType();
 
-        // Create feature-shaped pool requests
-        List<PoolRequest> poolRequests = PoolFactory.getPoolRequests( this.evaluation.getEvaluationDescription(),
-                                                                      projectConfig,
-                                                                      this.getFeatureGroup() );
-
         // In future, other types of pools may be handled here
         // Pairs that contain ensemble forecasts
         if ( type == DatasourceType.ENSEMBLE_FORECASTS )
@@ -202,7 +207,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
             List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> pools =
                     PoolFactory.getEnsemblePools( this.project,
-                                                  poolRequests,
+                                                  this.poolRequests,
                                                   retrieverFactory );
             this.monitor.setPoolCount( pools.size() );
 
@@ -238,7 +243,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
             List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> pools =
                     PoolFactory.getSingleValuedPools( this.project,
-                                                      poolRequests,
+                                                      this.poolRequests,
                                                       retrieverFactory );
             this.monitor.setPoolCount( pools.size() );
 

@@ -685,7 +685,8 @@ public class MessageFactoryTest
                                           TIME_WINDOW,
                                           timeScale,
                                           threshold,
-                                          false );
+                                          false,
+                                          1 );
 
         PoolMetadata metadata = PoolMetadata.of( evaluation, pool );
 
@@ -756,7 +757,8 @@ public class MessageFactoryTest
                                           TIME_WINDOW,
                                           timeScale,
                                           threshold,
-                                          false );
+                                          false,
+                                          1 );
 
         PoolMetadata metadata = PoolMetadata.of( evaluation, pool );
 
@@ -837,7 +839,8 @@ public class MessageFactoryTest
                                           TIME_WINDOW,
                                           timeScale,
                                           threshold,
-                                          false );
+                                          false,
+                                          1 );
 
         PoolMetadata metadata = PoolMetadata.of( evaluation, pool );
 
@@ -966,7 +969,8 @@ public class MessageFactoryTest
                                           timeOne,
                                           null,
                                           threshold,
-                                          false );
+                                          false,
+                                          1 );
 
         PoolMetadata fakeMetadata = PoolMetadata.of( evaluation, pool );
 
@@ -1023,7 +1027,8 @@ public class MessageFactoryTest
                                           timeOne,
                                           null,
                                           threshold,
-                                          false );
+                                          false,
+                                          1 );
 
         PoolMetadata fakeMetadata = PoolMetadata.of( evaluation, pool );
 

@@ -58,7 +58,8 @@ public final class ScoreStatisticOuterTest
                                           null,
                                           null,
                                           null,
-                                          false );
+                                          false,
+                                          1 );
         this.metadata = PoolMetadata.of( evaluation, pool );
 
         this.one =
@@ -92,7 +93,8 @@ public final class ScoreStatisticOuterTest
                                           null,
                                           null,
                                           null,
-                                          false );
+                                          false,
+                                          1 );
 
         PoolMetadata m1 = PoolMetadata.of( evaluation, pool );
 
@@ -104,7 +106,8 @@ public final class ScoreStatisticOuterTest
                                              null,
                                              null,
                                              null,
-                                             false );
+                                             false,
+                                             1 );
 
         PoolMetadata m3 = PoolMetadata.of( evaluation, poolTwo );
 

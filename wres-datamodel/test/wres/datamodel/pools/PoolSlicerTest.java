@@ -344,7 +344,8 @@ class PoolSlicerTest
                                                           Instant.parse( "1985-12-31T23:59:59Z" ) ),
                                       null,
                                       null,
-                                      false );
+                                      false,
+                                      1 );
 
         PoolMetadata m1 = PoolMetadata.of( evaluation, poolOne );
 
@@ -356,7 +357,8 @@ class PoolSlicerTest
                                                           Instant.parse( "1986-12-31T23:59:59Z" ) ),
                                       null,
                                       null,
-                                      false );
+                                      false,
+                                      1 );
 
         PoolMetadata m2 = PoolMetadata.of( evaluation, poolTwo );
 
@@ -368,7 +370,8 @@ class PoolSlicerTest
                                                           Instant.parse( "1988-01-01T00:00:00Z" ) ),
                                       null,
                                       null,
-                                      false );
+                                      false,
+                                      1 );
 
         PoolMetadata m3 = PoolMetadata.of( evaluation, poolThree );
 
@@ -382,7 +385,8 @@ class PoolSlicerTest
                                                           Instant.parse( "1988-01-01T00:00:00Z" ) ),
                                       null,
                                       null,
-                                      false );
+                                      false,
+                                      1 );
 
 
         PoolMetadata benchmark = PoolMetadata.of( evaluation, poolFour );
@@ -432,12 +436,12 @@ class PoolSlicerTest
                                           .build();
 
         wres.statistics.generated.Pool poolOne =
-                MessageFactory.parse( FeatureGroup.of( drrc3 ), null, null, null, false );
+                MessageFactory.parse( FeatureGroup.of( drrc3 ), null, null, null, false, 1 );
 
         PoolMetadata failOne = PoolMetadata.of( evaluation, poolOne );
 
         wres.statistics.generated.Pool poolTwo =
-                MessageFactory.parse( FeatureGroup.of( drrc3 ), null, TimeScaleOuter.of(), null, false );
+                MessageFactory.parse( FeatureGroup.of( drrc3 ), null, TimeScaleOuter.of(), null, false, 1 );
 
         PoolMetadata failTwo = PoolMetadata.of( evaluation, poolTwo );
 
@@ -487,7 +491,8 @@ class PoolSlicerTest
                                       OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                                                 Operator.GREATER,
                                                                                 ThresholdDataType.LEFT ) ),
-                                      false );
+                                      false,
+                                      1 );
 
         wres.statistics.generated.Pool poolTwo =
                 MessageFactory.parse( FeatureGroup.of( new FeatureTuple( FeatureKey.of( "D" ),
@@ -499,7 +504,8 @@ class PoolSlicerTest
                                       OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 2.0 ),
                                                                                 Operator.GREATER,
                                                                                 ThresholdDataType.LEFT ) ),
-                                      false );
+                                      false,
+                                      1 );
 
         PoolMetadata poolMetaThree =
                 PoolMetadata.of( evaluationOne, poolOne );

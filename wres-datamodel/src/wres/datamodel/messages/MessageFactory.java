@@ -188,7 +188,7 @@ public class MessageFactory
     }
 
     /**
-     * Builds a pool from the input, some of which may be missing.
+     * Builds a pool from the input, some of which may be missing. The pool is assigned the default identifier.
      * 
      * @param featureGroup the feature group
      * @param timeWindow the time window
@@ -204,9 +204,31 @@ public class MessageFactory
                               OneOrTwoThresholds thresholds,
                               boolean isBaselinePool )
     {
+        return MessageFactory.parse( featureGroup, timeWindow, timeScale, thresholds, isBaselinePool, 0 );
+    }
+    
+    /**
+     * Builds a pool from the input, some of which may be missing.
+     * 
+     * @param featureGroup the feature group
+     * @param timeWindow the time window
+     * @param timeScale the time scale
+     * @param thresholds the thresholds
+     * @param isBaselinePool is true if the pool refers to pairs of left and baseline data, otherwise left and right
+     * @param poolId the pool identifier
+     * @return the pool
+     */
 
+    public static Pool parse( FeatureGroup featureGroup,
+                              TimeWindowOuter timeWindow,
+                              TimeScaleOuter timeScale,
+                              OneOrTwoThresholds thresholds,
+                              boolean isBaselinePool,
+                              long poolId )
+    {
         Pool.Builder poolBuilder = Pool.newBuilder()
-                                       .setIsBaselinePool( isBaselinePool );
+                                       .setIsBaselinePool( isBaselinePool )
+                                       .setPoolId( poolId );
 
         // Feature tuple
         if ( Objects.nonNull( featureGroup ) )

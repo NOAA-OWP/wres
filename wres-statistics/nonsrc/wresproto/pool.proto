@@ -52,4 +52,7 @@ message Pool
     string region_name = 8;
     // The name of the spatial aggregation or geographic region associated with 
     // the geometries (e.g., Patagonia).
+
+    int64 pool_id = 9;
+    // A unique identifier for the pool.
 }

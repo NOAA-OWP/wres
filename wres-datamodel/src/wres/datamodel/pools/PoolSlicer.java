@@ -574,7 +574,8 @@ public class PoolSlicer
                                                                          unionWindow,
                                                                          test.getTimeScale(),
                                                                          threshold,
-                                                                         test.getPool().getIsBaselinePool() );
+                                                                         test.getPool().getIsBaselinePool(),
+                                                                         test.getPool().getPoolId() );
 
         return PoolMetadata.of( test.getEvaluation(), unionPool );
     }

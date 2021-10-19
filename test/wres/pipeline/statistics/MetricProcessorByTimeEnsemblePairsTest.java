@@ -572,7 +572,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                   () -> processor.apply( pairs ) );
 
         assertEquals( "Cannot add quantiles to probability thresholds without a climatological data source. Add a "
-                      + "climatological data source to pool PoolMetadata[leftDataName=,rightDataName=,"
+                      + "climatological data source to pool PoolMetadata[poolId=0,leftDataName=,rightDataName=,"
                       + "baselineDataName=,leftVariableName=,rightVariableName=MAP,baselineVariableName=,"
                       + "isBaselinePool=false,features=FeatureGroup[name=,features=[FeatureTuple[left="
                       + "FeatureKey[name=DRRC2,description=,srid=0,wkt=],right=FeatureKey[name=DRRC2,description=,"
