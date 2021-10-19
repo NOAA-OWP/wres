@@ -50,18 +50,18 @@
     <inputs>
         <left>
             <type>observations</type>
-            <source format="PI-XML">/mnt/wres_share/systests/data/DRRC2QINE.xml</source>
+            <source>/mnt/wres_share/systests/data/DRRC2QINE.xml</source>
             <variable>QINE</variable>
         </left>
         <right label="HEFS">
             <type>ensemble forecasts</type>
-            <source format="PI-XML">/mnt/wres_share/systests/data/drrc2ForecastsOneMonth/</source>
+            <source>/mnt/wres_share/systests/data/drrc2ForecastsOneMonth/</source>
             <variable>SQIN</variable>
         </right>
     </inputs>
 
     <pair>
-        <unit>CMS</unit>
+        <unit>m^3/s</unit>
         <feature left="DRRC2HSF" right="DRRC2HSF" />
         <leadHours minimum="0" maximum="48" />
     </pair>
@@ -69,7 +69,7 @@
     <metrics>
         <thresholds>
             <type>probability</type>
-            <commaSeparatedValues>0.0, 0.25, 0.50, 0.75, 1.0</commaSeparatedValues>
+            <commaSeparatedValues>0.002, 0.01, 0.1, 0.9, 0.99, 0.998</commaSeparatedValues>
             <operator>greater than or equal to</operator>
         </thresholds>
 
@@ -84,7 +84,7 @@
         <metric><name>reliability diagram</name></metric>
     </metrics>
     <outputs>
-        <destination type="numeric" />
+        <destination type="csv2" />
     </outputs>
 
 </project>

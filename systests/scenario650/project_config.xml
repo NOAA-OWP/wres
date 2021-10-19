@@ -3,13 +3,13 @@
     <inputs>
         <left label="NWM Analysis">
             <type>simulations</type>
-            <source format="netCDF" pattern="**/*tm02*">data/griddedExamples/precip_ellicott_city/analysis_assim/</source>
+            <source pattern="**/*tm02*">data/griddedExamples/precip_ellicott_city/analysis_assim/</source>
             <variable>RAINRATE</variable>
         </left>
         <right label="NWM Short Range">
             <type>single valued forecasts</type>
-            <!--<source format="netCDF">data/griddedExamples/precip_ellicott_city/short_range/</source> -->
-            <source format="netCDF" pattern="**/*nwm.t*0[0-9]z*">data/griddedExamples/precip_ellicott_city/short_range/nwm.20180526/</source>
+            <!--<source>data/griddedExamples/precip_ellicott_city/short_range/</source> -->
+            <source pattern="**/*nwm.t*0[0-9]z*">data/griddedExamples/precip_ellicott_city/short_range/nwm.20180526/</source>
             <variable>RAINRATE</variable>
         </right>
     </inputs>

@@ -5,12 +5,12 @@
     <inputs>
         <left label="">
             <type>observations</type>
-            <source format="PI-XML">data/DRRC2QME.xml</source>
+            <source>data/DRRC2QME.xml</source>
             <variable>QME</variable>
         </left>
         <right label="HEFS">
             <type>ensemble forecasts</type>
-            <source format="PI-XML">data/drrc2ForecastsOneMonth/</source>
+            <source>data/drrc2ForecastsOneMonth/</source>
             <variable>SQIN</variable>
         </right>
     </inputs>

@@ -12,19 +12,19 @@ below the example.
         <inputs>
             <left>
                 <type>observations</type>
-                <source format="PI-XML">c:/resources/DRRC2SQIN.xml</source>
+                <source>c:/resources/DRRC2SQIN.xml</source>
                 <variable>QINE</variable>
             </left>
             <right>
                 <type>ensemble forecasts</type>
-                <source format="PI-XML">c:/resources/forecasts/</source>
+                <source>c:/resources/forecasts/</source>
                 <variable>SQIN</variable>
             </right>
         </inputs>
 
         <pair>
-            <unit>CMS</unit>
-            <feature locationId="DRRC2" />
+            <unit>m^3/s</unit>
+            <feature left="DRRC2" right="DRRC2" />
             <dates earliest="1980-01-01T00:00:00Z" latest="2010-12-24T00:00:00Z"/>
             <issuedDates earliest="1980-01-01T00:00:00Z" latest="2010-12-20T00:00:00Z"/>
             <desiredTimeScale>
@@ -49,8 +49,7 @@ below the example.
         </metrics>
 
         <outputs>
-            <destination type="numeric">
-            </destination>
+            <destination type="csv2" />
         </outputs>
 
     </project>

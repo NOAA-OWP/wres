@@ -8,13 +8,13 @@
         </left>
         <right label="AHPS">
             <type>single valued forecasts</type>
-            <source format="wrds">smalldata/wrds_json/ahps/KCDM7_20180823T1435.json</source>
-            <source format="wrds">smalldata/wrds_json/ahps/KCDM7_20180823T1437.json</source>
-            <source format="wrds">smalldata/wrds_json/ahps/KCDM7_20180904.json</source>
-            <source format="wrds">smalldata/wrds_json/ahps/KCDM7_20180905.json</source>
-            <source format="wrds">smalldata/wrds_json/ahps/KCDM7_20180906.json</source>
-            <source format="wrds">smalldata/wrds_json/ahps/KCDM7_20180907.json</source>
-            <source format="wrds">smalldata/wrds_json/ahps/KCDM7_20180910.json</source>
+            <source>smalldata/wrds_json/ahps/KCDM7_20180823T1435.json</source>
+            <source>smalldata/wrds_json/ahps/KCDM7_20180823T1437.json</source>
+            <source>smalldata/wrds_json/ahps/KCDM7_20180904.json</source>
+            <source>smalldata/wrds_json/ahps/KCDM7_20180905.json</source>
+            <source>smalldata/wrds_json/ahps/KCDM7_20180906.json</source>
+            <source>smalldata/wrds_json/ahps/KCDM7_20180907.json</source>
+            <source>smalldata/wrds_json/ahps/KCDM7_20180910.json</source>
             <variable>QR</variable>
         </right>
     </inputs>

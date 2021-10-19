@@ -17,7 +17,7 @@
         -->
         <left>
             <type>observations</type>
-            <source format="PI-XML">data/CKLN6_STG.xml</source>
+            <source>data/CKLN6_STG.xml</source>
             <variable label = "STAGE">STG</variable>
         </left>
         
@@ -25,7 +25,7 @@
         -->
         <right label="HEFS" >
             <type>ensemble forecasts</type>
-            <source format="PI-XML">data/CKLN6_HEFS_STG_forecasts.tgz</source>
+            <source>data/CKLN6_HEFS_STG_forecasts.tgz</source>
             <variable label = "STAGE">SSTG</variable>
         </right>
     </inputs>

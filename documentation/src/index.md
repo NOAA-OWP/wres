@@ -6,17 +6,22 @@ rather than use the WRES NWCAL instance HTTP API service.
 ## Prerequisites
 
 1. Java 11 runtime environment
-2. Access to Postgres 9.6 or later database instance
+2. Access to Postgres 10+ database instance for larger-than-RAM deployments, or
+   alternatively RAM sufficient to hold the datasets for one evaluation.
 
 ## Set up the database
 
-For the time being, ask the software development team to help with this.
+Skip this step if not using postgresql.
+
+To use postgresql, ask the software development team to help with this.
 
 ## Run the software
 
 Ensure that the database you wish to connect to is specified in this file:
 
         lib/conf/wresconfig.xml
+
+For in-RAM (no postgresql) use the example H2 string found in this document.
 
 ### Unix systems
 
