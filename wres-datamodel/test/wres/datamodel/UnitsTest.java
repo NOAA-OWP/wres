@@ -57,7 +57,7 @@ public class UnitsTest
                      "fahrenheit", "\u2103", "\u2109", "\u00b0F", "GALLON",
                      "gi.us", "METRE", "fm", "fth_us", "pt_br", "DEGF",
                      "gal/min", "ac-ft", "ac", "ac ft", "gal*1000000/d",
-                     "mm s^-1", "kg/m^2/h" );
+                     "mm s^-1", "kg/m^2/h", "1000*ft^3/s", "℃" );
 
     @Test
     public void testConvertFlow()
@@ -187,6 +187,9 @@ public class UnitsTest
                         unit.getName(),
                         unit.getSymbol(),
                         unit.getDimension() );
+                System.out.println( "Indriya parsed '" + stringToParse
+                                    + "' into '" + unit + "' name='" +
+                                    unit.getName() + "'" );
             }
             catch ( MeasurementParseException mpe )
             {

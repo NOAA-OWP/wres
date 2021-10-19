@@ -303,8 +303,7 @@ project(':wres-datamodel')
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
 
-        // The following four provide units of measure. If used in public
-        // method signatures, they will be upgraded to api (not implementation).
+        // The following five libraries together provide units of measure.
         api 'javax.measure:unit-api:2.1.3'
         implementation 'si.uom:si-units:2.1'
         implementation 'tech.units:indriya:2.1.2'
