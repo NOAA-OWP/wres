@@ -8,8 +8,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
+import java.util.function.LongUnaryOperator;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
@@ -85,7 +87,13 @@ public class PoolFactory
      */
 
     private static final String WHICH_IS_NOT_ALLOWED = "', which is not allowed.";
+    
+    /**
+     * Used to create a pool identifier.
+     */
 
+    private static final AtomicLong poolId = new AtomicLong( 0 );
+    
     /**
      * Create pools for single-valued data. This method will attempt to retrieve and re-use data that is common to 
      * multiple pools. Thus, it is generally better to provide a list of pool requests that represent connected pools, 
@@ -362,11 +370,27 @@ public class PoolFactory
                                                 TimeScaleOuter desiredTimeScale,
                                                 LeftOrRightOrBaseline leftOrRightOrBaseline )
     {
+        // Updater for the pool identifier that avoids a long overflow
+        LongUnaryOperator updater = next -> {
+            if ( next + 1 < Long.MAX_VALUE )
+            {
+                return next + 1;
+            }
+
+            LOGGER.warn( "Resetting pool identification sequence to avoid long overflow." );
+
+            return 1;
+        };
+        
+        // Next identifier
+        long nextId = PoolFactory.poolId.updateAndGet( updater );
+        
         wres.statistics.generated.Pool pool = MessageFactory.parse( featureGroup,
                                                                     timeWindow, // Default to start with
                                                                     desiredTimeScale,
                                                                     null,
-                                                                    leftOrRightOrBaseline == LeftOrRightOrBaseline.BASELINE );
+                                                                    leftOrRightOrBaseline == LeftOrRightOrBaseline.BASELINE,
+                                                                    nextId );
 
         return PoolMetadata.of( evaluation, pool );
     }

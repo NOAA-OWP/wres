@@ -96,6 +96,28 @@ class FeatureGroupTest
             assertEquals( this.aGroup.hashCode(), this.aGroup.hashCode() );
         }
     }
+    
+    @Test
+    void testCompareTo()
+    {
+        // Consistent with equals
+        assertEquals( 0, this.aGroup.compareTo( this.aGroup ) );
+        FeatureGroup anotherGroup = FeatureGroup.of( "anotherName", this.aTuple );
+        assertNotEquals( 0, this.aGroup.compareTo( anotherGroup ) );
+        
+        // Unequal size
+        FeatureGroup smallerGroup = FeatureGroup.of( Set.of( this.aTuple ) );
+        FeatureGroup biggerGroup = FeatureGroup.of( Set.of( this.aTuple, this.anotherTuple ) );
+        assertTrue( smallerGroup.compareTo( biggerGroup ) < 0 );
+        
+        // Equal size, equal group name, lesser tuple name
+        FeatureKey keyOne = new FeatureKey( "A", null, null, null );
+        FeatureKey keyTwo = new FeatureKey( "B", null, null, null );
+        FeatureGroup lesserGroup = FeatureGroup.of( new FeatureTuple( keyOne, keyOne, null ) );
+        FeatureGroup greaterGroup = FeatureGroup.of( new FeatureTuple( keyTwo, keyTwo, null ) );
+        
+        assertTrue( greaterGroup.compareTo( lesserGroup ) > 0 );
+    }
 
     @Test
     void getName()

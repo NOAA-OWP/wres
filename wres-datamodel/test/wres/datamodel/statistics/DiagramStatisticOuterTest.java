@@ -48,7 +48,8 @@ public final class DiagramStatisticOuterTest
                                           null,
                                           null,
                                           null,
-                                          false );
+                                          false,
+                                          1 );
 
         this.metadata = PoolMetadata.of( evaluation, pool );
     }
@@ -72,7 +73,8 @@ public final class DiagramStatisticOuterTest
                                           null,
                                           null,
                                           null,
-                                          false );
+                                          false,
+                                          1 );
 
         PoolMetadata m2 = PoolMetadata.of( evaluation, pool );
         FeatureKey l3 = FeatureKey.of( "B" );
@@ -81,7 +83,8 @@ public final class DiagramStatisticOuterTest
                                              null,
                                              null,
                                              null,
-                                             false );
+                                             false,
+                                             1 );
 
         PoolMetadata m3 = PoolMetadata.of( evaluation, poolTwo );
 
@@ -188,7 +191,8 @@ public final class DiagramStatisticOuterTest
                                           null,
                                           null,
                                           null,
-                                          false );
+                                          false,
+                                          1 );
 
         PoolMetadata m2 = PoolMetadata.of( evaluation, pool );
 

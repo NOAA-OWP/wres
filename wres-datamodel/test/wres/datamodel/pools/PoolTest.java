@@ -296,10 +296,10 @@ class PoolTest
     void testToString()
     {
         String actual = this.testPool.toString();
-        String expected = "Pool[mainMetadata=PoolMetadata[leftDataName=,rightDataName=,baselineDataName=,"
+        String expected = "Pool[mainMetadata=PoolMetadata[poolId=0,leftDataName=,rightDataName=,baselineDataName=,"
                           + "leftVariableName=,rightVariableName=,baselineVariableName=,isBaselinePool=false,"
                           + "features=<null>,timeWindow=<null>,thresholds=<null>,timeScale=<null>,measurementUnit="
-                          + "DIMENSIONLESS],mainData=[a, b, c],baselineMetadata=PoolMetadata[leftDataName=,"
+                          + "DIMENSIONLESS],mainData=[a, b, c],baselineMetadata=PoolMetadata[poolId=0,leftDataName=,"
                           + "rightDataName=,baselineDataName=,leftVariableName=,rightVariableName=,"
                           + "baselineVariableName=,isBaselinePool=false,features=<null>,timeWindow=<null>,"
                           + "thresholds=<null>,timeScale=<null>,measurementUnit=DIMENSIONLESS],baselineData=[d, e, f],"

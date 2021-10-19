@@ -45,7 +45,8 @@ class PoolRequestTest
                                              this.timeWindow,
                                              null,
                                              null,
-                                             false );
+                                             false,
+                                             1 );
 
         this.poolMetadata = PoolMetadata.of( this.evaluation, poolOne );
 
@@ -63,7 +64,8 @@ class PoolRequestTest
                                                  this.timeWindow,
                                                  null,
                                                  null,
-                                                 false );
+                                                 false,
+                                                 1 );
 
         PoolMetadata anotherPoolMetadata = PoolMetadata.of( this.evaluation, anotherPool );
         PoolRequest anotherPoolRequest = PoolRequest.of( anotherPoolMetadata );
@@ -76,7 +78,8 @@ class PoolRequestTest
                                                     this.timeWindow,
                                                     null,
                                                     null,
-                                                    false );
+                                                    false,
+                                                    1 );
 
         PoolMetadata yetAnotherPoolMetadata = PoolMetadata.of( this.evaluation, yetAnotherPool );
         PoolRequest yetAnotherPoolRequest = PoolRequest.of( yetAnotherPoolMetadata );
@@ -102,7 +105,8 @@ class PoolRequestTest
                                                  this.timeWindow,
                                                  null,
                                                  null,
-                                                 false );
+                                                 false,
+                                                 1 );
 
         PoolMetadata oneMorePoolMetadata = PoolMetadata.of( this.evaluation, oneMorePool );
         PoolRequest oneMorePoolRequest = PoolRequest.of( oneMorePoolMetadata );

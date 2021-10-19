@@ -1,8 +1,11 @@
 package wres.datamodel.space;
 
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
@@ -17,7 +20,7 @@ import org.slf4j.LoggerFactory;
  * @author James Brown
  */
 
-public class FeatureGroup
+public class FeatureGroup implements Comparable<FeatureGroup>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( FeatureGroup.class );
@@ -26,7 +29,7 @@ public class FeatureGroup
     private final String name;
 
     /** The features. */
-    private final Set<FeatureTuple> features;
+    private final SortedSet<FeatureTuple> features;
 
     /**
      * @param features the grouped features, not null, not empty
@@ -140,6 +143,42 @@ public class FeatureGroup
                                                                             .toString();
     }
 
+    @Override
+    public int compareTo( FeatureGroup o )
+    {
+        Objects.requireNonNull( o );
+
+        // Name
+        int returnMe = Objects.compare( this.name, o.name, Comparator.nullsFirst( String::compareTo ) );
+
+        if ( returnMe != 0 )
+        {
+            return returnMe;
+        }
+
+        // Size of group
+        returnMe = Integer.compare( this.features.size(), o.features.size() );
+
+        if ( returnMe != 0 )
+        {
+            return returnMe;
+        }
+
+        // Group members, which belong to a sorted set
+        Iterator<FeatureTuple> iterator = o.features.iterator();
+        for ( FeatureTuple next : this.features )
+        {
+            returnMe = next.compareTo( iterator.next() );
+
+            if ( returnMe != 0 )
+            {
+                return returnMe;
+            }
+        }
+
+        return 0;
+    }
+
     /**
      * Hidden constructor.
      * @param name the group name, may be null
@@ -158,7 +197,7 @@ public class FeatureGroup
         }
 
         this.name = name;
-        this.features = Collections.unmodifiableSet( new TreeSet<>( features ) );
+        this.features = Collections.unmodifiableSortedSet( new TreeSet<>( features ) );
 
         LOGGER.debug( "Created a feature group with name {} and features {}.", this.getName(), this.getFeatures() );
     }

@@ -265,7 +265,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
         {
             return false;
         }
-        
+
         PoolMetadata p = (PoolMetadata) o;
 
         return Objects.equals( this.getEvaluation(), p.getEvaluation() )
@@ -298,7 +298,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
             featureGroup = FeatureGroup.of( innerPool.getRegionName(), featureTuples );
         }
 
-        return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
+        return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE ).append( "poolId", innerPool.getPoolId() )
                                                                             .append( "leftDataName",
                                                                                      innerEvaluation.getLeftDataName() )
                                                                             .append( "rightDataName",

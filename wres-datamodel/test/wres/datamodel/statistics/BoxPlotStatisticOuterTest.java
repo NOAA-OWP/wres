@@ -82,7 +82,8 @@ public final class BoxPlotStatisticOuterTest
                                           null,
                                           null,
                                           null,
-                                          false );
+                                          false,
+                                          1 );
 
         this.metadata = PoolMetadata.of( evaluation, pool );
     }
@@ -108,7 +109,8 @@ public final class BoxPlotStatisticOuterTest
                                           null,
                                           null,
                                           null,
-                                          false );
+                                          false,
+                                          1 );
 
         PoolMetadata m1 = PoolMetadata.of( evaluation, pool );
         FeatureKey l2 = FeatureKey.of( "A" );
@@ -117,7 +119,8 @@ public final class BoxPlotStatisticOuterTest
                                              null,
                                              null,
                                              null,
-                                             false );
+                                             false,
+                                             1 );
 
 
         PoolMetadata m2 = PoolMetadata.of( evaluation, poolTwo );
@@ -127,7 +130,8 @@ public final class BoxPlotStatisticOuterTest
                                                null,
                                                null,
                                                null,
-                                               false );
+                                               false,
+                                               1 );
 
         PoolMetadata m3 = PoolMetadata.of( evaluation, poolThree );
 
@@ -289,7 +293,8 @@ public final class BoxPlotStatisticOuterTest
                                           null,
                                           null,
                                           null,
-                                          false );
+                                          false,
+                                          1 );
 
         PoolMetadata m1 = PoolMetadata.of( evaluation, pool );
 

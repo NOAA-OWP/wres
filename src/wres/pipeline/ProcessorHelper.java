@@ -31,6 +31,7 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdsByMetric;
@@ -47,6 +48,7 @@ import wres.io.concurrency.Pipelines;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.geography.FeatureFinder;
+import wres.io.pooling.PoolFactory;
 import wres.io.project.Project;
 import wres.io.retrieval.UnitMapper;
 import wres.io.thresholds.ThresholdReader;
@@ -457,8 +459,15 @@ class ProcessorHelper
             // Create one task per feature group
             for ( FeatureGroup nextGroup : featureGroups )
             {
+                // Create feature-shaped pool requests
+                List<PoolRequest> poolRequests =
+                        PoolFactory.getPoolRequests( evaluationDetails.getEvaluationDescription(),
+                                                     projectConfig,
+                                                     nextGroup );
+
                 Supplier<FeatureProcessingResult> featureProcessor = new FeatureProcessor( evaluationDetails,
                                                                                            nextGroup,
+                                                                                           poolRequests,
                                                                                            unitMapper,
                                                                                            executors,
                                                                                            sharedWriters );
@@ -1033,15 +1042,15 @@ class ProcessorHelper
         Objects.requireNonNull( project );
         Objects.requireNonNull( featuresWithExplicitThresholds );
 
-        // Get the baseline groups
-        Set<FeatureGroup> featureGroups = project.getFeatureGroups();
+        // Get the baseline groups in a sorted set
+        Set<FeatureGroup> featureGroups = new TreeSet<>( project.getFeatureGroups() );
 
-        // Log any discrepancies between features with thresholds and features to evaluate
+        // Log a warning about any discrepancies between features with thresholds and features to evaluate
         if ( LOGGER.isWarnEnabled() )
         {
             Map<String, Set<String>> missing = new HashMap<>();
 
-            // Check that every group has one or more thresholds for every tuple, else warn and filter them out
+            // Check that every group has one or more thresholds for every tuple, else warn
             for ( FeatureGroup nextGroup : featureGroups )
             {
                 if ( nextGroup.getFeatures().size() > 1

@@ -73,7 +73,8 @@ public final class DataModelTestDataFactory
                                           null,
                                           null,
                                           null,
-                                          false );
+                                          false,
+                                          1 );
 
         final PoolMetadata source = PoolMetadata.of( evaluation, pool );
 
