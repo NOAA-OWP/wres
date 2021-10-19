@@ -23,9 +23,7 @@ import static systems.uom.common.USCustomary.FOOT;
 import static tech.units.indriya.unit.Units.METRE;
 
 /**
- * Experimental class to build units using javax.measure. When it is used,
- * visibility will likely need to be public and the library declarations updated
- * in the build.gradle to be "api" instead of "implementation."
+ * Build units using javax.measure. See also wres.io.retrieval.UnitMapper class.
  */
 
 public class Units
@@ -283,7 +281,7 @@ public class Units
 
         try
         {
-            LOGGER.trace( "getUnit parsing a unit {}, given {}", officialName, unitName );
+            LOGGER.debug( "getUnit parsing a unit {}, given {}", officialName, unitName );
             unit = AbstractUnit.parse( officialName );
         }
         catch ( MeasurementParseException mpe )
@@ -298,6 +296,13 @@ public class Units
                                                 aliases,
                                                 actualUnits,
                                                 mpe );
+        }
+
+        if ( LOGGER.isInfoEnabled() )
+        {
+            LOGGER.info( "Treating measurement unit name '{}' as formal "
+                         + "unit '{}' along dimension '{}'",
+                         unitName, officialName, unit.getDimension() );
         }
 
         return unit;

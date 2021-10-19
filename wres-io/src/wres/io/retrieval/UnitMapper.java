@@ -1,7 +1,9 @@
 package wres.io.retrieval;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -14,6 +16,7 @@ import javax.measure.UnitConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.ProjectConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.UnitAlias;
 import wres.datamodel.Units;
@@ -49,10 +52,29 @@ public class UnitMapper
         this.desiredMeasurementUnitName = desiredMeasurementUnitName;
         this.indriyaUnits = new ConcurrentHashMap<>( 4 );
 
+        Map<String,String> aliasToUnitStrings = new HashMap<>( aliases.size() );
+
+        for ( UnitAlias alias : aliases )
+        {
+            String old = aliasToUnitStrings.put( alias.getAlias(), alias.getUnit() );
+
+            if ( old != null )
+            {
+                throw new ProjectConfigException( alias,
+                                                  "Multiple definitions for a "
+                                                  + "single unit alias are not "
+                                                  + "supported. Found repeated "
+                                                  + "'" + old + "' alias. "
+                                                  + "Remove all but one unit "
+                                                  + "for alias '" + old + "'" );
+            }
+        }
+
         // Immediately attempt to get a javax.measure.Unit. But only warn.
         try
         {
-            Unit<?> desiredUnit = Units.getUnit( desiredMeasurementUnitName );
+            Unit<?> desiredUnit = Units.getUnit( desiredMeasurementUnitName,
+                                                 aliasToUnitStrings );
             this.indriyaUnits.put( desiredMeasurementUnitName, desiredUnit );
         }
         catch ( UnsupportedUnitException uue )
@@ -69,7 +91,8 @@ public class UnitMapper
 
             try
             {
-                Unit<?> indriyaUnit = Units.getUnit( unitName );
+                Unit<?> indriyaUnit = Units.getUnit( unitName,
+                                                     aliasToUnitStrings );
                 this.indriyaUnits.put( aliasName, indriyaUnit );
             }
             catch ( UnsupportedUnitException uue )
