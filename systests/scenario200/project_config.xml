@@ -5,12 +5,12 @@
     <inputs>
         <left label="">
             <type>observations</type>
-            <source format="PI-XML">data/DOSC1_QIN.xml</source>
+            <source>data/DOSC1_QIN.xml</source>
             <variable>QIN</variable>
         </left>
         <right label="HEFS">
             <type>simulations</type>
-            <source format="PI-XML">data/DOSC1_SQIN.xml</source>
+            <source>data/DOSC1_SQIN.xml</source>
             <variable>SQIN</variable>
         </right>
     </inputs>

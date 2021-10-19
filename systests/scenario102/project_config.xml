@@ -11,7 +11,7 @@
         </left>
         <right label="ESP" >
             <type>ensemble forecasts</type>
-            <source format="PI-XML">data/abrfcExample/LGNN5_hefs-mefp_flow_1yr.tgz</source>
+            <source>data/abrfcExample/LGNN5_hefs-mefp_flow_1yr.tgz</source>
             <variable>QINE</variable>
         </right>
     </inputs>

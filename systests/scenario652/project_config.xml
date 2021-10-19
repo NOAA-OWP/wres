@@ -3,12 +3,12 @@
     <inputs>
         <left label="NWM Analysis">
             <type>simulations</type>
-            <source format="netCDF">data/griddedExamples/land_snow_ellicott_city/analysis_assim/</source>
+            <source>data/griddedExamples/land_snow_ellicott_city/analysis_assim/</source>
             <variable>SNEQV</variable>
         </left>
         <right label="NWM Short Range">
             <type>single valued forecasts</type>
-            <source format="netCDF" pattern="**/*nwm.t*0[0-9]z*">data/griddedExamples/land_snow_ellicott_city/short_range/20180526</source>
+            <source pattern="**/*nwm.t*0[0-9]z*">data/griddedExamples/land_snow_ellicott_city/short_range/20180526</source>
             <variable>SNEQV</variable>
         </right>
     </inputs>

@@ -17,7 +17,7 @@
         -->
         <left label="Observations">
             <type>observations</type>
-            <source format="datacard" zoneOffset="CST" >data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
+            <source zoneOffset="CST">data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
             <variable>QINE</variable>
             <existingTimeScale>
                 <function>mean</function>
@@ -35,7 +35,7 @@
         -->
         <right label="Operational Single-Valued Forecasts" >
             <type>single valued forecasts</type>
-            <source format="PI-XML">data/singleValuedEx_ABRFC_ARCFUL_QINE</source>
+            <source>data/singleValuedEx_ABRFC_ARCFUL_QINE</source>
             <variable>QINE</variable>
         </right>
         
@@ -44,7 +44,7 @@
         -->
         <baseline>
             <type>observations</type>
-            <source format="datacard" zoneOffset="CST" >data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
+            <source zoneOffset="CST">data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
             <variable>QINE</variable>
             <transformation>persistence</transformation>
             <existingTimeScale>
