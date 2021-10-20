@@ -59,7 +59,7 @@ public class ValidationTest
     {
         Feature fullySpecifiedFeature = new Feature( "Chicken", "Cheese", "Tuna" );
         List<Feature> features = List.of( fullySpecifiedFeature );
-        boolean isValid = Validation.areFeaturesValid( features );
+        boolean isValid = Validation.areFeaturesValidInSingletonContext( features );
         assertTrue( isValid );
     }
 
@@ -68,7 +68,7 @@ public class ValidationTest
     {
         Feature featureWithLeftValue = new Feature( "Cheese", null, null );
         List<Feature> features = List.of( featureWithLeftValue );
-        boolean isValid = Validation.areFeaturesValid( features );
+        boolean isValid = Validation.areFeaturesValidInSingletonContext( features );
         assertTrue( isValid );
     }
 
@@ -77,7 +77,7 @@ public class ValidationTest
     {
         Feature featureWithNothing = new Feature( null, null, null );
         List<Feature> features = List.of( featureWithNothing );
-        boolean isValid = Validation.areFeaturesValid( features );
+        boolean isValid = Validation.areFeaturesValidInSingletonContext( features );
         assertFalse( isValid );
     }
     

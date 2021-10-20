@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.xml.bind.ValidationEvent;
@@ -590,7 +591,7 @@ public class Validation
         Locator locator = null;
 
         boolean isValid = true;
-        
+
         for ( DestinationConfig destination : projectConfigPlus.getProjectConfig()
                                                                .getOutputs()
                                                                .getDestination() )
@@ -1423,10 +1424,10 @@ public class Validation
             result = false;
         }
 
-        result = result && Validation.areFeaturesValid( pairConfig.getFeature() );
-        
+        result = result && Validation.areFeaturesValidInSingletonContext( pairConfig.getFeature() );
+
         result = result && Validation.areFeatureGroupsValid( projectConfigPlus, pairConfig );
-        
+
         result = result && Validation.areDatesValid( projectConfigPlus, pairConfig.getDates() );
 
         result = result && Validation.areDatesValid( projectConfigPlus, pairConfig.getIssuedDates() );
@@ -1473,7 +1474,18 @@ public class Validation
         return valid;
     }
 
-    static boolean areFeaturesValid( List<Feature> features )
+    /**
+     * Validates features.
+     * 
+     * TODO: Currently, features declared in the context of a featureGroup do not require that a feature name occurs 
+     * only once per feature dimension, but do require that feature tuples appear only once. When the former constraint
+     * is relaxed, define a single helper for validation of features to be re-used in all contexts.
+     * 
+     * @param features the features to validate
+     * @return true if the features are valid, false otherwise
+     */
+
+    static boolean areFeaturesValidInSingletonContext( List<Feature> features )
     {
         boolean valid = Validation.doesEachFeatureHaveSomethingDeclared( features );
         List<String> leftRawNames = Validation.getFeatureNames( features,
@@ -1493,7 +1505,93 @@ public class Validation
     }
 
     /**
+     * Validates features in a grouped context.
+     * 
+     * TODO: Currently, features declared in the context of a featureGroup do not require that a feature name occurs 
+     * only once per feature dimension, but do require that feature tuples appear only once. When the former constraint
+     * is relaxed, define a single helper for validation of features to be re-used in all contexts instead of two 
+     * separate helpers, namely {@link #areFeaturesValidInSingletonContext(List)} and this one.
+     * 
+     * @param features the features to validate
+     * @param context some optional context information to help understand the origin of the features (e.g., group name)
+     * @param projectConfigPlus the project declaration
+     * @param pairConfig the pair declaration
+     * @return true if the features are valid, false otherwise
+     */
+
+    static boolean areFeaturesValidInGroupedContext( List<Feature> features,
+                                                     String context,
+                                                     ProjectConfigPlus projectConfigPlus,
+                                                     PairConfig pairConfig )
+    {
+        boolean valid = Validation.doesEachFeatureHaveSomethingDeclared( features );
+
+        // Check that there are no duplicate feature tuples
+        Map<Feature, Long> duplicateTuplesWithCounts = features.stream()
+                                                               .collect( Collectors.groupingBy( next -> next,
+                                                                                                Collectors.counting() ) )
+                                                               .entrySet()
+                                                               .stream()
+                                                               .filter( next -> next.getValue() > 1 )
+                                                               .collect( Collectors.toMap( Map.Entry::getKey,
+                                                                                           Map.Entry::getValue ) );
+
+        String contextString = "";
+
+        if ( Objects.nonNull( context ) )
+        {
+            contextString = "associated with " + context + " ";
+        }
+
+        if ( !duplicateTuplesWithCounts.isEmpty() )
+        {
+            valid = false;
+
+            String msg = FILE_LINE_COLUMN_BOILERPLATE
+                         + " Discovered {} feature tuples {}that were duplicated one or more times, which is not "
+                         + "allowed. The duplicate feature tuples "
+                         + "and their counts are {}.";
+
+            LOGGER.warn( msg,
+                         projectConfigPlus.getOrigin(),
+                         pairConfig.sourceLocation().getLineNumber(),
+                         pairConfig.sourceLocation().getColumnNumber(),
+                         duplicateTuplesWithCounts.size(),
+                         contextString,
+                         duplicateTuplesWithCounts );
+        }
+
+        // Check for blank names, which are not allowed
+        Predicate<Feature> blankPolicer =
+                feature -> ( Objects.nonNull( feature.getLeft() ) && feature.getLeft().isBlank() )
+                           || ( Objects.nonNull( feature.getRight() ) && feature.getRight().isBlank() )
+                           || ( Objects.nonNull( feature.getBaseline() ) && feature.getBaseline().isBlank() );
+
+        Set<Feature> featuresWithBlankNames = features.stream()
+                                                      .filter( blankPolicer )
+                                                      .collect( Collectors.toSet() );
+
+        if ( !featuresWithBlankNames.isEmpty() )
+        {
+            valid = false;
+
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE + " Discovered {} feature tuples {}that contained one or more "
+                         + "blank names, which is now allowed. For each blank name, omit the name instead. The following "
+                         + "feature tuples had one or more blank names: {}.",
+                         projectConfigPlus.getOrigin(),
+                         pairConfig.sourceLocation().getLineNumber(),
+                         pairConfig.sourceLocation().getColumnNumber(),
+                         featuresWithBlankNames.size(),
+                         contextString,
+                         featuresWithBlankNames );
+        }
+
+        return valid;
+    }
+
+    /**
      * Validates any feature groups in the pair declaration.
+     * 
      * @param projectConfigPlus the project declaration
      * @param pairConfig the pair declaration
      * @param outputsConfig the outputs declaration
@@ -1539,7 +1637,7 @@ public class Validation
                              pairConfig.sourceLocation().getLineNumber(),
                              pairConfig.sourceLocation().getColumnNumber() );
             }
-            
+
             // Non-unique group names?
             Set<String> duplicates = groups.stream()
                                            // Remove groups without a declared name as the software will choose one
@@ -1553,7 +1651,7 @@ public class Validation
                                            .filter( next -> next.getValue() > 1 )
                                            .map( Map.Entry::getKey )
                                            .collect( Collectors.toSet() );
-            
+
             if ( !duplicates.isEmpty() )
             {
                 valid = false;
@@ -1569,8 +1667,13 @@ public class Validation
                              pairConfig.sourceLocation().getColumnNumber(),
                              duplicates );
             }
+
+            // Validate the individual features
+            valid = valid && Validation.validateIndividualFeaturesFromFeatureGroups( groups, 
+                                                                                     projectConfigPlus, 
+                                                                                     pairConfig );
         }
-        
+
         FeatureService featureService = pairConfig.getFeatureService();
 
         if ( Objects.nonNull( featureService ) )
@@ -1595,6 +1698,37 @@ public class Validation
                              pairConfig.sourceLocation().getLineNumber(),
                              pairConfig.sourceLocation().getColumnNumber() );
             }
+        }
+
+        return valid;
+    }
+
+    /**
+     * Validates individual features that are supplied in a grouped context.
+     * 
+     * TODO: Currently, features declared in the context of a featureGroup do not require that a feature name occurs 
+     * only once per feature dimension, but do require that feature tuples appear only once. When the former constraint
+     * is relaxed, define a single helper for validation of features to be re-used in all contexts. The new helper will 
+     * be called by this method, not {@link #areFeaturesValidInGroupedContext(List, String, ProjectConfigPlus, PairConfig)}.
+     * 
+     * @param groups the groups to evaluate
+     * @param projectConfigPlus the project declaration
+     * @param pairConfig the pair declaration
+     * @return true if the features are valid in all groups, otherwise false
+     */
+
+    private static boolean validateIndividualFeaturesFromFeatureGroups( List<FeaturePool> groups,
+                                                                        ProjectConfigPlus projectConfigPlus,
+                                                                        PairConfig pairConfig )
+    {
+        boolean valid = true;
+
+        for ( FeaturePool group : groups )
+        {
+            valid = valid && Validation.areFeaturesValidInGroupedContext( group.getFeature(),
+                                                                          group.getName(),
+                                                                          projectConfigPlus,
+                                                                          pairConfig );
         }
 
         return valid;
@@ -2817,17 +2951,17 @@ public class Validation
         result = result && Validation.areDataSourcesValid( projectConfigPlus, left );
 
         result = result && Validation.areDataSourcesValid( projectConfigPlus, right );
-        
+
         result = result && Validation.isTypeConsistentWithOtherDeclaration( projectConfigPlus, left );
-        
-        result = result && Validation.isTypeConsistentWithOtherDeclaration( projectConfigPlus, right );        
+
+        result = result && Validation.isTypeConsistentWithOtherDeclaration( projectConfigPlus, right );
 
         if ( baseline != null )
         {
             result = result && Validation.areDataSourcesValid( projectConfigPlus, baseline );
 
             result = result && Validation.areLeftAndBaselineConsistent( projectConfigPlus, left, baseline );
-            
+
             result = result && Validation.isTypeConsistentWithOtherDeclaration( projectConfigPlus, baseline );
         }
 
@@ -2968,7 +3102,7 @@ public class Validation
 
         return valid;
     }
-    
+
     /**
      * Checks that the {@link DataSourceConfig#getType()} is consistent with the other declaration.
      *  
