@@ -714,13 +714,15 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             builder.setMetadataForBaseline( adjustedBaseline );
         }
 
-        if ( LOGGER.isWarnEnabled() && !noData.isEmpty() )
+        if ( LOGGER.isDebugEnabled() && !noData.isEmpty() )
         {
-            LOGGER.warn( "While building pool {}, discovered insufficient time-series for {} features as follows: {}. "
-                         + "These features will not be represented in the statistics for this pool.",
-                         this.metadata,
-                         noData.size(),
-                         noData );
+            LOGGER.debug( "While building a pool that contained {} feature tuples, discovered no time-series for {} "
+                          + "of these feature tuples. These feature tuples will not be represented in the statistics "
+                          + "for this pool. The pool is {} and the feature tuples with missing data are {}.",
+                          tuples.size(),
+                          noData.size(),
+                          this.metadata,
+                          noData );
         }
 
         return builder.build();

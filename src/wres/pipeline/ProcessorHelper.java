@@ -1074,10 +1074,10 @@ class ProcessorHelper
                 LOGGER.warn( "While correlating thresholds with the features contained in feature groups, "
                              + "discovered {} feature groups that did not have thresholds for every feature within the "
                              + "group. These groups will be evaluated, but the grouped statistics will not include the "
-                             + "pairs associated with the features that have missing thresholds. The features with "
-                             + "missing thresholds and their associated feature groups are: {}. By default, the \"all "
-                             + "data\" threshold is added to every feature and the statistics for this threshold "
-                             + "will not be impacted.",
+                             + "pairs associated with the features that have missing thresholds. By default, the \"all "
+                             + "data\" threshold is added to every feature and the statistics for this threshold will "
+                             + "not be impacted. The features with missing thresholds and their associated feature "
+                             + "groups are: {}.",
                              missing.size(),
                              missing );
             }
