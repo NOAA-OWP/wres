@@ -12,10 +12,13 @@ import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.DoubleFunction;
 import java.util.function.Function;
@@ -135,7 +138,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
     private static final String LINE_SEPARATOR = System.lineSeparator();
 
     /**
-     * Lock for writing pairs to the {@link #path} for which this writer is built.
+     * Lock for writing csv to the {@link #path} for which this writer is built.
      */
 
     private final ReentrantLock writeLock;
@@ -151,18 +154,6 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      */
 
     private final BufferedOutputStream bufferedWriter;
-
-    /**
-     * Number of the current pool being written.
-     */
-
-    private int poolNumber = 1;
-
-    /**
-     * Group number. Identifies statistics that should be considered within the same group.
-     */
-
-    private int groupNumber = 1;
 
     /**
      * Duration units.
@@ -252,12 +243,12 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
         lock.lock();
 
+        // There is only thread per pool write, but it is convenient to increment in this form 
+        AtomicInteger groupNumber = new AtomicInteger( 1 );
+
         try
         {
-            this.writeStatistics( statistics, this.bufferedWriter );
-
-            // Increment the pool number
-            this.poolNumber++;
+            this.writeStatistics( statistics, this.bufferedWriter, groupNumber );
         }
         catch ( IOException e )
         {
@@ -306,15 +297,6 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
     }
 
     /**
-     * @return the pool number for the current pool.
-     */
-
-    private int getPoolNumber()
-    {
-        return poolNumber;
-    }
-
-    /**
      * Returns a pool description from the pool definitions.
      * 
      * @return a pool description
@@ -325,7 +307,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         StringJoiner joiner = new StringJoiner( CsvStatisticsWriter.DELIMITER );
 
         // Pool number
-        joiner.add( String.valueOf( this.getPoolNumber() ) );
+        joiner.add( String.valueOf( pool.getPoolId() ) );
 
         // Subject of the evaluation
         if ( pool.getIsBaselinePool() )
@@ -712,10 +694,14 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * 
      * @param statistics the statistics
      * @param writer a shared writer, not to be closed
+     * @param groupNumber the statistics group number
      * @throws IOException if the statistics could not be written
      */
 
-    private void writeStatistics( Statistics statistics, BufferedOutputStream writer ) throws IOException
+    private void writeStatistics( Statistics statistics,
+                                  BufferedOutputStream writer,
+                                  AtomicInteger groupNumber )
+            throws IOException
     {
         Objects.requireNonNull( statistics );
 
@@ -742,7 +728,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         // Write the double scores
         if ( !statistics.getScoresList().isEmpty() )
         {
-            this.writeDoubleScores( mergeDescription, statistics.getScoresList(), writer );
+            this.writeDoubleScores( mergeDescription, statistics.getScoresList(), writer, groupNumber );
         }
 
         // Write the duration scores
@@ -751,7 +737,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             this.writeDurationScores( mergeDescription,
                                       statistics.getDurationScoresList(),
                                       writer,
-                                      this.getDurationUnits() );
+                                      this.getDurationUnits(),
+                                      groupNumber );
         }
 
         // Write the diagrams
@@ -759,7 +746,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         {
             this.writeDiagrams( mergeDescription,
                                 statistics.getDiagramsList(),
-                                writer );
+                                writer,
+                                groupNumber );
         }
 
         // Write the box plots per pair (per pool)
@@ -767,7 +755,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         {
             this.writeBoxPlots( mergeDescription,
                                 statistics.getOneBoxPerPairList(),
-                                writer );
+                                writer,
+                                groupNumber );
         }
 
         // Write the box plots per pool
@@ -775,7 +764,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         {
             this.writeBoxPlots( mergeDescription,
                                 statistics.getOneBoxPerPoolList(),
-                                writer );
+                                writer,
+                                groupNumber );
         }
 
         // Write the timing error diagrams
@@ -784,7 +774,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             this.writeDurationDiagrams( mergeDescription,
                                         statistics.getDurationDiagramsList(),
                                         writer,
-                                        this.getDurationUnits() );
+                                        this.getDurationUnits(),
+                                        groupNumber );
         }
     }
 
@@ -794,17 +785,26 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * @param poolDescription the pool description
      * @param statistics the statistics
      * @param writer a shared writer, not to be closed
+     * @param groupNumber the statistics group number
      * @throws IOException if the any of the scores could not be written
      */
 
     private void writeDoubleScores( StringJoiner poolDescription,
                                     List<DoubleScoreStatistic> statistics,
-                                    BufferedOutputStream writer )
+                                    BufferedOutputStream writer,
+                                    AtomicInteger groupNumber )
             throws IOException
     {
-        for ( DoubleScoreStatistic next : statistics )
+        // Sort in metric name order
+        Comparator<DoubleScoreStatistic> comparator =
+                ( a, b ) -> a.getMetric().getName().compareTo( b.getMetric().getName() );
+
+        List<DoubleScoreStatistic> sorted = new ArrayList<>( statistics );
+        sorted.sort( comparator );
+
+        for ( DoubleScoreStatistic next : sorted )
         {
-            this.writeDoubleScore( poolDescription, next, writer );
+            this.writeDoubleScore( poolDescription, next, writer, groupNumber );
         }
     }
 
@@ -815,18 +815,27 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * @param statistics the statistics
      * @param writer a shared writer, not to be closed
      * @param durationUnits the duration units
+     * @param groupNumber the statistics group number
      * @throws IOException if the any of the scores could not be written
      */
 
     private void writeDurationScores( StringJoiner poolDescription,
                                       List<DurationScoreStatistic> statistics,
                                       BufferedOutputStream writer,
-                                      ChronoUnit durationUnits )
+                                      ChronoUnit durationUnits,
+                                      AtomicInteger groupNumber )
             throws IOException
     {
-        for ( DurationScoreStatistic next : statistics )
+        // Sort in metric name order
+        Comparator<DurationScoreStatistic> comparator =
+                ( a, b ) -> a.getMetric().getName().compareTo( b.getMetric().getName() );
+
+        List<DurationScoreStatistic> sorted = new ArrayList<>( statistics );
+        sorted.sort( comparator );
+
+        for ( DurationScoreStatistic next : sorted )
         {
-            this.writeDurationScore( poolDescription, next, writer, durationUnits );
+            this.writeDurationScore( poolDescription, next, writer, durationUnits, groupNumber );
         }
     }
 
@@ -836,17 +845,26 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * @param poolDescription the pool description
      * @param statistics the statistics
      * @param writer a shared writer, not to be closed
+     * @param groupNumber the statistics group number
      * @throws IOException if the any of the scores could not be written
      */
 
     private void writeDiagrams( StringJoiner poolDescription,
                                 List<DiagramStatistic> statistics,
-                                BufferedOutputStream writer )
+                                BufferedOutputStream writer,
+                                AtomicInteger groupNumber )
             throws IOException
     {
-        for ( DiagramStatistic next : statistics )
+        // Sort in metric name order
+        Comparator<DiagramStatistic> comparator =
+                ( a, b ) -> a.getMetric().getName().compareTo( b.getMetric().getName() );
+
+        List<DiagramStatistic> sorted = new ArrayList<>( statistics );
+        sorted.sort( comparator );
+
+        for ( DiagramStatistic next : sorted )
         {
-            this.writeDiagram( poolDescription, next, writer );
+            this.writeDiagram( poolDescription, next, writer, groupNumber );
         }
     }
 
@@ -856,17 +874,26 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * @param poolDescription the pool description
      * @param statistics the statistics
      * @param writer a shared writer, not to be closed
+     * @param groupNumber the statistics group number
      * @throws IOException if the any of the scores could not be written
      */
 
     private void writeBoxPlots( StringJoiner poolDescription,
                                 List<BoxplotStatistic> statistics,
-                                BufferedOutputStream writer )
+                                BufferedOutputStream writer,
+                                AtomicInteger groupNumber )
             throws IOException
     {
-        for ( BoxplotStatistic next : statistics )
+        // Sort in metric name order
+        Comparator<BoxplotStatistic> comparator =
+                ( a, b ) -> a.getMetric().getName().compareTo( b.getMetric().getName() );
+
+        List<BoxplotStatistic> sorted = new ArrayList<>( statistics );
+        sorted.sort( comparator );
+
+        for ( BoxplotStatistic next : sorted )
         {
-            this.writeBoxplot( poolDescription, next, writer );
+            this.writeBoxplot( poolDescription, next, writer, groupNumber );
         }
     }
 
@@ -877,18 +904,27 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * @param statistics the statistics
      * @param writer a shared writer, not to be closed
      * @param durationUnits the duration units
+     * @param groupNumber the statistics group number
      * @throws IOException if the any of the scores could not be written
      */
 
     private void writeDurationDiagrams( StringJoiner poolDescription,
                                         List<DurationDiagramStatistic> statistics,
                                         BufferedOutputStream writer,
-                                        ChronoUnit durationUnits )
+                                        ChronoUnit durationUnits,
+                                        AtomicInteger groupNumber )
             throws IOException
     {
-        for ( DurationDiagramStatistic next : statistics )
+        // Sort in metric name order
+        Comparator<DurationDiagramStatistic> comparator =
+                ( a, b ) -> a.getMetric().getName().compareTo( b.getMetric().getName() );
+
+        List<DurationDiagramStatistic> sorted = new ArrayList<>( statistics );
+        sorted.sort( comparator );
+
+        for ( DurationDiagramStatistic next : sorted )
         {
-            this.writeDurationDiagram( poolDescription, next, writer, durationUnits );
+            this.writeDurationDiagram( poolDescription, next, writer, durationUnits, groupNumber );
         }
     }
 
@@ -899,12 +935,14 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * @param score the score
      * @param writer a shared writer, not to be closed
      * @param formatter the formatter
+     * @param groupNumber the statistics group number
      * @throws IOException if the score could not be written
      */
 
     private void writeDoubleScore( StringJoiner poolDescription,
                                    DoubleScoreStatistic score,
-                                   BufferedOutputStream writer )
+                                   BufferedOutputStream writer,
+                                   AtomicInteger groupNumber )
             throws IOException
     {
         DoubleScoreMetric metric = score.getMetric();
@@ -945,7 +983,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             this.append( joiner, CsvStatisticsWriter.getDoubleString( metricComponent.getOptimum(), true ), false );
 
             // Add the statistic group number
-            this.append( joiner, String.valueOf( this.groupNumber ), false );
+            this.append( joiner, String.valueOf( groupNumber.getAndIncrement() ), false );
 
             // Add the statistic value
             String formattedValue = this.getDecimalFormatter()
@@ -954,9 +992,6 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
             // Write the row
             writer.write( joiner.toString().getBytes() );
-
-            // Increment the group number
-            this.groupNumber++;
         }
     }
 
@@ -985,13 +1020,15 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * @param score the score
      * @param writer a shared writer, not to be closed
      * @param durationUnits the duration units
+     * @param groupNumber the statistics group number
      * @throws IOException if the score could not be written
      */
 
     private void writeDurationScore( StringJoiner poolDescription,
                                      DurationScoreStatistic score,
                                      BufferedOutputStream writer,
-                                     ChronoUnit durationUnits )
+                                     ChronoUnit durationUnits,
+                                     AtomicInteger groupNumber )
             throws IOException
     {
         DurationScoreMetric metric = score.getMetric();
@@ -1031,7 +1068,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                               metricComponent.getOptimum() );
 
                 // Add the statistic group number
-                this.append( joiner, String.valueOf( this.groupNumber ), false );
+                this.append( joiner, String.valueOf( groupNumber.getAndIncrement() ), false );
 
                 // Add the statistic value
                 com.google.protobuf.Duration protoDuration = next.getValue();
@@ -1055,7 +1092,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                               metricComponent.getOptimum() );
 
                 // Add the statistic group number
-                this.append( joiner, String.valueOf( this.groupNumber ), false );
+                this.append( joiner, String.valueOf( groupNumber.getAndIncrement() ), false );
 
                 // Add the statistic value
                 com.google.protobuf.Duration protoDuration = next.getValue();
@@ -1070,9 +1107,6 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
             // Write the row
             writer.write( joiner.toString().getBytes() );
-
-            // Increment the group number
-            this.groupNumber++;
         }
     }
 
@@ -1120,20 +1154,21 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * @param poolDescription the pool description
      * @param diagram the diagram
      * @param writer a shared writer, not to be closed
-     * @param formatter the formatter
+     * @param groupNumber the statistics group number
      * @throws IOException if the score could not be written
      */
 
     private void writeDiagram( StringJoiner poolDescription,
                                DiagramStatistic diagram,
-                               BufferedOutputStream writer )
+                               BufferedOutputStream writer,
+                               AtomicInteger groupNumber )
             throws IOException
     {
         DiagramMetric metric = diagram.getMetric();
 
         for ( DiagramStatisticComponent next : diagram.getStatisticsList() )
         {
-            int innerGroupNumber = this.groupNumber;
+            int innerGroupNumber = groupNumber.get();
             for ( Double nextValue : next.getValuesList() )
             {
                 // Add a line separator for the next row
@@ -1186,9 +1221,10 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             }
         }
 
-        // Increment the group number by the number of elements in one diagram dimension
-        this.groupNumber += diagram.getStatistics( 0 )
-                                   .getValuesCount();
+        // Increment the group number by the number of elements in one diagram dimension because they are all equal in
+        // size
+        groupNumber.getAndAdd( diagram.getStatistics( 0 )
+                                      .getValuesCount() );
     }
 
     /**
@@ -1199,13 +1235,15 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * @param writer a shared writer, not to be closed
      * @param formatter the formatter
      * @param durationUnits the duration units
+     * @param groupNumber the statistics group number
      * @throws IOException if the score could not be written
      */
 
     private void writeDurationDiagram( StringJoiner poolDescription,
                                        DurationDiagramStatistic diagram,
                                        BufferedOutputStream writer,
-                                       ChronoUnit durationUnits )
+                                       ChronoUnit durationUnits,
+                                       AtomicInteger groupNumber )
             throws IOException
     {
         DurationDiagramMetric metric = diagram.getMetric();
@@ -1238,8 +1276,10 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             // No limits for the reference time
             CsvStatisticsWriter.addEmptyValues( joiner, 3 );
 
+            int gNumber = groupNumber.getAndIncrement();
+
             // Add the statistic group number
-            this.append( joiner, String.valueOf( this.groupNumber ), false );
+            this.append( joiner, String.valueOf( gNumber ), false );
 
             String formattedValue = epochDurationInUserUnits.toPlainString();
             this.append( joiner, formattedValue, false );
@@ -1267,14 +1307,11 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             this.addDurationMetricLimits( joinerTwo, metric.getMinimum(), metric.getMaximum(), metric.getOptimum() );
 
             // Add the statistic group number
-            this.append( joinerTwo, String.valueOf( this.groupNumber ), false );
+            this.append( joinerTwo, String.valueOf( gNumber ), false );
 
             String formattedValueDuration = durationInUserUnits.toPlainString();
             this.append( joinerTwo, formattedValueDuration, false );
             writer.write( joinerTwo.toString().getBytes() );
-
-            // Increment the group number
-            this.groupNumber++;
         }
     }
 
@@ -1284,18 +1321,20 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * @param poolDescription the pool description
      * @param boxplot the box plot
      * @param writer a shared writer, not to be closed
-     * @param formatter the formatter
+     * @param groupNumber the statistics group number
      * @throws IOException if the score could not be written
      */
 
     private void writeBoxplot( StringJoiner poolDescription,
                                BoxplotStatistic boxplot,
-                               BufferedOutputStream writer )
+                               BufferedOutputStream writer,
+                               AtomicInteger groupNumber )
             throws IOException
     {
         BoxplotMetric metric = boxplot.getMetric();
 
-        // Amount by which to increment the group number after writing
+        // Group number and amount by which to increment the group number after writing
+        int gNumber = groupNumber.get();
         int addToGroupNumber = 0;
 
         MetricDimension quantileValueType = MetricDimension.valueOf( metric.getQuantileValueType().name() );
@@ -1316,7 +1355,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                           metric,
                                           componentName,
                                           units,
-                                          this.groupNumber + addToGroupNumber,
+                                          gNumber + addToGroupNumber,
                                           statistic,
                                           writer );
 
@@ -1332,7 +1371,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                           metric,
                                           "PROBABILITY",
                                           "PROBABILITY",
-                                          this.groupNumber + addToGroupNumber + i,
+                                          gNumber + addToGroupNumber + i,
                                           probabilities.get( i ),
                                           writer );
             }
@@ -1346,7 +1385,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                           metric,
                                           quantileValueTypeString,
                                           units,
-                                          this.groupNumber + addToGroupNumber + i,
+                                          gNumber + addToGroupNumber + i,
                                           quantiles.get( i ),
                                           writer );
             }
@@ -1356,7 +1395,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         }
 
         // Increment the group number
-        this.groupNumber += addToGroupNumber;
+        groupNumber.getAndAdd( addToGroupNumber );
     }
 
     /**

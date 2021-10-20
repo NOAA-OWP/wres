@@ -173,7 +173,8 @@ public class WriterTestHelper
                                           timeOne,
                                           null,
                                           threshold,
-                                          false );
+                                          false,
+                                          1 );
 
         PoolMetadata fakeMetadataOne = PoolMetadata.of( evaluation, pool );
 
@@ -207,7 +208,8 @@ public class WriterTestHelper
                                              timeTwo,
                                              null,
                                              threshold,
-                                             false );
+                                             false,
+                                             2 );
 
         PoolMetadata fakeMetadataTwo = PoolMetadata.of( evaluation, poolTwo );
 
@@ -265,7 +267,8 @@ public class WriterTestHelper
                                           timeOne,
                                           null,
                                           threshold,
-                                          false );
+                                          false,
+                                          1 );
 
         PoolMetadata fakeMetadata = PoolMetadata.of( evaluation, pool );
 
@@ -346,7 +349,8 @@ public class WriterTestHelper
                                           timeOne,
                                           null,
                                           threshold,
-                                          false );
+                                          false,
+                                          1 );
 
         PoolMetadata fakeMetadata = PoolMetadata.of( evaluation, pool );
 
@@ -442,7 +446,8 @@ public class WriterTestHelper
                                           timeOne,
                                           null,
                                           threshold,
-                                          false );
+                                          false,
+                                          1 );
 
         PoolMetadata fakeMetadata = PoolMetadata.of( evaluation, pool );
 
@@ -533,7 +538,8 @@ public class WriterTestHelper
                                           timeOne,
                                           null,
                                           threshold,
-                                          false );
+                                          false,
+                                          1 );
 
         PoolMetadata fakeMetadata = PoolMetadata.of( evaluation, pool );
 
@@ -623,7 +629,8 @@ public class WriterTestHelper
                                           timeOne,
                                           null,
                                           threshold,
-                                          false );
+                                          false,
+                                          1 );
 
         PoolMetadata fakeMetadata = PoolMetadata.of( evaluation, pool );
 
@@ -693,7 +700,8 @@ public class WriterTestHelper
                                           timeOne,
                                           null,
                                           thresholdOne,
-                                          false );
+                                          false,
+                                          1 );
 
         PoolMetadata fakeMetadataA = PoolMetadata.of( evaluation, pool );
 
@@ -718,7 +726,8 @@ public class WriterTestHelper
                                              timeOne,
                                              null,
                                              thresholdTwo,
-                                             false );
+                                             false,
+                                             2 );
 
         PoolMetadata fakeMetadataB = PoolMetadata.of( evaluation, poolTwo );
 
@@ -731,7 +740,8 @@ public class WriterTestHelper
                                                timeTwo,
                                                null,
                                                thresholdOne,
-                                               false );
+                                               false,
+                                               3 );
 
         PoolMetadata fakeMetadataC = PoolMetadata.of( evaluation, poolThree );
 

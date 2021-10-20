@@ -6,9 +6,15 @@ import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.jimfs.Configuration;
@@ -62,7 +68,7 @@ class CsvStatisticsWriterTest
     void testWriteDoubleScores() throws IOException
     {
         // Get some raw scores and an imaginary evaluation
-        Statistics statistics = this.getDoubleScoreStatistics( false );
+        Statistics statistics = this.getDoubleScoreStatistics( false, 1 );
         Evaluation evaluation = this.getEvaluation();
 
         // Create a path on an in-memory file system
@@ -92,9 +98,9 @@ class CsvStatisticsWriterTest
 
             String lineOneExpected = "QINE,SQIN,,1,RIGHT,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
-                                     + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,"
-                                     + "PT0S,UNKNOWN,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN SQUARE ERROR,MAIN,,,0.0,"
-                                     + "Infinity,0.0,1,1.0";
+                                     + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,"
+                                     + "PT1H,PT0S,UNKNOWN,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN ABSOLUTE ERROR,"
+                                     + "MAIN,,,0.0,Infinity,0.0,1,3.0";
 
             assertEquals( lineOneExpected, actual.get( 1 ) );
 
@@ -108,9 +114,9 @@ class CsvStatisticsWriterTest
 
             String lineThreeExpected = "QINE,SQIN,,1,RIGHT,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
-                                       + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,"
-                                       + "PT1H,PT0S,UNKNOWN,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN ABSOLUTE ERROR,"
-                                       + "MAIN,,,0.0,Infinity,0.0,3,3.0";
+                                       + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,"
+                                       + "PT0S,UNKNOWN,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN SQUARE ERROR,MAIN,,,0.0,"
+                                       + "Infinity,0.0,3,1.0";
 
             assertEquals( lineThreeExpected, actual.get( 3 ) );
         }
@@ -120,7 +126,7 @@ class CsvStatisticsWriterTest
     void testWriteDoubleScoresForSeparateBaseline() throws IOException
     {
         // Get some raw scores and an imaginary evaluation
-        Statistics statistics = this.getDoubleScoreStatistics( true );
+        Statistics statistics = this.getDoubleScoreStatistics( true, 1 );
         Evaluation evaluation = this.getEvaluation();
 
         // Create a path on an in-memory file system
@@ -151,8 +157,8 @@ class CsvStatisticsWriterTest
             String lineOneExpected = "QINE,SQIN,,1,BASELINE,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,"
-                                     + "PT0S,UNKNOWN,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN SQUARE ERROR,MAIN,,,0.0,"
-                                     + "Infinity,0.0,1,1.0";
+                                     + "PT0S,UNKNOWN,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN ABSOLUTE ERROR,MAIN,,,"
+                                     + "0.0,Infinity,0.0,1,3.0";
 
             assertEquals( lineOneExpected, actual.get( 1 ) );
 
@@ -167,8 +173,8 @@ class CsvStatisticsWriterTest
             String lineThreeExpected = "QINE,SQIN,,1,BASELINE,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,"
-                                       + "PT0S,UNKNOWN,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN ABSOLUTE ERROR,MAIN,,,"
-                                       + "0.0,Infinity,0.0,3,3.0";
+                                       + "PT0S,UNKNOWN,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN SQUARE ERROR,MAIN,,,0.0,"
+                                       + "Infinity,0.0,3,1.0";
 
             assertEquals( lineThreeExpected, actual.get( 3 ) );
         }
@@ -411,11 +417,73 @@ class CsvStatisticsWriterTest
     }
 
     /**
+     * See #97539.
+     * @throws IOException if a write error occurs
+     * @throws InterruptedException if a thread is interrupted
+     * @throws ExecutionException if a write fails for any other reason
+     */
+
+    @RepeatedTest( 100 )
+    void testMultithreadedWriteIsDeterministic() throws IOException, InterruptedException, ExecutionException
+    {
+        // Get some raw scores for two different pools and an imaginary evaluation
+        Statistics statisticsOne = this.getDoubleScoreStatistics( false, 1 );
+        Statistics statisticsTwo = this.getDoubleScoreStatistics( true, 2 );
+
+        Evaluation evaluation = this.getEvaluation();
+
+        // Create a path on an in-memory file system
+        String fileName = "evaluation.csv";
+
+        ExecutorService executor = Executors.newFixedThreadPool( 2 );
+        
+        try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
+        {
+            Path directory = fileSystem.getPath( "test" );
+            Files.createDirectory( directory );
+            Path pathToStore = fileSystem.getPath( "test", fileName );
+            Path csvPath = Files.createFile( pathToStore );
+            CsvStatisticsWriter writer = CsvStatisticsWriter.of( evaluation, csvPath, false );
+
+            // Create the writer and submit two separate writes to the two-threaded executor
+            Runnable runOne = () -> writer.apply( statisticsOne );
+            Runnable runTwo = () -> writer.apply( statisticsTwo );
+
+            Future<?> one = executor.submit( runOne );
+            Future<?> two = executor.submit( runTwo );
+
+            // Complete the writes
+            one.get();
+            two.get();
+
+            // Flush the writes by closing
+            writer.close();
+
+            // Read the lines written, sort them in natural order, and assert against them
+            List<String> actual = Files.readAllLines( pathToStore );
+            Collections.sort( actual );
+          
+            assertEquals( 7, actual.size() );
+
+            assertEquals( CsvStatisticsWriterTest.LINE_ZERO_EXPECTED, actual.get( 0 ) );
+
+            String lineOneExpected = "QINE,SQIN,,1,RIGHT,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
+                                     + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
+                                     + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,"
+                                     + "PT1H,PT0S,UNKNOWN,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN ABSOLUTE ERROR,"
+                                     + "MAIN,,,0.0,Infinity,0.0,1,3.0";
+
+            assertEquals( lineOneExpected, actual.get( 1 ) );
+        }
+    }
+
+    /**
      * @param isBaselinePool is true for a baseline pool, false for a regular pool
+     * @param poolNumber the pool number
      * @return statistics that include double scores.
      */
 
-    private Statistics getDoubleScoreStatistics( boolean isBaselinePool )
+    private Statistics getDoubleScoreStatistics( boolean isBaselinePool, int poolNumber )
     {
         // Get some raw scores
         List<DoubleScoreStatisticOuter> scores = WriterTestHelper.getScoreStatisticsForOnePool();
@@ -432,11 +500,13 @@ class CsvStatisticsWriterTest
         if ( isBaselinePool )
         {
             builder.setBaselinePool( pool.toBuilder()
-                                         .setIsBaselinePool( true ) );
+                                         .setIsBaselinePool( true )
+                                         .setPoolId( poolNumber ) );
         }
         else
         {
-            builder.setPool( pool );
+            builder.setPool( pool.toBuilder()
+                                 .setPoolId( poolNumber ) );
         }
 
         return builder.build();
