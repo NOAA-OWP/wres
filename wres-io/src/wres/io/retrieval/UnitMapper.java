@@ -79,7 +79,7 @@ public class UnitMapper
         }
         catch ( UnsupportedUnitException uue )
         {
-            LOGGER.warn( "Unknown unit {} may cause unit conversion issues.",
+            LOGGER.warn( "Unknown unit '{}' may cause unit conversion issues.",
                          desiredMeasurementUnitName );
         }
 
@@ -89,16 +89,21 @@ public class UnitMapper
             String aliasName = unitAlias.getAlias();
             String unitName = unitAlias.getUnit();
 
-            try
+            // In the case of the desiredMeasurementUnitName, it's already been
+            // added above, so skip here to avoid duplication.
+            if ( !aliasName.equals( desiredMeasurementUnitName ) )
             {
-                Unit<?> indriyaUnit = Units.getUnit( unitName,
-                                                     aliasToUnitStrings );
-                this.indriyaUnits.put( aliasName, indriyaUnit );
-            }
-            catch ( UnsupportedUnitException uue )
-            {
-                LOGGER.warn( "Unknown unit {} may cause unit conversion issues.",
-                             unitName );
+                try
+                {
+                    Unit<?> indriyaUnit = Units.getUnit( aliasName,
+                                                         aliasToUnitStrings );
+                    this.indriyaUnits.put( aliasName, indriyaUnit );
+                }
+                catch ( UnsupportedUnitException uue )
+                {
+                    LOGGER.warn( "Unknown unit '{}' may cause unit conversion issues.",
+                                 unitName );
+                }
             }
         }
     }
