@@ -8,15 +8,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import javax.measure.Quantity;
 import javax.measure.Unit;
-import javax.measure.UnitConverter;
 import javax.measure.format.MeasurementParseException;
 import javax.measure.quantity.Length;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import si.uom.quantity.VolumetricFlowRate;
 import tech.units.indriya.AbstractUnit;
 
 import static systems.uom.common.USCustomary.FOOT;
@@ -325,25 +322,6 @@ public class Units
         return Units.getUnit( unitName, Collections.emptyMap() );
     }
 
-
-    /**
-     * Given a quantity of flow from and target unit to, convert.
-     *
-     * Probably not needed, given the "to" method on a Quantity.
-     * @deprecated
-     * @param from The quantity of flow rate to convert.
-     * @param to The resulting quantity in the unit prescribed.
-     * @return the primitive double value converted.
-     */
-
-    static double convertFlow( Quantity<VolumetricFlowRate> from,
-                               Unit<VolumetricFlowRate> to )
-    {
-        UnitConverter converter = from.getUnit()
-                                      .getConverterTo( to );
-        Number converted = converter.convert( from.getValue() );
-        return converted.doubleValue();
-    }
 
     public static final class UnsupportedUnitException extends RuntimeException
     {
