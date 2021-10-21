@@ -135,7 +135,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * Platform-dependent line separator.
      */
 
-    private static final String LINE_SEPARATOR = System.lineSeparator();
+    private static final byte[] LINE_SEPARATOR = System.lineSeparator()
+                                                       .getBytes( StandardCharsets.UTF_8 );
 
     /**
      * Lock for writing csv to the {@link #path} for which this writer is built.
@@ -950,7 +951,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         for ( DoubleScoreStatisticComponent next : score.getStatisticsList() )
         {
             // Add a line separator for the next row
-            writer.write( CsvStatisticsWriter.LINE_SEPARATOR.getBytes() );
+            writer.write( CsvStatisticsWriter.LINE_SEPARATOR );
 
             StringJoiner joiner = new StringJoiner( CsvStatisticsWriter.DELIMITER );
 
@@ -990,8 +991,12 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                         .apply( next.getValue() );
             this.append( joiner, formattedValue, false );
 
+            // Join the row string and get the row bytes in utf8.
+            byte[] row = joiner.toString()
+                               .getBytes( StandardCharsets.UTF_8 );
+
             // Write the row
-            writer.write( joiner.toString().getBytes() );
+            writer.write( row );
         }
     }
 
@@ -1036,7 +1041,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         for ( DurationScoreStatisticComponent next : score.getStatisticsList() )
         {
             // Add a line separator for the next row
-            writer.write( CsvStatisticsWriter.LINE_SEPARATOR.getBytes() );
+            writer.write( CsvStatisticsWriter.LINE_SEPARATOR );
 
             StringJoiner joiner = new StringJoiner( CsvStatisticsWriter.DELIMITER );
 
@@ -1105,8 +1110,12 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                 this.append( joiner, formattedValue, false );
             }
 
+            // Join the row string and get the row bytes in utf8.
+            byte[] row = joiner.toString()
+                               .getBytes( StandardCharsets.UTF_8 );
+
             // Write the row
-            writer.write( joiner.toString().getBytes() );
+            writer.write( row );
         }
     }
 
@@ -1172,7 +1181,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             for ( Double nextValue : next.getValuesList() )
             {
                 // Add a line separator for the next row
-                writer.write( CsvStatisticsWriter.LINE_SEPARATOR.getBytes() );
+                writer.write( CsvStatisticsWriter.LINE_SEPARATOR );
 
                 StringJoiner joiner = new StringJoiner( CsvStatisticsWriter.DELIMITER );
 
@@ -1213,8 +1222,12 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
                 this.append( joiner, formattedValue, false );
 
+                // Join the row string and get the row bytes in utf8.
+                byte[] row = joiner.toString()
+                                   .getBytes( StandardCharsets.UTF_8 );
+
                 // Write the row
-                writer.write( joiner.toString().getBytes() );
+                writer.write( row );
 
                 // Increment the group number
                 innerGroupNumber++;
@@ -1254,7 +1267,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         for ( PairOfInstantAndDuration next : diagram.getStatisticsList() )
         {
             // Write the instant
-            writer.write( CsvStatisticsWriter.LINE_SEPARATOR.getBytes() );
+            writer.write( CsvStatisticsWriter.LINE_SEPARATOR );
             StringJoiner joiner = new StringJoiner( CsvStatisticsWriter.DELIMITER );
             joiner.merge( poolDescription );
             MetricConstants namedMetric = MetricConstants.valueOf( metric.getName().name() );
@@ -1283,10 +1296,12 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
             String formattedValue = epochDurationInUserUnits.toPlainString();
             this.append( joiner, formattedValue, false );
-            writer.write( joiner.toString().getBytes() );
+            byte[] valueOne = joiner.toString()
+                                    .getBytes( StandardCharsets.UTF_8 );
+            writer.write( valueOne );
 
             // Write the duration
-            writer.write( CsvStatisticsWriter.LINE_SEPARATOR.getBytes() );
+            writer.write( CsvStatisticsWriter.LINE_SEPARATOR );
             StringJoiner joinerTwo = new StringJoiner( CsvStatisticsWriter.DELIMITER );
             joinerTwo.merge( poolDescription );
             this.append( joinerTwo, namedMetric.toString(), false );
@@ -1311,7 +1326,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
             String formattedValueDuration = durationInUserUnits.toPlainString();
             this.append( joinerTwo, formattedValueDuration, false );
-            writer.write( joinerTwo.toString().getBytes() );
+            byte[] valueTwo = joinerTwo.toString()
+                                       .getBytes( StandardCharsets.UTF_8 );
+            writer.write( valueTwo );
         }
     }
 
@@ -1421,7 +1438,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             throws IOException
     {
         // Add a line separator for the next row
-        writer.write( CsvStatisticsWriter.LINE_SEPARATOR.getBytes() );
+        writer.write( CsvStatisticsWriter.LINE_SEPARATOR );
 
         StringJoiner joiner = new StringJoiner( CsvStatisticsWriter.DELIMITER );
 
@@ -1458,8 +1475,10 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                     .apply( statistic );
         this.append( joiner, formattedValue, false );
 
-        // Write the row
-        writer.write( joiner.toString().getBytes() );
+        // Join the row string and get the row bytes in utf8.
+        byte[] row = joiner.toString()
+                           .getBytes( StandardCharsets.UTF_8 );
+        writer.write( row );
     }
 
     /**
@@ -1589,7 +1608,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
         try
         {
-            writer.write( CsvStatisticsWriter.HEADER.getBytes() );
+            byte[] headerBytes = CsvStatisticsWriter.HEADER.getBytes( StandardCharsets.UTF_8 );
+            writer.write( headerBytes );
 
             LOGGER.trace( "Header for the CSV file composed of {} written to {}.",
                           CsvStatisticsWriter.HEADER,
