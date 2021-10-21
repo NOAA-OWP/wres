@@ -651,6 +651,7 @@ public class Validation
     /**
      * @deprecated since 5.2 ('netcdf' is deprecated, 'netcdf2' ignores extra declarations)
      */
+    @Deprecated( since="5.2" )
     private static boolean isNetcdfOutputConfigValid( String path, List<DestinationConfig> destinations )
     {
         Objects.requireNonNull( destinations, NON_NULL );
@@ -1124,30 +1125,36 @@ public class Validation
         {
             isValid = false;
 
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                         + " The ensemble metrics {} require ensemble pairs, but the declared data type for the RIGHT "
-                         + "data source is '{}'. Either correct this data type to 'ensemble forecasts' or remove the "
-                         + "ensemble metrics before proceeding.",
-                         projectConfigPlus.getOrigin(),
-                         projectConfig.getInputs().getRight().sourceLocation().getLineNumber(),
-                         projectConfig.getInputs().getRight().sourceLocation().getColumnNumber(),
-                         ensemble,
-                         type.name().toLowerCase() );
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " The ensemble metrics {} require ensemble pairs, but the declared data type for the RIGHT "
+                             + "data source is '{}'. Either correct this data type to 'ensemble forecasts' or remove the "
+                             + "ensemble metrics before proceeding.",
+                             projectConfigPlus.getOrigin(),
+                             projectConfig.getInputs().getRight().sourceLocation().getLineNumber(),
+                             projectConfig.getInputs().getRight().sourceLocation().getColumnNumber(),
+                             ensemble,
+                             type.name().toLowerCase() );
+            }
         }
 
         if ( !discreteProbability.isEmpty() && type != DatasourceType.ENSEMBLE_FORECASTS )
         {
             isValid = false;
 
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                         + " The discrete probability metrics {} require ensemble pairs, but the declared data type for "
-                         + "the RIGHT data source is '{}'. Either correct this data type to 'ensemble forecasts' or "
-                         + "remove the discrete probability metrics before proceeding.",
-                         projectConfigPlus.getOrigin(),
-                         projectConfig.getInputs().getRight().sourceLocation().getLineNumber(),
-                         projectConfig.getInputs().getRight().sourceLocation().getColumnNumber(),
-                         discreteProbability,
-                         type.name().toLowerCase() );
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " The discrete probability metrics {} require ensemble pairs, but the declared data type for "
+                             + "the RIGHT data source is '{}'. Either correct this data type to 'ensemble forecasts' or "
+                             + "remove the discrete probability metrics before proceeding.",
+                             projectConfigPlus.getOrigin(),
+                             projectConfig.getInputs().getRight().sourceLocation().getLineNumber(),
+                             projectConfig.getInputs().getRight().sourceLocation().getColumnNumber(),
+                             discreteProbability,
+                             type.name().toLowerCase() );
+            }
         }
 
         return isValid;
@@ -1317,10 +1324,10 @@ public class Validation
 
         boolean result = true;
 
-        final String BEGIN_TAG = "<chartDrawingParameters>";
-        final String END_TAG = "</chartDrawingParameters>";
-        final String BEGIN_COMMENT = "<!--";
-        final String END_COMMENT = "-->";
+        final String beginTag = "<chartDrawingParameters>";
+        final String endTag = "</chartDrawingParameters>";
+        final String beginComment = "<!--";
+        final String endComment = "-->";
 
         // For to give a helpful message, find closeby tag without NPE
         Locatable nearbyTag = Validation.getNearbyTag( d );
@@ -1329,37 +1336,37 @@ public class Validation
         // starts with the correct tag or starts with a comment.
         String trimmedCustomString = customString.trim();
 
-        if ( !trimmedCustomString.startsWith( BEGIN_TAG )
-             && !trimmedCustomString.startsWith( BEGIN_COMMENT ) )
+        if ( !trimmedCustomString.startsWith( beginTag )
+             && !trimmedCustomString.startsWith( beginComment ) )
         {
             if ( LOGGER.isWarnEnabled() )
             {
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                              + " If custom graphics configuration is "
-                             + "provided, please start it with "
-                             + BEGIN_TAG,
+                             + "provided, please start it with {}",
                              projectConfigPlus.getOrigin(),
                              nearbyTag.sourceLocation().getLineNumber(),
                              nearbyTag.sourceLocation()
-                                      .getColumnNumber() );
+                                      .getColumnNumber(),
+                             beginTag );
             }
 
             result = false;
         }
 
-        if ( !trimmedCustomString.endsWith( END_TAG )
-             && !trimmedCustomString.endsWith( END_COMMENT ) )
+        if ( !trimmedCustomString.endsWith( endTag )
+             && !trimmedCustomString.endsWith( endComment ) )
         {
             if ( LOGGER.isWarnEnabled() )
             {
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                              + " If custom graphics configuration is "
-                             + "provided, please end it with "
-                             + END_TAG,
+                             + "provided, please end it with {}",
                              projectConfigPlus.getOrigin(),
                              nearbyTag.sourceLocation().getLineNumber(),
                              nearbyTag.sourceLocation()
-                                      .getColumnNumber() );
+                                      .getColumnNumber(),
+                             endTag );
             }
 
             result = false;
@@ -3016,8 +3023,12 @@ public class Validation
 
             try
             {
-                MonthDay.of( remove.getEarliestMonth(),
-                             remove.getEarliestDay() );
+                MonthDay monthDay = MonthDay.of( remove.getEarliestMonth(),
+                                                 remove.getEarliestDay() );
+
+                LOGGER.debug( "While validating the project declaration, discovered a monthday of {} for the "
+                              + "<removeMemberByValidYear> declaration.",
+                              monthDay );
             }
             catch ( DateTimeException dte )
             {
@@ -3049,8 +3060,9 @@ public class Validation
                                           DataSourceConfig dataSourceConfig,
                                           DataSourceConfig.Source source )
     {
-        boolean sourceValid = Validation.isDateConfigValid( projectConfigPlus, source )
-                              && Validation.isURIDefinedInSourceWhenExpected( projectConfigPlus, source );
+        Validation.warnAboutZoneOffset( projectConfigPlus, source );
+        
+        boolean sourceValid = Validation.isURIDefinedInSourceWhenExpected( projectConfigPlus, source );
 
         if ( source.getInterface() != null
              && source.getInterface()
@@ -3240,14 +3252,17 @@ public class Validation
 
     /**
      * Checks validity of date and time configuration such as zone and offset.
+     * 
+     * TODO: If this method needs to assert something more, add it return the status.
+     * 
      * @param projectConfigPlus the config
      * @param source the particular source element to check
      * @return true if valid, false otherwise
      * @throws NullPointerException when any arg is null
      */
 
-    static boolean isDateConfigValid( ProjectConfigPlus projectConfigPlus,
-                                      DataSourceConfig.Source source )
+    static void warnAboutZoneOffset( ProjectConfigPlus projectConfigPlus,
+                                     DataSourceConfig.Source source )
     {
         Objects.requireNonNull( projectConfigPlus, NON_NULL );
         Objects.requireNonNull( source, NON_NULL );
@@ -3265,7 +3280,5 @@ public class Validation
                          source.sourceLocation().getColumnNumber() );
 
         }
-
-        return true;
     }
 }
