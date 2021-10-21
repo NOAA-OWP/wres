@@ -74,10 +74,7 @@ import wres.statistics.generated.TimeWindow;
  * Writes statistics to a file that contains comma separated values (CSV). There is one CSV file per evaluation and  
  * there should be one instance of this writer per evaluation.
  * 
- *  and hence
- * one instance of this writer per evaluation is anticipated, although multiple .
- * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 @ThreadSafe
