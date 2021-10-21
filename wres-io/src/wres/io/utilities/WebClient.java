@@ -67,10 +67,10 @@ public class WebClient
                                                                       504,
                                                                       523,
                                                                       524 );
-
     private final OkHttpClient httpClient;
     private final boolean trackTimings;
     private final List<TimingInformation> timingInformation = new ArrayList<>( 1 );
+    private String userAgent;
 
     public WebClient( boolean trackTimings )
     {
@@ -81,6 +81,7 @@ public class WebClient
                                             .readTimeout( REQUEST_TIMEOUT )
                                             .build();
         this.trackTimings = trackTimings;
+        this.setUserAgent();
     }
 
     public WebClient( Pair<SSLContext,X509TrustManager> sslGoo, boolean trackTimings )
@@ -96,6 +97,7 @@ public class WebClient
                                                                sslGoo.getRight() )
                                             .build();
         this.trackTimings = trackTimings;
+        this.setUserAgent();
     }
 
     public WebClient()
@@ -217,6 +219,7 @@ public class WebClient
             Request request = new Request.Builder()
                     .url( uri.toURL() )
                     .header( "Accept-Encoding", "gzip" )
+                    .header( "User-Agent", this.getUserAgent()  )
                     .build();
 
             monitorEvent.begin();
@@ -370,6 +373,32 @@ public class WebClient
         }
 
         return httpResponse;
+    }
+
+    private void setUserAgent()
+    {
+        final String VERSION_UNKNOWN = "unspecified";
+        Package toGetVersion = this.getClass().getPackage();
+        String wresIoVersion;
+
+        if ( toGetVersion != null
+             && toGetVersion.getImplementationVersion() != null )
+        {
+            // When running from a released zip, the version should show up.
+            wresIoVersion = toGetVersion.getImplementationVersion();
+        }
+        else
+        {
+            // When running from source, this will be the expected outcome.
+            wresIoVersion = VERSION_UNKNOWN;
+        }
+
+        this.userAgent = "wres-io/" + wresIoVersion;
+    }
+
+    private String getUserAgent()
+    {
+        return this.userAgent;
     }
 
     /**
