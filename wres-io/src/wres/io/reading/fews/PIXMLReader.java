@@ -478,6 +478,8 @@ public final class PIXMLReader extends XMLReader
         String ensembleMemberId = null;
         String ensembleMemberIndex = null;
         double missingValue = PIXML_DEFAULT_MISSING_VALUE;
+        String locationLongName = null;
+        String locationStationName = null;
         String locationDescription = null;
         Double latitude = null;
         Double longitude = null;
@@ -546,7 +548,11 @@ public final class PIXMLReader extends XMLReader
                 }
                 else if ( localName.equalsIgnoreCase( "longName" ) )
                 {
-                    locationDescription = XMLHelper.getXMLText( reader );
+                    locationLongName = XMLHelper.getXMLText( reader );
+                }
+                else if ( localName.equalsIgnoreCase( "stationName" ) )
+                {
+                    locationStationName = XMLHelper.getXMLText( reader );
                 }
                 else if ( localName.equalsIgnoreCase( "lat" ) )
                 {
@@ -599,6 +605,24 @@ public final class PIXMLReader extends XMLReader
         else if ( Objects.nonNull( ensembleMemberIndex ) )
         {
             traceName = ensembleMemberIndex;
+        }
+
+        if ( locationStationName != null )
+        {
+            locationDescription = locationStationName;
+        }
+
+        if ( locationLongName != null )
+        {
+            // Append the long name to description when already set with station
+            if ( locationDescription != null )
+            {
+                locationDescription += " " + locationLongName;
+            }
+            else
+            {
+                locationDescription = locationLongName;
+            }
         }
 
 		// See #59438
