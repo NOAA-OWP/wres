@@ -97,8 +97,12 @@ public class PoolFactory
     /**
      * Create pools for single-valued data. This method will attempt to retrieve and re-use data that is common to 
      * multiple pools. Thus, it is generally better to provide a list of pool requests that represent connected pools, 
-     * such as pools that all belong to the same feature group, rather than supplying a long list of unconnected pools, 
-     * such as pools that belong to many feature groups.
+     * such as pools that all belong to the same feature group, rather than supplying a single pool or a long list of 
+     * unconnected pools, such as pools that belong to many feature groups.
+     * 
+     * TODO: analyze the pool requests and find groups with shared data, i.e., automatically analyze/optimize. In that
+     * case, there should be one call to this method per evaluation, which should then forward each group of requests 
+     * for batched creation of suppliers, as this method currently operates.
      * 
      * @param project the project for which pools are required, not null
      * @param poolRequests the pool requests, not null
@@ -117,13 +121,14 @@ public class PoolFactory
         Objects.requireNonNull( poolRequests, "Cannot create pools without list of pool requests." );
         Objects.requireNonNull( retrieverFactory, "Cannot create pools without a retriever factory." );
 
-        // Validate the project declaration for the required data type
-        // TODO: do not rely on the declared type. Detect the type instead
-        // See #57301
         ProjectConfig projectConfig = project.getProjectConfig();
         PairConfig pairConfig = projectConfig.getPair();
         Inputs inputsConfig = projectConfig.getInputs();
         DataSourceConfig baselineConfig = inputsConfig.getBaseline();
+        
+        // Check that the project declaration is consistent with a request for single-valued pools
+        // TODO: do not rely on the declared type. Detect the type instead
+        // See #57301
         PoolFactory.validateRequestedPoolsAgainstDeclaration( inputsConfig, false );
 
         long projectId = project.getId();
@@ -190,8 +195,12 @@ public class PoolFactory
     /**
      * Create pools for ensemble data. This method will attempt to retrieve and re-use data that is common to multiple 
      * pools. Thus, it is generally better to provide a list of pool requests that represent connected pools, such as 
-     * pools that all belong to the same feature group, rather than supplying a long list of unconnected pools, such 
-     * as pools that belong to many feature groups.
+     * pools that all belong to the same feature group, rather than supplying a single pool or a long list of 
+     * unconnected pools, such as pools that belong to many feature groups.
+     * 
+     * TODO: analyze the pool requests and find groups with shared data, i.e., automatically analyze/optimize. In that
+     * case, there should be one call to this method per evaluation, which should then forward each group of requests 
+     * for batched creation of suppliers, as this method currently operates.
      * 
      * @param project the project for which pools are required, not null
      * @param poolRequests the pool requests, not null
@@ -210,12 +219,13 @@ public class PoolFactory
         Objects.requireNonNull( poolRequests, "Cannot create pools without list of pool requests." );
         Objects.requireNonNull( retrieverFactory, "Cannot create pools without a retriever factory." );
 
-        // Validate the project declaration for the required data type
-        // TODO: do not rely on the declared type. Detect the type instead
-        // See #57301
         ProjectConfig projectConfig = project.getProjectConfig();
         PairConfig pairConfig = projectConfig.getPair();
         Inputs inputsConfig = projectConfig.getInputs();
+        
+        // Check that the project declaration is consistent with a request for ensemble pools
+        // TODO: do not rely on the declared type. Detect the type instead
+        // See #57301
         PoolFactory.validateRequestedPoolsAgainstDeclaration( inputsConfig, true );
 
         long projectId = project.getId();

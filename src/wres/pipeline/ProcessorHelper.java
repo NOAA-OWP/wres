@@ -459,7 +459,9 @@ class ProcessorHelper
             // Create one task per feature group
             for ( FeatureGroup nextGroup : featureGroups )
             {
-                // Create feature-shaped pool requests
+                // Create feature-shaped pool requests. This is more efficient because some datasets are shared across
+                // all pools that belong to a single feature group, such as the climatology. This efficiency is achieved
+                // when building suppliers from a collection of requests
                 List<PoolRequest> poolRequests =
                         PoolFactory.getPoolRequests( evaluationDetails.getEvaluationDescription(),
                                                      projectConfig,
@@ -483,7 +485,8 @@ class ProcessorHelper
             // Run the tasks, and join on all tasks. The main thread will wait until all are completed successfully
             // or one completes exceptionally for reasons other than lack of data
             // Complete the feature tasks
-            Pipelines.doAllOrException( featureTasks ).join();
+            Pipelines.doAllOrException( featureTasks )
+                     .join();
 
             // Report that all publication was completed. At this stage, a message is sent indicating the expected 
             // message count for all message types, thereby allowing consumers to know when they are done/

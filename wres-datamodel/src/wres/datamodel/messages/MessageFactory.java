@@ -1505,11 +1505,11 @@ public class MessageFactory
         else if ( Objects.nonNull( destination.getOutputType() ) )
         {
             GraphicShape shape = GraphicShape.valueOf( destination.getOutputType().name() );
-            
-            LOGGER.info( "Detected a shape of {} for the graphics output format in destination {}.", 
+
+            LOGGER.debug( "Detected a shape of {} for the graphics output format in destination {}.",
                           shape,
                           destination );
-            
+
             generalOptions.setShape( shape );
         }
         else
