@@ -117,7 +117,7 @@ public class Units
      * (66 rows)
      */
 
-    private static final Map<String,String> CONVENIENCE_ALIASES = new HashMap<>( 114 );
+    private static final Map<String,String> CONVENIENCE_ALIASES = new HashMap<>( 115 );
 
     static
     {
@@ -237,6 +237,7 @@ public class Units
         CONVENIENCE_ALIASES.put( "IN H-1", OFFICIAL_INCHES_PER_HOUR );
         CONVENIENCE_ALIASES.put( "in h{-1}", OFFICIAL_INCHES_PER_HOUR );
         CONVENIENCE_ALIASES.put( "IN H{-1}", OFFICIAL_INCHES_PER_HOUR );
+        CONVENIENCE_ALIASES.put( "M3", "m3" );
     }
 
     /**
