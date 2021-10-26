@@ -23,7 +23,7 @@ below the example.
         </inputs>
 
         <pair>
-            <unit>m^3/s</unit>
+            <unit>m3/s</unit>
             <feature left="DRRC2" right="DRRC2" />
             <dates earliest="1980-01-01T00:00:00Z" latest="2010-12-24T00:00:00Z"/>
             <issuedDates earliest="1980-01-01T00:00:00Z" latest="2010-12-20T00:00:00Z"/>

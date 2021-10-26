@@ -10,14 +10,16 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import javax.measure.Unit;
 import javax.measure.format.MeasurementParseException;
-import javax.measure.quantity.Length;
+import javax.measure.format.UnitFormat;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tech.units.indriya.AbstractUnit;
+import systems.uom.ucum.format.UCUMFormat;
+import systems.uom.ucum.internal.format.TokenException;
+import systems.uom.ucum.internal.format.TokenMgrError;
 
-import static systems.uom.common.USCustomary.FOOT;
-import static tech.units.indriya.unit.Units.METRE;
+
+import static systems.uom.ucum.format.UCUMFormat.Variant.CASE_SENSITIVE;
 
 /**
  * Build units using javax.measure. See also wres.io.retrieval.UnitMapper class.
@@ -26,11 +28,13 @@ import static tech.units.indriya.unit.Units.METRE;
 public class Units
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( Units.class );
-    private static final String OFFICIAL_CUBIC_METERS_PER_SECOND = "m^3/s";
-    private static final String OFFICIAL_CUBIC_FEET_PER_SECOND = "ft^3/s";
-    private static final String OFFICIAL_KILO_CUBIC_FEET_PER_SECOND = "ft^3*1000/s";
-    private static final String OFFICIAL_DEGREES_CELSIUS = "\u2103";
-    private static final String OFFICIAL_DEGREES_FAHRENHEIT = "\u00b0F";
+    private static final UnitFormat UNIT_FORMAT = UCUMFormat.getInstance( CASE_SENSITIVE );
+    private static final String OFFICIAL_CUBIC_METERS_PER_SECOND = "m3/s";
+    private static final String OFFICIAL_CUBIC_FEET_PER_SECOND = "[ft_i]3/s";
+    private static final String OFFICIAL_KILO_CUBIC_FEET_PER_SECOND = "1000.[ft_i]3/s";
+    private static final String OFFICIAL_DEGREES_CELSIUS = "Cel";
+    private static final String OFFICIAL_DEGREES_FAHRENHEIT = "[degF]";
+    private static final String OFFICIAL_INCHES_PER_HOUR = "[in_i]/h";
 
     /**
      * For backward compatibility, a map from weird unit names to official ones,
@@ -113,7 +117,7 @@ public class Units
      * (66 rows)
      */
 
-    private static final Map<String,String> CONVENIENCE_ALIASES = new HashMap<>( 108 );
+    private static final Map<String,String> CONVENIENCE_ALIASES = new HashMap<>( 114 );
 
     static
     {
@@ -145,8 +149,10 @@ public class Units
         CONVENIENCE_ALIASES.put( "f", OFFICIAL_DEGREES_FAHRENHEIT );
         CONVENIENCE_ALIASES.put( "DEGF", OFFICIAL_DEGREES_FAHRENHEIT );
         CONVENIENCE_ALIASES.put( "degf", OFFICIAL_DEGREES_FAHRENHEIT );
-        CONVENIENCE_ALIASES.put( "FT", "ft" );
-        CONVENIENCE_ALIASES.put( "IN", "in" );
+        CONVENIENCE_ALIASES.put( "FT", "[ft_i]" );
+        CONVENIENCE_ALIASES.put( "ft", "[ft_i]" );
+        CONVENIENCE_ALIASES.put( "IN", "[in_i]" );
+        CONVENIENCE_ALIASES.put( "in", "[in_i]" );
         CONVENIENCE_ALIASES.put( "M", "m" );
         CONVENIENCE_ALIASES.put( "MS", "ms" );
         CONVENIENCE_ALIASES.put( "HR", "h" );
@@ -154,20 +160,22 @@ public class Units
         CONVENIENCE_ALIASES.put( "S", "s" );
         CONVENIENCE_ALIASES.put( "MM", "mm" );
         CONVENIENCE_ALIASES.put( "CM", "cm" );
-        CONVENIENCE_ALIASES.put( "kg m{-2}", "kg/m^2" );
-        CONVENIENCE_ALIASES.put( "KG M{-2}", "kg/m^2" );
-        CONVENIENCE_ALIASES.put( "ft/sec", "ft/s" );
-        CONVENIENCE_ALIASES.put( "FT/SEC", "ft/s" );
-        CONVENIENCE_ALIASES.put( "GAL/MIN", "gal/min" );
-        CONVENIENCE_ALIASES.put( "mgd", "gal*1000000/d" );
-        CONVENIENCE_ALIASES.put( "MGD", "gal*1000000/d" );
+        CONVENIENCE_ALIASES.put( "kg m{-2}", "kg/m2" );
+        CONVENIENCE_ALIASES.put( "KG M{-2}", "kg/m2" );
+        CONVENIENCE_ALIASES.put( "ft/sec", "[ft_i]/s" );
+        CONVENIENCE_ALIASES.put( "FT/SEC", "[ft_i]/s" );
+        CONVENIENCE_ALIASES.put( "gal/min", "[gal_us]/min" );
+        CONVENIENCE_ALIASES.put( "GAL/MIN", "[gal_us]/min" );
+        CONVENIENCE_ALIASES.put( "mgd", "1000000.[gal_us]/d" );
+        CONVENIENCE_ALIASES.put( "MGD", "1000000.[gal_us]/d" );
         CONVENIENCE_ALIASES.put( "m/sec", "m/s" );
         CONVENIENCE_ALIASES.put( "M/SEC", "m/s" );
-        CONVENIENCE_ALIASES.put( "ft3/day", "ft^3/d" );
-        CONVENIENCE_ALIASES.put( "FT3/DAY", "ft^3/d" );
-        CONVENIENCE_ALIASES.put( "ac-ft", "ac ft" );
-        CONVENIENCE_ALIASES.put( "AC-FT", "ac ft" );
-        CONVENIENCE_ALIASES.put( "MPH", "mph" );
+        CONVENIENCE_ALIASES.put( "ft3/day", "[ft_i]3/d" );
+        CONVENIENCE_ALIASES.put( "FT3/DAY", "[ft_i]3/d" );
+        CONVENIENCE_ALIASES.put( "ac-ft", "[acr_us].[ft_i]" );
+        CONVENIENCE_ALIASES.put( "AC-FT", "[acr_us].[ft_i]" );
+        CONVENIENCE_ALIASES.put( "MPH", "[mi_i]/h" );
+        CONVENIENCE_ALIASES.put( "mph", "[mi_i]/h" );
         CONVENIENCE_ALIASES.put( "l/sec", "l/s");
         CONVENIENCE_ALIASES.put( "L/SEC", "l/s");
         CONVENIENCE_ALIASES.put( "MM/S", "mm/s");
@@ -184,25 +192,25 @@ public class Units
         CONVENIENCE_ALIASES.put( "MM H-1", "mm/h");
         CONVENIENCE_ALIASES.put( "mm h{-1}", "mm/h");
         CONVENIENCE_ALIASES.put( "MM H{-1}", "mm/h");
-        CONVENIENCE_ALIASES.put( "KG/M^2", "kg/m^2" );
-        CONVENIENCE_ALIASES.put( "kg/m^2h", "kg/m^2*h" );
-        CONVENIENCE_ALIASES.put( "KG/M^2H", "kg/m^2*h" );
-        CONVENIENCE_ALIASES.put( "kg/m^2s", "kg/m^2*s" );
-        CONVENIENCE_ALIASES.put( "KG/M^2S", "kg/m^2*s" );
-        CONVENIENCE_ALIASES.put( "kg/m^2/s", "kg/m^2*s" );
-        CONVENIENCE_ALIASES.put( "KG/M^2/S", "kg/m^2*s" );
-        CONVENIENCE_ALIASES.put( "kg/m^2/h", "kg/m^2*h" );
-        CONVENIENCE_ALIASES.put( "KG/M^2/H", "kg/m^2*h" );
+        CONVENIENCE_ALIASES.put( "KG/M^2", "kg/m2" );
+        CONVENIENCE_ALIASES.put( "kg/m^2h", "kg/m2.h" );
+        CONVENIENCE_ALIASES.put( "KG/M^2H", "kg/m2.h" );
+        CONVENIENCE_ALIASES.put( "kg/m^2s", "kg/m2.s" );
+        CONVENIENCE_ALIASES.put( "KG/M^2S", "kg/m2.s" );
+        CONVENIENCE_ALIASES.put( "kg/m^2/s", "kg/m2.s" );
+        CONVENIENCE_ALIASES.put( "KG/M^2/S", "kg/m2.s" );
+        CONVENIENCE_ALIASES.put( "kg/m^2/h", "kg/m2.h" );
+        CONVENIENCE_ALIASES.put( "KG/M^2/H", "kg/m2.h" );
         CONVENIENCE_ALIASES.put( "PA", "Pa" );
         CONVENIENCE_ALIASES.put( "pa", "Pa" );
-        CONVENIENCE_ALIASES.put( "w/m^2", "W/m^2" );
-        CONVENIENCE_ALIASES.put( "W/M^2", "W/m^2" );
-        CONVENIENCE_ALIASES.put( "W m{-2}", "W/m^2" );
-        CONVENIENCE_ALIASES.put( "w m{-2}", "W/m^2" );
-        CONVENIENCE_ALIASES.put( "W M{-2}", "W/m^2" );
-        CONVENIENCE_ALIASES.put( "W m-2", "W/m^2" );
-        CONVENIENCE_ALIASES.put( "W M-2", "W/m^2" );
-        CONVENIENCE_ALIASES.put( "w m-2", "W/m^2" );
+        CONVENIENCE_ALIASES.put( "w/m^2", "W/m2" );
+        CONVENIENCE_ALIASES.put( "W/M^2", "W/m2" );
+        CONVENIENCE_ALIASES.put( "W m{-2}", "W/m2" );
+        CONVENIENCE_ALIASES.put( "w m{-2}", "W/m2" );
+        CONVENIENCE_ALIASES.put( "W M{-2}", "W/m2" );
+        CONVENIENCE_ALIASES.put( "W m-2", "W/m2" );
+        CONVENIENCE_ALIASES.put( "W M-2", "W/m2" );
+        CONVENIENCE_ALIASES.put( "w m-2", "W/m2" );
         CONVENIENCE_ALIASES.put( "m s-1", "m/s" );
         CONVENIENCE_ALIASES.put( "M S-1", "m/s" );
         CONVENIENCE_ALIASES.put( "M/S", "m/s" );
@@ -212,21 +220,23 @@ public class Units
         CONVENIENCE_ALIASES.put( "KG KG-1", "kg/kg" );
         CONVENIENCE_ALIASES.put( "kg kg{-1}", "kg/kg" );
         CONVENIENCE_ALIASES.put( "KG KG{-1}", "kg/kg" );
-        CONVENIENCE_ALIASES.put( "kg m-2", "kg/m^2" );
-        CONVENIENCE_ALIASES.put( "KG M-2", "kg/m^2" );
+        CONVENIENCE_ALIASES.put( "kg m-2", "kg/m2" );
+        CONVENIENCE_ALIASES.put( "KG M-2", "kg/m2" );
         CONVENIENCE_ALIASES.put( "k", "K" );
-        CONVENIENCE_ALIASES.put( "IN/HR", "in/h" );
-        CONVENIENCE_ALIASES.put( "in hr^-1", "in/h" );
-        CONVENIENCE_ALIASES.put( "IN HR^-1", "in/h" );
-        CONVENIENCE_ALIASES.put( "in hr-1", "in/h" );
-        CONVENIENCE_ALIASES.put( "IN HR-1", "in/h" );
-        CONVENIENCE_ALIASES.put( "in hr{-1}", "in/h" );
-        CONVENIENCE_ALIASES.put( "IN HR{-1}", "in/h" );
-        CONVENIENCE_ALIASES.put( "IN/H", "in/h" );
-        CONVENIENCE_ALIASES.put( "in h-1", "in/h" );
-        CONVENIENCE_ALIASES.put( "IN H-1", "in/h" );
-        CONVENIENCE_ALIASES.put( "in h{-1}", "in/h" );
-        CONVENIENCE_ALIASES.put( "IN H{-1}", "in/h" );
+        CONVENIENCE_ALIASES.put( "IN/HR", OFFICIAL_INCHES_PER_HOUR );
+        CONVENIENCE_ALIASES.put( "in/hr", OFFICIAL_INCHES_PER_HOUR );
+        CONVENIENCE_ALIASES.put( "in hr^-1", OFFICIAL_INCHES_PER_HOUR );
+        CONVENIENCE_ALIASES.put( "IN HR^-1", OFFICIAL_INCHES_PER_HOUR );
+        CONVENIENCE_ALIASES.put( "in hr-1", OFFICIAL_INCHES_PER_HOUR );
+        CONVENIENCE_ALIASES.put( "IN HR-1", OFFICIAL_INCHES_PER_HOUR );
+        CONVENIENCE_ALIASES.put( "in hr{-1}", OFFICIAL_INCHES_PER_HOUR );
+        CONVENIENCE_ALIASES.put( "IN HR{-1}", OFFICIAL_INCHES_PER_HOUR );
+        CONVENIENCE_ALIASES.put( "IN/H", OFFICIAL_INCHES_PER_HOUR );
+        CONVENIENCE_ALIASES.put( "in/h", OFFICIAL_INCHES_PER_HOUR );
+        CONVENIENCE_ALIASES.put( "in h-1", OFFICIAL_INCHES_PER_HOUR );
+        CONVENIENCE_ALIASES.put( "IN H-1", OFFICIAL_INCHES_PER_HOUR );
+        CONVENIENCE_ALIASES.put( "in h{-1}", OFFICIAL_INCHES_PER_HOUR );
+        CONVENIENCE_ALIASES.put( "IN H{-1}", OFFICIAL_INCHES_PER_HOUR );
     }
 
     /**
@@ -267,9 +277,6 @@ public class Units
         Objects.requireNonNull( unitName );
         Objects.requireNonNull( overrideAliases );
 
-        // The next two lines are an attempt to ensure US Customary is loaded.
-        Unit<Length> foot = FOOT;
-        Unit<Length> meter = METRE;
         String officialName = CONVENIENCE_ALIASES.getOrDefault( unitName, unitName );
 
         // Priority is given to override aliases.
@@ -279,9 +286,11 @@ public class Units
         try
         {
             LOGGER.debug( "getUnit parsing a unit {}, given {}", officialName, unitName );
-            unit = AbstractUnit.parse( officialName );
+            unit = UNIT_FORMAT.parse( officialName );
         }
-        catch ( MeasurementParseException mpe )
+        // TODO: remove TokenMgrError and TokenException when the libraries
+        //  change to not throw these internal exceptions.
+        catch ( MeasurementParseException | TokenMgrError | TokenException e )
         {
             SortedSet<String> aliases = new TreeSet<>();
             aliases.addAll( Units.getAllConvenienceAliases() );
@@ -292,12 +301,12 @@ public class Units
             throw new UnsupportedUnitException( unitName,
                                                 aliases,
                                                 actualUnits,
-                                                mpe );
+                                                e );
         }
 
         if ( LOGGER.isInfoEnabled() )
         {
-            LOGGER.info( "Treating measurement unit name '{}' as formal "
+            LOGGER.info( "Treating measurement unit name '{}' as UCUM "
                          + "unit '{}' along dimension '{}'",
                          unitName, officialName, unit.getDimension() );
         }
@@ -341,7 +350,10 @@ public class Units
                    + "project declaration to tell WRES what '" + unit
                    + "' should be interpreted as. For example, if it were cubic"
                    + " meters per second: <unitAlias><alias>" + unit + "</alias>"
-                   + "<unit>m^3/s</unit></unitAlias>",
+                   + "<unit>m3/s</unit></unitAlias>. WRES expects UCUM case "
+                   + "sensitive units project declarations. To figure out the "
+                   + "format for your particular units, try the demo at "
+                   + "https://ucum.nlm.nih.gov/ucum-lhc/demo.html",
                    cause );
         }
     }

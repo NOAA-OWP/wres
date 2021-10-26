@@ -1,38 +1,42 @@
 package wres.datamodel;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import javax.measure.Quantity;
 import javax.measure.Unit;
 import javax.measure.UnitConverter;
 import javax.measure.format.MeasurementParseException;
 import javax.measure.format.UnitFormat;
-import javax.measure.quantity.Length;
 import javax.measure.quantity.Time;
 import javax.measure.quantity.Volume;
-import javax.measure.spi.ServiceProvider;
 
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import si.uom.quantity.VolumetricFlowRate;
+import systems.uom.ucum.format.UCUMFormat;
+import systems.uom.ucum.internal.format.TokenException;
+
+import systems.uom.ucum.internal.format.TokenMgrError;
 import tech.units.indriya.AbstractUnit;
-import tech.units.indriya.format.EBNFUnitFormat;
 import tech.units.indriya.quantity.Quantities;
 import tech.units.indriya.unit.ProductUnit;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static systems.uom.common.USCustomary.FOOT;
-import static systems.uom.common.USCustomary.GALLON_LIQUID;
-import static systems.uom.common.USCustomary.INCH;
-import static systems.uom.common.USCustomary.CUBIC_FOOT;
+import static systems.uom.ucum.UCUM.CUBIC_FOOT_INTERNATIONAL;
+import static systems.uom.ucum.UCUM.GALLON_US;
+import static systems.uom.ucum.format.UCUMFormat.Variant.CASE_SENSITIVE;
 import static tech.units.indriya.unit.Units.CUBIC_METRE;
 import static tech.units.indriya.unit.Units.DAY;
 import static tech.units.indriya.unit.Units.SECOND;
 
 /**
- * Experimental/exploratory as of 2021-02-17 commits
+ * The first test and the "explore" tests are exploratory. The remainder are
+ * critical tests to verify unit parsing and unit conversion functionality.
+ * See more related tests in wres.io.retrieval.UnitMapperTest as well as in
+ * wres.io.retrieval.UnitMapperTestWithNoDatabase
  */
 
 public class UnitsTest
@@ -40,7 +44,7 @@ public class UnitsTest
     static final Unit<VolumetricFlowRate> CUBIC_METRE_PER_SECOND =
             new ProductUnit<>( CUBIC_METRE.divide( SECOND ) );
     static final Unit<VolumetricFlowRate> CUBIC_FOOT_PER_SECOND =
-            new ProductUnit<>( CUBIC_FOOT.divide( SECOND ) );
+            new ProductUnit<>( CUBIC_FOOT_INTERNATIONAL.divide( SECOND ) );
     private static final Logger LOGGER =
             LoggerFactory.getLogger( UnitsTest.class );
 
@@ -57,7 +61,24 @@ public class UnitsTest
                      "fahrenheit", "\u2103", "\u2109", "\u00b0F", "GALLON",
                      "gi.us", "METRE", "fm", "fth_us", "pt_br", "DEGF",
                      "gal/min", "ac-ft", "ac", "ac ft", "gal*1000000/d",
-                     "mm s^-1", "kg/m^2/h", "1000*ft^3/s", "℃" );
+                     "mm s^-1", "kg/m^2/h", "1000*ft^3/s",
+                     "|0|",
+                     "℃",
+                     "|1|",
+                     new String( "℃".getBytes(),
+                                 StandardCharsets.UTF_8 ),
+                     "|2|",
+                     new String( "℃".getBytes( StandardCharsets.UTF_8 ),
+                                 StandardCharsets.UTF_8 ),
+                     "|3|",
+                     new String( "℃".getBytes( StandardCharsets.UTF_16 ),
+                                 StandardCharsets.UTF_8 ),
+                     "|4|",
+                     "cfs_i", "[cfs_i]", "[cfs_i]/s", "degF", "[degF]", "Cel",
+                     "K/[ft_i]", "ft3/s", "kft3/s", "k(ft3)/s", "k[ft3]/s",
+                     "k[cft_i]/s", "m3/s", "ft_i", "ft_i3", "kft_i3", "[ft_i]",
+                     "[ft_i]3", "k[ft_i]", "k[ft_i]3/s", "cft_i", "[cft_i]",
+                     "[cft_i]/s", "k[cft_i]/s", "m[gal_us]/d" );
 
     @Test
     public void testConvertFlow()
@@ -100,7 +121,7 @@ public class UnitsTest
                       someVolume.toSystemUnit() );
         UnitConverter unitConverter =
                 ( ( Unit<Volume> ) someVolume.getUnit() ).getConverterTo(
-                        GALLON_LIQUID );
+                        GALLON_US );
         double someGallonsDouble = unitConverter.convert( someVolume.getValue()
                                                                     .doubleValue() );
         LOGGER.debug( "Converted to gallons (double): {}", someGallonsDouble );
@@ -111,7 +132,7 @@ public class UnitsTest
 
         // More straightforward than using a converter:
         Quantity<Volume> gallons =
-                ( ( Quantity<Volume> ) someVolume ).to( GALLON_LIQUID );
+                ( ( Quantity<Volume> ) someVolume ).to( GALLON_US );
         LOGGER.debug( "Converted to gallons again: {}", gallons );
 
         // What about cubic meters?
@@ -143,42 +164,15 @@ public class UnitsTest
     }
 
     @Test
-    public void exploreServiceProviderUnitParsing()
-    {
-        UnitFormat unitFormat = ServiceProvider.current()
-                                               .getFormatService()
-                                               .getUnitFormat();
-        for ( String stringToParse : UNITS_TO_PARSE )
-        {
-            try
-            {
-                Unit<?> unit = unitFormat.parse( stringToParse );
-                LOGGER.debug(
-                        "SPI parsed '{}' into '{}', name='{}', symbol='{}', dimension='{}'",
-                        stringToParse,
-                        unit,
-                        unit.getName(),
-                        unit.getSymbol(),
-                        unit.getDimension() );
-            }
-            catch ( MeasurementParseException mpe )
-            {
-                LOGGER.debug( "Exception while parsing '{}': {}",
-                              stringToParse, mpe.getMessage() );
-            }
-        }
-    }
-
-    @Test
     public void exploreIndriyaUnitParsing()
     {
-        Unit<Length> foot = FOOT;
+        // When using USCustomary instead of UCUM, uncomment, import this:
+        //Unit<Length> foot = FOOT;
 
         for ( String stringToParse : UNITS_TO_PARSE )
         {
             try
             {
-                // Apparently identical to the implementation gotten from SPI.
                 Unit<?> unit = AbstractUnit.parse( stringToParse );
                 LOGGER.debug(
                         "Indriya parsed '{}' into '{}', name='{}', symbol='{}', dimension='{}'",
@@ -191,7 +185,7 @@ public class UnitsTest
                                     + "' into '" + unit + "' name='" +
                                     unit.getName() + "'" );
             }
-            catch ( MeasurementParseException mpe )
+            catch ( MeasurementParseException | TokenMgrError mpe )
             {
                 LOGGER.debug( "Exception while parsing '{}': {}",
                               stringToParse, mpe.getMessage() );
@@ -200,26 +194,9 @@ public class UnitsTest
     }
 
     @Test
-    public void exploreIndriyaKiloCubicFeetPerSecond()
+    public void exploreUCUMUnitParsing()
     {
-        // Even though "inch" is unused, it causes the USCustomary units to load
-        Unit<Length> inch = INCH;
-        String stringToParse = "ft^3*1000/s";
-        Unit<VolumetricFlowRate> unit = (Unit<VolumetricFlowRate>) AbstractUnit.parse( stringToParse );
-        LOGGER.debug( "Parsed '{}' into '{}', name='{}', symbol='{}', dimension='{}'",
-                      stringToParse,
-                      unit,
-                      unit.getName(),
-                      unit.getSymbol(),
-                      unit.getDimension() );
-        Quantity<VolumetricFlowRate> someKcfs = Quantities.getQuantity( 50.0, unit );
-        LOGGER.debug( someKcfs.to( CUBIC_FOOT_PER_SECOND ).toString() );
-    }
-
-    @Test
-    public void exploreEBNFUnitParsing()
-    {
-        UnitFormat unitFormat = EBNFUnitFormat.getInstance();
+        UnitFormat unitFormat = UCUMFormat.getInstance( CASE_SENSITIVE );
 
         for ( String stringToParse : UNITS_TO_PARSE )
         {
@@ -228,14 +205,14 @@ public class UnitsTest
                 // Apparently identical to the implementation gotten from SPI.
                 Unit<?> unit = unitFormat.parse( stringToParse );
                 LOGGER.debug(
-                        "Indriya parsed '{}' into '{}', name='{}', symbol='{}', dimension='{}'",
+                        "Indriya/UCUM parsed '{}' into '{}', name='{}', symbol='{}', dimension='{}'",
                         stringToParse,
                         unit,
                         unit.getName(),
                         unit.getSymbol(),
                         unit.getDimension() );
             }
-            catch ( MeasurementParseException | IllegalArgumentException e )
+            catch ( MeasurementParseException | TokenMgrError | TokenException | IllegalArgumentException e )
             {
                 LOGGER.debug( "Exception while parsing '{}': {}",
                               stringToParse, e.getMessage() );
@@ -264,12 +241,24 @@ public class UnitsTest
                       () -> Units.getUnit( "pears/parsec" ) );
     }
 
+
+    /**
+     * Verifies that the values in the convenience unit map (not the keys) can
+     * be parsed directly by the UCUM parser. This does not guarantee that these
+     * mean what we or the callers intend them to mean, because that is handled
+     * by explicit logging of the unit found and the use of unit aliases when
+     * the caller disagrees with the convenience aliases for a given evaluation.
+     */
+
     @Test
     public void verifyAllConvenienceUnitsCanBeParsed()
     {
+        UnitFormat unitFormat = UCUMFormat.getInstance( CASE_SENSITIVE );
+
         for ( String stringToParse : Units.getAllConvenienceUnits() )
         {
-            Unit<?> unit = AbstractUnit.parse( stringToParse );
+            LOGGER.debug( "About to parse unit from string {}", stringToParse );
+            Unit<?> unit = unitFormat.parse( stringToParse );
             LOGGER.debug( "Successfully parsed unit {} from string {}",
                           unit, stringToParse );
         }
