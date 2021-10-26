@@ -115,5 +115,13 @@ public class EvaluationEventUtilities
             return encoder.encodeToString( buffer );
         }
     }
+    
+    /**
+     * Do not construct.
+     */
+    
+    private EvaluationEventUtilities()
+    {
+    }
 
 }

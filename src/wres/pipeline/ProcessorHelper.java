@@ -376,7 +376,6 @@ class ProcessorHelper
             // Update the evaluation description with any analyzed units and variable names
             wres.statistics.generated.Evaluation evaluationDescription =
                     ProcessorHelper.setAnalyzedUnitsAndVariableNames( evaluationDetails.getEvaluationDescription(),
-                                                                      desiredMeasurementUnit,
                                                                       project );
 
             // Build the evaluation. In future, there may be a desire to build the evaluation prior to ingest, in order 
@@ -463,7 +462,7 @@ class ProcessorHelper
                 // all pools that belong to a single feature group, such as the climatology. This efficiency is achieved
                 // when building suppliers from a collection of requests
                 List<PoolRequest> poolRequests =
-                        PoolFactory.getPoolRequests( evaluationDetails.getEvaluationDescription(),
+                        PoolFactory.getPoolRequests( evaluationDescription,
                                                      projectConfig,
                                                      nextGroup );
 
@@ -1276,16 +1275,16 @@ class ProcessorHelper
 
     /**
      * @param evaluation the evaluation description
-     * @param desiredMeasurementUnit the desired measurement units
      * @param project the project
      * @return an evaluation description with analyzed measurement units and variables, as needed
+     * @throws SQLException if the analyzed unit could not be obtained from the project
      */
 
     private static wres.statistics.generated.Evaluation
             setAnalyzedUnitsAndVariableNames( wres.statistics.generated.Evaluation evaluation,
-                                              String desiredMeasurementUnit,
-                                              Project project )
+                                              Project project ) throws SQLException
     {
+        String desiredMeasurementUnit = project.getMeasurementUnit();
         wres.statistics.generated.Evaluation.Builder builder = evaluation.toBuilder()
                                                                          .setMeasurementUnit( desiredMeasurementUnit );
 
