@@ -22,6 +22,7 @@ import wres.io.data.caching.MeasurementUnits;
 /**
  * The UnitMapper doesn't need a database (db) to test conversions. See also
  * the original/companion class UnitMapperTest for tests of db integration.
+ * See also the tests in wres.datamodel.UnitsTest
  */
 
 public class UnitMapperTestWithNoDatabase
@@ -97,7 +98,7 @@ public class UnitMapperTestWithNoDatabase
     public void convertFromMetersPerSecondToFeetPerMinute()
     {
         String fromUnit = "m/s";
-        String toUnit = "ft/min";
+        String toUnit = "[ft_i]/min";
         UnitMapper mapper = UnitMapper.of( this.measurementUnitsCache, toUnit );
         DoubleUnaryOperator converter = mapper.getUnitMapper( fromUnit );
         assertEquals( 510039.370, converter.applyAsDouble( 2591.0 ), 0.001 );
@@ -111,8 +112,8 @@ public class UnitMapperTestWithNoDatabase
     @Test
     public void convertFromThousandsOfCubicFeetPerSecondToCubicMetersPerSecond()
     {
-        String fromUnit = "ft^3*1000/s";
-        String toUnit = "m^3/s";
+        String fromUnit = "1000.[ft_i]3/s";
+        String toUnit = "m3/s";
         UnitMapper mapper = UnitMapper.of( this.measurementUnitsCache, toUnit );
         DoubleUnaryOperator converter = mapper.getUnitMapper( fromUnit );
         assertEquals( 73425.583, converter.applyAsDouble( 2593.0 ), 0.001 );
@@ -127,7 +128,7 @@ public class UnitMapperTestWithNoDatabase
     public void convertFromDistancePerTimeToLuminousFluxFails()
     {
         // Light years (distance dimension) per hour (time dimension)
-        String fromUnit = "ly/h";
+        String fromUnit = "[ly]/h";
 
         // Lumen (luminous flux dimension)
         String toUnit = "lm";
@@ -146,7 +147,7 @@ public class UnitMapperTestWithNoDatabase
     {
         final String BOOGAFLICKLE = "boogaflickle";
         String fromUnit = BOOGAFLICKLE;
-        String toUnit = "ft/min";
+        String toUnit = "[ft_i]/min";
 
         // Here we declare that boogaflickle should be interpreted as "m/s"
         UnitAlias boogaflickleMeansMetersPerSecond = new UnitAlias( BOOGAFLICKLE, "m/s" );
@@ -169,8 +170,8 @@ public class UnitMapperTestWithNoDatabase
         String fromUnit = "m/s";
         String toUnit = BOOGAFLICKLE;
 
-        // Here we declare that boogaflickle should be interpreted as "ft/min"
-        UnitAlias boogaflickleMeansFeetPerMinute = new UnitAlias( BOOGAFLICKLE, "ft/min" );
+        // Here declare that boogaflickle should be interpreted as "[ft_i]/min"
+        UnitAlias boogaflickleMeansFeetPerMinute = new UnitAlias( BOOGAFLICKLE, "[ft_i]/min" );
         ProjectConfig declaration = this.getProjectDeclarationWith( List.of( boogaflickleMeansFeetPerMinute ) );
         UnitMapper mapper = UnitMapper.of( this.measurementUnitsCache,
                                            toUnit,
