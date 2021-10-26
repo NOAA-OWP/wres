@@ -28,6 +28,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * provide a {@link DoubleErrorFunction} to the constructor. This function is applied to each pair, and the average
  * score returned across all pairs.
  * 
+ * @param <S> the type of pooled data
  * @author James Brown
  */
 public abstract class DoubleErrorScore<S extends Pool<Pair<Double, Double>>>
@@ -61,18 +62,18 @@ public abstract class DoubleErrorScore<S extends Pool<Pair<Double, Double>>>
     private static final String NULL_INPUT_STRING = "Cannot construct the error score '";
 
     @Override
-    public DoubleScoreStatisticOuter apply( final S s )
+    public DoubleScoreStatisticOuter apply( final S pool )
     {
-        if ( Objects.isNull( s ) )
+        if ( Objects.isNull( pool ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
         //Compute the atomic errors in a stream
         double doubleScore = MissingValues.DOUBLE;
-        if ( !s.get().isEmpty() )
+        if ( !pool.get().isEmpty() )
         {
-            double[] doubles = s.get().stream().mapToDouble( this.getErrorFunction() ).toArray();
+            double[] doubles = pool.get().stream().mapToDouble( this.getErrorFunction() ).toArray();
             VectorOfDoubles wrappedDoubles = VectorOfDoubles.of( doubles );
             doubleScore = this.getErrorAccumulator().applyAsDouble( wrappedDoubles );
         }
@@ -93,7 +94,7 @@ public abstract class DoubleErrorScore<S extends Pool<Pair<Double, Double>>>
             if ( toSet.getUnits()
                       .isBlank() )
             {
-                String unit = s.getMetadata()
+                String unit = pool.getMetadata()
                                .getMeasurementUnit()
                                .toString();
                 toSet = toSet.toBuilder()
@@ -119,7 +120,7 @@ public abstract class DoubleErrorScore<S extends Pool<Pair<Double, Double>>>
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, s.getMetadata() );
+        return DoubleScoreStatisticOuter.of( score, pool.getMetadata() );
     }
 
     @Override

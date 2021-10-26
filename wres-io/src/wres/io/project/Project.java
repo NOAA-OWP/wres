@@ -194,7 +194,7 @@ public class Project
     }
 
     /**
-     * @return the measurement unit, which is either the declared unit of the analyzed unit, but possibly null
+     * @return the measurement unit, which is either the declared unit or the analyzed unit, but possibly null
      * @throws SQLException if the measurement unit is not declared and could not be determined from the project sources
      * @throws IllegalArgumentException if the project identity is required and undefined
      */
@@ -210,7 +210,7 @@ public class Project
             this.measurementUnit = declaredUnit;
 
             LOGGER.debug( "Determined the measurement unit from the project declaration as {}.",
-                          this.getMeasurementUnit() );
+                          this.measurementUnit );
         }
 
         // Still not available? Then analyze the unit.
@@ -237,9 +237,9 @@ public class Project
                     if ( LOGGER.isDebugEnabled() )
                     {
                         LOGGER.debug( "Determined the measurement unit by analyzing the project sources. The analyzed "
-                                      + "measurement unit is {} and corresponds to the most commonly occurring unit among "
-                                      + "time-series from {} sources. The script used to discover the measurement unit "
-                                      + "was: {}{}",
+                                      + "measurement unit is {} and corresponds to the most commonly occurring unit "
+                                      + "among time-series from {} sources. The script used to discover the "
+                                      + "measurement unit was: {}{}",
                                       this.measurementUnit,
                                       member,
                                       System.lineSeparator(),
