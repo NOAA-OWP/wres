@@ -226,7 +226,9 @@ public class FeatureFinder
     }
     
     /**
-     * Densifies singleton feature groups obtained from {@link PairConfig#getFeature()}.
+     * Densifies singleton feature groups obtained from {@link PairConfig#getFeature()} and adds any implicitly 
+     * declared features attached to the {@link PairConfig#getFeatureService()} where the {@link FeatureGroup#isPool()} 
+     * returns {@code false}.
      *
      * @param projectDeclaration The project declaration.
      * @param featureService The element containing location service details.
@@ -257,7 +259,7 @@ public class FeatureFinder
         List<Feature> consolidatedFeatures = new ArrayList<>( filledFeatures );
 
         // Add any implicitly declared features
-        if ( Objects.nonNull( featureService ) && Objects.nonNull( featureService.getGroup() ) )
+        if ( Objects.nonNull( featureService ) && !featureService.getGroup().isEmpty() )
         {
             // Combine all the features from groups that are not to be pooled
             List<Feature> fromGroups =
@@ -292,7 +294,8 @@ public class FeatureFinder
 
     /**
      * Densifies any explicitly declared feature groups obtained from {@link PairConfig#getFeatureGroup()} and adds any
-     * implicitly declared groups.
+     * implicitly declared groups attached to the {@link PairConfig#getFeatureService()} where the 
+     * {@link FeatureGroup#isPool()} returns {@code true}.
      *
      * @param projectDeclaration The project declaration.
      * @param featureService The element containing location service details.
@@ -336,7 +339,7 @@ public class FeatureFinder
         }
 
         // Add any implicitly declared feature groups
-        if ( Objects.nonNull( featureService ) && Objects.nonNull( featureService.getGroup() ) )
+        if ( Objects.nonNull( featureService ) && !featureService.getGroup().isEmpty() )
         {
             // Combine all the features from groups that are not to be pooled
             for ( FeatureGroup nextGroup : featureService.getGroup() )
