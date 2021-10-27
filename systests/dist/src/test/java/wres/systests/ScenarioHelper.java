@@ -159,10 +159,10 @@ public class ScenarioHelper
         //Create the directory listing... Temporarily removed for due to sorting issues.
         //Path dirListingPath;
         try
-        {    
+        {
             //Redmine #51654-387 decided not to compare the dirListing.txt due to sorting issues.
             //dirListingPath = constructDirListingFile( initialOutputSet );
-            
+
             // Need to filter out the *.png and the *.nc files and add to the hash set.
             HashSet<Path> finalOutputSet = new HashSet<Path>();
             for ( Path nextPath : initialOutputSet )
@@ -177,25 +177,19 @@ public class ScenarioHelper
                     finalOutputSet.add( nextPath );
                 }
             }
-            
+
             //Do not check the dirListing for now, see Redmine #51654-387
             //finalOutputSet.add( dirListingPath );
 
-            //Make the comparison and check the result code to ensure its 0.  
+            //Make the comparison and check the result code to ensure its 0.
             //TODO Implement a better means of handling this.  Do we need a result code with JUnit system testing?
             int resultCode = compareOutputAgainstBenchmarks( scenarioInfo,
                                                          finalOutputSet );
             assertEquals( "Comparison with benchmarks failed with code " + resultCode + ".", 0, resultCode );
         }
-        catch ( IllegalStateException e )
-        {
-            e.printStackTrace();
-            fail( "Problem encountered removed old output directories: " + e.getMessage() );
-        }
         catch ( IOException e )
         {
-            e.printStackTrace();
-            fail( "IOException encountered removed old output directories: " + e.getMessage() );
+            throw new RuntimeException( "Exception occurred", e );
         }
     }
 
@@ -243,7 +237,7 @@ public class ScenarioHelper
      */
     private static int compareOutputAgainstBenchmarks( ScenarioInformation scenarioInfo,
                                                        Set<Path> generatedOutputs )
-            throws IOException, IllegalStateException
+            throws IOException
     {
         //Establish the benchmarks directory and obtain a listing of all benchmarked files.
         Path benchmarksPath = scenarioInfo.getScenarioDirectory()
