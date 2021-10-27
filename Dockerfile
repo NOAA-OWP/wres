@@ -1,7 +1,7 @@
 FROM registry.access.redhat.com/ubi8/ubi:8.4-211
 
 RUN dnf install -y \
-    java-11-openjdk-headless-1:11.0.12.0.7-0.el8_4 \
+    java-11-openjdk-headless-1:11.0.13.0.8-1.el8_4.x86_64 \
     unzip-6.0-45.el8_4 \
     fontconfig-2.13.1-3.el8 \
     dejavu-fonts-common-2.35-7.el8 \
