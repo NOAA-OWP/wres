@@ -162,9 +162,7 @@ final class ProjectScriptGenerator
 
 
     /**
-     * Creates a script that retrieves the mostly commonly occurring measurement unit among all sources for each side of
-     * data (left, right or baseline) and then selects the right or left or baseline among them as the representative
-     * unit, in that order. 
+     * Creates a script that retrieves the mostly commonly occurring measurement unit among the right-ish sources. 
      * 
      * @param database The database to use
      * @param projectId The wres.project row id to look for intersecting data.

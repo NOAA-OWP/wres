@@ -239,9 +239,10 @@ public class Project
                         LOGGER.debug( "Determined the measurement unit by analyzing the project sources. The analyzed "
                                       + "measurement unit is {} and corresponds to the most commonly occurring unit "
                                       + "among time-series from {} sources. The script used to discover the "
-                                      + "measurement unit was: {}{}",
+                                      + "measurement unit for the project with identifier {} was: {}{}",
                                       this.measurementUnit,
                                       member,
+                                      this.getId(),
                                       System.lineSeparator(),
                                       scripter );
                     }
