@@ -34,6 +34,8 @@ out
 *.hprof
 *.hprof*.txt
 *.iml
+*.jfr
+*.tmp
 
 # Certificate-related, such as private keys or certificate signing requests
 *private*key*pem
@@ -47,7 +49,7 @@ wres-statistics/dist/wresproto/src/*
 
 # WRES-generated data
 output
-wres_evaluation_output*
+wres_evaluation_*
 
 # Local zulu openjdk 11 installation
 zulu11*
@@ -66,3 +68,4 @@ wres-vis/testoutput/chart2DTest/*
 /wres-metrics/testinput/metricProcessorEnsemblePairsByTimeTest/Contingency.R
 /wres-metrics/testinput/metricProcessorEnsemblePairsByTimeTest/NOTE.txt
 /wres-config/nonsrc/ProjectConfig.xsd.xml
+*.gz
