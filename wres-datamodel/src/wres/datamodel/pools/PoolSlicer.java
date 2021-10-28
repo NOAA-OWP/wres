@@ -416,13 +416,12 @@ public class PoolSlicer
 
             if ( features.size() != 1 )
             {
-                throw new PoolException( "Could not filter the outer pool " + metadata
-                                         + " because the inner pool "
-                                         + metadata
-                                         + " does not compose a single "
-                                         + "feature, rather these features: "
+                throw new PoolException( "Could not obtain the expected feature tuple from the pool metadata because "
+                                         + "the pool composes more than one feature where a single feature was "
+                                         + "expected. The features enountered are: "
                                          + features
-                                         + "." );
+                                         + ". The pool metadata is: "
+                                         + metadata );
             }
 
             return features.iterator().next();

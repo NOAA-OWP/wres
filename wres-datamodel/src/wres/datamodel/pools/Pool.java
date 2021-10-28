@@ -159,12 +159,22 @@ public class Pool<T> implements Supplier<List<T>>
             return null;
         }
 
-        Builder<T> builder = new Builder<>();
+        Builder<T> builder = new Builder<T>().setMetadata( this.baselineMeta );
 
-        return builder.addData( this.baselineSampleData )
-                      .setClimatology( this.climatology )
-                      .setMetadata( this.baselineMeta )
-                      .build();
+        // Preserve the mini-pool view of the data
+        List<Pool<T>> miniPools = this.getMiniPools();
+        
+        for( Pool<T> next : miniPools )
+        {
+            Pool<T> nextBaseline = new Builder<T>().setMetadata( next.baselineMeta )
+                                                   .addData( next.baselineSampleData )
+                                                   .setClimatology( next.climatology )
+                                                   .build();
+                        
+            builder.addPool( nextBaseline, false );
+        }
+        
+        return builder.build();
     }
 
     @Override
