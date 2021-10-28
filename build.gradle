@@ -211,7 +211,7 @@ project(':wres-util')
 
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
 
-        implementation 'com.google.guava:guava:30.1.1-jre'
+        implementation 'com.google.guava:guava:31.0.1-jre'
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
         implementation( 'edu.ucar:cdm-core:5.4.2' )
@@ -239,7 +239,7 @@ project(':wres-util')
         testImplementation 'junit:junit:4.13.2'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:3.12.4'
+        testImplementation 'org.mockito:mockito-core:4.0.0'
     }
 }
 
@@ -250,7 +250,7 @@ project(':wres-system')
         implementation project(':wres-util')
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
 
-        implementation 'com.google.guava:guava:30.1.1-jre'
+        implementation 'com.google.guava:guava:31.0.1-jre'
         implementation 'org.apache.commons:commons-lang3:3.12.0'
 
         // to use native postgres copy, need this on compile, otherwise runtime
@@ -271,7 +271,7 @@ project(':wres-system')
         implementation 'org.slf4j:jul-to-slf4j:2.0.0-alpha5'
 
         //JB @ 02/16/17
-        testImplementation group: 'com.google.guava', name: 'guava-testlib', version: '30.1.1-jre'
+        testImplementation group: 'com.google.guava', name: 'guava-testlib', version: '31.0.1-jre'
 
         testImplementation 'junit:junit:4.13.2'
 
@@ -314,7 +314,7 @@ project(':wres-datamodel')
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:3.12.4'
+        testImplementation 'org.mockito:mockito-core:4.0.0'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
@@ -407,12 +407,12 @@ project(':wres-io')
         runtimeOnly 'org.slf4j:jcl-over-slf4j:2.0.0-alpha5'
 
         //JB @ 02/16/17
-        testImplementation 'com.google.guava:guava-testlib:30.1.1-jre'
+        testImplementation 'com.google.guava:guava-testlib:31.0.1-jre'
 
         testImplementation 'org.liquibase:liquibase-core:4.5.0'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-inline:3.12.4'
+        testImplementation 'org.mockito:mockito-inline:4.0.0'
 
         // Use mockserver as a mock server for mock API responses
         testImplementation 'org.mock-server:mockserver-netty:5.11.2'
@@ -481,7 +481,7 @@ project(':wres-metrics')
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
 
         testImplementation 'junit:junit:4.13.2'
-        testImplementation 'org.mockito:mockito-core:3.12.4'
+        testImplementation 'org.mockito:mockito-core:4.0.0'
     }
 }
 
@@ -504,7 +504,7 @@ project(':wres-statistics')
         // Automatically download and use the correct protobuf compiler
         protoc
         {
-            artifact = 'com.google.protobuf:protoc:3.18.0'
+            artifact = 'com.google.protobuf:protoc:3.19.0'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
@@ -602,7 +602,7 @@ project(':wres-statistics')
 
     dependencies
     {
-        api 'com.google.protobuf:protobuf-java:3.18.0'
+        api 'com.google.protobuf:protobuf-java:3.19.0'
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
         implementation project(':wres-config')
 
@@ -684,7 +684,7 @@ project(':wres-vis')
 
         implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
         implementation group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '2.0.0'
-        implementation 'com.google.guava:guava:30.1.1-jre'
+        implementation 'com.google.guava:guava:31.0.1-jre'
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
 
         implementation files('../libs/external/jcommon-1.0.12.jar')
@@ -707,7 +707,7 @@ project(':wres-vis')
         testImplementation 'junit:junit:4.13.2'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:3.12.4'
+        testImplementation 'org.mockito:mockito-core:4.0.0'
 
         testRuntimeOnly files('dist/lib/conf')
     }
@@ -759,7 +759,7 @@ project(':wres-config')
         // To know about @Location
         api 'org.glassfish.jaxb:jaxb-core:2.3.0.1'
 
-        runtimeOnly 'org.glassfish.jaxb:jaxb-runtime:2.3.4'
+        runtimeOnly 'org.glassfish.jaxb:jaxb-runtime:2.3.5'
 
         runtimeOnly 'org.eclipse.persistence:org.eclipse.persistence.moxy:2.7.9'
 
@@ -784,7 +784,7 @@ project(':wres-config')
 
 
         // jaxb-xjc transitively includes bind-api and jaxb-core
-        jaxb 'org.glassfish.jaxb:jaxb-xjc:2.3.4'
+        jaxb 'org.glassfish.jaxb:jaxb-xjc:2.3.5'
         jaxb 'com.github.sabomichal:immutable-xjc-plugin:1.6.2'
     }
 
@@ -899,7 +899,7 @@ project(':wres-messages')
         // Automatically download and use the correct protobuf compiler
         protoc
         {
-            artifact = 'com.google.protobuf:protoc:3.18.0'
+            artifact = 'com.google.protobuf:protoc:3.19.0'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
@@ -935,7 +935,7 @@ project(':wres-messages')
 
     dependencies
     {
-        api 'com.google.protobuf:protobuf-java:3.18.0'
+        api 'com.google.protobuf:protobuf-java:3.19.0'
 
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
 
@@ -1077,7 +1077,7 @@ project(':wres-tasker')
         implementation 'org.apache.commons:commons-lang3:3.12.0'
 
         // To send/receive messages
-        implementation 'com.google.protobuf:protobuf-java:3.18.0'
+        implementation 'com.google.protobuf:protobuf-java:3.19.0'
 
         runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha10' )
         {
@@ -1323,9 +1323,9 @@ project(':wres-events')
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:3.12.4'
+        testImplementation 'org.mockito:mockito-core:4.0.0'
         // Mocking final classes
-        testImplementation 'org.mockito:mockito-inline:3.12.4'
+        testImplementation 'org.mockito:mockito-inline:4.0.0'
     }
 
     // Facilitate unit tests with JUnit
@@ -1560,7 +1560,7 @@ dependencies
     implementation 'javax.annotation:javax.annotation-api:1.3.2'
     implementation 'org.eclipse.jetty:jetty-server:9.4.44.v20210927'
     implementation 'org.eclipse.jetty:jetty-webapp:9.4.44.v20210927'
-    implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:2.34'
+    implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:2.35'
     // Update the jetty-continuation that above jersey dep depends on
     implementation 'org.eclipse.jetty:jetty-continuation:9.4.44.v20210927'
 
@@ -1570,7 +1570,7 @@ dependencies
         exclude group: 'org.checkerframework', module: 'checker-qual'
     }
 
-    implementation 'com.google.guava:guava:30.1.1-jre'
+    implementation 'com.google.guava:guava:31.0.1-jre'
 
     implementation( 'edu.ucar:cdm-core:5.4.2' )
     {
@@ -1580,9 +1580,9 @@ dependencies
         exclude group: 'org.jdom', module: 'jdom2'
     }
 
-    runtimeOnly 'org.glassfish.jersey.core:jersey-server:2.34'
-    runtimeOnly 'org.glassfish.jersey.containers:jersey-container-jetty-http:2.34'
-    runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:2.34'
+    runtimeOnly 'org.glassfish.jersey.core:jersey-server:2.35'
+    runtimeOnly 'org.glassfish.jersey.containers:jersey-container-jetty-http:2.35'
+    runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:2.35'
 
     runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha10' )
     {
@@ -1598,7 +1598,7 @@ dependencies
     testCompileOnly 'junit:junit:4.13.2'
     testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.8.1'
 
-    testImplementation 'org.mockito:mockito-core:3.12.4'
+    testImplementation 'org.mockito:mockito-core:4.0.0'
 
     testImplementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 }
