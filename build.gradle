@@ -201,6 +201,22 @@ subprojects
         preserveFileTimestamps = false
         reproducibleFileOrder = true
     }
+
+    // Truly prevent these annoying jars from showing up in dist zip
+    configurations.implementation
+    {
+        exclude group: 'com.google.code.findbugs', module: 'jsr305'
+        exclude group: 'org.checkerframework', module: 'checker-qual'
+        exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
+    }
+
+    // Truly prevent these annoying jars from showing up in dist zip
+    configurations.runtimeOnly
+    {
+        exclude group: 'com.google.code.findbugs', module: 'jsr305'
+        exclude group: 'org.checkerframework', module: 'checker-qual'
+        exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
+    }
 }
 
 project(':wres-util')
@@ -211,7 +227,12 @@ project(':wres-util')
 
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
 
-        implementation 'com.google.guava:guava:31.0.1-jre'
+        implementation( 'com.google.guava:guava:31.0.1-jre' )
+        {
+            // Not used at runtime, bloat
+            exclude group: 'org.checkerframework', module: 'checker-qual'
+        }
+
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
         implementation( 'edu.ucar:cdm-core:5.4.2' )
@@ -220,6 +241,8 @@ project(':wres-util')
             exclude group: 'commons-logging', module: 'commons-logging'
             // CVE-2021-33813
             exclude group: 'org.jdom', module: 'jdom2'
+            // Not used at runtime, bloat
+            exclude group: 'org.checkerframework', module: 'checker-qual'
         }
 
         // Update the org.apache.httpcomponents modules depended upon by cdm
@@ -250,11 +273,21 @@ project(':wres-system')
         implementation project(':wres-util')
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
 
-        implementation 'com.google.guava:guava:31.0.1-jre'
+        implementation( 'com.google.guava:guava:31.0.1-jre' )
+        {
+            // Not used at runtime, bloat
+            exclude group: 'org.checkerframework', module: 'checker-qual'
+        }
+
         implementation 'org.apache.commons:commons-lang3:3.12.0'
 
         // to use native postgres copy, need this on compile, otherwise runtime
-        implementation 'org.postgresql:postgresql:42.3.0'
+        implementation( 'org.postgresql:postgresql:42.3.0' )
+        {
+            // Not used at runtime, bloat
+            exclude group: 'org.checkerframework', module: 'checker-qual'
+        }
+
         implementation 'org.liquibase:liquibase-core:4.5.0'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
@@ -359,12 +392,18 @@ project(':wres-io')
             exclude group: 'commons-logging', module: 'commons-logging'
             // CVE-2021-33813
             exclude group: 'org.jdom', module: 'jdom2'
+            // Not used at runtime, bloat
+            exclude group: 'org.checkerframework', module: 'checker-qual'
         }
 
         implementation 'org.apache.commons:commons-compress:1.21'
 
         // to use native postgres copy, need this on compile, otherwise runtime
-        implementation 'org.postgresql:postgresql:42.3.0'
+        implementation( 'org.postgresql:postgresql:42.3.0' )
+        {
+            // Not used at runtime, bloat
+            exclude group: 'org.checkerframework', module: 'checker-qual'
+        }
 
         // Use H2 for truly embedded SQL db
         implementation 'com.h2database:h2:1.4.200'
@@ -684,7 +723,12 @@ project(':wres-vis')
 
         implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
         implementation group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '2.0.0'
-        implementation 'com.google.guava:guava:31.0.1-jre'
+        implementation( 'com.google.guava:guava:31.0.1-jre' )
+        {
+            // Not used at runtime, bloat
+            exclude group: 'org.checkerframework', module: 'checker-qual'
+        }
+
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
 
         implementation files('../libs/external/jcommon-1.0.12.jar')
@@ -1265,7 +1309,11 @@ project(':wres-eventsbroker')
         implementation group: 'javax.jms', name: 'javax.jms-api', version: '2.0.1'
         
         // QPID broker
-        implementation 'org.apache.qpid:qpid-broker-core:8.0.6'
+        implementation( 'org.apache.qpid:qpid-broker-core:8.0.6' )
+        {
+            // Not used by WRES, bloat
+            exclude group: 'org.apache.bcel', module: 'bcel'
+        }
 
         // QPID broker support for AMQP 0.8 and 0.9.1 (not 1.0)
         implementation 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:8.0.6'
@@ -1570,7 +1618,11 @@ dependencies
         exclude group: 'org.checkerframework', module: 'checker-qual'
     }
 
-    implementation 'com.google.guava:guava:31.0.1-jre'
+    implementation( 'com.google.guava:guava:31.0.1-jre' )
+    {
+        // Not used at runtime, bloat
+        exclude group: 'org.checkerframework', module: 'checker-qual'
+    }
 
     implementation( 'edu.ucar:cdm-core:5.4.2' )
     {
@@ -1578,6 +1630,8 @@ dependencies
         exclude group: 'commons-logging', module: 'commons-logging'
         // CVE-2021-33813
         exclude group: 'org.jdom', module: 'jdom2'
+        // Not used at runtime, bloat
+        exclude group: 'org.checkerframework', module: 'checker-qual'
     }
 
     runtimeOnly 'org.glassfish.jersey.core:jersey-server:2.35'
@@ -1768,6 +1822,22 @@ tasks.withType( AbstractArchiveTask )
     // Make bit-for-bit reproducible jars, zips, and tars.
     preserveFileTimestamps = false
     reproducibleFileOrder = true
+}
+
+// Truly prevent these annoying jars from showing up in dist zip
+configurations.implementation
+{
+    exclude group: 'com.google.code.findbugs', module: 'jsr305'
+    exclude group: 'org.checkerframework', module: 'checker-qual'
+    exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
+}
+
+// Truly prevent these annoying jars from showing up in dist zip
+configurations.runtimeOnly
+{
+    exclude group: 'com.google.code.findbugs', module: 'jsr305'
+    exclude group: 'org.checkerframework', module: 'checker-qual'
+    exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
 }
 
 defaultTasks 'installDist', 'test', 'javadoc', 'jacocorootreport'
