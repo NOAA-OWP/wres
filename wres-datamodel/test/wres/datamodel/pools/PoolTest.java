@@ -290,6 +290,28 @@ class PoolTest
         List<Pool<String>> expected = List.of( this.testPool, anotherPool );
         
         assertEquals( expected, actual );       
+    }
+    
+    @Test
+    void testGetBaselinePreservesMiniPools()
+    {
+        assertEquals(Collections.singletonList( this.testPool ), this.testPool.getMiniPools() );
+        
+        Pool<String> anotherPool = new Builder<String>().addData( List.of( "d", "e", "f" ) )
+                                                        .setMetadata( PoolMetadata.of() )
+                                                        .addDataForBaseline( List.of( "a", "b", "c" ) )
+                                                        .setMetadataForBaseline( PoolMetadata.of() )
+                                                        .setClimatology( VectorOfDoubles.of( 4, 5, 6 ) )
+                                                        .build();
+
+        Pool<String> merged = new Builder<String>().addPool( this.testPool, true )
+                                                   .addPool( anotherPool, true )
+                                                   .build();
+
+        List<Pool<String>> actual = merged.getBaselineData().getMiniPools(); 
+        List<Pool<String>> expected = List.of( this.testPool.getBaselineData(), anotherPool.getBaselineData() );
+        
+        assertEquals( expected, actual );       
     }    
     
     @Test
