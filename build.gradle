@@ -282,7 +282,7 @@ project(':wres-system')
         implementation 'org.apache.commons:commons-lang3:3.12.0'
 
         // to use native postgres copy, need this on compile, otherwise runtime
-        implementation( 'org.postgresql:postgresql:42.3.0' )
+        implementation( 'org.postgresql:postgresql:42.3.1' )
         {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
@@ -399,7 +399,7 @@ project(':wres-io')
         implementation 'org.apache.commons:commons-compress:1.21'
 
         // to use native postgres copy, need this on compile, otherwise runtime
-        implementation( 'org.postgresql:postgresql:42.3.0' )
+        implementation( 'org.postgresql:postgresql:42.3.1' )
         {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
@@ -1115,7 +1115,7 @@ project(':wres-tasker')
         implementation 'org.apache.tika:tika-core:1.27'
 
         // To persist job metadata while keeping it relatively fast
-        implementation 'org.redisson:redisson:3.16.3'
+        implementation 'org.redisson:redisson:3.16.4'
 
         // For ToStringBuilder
         implementation 'org.apache.commons:commons-lang3:3.12.0'
