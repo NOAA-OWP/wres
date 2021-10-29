@@ -20,7 +20,7 @@ import wres.config.ProjectConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.UnitAlias;
 import wres.datamodel.Units;
-import wres.datamodel.Units.UnsupportedUnitException;
+import wres.datamodel.Units.UnrecognizedUnitException;
 import wres.io.data.caching.MeasurementUnits;
 
 /**
@@ -56,17 +56,20 @@ public class UnitMapper
 
         for ( UnitAlias alias : aliases )
         {
-            String old = aliasToUnitStrings.put( alias.getAlias(), alias.getUnit() );
+            String existing = aliasToUnitStrings.put( alias.getAlias(),
+                                                      alias.getUnit() );
 
-            if ( old != null )
+            if ( existing != null )
             {
                 throw new ProjectConfigException( alias,
-                                                  "Multiple definitions for a "
+                                                  "Multiple declarations for a "
                                                   + "single unit alias are not "
                                                   + "supported. Found repeated "
-                                                  + "'" + old + "' alias. "
-                                                  + "Remove all but one unit "
-                                                  + "for alias '" + old + "'" );
+                                                  + "'" + alias.getAlias()
+                                                  + "' alias. Remove all but "
+                                                  + "one declaration for alias "
+                                                  + "'" + alias.getAlias()
+                                                  + "'." );
             }
         }
 
@@ -77,10 +80,19 @@ public class UnitMapper
                                                  aliasToUnitStrings );
             this.indriyaUnits.put( desiredMeasurementUnitName, desiredUnit );
         }
-        catch ( UnsupportedUnitException uue )
+        catch ( UnrecognizedUnitException uue )
         {
-            LOGGER.warn( "Unknown unit '{}' may cause unit conversion issues.",
-                         desiredMeasurementUnitName );
+            if ( LOGGER.isWarnEnabled() )
+            {
+                // Here we have either an alias name or a UCUM unit name where
+                // the UCUM value for the alias has failed to be recognized or
+                // the unit name itself has failed to be recognized. So it would
+                // be awkward to say either "unit alias" or "UCUM unit" here.
+                LOGGER.warn( "Unrecognized unit '"
+                             + desiredMeasurementUnitName + "' may cause unit "
+                             + "conversion failure if this evaluation requires"
+                             + " a unit conversion." );
+            }
         }
 
         // Immediately attempt to parse the given javax.measure.Unit, only warn.
@@ -99,10 +111,15 @@ public class UnitMapper
                                                          aliasToUnitStrings );
                     this.indriyaUnits.put( aliasName, indriyaUnit );
                 }
-                catch ( UnsupportedUnitException uue )
+                catch ( UnrecognizedUnitException uue )
                 {
-                    LOGGER.warn( "Unknown unit '{}' may cause unit conversion issues.",
-                                 unitName );
+                    // Here we definitely have an alias name and UCUM unit at
+                    // hand because we are iterating over declared unit aliases.
+                    LOGGER.warn( "Unit alias declaration with unrecognized UCUM"
+                                 + " unit '" + unitName + "' (having alias '"
+                                 + aliasName + "') may cause unit "
+                                 + "conversion failure if this evaluation "
+                                 + "requires a unit conversion." );
                 }
             }
         }
@@ -142,7 +159,7 @@ public class UnitMapper
      * @param unitName The name of an existing measurement unit.
      * @return A unit mapper for the prescribed existing units to this unit.
      * @throws NoSuchUnitConversionException When unable to create a converter.
-     * @throws UnsupportedUnitException When unable to support given unitName.
+     * @throws Units.UnrecognizedUnitException When unable to support given unitName.
      */
 
     public DoubleUnaryOperator getUnitMapper( String unitName )
@@ -193,7 +210,7 @@ public class UnitMapper
      * @param measurementUnitId The surrogate key for the measurement unit.
      * @return A unit mapper for the prescribed existing units to this unit.
      * @throws NoSuchUnitConversionException When unable to create a converter.
-     * @throws UnsupportedUnitException When unable to support given unitName.
+     * @throws UnrecognizedUnitException When unable to support given unitName.
      */
 
     public DoubleUnaryOperator getUnitMapper( long measurementUnitId )
