@@ -237,7 +237,7 @@ public class UnitsTest
     @Test
     public void getPairsPerParsecUnitThrowsException()
     {
-        assertThrows( Units.UnsupportedUnitException.class,
+        assertThrows( Units.UnrecognizedUnitException.class,
                       () -> Units.getUnit( "pears/parsec" ) );
     }
 

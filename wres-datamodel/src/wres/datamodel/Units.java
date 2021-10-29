@@ -269,7 +269,7 @@ public class Units
      * @param unitName The name String
      * @param overrideAliases Unit name aliases to official unit names.
      * @return the javax.measure if known, null otherwise.
-     * @throws UnsupportedUnitException when unable to find the unit.
+     * @throws UnrecognizedUnitException when unable to find the unit.
      */
 
     public static Unit<?> getUnit( String unitName,
@@ -296,13 +296,13 @@ public class Units
             SortedSet<String> aliases = new TreeSet<>();
             aliases.addAll( Units.getAllConvenienceAliases() );
             aliases.addAll( overrideAliases.keySet() );
-            SortedSet<String> actualUnits = new TreeSet<>();
-            actualUnits.addAll( Units.getAllConvenienceUnits() );
-            actualUnits.addAll( overrideAliases.values() );
-            throw new UnsupportedUnitException( unitName,
-                                                aliases,
-                                                actualUnits,
-                                                e );
+            SortedSet<String> actualUnits = new TreeSet<>( Units.getAllConvenienceUnits() );
+            // Omit the overrrideAliases values because they may not parse.
+            throw new UnrecognizedUnitException( unitName,
+                                                 officialName,
+                                                 aliases,
+                                                 actualUnits,
+                                                 e );
         }
 
         if ( LOGGER.isInfoEnabled() )
@@ -324,7 +324,7 @@ public class Units
      *
      * @param unitName The name String
      * @return the javax.measure if known, null otherwise.
-     * @throws UnsupportedUnitException when unable to find the unit.
+     * @throws UnrecognizedUnitException when unable to find the unit.
      */
 
     public static Unit<?> getUnit( String unitName )
@@ -333,28 +333,41 @@ public class Units
     }
 
 
-    public static final class UnsupportedUnitException extends RuntimeException
+    public static final class UnrecognizedUnitException extends RuntimeException
     {
         private static final long serialVersionUID = -6873574285493867322L;
 
-        UnsupportedUnitException( String unit,
-                                  Set<String> unitAliases,
-                                  Set<String> actualUnits,
-                                  Throwable cause )
+        UnrecognizedUnitException( String unitNameGiven,
+                                   String failedToParseUnitName,
+                                   Set<String> unitAliases,
+                                   Set<String> actualUnits,
+                                   Throwable cause )
         {
-            super( "Unable to find the measurement unit " + unit
-                   + " among the unit aliases "
-                   + unitAliases
-                   + ", nor was it able to be parsed as an indriya unit,"
-                   + " such as these units that can be parsed "
-                   + actualUnits + ". You may need to add a unit alias to the "
-                   + "project declaration to tell WRES what '" + unit
-                   + "' should be interpreted as. For example, if it were cubic"
-                   + " meters per second: <unitAlias><alias>" + unit + "</alias>"
-                   + "<unit>m3/s</unit></unitAlias>. WRES expects UCUM case "
-                   + "sensitive units project declarations. To figure out the "
-                   + "format for your particular units, try the demo at "
-                   + "https://ucum.nlm.nih.gov/ucum-lhc/demo.html",
+            super( "Unable to find the measurement unit '" + unitNameGiven
+                   + "' among the default unit aliases and/or '"
+                   + failedToParseUnitName + "' was not recognized as a UCUM "
+                   + "unit and/or the UCUM unit declared for '" + unitNameGiven
+                   + "' in a unitAlias declaration was not recognized (look "
+                   + "for an earlier WARN message). You may need to add a unit "
+                   + "alias to the project declaration (or replace an existing "
+                   + "one) to tell WRES which UCUM unit '" + unitNameGiven + "'"
+                   + " represents. For example, if '" + unitNameGiven + "' "
+                   + "represents cubic meters per second then use this: "
+                   + "<unitAlias><alias>" + unitNameGiven + "</alias><unit>"
+                   + "m3/s</unit></unitAlias>. WRES expects UCUM case-sensitive"
+                   + " unit format. To learn the UCUM format for your "
+                   + "particular unit(s), try the demo at "
+                   + "https://ucum.nlm.nih.gov/ucum-lhc/demo.html and/or review"
+                   + " the UCUM documentation at https://ucum.org/ucum.html"
+                   + " and/or look at the following UCUM string examples that "
+                   + "can be successfully recognized by WRES: " + actualUnits
+                   + ". Here are the default unit aliases in this version of "
+                   + "WRES that have educated guesses for UCUM units already "
+                   + "assigned for convenience (the following are not UCUM "
+                   + "units, but these will be automatically mapped to one of "
+                   + "the example UCUM units listed above unless overridden by "
+                   + "an explicit unit alias declaration): "
+                   + unitAliases,
                    cause );
         }
     }

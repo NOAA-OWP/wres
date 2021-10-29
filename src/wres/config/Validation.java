@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +64,7 @@ import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeScaleFunction;
 import wres.config.generated.TimeSeriesMetricConfig;
+import wres.config.generated.UnitAlias;
 import wres.config.generated.UnnamedFeature;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
@@ -1407,6 +1409,9 @@ public class Validation
 
         PairConfig pairConfig = projectConfig.getPair();
 
+        result = Validation.areUnitAliasDeclarationsValid( projectConfigPlus,
+                                                           pairConfig );
+
         TimeScaleConfig aggregationConfig =
                 pairConfig.getDesiredTimeScale();
 
@@ -1450,6 +1455,38 @@ public class Validation
         result = result && Validation.isGridSelectionValid( projectConfigPlus, pairConfig );
 
         return result;
+    }
+
+    private static boolean areUnitAliasDeclarationsValid( ProjectConfigPlus projectConfigPlus,
+                                                          PairConfig pairConfig )
+    {
+        Map<String,String> aliases = new HashMap<>();
+        boolean noDuplicates = true;
+
+        for ( UnitAlias alias : pairConfig.getUnitAlias() )
+        {
+            String existing = aliases.put( alias.getAlias(),
+                                           alias.getUnit() );
+
+            if ( existing != null )
+            {
+                noDuplicates = false;
+
+                String msg = FILE_LINE_COLUMN_BOILERPLATE + " Multiple"
+                             + " declarations for a single unit alias are not "
+                             + "supported. Found repeated '" + alias.getAlias()
+                             + "' alias. Remove all but one declaration for "
+                             + "alias '" + alias.getAlias() + "'.";
+
+                LOGGER.warn( msg,
+                             projectConfigPlus.getOrigin(),
+                             alias.sourceLocation().getLineNumber(),
+                             alias.sourceLocation()
+                                  .getColumnNumber() );
+            }
+        }
+
+        return noDuplicates;
     }
 
     private static boolean isGridSelectionValid( ProjectConfigPlus projectConfigPlus,
