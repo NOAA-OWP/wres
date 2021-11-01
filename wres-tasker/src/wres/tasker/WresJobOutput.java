@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Set;
@@ -14,7 +15,6 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.StreamingOutput;
 
@@ -27,16 +27,13 @@ import org.apache.tika.metadata.Metadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static jakarta.ws.rs.core.MediaType.TEXT_PLAIN;
-import static jakarta.ws.rs.core.MediaType.TEXT_HTML;
-
 @Path( "/job/{jobId}/output" )
 public class WresJobOutput
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WresJobOutput.class );
 
     @GET
-    @Produces( TEXT_PLAIN )
+    @Produces( "text/plain; charset=utf-8" )
     public Response getProjectResourcesPlain( @PathParam( "jobId" ) String id )
     {
         LOGGER.debug( "Retrieving resource list form job {} to create plain response", id );
@@ -51,7 +48,7 @@ public class WresJobOutput
         }
 
         StreamingOutput streamingOutput = output -> {
-            try ( OutputStreamWriter outputStreamWriter =  new OutputStreamWriter( output );
+            try ( OutputStreamWriter outputStreamWriter =  new OutputStreamWriter( output, StandardCharsets.UTF_8 );
                   BufferedWriter writer = new BufferedWriter( outputStreamWriter ) )
             {
                 for ( URI outputResource : jobOutputs )
@@ -71,7 +68,7 @@ public class WresJobOutput
 
 
     @GET
-    @Produces( TEXT_HTML )
+    @Produces( "text/html; charset=utf-8" )
     public Response getProjectResourcesHtml( @PathParam( "jobId" ) String id )
     {
         LOGGER.debug( "Retrieving resource list from job {} to create html response", id );
@@ -91,7 +88,7 @@ public class WresJobOutput
         String footer = "</ul></body></html>";
 
         StreamingOutput streamingOutput = output -> {
-            try ( OutputStreamWriter outputStreamWriter =  new OutputStreamWriter( output );
+            try ( OutputStreamWriter outputStreamWriter =  new OutputStreamWriter( output, StandardCharsets.UTF_8 );
                   BufferedWriter writer = new BufferedWriter( outputStreamWriter ) )
             {
                 writer.write( header );
@@ -130,7 +127,7 @@ public class WresJobOutput
         Set<URI> jobOutputs = WresJob.getSharedJobResults()
                                      .getJobOutputs( id );
 
-        String type = MediaType.TEXT_PLAIN_TYPE.getType();
+        String type = "text/plain; charset=utf-8";
 
         if ( jobOutputs == null )
         {
@@ -218,7 +215,7 @@ public class WresJobOutput
      */
 
     @DELETE
-    @Produces( TEXT_PLAIN )
+    @Produces( "text/plain; charset=utf-8" )
     public Response deleteProjectResourcesPlain( @PathParam( "jobId" ) String id )
     {
         LOGGER.debug( "Retrieving resources from job {}", id );

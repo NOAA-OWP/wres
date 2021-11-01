@@ -10,7 +10,7 @@ import jakarta.ws.rs.core.MediaType;
 public class WresJobStderr
 {
     @GET
-    @Produces( MediaType.TEXT_PLAIN )
+    @Produces( "text/plain; charset=utf-8" )
     public String getWresJobStderr( @PathParam( "jobId" ) String jobId )
     {
         return WresJob.getSharedJobResults()

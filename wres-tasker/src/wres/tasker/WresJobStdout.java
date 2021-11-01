@@ -12,7 +12,7 @@ import jakarta.ws.rs.core.StreamingOutput;
 public class WresJobStdout
 {
     @GET
-    @Produces( MediaType.TEXT_PLAIN )
+    @Produces( "text/plain; charset=utf-8" )
     public Response getWresJobStdout( @PathParam( "jobId" ) String jobId )
     {
         StreamingOutput streamingOutput = WresJob.getSharedJobResults()
