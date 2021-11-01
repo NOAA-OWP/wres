@@ -25,8 +25,6 @@ import org.jfree.data.xy.XYDataset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Lists;
-
 import ohd.hseb.charter.ChartConstants;
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
@@ -1053,7 +1051,7 @@ public abstract class ChartEngineFactory
                                                           source.getNumberOfSeries() );
         
         //Build the ChartEngine instance.
-        return generateChartEngine( Lists.newArrayList( source ),
+        return generateChartEngine( List.of( source ),
                                     arguments,
                                     parameters,
                                     null,
@@ -1121,7 +1119,7 @@ public abstract class ChartEngineFactory
                                                           source.getNumberOfSeries() );
         
         //Build the ChartEngine instance.
-        return generateChartEngine( Lists.newArrayList( source ),
+        return generateChartEngine( List.of( source ),
                                     arguments,
                                     parameters,
                                     null,
@@ -1188,7 +1186,7 @@ public abstract class ChartEngineFactory
                                                           source.getNumberOfSeries() );
         
         //Build the ChartEngine instance.
-        return generateChartEngine( Lists.newArrayList( source ),
+        return generateChartEngine( List.of( source ),
                                     arguments,
                                     parameters,
                                     null,
@@ -1264,7 +1262,7 @@ public abstract class ChartEngineFactory
         }
 
         //Build the ChartEngine instance.
-        return ChartTools.buildChartEngine( Lists.newArrayList( source ),
+        return ChartTools.buildChartEngine( List.of( source ),
                                             arguments,
                                             templateName,
                                             override );
@@ -1296,8 +1294,8 @@ public abstract class ChartEngineFactory
         {
             final NumericalXYChartDataSource source = new NumericalXYChartDataSource( null,
                                                                                       sourceIndex,
-                                                                                      Lists.newArrayList( xValues ),
-                                                                                      Lists.newArrayList( yValues ) );
+                                                                                      List.of( xValues ),
+                                                                                      List.of( yValues ) );
             source.getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle( "" );
             source.getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle( "" );
             source.getDefaultFullySpecifiedDataSourceDrawingParameters().setSubPlotIndex( subPlotIndex );
