@@ -646,6 +646,23 @@ public class Validation
             isValid = false;
         }
 
+        // The netcdf2 is supported but results may be surprising
+        if ( foundScratchNetcdf && !projectConfigPlus.getProjectConfig()
+                                                     .getPair()
+                                                     .getFeatureGroup()
+                                                     .isEmpty() )
+        {
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                         + " In this version of WRES, while \"netcdf2\" is "
+                         + "supported in combination with \"featureGroup\" "
+                         + "the statistics for a feature group will be repeated"
+                         + " for each individual feature in that group in the"
+                         + " resulting netCDF statistics data.",
+                         projectConfigPlus.getOrigin(),
+                         locator.getLineNumber(),
+                         locator.getColumnNumber() );
+        }
+
         return isValid;
     }
 
@@ -1638,7 +1655,6 @@ public class Validation
      * 
      * @param projectConfigPlus the project declaration
      * @param pairConfig the pair declaration
-     * @param outputsConfig the outputs declaration
      * @return true when the feature group declaration is valid, otherwise false
      */
 
@@ -1649,25 +1665,8 @@ public class Validation
 
         List<FeaturePool> groups = pairConfig.getFeatureGroup();
 
-        String allowGroups = System.getProperty( "wres.featureGroups" );
-
         if ( !groups.isEmpty() )
         {
-            if ( !"true".equalsIgnoreCase( allowGroups ) )
-            {
-                valid = false;
-
-                String msg = FILE_LINE_COLUMN_BOILERPLATE
-                             + " Feature grouping is an experimental feature for developers and cannot be used without "
-                             + "the 'wres.featureGroups=true' system property. Please set the system property or "
-                             + "remove the <featureGroup> declaration and try again.";
-
-                LOGGER.warn( msg,
-                             projectConfigPlus.getOrigin(),
-                             pairConfig.sourceLocation().getLineNumber(),
-                             pairConfig.sourceLocation().getColumnNumber() );
-            }
-
             if ( !pairConfig.getGridSelection().isEmpty() )
             {
                 valid = false;
@@ -1689,32 +1688,6 @@ public class Validation
             valid = valid && Validation.validateIndividualFeaturesFromFeatureGroups( groups, 
                                                                                      projectConfigPlus, 
                                                                                      pairConfig );
-        }
-
-        FeatureService featureService = pairConfig.getFeatureService();
-
-        if ( Objects.nonNull( featureService ) )
-        {
-            List<FeatureGroup> featureGroupsToPool = pairConfig.getFeatureService()
-                                                               .getGroup()
-                                                               .stream()
-                                                               .filter( FeatureGroup::isPool )
-                                                               .collect( Collectors.toList() );
-
-            if ( !featureGroupsToPool.isEmpty() && !"true".equalsIgnoreCase( allowGroups ) )
-            {
-                valid = false;
-
-                String msg = FILE_LINE_COLUMN_BOILERPLATE
-                             + " Feature grouping is an experimental feature for developers and cannot be used without "
-                             + "the 'wres.featureGroups=true' system property. Please set the system property or "
-                             + "remove the pool=\"true\" declaration on each featureService group and try again.";
-
-                LOGGER.warn( msg,
-                             projectConfigPlus.getOrigin(),
-                             pairConfig.sourceLocation().getLineNumber(),
-                             pairConfig.sourceLocation().getColumnNumber() );
-            }
         }
 
         return valid;
