@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
 import static jakarta.ws.rs.core.MediaType.MULTIPART_FORM_DATA;
-import static jakarta.ws.rs.core.MediaType.TEXT_PLAIN;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 import wres.config.ProjectConfigException;
@@ -60,7 +59,7 @@ public class WresJobInput
     @POST
     @Path( "/{dataset}" )
     @Consumes( MULTIPART_FORM_DATA )
-    @Produces( TEXT_PLAIN )
+    @Produces( "text/plain; charset=utf-8" )
     public Response addSourceToDataset( @PathParam( "jobId" ) String jobId,
                                         @PathParam( "dataset" ) String dataset,
                                         @FormDataParam( "data" ) InputStream data )
@@ -180,7 +179,7 @@ public class WresJobInput
 
     @POST
     @Consumes( APPLICATION_FORM_URLENCODED )
-    @Produces( TEXT_PLAIN )
+    @Produces( "text/plain; charset=utf-8" )
     public Response noMoreInput( @PathParam( "jobId" ) String jobId,
                                  @FormParam( "postInputDone" )
                                  @DefaultValue( "false" )

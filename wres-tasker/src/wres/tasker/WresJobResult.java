@@ -25,7 +25,7 @@ public class WresJobResult
      */
 
     @GET
-    @Produces( MediaType.TEXT_PLAIN )
+    @Produces( "text/plain; charset=utf-8" )
     public Response getWresJobResult( @PathParam( "jobId" ) String jobId )
     {
         JobMetadata.JobState jobState = WresJob.getSharedJobResults()

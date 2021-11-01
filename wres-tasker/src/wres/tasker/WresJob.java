@@ -33,7 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
-import static jakarta.ws.rs.core.MediaType.TEXT_HTML;
 
 import wres.messages.BrokerHelper;
 import wres.messages.generated.Job;
@@ -165,7 +164,7 @@ public class WresJob
 
 
     @GET
-    @Produces( MediaType.TEXT_PLAIN )
+    @Produces( "text/plain; charset=utf-8" )
     public String getWresJob()
     {
         // Test connectivity to broker
@@ -224,7 +223,7 @@ public class WresJob
 
     @POST
     @Consumes( APPLICATION_FORM_URLENCODED )
-    @Produces( TEXT_HTML )
+    @Produces( "text/html; charset=utf-8" )
     public Response postWresJob( @FormParam( "projectConfig" )
                                  @DefaultValue( "" )
                                  String projectConfig,
@@ -416,7 +415,7 @@ public class WresJob
      */
     @GET
     @Path( "/{jobId}" )
-    @Produces( TEXT_HTML )
+    @Produces( "text/html; charset=utf-8" )
     public Response getWresJobInfo( @PathParam( "jobId" ) String jobId )
     {
         Integer jobResult = JOB_RESULTS.getJobResultRaw( jobId );
