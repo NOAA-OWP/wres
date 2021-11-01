@@ -42,6 +42,7 @@ import org.redisson.api.RLiveObjectService;
 import org.redisson.api.RMapCache;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.map.event.EntryExpiredListener;
+import org.redisson.client.codec.StringCodec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,7 +115,8 @@ class JobResults
         // Use redis when available, otherwise local Caffeine instances.
         if ( Objects.nonNull( this.redisson ) )
         {
-            RMapCache<String,JobMetadata> redissonMap = this.redisson.getMapCache( "jobMetadataById" );
+            RMapCache<String,JobMetadata> redissonMap = this.redisson.getMapCache( "jobMetadataById",
+                                                                                   new StringCodec( StandardCharsets.UTF_8 ) );
             this.objectService = this.redisson.getLiveObjectService();
             this.objectService.registerClass( JobMetadata.class );
 
