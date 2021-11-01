@@ -16,7 +16,7 @@ volumes:
             device: "${NFS_HOME_DIR_DEVICE}"
 services:
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20211101-2052e26"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20211101-91ec6b8"
         restart: always
         depends_on:
             eventsbroker:
