@@ -26,8 +26,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Functions;
-
 import net.jcip.annotations.ThreadSafe;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.ProjectConfig.Inputs;
@@ -2042,7 +2040,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
         return timeSeries.stream()
                          .collect( Collectors.groupingBy( next -> next.getMetadata().getFeature(),
-                                                          Collectors.mapping( Functions.identity(),
+                                                          Collectors.mapping( Function.identity(),
                                                                               Collectors.toList() ) ) );
     }
 

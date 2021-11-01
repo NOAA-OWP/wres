@@ -1020,7 +1020,7 @@ public class SourceLoader
             
             String pattern = source.getPattern();
                     
-            if ( !com.google.common.base.Strings.isNullOrEmpty( pattern ) )
+            if ( ! ( pattern == null || pattern.isEmpty() ) )
             {
                 matcher = FileSystems.getDefault().getPathMatcher("glob:" + pattern );
             }
