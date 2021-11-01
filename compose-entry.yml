@@ -51,7 +51,7 @@ services:
          - /mnt/wres_share/heap_dumps/tasker:/mnt/wres_share/heap_dumps/tasker
         environment:
          # Make sure to pass through WRES_TASKER_SERVER_P12 to tasker at runtime
-         - JAVA_OPTS=-Dwres.broker=broker -Dwres.redisHost=persister -Dwres.taskerPathToServerP12=${WRES_TASKER_SERVER_P12} -Djava.io.tmpdir=/mnt/wres_share/input_data -Dwres.featureGroups=true -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/tasker -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/tasker/java_pid%p.hprof /mnt/wres_share/heap_dumps/tasker/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/tasker/java_pid%p_`hostname`.hprof'
+         - JAVA_OPTS=-Dwres.broker=broker -Dwres.redisHost=persister -Dwres.taskerPathToServerP12=${WRES_TASKER_SERVER_P12} -Djava.io.tmpdir=/mnt/wres_share/input_data -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/tasker -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/tasker/java_pid%p.hprof /mnt/wres_share/heap_dumps/tasker/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/tasker/java_pid%p_`hostname`.hprof'
         # Tasker JVM should have 340m max heap specified at launch
         # The total limit includes stack space which depends on Thread count
         mem_limit: 1390m
@@ -113,7 +113,7 @@ services:
          # administrator to run the migration(s) during or after deployment.
          # Write heap dumps to the root of the volume above.
          # Override the broker address and port in the binding URL of the event.properties.
-         - INNER_JAVA_OPTS=-Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Dwres.externalGraphics=true -Djava.io.tmpdir=/mnt/wres_share/evaluations -Dwres.databaseHost=${WRES_DB_FQDN} -Dwres.databaseName=wres8 -Dwres.username=wres_user8 -Dwres.attemptToMigrate=false -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/wres -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/wres/java_pid%p.hprof /mnt/wres_share/heap_dumps/wres/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/wres/java_pid%p_`hostname`.hprof' -XX:StartFlightRecording=settings=wres_jfr,maxsize=128m,dumponexit=true,filename=/mnt/wres_share/heap_dumps/wres/`date +%Y%m%dT%H%M%S.%NZ --utc`.jfr -XX:FlightRecorderOptions=repository=/mnt/wres_share/heap_dumps/wres/
+         - INNER_JAVA_OPTS=-Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Dwres.externalGraphics=true -Dwres.featureGroups=true -Djava.io.tmpdir=/mnt/wres_share/evaluations -Dwres.databaseHost=${WRES_DB_FQDN} -Dwres.databaseName=wres8 -Dwres.username=wres_user8 -Dwres.attemptToMigrate=false -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/wres -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/wres/java_pid%p.hprof /mnt/wres_share/heap_dumps/wres/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/wres/java_pid%p_`hostname`.hprof' -XX:StartFlightRecording=settings=wres_jfr,maxsize=128m,dumponexit=true,filename=/mnt/wres_share/heap_dumps/wres/`date +%Y%m%dT%H%M%S.%NZ --utc`.jfr -XX:FlightRecorderOptions=repository=/mnt/wres_share/heap_dumps/wres/
         # Shim JVM should have 64m max heap, core JVM should have 2560m max heap
         mem_limit: 3584m
         cap_drop:
