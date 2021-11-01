@@ -22,6 +22,10 @@ import org.slf4j.LoggerFactory;
 
 public class FeatureGroup implements Comparable<FeatureGroup>
 {
+    /** The maximum length of a feature group name: 32 characters for each name in a feature tuple, plus two separator 
+     * characters. */
+    public static final int MAXIMUM_NAME_LENGTH = 98;
+    
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( FeatureGroup.class );
 
@@ -194,6 +198,16 @@ public class FeatureGroup implements Comparable<FeatureGroup>
         if ( features.isEmpty() )
         {
             throw new IllegalArgumentException( "A feature group requires one or more features." );
+        }
+        
+        if ( Objects.nonNull( name ) && name.length() > FeatureGroup.MAXIMUM_NAME_LENGTH )
+        {
+            throw new IllegalArgumentException( "A feature group name cannot be longer than " +
+                                                FeatureGroup.MAXIMUM_NAME_LENGTH
+                                                + " characters. The supplied name is too long, please shorten the name"
+                                                + "and try again: "
+                                                + name
+                                                + "." );
         }
 
         this.name = name;

@@ -3,6 +3,7 @@ package wres.datamodel.space;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Set;
 
@@ -96,7 +97,7 @@ class FeatureGroupTest
             assertEquals( this.aGroup.hashCode(), this.aGroup.hashCode() );
         }
     }
-    
+
     @Test
     void testCompareTo()
     {
@@ -104,35 +105,35 @@ class FeatureGroupTest
         assertEquals( 0, this.aGroup.compareTo( this.aGroup ) );
         FeatureGroup anotherGroup = FeatureGroup.of( "anotherName", this.aTuple );
         assertNotEquals( 0, this.aGroup.compareTo( anotherGroup ) );
-        
+
         // Unequal size
         FeatureGroup smallerGroup = FeatureGroup.of( Set.of( this.aTuple ) );
         FeatureGroup biggerGroup = FeatureGroup.of( Set.of( this.aTuple, this.anotherTuple ) );
         assertTrue( smallerGroup.compareTo( biggerGroup ) < 0 );
-        
+
         // Equal size, equal group name, lesser tuple name
         FeatureKey keyOne = new FeatureKey( "A", null, null, null );
         FeatureKey keyTwo = new FeatureKey( "B", null, null, null );
         FeatureGroup lesserGroup = FeatureGroup.of( new FeatureTuple( keyOne, keyOne, null ) );
         FeatureGroup greaterGroup = FeatureGroup.of( new FeatureTuple( keyTwo, keyTwo, null ) );
-        
+
         assertTrue( greaterGroup.compareTo( lesserGroup ) > 0 );
     }
 
     @Test
-    void getName()
+    void testGetName()
     {
         assertEquals( "aGroup", this.aGroup.getName() );
     }
 
     @Test
-    void getFeatures()
+    void testGetFeatures()
     {
         assertEquals( Set.of( this.aTuple ), this.aGroup.getFeatures() );
     }
 
     @Test
-    void ofSingletons()
+    void testOfSingletons()
     {
         Set<FeatureGroup> groups = FeatureGroup.ofSingletons( Set.of( this.aTuple, this.anotherTuple ) );
 
@@ -140,6 +141,19 @@ class FeatureGroupTest
         FeatureGroup secondExpected = FeatureGroup.of( this.anotherTuple );
 
         assertEquals( Set.of( firstExpected, secondExpected ), groups );
+    }
+
+    @Test
+    void testFeatureGroupThrowsExpectedExceptionWhenNameTooLong()
+    {
+        IllegalArgumentException exception =
+                assertThrows( IllegalArgumentException.class,
+                              () -> FeatureGroup.of( new String( new char[99] ), this.aTuple ) );
+        
+        String actualMessage = exception.getMessage();
+        String expectedMessageStartsWith = "A feature group name cannot be longer than" ;
+
+        assertTrue( actualMessage.startsWith( expectedMessageStartsWith ) );
     }
 
 }

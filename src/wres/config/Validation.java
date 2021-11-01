@@ -1682,35 +1682,8 @@ public class Validation
                              pairConfig.sourceLocation().getColumnNumber() );
             }
 
-            // Non-unique group names?
-            Set<String> duplicates = groups.stream()
-                                           // Remove groups without a declared name as the software will choose one
-                                           .filter( next -> Objects.nonNull( next.getName() ) )
-                                           // Group by name and count instances
-                                           .collect( Collectors.groupingBy( FeaturePool::getName,
-                                                                            Collectors.counting() ) )
-                                           .entrySet()
-                                           .stream()
-                                           // Find duplicates
-                                           .filter( next -> next.getValue() > 1 )
-                                           .map( Map.Entry::getKey )
-                                           .collect( Collectors.toSet() );
-
-            if ( !duplicates.isEmpty() )
-            {
-                valid = false;
-
-                String msg = FILE_LINE_COLUMN_BOILERPLATE
-                             + " Each feature group or <featureGroup> must contain a unique name. The following "
-                             + "feature groups contained duplicate names {}. Please de-duplicate these feature group "
-                             + "names and try again.";
-
-                LOGGER.warn( msg,
-                             projectConfigPlus.getOrigin(),
-                             pairConfig.sourceLocation().getLineNumber(),
-                             pairConfig.sourceLocation().getColumnNumber(),
-                             duplicates );
-            }
+            // Validate the group names
+            valid = valid && Validation.validateFeatureGroupNames( groups, projectConfigPlus, pairConfig );
 
             // Validate the individual features
             valid = valid && Validation.validateIndividualFeaturesFromFeatureGroups( groups, 
@@ -1746,6 +1719,73 @@ public class Validation
 
         return valid;
     }
+    
+    private static boolean validateFeatureGroupNames( List<FeaturePool> groups, 
+                                                      ProjectConfigPlus projectConfigPlus,
+                                                      PairConfig pairConfig )
+    {
+        boolean valid = true;
+
+        // Non-unique group names?
+        Set<String> duplicates = groups.stream()
+                                       // Remove groups without a declared name as the software will choose one
+                                       .filter( next -> Objects.nonNull( next.getName() ) )
+                                       // Group by name and count instances
+                                       .collect( Collectors.groupingBy( FeaturePool::getName,
+                                                                        Collectors.counting() ) )
+                                       .entrySet()
+                                       .stream()
+                                       // Find duplicates
+                                       .filter( next -> next.getValue() > 1 )
+                                       .map( Map.Entry::getKey )
+                                       .collect( Collectors.toSet() );
+
+        if ( !duplicates.isEmpty() )
+        {
+            valid = false;
+
+            String msg = FILE_LINE_COLUMN_BOILERPLATE
+                         + " Each feature group or <featureGroup> must contain a unique name. The following "
+                         + "feature groups contained duplicate names {}. Please de-duplicate these feature group "
+                         + "names and try again.";
+
+            LOGGER.warn( msg,
+                         projectConfigPlus.getOrigin(),
+                         pairConfig.sourceLocation().getLineNumber(),
+                         pairConfig.sourceLocation().getColumnNumber(),
+                         duplicates );
+        }
+        
+        // Group names that are too long?
+        Set<String> tooLongNames = groups.stream()
+                                         // Remove groups without a declared name as the software will choose one
+                                         .filter( next -> Objects.nonNull( next.getName() )
+                                                          && next.getName()
+                                                                 .length() > wres.datamodel.space.FeatureGroup.MAXIMUM_NAME_LENGTH )
+                                         .map( FeaturePool::getName )
+                                         .collect( Collectors.toSet() );
+        
+        if ( !tooLongNames.isEmpty() )
+        {
+            valid = false;
+
+            String msg = FILE_LINE_COLUMN_BOILERPLATE
+                         + " Feature group names cannot exceed {} characters. Discovered {} feature groups whose names "
+                         + "exceeded this maximum length. Please rename these groups using a shorter name. The "
+                         + "offending feature group names are {}.";
+
+            LOGGER.warn( msg,
+                         projectConfigPlus.getOrigin(),
+                         pairConfig.sourceLocation().getLineNumber(),
+                         pairConfig.sourceLocation().getColumnNumber(),
+                         wres.datamodel.space.FeatureGroup.MAXIMUM_NAME_LENGTH,
+                         tooLongNames.size(),
+                         tooLongNames );
+        }
+        
+        return valid;
+    }
+    
 
     /**
      * Validates individual features that are supplied in a grouped context.

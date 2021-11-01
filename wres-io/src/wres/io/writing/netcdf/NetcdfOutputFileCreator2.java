@@ -62,7 +62,7 @@ class NetcdfOutputFileCreator2
     private static final int FEATURE_TUPLE_STRING_LENGTH = FEATURE_STRING_LENGTH * 3 + 2;
     
     /** The length of string to use for each feature group in the file. */
-    private static final int FEATURE_GROUP_STRING_LENGTH = 32;
+    private static final int FEATURE_GROUP_STRING_LENGTH = FeatureGroup.MAXIMUM_NAME_LENGTH;
 
     private static final String NOTE_REGARDING_UNITS_AND_GDAL = "Purposely avoided setting true units and standard_name attributes to maintain compatibility with GDAL/OGR 3.0.4 and QGIS 3.10.5.";
 
