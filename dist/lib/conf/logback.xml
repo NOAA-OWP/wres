@@ -21,6 +21,9 @@
           <totalSizeCap>2048MB</totalSizeCap>
         </rollingPolicy>
         <encoder>
+          <!-- Always write the log files in UTF-8. -->
+          <charset>UTF-8</charset>
+
           <!-- %exception{full}: full stacktrace in log file.
                %X{pid}: pid disambiguates multiple wres processes running. -->
           <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ} %X{pid} [%thread] %level %logger - %msg%n%exception{full}</pattern>
@@ -40,6 +43,7 @@
         </filter>
         -->
         <encoder>
+          <!-- The charset is driven by system/environment -->
 
           <!-- %nopexception: suppress stacktrace here -->
           <!-- %exception{short}: just the first line for each exception -->

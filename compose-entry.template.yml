@@ -52,6 +52,7 @@ services:
         environment:
          # Make sure to pass through WRES_TASKER_SERVER_P12 to tasker at runtime
          - JAVA_OPTS=-Dwres.broker=broker -Dwres.redisHost=persister -Dwres.taskerPathToServerP12=${WRES_TASKER_SERVER_P12} -Djava.io.tmpdir=/mnt/wres_share/input_data -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/tasker -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/tasker/java_pid%p.hprof /mnt/wres_share/heap_dumps/tasker/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/tasker/java_pid%p_`hostname`.hprof'
+         - LANG=C.UTF-8
         # Tasker JVM should have 340m max heap specified at launch
         # The total limit includes stack space which depends on Thread count
         mem_limit: 1390m
@@ -114,6 +115,7 @@ services:
          # Write heap dumps to the root of the volume above.
          # Override the broker address and port in the binding URL of the event.properties.
          - INNER_JAVA_OPTS=-Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Dwres.externalGraphics=true -Djava.io.tmpdir=/mnt/wres_share/evaluations -Dwres.databaseHost=${WRES_DB_FQDN} -Dwres.databaseName=wres8 -Dwres.username=wres_user8 -Dwres.attemptToMigrate=false -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/wres -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/wres/java_pid%p.hprof /mnt/wres_share/heap_dumps/wres/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/wres/java_pid%p_`hostname`.hprof' -XX:StartFlightRecording=settings=wres_jfr,maxsize=128m,dumponexit=true,filename=/mnt/wres_share/heap_dumps/wres/`date +%Y%m%dT%H%M%S.%NZ --utc`.jfr -XX:FlightRecorderOptions=repository=/mnt/wres_share/heap_dumps/wres/
+         - LANG=C.UTF-8
         # Shim JVM should have 64m max heap, core JVM should have 2560m max heap
         mem_limit: 3584m
         cap_drop:
@@ -139,6 +141,7 @@ services:
          - QPID_JAVA_MEM=-Xms256m -Xmx256m -XX:MaxDirectMemorySize=2048m
          - QPID_JAVA_GC=-XX:+UseConcMarkSweepGC
          - JAVA_OPTS=-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/eventsbroker
+         - LANG=C.UTF-8
         # Broker heap plus direct memory is 2304m in QPID_JAVA_MEM
         mem_limit: 2560m
         cap_drop:
@@ -160,6 +163,7 @@ services:
         environment:
          # Override the broker address and port in the binding URL of the event.properties
          - JAVA_OPTS=-Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Djava.io.tmpdir=/mnt/wres_share/evaluations -Xms640m -Xmx640m -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/graphics -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/graphics/java_pid%p.hprof /mnt/wres_share/heap_dumps/graphics/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/graphics/java_pid%p_`hostname`.hprof' -XX:StartFlightRecording=name=graphics,maxsize=256m,disk=true,maxage=24h,dumponexit=true,filename=/mnt/wres_share/heap_dumps/graphics/`hostname`/`date +%Y%m%dT%H%M%S.%NZ --utc`.jfr -XX:FlightRecorderOptions=repository=/mnt/wres_share/heap_dumps/graphics/`hostname`
+         - LANG=C.UTF-8
         # Graphics limit is 640m in JAVA_OPTS
         mem_limit: 1024m
         cap_drop:
