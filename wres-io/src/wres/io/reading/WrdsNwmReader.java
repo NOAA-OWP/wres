@@ -348,12 +348,6 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                          timeScale );
         }
 
-        // Is this a hack or not? Translate "meter^3 / sec" to "CMS"
-        if ( measurementUnit.equals( "meter^3 / sec") )
-        {
-            measurementUnit = "CMS";
-        }
-
         try
         {
             int emptyTimeseriesCount = 0;

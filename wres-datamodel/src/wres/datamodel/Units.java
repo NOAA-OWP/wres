@@ -117,7 +117,7 @@ public class Units
      * (66 rows)
      */
 
-    private static final Map<String,String> CONVENIENCE_ALIASES = new HashMap<>( 115 );
+    private static final Map<String,String> CONVENIENCE_ALIASES = new HashMap<>( 116 );
 
     static
     {
@@ -139,6 +139,7 @@ public class Units
         CONVENIENCE_ALIASES.put( "M3/S", OFFICIAL_CUBIC_METERS_PER_SECOND );
         CONVENIENCE_ALIASES.put( "m3/sec", OFFICIAL_CUBIC_METERS_PER_SECOND );
         CONVENIENCE_ALIASES.put( "M3/SEC", OFFICIAL_CUBIC_METERS_PER_SECOND );
+        CONVENIENCE_ALIASES.put( "meter^3 / sec", OFFICIAL_CUBIC_METERS_PER_SECOND );
         CONVENIENCE_ALIASES.put( "KCFS", OFFICIAL_KILO_CUBIC_FEET_PER_SECOND );
         CONVENIENCE_ALIASES.put( "kcfs", OFFICIAL_KILO_CUBIC_FEET_PER_SECOND );
         CONVENIENCE_ALIASES.put( "C", OFFICIAL_DEGREES_CELSIUS );
