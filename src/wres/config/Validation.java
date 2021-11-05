@@ -76,7 +76,7 @@ import wres.system.SystemSettings;
 
 
 /**
- * Helps validate project configurations at a higher level than parser, with
+ * Helps validate project declarations at a higher level than parser, with
  * detailed messaging.
  *
  * TODO: formal interface for validation text rather than log messages
@@ -112,8 +112,8 @@ public class Validation
 
     /** The warning message boilerplate for logger (includes 3 placeholders) */
     private static final String FILE_LINE_COLUMN_BOILERPLATE =
-            "In file {}, near line {} and column {}, WRES found an issue with "
-                                                               + "the project configuration.";
+            "In the project declaration from {}, near line {} and column {}, "
+            + "WRES found an issue.";
 
     private static final String API_SOURCE_MISSING_ISSUED_DATES_ERROR_MESSAGE =
             "One must specify issued dates with both earliest and latest (e.g. "
@@ -135,13 +135,13 @@ public class Validation
 
 
     /**
-     * Quick validation of the project configuration, will return detailed
-     * information to the user regarding issues about the configuration. Strict
+     * Quick validation of the project declaration, will return detailed
+     * information to the user regarding issues about the declaration. Strict
      * for now, i.e. return false even on minor xml problems. Does not return on
      * first issue, tries to inform the user of all issues before returning.
      *
      * @param systemSettings The system settings to use.
-     * @param projectConfigPlus the project configuration
+     * @param projectConfigPlus the project declaration
      * @return true if no issues were detected, false otherwise
      */
 
@@ -170,10 +170,10 @@ public class Validation
                 }
                 else
                 {
-                    LOGGER.warn( "In file {}, WRES found an issue with the "
-                                 + "project configuration. The parser said: {}",
-                                 projectConfigPlus.getOrigin(),
-                                 ve.getMessage(),
+                    LOGGER.warn( "In the project declaration from "
+                                 + projectConfigPlus.getOrigin() + ", WRES "
+                                 + "found an issue. The XML parser/validator "
+                                 + "reports this detail: " + ve.getMessage(),
                                  ve.getLinkedException() );
                 }
             }
@@ -308,8 +308,15 @@ public class Validation
             if ( LOGGER.isWarnEnabled() )
             {
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + ": at least one data source declaration required <feature> or <featureGroup> or "
-                             + "<featureService> declaration but none was declared.",
+                             + " At least one of the declared data sources "
+                             + "required one or more <feature> or "
+                             + "<featureGroup> declarations under <pair> or a "
+                             + "<featureService> declaration under <pair> "
+                             + "but no such feature-related declaration was "
+                             + "found. Add <feature> or <featureGroup> "
+                             + "declarations such that WRES can get data for "
+                             + "those geographic features using the declared "
+                             + "data source.",
                              projectConfigPlus.getOrigin(),
                              firstSourceThatRequiresFeatures.sourceLocation()
                                                             .getLineNumber(),
@@ -419,8 +426,8 @@ public class Validation
     /**
      * Validates the metrics portion of the project config.
      * 
-     * @param projectConfigPlus the project configuration
-     * @return true if the output configuration is valid, false otherwise
+     * @param projectConfigPlus the project declaration
+     * @return true if the output declaration is valid, false otherwise
      * @throws NullPointerException when projectConfigPlus is null
      */
 
@@ -429,10 +436,10 @@ public class Validation
     {
         Objects.requireNonNull( projectConfigPlus, NON_NULL );
 
-        // Validate that metric configuration is internally consistent
+        // Validate that metric declaration is internally consistent
         boolean result = Validation.isAllMetricsConfigInternallyConsistent( projectConfigPlus );
 
-        // Check that each named metric is consistent with the other configuration
+        // Check that each named metric is consistent with the other declaration
         result = result && Validation.isAllMetricsConfigConsistentWithOtherConfig( projectConfigPlus );
 
         // Check that any external thresholds refer to readable files
@@ -446,8 +453,8 @@ public class Validation
     /**
      * Validates the output portion of the project config.
      * 
-     * @param projectConfigPlus the project configuration
-     * @return true if the output configuration is valid, false otherwise
+     * @param projectConfigPlus the project declaration
+     * @return true if the output declaration is valid, false otherwise
      * @throws NullPointerException when projectConfigPlus is null
      */
 
@@ -706,7 +713,7 @@ public class Validation
             for ( DestinationConfig destinationConfig : incorrectDestinations )
             {
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " Netcdf output configurations are only valid for Netcdf Output.",
+                             + " Netcdf output declarations are only valid for Netcdf Output.",
                              path,
                              destinationConfig.sourceLocation().getLineNumber(),
                              destinationConfig.sourceLocation().getColumnNumber() );
@@ -717,10 +724,10 @@ public class Validation
     }
 
     /**
-     * Checks that the metric configuration is internally consistent.
+     * Checks that the metric declaration is internally consistent.
      * 
-     * @param projectConfigPlus the project configuration
-     * @return true if the metric configuration is internally consistent, false otherwise
+     * @param projectConfigPlus the project declaration
+     * @return true if the metric declaration is internally consistent, false otherwise
      * @throws NullPointerException when projectConfigPlus is null
      */
 
@@ -762,11 +769,11 @@ public class Validation
     }
 
     /**
-     * Checks that the metric configuration is internally consistent.
+     * Checks that the metric declaration is internally consistent.
      * 
-     * @param projectConfigPlus the project configuration
-     * @param metrics the metrics configuration
-     * @return true if the metric configuration is internally consistent, false otherwise
+     * @param projectConfigPlus the project declaration
+     * @param metrics the metrics declaration
+     * @return true if the metric declaration is internally consistent, false otherwise
      * @throws NullPointerException when projectConfigPlus is null
      */
 
@@ -836,10 +843,10 @@ public class Validation
     }
 
     /**
-     * Checks that the metric configuration is internally consistent.
+     * Checks that the metric declaration is internally consistent.
      * 
-     * @param projectConfigPlus the project configuration
-     * @return true if the metric configuration is internally consistent, false otherwise
+     * @param projectConfigPlus the project declaration
+     * @return true if the metric declaration is internally consistent, false otherwise
      * @throws NullPointerException when projectConfigPlus is null
      */
 
@@ -863,11 +870,11 @@ public class Validation
 
 
     /**
-     * Checks that the metric configuration is consistent with the other configuration.
+     * Checks that the metric declaration is consistent with the other declaration.
      *
-     * @param projectConfigPlus the project configuration
-     * @param metrics the metrics configuration 
-     * @return true if the metric is consistent with other configuration
+     * @param projectConfigPlus the project declaration
+     * @param metrics the metrics declaration
+     * @return true if the metric is consistent with other declaration
      * @throws NullPointerException when projectConfigPlus is null
      */
 
@@ -891,7 +898,7 @@ public class Validation
                    {
                        MetricConstants checkMe = MetricConfigHelper.from( nextMetric.getName() );
 
-                       // Check that the named metric is consistent with any pooling window configuration
+                       // Check that the named metric is consistent with any pooling window declaration
                        if ( checkMe != null && ! ( checkMe.isInGroup( StatisticType.DOUBLE_SCORE )
                                                    || checkMe.isInGroup( StatisticType.DURATION_SCORE ) ) )
                        {
@@ -900,7 +907,9 @@ public class Validation
                            if ( projectConfigPlus.getProjectConfig().getPair().getIssuedDatesPoolingWindow() != null )
                            {
                                result.set( false );
-                               LOGGER.warn( "In file {}, a metric named {} was requested, but is not allowed. "
+                               LOGGER.warn( "In the project declaration from {}"
+                                            + ", a metric named {} was "
+                                            + "requested, but is not allowed. "
                                             + "Verification diagrams are not currently supported in "
                                             + "combination with issuedDatesPoolingWindow. Please remove either "
                                             + "the {} or the issuedDatesPoolingWindow.",
@@ -913,7 +922,9 @@ public class Validation
                            if ( projectConfigPlus.getProjectConfig().getPair().getValidDatesPoolingWindow() != null )
                            {
                                result.set( false );
-                               LOGGER.warn( "In file {}, a metric named {} was requested, but is not allowed. "
+                               LOGGER.warn( "In the project declaration from {}"
+                                            + ", a metric named {} was "
+                                            + "requested, but is not allowed. "
                                             + "Verification diagrams are not currently supported in "
                                             + "combination with validDatesPoolingWindow. Please remove either "
                                             + "the {} or the validDatesPoolingWindow.",
@@ -928,19 +939,29 @@ public class Validation
                             && config.getInputs().getBaseline() == null )
                        {
                            result.set( false );
-                           LOGGER.warn( "In file {}, a metric named {} was requested, which requires an explicit "
-                                        + "baseline. Remove this metric or add the required baseline configuration.",
-                                        projectConfigPlus.getOrigin(),
-                                        nextMetric.getName() );
+
+                           if ( LOGGER.isWarnEnabled() )
+                           {
+                               LOGGER.warn( "In the project declaration from "
+                                            + projectConfigPlus.getOrigin()
+                                            + " a metric named "
+                                            + nextMetric.getName()
+                                            + " was requested, which requires "
+                                            + "an explicit baseline. Remove "
+                                            + "this metric or add the required "
+                                            + "baseline declaration." );
+                           }
                        }
                    }
                    // Handle the situation where a metric is recognized by the xsd but not by the ConfigMapper. This is
                    // unlikely and implies an incomplete implementation of a metric by the system  
                    catch ( MetricConfigException e )
                    {
-                       LOGGER.warn( "In file {}, a metric named {} was requested, but is not recognized by the system.",
-                                    projectConfigPlus.getOrigin(),
-                                    nextMetric.getName() );
+                       LOGGER.warn( "In the project declaration from "
+                                    + projectConfigPlus.getOrigin() + ", a "
+                                    + "metric named " + nextMetric.getName()
+                                    + " was requested, but is not recognized by"
+                                    + " the system." );
                        result.set( false );
                    }
                } );
@@ -1182,7 +1203,7 @@ public class Validation
     /**
      * Validates the paths to external thresholds.
      *
-     * @param projectConfigPlus the project configuration
+     * @param projectConfigPlus the project declaration
      * @return true if all have readable files, false otherwise
      * @throws NullPointerException when projectConfigPlus is null
      */
@@ -1194,7 +1215,7 @@ public class Validation
 
         boolean result = true;
 
-        final String PLEASE_UPDATE = "Please update the project configuration "
+        final String PLEASE_UPDATE = "Please update the project declaration "
                                      + "with a readable source of external thresholds.";
 
         // Iterate through the metric group
@@ -1294,8 +1315,8 @@ public class Validation
     /**
      * Validates graphics portion, similar to isProjectValid, but targeted.
      *
-     * @param projectConfigPlus the project configuration
-     * @return true if the graphics configuration is valid, false otherwise
+     * @param projectConfigPlus the project declaration
+     * @return true if the graphics declaration is valid, false otherwise
      */
 
     private static boolean isGraphicsPortionOfProjectValid( ProjectConfigPlus projectConfigPlus )
@@ -1326,7 +1347,7 @@ public class Validation
 
     /**
      * Validates a single custom graphics string from a given destination config
-     * @param projectConfigPlus the project configuration
+     * @param projectConfigPlus the project declaration
      * @param d the destination config we are validating
      * @param customString the non-null string we have already gotten from d
      * @return true if the string is valid, false otherwise
@@ -1361,7 +1382,7 @@ public class Validation
             if ( LOGGER.isWarnEnabled() )
             {
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " If custom graphics configuration is "
+                             + " If custom graphics declaration is "
                              + "provided, please start it with {}",
                              projectConfigPlus.getOrigin(),
                              nearbyTag.sourceLocation().getLineNumber(),
@@ -1379,7 +1400,7 @@ public class Validation
             if ( LOGGER.isWarnEnabled() )
             {
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " If custom graphics configuration is "
+                             + " If custom graphics declaration is "
                              + "provided, please end it with {}",
                              projectConfigPlus.getOrigin(),
                              nearbyTag.sourceLocation().getLineNumber(),
@@ -1438,7 +1459,7 @@ public class Validation
             if ( LOGGER.isWarnEnabled() )
             {
                 String msg = FILE_LINE_COLUMN_BOILERPLATE
-                             + " In the pair configuration, the aggregation "
+                             + " In the pair declaration, the aggregation "
                              + "duration provided for pairing is prescriptive "
                              + "so it cannot be 'instant' it needs to be "
                              + "one of the other time units such as 'hour'.";
@@ -1518,7 +1539,7 @@ public class Validation
                 valid = false;
 
                 String msg = FILE_LINE_COLUMN_BOILERPLATE
-                             + " In the pair configuration, the grid selection contains a <coordinate> filter, which "
+                             + " In the pair declaration, the grid selection contains a <coordinate> filter, which "
                              + "is not currently supported. Please replace this declaration with a <polygon> filter "
                              + AND_TRY_AGAIN;
 
@@ -2057,7 +2078,7 @@ public class Validation
             if ( LOGGER.isWarnEnabled() )
             {
                 String msg = FILE_LINE_COLUMN_BOILERPLATE
-                             + " In the pair configuration, the text '"
+                             + " In the pair declaration, the text '"
                              + date
                              + "' was not able to be converted to an "
                              + "Instant. Please use the ISO8601 format, the UTC"
@@ -2199,7 +2220,7 @@ public class Validation
     {
         DesiredTimeScaleConfig aggregationConfig = pairConfig.getDesiredTimeScale();
 
-        // No configuration, must be valid
+        // No declaration, must be valid
         if ( aggregationConfig == null )
         {
             return true;
@@ -2262,12 +2283,12 @@ public class Validation
      * 
      * See Redmine issue 40389.
      * 
-     * Not all attributes of a valid aggregation can be checked from the configuration alone, but some attributes, 
+     * Not all attributes of a valid aggregation can be checked from the declaration alone, but some attributes, 
      * notably whether the aggregation function is applicable, can be checked in advance. Having a valid time 
      * aggregation function does not imply that the system actually supports it.
      * 
-     * @param projectConfigPlus the project configuration
-     * @param pairConfig the pair configuration
+     * @param projectConfigPlus the project declaration
+     * @param pairConfig the pair declaration
      * @return true if the time aggregation function associated with the desiredTimeScaleis valid
      */
 
@@ -2290,10 +2311,10 @@ public class Validation
 
     /**
      * Tests a desired time aggregation function that is a sum. Returns true if function is valid, given the input 
-     * configuration, false otherwise.
+     * declaration, false otherwise.
      * 
-     * @param projectConfigPlus the project configuration
-     * @param inputConfig the input configuration
+     * @param projectConfigPlus the project declaration
+     * @param inputConfig the input declaration
      * @return true if the time aggregation function is valid, given the inputConfig
      */
 
@@ -2329,10 +2350,10 @@ public class Validation
 
     /**
      * Tests a desired time aggregation function that is a sum. Returns true if function is valid, given the 
-     * configuration for a specific input, false otherwise.
+     * declaration for a specific input, false otherwise.
      * 
-     * @param projectConfigPlus the project configuration
-     * @param inputConfig the input configuration
+     * @param projectConfigPlus the project declaration
+     * @param inputConfig the input declaration
      * @param helper a helper string for context
      * @return true if the time aggregation function is valid, given the inputConfig
      */
@@ -2384,12 +2405,12 @@ public class Validation
      * 
      * See Redmine issue 40389.
      * 
-     * Not all attributes of a valid aggregation can be checked from the configuration alone, but some attributes, 
+     * Not all attributes of a valid aggregation can be checked from the declaration alone, but some attributes, 
      * can be checked in advance. Having a valid time aggregation period does not imply that the system actually 
      * supports aggregation to that period.
      * 
-     * @param projectConfigPlus the project configuration
-     * @param pairConfig the pair configuration
+     * @param projectConfigPlus the project declaration
+     * @param pairConfig the pair declaration
      * @return true if the time aggregation period associated with the desiredTimeScale is valid
      */
 
@@ -2456,7 +2477,7 @@ public class Validation
      * Returns true if the desired aggregation period is consistent with the existing aggregation period, false 
      * otherwise. A time aggregation may be valid in principle without being supported by the system in practice.
      * 
-     * @param projectConfigPlus the project configuration
+     * @param projectConfigPlus the project declaration
      * @param desired the desired period
      * @param existing the existing period
      * @param helper a helper to locate the existing period being checked
@@ -2502,7 +2523,7 @@ public class Validation
      * Validates the time windows. 
      * 
      * @param projectConfigPlus the project declaration, which helps with messaging
-     * @param pairConfig the pair configuration
+     * @param pairConfig the pair declaration
      * @return true if the time windows are valid, otherwise false
      */
 
@@ -2525,7 +2546,7 @@ public class Validation
      * Checks the internal consistency of the issued and valid time intervals.
      * 
      * @param projectConfigPlus the project declaration, which helps with messaging
-     * @param pairConfig the pair configuration
+     * @param pairConfig the pair declaration
      * @return true if the issued and valid time intervals are valid, otherwise false
      */
 
@@ -2588,7 +2609,7 @@ public class Validation
      * Checks the valid dates pooling windows for consistency with other declaration, as well as internal consistency.
      * 
      * @param projectConfigPlus the project declaration, which helps with messaging
-     * @param pairConfig the pair configuration
+     * @param pairConfig the pair declaration
      * @return true if the valid dates pooling windows are undefined or valid, otherwise false
      */
 
@@ -2695,7 +2716,7 @@ public class Validation
      * declaration, as well as internal consistency.
      * 
      * @param projectConfigPlus the project declaration, which helps with messaging
-     * @param pairConfig the pair configuration
+     * @param pairConfig the pair declaration
      * @return true if the issued dates pooling windows are undefined or valid, otherwise false
      */
 
@@ -2802,7 +2823,7 @@ public class Validation
      * declaration, as well as internal consistency.
      * 
      * @param projectConfigPlus the project declaration, which helps with messaging
-     * @param pairConfig the pair configuration
+     * @param pairConfig the pair declaration
      * @return true if the lead time pooling windows are undefined or valid, otherwise false
      */
 
@@ -2907,7 +2928,7 @@ public class Validation
      * Validates the specified time windows. 
      * 
      * @param projectConfigPlus the project declaration, which helps with messaging
-     * @param windowConfig the time window configuration
+     * @param windowConfig the time window declaration
      * @param windowType a string that identifies the window type for messaging 
      * @return true if the time windows are valid, otherwise false
      */
@@ -3029,8 +3050,8 @@ public class Validation
      * Checks that given DataSourceConfig has at least one
      * DataSourceConfig.Source and checks validity of each inner
      * DataSourceConfig.Source.
-     * @param projectConfigPlus the evaluation project configuration plus
-     * @param dataSourceConfig the data source configuration to validate
+     * @param projectConfigPlus the evaluation project declaration plus
+     * @param dataSourceConfig the data source declaration to validate
      * @return true when valid, false otherwise.
      */
 
@@ -3046,7 +3067,7 @@ public class Validation
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                              + "A source needs to exist within each of the "
                              + "left and right sections of the "
-                             + "configuration.",
+                             + "declaration.",
                              projectConfigPlus,
                              dataSourceConfig.sourceLocation()
                                              .getLineNumber(),
@@ -3101,7 +3122,7 @@ public class Validation
 
     /**
      * Checks the validity of an individual DataSourceConfig.Source
-     * @param projectConfigPlus the evaluation project configuration
+     * @param projectConfigPlus the evaluation project declaration
      * @param dataSourceConfig the dataSourceConfig being checked
      * @param source the source being checked
      * @return true if valid, false otherwise
@@ -3131,7 +3152,7 @@ public class Validation
      * source of data as the left.
      * 
      * 
-     * @param projectConfigPlus the evaluation project configuration
+     * @param projectConfigPlus the evaluation project declaration
      * @param leftConfig the left data declaration
      * @param baselineConfig the baseline data declaration
      */
@@ -3168,8 +3189,8 @@ public class Validation
     /**
      * Checks that the {@link DataSourceConfig#getType()} is consistent with the other declaration.
      *  
-     * @param projectConfigPlus the evaluation project configuration plus
-     * @param dataSourceConfig the data source configuration to validate
+     * @param projectConfigPlus the evaluation project declaration plus
+     * @param dataSourceConfig the data source declaration to validate
      * @return true when valid, false otherwise.
      */
 
@@ -3301,7 +3322,7 @@ public class Validation
 
 
     /**
-     * Checks validity of date and time configuration such as zone and offset.
+     * Checks validity of date and time declaration such as zone and offset.
      * 
      * TODO: If this method needs to assert something more, add it return the status.
      * 
