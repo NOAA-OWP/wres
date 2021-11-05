@@ -88,10 +88,10 @@ public class UnitMapper
                 // the UCUM value for the alias has failed to be recognized or
                 // the unit name itself has failed to be recognized. So it would
                 // be awkward to say either "unit alias" or "UCUM unit" here.
-                LOGGER.warn( "Unrecognized unit '"
-                             + desiredMeasurementUnitName + "' may cause unit "
+                LOGGER.warn( "Unrecognized unit '{}' may cause unit "
                              + "conversion failure if this evaluation requires"
-                             + " a unit conversion." );
+                             + " a unit conversion.",
+                             desiredMeasurementUnitName );
             }
         }
 
@@ -116,10 +116,11 @@ public class UnitMapper
                     // Here we definitely have an alias name and UCUM unit at
                     // hand because we are iterating over declared unit aliases.
                     LOGGER.warn( "Unit alias declaration with unrecognized UCUM"
-                                 + " unit '" + unitName + "' (having alias '"
-                                 + aliasName + "') may cause unit "
-                                 + "conversion failure if this evaluation "
-                                 + "requires a unit conversion." );
+                                 + " unit '{}' (having alias '{}') may cause "
+                                 + "unit conversion failure if this evaluation "
+                                 + "requires a unit conversion.",
+                                 unitName,
+                                 aliasName );
                 }
             }
         }
@@ -201,9 +202,10 @@ public class UnitMapper
                                                      e );
         }
 
-        return converter::convert;
+        return UnitMapper.getNonFiniteFriendlyUnitMapper( converter::convert,
+                                                          unitName,
+                                                          this.getDesiredMeasurementUnitName() );
     }
-
 
     /**
      * Returns a unit mapper to this UnitMapper's unit from the given unit db id
@@ -216,6 +218,43 @@ public class UnitMapper
     public DoubleUnaryOperator getUnitMapper( long measurementUnitId )
     {
         String unitName = this.measurementUnitsCache.getUnit( measurementUnitId );
-        return this.getUnitMapper( unitName );
+
+        return UnitMapper.getNonFiniteFriendlyUnitMapper( this.getUnitMapper( unitName ),
+                                                          unitName,
+                                                          this.getDesiredMeasurementUnitName() );
     }
+
+    /**
+     * Returns a converter that applies a conversion to finite values and leaves non-finite values as-is.
+     * @param converter the converter
+     * @param unitName the unit name to help with logging
+     * @param desiredUnitName the desired unit name to help with logging
+     * @return a converter that accepts non-finite values
+     */
+
+    private static DoubleUnaryOperator getNonFiniteFriendlyUnitMapper( DoubleUnaryOperator converter,
+                                                                       String unitName,
+                                                                       String desiredUnitName )
+    {
+        return input -> {
+
+            // If finite, convert, otherwise return the input
+            if ( Double.isFinite( input ) )
+            {
+                return converter.applyAsDouble( input );
+            }
+
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "Discovered a non-finite value of {} in units of {}, which required conversion to units"
+                              + "of {}. Skipping the conversion and returning the raw value instead.",
+                              input,
+                              unitName,
+                              desiredUnitName );
+            }
+
+            return input;
+        };
+    }
+    
 }
