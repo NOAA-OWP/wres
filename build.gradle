@@ -288,7 +288,7 @@ project(':wres-system')
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
 
-        implementation 'org.liquibase:liquibase-core:4.5.0'
+        implementation 'org.liquibase:liquibase-core:4.6.1'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
         runtimeOnly 'com.mattbertolini:liquibase-slf4j:4.0.0'
@@ -448,7 +448,7 @@ project(':wres-io')
         //JB @ 02/16/17
         testImplementation 'com.google.guava:guava-testlib:31.0.1-jre'
 
-        testImplementation 'org.liquibase:liquibase-core:4.5.0'
+        testImplementation 'org.liquibase:liquibase-core:4.6.1'
 
         // Mocking help
         testImplementation 'org.mockito:mockito-inline:4.0.0'
