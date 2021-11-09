@@ -67,10 +67,12 @@ public class EvaluationEventUtilities
                 {
                     message = cause.getMessage();
                 }
+                
+                String eventMessage = causeClass + message;
+                
                 EvaluationStatusEvent.Builder causeEvent = EvaluationStatusEvent.newBuilder()
                                                                                 .setEventType( StatusMessageType.ERROR )
-                                                                                .setEventMessage( causeClass
-                                                                                                  + message );
+                                                                                .setEventMessage( eventMessage );
                 causes.add( causeEvent );
             }
             else
