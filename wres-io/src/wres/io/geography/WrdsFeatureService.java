@@ -60,6 +60,8 @@ class WrdsFeatureService
     
     private static final String DELIMITER = "/";
 
+    protected static final String CROSSWALK_ONLY_FLAG="?identifiers=true";
+
     private static final Logger LOGGER = LoggerFactory.getLogger( WrdsFeatureService.class );
 
     private static final String EXPLANATION_OF_WHY_AND_WHAT_TO_DO = "By declaring a feature, WRES interprets it as an "
@@ -311,7 +313,9 @@ class WrdsFeatureService
                           + from.toString()
                                 .toLowerCase()
                           + DELIMITER
-                          + commaDelimitedFeatures;
+                          + commaDelimitedFeatures
+                          + DELIMITER
+                          + CROSSWALK_ONLY_FLAG;
         URI uri = featureServiceBaseUri.resolve( fullPath )
                                        .normalize();
 

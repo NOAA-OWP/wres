@@ -853,7 +853,9 @@ public class FeatureFinder
         String fullPath = path + DELIMITER
                           + featureGroup.getType()
                           + DELIMITER
-                          + featureGroup.getValue();
+                          + featureGroup.getValue()
+                          + DELIMITER
+                          + WrdsFeatureService.CROSSWALK_ONLY_FLAG;
         URI uri = featureServiceBaseUri.resolve( fullPath )
                                        .normalize();
 
