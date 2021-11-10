@@ -284,11 +284,9 @@ public class WebClient
                 }
                 else if ( httpStatus >= 400 && httpStatus < 500 )
                 {
-                    LOGGER.debug( "Got empty/not-found data from {} in {}", uri,
+                    LOGGER.debug( "Got client error from {} in {}", uri,
                                   duration );
-
-                    httpResponse.body().close();
-                    return new ClientResponse(httpStatus);
+                    return new ClientResponse( httpResponse );
                 }
                 else
                 {

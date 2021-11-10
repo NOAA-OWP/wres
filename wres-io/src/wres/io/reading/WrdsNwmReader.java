@@ -57,6 +57,7 @@ import wres.io.reading.wrds.nwm.NwmFeature;
 import wres.io.reading.wrds.nwm.NwmForecast;
 import wres.io.reading.wrds.nwm.NwmMember;
 import wres.io.reading.wrds.nwm.NwmRootDocument;
+import wres.io.reading.wrds.nwm.NwmRootDocumentWithError;
 import wres.io.utilities.Database;
 import wres.io.utilities.WebClient;
 import wres.system.DatabaseLockManager;
@@ -280,6 +281,15 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                 LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}",
                              response.getStatusCode(),
                              uri );
+
+                String possibleError = this.tryToReadErrorMessage( response );
+
+                if ( possibleError != null )
+                {
+                    LOGGER.warn( "Found this WRDS error message from URI {}: {}",
+                                 uri, possibleError );
+                }
+
                 return Collections.emptyList();
             }
 
@@ -630,6 +640,42 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                        dataSource,
                                        lockManager,
                                        timeSeries );
+    }
+
+
+    /**
+     * Attempt to read an error message from a document like this:
+     * {
+     *   "error": "API Currently only supports querying by the following: ('nwm_feature_id', 'nws_lid', 'usgs_site_code', 'state', 'rfc', 'huc', 'county', 'tag')"
+     * }
+     *
+     * If anything goes wrong, return null.
+     *
+     * @param response The response containing a potential error message.
+     * @return The value from the above map, null if not found.
+     */
+
+    private String tryToReadErrorMessage( WebClient.ClientResponse response )
+    {
+        try
+        {
+            NwmRootDocumentWithError document = this.getJsonObjectMapper()
+                                                    .readValue( response.getResponse(),
+                                                                NwmRootDocumentWithError.class );
+            Map<String,String> messages = document.getMessages();
+
+            if ( messages != null )
+            {
+                return messages.get( "error" );
+            }
+        }
+        catch ( IOException ioe )
+        {
+            LOGGER.debug( "Failed to parse an error response body {}",
+                          response, ioe );
+        }
+
+        return null;
     }
 
     /**
