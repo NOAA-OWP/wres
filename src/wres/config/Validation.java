@@ -151,7 +151,7 @@ public class Validation
         // Assume valid until demonstrated otherwise
         boolean result = true;
 
-        // TODO: remove this boolean when releasing 6.0
+        // TODO: remove this boolean when releasing 7.0
         boolean sourceFormatEventsFound = false;
 
         for ( ValidationEvent ve : projectConfigPlus.getValidationEvents() )
@@ -178,7 +178,7 @@ public class Validation
                 }
             }
 
-            // TODO: remove this exception to validation when releasing 6.0
+            // TODO: remove this exception to validation when releasing 7.0
             if ( ve.getMessage()
                    .contains( "'format' is not allowed to appear in element 'source'" ) )
             {
@@ -190,7 +190,7 @@ public class Validation
             }
         }
 
-        // TODO: remove this message when releasing 6.0
+        // TODO: remove this message when releasing 7.0
         if ( sourceFormatEventsFound )
         {
             LOGGER.warn( " The 'format' attribute is deprecated in left/"
@@ -325,6 +325,77 @@ public class Validation
             }
 
             isValid = false;
+        }
+
+        Locatable baselineFeatureNameButNoBaseline = null;
+
+        if ( baselineConfig == null && pairDeclaration.getFeature() != null )
+        {
+            for ( Feature feature : pairDeclaration.getFeature() )
+            {
+                if ( feature.getBaseline() != null )
+                {
+                    baselineFeatureNameButNoBaseline = feature;
+                    break;
+                }
+            }
+        }
+
+        if ( baselineFeatureNameButNoBaseline == null
+             && baselineConfig == null
+             && pairDeclaration.getFeatureGroup() != null )
+        {
+            for ( FeaturePool featurePool : pairDeclaration.getFeatureGroup() )
+            {
+                for ( Feature feature : featurePool.getFeature() )
+                {
+                    if ( feature.getBaseline() != null )
+                    {
+                        baselineFeatureNameButNoBaseline = feature;
+                        break;
+                    }
+                }
+
+                if ( baselineFeatureNameButNoBaseline != null )
+                {
+                    break;
+                }
+            }
+        }
+
+        if ( baselineFeatureNameButNoBaseline != null )
+        {
+            isValid = false;
+
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " At least one <feature> was declared with a "
+                             + "baseline dataset geographic feature name, but "
+                             + "there was no baseline dataset declared in the "
+                             + "<inputs> declaration. WRES will look in the "
+                             + "left, right, and baseline datasets for the "
+                             + "names declared in <feature> attributes left, "
+                             + "right, and baseline, respectively. Either add "
+                             + "a baseline dataset or remove the baseline "
+                             + "feature name to resolve this issue. If the "
+                             + "name is known for some dimension not used by "
+                             + "either the left or right datasets, such as an "
+                             + "evaluation of National Water Model data "
+                             + "(nwm_feature_id) on the right versus USGS data "
+                             + "(usgs_site_code) on the left, while only the "
+                             + "NWS Location ID (nws_lid) is known, then use "
+                             + "the <featureService> with a <group> for each "
+                             + "feature, e.g. with <type>nws_lid</type> (the "
+                             + "known dimension) and <value>DRRC2</value> (the "
+                             + "known feature name in that dimension) and "
+                             + "omit the <feature> declarations too.",
+                             projectConfigPlus.getOrigin(),
+                             baselineFeatureNameButNoBaseline.sourceLocation()
+                                                             .getLineNumber(),
+                             baselineFeatureNameButNoBaseline.sourceLocation()
+                                                             .getColumnNumber() );
+            }
         }
 
         return isValid && Validation.hasVariablesIfGridded( projectConfigPlus );
