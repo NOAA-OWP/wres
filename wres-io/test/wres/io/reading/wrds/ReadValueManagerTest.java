@@ -1,11 +1,7 @@
 package wres.io.reading.wrds;
 
 import java.io.IOException;
-import java.net.URI;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 
 import org.junit.Test;
 import org.junit.Assert;
@@ -16,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.MissingValues;
 
 public class ReadValueManagerTest
 {
@@ -211,17 +208,11 @@ public class ReadValueManagerTest
         {
             if ( firstInstant.equals( ( evt.getTime() ) ) )
             {
-                if ( Double.isNaN( evt.getValue().doubleValue() ) )
-                {
-                    Assert.fail( "Expected NaN at " + firstInstant + ", but found " + evt.getValue() + " instead." );
-                }
+                Assert.assertEquals( MissingValues.DOUBLE, evt.getValue().doubleValue(), 0.0D );
             }
             if ( secondInstant.equals( ( evt.getTime() ) ) )
             {
-                if ( Double.isNaN( evt.getValue().doubleValue() ) )
-                {
-                    Assert.fail( "Expected NaN at " + secondInstant + ", but found " + evt.getValue() + " instead." );
-                }
+                Assert.assertEquals( MissingValues.DOUBLE, evt.getValue().doubleValue(), 0.0D );
             }
         }
     }

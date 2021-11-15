@@ -14,6 +14,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.MissingValues;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
@@ -209,12 +211,25 @@ public class ReadValueManager
                     + "Was the correct URL provided in the declaration?");
             }
 
+            // The response should include the missing values, but, in case we reuse
+            // this code later to read other forecasts, I allow for null.  If not null
+            // the output the list of missing values to debug. 
+            if (response.getHeader().getMissing_values() != null)
+            {
+                LOGGER.debug ( "The forecast specified the following missing values: " + 
+                               Arrays.toString(response.getHeader().getMissing_values()) );
+            }
+            else 
+            {
+                LOGGER.debug ( "The forecast specified no missing values." );
+            }
+
             List<IngestResult> results = new ArrayList<>( response.forecasts.length );
 
             for ( Forecast forecast : response.getForecasts() )
             {
                 LOGGER.debug( "Parsing {}", forecast );
-                TimeSeries<Double> timeSeries = this.read( forecast );
+                TimeSeries<Double> timeSeries = this.read( forecast, response.getHeader().getMissing_values() );
 
                 if ( Objects.nonNull( timeSeries ) )
                 {
@@ -243,10 +258,12 @@ public class ReadValueManager
 
     /**
      *
-     * @param forecast
-     * @return Populated TimeSeries<Double> when data was read, null otherwise.
+     * @param forecast The foreast portion of the response that will be read.
+     * @param missingValues An array of values to be treated as missing by this read.
+     * All of the values are replaced by the WRES missing value before storing.
+     * @return Populated time series  when data was read, null otherwise.
      */
-    private TimeSeries<Double> read( Forecast forecast )
+    protected TimeSeries<Double> read( Forecast forecast, double[] missingValues )
     {
         URI location = this.getLocation();
         List<DataPoint> dataPointsList;
@@ -326,9 +343,24 @@ public class ReadValueManager
 
         for (DataPoint dataPoint : dataPointsList)
         {
+            double usedValue = dataPoint.getValue();
+            
+            //If missing values are provided, replace them with MissingValues.DOUBLE.
+            if (missingValues != null)
+            {
+                for (double missing : missingValues)
+                {
+                    if (usedValue == missing)
+                    {
+                        usedValue = MissingValues.DOUBLE;
+                        break;
+                    }
+                }
+            }
+
             Event<Double> event = Event.of( dataPoint.getTime()
                                                      .toInstant(),
-                                            dataPoint.getValue() );
+                                            usedValue );
             timeSeriesBuilder.addEvent( event );
         }
 
@@ -398,6 +430,10 @@ public class ReadValueManager
 
     private URI getLocation()
     {
+        if (this.dataSource == null)
+        {
+            return null;
+        }
         return this.dataSource.getUri();
     }
 
