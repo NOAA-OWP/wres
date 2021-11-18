@@ -332,8 +332,8 @@ public class ThresholdSlicer
     }
 
     /**
-     * <p>Unpacks a map of {@link ThresholdsByMetric} into a collection organized by feature alone, forming the union 
-     * of thresholds across metrics.
+     * <p>Unpacks a map of {@link ThresholdsByMetric} into a collection organized by a single attribute, forming the 
+     * union of thresholds across metrics.
      * 
      * @param <T> the type of key
      * @param thresholds the thresholds to decompose

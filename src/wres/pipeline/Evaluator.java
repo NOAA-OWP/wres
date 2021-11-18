@@ -32,7 +32,7 @@ import wres.config.Validation;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.io.concurrency.Executor;
 import wres.io.utilities.Database;
-import wres.pipeline.ProcessorHelper.Executors;
+import wres.pipeline.ProcessorHelper2.Executors;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 
@@ -205,7 +205,7 @@ public class Evaluator
         // there is a DEADLOCK probability
 
         ThreadFactory featureFactory = new BasicThreadFactory.Builder()
-                                                                       .namingPattern( "Feature Thread %d" )
+                                                                       .namingPattern( "Pool Thread %d" )
                                                                        .build();
         ThreadFactory pairFactory = new BasicThreadFactory.Builder()
                                                                     .namingPattern( "Pair Thread %d" )
@@ -222,9 +222,8 @@ public class Evaluator
         SystemSettings innerSystemSettings = this.getSystemSettings();
 
         // Name our queues in order to easily monitor them
-        BlockingQueue<Runnable> featureQueue = new ArrayBlockingQueue<>( innerSystemSettings
-                                                                                            .getMaximumFeatureThreads()
-                                                                         + 20000 );
+        BlockingQueue<Runnable> poolQueue = new ArrayBlockingQueue<>( innerSystemSettings.getMaximumPoolThreads()
+                                                                      + 20000 );
         BlockingQueue<Runnable> pairQueue =
                 new ArrayBlockingQueue<>( innerSystemSettings.getMaximumPairThreads() + 20000 );
         BlockingQueue<Runnable> thresholdQueue = new LinkedBlockingQueue<>();
@@ -233,13 +232,13 @@ public class Evaluator
         BlockingQueue<Runnable> productQueue =
                 new ArrayBlockingQueue<>( innerSystemSettings.getMaximumProductThreads() + 20000 );
 
-        // Processes features
-        ThreadPoolExecutor featureExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumFeatureThreads(),
-                                                                     innerSystemSettings.getMaximumFeatureThreads(),
-                                                                     innerSystemSettings.poolObjectLifespan(),
-                                                                     TimeUnit.MILLISECONDS,
-                                                                     featureQueue,
-                                                                     featureFactory );
+        // Processes pools
+        ThreadPoolExecutor poolExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumPoolThreads(),
+                                                                  innerSystemSettings.getMaximumPoolThreads(),
+                                                                  innerSystemSettings.poolObjectLifespan(),
+                                                                  TimeUnit.MILLISECONDS,
+                                                                  poolQueue,
+                                                                  featureFactory );
 
         // Processes pairs       
         ThreadPoolExecutor pairExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumPairThreads(),
@@ -274,7 +273,7 @@ public class Evaluator
                                                                      productFactory );
 
         // Set the rejection policy to run in the caller, slowing producers           
-        featureExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
+        poolExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         pairExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         metricExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         productExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
@@ -285,7 +284,7 @@ public class Evaluator
         Executor ioExecutor = this.getExecutor();
         QueueMonitor queueMonitor = new QueueMonitor( innerDatabase,
                                                       ioExecutor,
-                                                      featureQueue,
+                                                      poolQueue,
                                                       pairQueue,
                                                       thresholdQueue,
                                                       metricQueue,
@@ -304,7 +303,7 @@ public class Evaluator
 
             // Reduce our set of executors to one object
             Executors executors = new Executors( ioExecutor,
-                                                 featureExecutor,
+                                                 poolExecutor,
                                                  pairExecutor,
                                                  thresholdExecutor,
                                                  metricExecutor,
@@ -319,12 +318,12 @@ public class Evaluator
             }
 
             // Process the configuration
-            Pair<Set<Path>, String> innerPathsAndProjectHash = ProcessorHelper.processEvaluation( innerSystemSettings,
-                                                                                                  databaseServices,
-                                                                                                  projectConfigPlus,
-                                                                                                  executors,
-                                                                                                  this.getBrokerConnectionFactory(),
-                                                                                                  monitor );
+            Pair<Set<Path>, String> innerPathsAndProjectHash = ProcessorHelper2.processEvaluation( innerSystemSettings,
+                                                                                                   databaseServices,
+                                                                                                   projectConfigPlus,
+                                                                                                   executors,
+                                                                                                   this.getBrokerConnectionFactory(),
+                                                                                                   monitor );
             pathsWrittenTo.addAll( innerPathsAndProjectHash.getLeft() );
             projectHash = innerPathsAndProjectHash.getRight();
             monitor.setDataHash( projectHash );
@@ -358,7 +357,7 @@ public class Evaluator
             shutDownGracefully( metricExecutor );
             shutDownGracefully( thresholdExecutor );
             shutDownGracefully( pairExecutor );
-            shutDownGracefully( featureExecutor );
+            shutDownGracefully( poolExecutor );
             lockManager.shutdown();
         }
 
@@ -413,7 +412,7 @@ public class Evaluator
     {
         private final Database database;
         private final Executor executor;
-        private final Queue<?> featureQueue;
+        private final Queue<?> poolQueue;
         private final Queue<?> pairQueue;
         private final Queue<?> thresholdQueue;
         private final Queue<?> metricQueue;
@@ -421,7 +420,7 @@ public class Evaluator
 
         QueueMonitor( Database database,
                       Executor executor,
-                      Queue<?> featureQueue,
+                      Queue<?> poolQueue,
                       Queue<?> pairQueue,
                       Queue<?> thresholdQueue,
                       Queue<?> metricQueue,
@@ -429,7 +428,7 @@ public class Evaluator
         {
             this.database = database;
             this.executor = executor;
-            this.featureQueue = featureQueue;
+            this.poolQueue = poolQueue;
             this.pairQueue = pairQueue;
             this.thresholdQueue = thresholdQueue;
             this.metricQueue = metricQueue;
@@ -439,7 +438,7 @@ public class Evaluator
         @Override
         public void run()
         {
-            int featureCount = 0;
+            int poolCount = 0;
             int pairCount = 0;
             int ioCount = executor.getIoExecutorQueueTaskCount();
             int databaseCount = database.getDatabaseQueueTaskCount();
@@ -448,9 +447,9 @@ public class Evaluator
             int metricCount = 0;
             int productCount = 0;
 
-            if ( this.featureQueue != null )
+            if ( this.poolQueue != null )
             {
-                featureCount = this.featureQueue.size();
+                poolCount = this.poolQueue.size();
             }
 
             if ( this.pairQueue != null )
@@ -473,10 +472,10 @@ public class Evaluator
                 productCount = this.productQueue.size();
             }
 
-            LOGGER.info( "IoQ={}, IoHiPriQ={}, FeatureQ={}, PairQ={}, DatabaseQ={}, ThresholdQ={}, MetricQ={}, ProductQ={}",
+            LOGGER.info( "IoQ={}, IoHiPriQ={}, PoolQ={}, PairQ={}, DatabaseQ={}, ThresholdQ={}, MetricQ={}, ProductQ={}",
                          ioCount,
                          hiPriCount,
-                         featureCount,
+                         poolCount,
                          pairCount,
                          databaseCount,
                          thresholdCount,

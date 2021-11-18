@@ -571,15 +571,9 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         ThresholdException actual = assertThrows( ThresholdException.class,
                                                   () -> processor.apply( pairs ) );
 
-        assertEquals( "Cannot add quantiles to probability thresholds without a climatological data source. Add a "
-                      + "climatological data source to pool PoolMetadata[poolId=0,leftDataName=,rightDataName=,"
-                      + "baselineDataName=,leftVariableName=,rightVariableName=MAP,baselineVariableName=,"
-                      + "isBaselinePool=false,features=FeatureGroup[name=,features=[FeatureTuple[left="
-                      + "FeatureKey[name=DRRC2,description=,srid=0,wkt=],right=FeatureKey[name=DRRC2,description=,"
-                      + "srid=0,wkt=],baseline=<null>]]],timeWindow=[1985-01-01T00:00:00Z,2010-12-31T11:59:59Z,"
-                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT24H,PT24H],"
-                      + "thresholds=<null>,timeScale=<null>,measurementUnit=MM/DAY] and try again.",
-                      actual.getMessage() );
+        assertTrue( actual.getMessage()
+                          .startsWith( "Cannot add quantiles to probability thresholds without a "
+                                       + "climatological data source." ) );
     }
 
     @Test

@@ -24,6 +24,7 @@ import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolSlicer;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
@@ -232,8 +233,13 @@ public class MetricProcessorByTimeSingleValuedPairs
                                                      MetricFuturesByTimeBuilder futures,
                                                      StatisticType outGroup )
     {
-        // Filter the thresholds for this group and for the required types
-        Map<FeatureTuple, ThresholdsByMetric> filtered = super.getMetrics().getThresholdsByMetricAndFeature();
+        // Filter the thresholds for the feature group associated with this pool and for the required types
+        ThresholdsByMetricAndFeature thresholdsByMetricAndFeature = super.getMetrics();
+        FeatureGroup featureGroup = pool.getMetadata()
+                                        .getFeatureGroup();
+        thresholdsByMetricAndFeature = thresholdsByMetricAndFeature.getThresholdsByMetricAndFeature( featureGroup );
+        
+        Map<FeatureTuple, ThresholdsByMetric> filtered = thresholdsByMetricAndFeature.getThresholdsByMetricAndFeature();
         filtered = ThresholdSlicer.filterByGroup( filtered,
                                                   SampleDataGroup.DICHOTOMOUS,
                                                   outGroup,
@@ -248,7 +254,7 @@ public class MetricProcessorByTimeSingleValuedPairs
         // Find the unique thresholds by value
         Map<FeatureTuple, Set<ThresholdOuter>> unique =
                 ThresholdSlicer.filter( withQuantiles, ThresholdSlicer::filter );
-        
+
         // Decompose the thresholds by common type across features
         List<Map<FeatureTuple, ThresholdOuter>> decomposedThresholds = ThresholdSlicer.decompose( unique );
 
@@ -268,7 +274,7 @@ public class MetricProcessorByTimeSingleValuedPairs
             Pool<Pair<Boolean, Boolean>> transformed = PoolSlicer.transform( pool,
                                                                              transformers,
                                                                              PoolSlicer.getFeatureMapper() );
-            
+
             // Add the threshold to the metadata
             ThresholdOuter composed = ThresholdSlicer.compose( Set.copyOf( thresholds.values() ) );
             transformed = this.addThresholdToPoolMetadata( transformed, OneOrTwoThresholds.of( composed ) );
@@ -292,8 +298,13 @@ public class MetricProcessorByTimeSingleValuedPairs
                                          MetricFuturesByTimeBuilder futures,
                                          StatisticType outGroup )
     {
-        // Filter the thresholds for this group and for the required types
-        Map<FeatureTuple, ThresholdsByMetric> filtered = super.getMetrics().getThresholdsByMetricAndFeature();
+        // Filter the thresholds for the feature group associated with this pool and for the required types
+        ThresholdsByMetricAndFeature thresholdsByMetricAndFeature = super.getMetrics();
+        FeatureGroup featureGroup = pool.getMetadata()
+                                        .getFeatureGroup();
+        thresholdsByMetricAndFeature = thresholdsByMetricAndFeature.getThresholdsByMetricAndFeature( featureGroup );
+        
+        Map<FeatureTuple, ThresholdsByMetric> filtered = thresholdsByMetricAndFeature.getThresholdsByMetricAndFeature();
         filtered = ThresholdSlicer.filterByGroup( filtered,
                                                   SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
                                                   outGroup,
@@ -308,7 +319,7 @@ public class MetricProcessorByTimeSingleValuedPairs
         // Find the unique thresholds by value
         Map<FeatureTuple, Set<ThresholdOuter>> unique =
                 ThresholdSlicer.filter( withQuantiles, ThresholdSlicer::filter );
-        
+
         // Decompose the thresholds by common type across features
         List<Map<FeatureTuple, ThresholdOuter>> decomposedThresholds = ThresholdSlicer.decompose( unique );
 
@@ -319,10 +330,10 @@ public class MetricProcessorByTimeSingleValuedPairs
                     ThresholdSlicer.getFiltersFromThresholds( thresholds,
                                                               MetricProcessorByTime::getFilterForTimeSeriesOfSingleValuedPairs );
 
-            Pool<TimeSeries<Pair<Double, Double>>> sliced = PoolSlicer.filter( pool, 
-                                                                               slicers, 
+            Pool<TimeSeries<Pair<Double, Double>>> sliced = PoolSlicer.filter( pool,
+                                                                               slicers,
                                                                                PoolSlicer.getFeatureMapper() );
-            
+
             // Add the threshold to the metadata
             ThresholdOuter composed = ThresholdSlicer.compose( Set.copyOf( thresholds.values() ) );
             sliced = this.addThresholdToPoolMetadata( sliced, OneOrTwoThresholds.of( composed ) );

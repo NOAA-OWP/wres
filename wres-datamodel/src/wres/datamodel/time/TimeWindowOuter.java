@@ -7,6 +7,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
 import com.google.protobuf.Timestamp;
 
 import wres.statistics.generated.TimeWindow;
@@ -380,14 +383,20 @@ public class TimeWindowOuter implements Comparable<TimeWindowOuter>
     @Override
     public String toString()
     {
-        StringJoiner sj = new StringJoiner( ",", "[", "]" );
-        sj.add( this.getEarliestReferenceTime().toString() )
-          .add( this.getLatestReferenceTime().toString() )
-          .add( this.getEarliestValidTime().toString() )
-          .add( this.getLatestValidTime().toString() )
-          .add( this.getEarliestLeadDuration().toString() )
-          .add( this.getLatestLeadDuration().toString() );
-        return sj.toString();
+        return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
+                                                                            .append( "earliestReferenceTime",
+                                                                                     this.getEarliestReferenceTime() )
+                                                                            .append( "latestReferenceTime",
+                                                                                     this.getLatestReferenceTime() )
+                                                                            .append( "earliestValidTime",
+                                                                                     this.getEarliestValidTime() )
+                                                                            .append( "latestValidTime",
+                                                                                     this.getLatestValidTime() )
+                                                                            .append( "earliestLeadDuration",
+                                                                                     this.getEarliestLeadDuration() )
+                                                                            .append( "latestLeadDuration",
+                                                                                     this.getLatestLeadDuration() )
+                                                                            .toString();
     }
 
     /**

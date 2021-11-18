@@ -57,6 +57,7 @@ import wres.datamodel.time.generators.PersistenceGenerator;
 import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
+import wres.io.retrieval.CachingRetriever;
 import wres.io.retrieval.RetrieverFactory;
 import wres.statistics.generated.Evaluation;
 
@@ -87,13 +88,13 @@ public class PoolFactory
      */
 
     private static final String WHICH_IS_NOT_ALLOWED = "', which is not allowed.";
-    
+
     /**
      * Used to create a pool identifier.
      */
 
     private static final AtomicLong poolId = new AtomicLong( 0 );
-    
+
     /**
      * Create pools for single-valued data. This method will attempt to retrieve and re-use data that is common to 
      * multiple pools. Thus, it is generally better to provide a list of pool requests that represent connected pools, 
@@ -102,7 +103,7 @@ public class PoolFactory
      * 
      * TODO: analyze the pool requests and find groups with shared data, i.e., automatically analyze/optimize. In that
      * case, there should be one call to this method per evaluation, which should then forward each group of requests 
-     * for batched creation of suppliers, as this method currently operates.
+     * for batched creation of suppliers, as this method currently assumes the caller will do.
      * 
      * @param project the project for which pools are required, not null
      * @param poolRequests the pool requests, not null
@@ -125,7 +126,7 @@ public class PoolFactory
         PairConfig pairConfig = projectConfig.getPair();
         Inputs inputsConfig = projectConfig.getInputs();
         DataSourceConfig baselineConfig = inputsConfig.getBaseline();
-        
+
         // Check that the project declaration is consistent with a request for single-valued pools
         // TODO: do not rely on the declared type. Detect the type instead
         // See #57301
@@ -175,9 +176,16 @@ public class PoolFactory
         UnaryOperator<Event<Double>> rightTransformer =
                 next -> Event.of( next.getTime(), leftTransformer.applyAsDouble( next.getValue() ) );
 
+        // Create a retriever factory that caches the climatological data for all pool requests if needed
+        RetrieverFactory<Double, Double> cachingFactory = retrieverFactory;
+        if( project.hasProbabilityThresholds() )
+        {
+            cachingFactory = new ClimatologyCachedRetrieverFactory<>( retrieverFactory );
+        }
+        
         // Build and return the pool suppliers
         return new PoolsGenerator.Builder<Double, Double>().setProject( project )
-                                                           .setRetrieverFactory( retrieverFactory )
+                                                           .setRetrieverFactory( cachingFactory )
                                                            .setPoolRequests( poolRequests )
                                                            .setBaselineGenerator( baselineGenerator )
                                                            .setLeftTransformer( leftTransformer::applyAsDouble )
@@ -196,11 +204,12 @@ public class PoolFactory
      * Create pools for ensemble data. This method will attempt to retrieve and re-use data that is common to multiple 
      * pools. Thus, it is generally better to provide a list of pool requests that represent connected pools, such as 
      * pools that all belong to the same feature group, rather than supplying a single pool or a long list of 
-     * unconnected pools, such as pools that belong to many feature groups.
+     * unconnected pools, such as pools that belong to many feature groups. Specifically, it will cache the 
+     * climatological data for all pool requests if climatological data is needed.
      * 
      * TODO: analyze the pool requests and find groups with shared data, i.e., automatically analyze/optimize. In that
      * case, there should be one call to this method per evaluation, which should then forward each group of requests 
-     * for batched creation of suppliers, as this method currently operates.
+     * for batched creation of suppliers, as this method currently assumes the caller will do.
      * 
      * @param project the project for which pools are required, not null
      * @param poolRequests the pool requests, not null
@@ -222,7 +231,7 @@ public class PoolFactory
         ProjectConfig projectConfig = project.getProjectConfig();
         PairConfig pairConfig = projectConfig.getPair();
         Inputs inputsConfig = projectConfig.getInputs();
-        
+
         // Check that the project declaration is consistent with a request for ensemble pools
         // TODO: do not rely on the declared type. Detect the type instead
         // See #57301
@@ -266,9 +275,16 @@ public class PoolFactory
         UnaryOperator<Event<Ensemble>> baselineTransformer = PoolFactory.getEnsembleTransformer( leftTransformer,
                                                                                                  removeMemberByValidYearBaseline );
 
+        // Create a retriever factory that caches the climatological data for all pool requests if needed
+        RetrieverFactory<Double, Ensemble> cachingFactory = retrieverFactory;
+        if( project.hasProbabilityThresholds() )
+        {
+            cachingFactory = new ClimatologyCachedRetrieverFactory<>( retrieverFactory );
+        }
+        
         // Build and return the pool suppliers
         return new PoolsGenerator.Builder<Double, Ensemble>().setProject( project )
-                                                             .setRetrieverFactory( retrieverFactory )
+                                                             .setRetrieverFactory( cachingFactory )
                                                              .setPoolRequests( poolRequests )
                                                              .setLeftTransformer( leftTransformer::applyAsDouble )
                                                              .setRightTransformer( rightTransformer )
@@ -305,7 +321,7 @@ public class PoolFactory
 
         PairConfig pairConfig = projectConfig.getPair();
 
-        // Get the desired times scale
+        // Get the desired time scale
         TimeScaleOuter desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
 
         // Get the time windows and sort them
@@ -391,10 +407,10 @@ public class PoolFactory
 
             return 1;
         };
-        
+
         // Next identifier
         long nextId = PoolFactory.poolId.updateAndGet( updater );
-        
+
         wres.statistics.generated.Pool pool = MessageFactory.parse( featureGroup,
                                                                     timeWindow, // Default to start with
                                                                     desiredTimeScale,
@@ -665,6 +681,68 @@ public class PoolFactory
                                                     + baselineType
                                                     + WHICH_IS_NOT_ALLOWED );
             }
+        }
+    }
+
+    /**
+     * Implementation of a {@link RetrieverFactory} that delegates all calls to a factory supplied on construction, 
+     * but wraps calls to the climatological data in a {@link CachingRetriever} before returning it.
+     *  
+     * @param <L> the left data type
+     * @param <R> the right data type
+     */
+
+    private static class ClimatologyCachedRetrieverFactory<L, R> implements RetrieverFactory<L, R>
+    {
+
+        /** The factory to delegate to for implementations. */
+        private final RetrieverFactory<L, R> delegate;
+
+        @Override
+        public Supplier<Stream<TimeSeries<L>>> getClimatologyRetriever( Set<FeatureKey> features )
+        {
+            // Cache the delegated call
+            Supplier<Stream<TimeSeries<L>>> delegated = this.delegate.getLeftRetriever( features );
+            return CachingRetriever.of( delegated );
+        }
+        
+        @Override
+        public Supplier<Stream<TimeSeries<L>>> getLeftRetriever( Set<FeatureKey> features )
+        {
+            return this.delegate.getLeftRetriever( features );
+        }
+
+        @Override
+        public Supplier<Stream<TimeSeries<R>>> getBaselineRetriever( Set<FeatureKey> features )
+        {
+            return this.delegate.getBaselineRetriever( features );
+        }
+
+        @Override
+        public Supplier<Stream<TimeSeries<L>>> getLeftRetriever( Set<FeatureKey> features, TimeWindowOuter timeWindow )
+        {
+            return this.delegate.getLeftRetriever( features, timeWindow );
+        }
+
+        @Override
+        public Supplier<Stream<TimeSeries<R>>> getRightRetriever( Set<FeatureKey> features, TimeWindowOuter timeWindow )
+        {
+            return this.delegate.getRightRetriever( features, timeWindow );
+        }
+
+        @Override
+        public Supplier<Stream<TimeSeries<R>>> getBaselineRetriever( Set<FeatureKey> features,
+                                                                     TimeWindowOuter timeWindow )
+        {
+            return this.delegate.getBaselineRetriever( features, timeWindow );
+        }
+
+        /**
+         * @param delegate the factory to delegate to for implementations
+         */
+        private ClimatologyCachedRetrieverFactory( RetrieverFactory<L, R> delegate )
+        {
+            this.delegate = delegate;
         }
     }
 

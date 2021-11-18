@@ -467,7 +467,7 @@ public final class MetricTestDataFactory
                                                      Instant.parse( SECOND_TIME ),
                                                      Duration.ofHours( 24 ) );
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( "A", false );
+        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup();
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "MAP" )
@@ -794,7 +794,7 @@ public final class MetricTestDataFactory
                                                      Instant.parse( SECOND_TIME ),
                                                      Duration.ofHours( 24 ) );
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( DRRC2, false );
+        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup();
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "MAP" )

@@ -270,9 +270,10 @@ public final class TimeWindowOuterTest
                                                   .toString() ) );
 
         //Equality against a benchmark
-        assertTrue( window.toString()
-                          .equals( "[1985-01-01T00:00:00Z,2010-12-31T11:59:59Z,"
-                                   + "1985-01-01T00:00:00Z,2010-12-31T11:59:59Z,PT0S,PT0S]" ) );
+        assertEquals( "TimeWindowOuter[earliestReferenceTime=1985-01-01T00:00:00Z,latestReferenceTime="
+                      + "2010-12-31T11:59:59Z,earliestValidTime=1985-01-01T00:00:00Z,"
+                      + "latestValidTime=2010-12-31T11:59:59Z,earliestLeadDuration=PT0S,latestLeadDuration=PT0S]",
+                      window.toString() );
     }
 
     @Test
@@ -564,7 +565,7 @@ public final class TimeWindowOuterTest
         union.add( second );
 
         TimeWindowOuter actual = TimeWindowOuter.unionOf( union );
-        
+
         assertEquals( expected, actual );
 
 
@@ -591,7 +592,7 @@ public final class TimeWindowOuterTest
         unionTwo.add( fourth );
 
         TimeWindowOuter actualTwo = TimeWindowOuter.unionOf( unionTwo );
-        
+
         assertEquals( expectedTwo, actualTwo );
     }
 
