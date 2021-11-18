@@ -123,6 +123,13 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     }
 
     @Override
+    public Supplier<Stream<TimeSeries<Double>>> getClimatologyRetriever( Set<FeatureKey> features )
+    {
+        // No distinction between climatology and left for now
+        return this.getLeftRetriever( features );
+    }
+    
+    @Override
     public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<FeatureKey> features )
     {
         return this.get( this.leftConfig,

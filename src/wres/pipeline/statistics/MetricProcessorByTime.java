@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.MetricConfigException;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolSlicer;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.Slicer;
 import wres.datamodel.metrics.MetricConstants;
@@ -280,8 +281,13 @@ abstract class MetricProcessorByTime<S extends Pool<?>>
                                                       MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                       StatisticType outGroup )
     {
-        // Filter the thresholds for this group and for the required types
-        Map<FeatureTuple, ThresholdsByMetric> filtered = super.getMetrics().getThresholdsByMetricAndFeature();
+        // Filter the thresholds for the feature group associated with this pool and for the required types
+        ThresholdsByMetricAndFeature thresholdsByMetricAndFeature = super.getMetrics();
+        FeatureGroup featureGroup = pool.getMetadata()
+                                        .getFeatureGroup();
+        thresholdsByMetricAndFeature = thresholdsByMetricAndFeature.getThresholdsByMetricAndFeature( featureGroup );
+        
+        Map<FeatureTuple, ThresholdsByMetric> filtered = thresholdsByMetricAndFeature.getThresholdsByMetricAndFeature();
         filtered = ThresholdSlicer.filterByGroup( filtered,
                                                   SampleDataGroup.SINGLE_VALUED,
                                                   outGroup,

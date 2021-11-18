@@ -497,12 +497,9 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
             if ( this.getProject().hasProbabilityThresholds()
                  || ConfigHelper.hasGeneratedBaseline( inputsConfig.getBaseline() ) )
             {
-                // Re-use the climatology across pools with a caching retriever
                 Set<FeatureKey> leftFeatures = this.getFeatures( FeatureTuple::getLeft );
-                Supplier<Stream<TimeSeries<L>>> leftSupplier = this.getRetrieverFactory()
-                                                                   .getLeftRetriever( leftFeatures );
-
-                climatologySupplier = CachingRetriever.of( leftSupplier );
+                climatologySupplier = this.getRetrieverFactory()
+                                          .getClimatologyRetriever( leftFeatures );
 
                 // Get the climatology at an appropriate scale and with any transformations required and add to the 
                 // builder, but retain the existing scale for the main supplier, as that may be re-used for left data, 

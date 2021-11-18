@@ -218,7 +218,7 @@ public class PoolSlicer
     }
 
     /**
-     * Applies an attribute-specific transformer  to the corresponding attribute-specific subset of pairs in the input 
+     * Applies an attribute-specific transformer to the corresponding attribute-specific subset of pairs in the input 
      * and returns the union of those transformed subsets for a metadata attribute that is extracted from the pool 
      * metadata with a mapper.
      * 

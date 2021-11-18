@@ -63,6 +63,13 @@ public class EnsembleRetrieverFactory2 implements RetrieverFactory<Double, Ensem
     }
 
     @Override
+    public Supplier<Stream<TimeSeries<Double>>> getClimatologyRetriever( Set<FeatureKey> features )
+    {
+        // No distinction between climatology and left for now
+        return this.getLeftRetriever( features );
+    }    
+    
+    @Override
     public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<FeatureKey> features )
     {
         // Wrap in a caching retriever to allow re-use of left-ish data, and map the units here

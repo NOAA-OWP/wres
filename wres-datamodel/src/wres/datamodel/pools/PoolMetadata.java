@@ -286,18 +286,6 @@ public class PoolMetadata implements Comparable<PoolMetadata>
         Evaluation innerEvaluation = this.getEvaluation();
         Pool innerPool = this.getPool();
 
-        // Pretty print the feature tuples
-        Set<FeatureTuple> featureTuples = innerPool.getGeometryTuplesList()
-                                                   .stream()
-                                                   .map( FeatureTuple::new )
-                                                   .collect( Collectors.toSet() );
-        FeatureGroup featureGroup = null;
-
-        if ( !featureTuples.isEmpty() )
-        {
-            featureGroup = FeatureGroup.of( innerPool.getRegionName(), featureTuples );
-        }
-
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE ).append( "poolId", innerPool.getPoolId() )
                                                                             .append( "leftDataName",
                                                                                      innerEvaluation.getLeftDataName() )
@@ -313,7 +301,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
                                                                                      innerEvaluation.getBaselineVariableName() )
                                                                             .append( "isBaselinePool",
                                                                                      innerPool.getIsBaselinePool() )
-                                                                            .append( "features", featureGroup )
+                                                                            .append( "features", this.getFeatureGroup() )
                                                                             .append( "timeWindow",
                                                                                      this.getTimeWindow() )
                                                                             .append( "thresholds",
@@ -400,6 +388,29 @@ public class PoolMetadata implements Comparable<PoolMetadata>
                    .stream()
                    .map( MessageFactory::parse )
                    .collect( Collectors.toUnmodifiableSet() );
+    }
+    
+    /**
+     * @return the feature group associated with the pool or null if the pool has no features
+     */
+    
+    public FeatureGroup getFeatureGroup()
+    {
+        // Pretty print the feature tuples
+        Set<FeatureTuple> featureTuples = this.getPool()
+                                              .getGeometryTuplesList()
+                                              .stream()
+                                              .map( FeatureTuple::new )
+                                              .collect( Collectors.toSet() );
+        
+        FeatureGroup featureGroup = null;
+        
+        if( ! featureTuples.isEmpty() )
+        {
+            featureGroup = FeatureGroup.of( this.getPool().getRegionName(), featureTuples );
+        }
+        
+        return featureGroup;
     }
 
     /**
