@@ -9,6 +9,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.FeatureDimension;
 import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -16,6 +17,7 @@ import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.io.geography.wrds.version.WrdsLocationRootVersionDocument;
 import wres.io.reading.wrds.ReadValueManager;
+import wres.io.thresholds.ThresholdReadingException;
 import wres.io.thresholds.exceptions.StreamIOException;
 import wres.io.thresholds.wrds.v2.ThresholdExtractor;
 import wres.io.thresholds.wrds.v2.ThresholdResponse;
@@ -76,11 +78,98 @@ public final class GeneralWRDSReader
         this.systemSettings = systemSettings;
     }
 
+    
+    /**
+     * Adjusts the path for access WRDS services for thresholds.
+     * @param originalPath The original path.
+     * @param featureDimension The feature dimension for the input side.
+     * @return The adjust path.
+     * @throws ThresholdReadingException if the user specified a path that
+     * includes the feature type suffix, but its incorrect.
+     */
+    private static String adjustPath(String originalPath, FeatureDimension featureDimension)
+    {
+        String adjustedPath;
+
+        //First, add a slash to make it easy to use endsWith later.
+        if ( !originalPath.endsWith( "/" ) )
+        {
+            adjustedPath = originalPath + "/";
+        }
+        else
+        {
+            adjustedPath = originalPath;
+        }
+        
+        boolean foundUnmatchingSuffixError = false;
+
+        //This uses a brute force if-then-else clause.  It could be turned into a method,
+        //but that feels like overkill.
+        
+        //NWS lid 
+        if ((featureDimension == FeatureDimension.NWS_LID) 
+                || (featureDimension == FeatureDimension.CUSTOM))
+        {
+            if (adjustedPath.endsWith( FeatureDimension.USGS_SITE_CODE.value() + "/" ) 
+                    || adjustedPath.endsWith( FeatureDimension.NWM_FEATURE_ID.value() + "/" ))
+            {
+                foundUnmatchingSuffixError = true;
+            }
+            else if (!adjustedPath.endsWith (FeatureDimension.NWS_LID.value() + "/" ))
+            {
+                adjustedPath += FeatureDimension.NWS_LID + "/";
+            }
+        }
+        
+        //USGS site code
+        if (featureDimension == FeatureDimension.USGS_SITE_CODE)
+        {
+            if (adjustedPath.endsWith( FeatureDimension.NWS_LID.value() +"/") 
+                    || adjustedPath.endsWith( FeatureDimension.NWM_FEATURE_ID.value() + "/" ))
+            {
+                foundUnmatchingSuffixError = true;
+            }
+            else if (!adjustedPath.endsWith (FeatureDimension.USGS_SITE_CODE.value() + "/" ))
+            {
+                adjustedPath += FeatureDimension.USGS_SITE_CODE + "/";
+            }
+        }
+        
+        //NWM feature id
+        if (featureDimension == FeatureDimension.NWM_FEATURE_ID)
+        {
+            if (adjustedPath.endsWith( FeatureDimension.NWS_LID.value() +"/") 
+                    || adjustedPath.endsWith( FeatureDimension.NWM_FEATURE_ID.value() + "/" ))
+            {
+                foundUnmatchingSuffixError = true;
+            }
+            else if (!adjustedPath.endsWith (FeatureDimension.NWM_FEATURE_ID.value() + "/" ))
+            {
+                adjustedPath += FeatureDimension.NWM_FEATURE_ID + "/";
+            }
+        }
+       
+        //An error was found.  Let the user know.    
+        if (foundUnmatchingSuffixError)
+        {
+            throw new ThresholdReadingException( "The input side for loading thresholds from WRDS"
+                    + " uses feature dimension '" + featureDimension.value() + "', but "
+                    + "the XML declared WRDS threshold source path, ..." + originalPath 
+                    + ", already includes a feature suffix that does not match that "
+                    + "feature dimension.  Either remove the suffix from the path or "
+                    + "specify a different input side for loading thresholds from WRDS.");
+        }
+        
+        return adjustedPath;
+    }
+    
+    
     /**
      * The top-level method to call to obtain thresholds
      * @param systemSettings Settings.
      * @param threshold User declaration.
      * @param unitMapper Target unit mapper.
+     * @param featureDimension The feature dimension of the provided list of features.
      * @param features List of features user specified.
      * @return Map of feature to threshold.
      * @throws IOException At various points, this can be thrown.
@@ -89,46 +178,58 @@ public final class GeneralWRDSReader
                                                                          final SystemSettings systemSettings,
                                                                          final ThresholdsConfig threshold,
                                                                          final UnitMapper unitMapper,
+                                                                         final FeatureDimension featureDimension,
                                                                          final Set<String> features )
             throws IOException
     {
+        //Get the declared source.
         ThresholdsConfig.Source source = (ThresholdsConfig.Source) threshold.getCommaSeparatedValuesOrSource();
+        
+        //Addresses will store a list of addresses to obtain, where each corresponds
+        //to a group of locations.
         List<URI> addresses = new ArrayList<>();
+        
+        //Those address are built from the source address.
         URI fullSourceAddress = GeneralWRDSReader.getAbsoluteUri( source.getValue(),
                                                                   systemSettings );
 
+        //If the source is a file, implying a WRDS JSON formatted file, then
+        //just use the file as is.
         if ( fullSourceAddress.getScheme()
                               .toLowerCase()
                               .equals( "file" ) )
         {
             addresses.add( fullSourceAddress );
         }
+        
+        //Otherwise, the source is a path to WRDS...
         else
         {
+            //Build the location groups to use.            
             Set<String> locationGroups = groupLocations( features );
+            
+            //Get the declared path and adjust it.  Note that adjusint could
+            //result in a runtime error if the user declared a bad feature
+            //dimensions suffix relative to the provided feature dimension.
             final String originalPath = fullSourceAddress.getPath();
+            final String adjustedPath = adjustPath(originalPath, featureDimension);
+
+            //Construct the URI builder.
             URIBuilder builder = new URIBuilder( fullSourceAddress );
-            final String adjustedPath;
-
-            if ( !originalPath.endsWith( "/" ) )
-            {
-                adjustedPath = originalPath + "/";
-            }
-            else
-            {
-                adjustedPath = originalPath;
-            }
-
+            
             LOGGER.debug( "Went from source {} to path {} to path {}",
                           source.getValue(),
                           originalPath,
                           adjustedPath );
 
+            //For each location group String...
             for ( String group : locationGroups )
             {
+                //Appebnd it to the adjustPath.
                 String path = adjustedPath + group + "/";
                 builder.setPath( path );
 
+                //Build the URI and store it in addresses.
                 try
                 {
                     URI address = builder.build();
@@ -137,18 +238,21 @@ public final class GeneralWRDSReader
                 }
                 catch ( URISyntaxException use )
                 {
-                    throw new RuntimeException( "Unable to build URI from "
+                    throw new ThresholdReadingException( "Unable to build URI from "
                                                 + builder,
                                                 use );
                 }
             }
         }
 
+        //construct the reader and the threshold map.  
         GeneralWRDSReader reader = new GeneralWRDSReader( systemSettings );
         Map<WrdsLocation, Set<ThresholdOuter>> thresholdMapping;
 
         try
         {
+            //Get the non-null resonses for the addresses, extract the thresholds,
+            //and collect them into a map.
             thresholdMapping = addresses.parallelStream()
                                         .map( reader::getResponse )
                                         .filter( Objects::nonNull )
@@ -178,6 +282,8 @@ public final class GeneralWRDSReader
             throw new IOException( "No thresholds could be retrieved from " + fullSourceAddress.toString() );
         }
 
+        LOGGER.debug("The following thresholds were obtained from WRDS: " + thresholdMapping);        
+
         return thresholdMapping;
     }
 
@@ -193,16 +299,18 @@ public final class GeneralWRDSReader
                                                                      UnitMapper desiredUnitMapper )
             throws StreamIOException
     {
+        //Obtain the source.
         ThresholdsConfig.Source source = (ThresholdsConfig.Source) config.getCommaSeparatedValuesOrSource();
+        
+        //Get the applyTo side.
         ThresholdConstants.ThresholdDataType side = ThresholdConstants.ThresholdDataType.LEFT;
-
         if ( Objects.nonNull( config.getApplyTo() ) )
         {
             side = ThresholdConstants.ThresholdDataType.valueOf( config.getApplyTo().name() );
         }
 
+        //Get the operator.
         ThresholdConstants.Operator operator = ThresholdConstants.Operator.GREATER;
-
         if ( Objects.nonNull( config.getOperator() ) )
         {
             operator = DataFactory.getThresholdOperator( config );
@@ -210,11 +318,14 @@ public final class GeneralWRDSReader
 
         try
         {
+            //Read the version information from the response, first.  This is used to 
+            //identify version being processed.
             WrdsLocationRootVersionDocument versionDoc = JSON_OBJECT_MAPPER.readValue( responseBytes, WrdsLocationRootVersionDocument.class );
             
             //Extract using V3 API reader.
             if ( versionDoc.isDeploymentInfoPresent() )
             {
+                //Get the response and construct the extractor.
                 GeneralThresholdResponse response =
                         JSON_OBJECT_MAPPER.readValue( responseBytes, GeneralThresholdResponse.class );
                 GeneralThresholdExtractor extractor = new GeneralThresholdExtractor( response )
@@ -222,6 +333,7 @@ public final class GeneralWRDSReader
                                                                                                .operatesBy( operator )
                                                                                                .onSide( side );
 
+                //If rating provider is not null, add it, too.
                 if ( source.getRatingProvider() != null )
                 {
                     extractor.ratingFrom( source.getRatingProvider() );
@@ -240,6 +352,7 @@ public final class GeneralWRDSReader
                     extractor.readFlow();
                 }
 
+                //Establish target unit.
                 extractor.convertTo( desiredUnitMapper );
 
                 return extractor.extract();
@@ -393,3 +506,4 @@ public final class GeneralWRDSReader
         return maybeIncomplete;
     }
 }
+

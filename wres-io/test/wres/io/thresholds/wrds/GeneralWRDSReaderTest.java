@@ -521,6 +521,7 @@ public class GeneralWRDSReaderTest
                                                                                                   systemSettings,
                                                                                                   normalThresholdConfig,
                                                                                                   this.unitMapper,
+                                                                                                  FeatureDimension.NWS_LID,
                                                                                                   DESIRED_FEATURES.stream()
                                                                                                                   .map( WrdsLocation::getNwsLid )
                                                                                                                   .collect( Collectors.toSet() ) );
@@ -631,6 +632,7 @@ public class GeneralWRDSReaderTest
                                                                                                   systemSettings,
                                                                                                   normalRecurrenceConfig,
                                                                                                   this.unitMapper,
+                                                                                                  FeatureDimension.NWS_LID,
                                                                                                   DESIRED_FEATURES.stream()
                                                                                                                   .map( WrdsLocation::getNwsLid )
                                                                                                                   .collect( Collectors.toSet() ) );
@@ -728,6 +730,7 @@ public class GeneralWRDSReaderTest
                                                                                                  systemSettings,
                                                                                                  oldNormalThresholdConfig,
                                                                                                  this.unitMapper,
+                                                                                                 FeatureDimension.NWS_LID,
                                                                                                  DESIRED_FEATURES.stream()
                                                                                                                  .map( WrdsLocation::getNwsLid )
                                                                                                                  .collect( Collectors.toSet() ) );
