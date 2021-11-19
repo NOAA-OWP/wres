@@ -353,7 +353,7 @@ public class ExternalThresholdReader
             }
 
             //Output a final log message.
-            LOGGER.info("####>> These thresholds were added for each of the following feature tuples: " 
+            LOGGER.info("These thresholds were added for each of the following feature tuples: " 
                 + tupleToThresholds);
 
             return Collections.unmodifiableSet( recognized );
