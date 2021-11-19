@@ -6,7 +6,7 @@ package wres.io.thresholds;
  * @author james.brown@hydrosolved.com
  */
 
-class ThresholdReadingException extends RuntimeException
+public class ThresholdReadingException extends RuntimeException
 {
     /**
      * Serial identifier.
