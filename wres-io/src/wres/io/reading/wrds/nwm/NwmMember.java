@@ -12,12 +12,12 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 @JsonIgnoreProperties( ignoreUnknown = true )
 public class NwmMember
 {
-    private final int identifier;
+    private final String identifier;
     private final List<NwmDataPoint> dataPoints;
 
     @JsonCreator( mode = JsonCreator.Mode.PROPERTIES )
     public NwmMember( @JsonProperty( "identifier" )
-                      int identifier,
+                      String identifier,
                       @JsonProperty( "data_points")
                       @JsonSetter( nulls = Nulls.AS_EMPTY)
                       List<NwmDataPoint> dataPoints )
@@ -26,7 +26,7 @@ public class NwmMember
         this.dataPoints = dataPoints;
     }
 
-    public int getIdentifier()
+    public String getIdentifier()
     {
         return this.identifier;
     }
