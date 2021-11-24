@@ -507,7 +507,7 @@ public class MessagePublisher implements Closeable
         Objects.requireNonNull( destination );
 
         // Create a unique identifier for the publisher
-        this.identifier = EvaluationEventUtilities.getUniqueId();
+        this.identifier = EvaluationEventUtilities.getId();
 
         // The connection factory is responsible for closing this. The connection owns all other resources to be closed.
         // According to the JMS specification, Connection::close will close all these resources.

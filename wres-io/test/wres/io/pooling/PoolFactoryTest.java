@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -23,6 +24,7 @@ import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
+import wres.io.project.Project;
 import wres.statistics.generated.Evaluation;
 
 /**
@@ -104,10 +106,15 @@ class PoolFactoryTest
         FeatureKey keyTwo = new FeatureKey( "DRRC2HSF", null, null, null );
         FeatureKey keyThree = new FeatureKey( "DRRC2HSF", null, null, null );
         FeatureTuple aTuple = new FeatureTuple( keyOne, keyTwo, keyThree );
-        
+
         FeatureGroup groupOne = FeatureGroup.of( aTuple );
-        
-        List<PoolRequest> actual = PoolFactory.getPoolRequests( evaluationDescription, projectConfig, groupOne );
+
+        Project project = Mockito.mock( Project.class );
+        Mockito.when( project.getFeatureGroups() )
+               .thenReturn( Set.of( groupOne ) );
+        Mockito.when( project.getProjectConfig() )
+               .thenReturn( projectConfig );
+        List<PoolRequest> actual = PoolFactory.getPoolRequests( evaluationDescription, project );
 
         assertEquals( 18, actual.size() );
     }

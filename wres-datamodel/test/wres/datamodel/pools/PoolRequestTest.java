@@ -5,12 +5,14 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+import java.time.Duration;
 import java.time.Instant;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
@@ -116,6 +118,25 @@ class PoolRequestTest
         assertNotEquals( this.poolRequest, PoolRequest.of( anotherPoolMetadata, anotherPoolMetadata ) );
     }
 
+    @Test
+    void testCompareTo()
+    {
+        assertEquals( 0, this.poolRequest.compareTo( this.poolRequest ) );
+        
+        PoolRequest withBaseline = PoolRequest.of( this.poolMetadata, this.poolMetadata );
+        
+        assertTrue( this.poolRequest.compareTo( withBaseline ) < 0 );
+        
+        assertTrue( withBaseline.compareTo( this.poolRequest ) > 0 );
+        
+        assertEquals( 0, withBaseline.compareTo( withBaseline ) );
+        
+        PoolMetadata newMetadata = PoolMetadata.of( this.poolMetadata, TimeScaleOuter.of( Duration.ofHours( 1 ) ) );
+        PoolRequest newPoolRequest = PoolRequest.of( newMetadata );
+        
+        assertTrue( newPoolRequest.compareTo( this.poolRequest ) > 0 );
+    }
+    
     @Test
     void testHashCode()
     {

@@ -78,7 +78,7 @@ class ProcessorHelper
      * Unique identifier for this instance of the core messaging client.
      */
 
-    private static final String CLIENT_ID = EvaluationEventUtilities.getUniqueId();
+    private static final String CLIENT_ID = EvaluationEventUtilities.getId();
 
     /**
      * Processes an evaluation.
@@ -116,7 +116,7 @@ class ProcessorHelper
         String projectHash = null;
 
         // Get a unique evaluation identifier
-        String evaluationId = EvaluationEventUtilities.getUniqueId();
+        String evaluationId = EvaluationEventUtilities.getId();
         monitor.setEvaluationId( evaluationId );
 
         // Create output directory
@@ -148,7 +148,7 @@ class ProcessorHelper
 
         LOGGER.debug( "These formats will be delivered by internal subscribers: {}.", internalFormats );
 
-        String consumerId = EvaluationEventUtilities.getUniqueId();
+        String consumerId = EvaluationEventUtilities.getId();
 
         // Moving this into the try-with-resources would require a different approach than notifying the evaluation to 
         // stop( Exception e ) on encountering an error that is not visible to it. See discussion in #90292.
@@ -463,8 +463,7 @@ class ProcessorHelper
                 // when building suppliers from a collection of requests
                 List<PoolRequest> poolRequests =
                         PoolFactory.getPoolRequests( evaluationDescription,
-                                                     projectConfig,
-                                                     nextGroup );
+                                                     project );
 
                 Supplier<FeatureProcessingResult> featureProcessor = new FeatureProcessor( evaluationDetails,
                                                                                            nextGroup,

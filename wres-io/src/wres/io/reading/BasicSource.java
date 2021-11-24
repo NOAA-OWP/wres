@@ -161,7 +161,7 @@ public abstract class BasicSource
     }
 
     /**
-     * Retrieves the results of the asynchrous hashing operation for the file
+     * Retrieves the results of the asynchronous hashing operation for the file
      * @return The MD5 hash of the contents of the current source file
      * @throws UnsupportedOperationException when hash was not previously requested?
      */

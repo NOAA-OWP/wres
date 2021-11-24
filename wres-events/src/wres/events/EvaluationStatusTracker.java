@@ -1011,7 +1011,7 @@ class EvaluationStatusTracker implements Closeable
         this.negotiatedSubscriberLatches = new ConcurrentHashMap<>();
 
         // Create a unique identifier for this tracker so that it can ignore messages related to itself
-        this.trackerId = EvaluationEventUtilities.getUniqueId();
+        this.trackerId = EvaluationEventUtilities.getId();
         this.resourcesWritten = new HashSet<>();
         this.retriesAttempted = new AtomicInteger();
         this.isFailedUnrecoverably = new AtomicBoolean();

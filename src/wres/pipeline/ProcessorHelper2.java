@@ -66,6 +66,7 @@ import wres.io.writing.WriteException;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
 import wres.pipeline.Evaluator.DatabaseServices;
+import wres.pipeline.Evaluator.Executors;
 import wres.pipeline.statistics.MetricProcessor;
 import wres.pipeline.statistics.MetricProcessorByTimeEnsemblePairs;
 import wres.pipeline.statistics.MetricProcessorByTimeSingleValuedPairs;
@@ -90,7 +91,7 @@ class ProcessorHelper2
      * Unique identifier for this instance of the core messaging client.
      */
 
-    private static final String CLIENT_ID = EvaluationEventUtilities.getUniqueId();
+    private static final String CLIENT_ID = EvaluationEventUtilities.getId();
 
     /** A function that estimates the trace count of a pool that contains ensemble traces. */
     private static final ToIntFunction<Pool<TimeSeries<Pair<Double, Ensemble>>>> ENSEMBLE_TRACE_COUNT_ESTIMATOR =
@@ -136,7 +137,7 @@ class ProcessorHelper2
         String projectHash = null;
 
         // Get a unique evaluation identifier
-        String evaluationId = EvaluationEventUtilities.getUniqueId();
+        String evaluationId = EvaluationEventUtilities.getId();
         monitor.setEvaluationId( evaluationId );
 
         // Create output directory
@@ -168,7 +169,7 @@ class ProcessorHelper2
 
         LOGGER.debug( "These formats will be delivered by internal subscribers: {}.", internalFormats );
 
-        String consumerId = EvaluationEventUtilities.getUniqueId();
+        String consumerId = EvaluationEventUtilities.getId();
 
         // Moving this into the try-with-resources would require a different approach than notifying the evaluation to 
         // stop( Exception e ) on encountering an error that is not visible to it. See discussion in #90292.
@@ -468,27 +469,20 @@ class ProcessorHelper2
             // completion state of features has no value when reported in this way
             ProgressMonitor.deactivate();
 
-            Map<String, List<PoolRequest>> poolRequests =
-                    ProcessorHelper2.getPoolRequests( evaluationDescription,
-                                                      projectConfig,
-                                                      featureGroups );
+            List<PoolRequest> poolRequests = ProcessorHelper2.getPoolRequests( evaluationDescription, project );
 
-            int poolCount = poolRequests.values()
-                                        .stream()
-                                        .mapToInt( List::size )
-                                        .sum();
-
+            int poolCount = poolRequests.size();
             EvaluationEvent monitor = evaluationDetails.getMonitor();
             monitor.setPoolCount( poolCount );
 
             // Report on the completion state of all pools
-            // Report detailed state by default (final arg = true)
-            // TODO: demote to summary report (final arg = false) for >> pool count
             PoolReporter poolReporter = new PoolReporter( projectConfigPlus, poolCount, true );
-            PoolGroupTracker groupTracker = ProcessorHelper2.getGroupPublicationTracker( evaluation,
-                                                                                         poolRequests );
 
-            // Tasks for pools
+            // Get a message group tracker to notify the completion of groups that encompass several pools. Currently, 
+            // this is feature-group shaped, but additional shapes may be desired in future
+            PoolGroupTracker groupTracker = PoolGroupTracker.ofFeatureGroupTracker( evaluation, poolRequests );
+
+            // Create the atomic tasks for this evaluation pipeline, i.e., pools
             List<CompletableFuture<Void>> poolTasks = ProcessorHelper2.getPoolTasks( evaluationDetails,
                                                                                      sharedWriters,
                                                                                      unitMapper,
@@ -498,12 +492,12 @@ class ProcessorHelper2
                                                                                      groupTracker );
 
             // Run the pool tasks, and join on all tasks. The main thread will wait until all are completed successfully
-            // or one completes exceptionally for reasons other than lack of data
+            // or one completes exceptionally (for reasons other than lack of data)
             Pipelines.doAllOrException( poolTasks )
                      .join();
 
             // Report that all publication was completed. At this stage, a message is sent indicating the expected 
-            // message count for all message types, thereby allowing consumers to know when they are done/
+            // message count for all message types, thereby allowing consumers to know when all messages have arrived.
             evaluation.markPublicationCompleteReportedSuccess();
 
             // Report on the pools
@@ -724,241 +718,6 @@ class ProcessorHelper2
     }
 
     /**
-     * A value object that a) reduces count of args for some methods and
-     * b) provides names for those objects. Can be removed if we can reduce the
-     * count of dependencies in some of our methods, or if we prefer to see all
-     * dependencies clearly laid out in the method signature.
-     */
-
-    static class Executors
-    {
-
-        /**
-         * Executor for input/output operations, such as ingest.
-         */
-
-        private final Executor ioExecutor;
-
-        /**
-         * The pool executor.
-         */
-        private final ExecutorService poolExecutor;
-
-        /**
-         * The pair executor.
-         */
-        private final ExecutorService pairExecutor;
-
-        /**
-         * The threshold executor.
-         */
-        private final ExecutorService thresholdExecutor;
-
-        /**
-         * The metric executor.
-         */
-        private final ExecutorService metricExecutor;
-
-        /**
-         * The product executor.
-         */
-        private final ExecutorService productExecutor;
-
-        /**
-         * Build. 
-         * 
-         * @param ioExecutor the executor for io operations
-         * @param poolExecutor the feature executor
-         * @param pairExecutor the pair executor
-         * @param thresholdExecutor the threshold executor
-         * @param metricExecutor the metric executor
-         * @param productExecutor the product executor
-         */
-        Executors( Executor ioExecutor,
-                   ExecutorService poolExecutor,
-                   ExecutorService pairExecutor,
-                   ExecutorService thresholdExecutor,
-                   ExecutorService metricExecutor,
-                   ExecutorService productExecutor )
-        {
-            this.ioExecutor = ioExecutor;
-            this.poolExecutor = poolExecutor;
-            this.pairExecutor = pairExecutor;
-            this.thresholdExecutor = thresholdExecutor;
-            this.metricExecutor = metricExecutor;
-            this.productExecutor = productExecutor;
-        }
-
-        /**
-         * Returns the {@link ExecutorService} for pools.
-         * @return the metric executor
-         */
-
-        ExecutorService getPoolExecutor()
-        {
-            return this.poolExecutor;
-        }
-
-        /**
-         * Returns the {@link ExecutorService} for pairs.
-         * @return the pair executor
-         */
-
-        ExecutorService getPairExecutor()
-        {
-            return this.pairExecutor;
-        }
-
-        /**
-         * Returns the {@link ExecutorService} for thresholds.
-         * @return the threshold executor
-         */
-
-        ExecutorService getThresholdExecutor()
-        {
-            return this.thresholdExecutor;
-        }
-
-        /**
-         * Returns the {@link ExecutorService} for metrics.
-         * @return the metric executor
-         */
-
-        ExecutorService getMetricExecutor()
-        {
-            return this.metricExecutor;
-        }
-
-        /**
-         * Returns the {@link ExecutorService} for products.
-         * @return the product executor
-         */
-
-        ExecutorService getProductExecutor()
-        {
-            return this.productExecutor;
-        }
-
-        /**
-         * Returns the {@link Executor} for io operations.
-         * @return the io executor
-         */
-
-        Executor getIoExecutor()
-        {
-            return this.ioExecutor;
-        }
-
-    }
-
-    /**
-     * A value object for shared writers.
-     */
-
-    static class SharedWriters implements Closeable
-    {
-        /**
-         * Shared writers for sample data.
-         */
-
-        private final SharedSampleDataWriters sharedSampleWriters;
-
-        /**
-         * Shared writers for baseline sampled data.
-         */
-
-        private final SharedSampleDataWriters sharedBaselineSampleWriters;
-
-        /**
-         * Returns an instance.
-         *
-         * @param sharedSampleWriters shared writer of pairs
-         * @param sharedBaselineSampleWriters shared writer of baseline pairs
-         */
-        static SharedWriters of( SharedSampleDataWriters sharedSampleWriters,
-                                 SharedSampleDataWriters sharedBaselineSampleWriters )
-
-        {
-            return new SharedWriters( sharedSampleWriters, sharedBaselineSampleWriters );
-        }
-
-        /**
-         * Returns the shared sample data writers.
-         * 
-         * @return the shared sample data writers.
-         */
-
-        SharedSampleDataWriters getSampleDataWriters()
-        {
-            return this.sharedSampleWriters;
-        }
-
-        /**
-         * Returns the shared sample data writers for baseline data.
-         * 
-         * @return the shared sample data writers  for baseline data.
-         */
-
-        SharedSampleDataWriters getBaselineSampleDataWriters()
-        {
-            return this.sharedBaselineSampleWriters;
-        }
-
-        /**
-         * Returns <code>true</code> if shared sample writers are available, otherwise <code>false</code>.
-         * 
-         * @return true if shared sample writers are available
-         */
-
-        boolean hasSharedSampleWriters()
-        {
-            return Objects.nonNull( this.sharedSampleWriters );
-        }
-
-        /**
-         * Returns <code>true</code> if shared sample writers are available for the baseline samples, otherwise 
-         * <code>false</code>.
-         * 
-         * @return true if shared sample writers are available for the baseline samples
-         */
-
-        boolean hasSharedBaselineSampleWriters()
-        {
-            return Objects.nonNull( this.sharedBaselineSampleWriters );
-        }
-
-        /**
-         * Attempts to close all shared writers.
-         * @throws IOException when a resource could not be closed
-         */
-
-        public void close() throws IOException
-        {
-            if ( this.hasSharedSampleWriters() )
-            {
-                this.getSampleDataWriters().close();
-            }
-
-            if ( this.hasSharedBaselineSampleWriters() )
-            {
-                this.getBaselineSampleDataWriters().close();
-            }
-        }
-
-        /**
-         * Hidden constructor.
-         * @param sharedSampleWriters the shared writer for pairs
-         * @param sharedBaselineSampleWriters the shared writer for baseline pairs
-         */
-        private SharedWriters( SharedSampleDataWriters sharedSampleWriters,
-                               SharedSampleDataWriters sharedBaselineSampleWriters )
-        {
-            this.sharedSampleWriters = sharedSampleWriters;
-            this.sharedBaselineSampleWriters = sharedBaselineSampleWriters;
-        }
-    }
-
-    /**
      * Returns a set of formats that are delivered by external subscribers, according to relevant system properties.
      * 
      * @return the formats delivered by external subscribers
@@ -1123,172 +882,6 @@ class ProcessorHelper2
     }
 
     /**
-     * Small value class to collect together variables needed to instantiate an evaluation.
-     */
-
-    static class EvaluationDetails
-    {
-        /** Project configuration. */
-        private final ProjectConfigPlus projectConfigPlus;
-        /** Evaluation description. */
-        private final wres.statistics.generated.Evaluation evaluationDescription;
-        /** Unique evaluation identifier. */
-        private final String evaluationId;
-        /** Approves format writer subscriptions that attempt to serve an evaluation. */
-        private final SubscriberApprover subscriberApprover;
-        /** Broker connections. */
-        private final BrokerConnectionFactory connections;
-        /** Monitor. */
-        private final EvaluationEvent monitor;
-        /** The project, possibly null. */
-        private Project project;
-        /** The resolved project, possibly null. */
-        private ResolvedProject resolvedProject;
-        /** The messaging component of an evaluation, possibly null. */
-        private Evaluation evaluation;
-
-        /**
-         * @return the project configuration
-         */
-        ProjectConfigPlus getProjectConfigPlus()
-        {
-            return projectConfigPlus;
-        }
-
-        /**
-         * @return the evaluation description
-         */
-        wres.statistics.generated.Evaluation getEvaluationDescription()
-        {
-            return evaluationDescription;
-        }
-
-        /**
-         * @return the evaluation identifier
-         */
-        String getEvaluationId()
-        {
-            return evaluationId;
-        }
-
-        /**
-         * @return the subscriber approver
-         */
-        SubscriberApprover getSubscriberApprover()
-        {
-            return subscriberApprover;
-        }
-
-        /**
-         * @return the broker connection factory
-         */
-        BrokerConnectionFactory getBrokerConnections()
-        {
-            return connections;
-        }
-
-        /**
-         * @return the monitor
-         */
-
-        EvaluationEvent getMonitor()
-        {
-            return this.monitor;
-        }
-
-        /**
-         * @return the project, possibly null
-         */
-
-        Project getProject()
-        {
-            return this.project;
-        }
-
-        /**
-         * @return the resolvedProject, possibly null
-         */
-
-        ResolvedProject getResolvedProject()
-        {
-            return this.resolvedProject;
-        }
-
-        /**
-         * @return the evaluation, possibly null
-         */
-
-        Evaluation getEvaluation()
-        {
-            return this.evaluation;
-        }
-
-        /**
-         * Set the project, not null.
-         * @param project the project
-         * @throws NullPointerException if the project is null
-         */
-
-        void setProject( Project project )
-        {
-            Objects.requireNonNull( project );
-
-            this.project = project;
-        }
-
-        /**
-         * Set the resolved project, not null.
-         * @param resolvedProject the resolved project
-         * @throws NullPointerException if the resolvedProject is null
-         */
-
-        void setResolvedProject( ResolvedProject resolvedProject )
-        {
-            Objects.requireNonNull( resolvedProject );
-
-            this.resolvedProject = resolvedProject;
-        }
-
-        /**
-         * Set the evaluation, not null.
-         * @param evaluation the evaluation
-         * @throws NullPointerException if the evaluation is null
-         */
-
-        void setEvaluation( Evaluation evaluation )
-        {
-            Objects.requireNonNull( evaluation );
-
-            this.evaluation = evaluation;
-        }
-
-        /**
-         * Builds an instance.
-         * 
-         * @param projectConfigPlus the project declaration
-         * @param evaluationDescription the evaluation description
-         * @param evaluationId the evaluation identifier
-         * @param subscriberApprover the subscriber approver
-         * @param connections the broker connections
-         */
-
-        EvaluationDetails( ProjectConfigPlus projectConfigPlus,
-                           wres.statistics.generated.Evaluation evaluationDescription,
-                           String evaluationId,
-                           SubscriberApprover subscriberApprover,
-                           BrokerConnectionFactory connections,
-                           EvaluationEvent monitor )
-        {
-            this.projectConfigPlus = projectConfigPlus;
-            this.evaluationDescription = evaluationDescription;
-            this.evaluationId = evaluationId;
-            this.subscriberApprover = subscriberApprover;
-            this.connections = connections;
-            this.monitor = monitor;
-        }
-    }
-
-    /**
      * @param evaluation the evaluation description
      * @param project the project
      * @return an evaluation description with analyzed measurement units and variables, as needed
@@ -1322,75 +915,46 @@ class ProcessorHelper2
     }
 
     /**
-     * Creates the pool requests, which are currently feature-shaped for efficiency because some datasets are shared
-     * across all pools that belong to one feature and some statistics formats are written per feature.
+     * Creates the pool requests from the project.
      * 
      * @param evaluationDescription the evaluation description
-     * @param projectConfig the project declaration
-     * @param featureGroups the feature groups
-     * @return the pool requests, indexed by message group identifier
+     * @param project the project
+     * @return the pool requests
      */
 
-    private static Map<String, List<PoolRequest>>
-            getPoolRequests( wres.statistics.generated.Evaluation evaluationDescription,
-                             ProjectConfig projectConfig,
-                             Set<FeatureGroup> featureGroups )
+    private static List<PoolRequest> getPoolRequests( wres.statistics.generated.Evaluation evaluationDescription,
+                                                      Project project )
     {
-        Map<String, List<PoolRequest>> pools = new TreeMap<>();
-
-        // Create a pool request for each pool within a feature group
-        for ( FeatureGroup nextGroup : featureGroups )
-        {
-            // Create feature-shaped pool requests. This is more efficient because some datasets are shared across
-            // all pools that belong to a single feature group, such as the climatology. This efficiency is achieved
-            // when building suppliers from a collection of requests
-            List<PoolRequest> poolRequests =
-                    PoolFactory.getPoolRequests( evaluationDescription,
-                                                 projectConfig,
-                                                 nextGroup );
-
-            // Message groups are also feature-shaped because some statistics formats are per-feature, notably some 
-            // graphics
-            String messageGroupId = EvaluationEventUtilities.getUniqueId();
-
-            pools.put( messageGroupId, poolRequests );
-        }
+        List<PoolRequest> poolRequests = PoolFactory.getPoolRequests( evaluationDescription, project );
 
         // Log some information about the pools
         if ( LOGGER.isInfoEnabled() )
         {
-            // Find the pool count, feature groups and time windows
-            int poolCount = 0;
             Set<FeatureGroup> features = new TreeSet<>();
             Set<TimeWindowOuter> timeWindows = new TreeSet<>();
 
-            for ( Map.Entry<String, List<PoolRequest>> nextPool : pools.entrySet() )
+            for ( PoolRequest nextRequest : poolRequests )
             {
-                List<PoolRequest> nextRequests = nextPool.getValue();
-                Set<FeatureGroup> nextFeatures = nextRequests.stream()
-                                                             .map( next -> next.getMetadata().getFeatureGroup() )
-                                                             .collect( Collectors.toSet() );
-                features.addAll( nextFeatures );
+                FeatureGroup nextFeature = nextRequest.getMetadata()
+                                                      .getFeatureGroup();
+                features.add( nextFeature );
 
-                Set<TimeWindowOuter> nextTimeWindows = nextRequests.stream()
-                                                                   .map( next -> next.getMetadata().getTimeWindow() )
-                                                                   .collect( Collectors.toSet() );
+                TimeWindowOuter nextTimeWindow = nextRequest.getMetadata()
+                                                            .getTimeWindow();
 
-                timeWindows.addAll( nextTimeWindows );
-
-                poolCount += nextRequests.size();
+                timeWindows.add( nextTimeWindow );
             }
 
             LOGGER.info( "Created {} pool requests, which included {} features groups and {} time windows. "
                          + "The feature groups were: {}. The time windows were: {}.",
-                         poolCount,
+                         poolRequests.size(),
                          features.size(),
                          timeWindows.size(),
                          PoolReporter.getPoolItemDescription( features, FeatureGroup::getName ),
                          PoolReporter.getPoolItemDescription( timeWindows, TimeWindowOuter::toString ) );
         }
 
-        return Collections.unmodifiableMap( pools );
+        return poolRequests;
     }
 
     /**
@@ -1402,17 +966,17 @@ class ProcessorHelper2
      * @param poolRequests the pool requests
      * @param executors the executor services
      * @param poolReporter the pool reporter that reports on a pool execution
-     * @param groupPublicationTracker the group publication tracker
+     * @param poolGroupTracker the group publication tracker
      * @return the pool execution tasks
      */
 
     private static List<CompletableFuture<Void>> getPoolTasks( EvaluationDetails evaluationDetails,
                                                                SharedWriters sharedWriters,
                                                                UnitMapper unitMapper,
-                                                               Map<String, List<PoolRequest>> poolRequests,
+                                                               List<PoolRequest> poolRequests,
                                                                Executors executors,
                                                                PoolReporter poolReporter,
-                                                               PoolGroupTracker groupPublicationTracker )
+                                                               PoolGroupTracker poolGroupTracker )
     {
 
         List<CompletableFuture<Void>> poolTasks = new ArrayList<>();
@@ -1421,50 +985,39 @@ class ProcessorHelper2
                                                .getRight()
                                                .getType();
 
-        // Create one task per pool, retaining the feature-shape of the pools for efficient retrieval because some 
-        // datasets are shared across pools for each feature
-        for ( Map.Entry<String, List<PoolRequest>> pools : poolRequests.entrySet() )
+        // Ensemble pairs
+        if ( type == DatasourceType.ENSEMBLE_FORECASTS )
         {
-            // The statistics message groups are also feature-shaped because there are feature-shaped statistics formats
-            String groupId = pools.getKey();
-            List<PoolRequest> nextPoolRequests = pools.getValue();
+            List<PoolProcessor<Double, Ensemble>> poolProcessors =
+                    ProcessorHelper2.getEnsemblePoolProcessors( evaluationDetails,
+                                                                poolRequests,
+                                                                sharedWriters,
+                                                                unitMapper,
+                                                                executors,
+                                                                poolGroupTracker );
 
-            if ( type == DatasourceType.ENSEMBLE_FORECASTS )
-            {
-                List<PoolProcessor<Double, Ensemble>> poolProcessors =
-                        ProcessorHelper2.getEnsemblePoolProcessors( evaluationDetails,
-                                                                    nextPoolRequests,
+            List<CompletableFuture<Void>> nextPoolTasks =
+                    ProcessorHelper2.getPoolTasks( poolProcessors,
+                                                   executors.getPoolExecutor(),
+                                                   poolReporter );
+            poolTasks.addAll( nextPoolTasks );
+        }
+        // All other single-valued types
+        else
+        {
+            List<PoolProcessor<Double, Double>> poolProcessors =
+                    ProcessorHelper2.getSingleValuedPoolProcessors( evaluationDetails,
+                                                                    poolRequests,
                                                                     sharedWriters,
                                                                     unitMapper,
                                                                     executors,
-                                                                    groupId,
-                                                                    groupPublicationTracker );
+                                                                    poolGroupTracker );
 
-                List<CompletableFuture<Void>> nextPoolTasks =
-                        ProcessorHelper2.getPoolTasks( poolProcessors,
-                                                       // Pool executor service for outer execution of pools
-                                                       executors.getPoolExecutor(),
-                                                       poolReporter );
-                poolTasks.addAll( nextPoolTasks );
-            }
-            else
-            {
-                List<PoolProcessor<Double, Double>> poolProcessors =
-                        ProcessorHelper2.getSingleValuedPoolProcessors( evaluationDetails,
-                                                                        nextPoolRequests,
-                                                                        sharedWriters,
-                                                                        unitMapper,
-                                                                        executors,
-                                                                        groupId,
-                                                                        groupPublicationTracker );
-
-                List<CompletableFuture<Void>> nextPoolTasks =
-                        ProcessorHelper2.getPoolTasks( poolProcessors,
-                                                       // Pool executor service for outer execution of pools
-                                                       executors.getPoolExecutor(),
-                                                       poolReporter );
-                poolTasks.addAll( nextPoolTasks );
-            }
+            List<CompletableFuture<Void>> nextPoolTasks =
+                    ProcessorHelper2.getPoolTasks( poolProcessors,
+                                                   executors.getPoolExecutor(),
+                                                   poolReporter );
+            poolTasks.addAll( nextPoolTasks );
         }
 
         return Collections.unmodifiableList( poolTasks );
@@ -1488,7 +1041,6 @@ class ProcessorHelper2
                                            SharedWriters sharedWriters,
                                            UnitMapper unitMapper,
                                            Executors executors,
-                                           String groupId,
                                            PoolGroupTracker groupPublicationTracker )
     {
         Project project = evaluationDetails.getProject();
@@ -1503,6 +1055,7 @@ class ProcessorHelper2
         RetrieverFactory<Double, Double> retrieverFactory = SingleValuedRetrieverFactory.of( project,
                                                                                              unitMapper );
 
+        // Create the pool suppliers for all pools in this evaluation
         List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> poolSuppliers =
                 PoolFactory.getSingleValuedPools( project,
                                                   poolRequests,
@@ -1535,13 +1088,6 @@ class ProcessorHelper2
                                                                .setPoolRequest( poolRequest )
                                                                .setPoolSupplier( poolSupplier )
                                                                .setEvaluation( evaluationDetails.getEvaluation() )
-                                                               // Use a different executor service than the outer 
-                                                               // pools executor service to execute inner pool 
-                                                               // activities, otherwise dependent/independent 
-                                                               // activities can interleave, blocking the outer 
-                                                               // executor
-                                                               .setExecutorService( executors.getPairExecutor() )
-                                                               .setMessageGroupId( groupId )
                                                                .setMonitor( evaluationDetails.getMonitor() )
                                                                .setTraceCountEstimator( SINGLE_VALUED_TRACE_COUNT_ESTIMATOR )
                                                                .setProjectConfig( project.getProjectConfig() )
@@ -1572,7 +1118,6 @@ class ProcessorHelper2
                                        SharedWriters sharedWriters,
                                        UnitMapper unitMapper,
                                        Executors executors,
-                                       String groupId,
                                        PoolGroupTracker groupPublicationTracker )
     {
         Project project = evaluationDetails.getProject();
@@ -1587,6 +1132,7 @@ class ProcessorHelper2
         RetrieverFactory<Double, Ensemble> retrieverFactory = EnsembleRetrieverFactory.of( project,
                                                                                            unitMapper );
 
+        // Create the pool suppliers for all pools in this evaluation
         List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> poolSuppliers =
                 PoolFactory.getEnsemblePools( project,
                                               poolRequests,
@@ -1619,13 +1165,6 @@ class ProcessorHelper2
                                                                  .setPoolRequest( poolRequest )
                                                                  .setPoolSupplier( poolSupplier )
                                                                  .setEvaluation( evaluationDetails.getEvaluation() )
-                                                                 // Use a different executor service than the outer 
-                                                                 // pools executor service to execute inner pool 
-                                                                 // activities, otherwise dependent/independent 
-                                                                 // activities can interleave, blocking the outer 
-                                                                 // executor
-                                                                 .setExecutorService( executors.getPairExecutor() )
-                                                                 .setMessageGroupId( groupId )
                                                                  .setMonitor( evaluationDetails.getMonitor() )
                                                                  .setTraceCountEstimator( ENSEMBLE_TRACE_COUNT_ESTIMATOR )
                                                                  .setProjectConfig( project.getProjectConfig() )
@@ -1655,7 +1194,6 @@ class ProcessorHelper2
 
         for ( PoolProcessor<L, R> nextProcessor : poolProcessors )
         {
-
             CompletableFuture<Void> nextPoolTask = CompletableFuture.supplyAsync( nextProcessor,
                                                                                   poolExecutor )
                                                                     .thenAccept( poolReporter );
@@ -1746,31 +1284,281 @@ class ProcessorHelper2
     }
 
     /**
-     * @param evaluation the evaluation
-     * @param poolRequests the pool requests from which to create a group publication tracker
-     * @return the group publication tracker
+     * Small value class to collect together variables needed to instantiate an evaluation.
      */
 
-    private static PoolGroupTracker getGroupPublicationTracker( Evaluation evaluation,
-                                                                Map<String, List<PoolRequest>> poolRequests )
+    private static class EvaluationDetails
     {
-        PoolGroupTracker.Builder builder = new PoolGroupTracker.Builder().setEvaluation( evaluation );
+        /** Project configuration. */
+        private final ProjectConfigPlus projectConfigPlus;
+        /** Evaluation description. */
+        private final wres.statistics.generated.Evaluation evaluationDescription;
+        /** Unique evaluation identifier. */
+        private final String evaluationId;
+        /** Approves format writer subscriptions that attempt to serve an evaluation. */
+        private final SubscriberApprover subscriberApprover;
+        /** Broker connections. */
+        private final BrokerConnectionFactory connections;
+        /** Monitor. */
+        private final EvaluationEvent monitor;
+        /** The project, possibly null. */
+        private Project project;
+        /** The resolved project, possibly null. */
+        private ResolvedProject resolvedProject;
+        /** The messaging component of an evaluation, possibly null. */
+        private Evaluation evaluation;
 
-        for ( Map.Entry<String, List<PoolRequest>> nextGroup : poolRequests.entrySet() )
+        /**
+         * @return the project configuration
+         */
+        private ProjectConfigPlus getProjectConfigPlus()
         {
-            String groupId = nextGroup.getKey();
-
-            int groupSize = nextGroup.getValue()
-                                     .size();
-
-            builder.addGroup( groupId, groupSize );
+            return projectConfigPlus;
         }
 
-        return builder.build();
+        /**
+         * @return the evaluation description
+         */
+        private wres.statistics.generated.Evaluation getEvaluationDescription()
+        {
+            return evaluationDescription;
+        }
+
+        /**
+         * @return the evaluation identifier
+         */
+        private String getEvaluationId()
+        {
+            return evaluationId;
+        }
+
+        /**
+         * @return the subscriber approver
+         */
+        private SubscriberApprover getSubscriberApprover()
+        {
+            return subscriberApprover;
+        }
+
+        /**
+         * @return the broker connection factory
+         */
+        private BrokerConnectionFactory getBrokerConnections()
+        {
+            return connections;
+        }
+
+        /**
+         * @return the monitor
+         */
+
+        private EvaluationEvent getMonitor()
+        {
+            return this.monitor;
+        }
+
+        /**
+         * @return the project, possibly null
+         */
+
+        private Project getProject()
+        {
+            return this.project;
+        }
+
+        /**
+         * @return the resolvedProject, possibly null
+         */
+
+        private ResolvedProject getResolvedProject()
+        {
+            return this.resolvedProject;
+        }
+
+        /**
+         * @return the evaluation, possibly null
+         */
+
+        private Evaluation getEvaluation()
+        {
+            return this.evaluation;
+        }
+
+        /**
+         * Set the project, not null.
+         * @param project the project
+         * @throws NullPointerException if the project is null
+         */
+
+        private void setProject( Project project )
+        {
+            Objects.requireNonNull( project );
+
+            this.project = project;
+        }
+
+        /**
+         * Set the resolved project, not null.
+         * @param resolvedProject the resolved project
+         * @throws NullPointerException if the resolvedProject is null
+         */
+
+        private void setResolvedProject( ResolvedProject resolvedProject )
+        {
+            Objects.requireNonNull( resolvedProject );
+
+            this.resolvedProject = resolvedProject;
+        }
+
+        /**
+         * Set the evaluation, not null.
+         * @param evaluation the evaluation
+         * @throws NullPointerException if the evaluation is null
+         */
+
+        private void setEvaluation( Evaluation evaluation )
+        {
+            Objects.requireNonNull( evaluation );
+
+            this.evaluation = evaluation;
+        }
+
+        /**
+         * Builds an instance.
+         * 
+         * @param projectConfigPlus the project declaration
+         * @param evaluationDescription the evaluation description
+         * @param evaluationId the evaluation identifier
+         * @param subscriberApprover the subscriber approver
+         * @param connections the broker connections
+         */
+
+        private EvaluationDetails( ProjectConfigPlus projectConfigPlus,
+                                   wres.statistics.generated.Evaluation evaluationDescription,
+                                   String evaluationId,
+                                   SubscriberApprover subscriberApprover,
+                                   BrokerConnectionFactory connections,
+                                   EvaluationEvent monitor )
+        {
+            this.projectConfigPlus = projectConfigPlus;
+            this.evaluationDescription = evaluationDescription;
+            this.evaluationId = evaluationId;
+            this.subscriberApprover = subscriberApprover;
+            this.connections = connections;
+            this.monitor = monitor;
+        }
+    }
+
+    /**
+     * A value object for shared writers.
+     */
+
+    private static class SharedWriters implements Closeable
+    {
+        /**
+         * Shared writers for sample data.
+         */
+
+        private final SharedSampleDataWriters sharedSampleWriters;
+
+        /**
+         * Shared writers for baseline sampled data.
+         */
+
+        private final SharedSampleDataWriters sharedBaselineSampleWriters;
+
+        /**
+         * Returns an instance.
+         *
+         * @param sharedSampleWriters shared writer of pairs
+         * @param sharedBaselineSampleWriters shared writer of baseline pairs
+         */
+        private static SharedWriters of( SharedSampleDataWriters sharedSampleWriters,
+                                         SharedSampleDataWriters sharedBaselineSampleWriters )
+
+        {
+            return new SharedWriters( sharedSampleWriters, sharedBaselineSampleWriters );
+        }
+
+        /**
+         * Returns the shared sample data writers.
+         * 
+         * @return the shared sample data writers.
+         */
+
+        private SharedSampleDataWriters getSampleDataWriters()
+        {
+            return this.sharedSampleWriters;
+        }
+
+        /**
+         * Returns the shared sample data writers for baseline data.
+         * 
+         * @return the shared sample data writers  for baseline data.
+         */
+
+        private SharedSampleDataWriters getBaselineSampleDataWriters()
+        {
+            return this.sharedBaselineSampleWriters;
+        }
+
+        /**
+         * Returns <code>true</code> if shared sample writers are available, otherwise <code>false</code>.
+         * 
+         * @return true if shared sample writers are available
+         */
+
+        private boolean hasSharedSampleWriters()
+        {
+            return Objects.nonNull( this.sharedSampleWriters );
+        }
+
+        /**
+         * Returns <code>true</code> if shared sample writers are available for the baseline samples, otherwise 
+         * <code>false</code>.
+         * 
+         * @return true if shared sample writers are available for the baseline samples
+         */
+
+        private boolean hasSharedBaselineSampleWriters()
+        {
+            return Objects.nonNull( this.sharedBaselineSampleWriters );
+        }
+
+        /**
+         * Attempts to close all shared writers.
+         * @throws IOException when a resource could not be closed
+         */
+        @Override
+        public void close() throws IOException
+        {
+            if ( this.hasSharedSampleWriters() )
+            {
+                this.getSampleDataWriters().close();
+            }
+
+            if ( this.hasSharedBaselineSampleWriters() )
+            {
+                this.getBaselineSampleDataWriters().close();
+            }
+        }
+
+        /**
+         * Hidden constructor.
+         * @param sharedSampleWriters the shared writer for pairs
+         * @param sharedBaselineSampleWriters the shared writer for baseline pairs
+         */
+        private SharedWriters( SharedSampleDataWriters sharedSampleWriters,
+                               SharedSampleDataWriters sharedBaselineSampleWriters )
+        {
+            this.sharedSampleWriters = sharedSampleWriters;
+            this.sharedBaselineSampleWriters = sharedBaselineSampleWriters;
+        }
     }
 
     private ProcessorHelper2()
     {
         // Helper class with static methods therefore no construction allowed.
     }
+
 }

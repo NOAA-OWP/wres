@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -133,6 +134,8 @@ public class PoolsGeneratorTest
 
         FeatureKey feature = FeatureKey.of( "FAKE2" );
 
+        FeatureGroup featureGroup = FeatureGroup.of( new FeatureTuple( feature, feature, null ) );
+
         // Mock the sufficient elements of Project
         Project project = Mockito.mock( Project.class );
         Mockito.when( project.getProjectConfig() ).thenReturn( projectConfig );
@@ -144,6 +147,7 @@ public class PoolsGeneratorTest
         Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
         Mockito.when( project.getDatabase() ).thenReturn( this.wresDatabase );
         Mockito.when( project.getFeaturesCache() ).thenReturn( this.featuresCache );
+        Mockito.when( project.getFeatureGroups() ).thenReturn( Set.of( featureGroup ) );
 
         ProjectConfigPlus projectConfigPlus = Mockito.mock( ProjectConfigPlus.class );
         Mockito.when( projectConfigPlus.getProjectConfig() )
@@ -158,11 +162,8 @@ public class PoolsGeneratorTest
         Mockito.when( retrieverFactory.getRightRetriever( Mockito.any(), Mockito.any() ) )
                .thenReturn( () -> Stream.of() );
 
-        FeatureGroup featureGroup = FeatureGroup.of( new FeatureTuple( feature, feature, null ) );
-
         List<PoolRequest> poolRequests = PoolFactory.getPoolRequests( evaluationDescription,
-                                                                      projectConfig,
-                                                                      featureGroup );
+                                                                      project );
 
         // Create the actual output
         List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> actual =
@@ -245,6 +246,7 @@ public class PoolsGeneratorTest
         ProjectConfig projectConfig = new ProjectConfig( inputsConfig, pairsConfig, null, null, null, null );
 
         FeatureKey feature = FeatureKey.of( "FAKE2" );
+        FeatureGroup featureGroup = FeatureGroup.of( new FeatureTuple( feature, feature, null ) );
 
         // Mock the sufficient elements of Project
         Project project = Mockito.mock( Project.class );
@@ -258,6 +260,7 @@ public class PoolsGeneratorTest
         Mockito.when( project.getDatabase() ).thenReturn( this.wresDatabase );
         Mockito.when( project.getFeaturesCache() ).thenReturn( this.featuresCache );
         Mockito.when( project.getEnsemblesCache() ).thenReturn( this.ensemblesCache );
+        Mockito.when( project.getFeatureGroups() ).thenReturn( Set.of( featureGroup ) );
 
         ProjectConfigPlus projectConfigPlus = Mockito.mock( ProjectConfigPlus.class );
         Mockito.when( projectConfigPlus.getProjectConfig() )
@@ -272,12 +275,9 @@ public class PoolsGeneratorTest
         Mockito.when( retrieverFactory.getRightRetriever( Mockito.any(), Mockito.any() ) )
                .thenReturn( () -> Stream.of() );
 
-        FeatureGroup featureGroup = FeatureGroup.of( new FeatureTuple( feature, feature, null ) );
-
         List<PoolRequest> poolRequests = PoolFactory.getPoolRequests( evaluationDescription,
-                                                                      projectConfig,
-                                                                      featureGroup );
-        
+                                                                      project );
+
         // Create the actual output
         List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> actual =
                 PoolFactory.getEnsemblePools( project,

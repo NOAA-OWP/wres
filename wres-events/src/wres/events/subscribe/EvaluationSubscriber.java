@@ -1407,7 +1407,7 @@ public class EvaluationSubscriber implements Closeable
 
     private void publishStatusMessage( String evaluationId, EvaluationStatus status )
     {
-        String messageId = "ID:" + this.getClientId() + "-m" + EvaluationEventUtilities.getUniqueId();
+        String messageId = "ID:" + this.getClientId() + "-m" + EvaluationEventUtilities.getId();
 
         ByteBuffer buffer = ByteBuffer.wrap( status.toByteArray() );
 
@@ -1659,17 +1659,17 @@ public class EvaluationSubscriber implements Closeable
 
             // Register an exception listener for each connection
             ConnectionExceptionListener publisherConnectionListener =
-                    new ConnectionExceptionListener( this, EvaluationEventUtilities.getUniqueId() );
+                    new ConnectionExceptionListener( this, EvaluationEventUtilities.getId() );
 
             this.evaluationStatusPublisher = MessagePublisher.of( broker,
                                                                   this.evaluationStatusTopic,
                                                                   publisherConnectionListener );
 
             ConnectionExceptionListener consumerConnectionListener =
-                    new ConnectionExceptionListener( this, EvaluationEventUtilities.getUniqueId() );
+                    new ConnectionExceptionListener( this, EvaluationEventUtilities.getId() );
             this.consumerConnection.setExceptionListener( consumerConnectionListener );
             ConnectionExceptionListener statisticsConsumerConnectionListener =
-                    new ConnectionExceptionListener( this, EvaluationEventUtilities.getUniqueId() );
+                    new ConnectionExceptionListener( this, EvaluationEventUtilities.getId() );
             this.statisticsConsumerConnection.setExceptionListener( statisticsConsumerConnectionListener );
 
             // Client acknowledges

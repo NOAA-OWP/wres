@@ -42,7 +42,6 @@ import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
 import wres.io.retrieval.CachingRetriever;
 import wres.io.retrieval.DataAccessException;
@@ -441,7 +440,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
         }
 
         // A baseline generator should be supplied if there is a baseline to generate, otherwise not
-        if ( Objects.nonNull( this.baselineGenerator ) != ConfigHelper.hasGeneratedBaseline( this.project.getBaseline() ) )
+        if ( Objects.nonNull( this.baselineGenerator ) != this.project.hasGeneratedBaseline() )
         {
             throw new IllegalArgumentException( messageStart
                                                 + " a baseline generator should be supplied when required, "
@@ -494,8 +493,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
         {
             // Climatological data required?
             Supplier<Stream<TimeSeries<L>>> climatologySupplier = null;
-            if ( this.getProject().hasProbabilityThresholds()
-                 || ConfigHelper.hasGeneratedBaseline( inputsConfig.getBaseline() ) )
+            if ( this.getProject().hasProbabilityThresholds() || this.getProject().hasGeneratedBaseline() )
             {
                 Set<FeatureKey> leftFeatures = this.getFeatures( FeatureTuple::getLeft );
                 climatologySupplier = this.getRetrieverFactory()
@@ -510,6 +508,10 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                                                                desiredTimeScale,
                                                                this.getLeftTransformer(),
                                                                this.getClimateAdmissibleValue() );
+                
+                // Cache the upscaled climatology, even if the raw climatology is itself cached because the upscaling
+                // is potentially expensive and there is no need to repeat it on every call to the supplier.
+                climatologyAtScale = CachingRetriever.of( climatologyAtScale );
 
                 builder.setClimatology( climatologyAtScale, this.getClimateMapper() );
             }
@@ -555,7 +557,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                     builder.setBaselineMetadata( nextPool.getMetadataForBaseline() );
 
                     // Generated baseline?
-                    if ( ConfigHelper.hasGeneratedBaseline( projectConfig.getInputs().getBaseline() ) )
+                    if ( this.getProject().hasGeneratedBaseline() )
                     {
                         builder.setBaselineGenerator( this.getBaselineGenerator() );
                     }
@@ -886,73 +888,76 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                                               UnaryOperator<L> transformer,
                                               Predicate<L> admissibleValue )
     {
-        List<TimeSeries<L>> climData = climatologySupplier.get()
-                                                          .collect( Collectors.toList() );
+        // Defer rescaling until retrieval time
+        return () -> {
+            List<TimeSeries<L>> climData = climatologySupplier.get()
+                                                              .collect( Collectors.toList() );
 
-        TimeSeriesMetadata existingMetadata = null;
+            TimeSeriesMetadata existingMetadata = null;
 
-        List<TimeSeries<L>> returnMe = new ArrayList<>();
+            List<TimeSeries<L>> returnMe = new ArrayList<>();
 
-        for ( TimeSeries<L> next : climData )
-        {
-            TimeSeries.Builder<L> builder = new TimeSeries.Builder<>();
-
-            TimeSeries<L> nextSeries = next;
-            TimeScaleOuter nextScale = nextSeries.getMetadata()
-                                                 .getTimeScale();
-
-            // Upscale? A difference in period is the minimum needed
-            if ( Objects.nonNull( desiredTimeScale )
-                 && Objects.nonNull( nextScale )
-                 && !desiredTimeScale.getPeriod().equals( nextScale.getPeriod() ) )
+            for ( TimeSeries<L> next : climData )
             {
-                if ( Objects.isNull( upscaler ) )
+                TimeSeries.Builder<L> builder = new TimeSeries.Builder<>();
+
+                TimeSeries<L> nextSeries = next;
+                TimeScaleOuter nextScale = nextSeries.getMetadata()
+                                                     .getTimeScale();
+
+                // Upscale? A difference in period is the minimum needed
+                if ( Objects.nonNull( desiredTimeScale )
+                     && Objects.nonNull( nextScale )
+                     && !desiredTimeScale.getPeriod().equals( nextScale.getPeriod() ) )
                 {
-                    throw new IllegalArgumentException( "The climatological time-series "
-                                                        + nextSeries.hashCode()
-                                                        + " needed upscaling from "
-                                                        + nextScale
-                                                        + " to "
-                                                        + desiredTimeScale
-                                                        + " but no upscaler was provided." );
+                    if ( Objects.isNull( upscaler ) )
+                    {
+                        throw new IllegalArgumentException( "The climatological time-series "
+                                                            + nextSeries.hashCode()
+                                                            + " needed upscaling from "
+                                                            + nextScale
+                                                            + " to "
+                                                            + desiredTimeScale
+                                                            + " but no upscaler was provided." );
+                    }
+
+                    nextSeries = upscaler.upscale( nextSeries, desiredTimeScale )
+                                         .getTimeSeries();
+
+                    LOGGER.debug( "Upscaled the climatological time-series {} from {} to {}.",
+                                  nextSeries.hashCode(),
+                                  nextScale,
+                                  desiredTimeScale );
+
                 }
 
-                nextSeries = upscaler.upscale( nextSeries, desiredTimeScale )
-                                     .getTimeSeries();
+                // Transform?
+                if ( Objects.nonNull( transformer ) )
+                {
+                    nextSeries = TimeSeriesSlicer.transform( nextSeries, transformer );
+                }
 
-                LOGGER.debug( "Upscaled the climatological time-series {} from {} to {}.",
-                              nextSeries.hashCode(),
-                              nextScale,
-                              desiredTimeScale );
+                // Filter inadmissible values. Do this LAST because a transformer may produce 
+                // non-finite values
+                nextSeries = TimeSeriesSlicer.filter( nextSeries, admissibleValue );
 
+                existingMetadata = nextSeries.getMetadata();
+                builder.addEvents( nextSeries.getEvents() );
+
+                TimeSeriesMetadata metadata =
+                        new TimeSeriesMetadata.Builder( existingMetadata ).setTimeScale( desiredTimeScale )
+                                                                          .build();
+                builder.setMetadata( metadata );
+
+                TimeSeries<L> climatologyAtScale = builder.build();
+
+                returnMe.add( climatologyAtScale );
             }
 
-            // Transform?
-            if ( Objects.nonNull( transformer ) )
-            {
-                nextSeries = TimeSeriesSlicer.transform( nextSeries, transformer );
-            }
+            LOGGER.debug( "Created {} climatological time-series.", returnMe.size() );
 
-            // Filter inadmissible values. Do this LAST because a transformer may produce 
-            // non-finite values
-            nextSeries = TimeSeriesSlicer.filter( nextSeries, admissibleValue );
-
-            existingMetadata = nextSeries.getMetadata();
-            builder.addEvents( nextSeries.getEvents() );
-
-            TimeSeriesMetadata metadata =
-                    new TimeSeriesMetadata.Builder( existingMetadata ).setTimeScale( desiredTimeScale )
-                                                                      .build();
-            builder.setMetadata( metadata );
-
-            TimeSeries<L> climatologyAtScale = builder.build();
-
-            returnMe.add( climatologyAtScale );
-        }
-
-        LOGGER.debug( "Created {} climatological time-series.", returnMe.size() );
-
-        return returnMe::stream;
+            return returnMe.stream();
+        };
     }
 
 }

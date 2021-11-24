@@ -465,7 +465,7 @@ class GraphicsClient
         this.isClosed = new AtomicBoolean();
 
         // Client identifier = identifier of the one subscriber it composes
-        String subscriberId = EvaluationEventUtilities.getUniqueId();
+        String subscriberId = EvaluationEventUtilities.getId();
 
         // A factory that creates consumers on demand
         this.consumerFactory = new GraphicsConsumerFactory( subscriberId );

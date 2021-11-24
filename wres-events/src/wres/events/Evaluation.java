@@ -910,7 +910,7 @@ public class Evaluation implements Closeable
         }
 
         /**
-         * Sets the evaluation identifier. See {@link EvaluationEventUtilities#getUniqueId()}.
+         * Sets the evaluation identifier. See {@link EvaluationEventUtilities#getId()}.
          * 
          * @param evaluationId the evaluation identifier
          * @return this builder 
@@ -1328,7 +1328,7 @@ public class Evaluation implements Closeable
 
         if ( Objects.isNull( internalId ) )
         {
-            internalId = EvaluationEventUtilities.getUniqueId();
+            internalId = EvaluationEventUtilities.getId();
         }
 
         this.evaluationId = internalId;
@@ -1470,7 +1470,7 @@ public class Evaluation implements Closeable
                                   String groupId )
     {
         // Published below, so increment by 1 here 
-        String messageId = "ID:" + this.getEvaluationId() + "-m" + EvaluationEventUtilities.getUniqueId();
+        String messageId = "ID:" + this.getEvaluationId() + "-m" + EvaluationEventUtilities.getId();
 
         // Create the metadata
         Map<MessageProperty, String> properties = new EnumMap<>( MessageProperty.class );

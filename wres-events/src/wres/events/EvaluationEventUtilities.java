@@ -31,7 +31,7 @@ public class EvaluationEventUtilities
      * @return a unique identifier
      */
 
-    public static String getUniqueId()
+    public static String getId()
     {
         return EvaluationEventUtilities.ID_GENERATOR.generate();
     }

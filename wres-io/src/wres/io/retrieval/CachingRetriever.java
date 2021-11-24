@@ -12,7 +12,7 @@ import net.jcip.annotations.Immutable;
  * <p>Adds a wrapper to a {@link Supplier} that supplies a {@link Stream} of retrieved data. This allows the retrieved 
  * data to be cached locally for re-use. The data is acquired eagerly, on construction.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  * @param <T> the type of data to retrieve
  */
 @Immutable
@@ -20,7 +20,10 @@ public class CachingRetriever<T> implements Supplier<Stream<T>>
 {
 
     /** Cache of data.*/
-    private final List<T> cache;
+    private volatile List<T> cache;
+
+    /** The underlying retriever. */
+    private final Supplier<Stream<T>> retriever;
 
     /**
      * Provides an instance.
@@ -39,6 +42,21 @@ public class CachingRetriever<T> implements Supplier<Stream<T>>
     @Override
     public Stream<T> get()
     {
+        // Double-checked locking idiom with optimization to check the volatile cache only once
+        List<T> localCache = this.cache;
+        if ( Objects.isNull( localCache ) )
+        {
+            synchronized ( this )
+            {
+                localCache = this.cache;
+                if ( Objects.isNull( localCache ) )
+                {
+                    this.cache = localCache = this.retriever.get()
+                                                            .collect( Collectors.toUnmodifiableList() );
+                }
+            }
+        }
+
         return this.cache.stream();
     }
 
@@ -53,8 +71,7 @@ public class CachingRetriever<T> implements Supplier<Stream<T>>
     {
         Objects.requireNonNull( retriever );
 
-        this.cache = retriever.get()
-                              .collect( Collectors.toUnmodifiableList() );
+        this.retriever = retriever;
     }
 
 }
