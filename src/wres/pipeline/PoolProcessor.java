@@ -5,10 +5,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
@@ -47,9 +43,6 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 
     /** The evaluation. */
     private final Evaluation evaluation;
-
-    /** The executor service. */
-    private final ExecutorService executorService;
 
     /** The pairs writer. */
     private final PairsWriter<L, R> pairsWriter;
@@ -96,9 +89,6 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         /** The evaluation. */
         private Evaluation evaluation;
 
-        /** The executor service. */
-        private ExecutorService executorService;
-
         /** The pairs writer. */
         private PairsWriter<L, R> pairsWriter;
 
@@ -107,9 +97,6 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 
         /** Monitor. */
         private EvaluationEvent monitor;
-
-        /** A unique identifier for the group to which this pool belongs for messaging purposes. */
-        private String messageGroupId;
 
         /** The pool supplier. */
         private Supplier<Pool<TimeSeries<Pair<L, R>>>> poolSupplier;
@@ -147,16 +134,6 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         }
 
         /**
-         * @param executorService the executor service to set
-         * @return this builder
-         */
-        Builder<L, R> setExecutorService( ExecutorService executorService )
-        {
-            this.executorService = executorService;
-            return this;
-        }
-
-        /**
          * @param pairsWriter the pairsWriter to set
          * @return this builder
          */
@@ -183,16 +160,6 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         Builder<L, R> setMonitor( EvaluationEvent monitor )
         {
             this.monitor = monitor;
-            return this;
-        }
-
-        /**
-         * @param messageGroupId the groupIdForMessaging to set
-         * @return this builder
-         */
-        Builder<L, R> setMessageGroupId( String messageGroupId )
-        {
-            this.messageGroupId = messageGroupId;
             return this;
         }
 
@@ -266,59 +233,37 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
     @Override
     public PoolProcessingResult get()
     {
-        // Something published?
-        AtomicBoolean published = new AtomicBoolean();
+        // Get the pool
+        Pool<TimeSeries<Pair<L, R>>> pool = this.poolSupplier.get();
 
-        // Behold, the pool processing pipeline
-        CompletableFuture<Void> pipeline =
-                // Retrieve the pairs                
-                CompletableFuture.supplyAsync( this.poolSupplier, this.executorService )
-                                 // Write the main pairs, as needed
-                                 .thenApply( this.getPairWritingTask( false, this.pairsWriter, this.projectConfig ) )
-                                 // Write the baseline pairs, as needed
-                                 .thenApply( this.getPairWritingTask( true, this.basePairsWriter, this.projectConfig ) )
-                                 // Compute the statistics
-                                 .thenApply( this.getStatisticsProcessingTask( this.metricProcessors,
-                                                                               this.projectConfig,
-                                                                               this.traceCountEstimator ) )
-                                 // Publish the statistics for awaiting format consumers
-                                 .thenAcceptAsync( statistics -> {
+        // Compute the statistics
+        List<StatisticsStore> statistics = this.getStatisticsProcessingTask( this.metricProcessors,
+                                                                             this.projectConfig,
+                                                                             this.traceCountEstimator )
+                                               .apply( pool );
 
-                                     boolean success = this.publish( this.evaluation,
-                                                                     statistics,
-                                                                     this.getMessageGroupId() );
+        // Publish the statistics 
+        boolean published = this.publish( this.evaluation,
+                                          statistics,
+                                          this.getMessageGroupId() );
 
-                                     // Notify that something was published
-                                     // This is needed to confirm group completion - cannot complete a message
-                                     // group if nothing was published to it.
-                                     if ( success )
-                                     {
-                                         published.set( true );
-                                     }
+        // Register publication of the pool with the pool group tracker
+        this.poolGroupTracker.registerPublication( this.getMessageGroupId(), published );
 
-                                 },
-                                                   // Consuming happens in the product thread pool and publishing
-                                                   // should happen in a different one because production is
-                                                   // flow-controlled with respect to consumption using a naive 
-                                                   // blocking approach, which would otherwise risk deadlock. 
-                                                   this.executorService );
+        // TODO: extract the pair writing to the product writers, i.e., publish the pairs
+        // Write the main pairs
+        this.getPairWritingTask( false,
+                                 this.pairsWriter,
+                                 this.projectConfig )
+            .apply( pool );
 
-        // Complete all tasks or one exceptionally
-        try
-        {
-            // Wait for completion of the pool
-            pipeline.join();
+        // Write any baseline pairs, as needed
+        this.getPairWritingTask( true,
+                                 this.basePairsWriter,
+                                 this.projectConfig )
+            .apply( pool );
 
-            // Register publication of the pool with the pool group tracker
-            this.poolGroupTracker.registerPublication( this.getMessageGroupId(), published.get() );
-        }
-        catch ( CompletionException e )
-        {
-            // Otherwise, chain and propagate the exception up to the top.
-            throw new WresProcessingException( this.errorMessage, e );
-        }
-
-        return new PoolProcessingResult( this.poolRequest, published.get() );
+        return new PoolProcessingResult( this.poolRequest, published );
     }
 
     /**
@@ -502,12 +447,10 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
     private PoolProcessor( Builder<L, R> builder )
     {
         this.projectConfig = builder.projectConfig;
-        this.executorService = builder.executorService;
         this.pairsWriter = builder.pairsWriter;
         this.basePairsWriter = builder.basePairsWriter;
         this.evaluation = builder.evaluation;
         this.monitor = builder.monitor;
-        this.messageGroupId = builder.messageGroupId;
         this.poolSupplier = builder.poolSupplier;
         this.poolRequest = builder.poolRequest;
         this.metricProcessors = List.copyOf( builder.metricProcessors ); // Validates nullity
@@ -516,14 +459,15 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         this.poolGroupTracker = builder.poolGroupTracker;
 
         Objects.requireNonNull( this.projectConfig );
-        Objects.requireNonNull( this.executorService );
         Objects.requireNonNull( this.evaluation );
         Objects.requireNonNull( this.monitor );
-        Objects.requireNonNull( this.messageGroupId );
         Objects.requireNonNull( this.poolSupplier );
         Objects.requireNonNull( this.poolRequest );
         Objects.requireNonNull( this.traceCountEstimator );
         Objects.requireNonNull( this.poolGroupTracker );
+
+        // Set the message group identifier
+        this.messageGroupId = poolGroupTracker.getGroupId( this.poolRequest );
     }
 
 }

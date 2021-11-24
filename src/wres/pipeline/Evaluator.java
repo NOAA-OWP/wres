@@ -32,7 +32,6 @@ import wres.config.Validation;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.io.concurrency.Executor;
 import wres.io.utilities.Database;
-import wres.pipeline.ProcessorHelper2.Executors;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 
@@ -94,7 +93,7 @@ public class Evaluator
         // Create a record of failure, but only commit if a failure actually occurs
         EvaluationEvent failure = EvaluationEvent.of();
         failure.begin();
-        
+
         if ( args.length != 1 )
         {
             String message = "Please correct project configuration file name and "
@@ -195,21 +194,20 @@ public class Evaluator
     public ExecutionResult evaluate( ProjectConfigPlus projectConfigPlus )
     {
         Objects.requireNonNull( projectConfigPlus );
-        
+
         EvaluationEvent monitor = EvaluationEvent.of();
         monitor.begin();
-        
+
         // Build a processing pipeline
         // Essential to use a separate thread pool for thresholds and metrics as ArrayBlockingQueue operates a FIFO 
         // policy. If dependent tasks (thresholds) are queued ahead of independent ones (metrics) in the same pool, 
-        // there is a DEADLOCK probability
+        // there is a DEADLOCK probability. Likewise, use a separate thread pool for dispatching pools and completing
+        // tasks within pools with the same number of threads in each.
 
-        ThreadFactory featureFactory = new BasicThreadFactory.Builder()
-                                                                       .namingPattern( "Pool Thread %d" )
-                                                                       .build();
-        ThreadFactory pairFactory = new BasicThreadFactory.Builder()
-                                                                    .namingPattern( "Pair Thread %d" )
+        ThreadFactory poolFactory = new BasicThreadFactory.Builder()
+                                                                    .namingPattern( "Pool Thread %d" )
                                                                     .build();
+
         ThreadFactory thresholdFactory = new BasicThreadFactory.Builder()
                                                                          .namingPattern( "Threshold Dispatch Thread %d" )
                                                                          .build();
@@ -224,8 +222,6 @@ public class Evaluator
         // Name our queues in order to easily monitor them
         BlockingQueue<Runnable> poolQueue = new ArrayBlockingQueue<>( innerSystemSettings.getMaximumPoolThreads()
                                                                       + 20000 );
-        BlockingQueue<Runnable> pairQueue =
-                new ArrayBlockingQueue<>( innerSystemSettings.getMaximumPairThreads() + 20000 );
         BlockingQueue<Runnable> thresholdQueue = new LinkedBlockingQueue<>();
         BlockingQueue<Runnable> metricQueue =
                 new ArrayBlockingQueue<>( innerSystemSettings.getMaximumMetricThreads() + 20000 );
@@ -238,15 +234,7 @@ public class Evaluator
                                                                   innerSystemSettings.poolObjectLifespan(),
                                                                   TimeUnit.MILLISECONDS,
                                                                   poolQueue,
-                                                                  featureFactory );
-
-        // Processes pairs       
-        ThreadPoolExecutor pairExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumPairThreads(),
-                                                                  innerSystemSettings.getMaximumPairThreads(),
-                                                                  innerSystemSettings.poolObjectLifespan(),
-                                                                  TimeUnit.MILLISECONDS,
-                                                                  pairQueue,
-                                                                  pairFactory );
+                                                                  poolFactory );
 
         // Dispatches thresholds
         ThreadPoolExecutor thresholdExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumThresholdThreads(),
@@ -274,7 +262,6 @@ public class Evaluator
 
         // Set the rejection policy to run in the caller, slowing producers           
         poolExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
-        pairExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         metricExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         productExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
 
@@ -285,7 +272,6 @@ public class Evaluator
         QueueMonitor queueMonitor = new QueueMonitor( innerDatabase,
                                                       ioExecutor,
                                                       poolQueue,
-                                                      pairQueue,
                                                       thresholdQueue,
                                                       metricQueue,
                                                       productQueue );
@@ -304,7 +290,6 @@ public class Evaluator
             // Reduce our set of executors to one object
             Executors executors = new Executors( ioExecutor,
                                                  poolExecutor,
-                                                 pairExecutor,
                                                  thresholdExecutor,
                                                  metricExecutor,
                                                  productExecutor );
@@ -356,7 +341,6 @@ public class Evaluator
             shutDownGracefully( productExecutor );
             shutDownGracefully( metricExecutor );
             shutDownGracefully( thresholdExecutor );
-            shutDownGracefully( pairExecutor );
             shutDownGracefully( poolExecutor );
             lockManager.shutdown();
         }
@@ -413,7 +397,6 @@ public class Evaluator
         private final Database database;
         private final Executor executor;
         private final Queue<?> poolQueue;
-        private final Queue<?> pairQueue;
         private final Queue<?> thresholdQueue;
         private final Queue<?> metricQueue;
         private final Queue<?> productQueue;
@@ -421,7 +404,6 @@ public class Evaluator
         QueueMonitor( Database database,
                       Executor executor,
                       Queue<?> poolQueue,
-                      Queue<?> pairQueue,
                       Queue<?> thresholdQueue,
                       Queue<?> metricQueue,
                       Queue<?> productQueue )
@@ -429,7 +411,6 @@ public class Evaluator
             this.database = database;
             this.executor = executor;
             this.poolQueue = poolQueue;
-            this.pairQueue = pairQueue;
             this.thresholdQueue = thresholdQueue;
             this.metricQueue = metricQueue;
             this.productQueue = productQueue;
@@ -439,7 +420,6 @@ public class Evaluator
         public void run()
         {
             int poolCount = 0;
-            int pairCount = 0;
             int ioCount = executor.getIoExecutorQueueTaskCount();
             int databaseCount = database.getDatabaseQueueTaskCount();
             int hiPriCount = executor.getHiPriIoExecutorQueueTaskCount();
@@ -450,11 +430,6 @@ public class Evaluator
             if ( this.poolQueue != null )
             {
                 poolCount = this.poolQueue.size();
-            }
-
-            if ( this.pairQueue != null )
-            {
-                pairCount = this.pairQueue.size();
             }
 
             if ( this.thresholdQueue != null )
@@ -472,11 +447,10 @@ public class Evaluator
                 productCount = this.productQueue.size();
             }
 
-            LOGGER.info( "IoQ={}, IoHiPriQ={}, PoolQ={}, PairQ={}, DatabaseQ={}, ThresholdQ={}, MetricQ={}, ProductQ={}",
+            LOGGER.info( "IoQ={}, IoHiPriQ={}, PoolQ={}, DatabaseQ={}, ThresholdQ={}, MetricQ={}, ProductQ={}",
                          ioCount,
                          hiPriCount,
                          poolCount,
-                         pairCount,
                          databaseCount,
                          thresholdCount,
                          metricCount,
@@ -527,6 +501,115 @@ public class Evaluator
         DatabaseLockManager getDatabaseLockManager()
         {
             return this.databaseLockManager;
+        }
+    }
+
+    /**
+     * A value object that a) reduces count of args for some methods and
+     * b) provides names for those objects. Can be removed if we can reduce the
+     * count of dependencies in some of our methods, or if we prefer to see all
+     * dependencies clearly laid out in the method signature.
+     */
+
+    static class Executors
+    {
+
+        /**
+         * Executor for input/output operations, such as ingest.
+         */
+
+        private final Executor ioExecutor;
+
+        /**
+         * The pool executor.
+         */
+        private final ExecutorService poolExecutor;
+
+        /**
+         * The threshold executor.
+         */
+        private final ExecutorService thresholdExecutor;
+
+        /**
+         * The metric executor.
+         */
+        private final ExecutorService metricExecutor;
+
+        /**
+         * The product executor.
+         */
+        private final ExecutorService productExecutor;
+
+        /**
+         * Build. 
+         * 
+         * @param ioExecutor the executor for io operations
+         * @param poolExecutor the outer pool executor
+         * @param thresholdExecutor the threshold executor
+         * @param metricExecutor the metric executor
+         * @param productExecutor the product executor
+         */
+        Executors( Executor ioExecutor,
+                   ExecutorService poolExecutor,
+                   ExecutorService thresholdExecutor,
+                   ExecutorService metricExecutor,
+                   ExecutorService productExecutor )
+        {
+            this.ioExecutor = ioExecutor;
+            this.poolExecutor = poolExecutor;
+            this.thresholdExecutor = thresholdExecutor;
+            this.metricExecutor = metricExecutor;
+            this.productExecutor = productExecutor;
+        }
+
+        /**
+         * Returns the {@link ExecutorService} for pool tasks.
+         * @return the outer pool executor
+         */
+
+        ExecutorService getPoolExecutor()
+        {
+            return this.poolExecutor;
+        }
+
+        /**
+         * Returns the {@link ExecutorService} for thresholds.
+         * @return the threshold executor
+         */
+
+        ExecutorService getThresholdExecutor()
+        {
+            return this.thresholdExecutor;
+        }
+
+        /**
+         * Returns the {@link ExecutorService} for metrics.
+         * @return the metric executor
+         */
+
+        ExecutorService getMetricExecutor()
+        {
+            return this.metricExecutor;
+        }
+
+        /**
+         * Returns the {@link ExecutorService} for products.
+         * @return the product executor
+         */
+
+        ExecutorService getProductExecutor()
+        {
+            return this.productExecutor;
+        }
+
+        /**
+         * Returns the {@link Executor} for io operations.
+         * @return the io executor
+         */
+
+        Executor getIoExecutor()
+        {
+            return this.ioExecutor;
         }
     }
 

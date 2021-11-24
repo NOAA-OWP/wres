@@ -1,5 +1,6 @@
 package wres.datamodel.pools;
 
+import java.util.Comparator;
 import java.util.Objects;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -16,7 +17,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
  * @author James Brown
  */
 
-public class PoolRequest
+public class PoolRequest implements Comparable<PoolRequest>
 {
     /** The metadata for the left/right data within the pool. */
     private final PoolMetadata leftRight;
@@ -106,6 +107,24 @@ public class PoolRequest
                                                                                      this.getMetadataForBaseline() )
                                                                             .toString();
     }
+    
+    @Override
+    public int compareTo( PoolRequest o )
+    {
+        Objects.requireNonNull( o );
+
+        int compare = this.getMetadata()
+                          .compareTo( o.getMetadata() );
+
+        if ( compare != 0 )
+        {
+            return compare;
+        }
+
+        return Objects.compare( this.getMetadataForBaseline(),
+                                o.getMetadataForBaseline(),
+                                Comparator.nullsFirst( Comparator.naturalOrder() ) );
+    }
 
     /**
      * Hidden constructor.
@@ -121,5 +140,4 @@ public class PoolRequest
         this.leftRight = leftRight;
         this.leftBaseline = leftBaseline;
     }
-
 }

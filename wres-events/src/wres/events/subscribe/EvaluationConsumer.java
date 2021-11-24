@@ -715,7 +715,7 @@ class EvaluationConsumer
         }
 
         // Create the metadata
-        String messageId = "ID:" + this.getClientId() + "-m" + EvaluationEventUtilities.getUniqueId();
+        String messageId = "ID:" + this.getClientId() + "-m" + EvaluationEventUtilities.getId();
 
         ByteBuffer buffer = ByteBuffer.wrap( message.build()
                                                     .toByteArray() );

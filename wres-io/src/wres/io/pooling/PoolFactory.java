@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
@@ -15,6 +16,7 @@ import java.util.function.LongUnaryOperator;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -97,6 +99,147 @@ public class PoolFactory
 
     /**
      * Create pools for single-valued data. This method will attempt to retrieve and re-use data that is common to 
+     * multiple pools. In particular, it will cache the climatological data for all pool requests that belong to a 
+     * single feature group because the climatological data is shared across feature groups.
+     * 
+     * TODO: further optimize to re-use datasets that are shared between multiple feature groups, other than 
+     * climatology, such as one feature that is part of feature groups.
+     * 
+     * @param project the project for which pools are required, not null
+     * @param poolRequests the pool requests, not null
+     * @param retrieverFactory the retriever factory, not null
+     * @return a list of suppliers that supply pools of pairs
+     * @throws NullPointerException if the input is null
+     * @throws IllegalArgumentException if the project is not consistent with the generation of pools for single-valued
+     *            data
+     */
+
+    public static List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> getSingleValuedPools( Project project,
+                                                                                               List<PoolRequest> poolRequests,
+                                                                                               RetrieverFactory<Double, Double> retrieverFactory )
+    {
+        Objects.requireNonNull( project, "Cannot create pools from a null project." );
+        Objects.requireNonNull( poolRequests, "Cannot create pools without list of pool requests." );
+        Objects.requireNonNull( retrieverFactory, "Cannot create pools without a retriever factory." );
+
+        // Create one collection of pools for each feature group in the requests
+        Map<FeatureGroup, List<PoolRequest>> groups =
+                poolRequests.stream()
+                            .collect( Collectors.groupingBy( e -> e.getMetadata().getFeatureGroup() ) );
+
+        List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> suppliers = new ArrayList<>();
+
+        for ( Map.Entry<FeatureGroup, List<PoolRequest>> nextEntry : groups.entrySet() )
+        {
+            FeatureGroup featureGroup = nextEntry.getKey();
+            List<PoolRequest> nextPoolRequests = nextEntry.getValue();
+
+            LOGGER.debug( "Building pool suppliers for feature group {}.", featureGroup );
+
+            // Create a retriever factory that caches the climatological data for all pool requests if needed
+            RetrieverFactory<Double, Double> cachingFactory = retrieverFactory;
+            if ( project.hasProbabilityThresholds() || project.hasGeneratedBaseline() )
+            {
+                LOGGER.debug( "Building a caching retriever factory to cache the retrieval of the climatological data "
+                              + "across all pools within feature group {}.",
+                              featureGroup );
+
+                cachingFactory = new ClimatologyCachedRetrieverFactory<>( retrieverFactory );
+            }
+
+            List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> nextSuppliers =
+                    PoolFactory.getSingleValuedPoolsInner( project, nextPoolRequests, cachingFactory );
+
+            suppliers.addAll( nextSuppliers );
+        }
+
+        return Collections.unmodifiableList( suppliers );
+    }
+
+    /**
+     * Create pools for ensemble data. This method will attempt to retrieve and re-use data that is common to multiple 
+     * pools. In particular, it will cache the climatological data for all pool requests that belong to a single 
+     * feature group because the climatological data is shared across feature groups.
+     * 
+     * TODO: further optimize to re-use datasets that are shared between multiple feature groups, other than 
+     * climatology, such as one feature that is part of feature groups.
+     * 
+     * @param project the project for which pools are required, not null
+     * @param poolRequests the pool requests, not null
+     * @param retrieverFactory the retriever factory, not null
+     * @return a list of suppliers that supply pools of pairs
+     * @throws NullPointerException if the input is null
+     * @throws IllegalArgumentException if the project is not consistent with the generation of pools for ensemble data
+     */
+
+    public static List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> getEnsemblePools( Project project,
+                                                                                             List<PoolRequest> poolRequests,
+                                                                                             RetrieverFactory<Double, Ensemble> retrieverFactory )
+    {
+        Objects.requireNonNull( project, "Cannot create pools from a null project." );
+        Objects.requireNonNull( poolRequests, "Cannot create pools without list of pool requests." );
+        Objects.requireNonNull( retrieverFactory, "Cannot create pools without a retriever factory." );
+
+        // Create one collection of pools for each feature group in the requests
+        Map<FeatureGroup, List<PoolRequest>> groups =
+                poolRequests.stream()
+                            .collect( Collectors.groupingBy( e -> e.getMetadata().getFeatureGroup() ) );
+
+        List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> suppliers = new ArrayList<>();
+
+        for ( Map.Entry<FeatureGroup, List<PoolRequest>> nextEntry : groups.entrySet() )
+        {
+            FeatureGroup featureGroup = nextEntry.getKey();
+            List<PoolRequest> nextPoolRequests = nextEntry.getValue();
+
+            LOGGER.debug( "Building pool suppliers for feature group {}.", featureGroup );
+
+            // Create a retriever factory that caches the climatological data for all pool requests if needed
+            RetrieverFactory<Double, Ensemble> cachingFactory = retrieverFactory;
+            if ( project.hasProbabilityThresholds() || project.hasGeneratedBaseline() )
+            {
+                LOGGER.debug( "Building a caching retriever factory to cache the retrieval of the climatological data "
+                              + "across all pools within feature group {}.",
+                              featureGroup );
+
+                cachingFactory = new ClimatologyCachedRetrieverFactory<>( retrieverFactory );
+            }
+
+            List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> nextSuppliers =
+                    PoolFactory.getEnsemblePoolsInner( project, nextPoolRequests, cachingFactory );
+
+            suppliers.addAll( nextSuppliers );
+        }
+
+        return Collections.unmodifiableList( suppliers );
+    }
+
+    /**
+     * Generates the {@link PoolRequest} associated with a particular {@link Project} in order to drive pool creation.
+     * 
+     * @param evaluation the evaluation description
+     * @param project the project
+     * @return the pool requests
+     * @throws NullPointerException if any input is null
+     * @throws PoolCreationException if the pool could not be created for any other reason
+     */
+
+    public static List<PoolRequest> getPoolRequests( Evaluation evaluation,
+                                                     Project project )
+    {
+        Objects.requireNonNull( project );
+
+        Set<FeatureGroup> featureGroups = project.getFeatureGroups();
+        ProjectConfig projectConfig = project.getProjectConfig();
+
+        return featureGroups.stream()
+                            .flatMap( nextGroup -> PoolFactory.getPoolRequests( evaluation, projectConfig, nextGroup )
+                                                              .stream() )
+                            .collect( Collectors.toUnmodifiableList() );
+    }
+
+    /**
+     * Create pools for single-valued data. This method will attempt to retrieve and re-use data that is common to 
      * multiple pools. Thus, it is generally better to provide a list of pool requests that represent connected pools, 
      * such as pools that all belong to the same feature group, rather than supplying a single pool or a long list of 
      * unconnected pools, such as pools that belong to many feature groups.
@@ -114,9 +257,9 @@ public class PoolFactory
      *            data
      */
 
-    public static List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> getSingleValuedPools( Project project,
-                                                                                               List<PoolRequest> poolRequests,
-                                                                                               RetrieverFactory<Double, Double> retrieverFactory )
+    private static List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> getSingleValuedPoolsInner( Project project,
+                                                                                                     List<PoolRequest> poolRequests,
+                                                                                                     RetrieverFactory<Double, Double> retrieverFactory )
     {
         Objects.requireNonNull( project, "Cannot create pools from a null project." );
         Objects.requireNonNull( poolRequests, "Cannot create pools without list of pool requests." );
@@ -157,7 +300,7 @@ public class PoolFactory
         // Create a feature-specific baseline generator function (e.g., persistence), if required
         Function<Set<FeatureKey>, UnaryOperator<TimeSeries<Double>>> baselineGenerator = null;
         // Generated baseline declared?
-        if ( ConfigHelper.hasGeneratedBaseline( baselineConfig ) )
+        if ( project.hasGeneratedBaseline() )
         {
             LOGGER.debug( "While creating pools for project '{}', discovered a baseline "
                           + "to generate from a data source.",
@@ -176,16 +319,9 @@ public class PoolFactory
         UnaryOperator<Event<Double>> rightTransformer =
                 next -> Event.of( next.getTime(), leftTransformer.applyAsDouble( next.getValue() ) );
 
-        // Create a retriever factory that caches the climatological data for all pool requests if needed
-        RetrieverFactory<Double, Double> cachingFactory = retrieverFactory;
-        if( project.hasProbabilityThresholds() )
-        {
-            cachingFactory = new ClimatologyCachedRetrieverFactory<>( retrieverFactory );
-        }
-        
         // Build and return the pool suppliers
         return new PoolsGenerator.Builder<Double, Double>().setProject( project )
-                                                           .setRetrieverFactory( cachingFactory )
+                                                           .setRetrieverFactory( retrieverFactory )
                                                            .setPoolRequests( poolRequests )
                                                            .setBaselineGenerator( baselineGenerator )
                                                            .setLeftTransformer( leftTransformer::applyAsDouble )
@@ -207,27 +343,18 @@ public class PoolFactory
      * unconnected pools, such as pools that belong to many feature groups. Specifically, it will cache the 
      * climatological data for all pool requests if climatological data is needed.
      * 
-     * TODO: analyze the pool requests and find groups with shared data, i.e., automatically analyze/optimize. In that
-     * case, there should be one call to this method per evaluation, which should then forward each group of requests 
-     * for batched creation of suppliers, as this method currently assumes the caller will do.
-     * 
      * @param project the project for which pools are required, not null
      * @param poolRequests the pool requests, not null
      * @param retrieverFactory the retriever factory, not null
      * @return a list of suppliers that supply pools of pairs
      * @throws NullPointerException if the input is null
-     * @throws IllegalArgumentException if the project is not consistent with the generation of pools for single-valued
-     *            data
+     * @throws IllegalArgumentException if the project is not consistent with the generation of pools for ensemble data
      */
 
-    public static List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> getEnsemblePools( Project project,
-                                                                                             List<PoolRequest> poolRequests,
-                                                                                             RetrieverFactory<Double, Ensemble> retrieverFactory )
+    private static List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> getEnsemblePoolsInner( Project project,
+                                                                                                   List<PoolRequest> poolRequests,
+                                                                                                   RetrieverFactory<Double, Ensemble> retrieverFactory )
     {
-        Objects.requireNonNull( project, "Cannot create pools from a null project." );
-        Objects.requireNonNull( poolRequests, "Cannot create pools without list of pool requests." );
-        Objects.requireNonNull( retrieverFactory, "Cannot create pools without a retriever factory." );
-
         ProjectConfig projectConfig = project.getProjectConfig();
         PairConfig pairConfig = projectConfig.getPair();
         Inputs inputsConfig = projectConfig.getInputs();
@@ -275,16 +402,9 @@ public class PoolFactory
         UnaryOperator<Event<Ensemble>> baselineTransformer = PoolFactory.getEnsembleTransformer( leftTransformer,
                                                                                                  removeMemberByValidYearBaseline );
 
-        // Create a retriever factory that caches the climatological data for all pool requests if needed
-        RetrieverFactory<Double, Ensemble> cachingFactory = retrieverFactory;
-        if( project.hasProbabilityThresholds() )
-        {
-            cachingFactory = new ClimatologyCachedRetrieverFactory<>( retrieverFactory );
-        }
-        
         // Build and return the pool suppliers
         return new PoolsGenerator.Builder<Double, Ensemble>().setProject( project )
-                                                             .setRetrieverFactory( cachingFactory )
+                                                             .setRetrieverFactory( retrieverFactory )
                                                              .setPoolRequests( poolRequests )
                                                              .setLeftTransformer( leftTransformer::applyAsDouble )
                                                              .setRightTransformer( rightTransformer )
@@ -307,13 +427,13 @@ public class PoolFactory
      * @param projectConfig the project declaration
      * @param featureGroup the feature group
      * @return the pool requests
-     * @throws NullPointerException if the input is null
+     * @throws NullPointerException if any input is null
      * @throws PoolCreationException if the pool could not be created for any other reason
      */
 
-    public static List<PoolRequest> getPoolRequests( Evaluation evaluation,
-                                                     ProjectConfig projectConfig,
-                                                     FeatureGroup featureGroup )
+    private static List<PoolRequest> getPoolRequests( Evaluation evaluation,
+                                                      ProjectConfig projectConfig,
+                                                      FeatureGroup featureGroup )
     {
         Objects.requireNonNull( evaluation );
         Objects.requireNonNull( projectConfig );
@@ -705,7 +825,7 @@ public class PoolFactory
             Supplier<Stream<TimeSeries<L>>> delegated = this.delegate.getLeftRetriever( features );
             return CachingRetriever.of( delegated );
         }
-        
+
         @Override
         public Supplier<Stream<TimeSeries<L>>> getLeftRetriever( Set<FeatureKey> features )
         {

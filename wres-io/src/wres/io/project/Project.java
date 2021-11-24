@@ -1399,6 +1399,14 @@ public class Project
         return this.getBaseline() != null;
     }
 
+    /**
+     * @return Whether or not there is a generated baseline
+     */
+    public boolean hasGeneratedBaseline()
+    {
+        return ConfigHelper.hasGeneratedBaseline( this.getBaseline() );
+    }
+    
     public long getId()
     {
         return this.projectId;

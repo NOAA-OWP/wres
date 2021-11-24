@@ -24,8 +24,7 @@
     <maximum_thread_count>7</maximum_thread_count>
     <maximum_archive_threads>5</maximum_archive_threads>
     <maximum_web_client_threads>6</maximum_web_client_threads>
-    <maximum_pool_threads>2</maximum_pool_threads>
-    <maximum_pair_threads>6</maximum_pair_threads>
+    <maximum_pool_threads>6</maximum_pool_threads>
     <maximum_threshold_threads>1</maximum_threshold_threads>
     <maximum_metric_threads>1</maximum_metric_threads>
     <maximum_product_threads>3</maximum_product_threads>

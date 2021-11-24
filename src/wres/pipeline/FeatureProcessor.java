@@ -175,7 +175,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         this.sharedWriters = sharedWriters;
         this.evaluation = localEvaluation;
         this.monitor = localMonitor;
-        this.groupIdForMessaging = EvaluationEventUtilities.getUniqueId();
+        this.groupIdForMessaging = EvaluationEventUtilities.getId();
 
         // Error message
         this.errorMessage = "While processing feature group " + featureGroup;

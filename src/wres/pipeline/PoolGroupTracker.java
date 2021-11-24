@@ -1,22 +1,30 @@
 package wres.pipeline;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.datamodel.pools.PoolRequest;
+import wres.datamodel.space.FeatureGroup;
 import wres.events.Evaluation;
+import wres.events.EvaluationEventUtilities;
 
 /**
  * Tracks the publication of statistics messages that belong to groups of pools and marks the publication of a group
  * complete when all statistics messages have been published for that group of pools. A group must be formally completed 
  * so that consumers can be notified that all expected statistics are ready for some grouped operation, such as the 
- * creation of a graphic from a group of pools (e.g., all lead durations).
+ * creation of a graphic from a group of pools (e.g., all lead durations). The grouping logic is embedded within this
+ * class and is currently based on feature groups. The API itself is more general and allows for this implementation 
+ * logic to change by adding a new static constructor, akin to {@link #ofFeatureGroupTracker(List)}.
  *  
  * @author James Brown
  */
@@ -31,6 +39,56 @@ class PoolGroupTracker
 
     /** The evaluation whose message groups should be marked complete. */
     private final Evaluation evaluation;
+
+    /** The pool group identity associated with each {@link PoolRequest}. */
+    private final Map<PoolRequest, String> groupIdentities;
+
+    /**
+     * Builds a message group tracker that tracks messages by feature group.
+     * @param evaluation the evaluation
+     * @param poolRequests the pool requests
+     * @return the tracker instance
+     * @throws NullPointerException if either input is null
+     */
+
+    static PoolGroupTracker ofFeatureGroupTracker( Evaluation evaluation, List<PoolRequest> poolRequests )
+    {
+        // Group the requests by feature group and then identify each group
+        Map<FeatureGroup, List<PoolRequest>> groups =
+                poolRequests.stream()
+                            .collect( Collectors.groupingBy( e -> e.getMetadata().getFeatureGroup() ) );
+
+        Map<PoolRequest, String> groupIdentities = new HashMap<>();
+
+        for ( Map.Entry<FeatureGroup, List<PoolRequest>> nextEntry : groups.entrySet() )
+        {
+            List<PoolRequest> nextRequests = nextEntry.getValue();
+            String identity = EvaluationEventUtilities.getId();
+            nextRequests.forEach( next -> groupIdentities.put( next, identity ) );
+        }
+
+        return new PoolGroupTracker( evaluation, groupIdentities );
+    }
+
+    /**
+     * @param poolRequest the pool request
+     * @return the group identity for the pool request
+     * @throws IllegalArgumentException if the pool request does not exist in this context
+     */
+
+    String getGroupId( PoolRequest poolRequest )
+    {
+        String identity = groupIdentities.get( poolRequest );
+
+        if ( Objects.isNull( identity ) )
+        {
+            throw new IllegalArgumentException( "Could not identify a message group for the specified pool "
+                                                + "request: "
+                                                + poolRequest );
+        }
+
+        return identity;
+    }
 
     /**
      * Registers a message that belongs to a group as published or otherwise complete (no data to publish).
@@ -60,71 +118,27 @@ class PoolGroupTracker
     }
 
     /**
-     * Incrementally build an instance by adding groups.
-     */
-
-    static class Builder
-    {
-
-        /** The evaluation. */
-        private Evaluation evaluation;
-
-        /** The groups. */
-        private final Map<String, Integer> groups = new HashMap<>();
-
-        /**
-         * @param groupId the group identifier
-         * @param groupSize the group size
-         * @return this builder
-         */
-
-        Builder addGroup( String groupId, int groupSize )
-        {
-            this.groups.put( groupId, groupSize );
-            return this;
-        }
-
-        /**
-         * @param evaluation the evaluation
-         * @return this builder
-         */
-        Builder setEvaluation( Evaluation evaluation )
-        {
-            this.evaluation = evaluation;
-            return this;
-        }
-
-        /**
-         * @return an instance
-         */
-
-        PoolGroupTracker build()
-        {
-            return new PoolGroupTracker( this );
-        }
-        
-        /**
-         * Package private constructor.
-         */
-        Builder()
-        {
-        }
-    }
-
-    /**
      * @param builder the builder
      */
 
-    private PoolGroupTracker( Builder builder )
+    private PoolGroupTracker( Evaluation evaluation, Map<PoolRequest, String> groupIdentities )
     {
-        this.evaluation = builder.evaluation;
+        this.evaluation = evaluation;
         this.groups = new HashMap<>();
-        Map<String, Integer> innerGroups = Map.copyOf( builder.groups );
+        this.groupIdentities = new HashMap<>( groupIdentities );
 
-        for ( Map.Entry<String, Integer> nextGroup : innerGroups.entrySet() )
+        // Count the number of pools per group identity
+        Map<String, Long> counts = groupIdentities.values()
+                                                  .stream()
+                                                  .collect( Collectors.groupingBy( Function.identity(),
+                                                                                   Collectors.counting() ) );
+
+        LOGGER.debug( "Discovered the following number of pools per group identity: {}.", counts );
+
+        for ( Map.Entry<String, Long> nextGroup : counts.entrySet() )
         {
             String nextGroupId = nextGroup.getKey();
-            Integer nextGroupSize = nextGroup.getValue();
+            Long nextGroupSize = nextGroup.getValue();
             CompletionTracker nextTracker = new CompletionTracker( this.evaluation, nextGroupId, nextGroupSize );
             this.groups.put( nextGroupId, nextTracker );
         }
@@ -152,7 +166,7 @@ class PoolGroupTracker
          * and the flag is true, group completion occurs.
          */
 
-        private final AtomicReference<Pair<Integer, Boolean>> publicationState;
+        private final AtomicReference<Pair<Long, Boolean>> publicationState;
 
         /**
          * Creates an instance.
@@ -162,7 +176,7 @@ class PoolGroupTracker
 
         private CompletionTracker( Evaluation evaluation,
                                    String groupId,
-                                   int groupSize )
+                                   long groupSize )
         {
             Objects.requireNonNull( groupId );
 
@@ -183,13 +197,13 @@ class PoolGroupTracker
 
         private void registerPublication( boolean actuallyPublished )
         {
-            UnaryOperator<Pair<Integer, Boolean>> updater = next -> {
-                int newCount = next.getKey() - 1;
+            UnaryOperator<Pair<Long, Boolean>> updater = next -> {
+                long newCount = next.getKey() - 1;
                 boolean published = next.getRight() || actuallyPublished;
                 return Pair.of( newCount, published );
             };
 
-            Pair<Integer, Boolean> result = this.publicationState.updateAndGet( updater );
+            Pair<Long, Boolean> result = this.publicationState.updateAndGet( updater );
 
             if ( result.getLeft() == 0 && result.getRight().booleanValue() )
             {
