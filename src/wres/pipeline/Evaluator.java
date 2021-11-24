@@ -303,12 +303,12 @@ public class Evaluator
             }
 
             // Process the configuration
-            Pair<Set<Path>, String> innerPathsAndProjectHash = ProcessorHelper2.processEvaluation( innerSystemSettings,
-                                                                                                   databaseServices,
-                                                                                                   projectConfigPlus,
-                                                                                                   executors,
-                                                                                                   this.getBrokerConnectionFactory(),
-                                                                                                   monitor );
+            Pair<Set<Path>, String> innerPathsAndProjectHash = ProcessorHelper.processEvaluation( innerSystemSettings,
+                                                                                                  databaseServices,
+                                                                                                  projectConfigPlus,
+                                                                                                  executors,
+                                                                                                  this.getBrokerConnectionFactory(),
+                                                                                                  monitor );
             pathsWrittenTo.addAll( innerPathsAndProjectHash.getLeft() );
             projectHash = innerPathsAndProjectHash.getRight();
             monitor.setDataHash( projectHash );
