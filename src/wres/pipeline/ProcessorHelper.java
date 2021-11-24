@@ -16,6 +16,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
+import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -26,16 +27,21 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.ProjectConfigs;
+import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;
+import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.events.Evaluation;
 import wres.events.EvaluationEventUtilities;
 import wres.events.subscribe.ConsumerFactory;
@@ -50,6 +56,9 @@ import wres.io.data.caching.MeasurementUnits;
 import wres.io.geography.FeatureFinder;
 import wres.io.pooling.PoolFactory;
 import wres.io.project.Project;
+import wres.io.retrieval.EnsembleRetrieverFactory;
+import wres.io.retrieval.RetrieverFactory;
+import wres.io.retrieval.SingleValuedRetrieverFactory;
 import wres.io.retrieval.UnitMapper;
 import wres.io.thresholds.ThresholdReader;
 import wres.io.writing.SharedSampleDataWriters;
@@ -57,6 +66,10 @@ import wres.io.writing.WriteException;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
 import wres.pipeline.Evaluator.DatabaseServices;
+import wres.pipeline.Evaluator.Executors;
+import wres.pipeline.statistics.MetricProcessor;
+import wres.pipeline.statistics.MetricProcessorByTimeEnsemblePairs;
+import wres.pipeline.statistics.MetricProcessorByTimeSingleValuedPairs;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Consumer.Format;
 import wres.system.ProgressMonitor;
@@ -79,6 +92,14 @@ class ProcessorHelper
      */
 
     private static final String CLIENT_ID = EvaluationEventUtilities.getId();
+
+    /** A function that estimates the trace count of a pool that contains ensemble traces. */
+    private static final ToIntFunction<Pool<TimeSeries<Pair<Double, Ensemble>>>> ENSEMBLE_TRACE_COUNT_ESTIMATOR =
+            ProcessorHelper.getEnsembleTraceCountEstimator();
+
+    /** A function that estimates the trace count of a pool that contains single-valued traces. */
+    private static final ToIntFunction<Pool<TimeSeries<Pair<Double, Double>>>> SINGLE_VALUED_TRACE_COUNT_ESTIMATOR =
+            ProcessorHelper.getSingleValuedTraceCountEstimator();
 
     /**
      * Processes an evaluation.
@@ -188,13 +209,14 @@ class ProcessorHelper
                                                                          monitor );
 
             // Open an evaluation, to be closed on completion or stopped on exception
-            Pair<Evaluation, String> evaluationAndProjectHash = ProcessorHelper.processProjectConfig( evaluationDetails,
-                                                                                                      systemSettings,
-                                                                                                      databaseServices,
-                                                                                                      executors,
-                                                                                                      sharedWriters,
-                                                                                                      netcdfWriters,
-                                                                                                      outputDirectory );
+            Pair<Evaluation, String> evaluationAndProjectHash =
+                    ProcessorHelper.processProjectConfig( evaluationDetails,
+                                                          systemSettings,
+                                                          databaseServices,
+                                                          executors,
+                                                          sharedWriters,
+                                                          netcdfWriters,
+                                                          outputDirectory );
             evaluation = evaluationAndProjectHash.getLeft();
             projectHash = evaluationAndProjectHash.getRight();
 
@@ -443,55 +465,43 @@ class ProcessorHelper
                                                                   outputDirectory );
             evaluationDetails.setResolvedProject( resolvedProject );
 
-            // Tasks for features
-            List<CompletableFuture<Void>> featureTasks = new ArrayList<>();
-
-            // Report on the completion state of all features
-            // Report detailed state by default (final arg = true)
-            // TODO: demote to summary report (final arg = false) for >> feature count
-            FeatureReporter featureReport = new FeatureReporter( projectConfigPlus, featureGroups.size(), true );
-
             // Deactivate progress monitoring within features, as features are processed asynchronously - the internal
             // completion state of features has no value when reported in this way
             ProgressMonitor.deactivate();
 
-            // Create one task per feature group
-            for ( FeatureGroup nextGroup : featureGroups )
-            {
-                // Create feature-shaped pool requests. This is more efficient because some datasets are shared across
-                // all pools that belong to a single feature group, such as the climatology. This efficiency is achieved
-                // when building suppliers from a collection of requests
-                List<PoolRequest> poolRequests =
-                        PoolFactory.getPoolRequests( evaluationDescription,
-                                                     project );
+            List<PoolRequest> poolRequests = ProcessorHelper.getPoolRequests( evaluationDescription, project );
 
-                Supplier<FeatureProcessingResult> featureProcessor = new FeatureProcessor( evaluationDetails,
-                                                                                           nextGroup,
-                                                                                           poolRequests,
-                                                                                           unitMapper,
-                                                                                           executors,
-                                                                                           sharedWriters );
+            int poolCount = poolRequests.size();
+            EvaluationEvent monitor = evaluationDetails.getMonitor();
+            monitor.setPoolCount( poolCount );
 
-                CompletableFuture<Void> nextFeatureTask = CompletableFuture.supplyAsync( featureProcessor,
-                                                                                         executors.getFeatureExecutor() )
-                                                                           .thenAccept( featureReport );
+            // Report on the completion state of all pools
+            PoolReporter poolReporter = new PoolReporter( projectConfigPlus, poolCount, true );
 
-                // Add to list of tasks
-                featureTasks.add( nextFeatureTask );
-            }
+            // Get a message group tracker to notify the completion of groups that encompass several pools. Currently, 
+            // this is feature-group shaped, but additional shapes may be desired in future
+            PoolGroupTracker groupTracker = PoolGroupTracker.ofFeatureGroupTracker( evaluation, poolRequests );
 
-            // Run the tasks, and join on all tasks. The main thread will wait until all are completed successfully
-            // or one completes exceptionally for reasons other than lack of data
-            // Complete the feature tasks
-            Pipelines.doAllOrException( featureTasks )
+            // Create the atomic tasks for this evaluation pipeline, i.e., pools
+            List<CompletableFuture<Void>> poolTasks = ProcessorHelper.getPoolTasks( evaluationDetails,
+                                                                                    sharedWriters,
+                                                                                    unitMapper,
+                                                                                    poolRequests,
+                                                                                    executors,
+                                                                                    poolReporter,
+                                                                                    groupTracker );
+
+            // Run the pool tasks, and join on all tasks. The main thread will wait until all are completed successfully
+            // or one completes exceptionally (for reasons other than lack of data)
+            Pipelines.doAllOrException( poolTasks )
                      .join();
 
             // Report that all publication was completed. At this stage, a message is sent indicating the expected 
-            // message count for all message types, thereby allowing consumers to know when they are done/
+            // message count for all message types, thereby allowing consumers to know when all messages have arrived.
             evaluation.markPublicationCompleteReportedSuccess();
 
-            // Report on the features
-            featureReport.report();
+            // Report on the pools
+            poolReporter.report();
 
             // Return an evaluation that was opened
             return Pair.of( evaluation, projectHash );
@@ -708,241 +718,6 @@ class ProcessorHelper
     }
 
     /**
-     * A value object that a) reduces count of args for some methods and
-     * b) provides names for those objects. Can be removed if we can reduce the
-     * count of dependencies in some of our methods, or if we prefer to see all
-     * dependencies clearly laid out in the method signature.
-     */
-
-    static class Executors
-    {
-
-        /**
-         * Executor for input/output operations, such as ingest.
-         */
-
-        private final Executor ioExecutor;
-
-        /**
-         * The feature executor.
-         */
-        private final ExecutorService featureExecutor;
-
-        /**
-         * The pair executor.
-         */
-        private final ExecutorService pairExecutor;
-
-        /**
-         * The threshold executor.
-         */
-        private final ExecutorService thresholdExecutor;
-
-        /**
-         * The metric executor.
-         */
-        private final ExecutorService metricExecutor;
-
-        /**
-         * The product executor.
-         */
-        private final ExecutorService productExecutor;
-
-        /**
-         * Build. 
-         * 
-         * @param ioExecutor the executor for io operations
-         * @param featureExecutor the feature executor
-         * @param pairExecutor the pair executor
-         * @param thresholdExecutor the threshold executor
-         * @param metricExecutor the metric executor
-         * @param productExecutor the product executor
-         */
-        Executors( Executor ioExecutor,
-                   ExecutorService featureExecutor,
-                   ExecutorService pairExecutor,
-                   ExecutorService thresholdExecutor,
-                   ExecutorService metricExecutor,
-                   ExecutorService productExecutor )
-        {
-            this.ioExecutor = ioExecutor;
-            this.featureExecutor = featureExecutor;
-            this.pairExecutor = pairExecutor;
-            this.thresholdExecutor = thresholdExecutor;
-            this.metricExecutor = metricExecutor;
-            this.productExecutor = productExecutor;
-        }
-
-        /**
-         * Returns the {@link ExecutorService} for features.
-         * @return the metric executor
-         */
-
-        ExecutorService getFeatureExecutor()
-        {
-            return this.featureExecutor;
-        }
-
-        /**
-         * Returns the {@link ExecutorService} for pairs.
-         * @return the pair executor
-         */
-
-        ExecutorService getPairExecutor()
-        {
-            return this.pairExecutor;
-        }
-
-        /**
-         * Returns the {@link ExecutorService} for thresholds.
-         * @return the threshold executor
-         */
-
-        ExecutorService getThresholdExecutor()
-        {
-            return this.thresholdExecutor;
-        }
-
-        /**
-         * Returns the {@link ExecutorService} for metrics.
-         * @return the metric executor
-         */
-
-        ExecutorService getMetricExecutor()
-        {
-            return this.metricExecutor;
-        }
-
-        /**
-         * Returns the {@link ExecutorService} for products.
-         * @return the product executor
-         */
-
-        ExecutorService getProductExecutor()
-        {
-            return this.productExecutor;
-        }
-
-        /**
-         * Returns the {@link Executor} for io operations.
-         * @return the io executor
-         */
-
-        Executor getIoExecutor()
-        {
-            return this.ioExecutor;
-        }
-
-    }
-
-    /**
-     * A value object for shared writers.
-     */
-
-    static class SharedWriters implements Closeable
-    {
-        /**
-         * Shared writers for sample data.
-         */
-
-        private final SharedSampleDataWriters sharedSampleWriters;
-
-        /**
-         * Shared writers for baseline sampled data.
-         */
-
-        private final SharedSampleDataWriters sharedBaselineSampleWriters;
-
-        /**
-         * Returns an instance.
-         *
-         * @param sharedSampleWriters shared writer of pairs
-         * @param sharedBaselineSampleWriters shared writer of baseline pairs
-         */
-        static SharedWriters of( SharedSampleDataWriters sharedSampleWriters,
-                                 SharedSampleDataWriters sharedBaselineSampleWriters )
-
-        {
-            return new SharedWriters( sharedSampleWriters, sharedBaselineSampleWriters );
-        }
-
-        /**
-         * Returns the shared sample data writers.
-         * 
-         * @return the shared sample data writers.
-         */
-
-        SharedSampleDataWriters getSampleDataWriters()
-        {
-            return this.sharedSampleWriters;
-        }
-
-        /**
-         * Returns the shared sample data writers for baseline data.
-         * 
-         * @return the shared sample data writers  for baseline data.
-         */
-
-        SharedSampleDataWriters getBaselineSampleDataWriters()
-        {
-            return this.sharedBaselineSampleWriters;
-        }
-
-        /**
-         * Returns <code>true</code> if shared sample writers are available, otherwise <code>false</code>.
-         * 
-         * @return true if shared sample writers are available
-         */
-
-        boolean hasSharedSampleWriters()
-        {
-            return Objects.nonNull( this.sharedSampleWriters );
-        }
-
-        /**
-         * Returns <code>true</code> if shared sample writers are available for the baseline samples, otherwise 
-         * <code>false</code>.
-         * 
-         * @return true if shared sample writers are available for the baseline samples
-         */
-
-        boolean hasSharedBaselineSampleWriters()
-        {
-            return Objects.nonNull( this.sharedBaselineSampleWriters );
-        }
-
-        /**
-         * Attempts to close all shared writers.
-         * @throws IOException when a resource could not be closed
-         */
-
-        public void close() throws IOException
-        {
-            if ( this.hasSharedSampleWriters() )
-            {
-                this.getSampleDataWriters().close();
-            }
-
-            if ( this.hasSharedBaselineSampleWriters() )
-            {
-                this.getBaselineSampleDataWriters().close();
-            }
-        }
-
-        /**
-         * Hidden constructor.
-         * @param sharedSampleWriters the shared writer for pairs
-         * @param sharedBaselineSampleWriters the shared writer for baseline pairs
-         */
-        private SharedWriters( SharedSampleDataWriters sharedSampleWriters,
-                               SharedSampleDataWriters sharedBaselineSampleWriters )
-        {
-            this.sharedSampleWriters = sharedSampleWriters;
-            this.sharedBaselineSampleWriters = sharedBaselineSampleWriters;
-        }
-    }
-
-    /**
      * Returns a set of formats that are delivered by external subscribers, according to relevant system properties.
      * 
      * @return the formats delivered by external subscribers
@@ -1107,10 +882,412 @@ class ProcessorHelper
     }
 
     /**
+     * @param evaluation the evaluation description
+     * @param project the project
+     * @return an evaluation description with analyzed measurement units and variables, as needed
+     * @throws SQLException if the analyzed unit could not be obtained from the project
+     */
+
+    private static wres.statistics.generated.Evaluation
+            setAnalyzedUnitsAndVariableNames( wres.statistics.generated.Evaluation evaluation,
+                                              Project project )
+                    throws SQLException
+    {
+        String desiredMeasurementUnit = project.getMeasurementUnit();
+        wres.statistics.generated.Evaluation.Builder builder = evaluation.toBuilder()
+                                                                         .setMeasurementUnit( desiredMeasurementUnit );
+
+        // Only set the names with analyzed names if the existing names are empty
+        if ( "".equals( evaluation.getLeftVariableName() ) )
+        {
+            builder.setLeftVariableName( project.getLeftVariableName() );
+        }
+        if ( "".equals( evaluation.getRightVariableName() ) )
+        {
+            builder.setLeftVariableName( project.getRightVariableName() );
+        }
+        if ( project.hasBaseline() && "".equals( evaluation.getBaselineVariableName() ) )
+        {
+            builder.setBaselineVariableName( project.getBaselineVariableName() );
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Creates the pool requests from the project.
+     * 
+     * @param evaluationDescription the evaluation description
+     * @param project the project
+     * @return the pool requests
+     */
+
+    private static List<PoolRequest> getPoolRequests( wres.statistics.generated.Evaluation evaluationDescription,
+                                                      Project project )
+    {
+        List<PoolRequest> poolRequests = PoolFactory.getPoolRequests( evaluationDescription, project );
+
+        // Log some information about the pools
+        if ( LOGGER.isInfoEnabled() )
+        {
+            Set<FeatureGroup> features = new TreeSet<>();
+            Set<TimeWindowOuter> timeWindows = new TreeSet<>();
+
+            for ( PoolRequest nextRequest : poolRequests )
+            {
+                FeatureGroup nextFeature = nextRequest.getMetadata()
+                                                      .getFeatureGroup();
+                features.add( nextFeature );
+
+                TimeWindowOuter nextTimeWindow = nextRequest.getMetadata()
+                                                            .getTimeWindow();
+
+                timeWindows.add( nextTimeWindow );
+            }
+
+            LOGGER.info( "Created {} pool requests, which included {} features groups and {} time windows. "
+                         + "The feature groups were: {}. The time windows were: {}.",
+                         poolRequests.size(),
+                         features.size(),
+                         timeWindows.size(),
+                         PoolReporter.getPoolItemDescription( features, FeatureGroup::getName ),
+                         PoolReporter.getPoolItemDescription( timeWindows, TimeWindowOuter::toString ) );
+        }
+
+        return poolRequests;
+    }
+
+    /**
+     * Creates one pool task for each pool request.
+     * 
+     * @param evaluationDetails the evaluation details
+     * @param sharedWriters the shared writers
+     * @param unitMapper the unit mapper
+     * @param poolRequests the pool requests
+     * @param executors the executor services
+     * @param poolReporter the pool reporter that reports on a pool execution
+     * @param poolGroupTracker the group publication tracker
+     * @return the pool execution tasks
+     */
+
+    private static List<CompletableFuture<Void>> getPoolTasks( EvaluationDetails evaluationDetails,
+                                                               SharedWriters sharedWriters,
+                                                               UnitMapper unitMapper,
+                                                               List<PoolRequest> poolRequests,
+                                                               Executors executors,
+                                                               PoolReporter poolReporter,
+                                                               PoolGroupTracker poolGroupTracker )
+    {
+
+        List<CompletableFuture<Void>> poolTasks = new ArrayList<>();
+
+        DatasourceType type = evaluationDetails.getProject()
+                                               .getRight()
+                                               .getType();
+
+        // Ensemble pairs
+        if ( type == DatasourceType.ENSEMBLE_FORECASTS )
+        {
+            List<PoolProcessor<Double, Ensemble>> poolProcessors =
+                    ProcessorHelper.getEnsemblePoolProcessors( evaluationDetails,
+                                                               poolRequests,
+                                                               sharedWriters,
+                                                               unitMapper,
+                                                               executors,
+                                                               poolGroupTracker );
+
+            List<CompletableFuture<Void>> nextPoolTasks =
+                    ProcessorHelper.getPoolTasks( poolProcessors,
+                                                  executors.getPoolExecutor(),
+                                                  poolReporter );
+            poolTasks.addAll( nextPoolTasks );
+        }
+        // All other single-valued types
+        else
+        {
+            List<PoolProcessor<Double, Double>> poolProcessors =
+                    ProcessorHelper.getSingleValuedPoolProcessors( evaluationDetails,
+                                                                   poolRequests,
+                                                                   sharedWriters,
+                                                                   unitMapper,
+                                                                   executors,
+                                                                   poolGroupTracker );
+
+            List<CompletableFuture<Void>> nextPoolTasks =
+                    ProcessorHelper.getPoolTasks( poolProcessors,
+                                                  executors.getPoolExecutor(),
+                                                  poolReporter );
+            poolTasks.addAll( nextPoolTasks );
+        }
+
+        return Collections.unmodifiableList( poolTasks );
+    }
+
+    /**
+     * Returns a list of processors for processing single-valued pools, one for each pool request.
+     * @param evaluationDetails the evaluation details
+     * @param poolRequests the pool requests
+     * @param sharedWriters the shared writers
+     * @param unitMapper the unit mapper
+     * @param executors the executors
+     * @param groupId the group identifier for message groups
+     * @param groupPublicationTracker the group publication tracker
+     * @return the single-valued processors
+     */
+
+    private static List<PoolProcessor<Double, Double>>
+            getSingleValuedPoolProcessors( EvaluationDetails evaluationDetails,
+                                           List<PoolRequest> poolRequests,
+                                           SharedWriters sharedWriters,
+                                           UnitMapper unitMapper,
+                                           Executors executors,
+                                           PoolGroupTracker groupPublicationTracker )
+    {
+        Project project = evaluationDetails.getProject();
+
+        List<MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
+                ProcessorHelper.getSingleValuedProcessors( evaluationDetails.getResolvedProject()
+                                                                            .getThresholdsByMetricAndFeature(),
+                                                           executors.getThresholdExecutor(),
+                                                           executors.getMetricExecutor() );
+
+        // Create a retriever factory to support retrieval for this project
+        RetrieverFactory<Double, Double> retrieverFactory = SingleValuedRetrieverFactory.of( project,
+                                                                                             unitMapper );
+
+        // Create the pool suppliers for all pools in this evaluation
+        List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> poolSuppliers =
+                PoolFactory.getSingleValuedPools( project,
+                                                  poolRequests,
+                                                  retrieverFactory );
+
+        // Stand-up the pair writers
+        PairsWriter<Double, Double> pairsWriter = null;
+        PairsWriter<Double, Double> basePairsWriter = null;
+        if ( sharedWriters.hasSharedSampleWriters() )
+        {
+            pairsWriter = sharedWriters.getSampleDataWriters().getSingleValuedWriter();
+        }
+        if ( sharedWriters.hasSharedBaselineSampleWriters() )
+        {
+            basePairsWriter = sharedWriters.getBaselineSampleDataWriters().getSingleValuedWriter();
+        }
+
+        List<PoolProcessor<Double, Double>> poolProcessors = new ArrayList<>();
+
+        int count = poolSuppliers.size();
+        for ( int i = 0; i < count; i++ )
+        {
+            PoolRequest poolRequest = poolRequests.get( i );
+            Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolSupplier = poolSuppliers.get( i );
+
+            PoolProcessor<Double, Double> poolProcessor =
+                    new PoolProcessor.Builder<Double, Double>().setPairsWriter( pairsWriter )
+                                                               .setBasePairsWriter( basePairsWriter )
+                                                               .setMetricProcessors( processors )
+                                                               .setPoolRequest( poolRequest )
+                                                               .setPoolSupplier( poolSupplier )
+                                                               .setEvaluation( evaluationDetails.getEvaluation() )
+                                                               .setMonitor( evaluationDetails.getMonitor() )
+                                                               .setTraceCountEstimator( SINGLE_VALUED_TRACE_COUNT_ESTIMATOR )
+                                                               .setProjectConfig( project.getProjectConfig() )
+                                                               .setPoolGroupTracker( groupPublicationTracker )
+                                                               .build();
+
+            poolProcessors.add( poolProcessor );
+        }
+
+        return Collections.unmodifiableList( poolProcessors );
+    }
+
+    /**
+     * Returns a list of processors for processing ensemble pools, one for each pool request.
+     * @param evaluationDetails the evaluation details
+     * @param poolRequests the pool requests
+     * @param sharedWriters the shared writers
+     * @param unitMapper the unit mapper
+     * @param executors the executors
+     * @param groupId the group identifier for message groups
+     * @param groupPublicationTracker the group publication tracker
+     * @return the ensemble processors
+     */
+
+    private static List<PoolProcessor<Double, Ensemble>>
+            getEnsemblePoolProcessors( EvaluationDetails evaluationDetails,
+                                       List<PoolRequest> poolRequests,
+                                       SharedWriters sharedWriters,
+                                       UnitMapper unitMapper,
+                                       Executors executors,
+                                       PoolGroupTracker groupPublicationTracker )
+    {
+        Project project = evaluationDetails.getProject();
+
+        List<MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors =
+                ProcessorHelper.getEnsembleProcessors( evaluationDetails.getResolvedProject()
+                                                                        .getThresholdsByMetricAndFeature(),
+                                                       executors.getThresholdExecutor(),
+                                                       executors.getMetricExecutor() );
+
+        // Create a retriever factory to support retrieval for this project
+        RetrieverFactory<Double, Ensemble> retrieverFactory = EnsembleRetrieverFactory.of( project,
+                                                                                           unitMapper );
+
+        // Create the pool suppliers for all pools in this evaluation
+        List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> poolSuppliers =
+                PoolFactory.getEnsemblePools( project,
+                                              poolRequests,
+                                              retrieverFactory );
+
+        // Stand-up the pair writers
+        PairsWriter<Double, Ensemble> pairsWriter = null;
+        PairsWriter<Double, Ensemble> basePairsWriter = null;
+        if ( sharedWriters.hasSharedSampleWriters() )
+        {
+            pairsWriter = sharedWriters.getSampleDataWriters().getEnsembleWriter();
+        }
+        if ( sharedWriters.hasSharedBaselineSampleWriters() )
+        {
+            basePairsWriter = sharedWriters.getBaselineSampleDataWriters().getEnsembleWriter();
+        }
+
+        List<PoolProcessor<Double, Ensemble>> poolProcessors = new ArrayList<>();
+
+        int count = poolSuppliers.size();
+        for ( int i = 0; i < count; i++ )
+        {
+            PoolRequest poolRequest = poolRequests.get( i );
+            Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>> poolSupplier = poolSuppliers.get( i );
+
+            PoolProcessor<Double, Ensemble> poolProcessor =
+                    new PoolProcessor.Builder<Double, Ensemble>().setPairsWriter( pairsWriter )
+                                                                 .setBasePairsWriter( basePairsWriter )
+                                                                 .setMetricProcessors( processors )
+                                                                 .setPoolRequest( poolRequest )
+                                                                 .setPoolSupplier( poolSupplier )
+                                                                 .setEvaluation( evaluationDetails.getEvaluation() )
+                                                                 .setMonitor( evaluationDetails.getMonitor() )
+                                                                 .setTraceCountEstimator( ENSEMBLE_TRACE_COUNT_ESTIMATOR )
+                                                                 .setProjectConfig( project.getProjectConfig() )
+                                                                 .setPoolGroupTracker( groupPublicationTracker )
+                                                                 .build();
+
+            poolProcessors.add( poolProcessor );
+        }
+
+        return Collections.unmodifiableList( poolProcessors );
+    }
+
+    /**
+     * @param <L> the left type of pooled data
+     * @param <R> the right type of pooled data
+     * @param poolProcessors the pool processors
+     * @param poolExecutor the pool executor
+     * @param poolReporter the pool reporter
+     * @return the pool tasks
+     */
+
+    private static <L, R> List<CompletableFuture<Void>> getPoolTasks( List<PoolProcessor<L, R>> poolProcessors,
+                                                                      ExecutorService poolExecutor,
+                                                                      PoolReporter poolReporter )
+    {
+        List<CompletableFuture<Void>> poolTasks = new ArrayList<>();
+
+        for ( PoolProcessor<L, R> nextProcessor : poolProcessors )
+        {
+            CompletableFuture<Void> nextPoolTask = CompletableFuture.supplyAsync( nextProcessor,
+                                                                                  poolExecutor )
+                                                                    .thenAccept( poolReporter );
+
+            poolTasks.add( nextPoolTask );
+        }
+
+        return Collections.unmodifiableList( poolTasks );
+    }
+
+    /**
+     * @param metrics the metrics
+     * @param thresholdExecutor the threshold executor
+     * @param metricExecutor the metric executor
+     * @return the single-valued processors
+     */
+
+    private static List<MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>>>
+            getSingleValuedProcessors( List<ThresholdsByMetricAndFeature> metrics,
+                                       ExecutorService thresholdExecutor,
+                                       ExecutorService metricExecutor )
+    {
+        List<MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors = new ArrayList<>();
+
+        for ( ThresholdsByMetricAndFeature nextMetrics : metrics )
+        {
+            MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>> nextProcessor =
+                    new MetricProcessorByTimeSingleValuedPairs( nextMetrics,
+                                                                thresholdExecutor,
+                                                                metricExecutor );
+            processors.add( nextProcessor );
+        }
+
+        return Collections.unmodifiableList( processors );
+    }
+
+    /**
+     * @param metrics the metrics
+     * @param thresholdExecutor the threshold executor
+     * @param metricExecutor the metric executor
+     * @return the single-valued processors
+     */
+
+    private static List<MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>>
+            getEnsembleProcessors( List<ThresholdsByMetricAndFeature> metrics,
+                                   ExecutorService thresholdExecutor,
+                                   ExecutorService metricExecutor )
+    {
+        List<MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors = new ArrayList<>();
+
+        for ( ThresholdsByMetricAndFeature nextMetrics : metrics )
+        {
+            MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> nextProcessor =
+                    new MetricProcessorByTimeEnsemblePairs( nextMetrics,
+                                                            thresholdExecutor,
+                                                            metricExecutor );
+            processors.add( nextProcessor );
+        }
+
+        return Collections.unmodifiableList( processors );
+    }
+
+    /**
+     * @return a function that estimates the number of traces in a pool of single-valued time-series
+     */
+
+    private static ToIntFunction<Pool<TimeSeries<Pair<Double, Double>>>> getSingleValuedTraceCountEstimator()
+    {
+        return pool -> 2 * pool.get().size();
+    }
+
+    /**
+     * @return a function that estimates the number of traces in a pool of ensemble time-series
+     */
+
+    private static ToIntFunction<Pool<TimeSeries<Pair<Double, Ensemble>>>> getEnsembleTraceCountEstimator()
+    {
+        return pool -> pool.get()
+                           .size()
+                       * ( pool.get()
+                               .get( 0 )
+                               .getEvents()
+                               .first()
+                               .getValue()
+                               .getRight()
+                               .size()
+                           + 1 );
+    }
+
+    /**
      * Small value class to collect together variables needed to instantiate an evaluation.
      */
 
-    static class EvaluationDetails
+    private static class EvaluationDetails
     {
         /** Project configuration. */
         private final ProjectConfigPlus projectConfigPlus;
@@ -1134,7 +1311,7 @@ class ProcessorHelper
         /**
          * @return the project configuration
          */
-        ProjectConfigPlus getProjectConfigPlus()
+        private ProjectConfigPlus getProjectConfigPlus()
         {
             return projectConfigPlus;
         }
@@ -1142,7 +1319,7 @@ class ProcessorHelper
         /**
          * @return the evaluation description
          */
-        wres.statistics.generated.Evaluation getEvaluationDescription()
+        private wres.statistics.generated.Evaluation getEvaluationDescription()
         {
             return evaluationDescription;
         }
@@ -1150,7 +1327,7 @@ class ProcessorHelper
         /**
          * @return the evaluation identifier
          */
-        String getEvaluationId()
+        private String getEvaluationId()
         {
             return evaluationId;
         }
@@ -1158,7 +1335,7 @@ class ProcessorHelper
         /**
          * @return the subscriber approver
          */
-        SubscriberApprover getSubscriberApprover()
+        private SubscriberApprover getSubscriberApprover()
         {
             return subscriberApprover;
         }
@@ -1166,7 +1343,7 @@ class ProcessorHelper
         /**
          * @return the broker connection factory
          */
-        BrokerConnectionFactory getBrokerConnections()
+        private BrokerConnectionFactory getBrokerConnections()
         {
             return connections;
         }
@@ -1175,7 +1352,7 @@ class ProcessorHelper
          * @return the monitor
          */
 
-        EvaluationEvent getMonitor()
+        private EvaluationEvent getMonitor()
         {
             return this.monitor;
         }
@@ -1184,7 +1361,7 @@ class ProcessorHelper
          * @return the project, possibly null
          */
 
-        Project getProject()
+        private Project getProject()
         {
             return this.project;
         }
@@ -1193,7 +1370,7 @@ class ProcessorHelper
          * @return the resolvedProject, possibly null
          */
 
-        ResolvedProject getResolvedProject()
+        private ResolvedProject getResolvedProject()
         {
             return this.resolvedProject;
         }
@@ -1202,7 +1379,7 @@ class ProcessorHelper
          * @return the evaluation, possibly null
          */
 
-        Evaluation getEvaluation()
+        private Evaluation getEvaluation()
         {
             return this.evaluation;
         }
@@ -1213,7 +1390,7 @@ class ProcessorHelper
          * @throws NullPointerException if the project is null
          */
 
-        void setProject( Project project )
+        private void setProject( Project project )
         {
             Objects.requireNonNull( project );
 
@@ -1226,7 +1403,7 @@ class ProcessorHelper
          * @throws NullPointerException if the resolvedProject is null
          */
 
-        void setResolvedProject( ResolvedProject resolvedProject )
+        private void setResolvedProject( ResolvedProject resolvedProject )
         {
             Objects.requireNonNull( resolvedProject );
 
@@ -1239,7 +1416,7 @@ class ProcessorHelper
          * @throws NullPointerException if the evaluation is null
          */
 
-        void setEvaluation( Evaluation evaluation )
+        private void setEvaluation( Evaluation evaluation )
         {
             Objects.requireNonNull( evaluation );
 
@@ -1256,12 +1433,12 @@ class ProcessorHelper
          * @param connections the broker connections
          */
 
-        EvaluationDetails( ProjectConfigPlus projectConfigPlus,
-                           wres.statistics.generated.Evaluation evaluationDescription,
-                           String evaluationId,
-                           SubscriberApprover subscriberApprover,
-                           BrokerConnectionFactory connections,
-                           EvaluationEvent monitor )
+        private EvaluationDetails( ProjectConfigPlus projectConfigPlus,
+                                   wres.statistics.generated.Evaluation evaluationDescription,
+                                   String evaluationId,
+                                   SubscriberApprover subscriberApprover,
+                                   BrokerConnectionFactory connections,
+                                   EvaluationEvent monitor )
         {
             this.projectConfigPlus = projectConfigPlus;
             this.evaluationDescription = evaluationDescription;
@@ -1273,39 +1450,115 @@ class ProcessorHelper
     }
 
     /**
-     * @param evaluation the evaluation description
-     * @param project the project
-     * @return an evaluation description with analyzed measurement units and variables, as needed
-     * @throws SQLException if the analyzed unit could not be obtained from the project
+     * A value object for shared writers.
      */
 
-    private static wres.statistics.generated.Evaluation
-            setAnalyzedUnitsAndVariableNames( wres.statistics.generated.Evaluation evaluation,
-                                              Project project ) throws SQLException
+    private static class SharedWriters implements Closeable
     {
-        String desiredMeasurementUnit = project.getMeasurementUnit();
-        wres.statistics.generated.Evaluation.Builder builder = evaluation.toBuilder()
-                                                                         .setMeasurementUnit( desiredMeasurementUnit );
+        /**
+         * Shared writers for sample data.
+         */
 
-        // Only set the names with analyzed names if the existing names are empty
-        if ( "".equals( evaluation.getLeftVariableName() ) )
+        private final SharedSampleDataWriters sharedSampleWriters;
+
+        /**
+         * Shared writers for baseline sampled data.
+         */
+
+        private final SharedSampleDataWriters sharedBaselineSampleWriters;
+
+        /**
+         * Returns an instance.
+         *
+         * @param sharedSampleWriters shared writer of pairs
+         * @param sharedBaselineSampleWriters shared writer of baseline pairs
+         */
+        private static SharedWriters of( SharedSampleDataWriters sharedSampleWriters,
+                                         SharedSampleDataWriters sharedBaselineSampleWriters )
+
         {
-            builder.setLeftVariableName( project.getLeftVariableName() );
-        }
-        if ( "".equals( evaluation.getRightVariableName() ) )
-        {
-            builder.setLeftVariableName( project.getRightVariableName() );
-        }
-        if ( project.hasBaseline() && "".equals( evaluation.getBaselineVariableName() ) )
-        {
-            builder.setBaselineVariableName( project.getBaselineVariableName() );
+            return new SharedWriters( sharedSampleWriters, sharedBaselineSampleWriters );
         }
 
-        return builder.build();
+        /**
+         * Returns the shared sample data writers.
+         * 
+         * @return the shared sample data writers.
+         */
+
+        private SharedSampleDataWriters getSampleDataWriters()
+        {
+            return this.sharedSampleWriters;
+        }
+
+        /**
+         * Returns the shared sample data writers for baseline data.
+         * 
+         * @return the shared sample data writers  for baseline data.
+         */
+
+        private SharedSampleDataWriters getBaselineSampleDataWriters()
+        {
+            return this.sharedBaselineSampleWriters;
+        }
+
+        /**
+         * Returns <code>true</code> if shared sample writers are available, otherwise <code>false</code>.
+         * 
+         * @return true if shared sample writers are available
+         */
+
+        private boolean hasSharedSampleWriters()
+        {
+            return Objects.nonNull( this.sharedSampleWriters );
+        }
+
+        /**
+         * Returns <code>true</code> if shared sample writers are available for the baseline samples, otherwise 
+         * <code>false</code>.
+         * 
+         * @return true if shared sample writers are available for the baseline samples
+         */
+
+        private boolean hasSharedBaselineSampleWriters()
+        {
+            return Objects.nonNull( this.sharedBaselineSampleWriters );
+        }
+
+        /**
+         * Attempts to close all shared writers.
+         * @throws IOException when a resource could not be closed
+         */
+        @Override
+        public void close() throws IOException
+        {
+            if ( this.hasSharedSampleWriters() )
+            {
+                this.getSampleDataWriters().close();
+            }
+
+            if ( this.hasSharedBaselineSampleWriters() )
+            {
+                this.getBaselineSampleDataWriters().close();
+            }
+        }
+
+        /**
+         * Hidden constructor.
+         * @param sharedSampleWriters the shared writer for pairs
+         * @param sharedBaselineSampleWriters the shared writer for baseline pairs
+         */
+        private SharedWriters( SharedSampleDataWriters sharedSampleWriters,
+                               SharedSampleDataWriters sharedBaselineSampleWriters )
+        {
+            this.sharedSampleWriters = sharedSampleWriters;
+            this.sharedBaselineSampleWriters = sharedBaselineSampleWriters;
+        }
     }
 
     private ProcessorHelper()
     {
         // Helper class with static methods therefore no construction allowed.
     }
+
 }
