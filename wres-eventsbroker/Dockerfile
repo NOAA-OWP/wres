@@ -24,12 +24,12 @@ RUN apk add tar && \
 
 #############
 # Final image
-FROM registry.access.redhat.com/ubi8/ubi:8.4-213
+FROM registry.access.redhat.com/ubi8/ubi:8.5-200
 
 RUN dnf install -y \
-    java-11-openjdk-headless-1:11.0.13.0.8-1.el8_4.x86_64 \
+    java-11-openjdk-headless-1:11.0.13.0.8-3.el8_5.x86_64 \
     procps-ng-3.3.15-6.el8 \
-    iproute-5.9.0-4.el8 \
+    iproute-5.12.0-4.el8.x86_64 \
     && dnf clean all
 
 # Set env vars expected by qpid
