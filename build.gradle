@@ -40,7 +40,7 @@ plugins
     //id 'org.uulib.gradle.markdown' version '0.0.1'
 
     // To generate de/serialization classes for message bodies
-    id 'com.google.protobuf' version '0.8.17'
+    id 'com.google.protobuf' version '0.8.18'
 
     // To create trusted certificate files (.jks aka cacerts) from dir of .pem
     // (Not working: not friendly to our directory structure nor submodules)
@@ -52,7 +52,7 @@ plugins
     id 'com.github.ksoichiro.console.reporter' version '0.6.3'
 
     // To discover library versions with known vulnerabilities
-    id 'org.owasp.dependencycheck' version '6.4.1.1'
+    id 'org.owasp.dependencycheck' version '6.5.0.1'
     
     // Task to assist in downloading artifacts
     id "de.undercouch.download" version "4.1.2"
@@ -262,7 +262,7 @@ project(':wres-util')
         testImplementation 'junit:junit:4.13.2'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:4.0.0'
+        testImplementation 'org.mockito:mockito-core:4.1.0'
     }
 }
 
@@ -347,15 +347,15 @@ project(':wres-datamodel')
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:4.0.0'
+        testImplementation 'org.mockito:mockito-core:4.1.0'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
 
         // Backwards compatibility for JUnit 4 tests
         testCompileOnly 'junit:junit:4.13.2'
-        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.8.1'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.8.2'
     }
     // Facilitate unit tests with JUnit
     test {
@@ -421,7 +421,7 @@ project(':wres-io')
         implementation 'com.squareup.okhttp3:okhttp:4.10.0-RC1'
 
         // Update vulnerable kotlin-stdlib that okhttp/okio uses
-        implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.5.31'
+        implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.6.0'
 
         // To accurately detect mime types of files.
         implementation 'org.apache.tika:tika-core:1.27'
@@ -451,7 +451,7 @@ project(':wres-io')
         testImplementation 'org.liquibase:liquibase-core:4.6.1'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-inline:4.0.0'
+        testImplementation 'org.mockito:mockito-inline:4.1.0'
 
         // Use mockserver as a mock server for mock API responses
         testImplementation 'org.mock-server:mockserver-netty:5.11.2'
@@ -460,12 +460,12 @@ project(':wres-io')
         testImplementation 'com.h2database:h2:1.4.200'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
 
         // Backwards compatibility for JUnit 4 tests
         testImplementation 'junit:junit:4.13.2'
-        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.8.1'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.8.2'
 
         // In-memory implementation of a java.nio.file abstract file system api
         // to test writing of files without actually writing files on the host machine
@@ -520,7 +520,7 @@ project(':wres-metrics')
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
 
         testImplementation 'junit:junit:4.13.2'
-        testImplementation 'org.mockito:mockito-core:4.0.0'
+        testImplementation 'org.mockito:mockito-core:4.1.0'
     }
 }
 
@@ -656,8 +656,8 @@ project(':wres-statistics')
         }
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
 
         testImplementation project( ':wres-eventsbroker' )
     }
@@ -736,7 +736,7 @@ project(':wres-vis')
         implementation files('../libs/external/ohdcommonchps.jar')
 
         // SVG graphics from JFreeChart instances
-        implementation group: 'org.jfree', name: 'jfreesvg', version: '3.4.1'
+        implementation group: 'org.jfree', name: 'jfreesvg', version: '3.4.2'
 
         runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha10' )
         {
@@ -751,7 +751,7 @@ project(':wres-vis')
         testImplementation 'junit:junit:4.13.2'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:4.0.0'
+        testImplementation 'org.mockito:mockito-core:4.1.0'
 
         testRuntimeOnly files('dist/lib/conf')
     }
@@ -810,8 +810,8 @@ project(':wres-config')
         // Trying json-values based on vavr, potential replacement for xjc/jaxb.
         testImplementation 'com.github.imrafaelmerino:json-values:9.1.0'
 
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
 
         // May help in future with #37380, may need to modify sources
         // available at https://git.apache.org/cxf-xjc-utils.git in dv dir:
@@ -994,7 +994,7 @@ project(':wres-worker')
     {
         implementation project( ':wres-messages' )
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
-        implementation 'com.rabbitmq:amqp-client:5.13.1'
+        implementation 'com.rabbitmq:amqp-client:5.14.0'
 
         runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha10' )
         {
@@ -1367,13 +1367,13 @@ project(':wres-events')
         }
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:4.0.0'
+        testImplementation 'org.mockito:mockito-core:4.1.0'
         // Mocking final classes
-        testImplementation 'org.mockito:mockito-inline:4.0.0'
+        testImplementation 'org.mockito:mockito-inline:4.1.0'
     }
 
     // Facilitate unit tests with JUnit
@@ -1645,14 +1645,14 @@ dependencies
     }
 
     // JUnit 5 API and runtime
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
 
     // Backwards compatibility for JUnit 4 tests
     testCompileOnly 'junit:junit:4.13.2'
-    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.8.1'
+    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.8.2'
 
-    testImplementation 'org.mockito:mockito-core:4.0.0'
+    testImplementation 'org.mockito:mockito-core:4.1.0'
 
     testImplementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 }
