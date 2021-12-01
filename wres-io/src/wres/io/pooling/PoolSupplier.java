@@ -307,15 +307,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             baselineEvent.commit();
         }
 
-        // Build a separate mini-pool for each feature tuple, then combine them
-
-        // Must be some left data plus right or baseline data, otherwise it's an empty pool
-        if ( leftData.isEmpty() || ( rightData.isEmpty() && Objects.isNull( this.baselineGenerator )
-                                     && baselineData.isEmpty() ) )
-        {
-            return this.getEmptyPool( leftData.size(), rightData.size(), baselineData.size() );
-        }
-
         Pool<TimeSeries<Pair<L, R>>> returnMe = this.createPool( leftData, rightData, baselineData );
 
         poolMonitor.commit();
@@ -678,6 +669,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
         LOGGER.debug( "Discovered the following feature tuples to iterate: {}.", tuples );
 
+        // Preserve any individual feature tuples as separate "mini-pools" in order to allow for feature-specific
+        // operations on the pool, such as feature-specific threshold filters or decomposition-by-feature
         Set<FeatureTuple> noData = new HashSet<>();
         TimeScaleOuter timeScale = null;
         for ( FeatureTuple nextTuple : tuples )
@@ -686,6 +679,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             List<TimeSeries<R>> r = mappedRight.get( nextTuple.getRight() );
             List<TimeSeries<R>> b = mappedBaseline.get( nextTuple.getBaseline() );
 
+            // Add mini pool
             if ( Objects.nonNull( l ) && Objects.nonNull( r ) )
             {
                 Pool<TimeSeries<Pair<L, R>>> miniPool = this.createPoolPerFeatureTuple( nextTuple, l, r, b );
@@ -696,12 +690,24 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                 // Add the pool and merge the climatology
                 builder.addPool( miniPool, true );
             }
+            // Record no data
             else
             {
                 noData.add( nextTuple );
             }
         }
-
+        
+        // Add an empty mini pool for each feature with no data, using consistent time-scale information derived from
+        // a non-empty pool, where available
+        for( FeatureTuple nextEmpty : noData )
+        {
+            Pool<TimeSeries<Pair<L, R>>> emptyPool =
+                    this.createPoolPerFeatureTuple( nextEmpty, List.of(), List.of(), List.of() );
+            PoolMetadata adjusted = PoolMetadata.of( emptyPool.getMetadata(), timeScale );
+            emptyPool = Pool.of( List.of(), adjusted );
+            builder.addPool( emptyPool, false );
+        }
+        
         // Set the metadata for the overall pool using the updated time scale information
         PoolMetadata adjusted = PoolMetadata.of( this.metadata, timeScale );
         builder.setMetadata( adjusted );

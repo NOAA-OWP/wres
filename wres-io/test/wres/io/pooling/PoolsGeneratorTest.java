@@ -162,6 +162,7 @@ public class PoolsGeneratorTest
         Mockito.when( retrieverFactory.getRightRetriever( Mockito.any(), Mockito.any() ) )
                .thenReturn( () -> Stream.of() );
 
+        PoolParameters poolParameters = new PoolParameters.Builder().build();
         List<PoolRequest> poolRequests = PoolFactory.getPoolRequests( evaluationDescription,
                                                                       project );
 
@@ -169,7 +170,8 @@ public class PoolsGeneratorTest
         List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> actual =
                 PoolFactory.getSingleValuedPools( project,
                                                   poolRequests,
-                                                  retrieverFactory );
+                                                  retrieverFactory,
+                                                  poolParameters );
 
         // Assert expected number of suppliers
         assertEquals( 18, actual.size() );
@@ -279,10 +281,12 @@ public class PoolsGeneratorTest
                                                                       project );
 
         // Create the actual output
+        PoolParameters poolParameters = new PoolParameters.Builder().build();
         List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> actual =
                 PoolFactory.getEnsemblePools( project,
                                               poolRequests,
-                                              retrieverFactory );
+                                              retrieverFactory,
+                                              poolParameters );
 
         // Assert expected number of suppliers
         assertEquals( 18, actual.size() );

@@ -55,6 +55,7 @@ import wres.io.config.ConfigHelper;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.geography.FeatureFinder;
 import wres.io.pooling.PoolFactory;
+import wres.io.pooling.PoolParameters;
 import wres.io.project.Project;
 import wres.io.retrieval.EnsembleRetrieverFactory;
 import wres.io.retrieval.RetrieverFactory;
@@ -201,7 +202,8 @@ class ProcessorHelper
                                                     .build();
 
             // Package the details needed to build the evaluation
-            EvaluationDetails evaluationDetails = new EvaluationDetails( projectConfigPlus,
+            EvaluationDetails evaluationDetails = new EvaluationDetails( systemSettings,
+                                                                         projectConfigPlus,
                                                                          evaluationDescription,
                                                                          evaluationId,
                                                                          subscriberApprover,
@@ -211,7 +213,6 @@ class ProcessorHelper
             // Open an evaluation, to be closed on completion or stopped on exception
             Pair<Evaluation, String> evaluationAndProjectHash =
                     ProcessorHelper.processProjectConfig( evaluationDetails,
-                                                          systemSettings,
                                                           databaseServices,
                                                           executors,
                                                           sharedWriters,
@@ -337,7 +338,6 @@ class ProcessorHelper
      *
      * Assumes that a shared lock for evaluation has already been obtained.
      * @param evaluationDetails the evaluation details
-     * @param systemSettings the system settings
      * @param databaseServices the database services
      * @param executors the executors
      * @param netcdfWriters netCDF writers
@@ -349,7 +349,6 @@ class ProcessorHelper
      */
 
     private static Pair<Evaluation, String> processProjectConfig( EvaluationDetails evaluationDetails,
-                                                                  SystemSettings systemSettings,
                                                                   DatabaseServices databaseServices,
                                                                   Executors executors,
                                                                   SharedWriters sharedWriters,
@@ -375,7 +374,7 @@ class ProcessorHelper
             LOGGER.debug( "Beginning ingest for project {}...", projectConfigPlus );
 
             // Need to ingest first
-            Project project = Operations.ingest( systemSettings,
+            Project project = Operations.ingest( evaluationDetails.getSystemSettings(),
                                                  databaseServices.getDatabase(),
                                                  executors.getIoExecutor(),
                                                  featurefulProjectConfig,
@@ -421,8 +420,7 @@ class ProcessorHelper
             Set<FeatureTuple> featuresWithExplicitThresholds = new TreeSet<>();
             for ( MetricsConfig metricsConfig : projectConfig.getMetrics() )
             {
-                ThresholdReader thresholdReader = new ThresholdReader(
-                                                                       systemSettings,
+                ThresholdReader thresholdReader = new ThresholdReader( evaluationDetails.getSystemSettings(),
                                                                        projectConfig,
                                                                        metricsConfig,
                                                                        unitMapper,
@@ -449,11 +447,16 @@ class ProcessorHelper
             // Create any netcdf blobs for writing. See #80267-137.
             if ( !netcdfWriters.isEmpty() )
             {
+                // TODO: eliminate these log messages when legacy netcdf is removed
+                LOGGER.info( "Creating NetCDF blobs for statistics. This may take some time..." );
+
                 for ( NetcdfOutputWriter writer : netcdfWriters )
                 {
                     writer.createBlobsForWriting( featureGroups,
                                                   thresholdsByMetricAndFeature );
                 }
+
+                LOGGER.info( "Finished creating NetCDF blobs, which are now ready to accept statistics." );
             }
 
             // The project code - ideally project hash
@@ -985,6 +988,12 @@ class ProcessorHelper
                                                .getRight()
                                                .getType();
 
+        SystemSettings settings = evaluationDetails.getSystemSettings();
+        PoolParameters poolParameters =
+                new PoolParameters.Builder().setFeatureBatchThreshold( settings.getFeatureBatchThreshold() )
+                                            .setFeatureBatchSize( settings.getFeatureBatchSize() )
+                                            .build();
+
         // Ensemble pairs
         if ( type == DatasourceType.ENSEMBLE_FORECASTS )
         {
@@ -994,7 +1003,8 @@ class ProcessorHelper
                                                                sharedWriters,
                                                                unitMapper,
                                                                executors,
-                                                               poolGroupTracker );
+                                                               poolGroupTracker,
+                                                               poolParameters );
 
             List<CompletableFuture<Void>> nextPoolTasks =
                     ProcessorHelper.getPoolTasks( poolProcessors,
@@ -1011,7 +1021,8 @@ class ProcessorHelper
                                                                    sharedWriters,
                                                                    unitMapper,
                                                                    executors,
-                                                                   poolGroupTracker );
+                                                                   poolGroupTracker,
+                                                                   poolParameters );
 
             List<CompletableFuture<Void>> nextPoolTasks =
                     ProcessorHelper.getPoolTasks( poolProcessors,
@@ -1030,8 +1041,8 @@ class ProcessorHelper
      * @param sharedWriters the shared writers
      * @param unitMapper the unit mapper
      * @param executors the executors
-     * @param groupId the group identifier for message groups
      * @param groupPublicationTracker the group publication tracker
+     * @param poolParameters the pool parameters
      * @return the single-valued processors
      */
 
@@ -1041,7 +1052,8 @@ class ProcessorHelper
                                            SharedWriters sharedWriters,
                                            UnitMapper unitMapper,
                                            Executors executors,
-                                           PoolGroupTracker groupPublicationTracker )
+                                           PoolGroupTracker groupPublicationTracker,
+                                           PoolParameters poolParameters )
     {
         Project project = evaluationDetails.getProject();
 
@@ -1059,7 +1071,8 @@ class ProcessorHelper
         List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> poolSuppliers =
                 PoolFactory.getSingleValuedPools( project,
                                                   poolRequests,
-                                                  retrieverFactory );
+                                                  retrieverFactory,
+                                                  poolParameters );
 
         // Stand-up the pair writers
         PairsWriter<Double, Double> pairsWriter = null;
@@ -1107,8 +1120,8 @@ class ProcessorHelper
      * @param sharedWriters the shared writers
      * @param unitMapper the unit mapper
      * @param executors the executors
-     * @param groupId the group identifier for message groups
      * @param groupPublicationTracker the group publication tracker
+     * @param poolParameters the pool parameters
      * @return the ensemble processors
      */
 
@@ -1118,7 +1131,8 @@ class ProcessorHelper
                                        SharedWriters sharedWriters,
                                        UnitMapper unitMapper,
                                        Executors executors,
-                                       PoolGroupTracker groupPublicationTracker )
+                                       PoolGroupTracker groupPublicationTracker,
+                                       PoolParameters poolParameters )
     {
         Project project = evaluationDetails.getProject();
 
@@ -1136,7 +1150,8 @@ class ProcessorHelper
         List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> poolSuppliers =
                 PoolFactory.getEnsemblePools( project,
                                               poolRequests,
-                                              retrieverFactory );
+                                              retrieverFactory,
+                                              poolParameters );
 
         // Stand-up the pair writers
         PairsWriter<Double, Ensemble> pairsWriter = null;
@@ -1289,6 +1304,8 @@ class ProcessorHelper
 
     private static class EvaluationDetails
     {
+        /** System settings. **/
+        private final SystemSettings systemSettings;
         /** Project configuration. */
         private final ProjectConfigPlus projectConfigPlus;
         /** Evaluation description. */
@@ -1355,6 +1372,15 @@ class ProcessorHelper
         private EvaluationEvent getMonitor()
         {
             return this.monitor;
+        }
+
+        /**
+         * @return the system settings
+         */
+
+        private SystemSettings getSystemSettings()
+        {
+            return this.systemSettings;
         }
 
         /**
@@ -1426,20 +1452,24 @@ class ProcessorHelper
         /**
          * Builds an instance.
          * 
+         * @param systemSettings the system settings
          * @param projectConfigPlus the project declaration
          * @param evaluationDescription the evaluation description
          * @param evaluationId the evaluation identifier
          * @param subscriberApprover the subscriber approver
          * @param connections the broker connections
+         * @param monitor the evaluation event monitor
          */
 
-        private EvaluationDetails( ProjectConfigPlus projectConfigPlus,
+        private EvaluationDetails( SystemSettings systemSettings,
+                                   ProjectConfigPlus projectConfigPlus,
                                    wres.statistics.generated.Evaluation evaluationDescription,
                                    String evaluationId,
                                    SubscriberApprover subscriberApprover,
                                    BrokerConnectionFactory connections,
                                    EvaluationEvent monitor )
         {
+            this.systemSettings = systemSettings;
             this.projectConfigPlus = projectConfigPlus;
             this.evaluationDescription = evaluationDescription;
             this.evaluationId = evaluationId;

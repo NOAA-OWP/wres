@@ -10,7 +10,7 @@ import net.jcip.annotations.Immutable;
 
 /**
  * <p>Adds a wrapper to a {@link Supplier} that supplies a {@link Stream} of retrieved data. This allows the retrieved 
- * data to be cached locally for re-use. The data is acquired eagerly, on construction.
+ * data to be cached locally for re-use.
  * 
  * @author James Brown
  * @param <T> the type of data to retrieve
@@ -18,12 +18,8 @@ import net.jcip.annotations.Immutable;
 @Immutable
 public class CachingRetriever<T> implements Supplier<Stream<T>>
 {
-
-    /** Cache of data.*/
-    private volatile List<T> cache;
-
-    /** The underlying retriever. */
-    private final Supplier<Stream<T>> retriever;
+    /** The underlying cached supply. */
+    private final Supplier<List<T>> cachingSupplier;
 
     /**
      * Provides an instance.
@@ -42,22 +38,8 @@ public class CachingRetriever<T> implements Supplier<Stream<T>>
     @Override
     public Stream<T> get()
     {
-        // Double-checked locking idiom with optimization to check the volatile cache only once
-        List<T> localCache = this.cache;
-        if ( Objects.isNull( localCache ) )
-        {
-            synchronized ( this )
-            {
-                localCache = this.cache;
-                if ( Objects.isNull( localCache ) )
-                {
-                    this.cache = localCache = this.retriever.get()
-                                                            .collect( Collectors.toUnmodifiableList() );
-                }
-            }
-        }
-
-        return this.cache.stream();
+        return this.cachingSupplier.get()
+                                   .stream();
     }
 
     /**
@@ -71,7 +53,8 @@ public class CachingRetriever<T> implements Supplier<Stream<T>>
     {
         Objects.requireNonNull( retriever );
 
-        this.retriever = retriever;
+        this.cachingSupplier = CachingSupplier.of( () -> retriever.get()
+                                                                  .collect( Collectors.toUnmodifiableList() ) );
     }
 
 }

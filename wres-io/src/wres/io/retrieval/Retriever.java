@@ -11,7 +11,7 @@ import java.util.stream.Stream;
  * <p>An API for performing read operations on data objects of type <code>T</code>. Retrievers that read specific data 
  * types from specific data stores should implement this interface.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  * @param <T> the type of object to retrieve
  */
 

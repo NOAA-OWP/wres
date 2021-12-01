@@ -641,12 +641,15 @@ class EvaluationConsumer
                                          null,
                                          Collections.unmodifiableList( causeEvents ) );
 
-            String message = EvaluationConsumer.CONSUMER_STRING + this.getClientId()
-                             + " has marked evaluation "
-                             + this.getEvaluationId()
-                             + " as failed unrecoverably with cause:";
+            if ( LOGGER.isWarnEnabled() )
+            {
+                String message = EvaluationConsumer.CONSUMER_STRING + this.getClientId()
+                                 + " has marked evaluation "
+                                 + this.getEvaluationId()
+                                 + " as failed unrecoverably.";
 
-            LOGGER.warn( message, cause );
+                LOGGER.warn( message, cause );
+            }
         }
     }
 

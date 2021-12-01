@@ -53,6 +53,10 @@ public class SystemSettings extends XMLReader
 	private int maximumThresholdThreads = 1;
 	private int maximumMetricThreads = 1;
 	private int maximumProductThreads = 3;
+	/** The minimum number of singleton features per evaluation at which feature-batched retrieval is triggered. **/
+	private int featureBatchThreshold = 10;
+    /** The number of features contained within each feature batch when feature-batched retrieval is conducted. **/
+    private int featureBatchSize = 50;
 
     public static SystemSettings fromDefaultClasspathXmlFile()
     {
@@ -177,6 +181,12 @@ public class SystemSettings extends XMLReader
                         break;
                     case "maximum_product_threads":
                         this.setMaximumProductThreads( reader );
+                        break;
+                    case "feature_batch_threshold":
+                        this.setFeatureBatchThreshold( reader );
+                        break;
+                    case "feature_batch_size":
+                        this.setFeatureBatchSize( reader );
                         break;
                     case "wresconfig":
                         //Do nothing, but make sure no debug message implying it is skipped is output.
@@ -356,6 +366,61 @@ public class SystemSettings extends XMLReader
         this.updateProgressMonitor = Strings.isTrue( XMLHelper.getXMLText( reader) );
         ProgressMonitor.setShouldUpdate( this.getUpdateProgressMonitor() );
     }
+
+    private void setFeatureBatchThreshold( XMLStreamReader reader )
+            throws XMLStreamException
+    {
+        String threshold = XMLHelper.getXMLText( reader );
+
+        if ( threshold != null && StringUtils.isNumeric( threshold ) )
+        {
+            int thresholdInt = Integer.parseInt( threshold );
+            if ( thresholdInt >= 0 )
+            {
+                this.featureBatchThreshold = thresholdInt;
+            }
+            else
+            {
+                LOGGER.warn( "Failed to set the feature_batch_threshold from the input because it was not a valid "
+                             + "number: {}. Provide an integer that is greater than or equal to zero.",
+                             thresholdInt );
+            }
+        }
+        else
+        {
+            LOGGER.warn( "Failed to set the feature_batch_threshold from the input because it was not a valid number: "
+                         + "{}. Provide a non-null integer that is greater than or equal to zero.",
+                         threshold );
+        }
+    }
+
+    private void setFeatureBatchSize( XMLStreamReader reader )
+            throws XMLStreamException
+    {
+        String size = XMLHelper.getXMLText( reader );
+
+        if ( size != null && StringUtils.isNumeric( size ) )
+        {
+            int sizeInt = Integer.parseInt( size );
+            if ( sizeInt >= 1 )
+            {
+                this.featureBatchSize = sizeInt;
+            }
+            else
+            {
+                LOGGER.warn( "Failed to set the feature_batch_size from the input because it was not a valid number: "
+                             + "{}. Provide an integer that is greater than or equal to one.",
+                             sizeInt );
+            }
+        }
+        else
+        {
+            LOGGER.warn( "Failed to set the feature_batch_size from the input because it was not a valid number: {}. "
+                         + "Provide a non-null integer that is greater than or equal to one.",
+                         size );
+        }
+    }
+    
     /**
      * @return The path where the system should store NetCDF files internally
      */
@@ -520,6 +585,20 @@ public class SystemSettings extends XMLReader
     public int getMaximumPoolThreads()
     {
         return maximumPoolThreads;
+    }
+    
+    /**
+     * @return The minimum number of singleton feature groups within an evaluation when using feature-batched retrieval
+     */
+    public int getFeatureBatchThreshold() {
+        return this.featureBatchThreshold;
+    }
+    
+    /**
+     * @return The number of features within each feature-batched retrieval when using feature-batched retrieval
+     */
+    public int getFeatureBatchSize() {
+        return this.featureBatchSize;
     }
 
     private void setMaximumPoolThreads( XMLStreamReader reader )
@@ -798,32 +877,92 @@ public class SystemSettings extends XMLReader
                              maxProductThreads, this.maximumProductThreads );
             }
         }
+        
+        String fBatchThreshold = System.getProperty( "wres.featureBatchThreshold" );
+
+        if ( fBatchThreshold != null )
+        {
+            if ( StringUtils.isNumeric( fBatchThreshold ) )
+            {
+                int threshold = Integer.parseInt( fBatchThreshold );
+                if ( threshold >= 1 )
+                {
+                    this.featureBatchThreshold = threshold;
+                }
+                else
+                {
+                    LOGGER.warn( "'{}' is not a valid value for wres.featureBatchThreshold, which must be an integer "
+                                 + "greater than or equal to 0. Falling back to {}.",
+                                 threshold,
+                                 this.featureBatchThreshold );
+                }
+            }
+            else
+            {
+                LOGGER.warn( "'{}' is not a valid value for wres.featureBatchThreshold, which must be an integer " +
+                             "greater than or equal to 0. Falling back to {}.",
+                             fBatchThreshold,
+                             this.featureBatchThreshold );
+            }
+        }
+        
+        String fBatchSize = System.getProperty( "wres.featureBatchSize" );
+
+        if ( fBatchSize != null )
+        {
+            if ( StringUtils.isNumeric( fBatchSize ) )
+            {
+                int size = Integer.parseInt( fBatchSize );
+
+                if ( size >= 1 )
+                {
+                    this.featureBatchSize = size;
+                }
+                else
+                {
+                    LOGGER.warn( "'{}' is not a valid value for wres.featureBatchSize, which must be an integer "
+                                 + "greater than or equal to 1. Falling back to {}.",
+                                 size,
+                                 this.featureBatchSize );
+                }
+            }
+            else
+            {
+                LOGGER.warn( "'{}' is not a valid value for wres.featureBatchSize, which must be an integer " +
+                             "greater than or equal to 1. Falling back to {}.",
+                             fBatchSize,
+                             this.featureBatchSize );
+            }
+        }
+
     }
 
     @Override
     public String toString()
     {
         return new ToStringBuilder( this )
-                .append( "databaseConfiguration", databaseConfiguration )
-                .append( "maximumThreadCount", maximumThreadCount )
-                .append( "poolObjectLifespan", poolObjectLifespan )
-                .append( "fetchSize", fetchSize )
-                .append( "maximumCopies", maximumCopies )
-                .append( "netcdfCachePeriod", netcdfCachePeriod )
-                .append( "minimumCachedNetcdf", minimumCachedNetcdf )
-                .append( "maximumCachedNetcdf", maximumCachedNetcdf )
-                .append( "hardNetcdfCacheLimit", hardNetcdfCacheLimit )
-                .append( "netcdfStorePath", netcdfStorePath )
-                .append( "maximumArchiveThreads", maximumArchiveThreads )
-                .append( "maximumWebClientThreads", maximumWebClientThreads )
-                .append( "maximumNwmIngestThreads", maximumNwmIngestThreads )
-                .append( "dataDirectory", dataDirectory )
-                .append( "updateProgressMonitor", updateProgressMonitor )
-                .append( "maximumFeatureThreads", maximumPoolThreads )
-                .append( "maximumThresholdThreads", maximumThresholdThreads )
-                .append( "maximumMetricThreads", maximumMetricThreads )
-                .append( "maximumProductThreads", maximumProductThreads )
-                .toString();
+                                          .append( "databaseConfiguration", this.databaseConfiguration )
+                                          .append( "maximumThreadCount", this.maximumThreadCount )
+                                          .append( "poolObjectLifespan", this.poolObjectLifespan )
+                                          .append( "fetchSize", this.fetchSize )
+                                          .append( "maximumCopies", this.maximumCopies )
+                                          .append( "netcdfCachePeriod", this.netcdfCachePeriod )
+                                          .append( "minimumCachedNetcdf", this.minimumCachedNetcdf )
+                                          .append( "maximumCachedNetcdf", this.maximumCachedNetcdf )
+                                          .append( "hardNetcdfCacheLimit", this.hardNetcdfCacheLimit )
+                                          .append( "netcdfStorePath", this.netcdfStorePath )
+                                          .append( "maximumArchiveThreads", this.maximumArchiveThreads )
+                                          .append( "maximumWebClientThreads", this.maximumWebClientThreads )
+                                          .append( "maximumNwmIngestThreads", this.maximumNwmIngestThreads )
+                                          .append( "dataDirectory", this.dataDirectory )
+                                          .append( "updateProgressMonitor", this.updateProgressMonitor )
+                                          .append( "maximumPoolThreads", this.maximumPoolThreads )
+                                          .append( "maximumThresholdThreads", this.maximumThresholdThreads )
+                                          .append( "maximumMetricThreads", this.maximumMetricThreads )
+                                          .append( "maximumProductThreads", this.maximumProductThreads )
+                                          .append( "featureBatchThreshold", this.featureBatchThreshold )
+                                          .append( "featureBatchSize", this.featureBatchSize )
+                                          .toString();
     }
 
     @Override

@@ -16,6 +16,7 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Pool;
 
 /**
@@ -96,7 +97,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
      * 
      * @param input the source metadata
      * @param thresholds the thresholds
-     * @return a {@link PoolMetadata} object
+     * @return the pool metadata built from the combined inputs
      * @throws NullPointerException if any required input is null
      */
 
@@ -125,7 +126,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
      * 
      * @param input the source metadata
      * @param timeWindow the new time window
-     * @return a {@link PoolMetadata} object
+     * @return the pool metadata built from the combined inputs
      * @throws NullPointerException if any required input is null
      */
 
@@ -177,7 +178,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
      * @param input the source metadata
      * @param timeWindow the new time window
      * @param timeScale the new time scale
-     * @return a {@link PoolMetadata} object
+     * @return the pool metadata built from the combined inputs
      * @throws NullPointerException if the input is null
      */
 
@@ -211,7 +212,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
      * @param input the source metadata
      * @param timeWindow the new time window
      * @param thresholds the thresholds
-     * @return a {@link PoolMetadata} object
+     * @return the pool metadata built from the combined inputs
      * @throws NullPointerException if the input is null
      */
 
@@ -237,6 +238,41 @@ public class PoolMetadata implements Comparable<PoolMetadata>
         if ( Objects.nonNull( timeWindow ) )
         {
             pool.setTimeWindow( timeWindow.getTimeWindow() );
+        }
+
+        return new PoolMetadata( evaluation, pool.build() );
+    }
+
+    /**
+     * Builds a {@link PoolMetadata} from a prescribed input source and an override {@link FeatureGroup}.
+     * 
+     * @param input the source metadata
+     * @param featureGroup the new feature group
+     * @return the pool metadata built from the combined inputs
+     * @throws NullPointerException if the input is null
+     */
+
+    public static PoolMetadata of( PoolMetadata input, FeatureGroup featureGroup )
+    {
+        Objects.requireNonNull( input );
+
+        Evaluation evaluation = input.getEvaluation();
+
+        Pool.Builder pool = input.getPool().toBuilder();
+
+        if ( Objects.nonNull( featureGroup ) )
+        {
+            pool.clearGeometryTuples();
+            Set<FeatureTuple> featureTuples = featureGroup.getFeatures();
+            Set<GeometryTuple> geometryTuples = featureTuples.stream()
+                                                             .map( FeatureTuple::getGeometryTuple )
+                                                             .collect( Collectors.toSet() );
+            pool.addAllGeometryTuples( geometryTuples );
+
+            if ( Objects.nonNull( featureGroup.getName() ) )
+            {
+                pool.setRegionName( featureGroup.getName() );
+            }
         }
 
         return new PoolMetadata( evaluation, pool.build() );
@@ -301,7 +337,8 @@ public class PoolMetadata implements Comparable<PoolMetadata>
                                                                                      innerEvaluation.getBaselineVariableName() )
                                                                             .append( "isBaselinePool",
                                                                                      innerPool.getIsBaselinePool() )
-                                                                            .append( "features", this.getFeatureGroup() )
+                                                                            .append( "features",
+                                                                                     this.getFeatureGroup() )
                                                                             .append( "timeWindow",
                                                                                      this.getTimeWindow() )
                                                                             .append( "thresholds",
@@ -389,11 +426,11 @@ public class PoolMetadata implements Comparable<PoolMetadata>
                    .map( MessageFactory::parse )
                    .collect( Collectors.toUnmodifiableSet() );
     }
-    
+
     /**
      * @return the feature group associated with the pool or null if the pool has no features
      */
-    
+
     public FeatureGroup getFeatureGroup()
     {
         // Pretty print the feature tuples
@@ -402,14 +439,14 @@ public class PoolMetadata implements Comparable<PoolMetadata>
                                               .stream()
                                               .map( FeatureTuple::new )
                                               .collect( Collectors.toSet() );
-        
+
         FeatureGroup featureGroup = null;
-        
-        if( ! featureTuples.isEmpty() )
+
+        if ( !featureTuples.isEmpty() )
         {
             featureGroup = FeatureGroup.of( this.getPool().getRegionName(), featureTuples );
         }
-        
+
         return featureGroup;
     }
 

@@ -113,6 +113,15 @@ public class FeatureGroup implements Comparable<FeatureGroup>
     {
         return this.features; //Immutable on construction
     }
+    
+    /**
+     * @return whether the feature group contains precisely one feature tuple
+     */
+
+    public boolean isSingleton()
+    {
+        return this.features.size() == 1;
+    }
 
     @Override
     public boolean equals( Object o )
