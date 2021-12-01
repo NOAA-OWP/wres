@@ -32,4 +32,15 @@
     <maximum_copies>10000</maximum_copies>
     <update_frequency>1</update_frequency>
     <update_progress_monitor>false</update_progress_monitor>
+	<!-- The minimum number of singleton feature groups at which feature-batched 
+		retrieval occurs. A smaller number will lead to feature-batched retrieval 
+		being conducted for more evaluations. The smallest valid number is 0 and 
+		the largest is 2^31–1, which is the largest number that can be stored in 
+		a 32-bit integer. -->
+	<feature_batch_threshold>10</feature_batch_threshold>
+	<!-- The number of features per retrieval when conducting feature-batched 
+		retrieval. A larger number will consume more memory, but should lead to faster 
+		retrieval. The smallest valid number is 1 and the largest is 2^31–1, which 
+		is the largest number that can be stored in a 32-bit integer. -->
+	<feature_batch_size>50</feature_batch_size>
 </wresconfig>

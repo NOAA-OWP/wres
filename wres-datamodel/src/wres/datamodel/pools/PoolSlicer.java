@@ -418,10 +418,15 @@ public class PoolSlicer
             {
                 throw new PoolException( "Could not obtain the expected feature tuple from the pool metadata because "
                                          + "the pool composes more than one feature where a single feature was "
-                                         + "expected. The features enountered are: "
+                                         + "expected. This may occur when a pool contains several features but the "
+                                         + "pool was not built to preserve the feature-specific 'mini-pools' using the "
+                                         + "appropriate builder option for the outer pool or some other transformation "
+                                         + "of the outer pool resulted in a loss of the 'mini-pool' context. The "
+                                         + "features encountered are: "
                                          + features
                                          + ". The pool metadata is: "
-                                         + metadata );
+                                         + metadata
+                                         + "." );
             }
 
             return features.iterator().next();

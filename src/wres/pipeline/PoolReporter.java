@@ -1,6 +1,8 @@
 package wres.pipeline;
 
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
@@ -76,7 +78,19 @@ class PoolReporter implements Consumer<PoolProcessingResult>
      */
 
     private AtomicInteger processed;
+    
+    /**
+     * The time when the first pool was completed.
+     */
 
+    private Instant startTime;
+    
+    /**
+     * The time when the last pool was completed.
+     */
+
+    private Instant endTime;    
+    
     /**
      * Is <code>true</code> to print a detailed report in {@link #report()}, <code>false</code> to provide a summary.
      */
@@ -118,6 +132,12 @@ class PoolReporter implements Consumer<PoolProcessingResult>
     {
         Objects.requireNonNull( result, "cannot accept a null pool processing result." );
 
+        // Register start time
+        if( Objects.isNull( this.startTime ) )
+        {
+            this.startTime = Instant.now();
+        }
+        
         FeatureGroup featureGroup = result.getPoolRequest()
                                           .getMetadata()
                                           .getFeatureGroup();
@@ -160,6 +180,12 @@ class PoolReporter implements Consumer<PoolProcessingResult>
                              timeWindow );
             }
         }
+        
+        // Register end time
+        if( this.processed.get() == this.totalPools )
+        {
+            this.endTime = Instant.now();
+        }
     }
 
     /**
@@ -181,14 +207,21 @@ class PoolReporter implements Consumer<PoolProcessingResult>
              &&
              !successfulFeaturesToReport.isEmpty() )
         {
+            if( Objects.nonNull( this.endTime ) )
+            {
+                this.endTime = Instant.now();
+            }
+            
             LOGGER.info( "Statistics were created for {} pools, which included {} features groups and {} time windows. "
-                         + "The feature groups were: {}. The time windows were: {}.",
+                         + "The feature groups were: {}. The time windows were: {}. The time elapsed between the "
+                         + "completion of the first and last pools was: {}.",
                          successfulPoolsToReport.size(),
                          successfulFeaturesToReport.size(),
                          successfulTimeWindowsToReport.size(),
                          PoolReporter.getPoolItemDescription( successfulFeaturesToReport, FeatureGroup::getName ),
                          PoolReporter.getPoolItemDescription( successfulTimeWindowsToReport,
-                                                              TimeWindowOuter::toString ) );
+                                                              TimeWindowOuter::toString ),
+                         Duration.between( this.startTime, this.endTime ) );
         }
 
         // Exception after detailed report: in practice, this should be handled earlier

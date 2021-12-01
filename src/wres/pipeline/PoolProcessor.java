@@ -235,7 +235,7 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
     {
         // Get the pool
         Pool<TimeSeries<Pair<L, R>>> pool = this.poolSupplier.get();
-
+        
         // Compute the statistics
         List<StatisticsStore> statistics = this.getStatisticsProcessingTask( this.metricProcessors,
                                                                              this.projectConfig,
