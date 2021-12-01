@@ -34,7 +34,7 @@ plugins
     id 'org.openrepose.gradle.plugins.jaxb' version '2.5.0'
 
     // For ability to use git ids for versioning jar files:
-    id 'org.ajoberstar.grgit' version '4.1.0'
+    id 'org.ajoberstar.grgit' version '4.1.1'
 
     // To compile user documentation (not working: blows up on compileMarkdown)
     //id 'org.uulib.gradle.markdown' version '0.0.1'
@@ -1078,7 +1078,7 @@ project(':wres-tasker')
 
         implementation project( ':wres-messages' )
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
-        implementation 'com.rabbitmq:amqp-client:5.13.1'
+        implementation 'com.rabbitmq:amqp-client:5.14.0'
         implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.0.0'
         implementation 'jakarta.annotation:jakarta.annotation-api:2.1.0-B1'
 
@@ -1115,7 +1115,7 @@ project(':wres-tasker')
         implementation 'org.apache.tika:tika-core:1.27'
 
         // To persist job metadata while keeping it relatively fast
-        implementation 'org.redisson:redisson:3.16.4'
+        implementation 'org.redisson:redisson:3.16.5'
 
         // For ToStringBuilder
         implementation 'org.apache.commons:commons-lang3:3.12.0'
@@ -1138,8 +1138,8 @@ project(':wres-tasker')
         testImplementation 'junit:junit:4.13.2'
 
         // To generate fake certificates and keys for testing
-        testImplementation 'org.bouncycastle:bcpkix-jdk15on:1.69'
-        testImplementation 'org.bouncycastle:bcprov-jdk15on:1.69'
+        testImplementation 'org.bouncycastle:bcpkix-jdk15on:1.70'
+        testImplementation 'org.bouncycastle:bcprov-jdk15on:1.70'
 
         // To test against an embedded AMQP broker
         testImplementation 'org.apache.qpid:qpid-broker-core:8.0.6'
