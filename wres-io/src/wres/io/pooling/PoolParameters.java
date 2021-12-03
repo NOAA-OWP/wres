@@ -135,7 +135,7 @@ public class PoolParameters
                                                 + "." );
         }
 
-        LOGGER.info( "Created pool parameters of {}.", this );
+        LOGGER.debug( "Created pool parameters of {}.", this );
     }
 
 }
