@@ -584,7 +584,7 @@ public class Pool<T> implements Supplier<List<T>>
     {
         if ( Objects.isNull( this.mainMeta ) )
         {
-            throw new PoolException( "Specify non-null metadata for the metric input." );
+            throw new PoolException( "Specify non-null metadata for the pool." );
         }
 
         if ( this.sampleData.contains( (T) null ) )

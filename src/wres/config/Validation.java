@@ -44,9 +44,7 @@ import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
-import wres.config.generated.FeatureGroup;
 import wres.config.generated.FeaturePool;
-import wres.config.generated.FeatureService;
 import wres.config.generated.IntBoundsType;
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
@@ -59,6 +57,7 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.config.generated.ProjectConfig.Outputs;
 import wres.config.generated.RemoveMemberByValidYear;
+import wres.config.generated.SourceTransformationType;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeScaleConfig;
@@ -3186,6 +3185,50 @@ public class Validation
                              remove.getEarliestDay() );
                 dataSourcesValid = false;
             }
+        }
+        
+        // Validate any persistence transformation
+        // Start by warning against a transformation, of which there is only one type supported
+        if ( Objects.nonNull( dataSourceConfig.getTransformation() ) )
+        {
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                         + " The declaration contains a <transformation>persistence</transformation>, which has been "
+                         + "marked deprecated for removal. This feature will be removed without warning in a future "
+                         + "release. Instead, declare <persistence>1</persistence> for the same behavior.",
+                         projectConfigPlus.getOrigin(),
+                         dataSourceConfig.sourceLocation().getLineNumber(),
+                         dataSourceConfig.sourceLocation().getColumnNumber() );
+            dataSourcesValid = true;
+        }
+
+        // Do not declare persistence in two different ways
+        if ( Objects.nonNull( dataSourceConfig.getPersistence() )
+             && Objects.nonNull( dataSourceConfig.getTransformation() )
+             && dataSourceConfig.getTransformation() == SourceTransformationType.PERSISTENCE )
+        {
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                         + " The declaration contains both a <transformation>persistence</transformation> and a "
+                         + "<persistence>{}</persistence>, which is not allowed. Please delete the "
+                         + "<transformation>persistence</transformation> and try again.",
+                         projectConfigPlus.getOrigin(),
+                         dataSourceConfig.sourceLocation().getLineNumber(),
+                         dataSourceConfig.sourceLocation().getColumnNumber(),
+                         dataSourceConfig.getPersistence() );
+            dataSourcesValid = false;
+        }
+
+        // The lag associated with persistence is non-negative
+        if ( Objects.nonNull( dataSourceConfig.getPersistence() ) && dataSourceConfig.getPersistence() < 0 )
+        {
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                         + " The declaration contains a persistence transformation with a lag of {}, which is not "
+                         + "allowed. The lag must be non-negative. Please correct the lag to 0 or greater and try "
+                         + "again.",
+                         projectConfigPlus.getOrigin(),
+                         dataSourceConfig.sourceLocation().getLineNumber(),
+                         dataSourceConfig.sourceLocation().getColumnNumber(),
+                         dataSourceConfig.getPersistence() );
+            dataSourcesValid = false;
         }
 
         return dataSourcesValid;

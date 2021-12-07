@@ -35,7 +35,6 @@ import wres.config.generated.DoubleBoundsType;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
-import wres.config.generated.SourceTransformationType;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.config.generated.RemoveMemberByValidYear;
 import wres.datamodel.Ensemble;
@@ -738,12 +737,22 @@ public class PoolFactory
         Objects.requireNonNull( baselineConfig );
         Objects.requireNonNull( retrieverFactory );
 
-        // Persistence is supported
-        if ( baselineConfig.getTransformation() == SourceTransformationType.PERSISTENCE )
+        // Has a generated baseline, only one supported for now: persistence
+        if ( ConfigHelper.hasGeneratedBaseline( baselineConfig ) )
         {
             LOGGER.trace( "Creating a persistence generator for data source {}.", baselineConfig );
 
+            // Default lag of 1
+            int lag = 1;
+            
+            if ( Objects.nonNull( baselineConfig.getPersistence() ) )
+            {
+                lag = baselineConfig.getPersistence();
+                LOGGER.debug( "Discovered a persistence baseline with a lag of {}.", lag );
+            }
+            
             // Map from the input data type to the required type
+            int finalLag = lag;
             return features -> {
                 Supplier<Stream<TimeSeries<R>>> persistenceSource =
                         () -> retrieverFactory.getBaselineRetriever( features ).get();
@@ -751,7 +760,8 @@ public class PoolFactory
                 // Order 1 by default. If others are supported later, add these                              
                 return PersistenceGenerator.of( persistenceSource,
                                                 upscaler,
-                                                admissibleValue );
+                                                admissibleValue,
+                                                finalLag );
             };
         }
         // Other types are not supported

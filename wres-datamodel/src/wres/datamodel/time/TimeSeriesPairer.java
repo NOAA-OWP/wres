@@ -9,7 +9,7 @@ import wres.datamodel.pools.pairs.PairingException;
  * 
  * @param <L> the left type of event value
  * @param <R> the right type of event value
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public interface TimeSeriesPairer<L, R>

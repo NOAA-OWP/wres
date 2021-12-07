@@ -395,7 +395,8 @@ public class ConfigHelper
     {
         // Currently only one generated type supported
         return Objects.nonNull( baselineConfig )
-               && baselineConfig.getTransformation() == SourceTransformationType.PERSISTENCE;
+               && ( baselineConfig.getTransformation() == SourceTransformationType.PERSISTENCE ||
+                    Objects.nonNull( baselineConfig.getPersistence() ) );
     }
 
     /**

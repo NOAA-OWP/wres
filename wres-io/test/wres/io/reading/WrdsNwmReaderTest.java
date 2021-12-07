@@ -178,6 +178,7 @@ public class WrdsNwmReaderTest
                                                         null,
                                                         null,
                                                         null,
+                                                        null,
                                                         null );
 
         ProjectConfig.Inputs inputs = new ProjectConfig.Inputs( null,
@@ -352,6 +353,7 @@ public class WrdsNwmReaderTest
         DataSourceConfig config = new DataSourceConfig( DatasourceType.ANALYSES,
                                                         sourceList,
                                                         configVariable,
+                                                        null,
                                                         null,
                                                         null,
                                                         null,

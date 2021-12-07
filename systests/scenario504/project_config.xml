@@ -22,7 +22,7 @@
             <!-- Special transformation "persistence" tells system to generate
                  a persistence forecast from the data source that will create
                  its pairs with identical pool parameters as the forecasts. -->
-            <transformation>persistence</transformation>
+            <persistence>1</persistence>
         </baseline>
     </inputs>
 
