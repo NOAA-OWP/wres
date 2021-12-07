@@ -235,7 +235,7 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
     {
         // Get the pool
         Pool<TimeSeries<Pair<L, R>>> pool = this.poolSupplier.get();
-        
+
         // Compute the statistics
         List<StatisticsStore> statistics = this.getStatisticsProcessingTask( this.metricProcessors,
                                                                              this.projectConfig,
@@ -252,15 +252,11 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 
         // TODO: extract the pair writing to the product writers, i.e., publish the pairs
         // Write the main pairs
-        this.getPairWritingTask( false,
-                                 this.pairsWriter,
-                                 this.projectConfig )
+        this.getPairWritingTask( false, this.pairsWriter )
             .apply( pool );
 
         // Write any baseline pairs, as needed
-        this.getPairWritingTask( true,
-                                 this.basePairsWriter,
-                                 this.projectConfig )
+        this.getPairWritingTask( true, this.basePairsWriter )
             .apply( pool );
 
         return new PoolProcessingResult( this.poolRequest, published );
@@ -330,30 +326,35 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
      * 
      * @param useBaseline is true to write the baseline pairs
      * @param sharedWriters the consumers of paired data for writing
-     * @param projectConfig the project declaration
      * @return a task that writes pairs
      */
 
     private UnaryOperator<Pool<TimeSeries<Pair<L, R>>>> getPairWritingTask( boolean useBaseline,
-                                                                            PairsWriter<L, R> sharedWriters,
-                                                                            ProjectConfig projectConfig )
+                                                                            PairsWriter<L, R> sharedWriters )
     {
         return pairs -> {
-
+            
             if ( Objects.nonNull( sharedWriters ) )
             {
                 // Baseline data?
-                if ( useBaseline && Objects.nonNull( projectConfig.getInputs().getBaseline() ) )
+                if ( useBaseline )
                 {
-                    sharedWriters.accept( pairs.getBaselineData() );
+                    if ( Objects.nonNull( pairs.getBaselineData() ) )
+                    {
+                        sharedWriters.accept( pairs.getBaselineData() );
+                    }
+                    else
+                    {
+                        LOGGER.debug( "No baseline pairs were discovered for pool {}.", pairs.getMetadata() );
+                    }
                 }
+                // Main pairs
                 else
                 {
                     sharedWriters.accept( pairs );
                 }
             }
-            // #71874: pairs are not written per feature so do not report on the 
-            // paths to pairs for each feature. Report on the pairs for all features.
+            
             return pairs;
         };
     }
