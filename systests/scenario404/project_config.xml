@@ -18,7 +18,7 @@
             <type>observations</type>
             <source zoneOffset="CST">data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
             <variable>QINE</variable>
-            <transformation>persistence</transformation>
+            <persistence>1</persistence>
         </baseline>
     </inputs>
 

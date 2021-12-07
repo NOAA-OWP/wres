@@ -76,11 +76,13 @@ class PoolFactoryTest
                                                       null,
                                                       null,
                                                       null,
+                                                      null,
                                                       null );
 
         DataSourceConfig right = new DataSourceConfig( DatasourceType.fromValue( "single valued forecasts" ),
                                                        sourceList,
                                                        new Variable( "STREAMFLOW", null ),
+                                                       null,
                                                        null,
                                                        null,
                                                        null,

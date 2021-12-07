@@ -84,6 +84,24 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="persistence">
+        <xs:annotation>
+            <xs:documentation>Creates a baseline by persisting the prescribed source
+                forwards in time with a specified order or "lag", which must be 
+                greater than or equal to zero. For non-forecast sources, the lag is
+                applied to the valid time. For example, a lag of 1 means that the 
+                persisted value is the value from the persistence source that is one 
+                time step prior to the current valid time. For a forecast source, the 
+                lag is applied to the forecast reference time, or the first reference 
+                time if there are many. In this context, a lag of 3 means that the 
+                persisted value at all forecast valid times is the value from the 
+                persistence source that is 3 steps prior to the forecast reference 
+                time.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:int" />
+    </xs:simpleType>
+
     <xs:simpleType name="interfaceShortHand">
         <xs:annotation>
             <xs:documentation>
@@ -367,6 +385,7 @@
                 </xs:complexType>
             </xs:element>
             <xs:element name="transformation" type="sourceTransformationType" minOccurs="0" maxOccurs="1" />
+            <xs:element name="persistence" type="persistence" minOccurs="0" maxOccurs="1" />
             <xs:element name="ensemble" type="ensembleCondition" minOccurs="0" maxOccurs="unbounded" />
             <xs:element name="timeShift" minOccurs="0" maxOccurs="1">
                 <xs:complexType>

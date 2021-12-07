@@ -23,6 +23,7 @@ public class ConfigHelperTest
                                                                   null,
                                                                   null,
                                                                   null,
+                                                                  null,
                                                                   configuredTimeShift,
                                                                   null,
                                                                   null,
@@ -40,6 +41,7 @@ public class ConfigHelperTest
     public void getNullTimeshift()
     {
         DataSourceConfig dataSourceConfig = new DataSourceConfig( null,
+                                                                  null,
                                                                   null,
                                                                   null,
                                                                   null,

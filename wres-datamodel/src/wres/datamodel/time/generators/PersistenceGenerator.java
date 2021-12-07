@@ -89,7 +89,6 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
      * @param admissibleValue an optional constraint on values that should be persisted
      * @return an instance
      * @throws NullPointerException if the persistenceSource is null
-     * @throws IllegalArgumentException if the order is negative
      */
 
     public static <T> PersistenceGenerator<T> of( Supplier<Stream<TimeSeries<T>>> persistenceSource,
@@ -98,6 +97,28 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
     {
         return new PersistenceGenerator<>( 1, persistenceSource, upscaler, admissibleValue );
     }
+    
+    /**
+     * Provides an instance for persistence of order one, i.e., lag-1 persistence.
+     * 
+     * @param <T> the type of time-series event value
+     * @param persistenceSource the persistence data source
+     * @param upscaler the temporal upscaler, which is required if the template series has a larger scale than the 
+     *            persistenceSource
+     * @param admissibleValue an optional constraint on values that should be persisted
+     * @param lag the lag or order, which must be non-negative
+     * @return an instance
+     * @throws NullPointerException if the persistenceSource is null
+     * @throws IllegalArgumentException if the order is negative
+     */
+
+    public static <T> PersistenceGenerator<T> of( Supplier<Stream<TimeSeries<T>>> persistenceSource,
+                                                  TimeSeriesUpscaler<T> upscaler,
+                                                  Predicate<T> admissibleValue,
+                                                  int lag )
+    {
+        return new PersistenceGenerator<>( lag, persistenceSource, upscaler, admissibleValue );
+    }    
 
     /**
      * Creates a persistence time-series at a lag supplied on construction using the input time-series as a template.
