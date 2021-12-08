@@ -675,39 +675,26 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         TimeScaleOuter timeScale = null;
         for ( FeatureTuple nextTuple : tuples )
         {
-            List<TimeSeries<L>> l = mappedLeft.get( nextTuple.getLeft() );
-            List<TimeSeries<R>> r = mappedRight.get( nextTuple.getRight() );
-            List<TimeSeries<R>> b = mappedBaseline.get( nextTuple.getBaseline() );
+            // Get the feature-specific time-series or an empty list
+            List<TimeSeries<L>> l = mappedLeft.getOrDefault( nextTuple.getLeft(), List.of() );
+            List<TimeSeries<R>> r = mappedRight.getOrDefault( nextTuple.getRight(), List.of() );
+            List<TimeSeries<R>> b = mappedBaseline.getOrDefault( nextTuple.getBaseline(), List.of() );
 
             // Add mini pool
-            if ( Objects.nonNull( l ) && Objects.nonNull( r ) )
-            {
-                Pool<TimeSeries<Pair<L, R>>> miniPool = this.createPoolPerFeatureTuple( nextTuple, l, r, b );
+            Pool<TimeSeries<Pair<L, R>>> miniPool = this.createPoolPerFeatureTuple( nextTuple, l, r, b );
 
-                timeScale = miniPool.getMetadata()
-                                    .getTimeScale();
+            timeScale = miniPool.getMetadata()
+                                .getTimeScale();
 
-                // Add the pool and merge the climatology
-                builder.addPool( miniPool, true );
-            }
-            // Record no data
-            else
+            // Add the pool and merge the climatology
+            builder.addPool( miniPool, true );
+
+            if ( l.isEmpty() && r.isEmpty() )
             {
                 noData.add( nextTuple );
             }
         }
-        
-        // Add an empty mini pool for each feature with no data, using consistent time-scale information derived from
-        // a non-empty pool, where available
-        for( FeatureTuple nextEmpty : noData )
-        {
-            Pool<TimeSeries<Pair<L, R>>> emptyPool =
-                    this.createPoolPerFeatureTuple( nextEmpty, List.of(), List.of(), List.of() );
-            PoolMetadata adjusted = PoolMetadata.of( emptyPool.getMetadata(), timeScale );
-            emptyPool = Pool.of( List.of(), adjusted );
-            builder.addPool( emptyPool, false );
-        }
-        
+
         // Set the metadata for the overall pool using the updated time scale information
         PoolMetadata adjusted = PoolMetadata.of( this.metadata, timeScale );
         builder.setMetadata( adjusted );
@@ -2051,32 +2038,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     }
 
     /**
-     * @param leftCount the number of left series, to help with logging
-     * @param rightCount the number of right series, to help with logging
-     * @param baselineCount the number of baseline series, to help with logging
-     * @return an empty pool.
-     */
-
-    private Pool<TimeSeries<Pair<L, R>>> getEmptyPool( int leftCount, int rightCount, int baselineCount )
-    {
-        Pool.Builder<TimeSeries<Pair<L, R>>> builder = new Pool.Builder<>();
-
-        if ( LOGGER.isDebugEnabled() )
-        {
-            LOGGER.debug( "The following pool was empty: {}. There were {} left time-series, {} right time-series "
-                          + "and {} baseline time-series.",
-                          this.metadata,
-                          leftCount,
-                          rightCount,
-                          baselineCount );
-        }
-
-        return builder.setMetadata( this.metadata )
-                      .setMetadataForBaseline( this.baselineMetadata )
-                      .build();
-    }
-
-    /**
      * Hidden constructor.  
      * 
      * @param builder the builder
@@ -2227,6 +2188,5 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
         return returnMe;
     }
-
 
 }
