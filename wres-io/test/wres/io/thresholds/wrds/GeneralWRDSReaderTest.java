@@ -375,14 +375,20 @@ public class GeneralWRDSReaderTest
 
         thresholds = results.values().iterator().next();
         expectedThresholdValues = new HashMap<>();
-        expectedThresholdValues.put( "low", 557.8 );
-        expectedThresholdValues.put( "bankfull", 9379.0 );
-        expectedThresholdValues.put( "action", 9379.0 );
-        expectedThresholdValues.put( "flood", 35331.0 );
-        expectedThresholdValues.put( "minor", 35331.0 );
-        expectedThresholdValues.put( "moderate", 102042.0 );
-        expectedThresholdValues.put( "major", 142870.0 );
+        expectedThresholdValues.put( "action", 11900.0 );
+        expectedThresholdValues.put( "flood", 31500.0 );
+        expectedThresholdValues.put( "minor", 31500.0 );
+        expectedThresholdValues.put( "moderate", 77929.0 );
+        expectedThresholdValues.put( "major", 105100.0 );
         expectedThresholdValues.put( "record", 136000.0 );
+
+        expectedThresholdValues.put( "NRLDB low", 557.8 );
+        expectedThresholdValues.put( "NRLDB bankfull", 9379.0 );
+        expectedThresholdValues.put( "NRLDB action", 9379.0 );
+        expectedThresholdValues.put( "NRLDB flood", 35331.0 );
+        expectedThresholdValues.put( "NRLDB minor", 35331.0 );
+        expectedThresholdValues.put( "NRLDB moderate", 102042.0 );
+        expectedThresholdValues.put( "NRLDB major", 142870.0 );
 
         for ( ThresholdOuter outerThreshold : thresholds )
         {
@@ -462,13 +468,15 @@ public class GeneralWRDSReaderTest
         thresholds = results.values().iterator().next();
         expectedThresholdValues = new HashMap<>();
         expectedThresholdValues = new HashMap<>();
-        expectedThresholdValues.put( "bankfull", 38633.0 );
-        expectedThresholdValues.put( "action", 31313.0 );
-        expectedThresholdValues.put( "flood", 48628.0 );
-        expectedThresholdValues.put( "minor", 48628.0 );
-        expectedThresholdValues.put( "moderate", 144077.0 );
-        expectedThresholdValues.put( "major", 216266.0 );
+        expectedThresholdValues.put( "flood", 36900.0 );
         expectedThresholdValues.put( "record", 209000.0 );
+
+        expectedThresholdValues.put( "NRLDB bankfull", 38633.0 );
+        expectedThresholdValues.put( "NRLDB action", 31313.0 );
+        expectedThresholdValues.put( "NRLDB flood", 48628.0 );
+        expectedThresholdValues.put( "NRLDB minor", 48628.0 );
+        expectedThresholdValues.put( "NRLDB moderate", 144077.0 );
+        expectedThresholdValues.put( "NRLDB major", 216266.0 );
 
         for ( ThresholdOuter outerThreshold : thresholds )
         {

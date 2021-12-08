@@ -248,13 +248,16 @@ public class GeneralThresholdDefinition implements Serializable
             {
                 if ( threshold.getValue() != null )
                 {
+                    //Build the label.  It will be the threshold key unless that's already used.
+                    //If it is already used, then the rating curve source will be added.
+                    String label = getCalc_flow_values().getRating_curve().getSource().toString() + " " + threshold.getKey();
                     double value = calculatedUnitConversionOperator.applyAsDouble( threshold.getValue() );
-                    thresholdMap.put( threshold.getKey(),
+                    thresholdMap.put( label,
                                       ThresholdOuter.of(
                                                          OneOrTwoDoubles.of( value ),
                                                          thresholdOperator,
                                                          dataType,
-                                                         threshold.getKey(),
+                                                         label,
                                                          MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() ) ) );
                 }
             }
