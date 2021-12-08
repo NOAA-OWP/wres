@@ -22,6 +22,7 @@ import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool.Builder;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -429,52 +430,9 @@ public class PoolSlicer
                                          + "." );
             }
 
-            return features.iterator().next();
+            return features.iterator()
+                           .next();
         };
-    }
-
-    /**
-     * Returns <code>true</code> if the two metadatas are equal after ignoring the time windows, thresholds and 
-     * features.
-     * 
-     * @param first the first metadata to test for conditional equality with the second
-     * @param second the second metadata to test for conditional equality with the first
-     * @return true if the metadatas are conditionally equal
-     */
-
-    public static boolean equalsWithoutTimeWindowOrThresholdsOrFeatures( PoolMetadata first, PoolMetadata second )
-    {
-        if ( Objects.isNull( first ) != Objects.isNull( second ) )
-        {
-            return false;
-        }
-
-        if ( Objects.isNull( first ) )
-        {
-            return true;
-        }
-
-        // Adjust the pools to remove the time window and thresholds and feature-ish information
-        wres.statistics.generated.Pool adjustedPoolFirst = first.getPool()
-                                                                .toBuilder()
-                                                                .clearTimeWindow()
-                                                                .clearEventThreshold()
-                                                                .clearDecisionThreshold()
-                                                                .clearGeometryTuples()
-                                                                .clearRegionName()
-                                                                .build();
-
-        wres.statistics.generated.Pool adjustedPoolSecond = second.getPool()
-                                                                  .toBuilder()
-                                                                  .clearTimeWindow()
-                                                                  .clearEventThreshold()
-                                                                  .clearDecisionThreshold()
-                                                                  .clearGeometryTuples()
-                                                                  .clearRegionName()
-                                                                  .build();
-
-        return first.getEvaluation().equals( second.getEvaluation() )
-               && adjustedPoolFirst.equals( adjustedPoolSecond );
     }
 
     /**
@@ -507,6 +465,7 @@ public class PoolSlicer
 
         // Test entry
         PoolMetadata test = input.get( 0 );
+        TimeScaleOuter timeScale = null;
 
         // Validate for equivalence with the first entry and add window to list
         for ( PoolMetadata next : input )
@@ -533,20 +492,23 @@ public class PoolSlicer
                 unionThresholds.add( next.getThresholds() );
             }
 
+            if( Objects.isNull( timeScale ) )
+            {
+                timeScale = next.getTimeScale();
+            }
+            
             unionFeatures.addAll( next.getFeatureTuples() );
             unionRegionNames.add( next.getPool().getRegionName() );
         }
-
-        if ( LOGGER.isDebugEnabled() )
-        {
-            LOGGER.debug( "While building the union metadata from {}, discovered these time windows in common: {}; and "
-                          + "these features in common: {}; and these thresholds in common: {}; and these feature group"
-                          + "names in common: {}. ",
-                          unionWindows,
-                          unionFeatures,
-                          unionThresholds,
-                          unionRegionNames );
-        }
+        
+        LOGGER.debug( "While building the union metadata from {}, discovered these time windows in common: {}; and "
+                      + "these features in common: {}; and these thresholds in common: {}; and these feature group"
+                      + "names in common: {}. ",
+                      input,
+                      unionWindows,
+                      unionFeatures,
+                      unionThresholds,
+                      unionRegionNames );
 
         TimeWindowOuter unionWindow = null;
         if ( !unionWindows.isEmpty() )
@@ -576,13 +538,64 @@ public class PoolSlicer
 
         wres.statistics.generated.Pool unionPool = MessageFactory.parse( featureGroup,
                                                                          unionWindow,
-                                                                         test.getTimeScale(),
+                                                                         timeScale,
                                                                          threshold,
                                                                          test.getPool().getIsBaselinePool(),
                                                                          test.getPool().getPoolId() );
 
         return PoolMetadata.of( test.getEvaluation(), unionPool );
     }
+    
+    /**
+     * Returns <code>true</code> if the two metadatas are equal after ignoring the time windows, thresholds and 
+     * features. In addition, the time scale will be ignored (lenient) if one of the time scales is null/unknown.
+     * 
+     * @param first the first metadata to test for conditional equality with the second
+     * @param second the second metadata to test for conditional equality with the first
+     * @return true if the metadatas are conditionally equal
+     */
+
+    private static boolean equalsWithoutTimeWindowOrThresholdsOrFeatures( PoolMetadata first, PoolMetadata second )
+    {
+        if ( Objects.isNull( first ) != Objects.isNull( second ) )
+        {
+            return false;
+        }
+
+        if ( Objects.isNull( first ) )
+        {
+            return true;
+        }
+
+        // Lenient about the time scale when it is missing from one
+        boolean ignoreTimeScale = ! first.hasTimeScale() || ! second.hasTimeScale();
+        
+        // Adjust the pools to remove the time window and thresholds and feature-ish information
+        wres.statistics.generated.Pool.Builder adjustedPoolFirst = first.getPool()
+                                                                .toBuilder()
+                                                                .clearTimeWindow()
+                                                                .clearEventThreshold()
+                                                                .clearDecisionThreshold()
+                                                                .clearGeometryTuples()
+                                                                .clearRegionName();
+
+        wres.statistics.generated.Pool.Builder adjustedPoolSecond = second.getPool()
+                                                                  .toBuilder()
+                                                                  .clearTimeWindow()
+                                                                  .clearEventThreshold()
+                                                                  .clearDecisionThreshold()
+                                                                  .clearGeometryTuples()
+                                                                  .clearRegionName();
+        
+        if( ignoreTimeScale )
+        {
+            adjustedPoolFirst.clearTimeScale();
+            adjustedPoolSecond.clearTimeScale();
+        }
+
+        return first.getEvaluation().equals( second.getEvaluation() )
+               && adjustedPoolFirst.build().equals( adjustedPoolSecond.build() );
+    }    
 
     /**
      * Unpacks a pool of time-series into their raw event values, eliminating the time-series view.
