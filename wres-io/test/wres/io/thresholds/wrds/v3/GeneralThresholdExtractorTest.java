@@ -647,18 +647,24 @@ class GeneralThresholdExtractorTest
         Assert.assertTrue( funExtraction.containsKey( STEAK ) );
         Assert.assertTrue( funExtraction.containsKey( BAKED_POTATO ) );
 
-        Assert.assertEquals( 7, funExtraction.get( STEAK ).size() );
-        Assert.assertEquals( 6, funExtraction.get( BAKED_POTATO ).size() );
+        Assert.assertEquals( 14, funExtraction.get( STEAK ).size() );
+        Assert.assertEquals( 11, funExtraction.get( BAKED_POTATO ).size() );
 
-        thresholdValues = new HashMap<>();
+        thresholdValues.put( "bankfull", 14.586 );
+        thresholdValues.put( "low", 5.7 );
+        thresholdValues.put( "action", 13.5 );
+        thresholdValues.put( "minor", 189.42 );
+        thresholdValues.put( "moderate", 868.5 );
+        thresholdValues.put( "major", 90144.2 );
+        thresholdValues.put( "record", 4846844.5484 );
 
-        thresholdValues.put( "bankfull", -14.586 );
-        thresholdValues.put( "low", -5.7 );
-        thresholdValues.put( "action", -13.5 );
-        thresholdValues.put( "minor", -189.42 );
-        thresholdValues.put( "moderate", -868.5 );
-        thresholdValues.put( "major", -90144.2 );
-        thresholdValues.put( "record", -4846844.5484 );
+        thresholdValues.put( "DonkeySauce bankfull", -14.586 );
+        thresholdValues.put( "DonkeySauce low", -5.7 );
+        thresholdValues.put( "DonkeySauce action", -13.5 );
+        thresholdValues.put( "DonkeySauce minor", -189.42 );
+        thresholdValues.put( "DonkeySauce moderate", -868.5 );
+        thresholdValues.put( "DonkeySauce major", -90144.2 );
+        thresholdValues.put( "DonkeySauce record", -4846844.5484 );
 
         for ( ThresholdOuter outerThreshold : funExtraction.get( STEAK ) )
         {
@@ -675,12 +681,18 @@ class GeneralThresholdExtractorTest
 
         thresholdValues = new HashMap<>();
 
-        thresholdValues.put( "low", 54.7 );
+        thresholdValues.put( "low", 57.0 );
         thresholdValues.put( "bankfull", 1458.6 );
-        thresholdValues.put( "minor", 18942.0 );
-        thresholdValues.put( "moderate", 88.5 );
-        thresholdValues.put( "major", 901.2 );
-        thresholdValues.put( "record", 6844.84 );
+        thresholdValues.put( "minor", 142.0 );
+        thresholdValues.put( "moderate", 86.85 );
+        thresholdValues.put( "major", 9.2 );
+        thresholdValues.put( "record", 4.35 );
+
+        thresholdValues.put( "DonkeySauce low", 54.7 );
+        thresholdValues.put( "DonkeySauce minor", 18942.0 );
+        thresholdValues.put( "DonkeySauce moderate", 88.5 );
+        thresholdValues.put( "DonkeySauce major", 901.2 );
+        thresholdValues.put( "DonkeySauce record", 6844.84 );
 
         for ( ThresholdOuter outerThreshold : funExtraction.get( BAKED_POTATO ) )
         {
