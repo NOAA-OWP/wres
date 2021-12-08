@@ -140,6 +140,9 @@ public class Pool<T> implements Supplier<List<T>>
     {
         if ( this.miniPools.isEmpty() )
         {
+            LOGGER.debug( "There is no mini-pool view of this pool because it was not built from smaller pools. "
+                          + "Returning the overall pool instead." );
+
             return Collections.singletonList( this );
         }
 
@@ -163,17 +166,20 @@ public class Pool<T> implements Supplier<List<T>>
 
         // Preserve the mini-pool view of the data
         List<Pool<T>> miniPools = this.getMiniPools();
-        
-        for( Pool<T> next : miniPools )
+
+        for ( Pool<T> next : miniPools )
         {
-            Pool<T> nextBaseline = new Builder<T>().setMetadata( next.baselineMeta )
-                                                   .addData( next.baselineSampleData )
-                                                   .setClimatology( next.climatology )
-                                                   .build();
-                        
-            builder.addPool( nextBaseline, false );
+            if ( next.hasBaseline() )
+            {
+                Pool<T> nextBaseline = new Builder<T>().setMetadata( next.baselineMeta )
+                                                       .addData( next.baselineSampleData )
+                                                       .setClimatology( next.climatology )
+                                                       .build();
+
+                builder.addPool( nextBaseline, false );
+            }
         }
-        
+
         return builder.build();
     }
 
@@ -257,7 +263,7 @@ public class Pool<T> implements Supplier<List<T>>
             returnMe = returnMe && input.baselineSampleData.equals( this.baselineSampleData )
                        && input.baselineMeta.equals( this.baselineMeta );
         }
-        
+
         return returnMe;
     }
 
@@ -539,19 +545,19 @@ public class Pool<T> implements Supplier<List<T>>
     {
         //Ensure safe types
         this.sampleData = Collections.unmodifiableList( new ArrayList<>( b.sampleData ) );
-        
+
         // If there is only one mini-pool, elide. The mini-pools view adds a reference for each data item and the 
         // default view is a single pool, so there is no need for the duplicate references.
         List<Pool<T>> miniPoolsInner = Collections.unmodifiableList( new ArrayList<>( b.miniPools ) );
-        if( miniPoolsInner.size() == 1 )
+        if ( miniPoolsInner.size() == 1 )
         {
-            this.miniPools = Collections.emptyList();   
+            this.miniPools = Collections.emptyList();
         }
         else
         {
             this.miniPools = miniPoolsInner;
         }
-        
+
         this.mainMeta = b.mainMeta;
         this.climatology = b.climatology;
 

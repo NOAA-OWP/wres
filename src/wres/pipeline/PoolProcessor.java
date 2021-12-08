@@ -339,7 +339,7 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                 // Baseline data?
                 if ( useBaseline )
                 {
-                    if ( Objects.nonNull( pairs.getBaselineData() ) )
+                    if ( pairs.hasBaseline() )
                     {
                         sharedWriters.accept( pairs.getBaselineData() );
                     }
