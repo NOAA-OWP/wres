@@ -1,10 +1,10 @@
 package wres.datamodel.pools;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Function;
@@ -407,8 +408,9 @@ class PoolSlicerTest
     @Test
     void testUnionOfThrowsExceptionWithEmptyInput()
     {
+        List<PoolMetadata> input = List.of();
         IllegalArgumentException actual = assertThrows( IllegalArgumentException.class,
-                                                        () -> PoolSlicer.unionOf( Collections.emptyList() ) );
+                                                        () -> PoolSlicer.unionOf( input ) );
 
         assertEquals( "Cannot find the union of empty input.", actual.getMessage() );
     }
@@ -416,8 +418,20 @@ class PoolSlicerTest
     @Test
     void testUnionOfThrowsExceptionWithOneNullInput()
     {
+        List<PoolMetadata> nullInput = Arrays.asList( (PoolMetadata) null );
         NullPointerException actual = assertThrows( NullPointerException.class,
-                                                    () -> PoolSlicer.unionOf( Arrays.asList( (PoolMetadata) null ) ) );
+                                                    () -> PoolSlicer.unionOf( nullInput ) );
+
+        assertEquals( "Cannot find the union of null metadata.", actual.getMessage() );
+    }
+
+    @Test
+    void testUnionOfThrowsExceptionWithOneNullAndOneValidInput()
+    {
+        List<PoolMetadata> oneNull = Arrays.asList( PoolMetadata.of(), null );
+
+        NullPointerException actual = assertThrows( NullPointerException.class,
+                                                    () -> PoolSlicer.unionOf( oneNull ) );
 
         assertEquals( "Cannot find the union of null metadata.", actual.getMessage() );
     }
@@ -436,7 +450,12 @@ class PoolSlicerTest
                                           .build();
 
         wres.statistics.generated.Pool poolOne =
-                MessageFactory.parse( FeatureGroup.of( drrc3 ), null, null, null, false, 1 );
+                MessageFactory.parse( FeatureGroup.of( drrc3 ),
+                                      null,
+                                      TimeScaleOuter.of( Duration.ofHours( 1 ) ),
+                                      null,
+                                      false,
+                                      1 );
 
         PoolMetadata failOne = PoolMetadata.of( evaluation, poolOne );
 
@@ -456,11 +475,8 @@ class PoolSlicerTest
     }
 
     @Test
-    void testEqualsWithoutTimeWindowOrThresholdsOrFeatures()
+    void testUnionOfThrowsExceptionWithUnequalEvaluations()
     {
-        // False if the input is null
-        assertFalse( PoolSlicer.equalsWithoutTimeWindowOrThresholdsOrFeatures( PoolMetadata.of(), null ) );
-
         // Different evaluations
         Evaluation evaluationOne = Evaluation.newBuilder()
                                              .setRightVariableName( SQIN )
@@ -478,9 +494,23 @@ class PoolSlicerTest
         PoolMetadata poolMetaTwo =
                 PoolMetadata.of( evaluationTwo, wres.statistics.generated.Pool.getDefaultInstance() );
 
-        assertFalse( PoolSlicer.equalsWithoutTimeWindowOrThresholdsOrFeatures( poolMetaOne, poolMetaTwo ) );
+        List<PoolMetadata> pools = List.of( poolMetaOne, poolMetaTwo );
 
+        PoolMetadataException actual = assertThrows( PoolMetadataException.class,
+                                                     () -> PoolSlicer.unionOf( pools ) );
+
+        assertTrue( actual.getMessage().contains( "Only the time window and thresholds and features can differ" ) );
+    }
+
+    @Test
+    void testUnionOfWithDifferentThresholdsTimeWindowsAndFeatures()
+    {
         // Differ on all of thresholds, time window and features, but nothing else
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( SQIN )
+                                          .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
+                                          .build();
+
         wres.statistics.generated.Pool poolOne =
                 MessageFactory.parse( FeatureGroup.of( new FeatureTuple( FeatureKey.of( "A" ),
                                                                          FeatureKey.of( "B" ),
@@ -507,12 +537,30 @@ class PoolSlicerTest
                                       false,
                                       1 );
 
-        PoolMetadata poolMetaThree =
-                PoolMetadata.of( evaluationOne, poolOne );
-        PoolMetadata poolMetaFour =
-                PoolMetadata.of( evaluationOne, poolTwo );
+        PoolMetadata poolMetaOne = PoolMetadata.of( evaluation, poolOne );
+        PoolMetadata poolMetaTwo = PoolMetadata.of( evaluation, poolTwo );
 
-        assertTrue( PoolSlicer.equalsWithoutTimeWindowOrThresholdsOrFeatures( poolMetaThree, poolMetaFour ) );
+        List<PoolMetadata> pools = List.of( poolMetaOne, poolMetaTwo );
+
+        PoolMetadata actual = PoolSlicer.unionOf( pools );
+
+        wres.statistics.generated.Pool expectedPool =
+                MessageFactory.parse( FeatureGroup.of( Set.of( new FeatureTuple( FeatureKey.of( "A" ),
+                                                                                 FeatureKey.of( "B" ),
+                                                                                 FeatureKey.of( "C" ) ),
+                                                               new FeatureTuple( FeatureKey.of( "D" ),
+                                                                                 FeatureKey.of( "E" ),
+                                                                                 FeatureKey.of( "F" ) ) ) ),
+                                      TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
+                                                          Instant.parse( SECOND_TIME ) ),
+                                      TimeScaleOuter.of(),
+                                      null,
+                                      false,
+                                      1 );
+
+        PoolMetadata expected = PoolMetadata.of( evaluation, expectedPool );
+
+        assertEquals( expected, actual );
     }
 
     @Test

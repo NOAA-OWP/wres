@@ -25,7 +25,7 @@ import wres.statistics.generated.Evaluation;
 
 class PoolTest
 {
-
+    
     /**
      * An instance for testing.
      */
