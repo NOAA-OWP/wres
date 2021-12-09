@@ -51,7 +51,7 @@ services:
          - /mnt/wres_share/heap_dumps/tasker:/mnt/wres_share/heap_dumps/tasker
         environment:
          # Make sure to pass through WRES_TASKER_SERVER_P12 to tasker at runtime
-         - JAVA_OPTS=-Dwres.broker=broker -Dwres.redisHost=persister -Dwres.taskerPathToServerP12=${WRES_TASKER_SERVER_P12} -Djava.io.tmpdir=/mnt/wres_share/input_data -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/tasker -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/tasker/java_pid%p.hprof /mnt/wres_share/heap_dumps/tasker/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/tasker/java_pid%p_`hostname`.hprof'
+         - JAVA_OPTS=-Dwres.broker=broker -Dwres.redisHost=persister -Dwres.taskerPathToServerP12=${WRES_TASKER_SERVER_P12} -Dcom.redhat.fips=false -Djava.io.tmpdir=/mnt/wres_share/input_data -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/tasker -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/tasker/java_pid%p.hprof /mnt/wres_share/heap_dumps/tasker/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/tasker/java_pid%p_`hostname`.hprof'
          - LANG=C.UTF-8
         # Tasker JVM should have 340m max heap specified at launch
         # The total limit includes stack space which depends on Thread count
@@ -107,14 +107,14 @@ services:
          # For logs (inside container, avoid writing to read-only /home)
          - /container_home
         environment:
-         - JAVA_OPTS=-Dwres.broker=broker -Djava.io.tmpdir=/mnt/wres_share/evaluations -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/worker-shim -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/worker-shim/java_pid%p.hprof /mnt/wres_share/heap_dumps/worker-shim/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/worker-shim/java_pid%p_`hostname`.hprof'
+         - JAVA_OPTS=-Dwres.broker=broker -Dcom.redhat.fips=false -Djava.io.tmpdir=/mnt/wres_share/evaluations -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/worker-shim -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/worker-shim/java_pid%p.hprof /mnt/wres_share/heap_dumps/worker-shim/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/worker-shim/java_pid%p_`hostname`.hprof'
          - PGPASSFILE=/wres_secrets/.pgpass
          # Use caller-specified db hostname from env var WRES_DB_FQDN.
          # Do not auto-liquibase-migrate on each evaluation. This requires an
          # administrator to run the migration(s) during or after deployment.
          # Write heap dumps to the root of the volume above.
          # Override the broker address and port in the binding URL of the event.properties.
-         - INNER_JAVA_OPTS=-Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Dwres.externalGraphics=true -Djava.io.tmpdir=/mnt/wres_share/evaluations -Dwres.databaseHost=${WRES_DB_FQDN} -Dwres.certificateFileToTrust=${WRES_DB_CA_FILE} -Dwres.databaseName=wres8 -Dwres.username=wres_user8 -Dwres.attemptToMigrate=false -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/wres -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/wres/java_pid%p.hprof /mnt/wres_share/heap_dumps/wres/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/wres/java_pid%p_`hostname`.hprof' -XX:StartFlightRecording=settings=wres_jfr,maxsize=128m,dumponexit=true,filename=/mnt/wres_share/heap_dumps/wres/`date +%Y%m%dT%H%M%S.%NZ --utc`.jfr -XX:FlightRecorderOptions=repository=/mnt/wres_share/heap_dumps/wres/
+         - INNER_JAVA_OPTS=-Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Dwres.externalGraphics=true -Dcom.redhat.fips=false -Djava.io.tmpdir=/mnt/wres_share/evaluations -Dwres.databaseHost=${WRES_DB_FQDN} -Dwres.certificateFileToTrust=${WRES_DB_CA_FILE} -Dwres.databaseName=wres8 -Dwres.username=wres_user8 -Dwres.attemptToMigrate=false -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/wres -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/wres/java_pid%p.hprof /mnt/wres_share/heap_dumps/wres/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/wres/java_pid%p_`hostname`.hprof' -XX:StartFlightRecording=settings=wres_jfr,maxsize=128m,dumponexit=true,filename=/mnt/wres_share/heap_dumps/wres/`date +%Y%m%dT%H%M%S.%NZ --utc`.jfr -XX:FlightRecorderOptions=repository=/mnt/wres_share/heap_dumps/wres/
          - LANG=C.UTF-8
         # Shim JVM should have 64m max heap, core JVM should have 2560m max heap
         mem_limit: 3584m
@@ -162,7 +162,7 @@ services:
          - /mnt/wres_share/heap_dumps/graphics:/mnt/wres_share/heap_dumps/graphics
         environment:
          # Override the broker address and port in the binding URL of the event.properties
-         - JAVA_OPTS=-Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Djava.io.tmpdir=/mnt/wres_share/evaluations -Xms640m -Xmx640m -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/graphics -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/graphics/java_pid%p.hprof /mnt/wres_share/heap_dumps/graphics/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/graphics/java_pid%p_`hostname`.hprof' -XX:StartFlightRecording=name=graphics,maxsize=256m,disk=true,maxage=24h,dumponexit=true,filename=/mnt/wres_share/heap_dumps/graphics/`hostname`/`date +%Y%m%dT%H%M%S.%NZ --utc`.jfr -XX:FlightRecorderOptions=repository=/mnt/wres_share/heap_dumps/graphics/`hostname`
+         - JAVA_OPTS=-Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Dcom.redhat.fips=false -Djava.io.tmpdir=/mnt/wres_share/evaluations -Xms640m -Xmx640m -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/graphics -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/graphics/java_pid%p.hprof /mnt/wres_share/heap_dumps/graphics/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/graphics/java_pid%p_`hostname`.hprof' -XX:StartFlightRecording=name=graphics,maxsize=256m,disk=true,maxage=24h,dumponexit=true,filename=/mnt/wres_share/heap_dumps/graphics/`hostname`/`date +%Y%m%dT%H%M%S.%NZ --utc`.jfr -XX:FlightRecorderOptions=repository=/mnt/wres_share/heap_dumps/graphics/`hostname`
          - LANG=C.UTF-8
         # Graphics limit is 640m in JAVA_OPTS
         mem_limit: 1024m
