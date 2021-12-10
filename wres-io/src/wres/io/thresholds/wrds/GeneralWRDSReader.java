@@ -139,7 +139,7 @@ public final class GeneralWRDSReader
         if (featureDimension == FeatureDimension.NWM_FEATURE_ID)
         {
             if (adjustedPath.endsWith( FeatureDimension.NWS_LID.value() +"/") 
-                    || adjustedPath.endsWith( FeatureDimension.NWM_FEATURE_ID.value() + "/" ))
+                    || adjustedPath.endsWith( FeatureDimension.USGS_SITE_CODE.value() + "/" ))
             {
                 foundUnmatchingSuffixError = true;
             }
