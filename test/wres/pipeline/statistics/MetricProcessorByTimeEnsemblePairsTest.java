@@ -603,10 +603,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         MetricConfigException actual = assertThrows( MetricConfigException.class,
                                                      () -> MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( mockedConfig ) );
 
-        assertEquals( "In order to configure dichotomous metrics for ensemble inputs, every metric group "
-                      + "that contains dichotomous metrics must also contain thresholds for classifying the forecast "
-                      + "probabilities into occurrences and non-occurrences.",
-                      actual.getMessage() );
+        assertTrue( actual.getMessage().startsWith( "In order to configure dichotomous metrics for ensemble inputs" ) );
     }
 
     @Test
@@ -635,10 +632,8 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         MetricConfigException actual = assertThrows( MetricConfigException.class,
                                                      () -> MetricProcessorByTimeEnsemblePairsTest.ofMetricProcessorForEnsemblePairs( mockedConfig ) );
 
-        assertEquals( "In order to configure multicategory metrics for ensemble inputs, every metric "
-                      + "group that contains multicategory metrics must also contain thresholds for classifying the "
-                      + "forecast probabilities into occurrences and non-occurrences.",
-                      actual.getMessage() );
+        assertTrue( actual.getMessage()
+                          .startsWith( "In order to configure multicategory metrics for ensemble inputs" ) );
     }
 
     @Test

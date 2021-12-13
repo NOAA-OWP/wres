@@ -328,7 +328,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
 
         return metrics.toArray( new MetricConstants[metrics.size()] );
     }
-    
+
     /**
      * Returns true if metrics are available for the input {@link SampleDataGroup} and {@link StatisticType}, false
      * otherwise.
@@ -344,7 +344,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
     {
         return this.getMetrics( inGroup, outGroup ).length > 0;
     }
-    
+
     /**
      * Returns true if metrics are available for the input {@link SampleDataGroup}, false otherwise.
      * 
@@ -449,7 +449,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         FeatureGroup featureGroup = pool.getMetadata()
                                         .getFeatureGroup();
         thresholdsByMetricAndFeature = thresholdsByMetricAndFeature.getThresholdsByMetricAndFeature( featureGroup );
-        
+
         Map<FeatureTuple, ThresholdsByMetric> filtered = thresholdsByMetricAndFeature.getThresholdsByMetricAndFeature();
         filtered = ThresholdSlicer.filterByGroup( filtered,
                                                   SampleDataGroup.ENSEMBLE,
@@ -592,7 +592,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         FeatureGroup featureGroup = pool.getMetadata()
                                         .getFeatureGroup();
         thresholdsByMetricAndFeature = thresholdsByMetricAndFeature.getThresholdsByMetricAndFeature( featureGroup );
-        
+
         Map<FeatureTuple, ThresholdsByMetric> filtered = thresholdsByMetricAndFeature.getThresholdsByMetricAndFeature();
         filtered = ThresholdSlicer.filterByGroup( filtered,
                                                   SampleDataGroup.DISCRETE_PROBABILITY,
@@ -781,7 +781,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         FeatureGroup featureGroup = pool.getMetadata()
                                         .getFeatureGroup();
         thresholdsByMetricAndFeature = thresholdsByMetricAndFeature.getThresholdsByMetricAndFeature( featureGroup );
-        
+
         Map<FeatureTuple, ThresholdsByMetric> filtered = thresholdsByMetricAndFeature.getThresholdsByMetricAndFeature();
         filtered = ThresholdSlicer.filterByGroup( filtered,
                                                   SampleDataGroup.DICHOTOMOUS,
@@ -827,7 +827,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                                                          SampleDataGroup.DICHOTOMOUS,
                                                          outGroup,
                                                          ThresholdGroup.PROBABILITY_CLASSIFIER );
-            
+
             Map<FeatureTuple, Set<ThresholdOuter>> unpackedInner = ThresholdSlicer.unpack( classifiers );
             List<Map<FeatureTuple, ThresholdOuter>> decomposedInner = ThresholdSlicer.decompose( unpackedInner );
 
@@ -931,45 +931,50 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         // All groups that contain dichotomous and multicategory metrics must 
         // have thresholds of type ThresholdType.PROBABILITY_CLASSIFIER
         // Check that the relevant parameters have been set first
-        Map<MetricConstants, Set<ThresholdOuter>> probabilityClassifiers =
-                super.getMetrics().getThresholdsByMetricAndFeature()
-                                  .values()
-                                  .stream()
-                                  .flatMap( next -> next.getThresholds( ThresholdGroup.PROBABILITY_CLASSIFIER )
-                                                        .entrySet()
-                                                        .stream() )
-                                  .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
-
-        // Multicategory
-        if ( this.hasMetrics( SampleDataGroup.MULTICATEGORY ) )
+        for ( Map.Entry<FeatureTuple, ThresholdsByMetric> nextEntry : super.getMetrics()
+                                                                                        .getThresholdsByMetricAndFeature()
+                                                                                        .entrySet() )
         {
-            MetricConstants[] check = this.getMetrics( SampleDataGroup.MULTICATEGORY, null );
+            FeatureTuple nextFeature = nextEntry.getKey();
+            ThresholdsByMetric nextThresholds = nextEntry.getValue();
+            Map<MetricConstants, Set<ThresholdOuter>> probabilityClassifiers =
+                    nextThresholds.getThresholds( ThresholdGroup.PROBABILITY_CLASSIFIER );
 
-            if ( !Arrays.stream( check )
-                        .allMatch( next -> probabilityClassifiers.containsKey( next )
-                                           && !probabilityClassifiers.get( next ).isEmpty() ) )
+            // Multicategory
+            if ( this.hasMetrics( SampleDataGroup.MULTICATEGORY ) )
             {
-                throw new MetricConfigException( "In order to configure multicategory metrics for ensemble "
-                                                 + "inputs, every metric group that contains multicategory "
-                                                 + "metrics must also contain thresholds for classifying "
-                                                 + "the forecast probabilities into occurrences and "
-                                                 + "non-occurrences." );
+                MetricConstants[] check = this.getMetrics( SampleDataGroup.MULTICATEGORY, null );
+
+                if ( !Arrays.stream( check )
+                            .allMatch( next -> probabilityClassifiers.containsKey( next )
+                                               && !probabilityClassifiers.get( next ).isEmpty() ) )
+                {
+                    throw new MetricConfigException( "In order to configure multicategory metrics for ensemble inputs, "
+                                                     + "every metric group that contains multicategory metrics must "
+                                                     + "also contain thresholds for classifying the forecast "
+                                                     + "probabilities into occurrences and non-occurrences, but these "
+                                                     + "thresholds were missing for feature tuple "
+                                                     + nextFeature
+                                                     + "." );
+                }
             }
-        }
 
-        // Dichotomous
-        if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS ) )
-        {
-            MetricConstants[] check = this.getMetrics( SampleDataGroup.DICHOTOMOUS, null );
-            if ( !Arrays.stream( check )
-                        .allMatch( next -> probabilityClassifiers.containsKey( next )
-                                           && !probabilityClassifiers.get( next ).isEmpty() ) )
+            // Dichotomous
+            if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS ) )
             {
-                throw new MetricConfigException( "In order to configure dichotomous metrics for ensemble "
-                                                 + "inputs, every metric group that contains dichotomous "
-                                                 + "metrics must also contain thresholds for classifying "
-                                                 + "the forecast probabilities into occurrences and "
-                                                 + "non-occurrences." );
+                MetricConstants[] check = this.getMetrics( SampleDataGroup.DICHOTOMOUS, null );
+                if ( !Arrays.stream( check )
+                            .allMatch( next -> probabilityClassifiers.containsKey( next )
+                                               && !probabilityClassifiers.get( next ).isEmpty() ) )
+                {
+                    throw new MetricConfigException( "In order to configure dichotomous metrics for ensemble inputs, "
+                                                     + "every metric group that contains dichotomous metrics must also "
+                                                     + "contain thresholds for classifying the forecast probabilities "
+                                                     + "into occurrences and non-occurrences, but these thresholds "
+                                                     + "were missing for feature tuple "
+                                                     + nextFeature
+                                                     + "." );
+                }
             }
         }
     }
