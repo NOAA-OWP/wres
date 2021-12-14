@@ -8,6 +8,7 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -254,7 +255,7 @@ public final class TimeSeriesSlicer
                 TimeSeriesSlicer.filterReferenceTimes( subset, timeWindow );
 
         // Find the references times that were not in the subset, plus the ones that were and are within bounds
-        Map<ReferenceTimeType, Instant> notConsideredOrWithinBounds = new TreeMap<>();
+        Map<ReferenceTimeType, Instant> notConsideredOrWithinBounds = new EnumMap<>( ReferenceTimeType.class );
         notConsideredOrWithinBounds.putAll( input.getReferenceTimes() );
         notConsideredOrWithinBounds.keySet().removeAll( subset.keySet() );
         notConsideredOrWithinBounds.putAll( referenceTimes );
@@ -440,7 +441,7 @@ public final class TimeSeriesSlicer
 
         if ( Objects.isNull( referenceTime ) )
         {
-            return Map.of();
+            return Collections.emptyMap();
         }
 
         Map<Duration, Event<T>> returnMe = new TreeMap<>();
@@ -1298,7 +1299,7 @@ public final class TimeSeriesSlicer
                                                                          TimeWindowOuter timeWindow )
     {
 
-        Map<ReferenceTimeType, Instant> returnMe = new TreeMap<>();
+        Map<ReferenceTimeType, Instant> returnMe = new EnumMap<>( ReferenceTimeType.class );
 
         // Unbounded, so everything qualifies
         if ( timeWindow.getEarliestReferenceTime().equals( Instant.MIN )
