@@ -1888,7 +1888,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                 {
                     // Remove any observation-like reference times
                     TimeSeriesMetadata meta =
-                            new TimeSeriesMetadata.Builder( next.getMetadata() ).setReferenceTimes( Map.of() )
+                            new TimeSeriesMetadata.Builder( next.getMetadata() ).setReferenceTimes( Collections.emptyMap() )
                                                                                 .build();
 
                     TimeSeries<T> series = TimeSeries.of( meta, next.getEvents() );

@@ -9,6 +9,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -288,7 +289,9 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 if ( provider.hasColumn( REFERENCE_TIME ) && !provider.isNull( REFERENCE_TIME ) )
                 {
                     Instant referenceTime = provider.getInstant( REFERENCE_TIME );
-                    referenceTimes = Map.of( this.getReferenceTimeType(), referenceTime );
+                    referenceTimes = new EnumMap<>( ReferenceTimeType.class );
+                    referenceTimes.put( this.getReferenceTimeType(), referenceTime );
+                    referenceTimes = Collections.unmodifiableMap( referenceTimes );
                 }
 
                 // Add the event     
