@@ -1127,7 +1127,6 @@ project(':wres-tasker')
         implementation 'io.netty:netty-resolver:4.1.72.Final'
         implementation 'io.netty:netty-resolver-dns:4.1.72.Final'
         implementation 'io.netty:netty-transport:4.1.72.Final'
-        implementation 'io.netty:netty-tcnative-classes:4.1.72.Final'
 
         // For ToStringBuilder
         implementation 'org.apache.commons:commons-lang3:3.12.0'
