@@ -1068,7 +1068,7 @@ class ProcessorHelper
                                                                                              unitMapper );
 
         // Create the pool suppliers for all pools in this evaluation
-        List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> poolSuppliers =
+        List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Double>>>>>> poolSuppliers =
                 PoolFactory.getSingleValuedPools( project,
                                                   poolRequests,
                                                   retrieverFactory,
@@ -1088,11 +1088,10 @@ class ProcessorHelper
 
         List<PoolProcessor<Double, Double>> poolProcessors = new ArrayList<>();
 
-        int count = poolSuppliers.size();
-        for ( int i = 0; i < count; i++ )
+        for ( Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> next : poolSuppliers )
         {
-            PoolRequest poolRequest = poolRequests.get( i );
-            Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolSupplier = poolSuppliers.get( i );
+            PoolRequest poolRequest = next.getKey();
+            Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolSupplier = next.getValue();
 
             PoolProcessor<Double, Double> poolProcessor =
                     new PoolProcessor.Builder<Double, Double>().setPairsWriter( pairsWriter )
@@ -1147,7 +1146,7 @@ class ProcessorHelper
                                                                                            unitMapper );
 
         // Create the pool suppliers for all pools in this evaluation
-        List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> poolSuppliers =
+        List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>>> poolSuppliers =
                 PoolFactory.getEnsemblePools( project,
                                               poolRequests,
                                               retrieverFactory,
@@ -1167,11 +1166,10 @@ class ProcessorHelper
 
         List<PoolProcessor<Double, Ensemble>> poolProcessors = new ArrayList<>();
 
-        int count = poolSuppliers.size();
-        for ( int i = 0; i < count; i++ )
+        for ( Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> next : poolSuppliers )
         {
-            PoolRequest poolRequest = poolRequests.get( i );
-            Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>> poolSupplier = poolSuppliers.get( i );
+            PoolRequest poolRequest = next.getKey();
+            Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>> poolSupplier = next.getValue();
 
             PoolProcessor<Double, Ensemble> poolProcessor =
                     new PoolProcessor.Builder<Double, Ensemble>().setPairsWriter( pairsWriter )

@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -169,7 +170,7 @@ public class PoolsGeneratorTest
                                                                       project );
 
         // Create the actual output
-        List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> actual =
+        List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Double>>>>>> actual =
                 PoolFactory.getSingleValuedPools( project,
                                                   poolRequests,
                                                   retrieverFactory,
@@ -286,7 +287,7 @@ public class PoolsGeneratorTest
 
         // Create the actual output
         PoolParameters poolParameters = new PoolParameters.Builder().build();
-        List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> actual =
+        List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>>> actual =
                 PoolFactory.getEnsemblePools( project,
                                               poolRequests,
                                               retrieverFactory,

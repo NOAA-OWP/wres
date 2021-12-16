@@ -18,6 +18,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolRequest;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.statistics.StatisticsStore;
 import wres.datamodel.time.TimeSeries;
 import wres.events.Evaluation;

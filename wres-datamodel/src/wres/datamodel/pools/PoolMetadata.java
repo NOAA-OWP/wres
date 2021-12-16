@@ -273,6 +273,10 @@ public class PoolMetadata implements Comparable<PoolMetadata>
             {
                 pool.setRegionName( featureGroup.getName() );
             }
+            else
+            {
+                pool.clearRegionName();
+            }
         }
 
         return new PoolMetadata( evaluation, pool.build() );

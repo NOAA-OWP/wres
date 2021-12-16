@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -114,16 +113,17 @@ public class PoolFactory
      * @param poolRequests the pool requests, not null
      * @param retrieverFactory the retriever factory, not null
      * @param poolParameters the pool parameters
-     * @return a list of suppliers that supply pools of pairs
+     * @return one pool supplier for each pool request, ordered in intended execution order (for optimal performance)
      * @throws NullPointerException if any input is null
      * @throws IllegalArgumentException if the project is not consistent with the generation of pools for single-valued
      *            data
      */
 
-    public static List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> getSingleValuedPools( Project project,
-                                                                                               List<PoolRequest> poolRequests,
-                                                                                               RetrieverFactory<Double, Double> retrieverFactory,
-                                                                                               PoolParameters poolParameters )
+    public static List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Double>>>>>>
+            getSingleValuedPools( Project project,
+                                  List<PoolRequest> poolRequests,
+                                  RetrieverFactory<Double, Double> retrieverFactory,
+                                  PoolParameters poolParameters )
     {
         Objects.requireNonNull( project, CANNOT_CREATE_POOLS_FROM_A_NULL_PROJECT );
         Objects.requireNonNull( poolRequests, CANNOT_CREATE_POOLS_WITHOUT_LIST_OF_POOL_REQUESTS );
@@ -139,7 +139,7 @@ public class PoolFactory
         Map<DecomposableFeatureGroup, List<PoolRequest>> optimizedGroups =
                 PoolFactory.getFeatureBatchedSingletons( groups, poolParameters );
 
-        List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> suppliers = new ArrayList<>();
+        List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Double>>>>> suppliers = new ArrayList<>();
 
         for ( Map.Entry<DecomposableFeatureGroup, List<PoolRequest>> nextEntry : optimizedGroups.entrySet() )
         {
@@ -162,19 +162,23 @@ public class PoolFactory
                 cachingFactory = new ClimatologyCachedRetrieverFactory<>( retrieverFactory );
             }
 
-            List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> nextSuppliers =
+            List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Double>>>>> nextSuppliers =
                     PoolFactory.getSingleValuedPoolsInner( project, nextPoolRequests, cachingFactory );
 
             // Optimized? In that case, decompose the feature-batched pools into feature-specific pools
             if ( nextGroup.isComposed() )
             {
-                nextSuppliers = PoolFactory.decompose( nextGroup.getGroups(), nextSuppliers );
+                List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Double>>>>> decomposed =
+                        PoolFactory.decompose( nextSuppliers );
+                suppliers.addAll( decomposed );
             }
-
-            suppliers.addAll( nextSuppliers );
+            else
+            {
+                suppliers.addAll( nextSuppliers );
+            }
         }
 
-        return Collections.unmodifiableList( suppliers );
+        return PoolFactory.unpack( poolRequests, suppliers );
     }
 
     /**
@@ -189,15 +193,16 @@ public class PoolFactory
      * @param poolRequests the pool requests, not null
      * @param retrieverFactory the retriever factory, not null
      * @param poolParameters the pool parameters
-     * @return a list of suppliers that supply pools of pairs
+     * @return one pool supplier for each pool request, ordered in intended execution order (for optimal performance)
      * @throws NullPointerException if the input is null
      * @throws IllegalArgumentException if the project is not consistent with the generation of pools for ensemble data
      */
 
-    public static List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> getEnsemblePools( Project project,
-                                                                                             List<PoolRequest> poolRequests,
-                                                                                             RetrieverFactory<Double, Ensemble> retrieverFactory,
-                                                                                             PoolParameters poolParameters )
+    public static List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>>>
+            getEnsemblePools( Project project,
+                              List<PoolRequest> poolRequests,
+                              RetrieverFactory<Double, Ensemble> retrieverFactory,
+                              PoolParameters poolParameters )
     {
         Objects.requireNonNull( project, CANNOT_CREATE_POOLS_FROM_A_NULL_PROJECT );
         Objects.requireNonNull( poolRequests, CANNOT_CREATE_POOLS_WITHOUT_LIST_OF_POOL_REQUESTS );
@@ -209,11 +214,12 @@ public class PoolFactory
                 poolRequests.stream()
                             .collect( Collectors.groupingBy( e -> e.getMetadata().getFeatureGroup() ) );
 
-        // Optimize, if possible, by conducting feature-batched retrieval
+        // Optimize, if possible, by conducting feature-batched retrieval. Each list of pool requests is associated
+        // with the same feature group, which may be a composition of features to decompose
         Map<DecomposableFeatureGroup, List<PoolRequest>> optimizedGroups =
                 PoolFactory.getFeatureBatchedSingletons( groups, poolParameters );
 
-        List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> suppliers = new ArrayList<>();
+        List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Ensemble>>>>> suppliers = new ArrayList<>();
 
         for ( Map.Entry<DecomposableFeatureGroup, List<PoolRequest>> nextEntry : optimizedGroups.entrySet() )
         {
@@ -236,19 +242,23 @@ public class PoolFactory
                 cachingFactory = new ClimatologyCachedRetrieverFactory<>( retrieverFactory );
             }
 
-            List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> nextSuppliers =
+            List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Ensemble>>>>> nextSuppliers =
                     PoolFactory.getEnsemblePoolsInner( project, nextPoolRequests, cachingFactory );
 
             // Optimized? In that case, decompose the feature-batched pools into feature-specific pools
             if ( nextGroup.isComposed() )
             {
-                nextSuppliers = PoolFactory.decompose( nextGroup.getGroups(), nextSuppliers );
+                List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Ensemble>>>>> decomposed =
+                        PoolFactory.decompose( nextSuppliers );
+                suppliers.addAll( decomposed );
             }
-
-            suppliers.addAll( nextSuppliers );
+            else
+            {
+                suppliers.addAll( nextSuppliers );
+            }
         }
 
-        return Collections.unmodifiableList( suppliers );
+        return PoolFactory.unpack( poolRequests, suppliers );
     }
 
     /**
@@ -294,9 +304,10 @@ public class PoolFactory
      *            data
      */
 
-    private static List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> getSingleValuedPoolsInner( Project project,
-                                                                                                     List<PoolRequest> poolRequests,
-                                                                                                     RetrieverFactory<Double, Double> retrieverFactory )
+    private static List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Double>>>>>
+            getSingleValuedPoolsInner( Project project,
+                                       List<PoolRequest> poolRequests,
+                                       RetrieverFactory<Double, Double> retrieverFactory )
     {
         ProjectConfig projectConfig = project.getProjectConfig();
         PairConfig pairConfig = projectConfig.getPair();
@@ -353,20 +364,23 @@ public class PoolFactory
                 next -> Event.of( next.getTime(), leftTransformer.applyAsDouble( next.getValue() ) );
 
         // Build and return the pool suppliers
-        return new PoolsGenerator.Builder<Double, Double>().setProject( project )
-                                                           .setRetrieverFactory( retrieverFactory )
-                                                           .setPoolRequests( poolRequests )
-                                                           .setBaselineGenerator( baselineGenerator )
-                                                           .setLeftTransformer( leftTransformer::applyAsDouble )
-                                                           .setRightTransformer( rightTransformer )
-                                                           .setLeftUpscaler( upscaler )
-                                                           .setRightUpscaler( upscaler )
-                                                           .setPairer( pairer )
-                                                           .setCrossPairer( crossPairer )
-                                                           .setClimateMapper( Double::doubleValue )
-                                                           .setClimateAdmissibleValue( Double::isFinite )
-                                                           .build()
-                                                           .get();
+        List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> rawSuppliers =
+                new PoolsGenerator.Builder<Double, Double>().setProject( project )
+                                                            .setRetrieverFactory( retrieverFactory )
+                                                            .setPoolRequests( poolRequests )
+                                                            .setBaselineGenerator( baselineGenerator )
+                                                            .setLeftTransformer( leftTransformer::applyAsDouble )
+                                                            .setRightTransformer( rightTransformer )
+                                                            .setLeftUpscaler( upscaler )
+                                                            .setRightUpscaler( upscaler )
+                                                            .setPairer( pairer )
+                                                            .setCrossPairer( crossPairer )
+                                                            .setClimateMapper( Double::doubleValue )
+                                                            .setClimateAdmissibleValue( Double::isFinite )
+                                                            .build()
+                                                            .get();
+
+        return PoolFactory.getComposedSuppliers( poolRequests, rawSuppliers );
     }
 
     /**
@@ -384,9 +398,10 @@ public class PoolFactory
      * @throws IllegalArgumentException if the project is not consistent with the generation of pools for ensemble data
      */
 
-    private static List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> getEnsemblePoolsInner( Project project,
-                                                                                                   List<PoolRequest> poolRequests,
-                                                                                                   RetrieverFactory<Double, Ensemble> retrieverFactory )
+    private static List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Ensemble>>>>>
+            getEnsemblePoolsInner( Project project,
+                                   List<PoolRequest> poolRequests,
+                                   RetrieverFactory<Double, Ensemble> retrieverFactory )
     {
         ProjectConfig projectConfig = project.getProjectConfig();
         PairConfig pairConfig = projectConfig.getPair();
@@ -430,26 +445,149 @@ public class PoolFactory
         UnaryOperator<Event<Ensemble>> rightTransformer = PoolFactory.getEnsembleTransformer( leftTransformer,
                                                                                               removeMemberByValidYearRight );
 
-        //Baseline transformer
+        // Baseline transformer
         MonthDay removeMemberByValidYearBaseline = PoolFactory.getRemoveMemberByValidYear( inputsConfig.getBaseline() );
         UnaryOperator<Event<Ensemble>> baselineTransformer = PoolFactory.getEnsembleTransformer( leftTransformer,
                                                                                                  removeMemberByValidYearBaseline );
 
         // Build and return the pool suppliers
-        return new PoolsGenerator.Builder<Double, Ensemble>().setProject( project )
-                                                             .setRetrieverFactory( retrieverFactory )
-                                                             .setPoolRequests( poolRequests )
-                                                             .setLeftTransformer( leftTransformer::applyAsDouble )
-                                                             .setRightTransformer( rightTransformer )
-                                                             .setBaselineTransformer( baselineTransformer )
-                                                             .setLeftUpscaler( leftUpscaler )
-                                                             .setRightUpscaler( rightUpscaler )
-                                                             .setPairer( pairer )
-                                                             .setCrossPairer( crossPairer )
-                                                             .setClimateMapper( Double::doubleValue )
-                                                             .setClimateAdmissibleValue( Double::isFinite )
-                                                             .build()
-                                                             .get();
+        List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> rawSuppliers =
+                new PoolsGenerator.Builder<Double, Ensemble>().setProject( project )
+                                                              .setRetrieverFactory( retrieverFactory )
+                                                              .setPoolRequests( poolRequests )
+                                                              .setLeftTransformer( leftTransformer::applyAsDouble )
+                                                              .setRightTransformer( rightTransformer )
+                                                              .setBaselineTransformer( baselineTransformer )
+                                                              .setLeftUpscaler( leftUpscaler )
+                                                              .setRightUpscaler( rightUpscaler )
+                                                              .setPairer( pairer )
+                                                              .setCrossPairer( crossPairer )
+                                                              .setClimateMapper( Double::doubleValue )
+                                                              .setClimateAdmissibleValue( Double::isFinite )
+                                                              .build()
+                                                              .get();
+
+        return PoolFactory.getComposedSuppliers( poolRequests, rawSuppliers );
+    }
+
+    /**
+     * Composes the raw suppliers with feature group information based on the pool requests, which are ordered 
+     * identically to the suppliers.
+     * 
+     * @param <T> the type of supplied data
+     * @param poolRequests the pool requests
+     * @param rawSuppliers the raw suppliers
+     * @return the composed suppliers
+     * @throws IllegalArgumentException if the number of pool requests and suppliers does not match
+     */
+
+    private static <T> List<SupplierWithPoolRequest<T>> getComposedSuppliers( List<PoolRequest> poolRequests,
+                                                                              List<Supplier<T>> rawSuppliers )
+    {
+        if ( poolRequests.size() != rawSuppliers.size() )
+        {
+            throw new IllegalArgumentException( "Expected as many pool requests as pool suppliers: ["
+                                                + poolRequests.size()
+                                                + ", "
+                                                + rawSuppliers.size()
+                                                + "]." );
+        }
+
+        List<SupplierWithPoolRequest<T>> composedSuppliers = new ArrayList<>();
+        int count = poolRequests.size();
+        for ( int i = 0; i < count; i++ )
+        {
+            PoolRequest poolRequest = poolRequests.get( i );
+            Supplier<T> rawSupplier = rawSuppliers.get( i );
+            SupplierWithPoolRequest<T> composedSupplier = SupplierWithPoolRequest.of( rawSupplier, poolRequest );
+            composedSuppliers.add( composedSupplier );
+        }
+
+        return Collections.unmodifiableList( composedSuppliers );
+    }
+
+    /**
+     * Unpacks each supplier and pairs it with the original request that produced it. The only difference between the
+     * original request and the corresponding request attached to the supplier and obtained from 
+     * {@link SupplierWithPoolRequest#getPoolRequest()} is the pool identifier and it is friendly to preserve these 
+     * identifiers, which are otherwise destroyed by feature-batching.
+     * 
+     * @param <T> the type of data supplied
+     * @param originalRequests the original pool requests before any feature-batching was applied
+     * @param suppliers the suppliers
+     * @return a map of requests to suppliers
+     */
+
+    private static <T> List<Pair<PoolRequest, Supplier<T>>> unpack( List<PoolRequest> originalRequests,
+                                                                    List<SupplierWithPoolRequest<T>> suppliers )
+    {
+        // Establish a map between the single tuple in the singleton feature groups and their pool requests 
+
+        // The original requests, organized by feature tuple and time window in order to allow easy correlation with the
+        // new requests
+        Map<FeatureTuple, Map<TimeWindowOuter, PoolRequest>> singletons = new HashMap<>();
+        for ( PoolRequest nextRequest : originalRequests )
+        {
+            PoolMetadata mainMetadata = nextRequest.getMetadata();
+            FeatureGroup group = mainMetadata.getFeatureGroup();
+            if ( group.isSingleton() )
+            {
+                FeatureTuple nextTuple = group.getFeatures()
+                                              .iterator()
+                                              .next();
+
+                TimeWindowOuter timeWindow = mainMetadata.getTimeWindow();
+
+                if ( singletons.containsKey( nextTuple ) )
+                {
+                    singletons.get( nextTuple )
+                              .put( timeWindow, nextRequest );
+                }
+                else
+                {
+                    Map<TimeWindowOuter, PoolRequest> innerMap = new HashMap<>();
+                    innerMap.put( timeWindow, nextRequest );
+                    singletons.put( nextTuple, innerMap );
+                }
+            }
+        }
+
+        List<Pair<PoolRequest, Supplier<T>>> returnMe = new ArrayList<>();
+
+        // Iterate through the suppliers
+        for ( SupplierWithPoolRequest<T> nextSupplier : suppliers )
+        {
+            // The interpreted pool request, after any feature batching. The only difference between this 
+            // pool request and the original pool request is the poolId, which should be preserved in the response
+            PoolRequest poolRequest = nextSupplier.getPoolRequest();
+
+            FeatureGroup nextGroup = poolRequest.getMetadata()
+                                                .getFeatureGroup();
+
+            Pair<PoolRequest, Supplier<T>> nextPair = null;
+            if ( nextGroup.isSingleton() )
+            {
+                FeatureTuple singleton = nextGroup.getFeatures()
+                                                  .iterator()
+                                                  .next();
+                TimeWindowOuter timeWindow = poolRequest.getMetadata()
+                                                        .getTimeWindow();
+
+                Map<TimeWindowOuter, PoolRequest> requestsByTime = singletons.get( singleton );
+
+                // The original pool request, to be preserved
+                PoolRequest originalPoolRequest = requestsByTime.get( timeWindow );
+                nextPair = Pair.of( originalPoolRequest, nextSupplier );
+            }
+            else
+            {
+                nextPair = Pair.of( poolRequest, nextSupplier );
+            }
+
+            returnMe.add( nextPair );
+        }
+
+        return Collections.unmodifiableList( returnMe );
     }
 
     /**
@@ -549,6 +687,23 @@ public class PoolFactory
                                                 TimeScaleOuter desiredTimeScale,
                                                 LeftOrRightOrBaseline leftOrRightOrBaseline )
     {
+        long poolId = PoolFactory.getNextPoolId();
+
+        wres.statistics.generated.Pool pool = MessageFactory.parse( featureGroup,
+                                                                    timeWindow, // Default to start with
+                                                                    desiredTimeScale,
+                                                                    null,
+                                                                    leftOrRightOrBaseline == LeftOrRightOrBaseline.BASELINE,
+                                                                    poolId );
+
+        return PoolMetadata.of( evaluation, pool );
+    }
+
+    /**
+     * @return a sequential pool identifier
+     */
+    private static long getNextPoolId()
+    {
         // Updater for the pool identifier that avoids a long overflow
         LongUnaryOperator updater = next -> {
             if ( next + 1 < Long.MAX_VALUE )
@@ -561,17 +716,7 @@ public class PoolFactory
             return 1;
         };
 
-        // Next identifier
-        long nextId = PoolFactory.POOL_ID.updateAndGet( updater );
-
-        wres.statistics.generated.Pool pool = MessageFactory.parse( featureGroup,
-                                                                    timeWindow, // Default to start with
-                                                                    desiredTimeScale,
-                                                                    null,
-                                                                    leftOrRightOrBaseline == LeftOrRightOrBaseline.BASELINE,
-                                                                    nextId );
-
-        return PoolMetadata.of( evaluation, pool );
+        return PoolFactory.POOL_ID.updateAndGet( updater );
     }
 
     /**
@@ -744,13 +889,13 @@ public class PoolFactory
 
             // Default lag of 1
             int lag = 1;
-            
+
             if ( Objects.nonNull( baselineConfig.getPersistence() ) )
             {
                 lag = baselineConfig.getPersistence();
                 LOGGER.debug( "Discovered a persistence baseline with a lag of {}.", lag );
             }
-            
+
             // Map from the input data type to the required type
             int finalLag = lag;
             return features -> {
@@ -872,6 +1017,8 @@ public class PoolFactory
         int groupSize = requests.size() < poolParameters.getFeatureBatchSize() ? requests.size()
                                                                                : poolParameters.getFeatureBatchSize();
 
+        int poolRequestCount = 0;
+
         // Loop the pool requests and gather them into groups for feature-batched retrieval, if the conditions are met
         for ( Map.Entry<FeatureGroup, List<PoolRequest>> nextEntry : requests.entrySet() )
         {
@@ -881,6 +1028,7 @@ public class PoolFactory
             // More features than the minimum, batching is allowed and this is a singleton group, so batch it
             if ( shouldBatch && nextGroup.isSingleton() )
             {
+                // Start a new batch
                 if ( nextPoolRequests.isEmpty() )
                 {
                     nextPoolRequests.addAll( nextPools );
@@ -888,7 +1036,8 @@ public class PoolFactory
 
                 nextGroups.add( nextGroup );
 
-                // Either reached the batch size or there are fewer features in total than the batch size
+                // Either reached the batch size or there are fewer features in total than the batch size, so complete
+                // the batch
                 if ( nextGroups.size() == groupSize )
                 {
                     LOGGER.debug( "Created a batch of {} singleton feature groups for efficient retrieval. The "
@@ -901,6 +1050,7 @@ public class PoolFactory
                     List<PoolRequest> nextAdjustedPools = PoolFactory.setFeatureGroup( nextComposedGroup,
                                                                                        nextPoolRequests );
                     returnMe.put( group, nextAdjustedPools );
+                    poolRequestCount += nextAdjustedPools.size();
 
                     // Clear the group
                     nextGroups.clear();
@@ -914,6 +1064,7 @@ public class PoolFactory
 
                 DecomposableFeatureGroup group = new DecomposableFeatureGroup( Set.of( nextGroup ), false );
                 returnMe.put( group, nextPools );
+                poolRequestCount += nextPools.size();
             }
         }
 
@@ -924,7 +1075,15 @@ public class PoolFactory
             FeatureGroup nextComposedGroup = group.getComposedGroup();
             List<PoolRequest> nextAdjustedPools = PoolFactory.setFeatureGroup( nextComposedGroup, nextPoolRequests );
             returnMe.put( group, nextAdjustedPools );
+            poolRequestCount += nextAdjustedPools.size();
+
+            LOGGER.debug( "Created a batch of {} singleton feature groups for efficient retrieval. The "
+                          + "singleton groups to be treated as a batch are: {}.",
+                          nextGroups.size(),
+                          nextGroups );
         }
+
+        LOGGER.info( "Created {} optimized pool requests.", poolRequestCount );
 
         return Collections.unmodifiableMap( returnMe );
     }
@@ -1065,46 +1224,42 @@ public class PoolFactory
      * 
      * @param <L> the left-ish data type
      * @param <R> the right-ish data type
-     * @param singletons the singletons to use when decomposing the pool
      * @param toDecompose the pools suppliers to decompose
      * @return the decomposed pool suppliers, one for every pool and feature in the input
      */
 
-    private static <L, R> List<Supplier<Pool<TimeSeries<Pair<L, R>>>>> decompose( Set<FeatureGroup> singletons,
-                                                                                  List<Supplier<Pool<TimeSeries<Pair<L, R>>>>> toDecompose )
+    private static <L, R> List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<L, R>>>>>
+            decompose( List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<L, R>>>>> toDecompose )
     {
-        // Organize the suppliers by feature group
-        Map<FeatureGroup, List<Supplier<Pool<TimeSeries<Pair<L, R>>>>>> returnMe = new HashMap<>();
-        singletons.forEach( nextFeature -> returnMe.put( nextFeature, new ArrayList<>() ) );
+        // Decomposed suppliers
+        List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<L, R>>>>> flattened = new ArrayList<>();
 
-        for ( Supplier<Pool<TimeSeries<Pair<L, R>>>> nextSupplier : toDecompose )
+        for ( SupplierWithPoolRequest<Pool<TimeSeries<Pair<L, R>>>> nextSupplier : toDecompose )
         {
-            // Cache the result from the outer supplier, which contains the pairs for all features
-            Supplier<Pool<TimeSeries<Pair<L, R>>>> nextSupplierCached = CachingSupplier.of( nextSupplier );
+            PoolRequest nextRequest = nextSupplier.getPoolRequest();
+            FeatureGroup nextGroup = nextRequest.getMetadata()
+                                                .getFeatureGroup();
+
+            // Create decomposed pool requests here and use them below.
+            Map<FeatureTuple, PoolRequest> decomposedRequests = PoolFactory.decompose( nextRequest );
+
+            // Decompose/map the pools by feature and cache that map for re-use
+            Supplier<Map<FeatureTuple, Pool<TimeSeries<Pair<L, R>>>>> decomposed =
+                    () -> PoolSlicer.decompose( PoolSlicer.getFeatureMapper(), nextSupplier.get() );
+            Supplier<Map<FeatureTuple, Pool<TimeSeries<Pair<L, R>>>>> cachedDecomposed =
+                    CachingSupplier.of( decomposed );
 
             // Create a supplier that extracts the required feature tuple
-            for ( FeatureGroup nextGroup : singletons )
+            for ( FeatureTuple nextTuple : nextGroup.getFeatures() )
             {
-                if ( !nextGroup.isSingleton() )
-                {
-                    throw new IllegalStateException( "Expected a singleton feature group, but found: " + nextGroup
-                                                     + "." );
-                }
-
-                // The single feature tuple in the group
-                FeatureTuple nextTuple = nextGroup.getFeatures()
-                                                  .iterator()
-                                                  .next();
+                PoolRequest nextDecomposedRequest = decomposedRequests.get( nextTuple );
 
                 Supplier<Pool<TimeSeries<Pair<L, R>>>> nextInnerSupplier = () -> {
-                    Pool<TimeSeries<Pair<L, R>>> composed = nextSupplierCached.get();
 
-                    // Decompose by feature tuple
-                    Map<FeatureTuple, Pool<TimeSeries<Pair<L, R>>>> decomposed =
-                            PoolSlicer.decompose( PoolSlicer.getFeatureMapper(), composed );
+                    Map<FeatureTuple, Pool<TimeSeries<Pair<L, R>>>> decomposedMap = cachedDecomposed.get();
 
                     // The expected feature tuple should be contained within the map
-                    if ( !decomposed.containsKey( nextTuple ) )
+                    if ( !decomposedMap.containsKey( nextTuple ) )
                     {
                         LOGGER.debug( "While decomposing the pools for feature group {}, found no pools associated "
                                       + "with feature tuple {}.",
@@ -1115,30 +1270,72 @@ public class PoolFactory
                         return Pool.of( List.of(), PoolMetadata.of() );
                     }
 
-                    Pool<TimeSeries<Pair<L, R>>> pool = decomposed.get( nextTuple );
-                    PoolMetadata meta = PoolMetadata.of( pool.getMetadata(), nextGroup );
+                    // Update the metadata with the new feature group and a resequenced pool identifier
+                    Pool<TimeSeries<Pair<L, R>>> pool = decomposedMap.get( nextTuple );
+                    PoolMetadata nextMain = nextDecomposedRequest.getMetadata();
 
                     if ( pool.hasBaseline() )
                     {
                         Pool<TimeSeries<Pair<L, R>>> baselinePool = pool.getBaselineData();
-                        PoolMetadata baselineMeta = PoolMetadata.of( baselinePool.getMetadata(), nextGroup );
+                        PoolMetadata nextBase = nextDecomposedRequest.getMetadata();
 
-                        return Pool.of( pool.get(), meta, baselinePool.get(), baselineMeta, pool.getClimatology() );
+                        return Pool.of( pool.get(), nextMain, baselinePool.get(), nextBase, pool.getClimatology() );
                     }
 
-                    return Pool.of( pool.get(), meta, null, null, pool.getClimatology() );
+                    return Pool.of( pool.get(), nextMain, null, null, pool.getClimatology() );
                 };
 
-                List<Supplier<Pool<TimeSeries<Pair<L, R>>>>> nextList = returnMe.get( nextGroup );
-                nextList.add( nextInnerSupplier );
+                SupplierWithPoolRequest<Pool<TimeSeries<Pair<L, R>>>> supplier =
+                        SupplierWithPoolRequest.of( nextInnerSupplier,
+                                                    nextDecomposedRequest );
+
+                flattened.add( supplier );
             }
         }
 
+        LOGGER.debug( "Decomposed {} pools with one or more feature tuples into {} pools that each contained precisely "
+                      + "one feature tuple.",
+                      toDecompose.size(),
+                      flattened.size() );
+
         // Return the flat list of suppliers in feature-group order
-        return returnMe.values()
-                       .stream()
-                       .flatMap( List::stream )
-                       .collect( Collectors.toUnmodifiableList() );
+        return Collections.unmodifiableList( flattened );
+    }
+
+    /**
+     * Decomposes a feature-batched pool request that contains several features into separate pool requests.
+     *     
+     * @param poolRequest the pool request to decompose
+     * @return the decomposed pool requests
+     */
+
+    private static Map<FeatureTuple, PoolRequest> decompose( PoolRequest poolRequest )
+    {
+        PoolMetadata main = poolRequest.getMetadata();
+        PoolMetadata base = poolRequest.getMetadataForBaseline();
+
+        Map<FeatureTuple, PoolRequest> returnMe = new HashMap<>();
+        for ( FeatureTuple nextFeature : main.getFeatureGroup().getFeatures() )
+        {
+            FeatureGroup singleton = FeatureGroup.of( nextFeature.toStringShort(), nextFeature );
+            wres.statistics.generated.Pool poolInner = main.getPool();
+            wres.statistics.generated.Pool poolInnerWithId = poolInner.toBuilder()
+                                                                      .clearPoolId()
+                                                                      .build();
+            PoolMetadata withId = PoolMetadata.of( main.getEvaluation(), poolInnerWithId );
+            PoolMetadata mainAdj = PoolMetadata.of( withId, singleton );
+            PoolMetadata baseAdj = null;
+
+            if ( poolRequest.hasBaseline() )
+            {
+                baseAdj = PoolMetadata.of( base, singleton );
+            }
+
+            PoolRequest requestAdj = PoolRequest.of( mainAdj, baseAdj );
+            returnMe.put( nextFeature, requestAdj );
+        }
+
+        return Collections.unmodifiableMap( returnMe );
     }
 
     /**
@@ -1204,16 +1401,13 @@ public class PoolFactory
     }
 
     /**
-     * A collection of singleton feature groups for which feature-batched retrieval may be performed. If conducting
-     * feature-batched retrieval, then the pools associated with these groups must be decomposed after they are 
-     * constructed, because they will contain the pairs for all singleton features.
+     * A feature group that should be decomposed if feature-batched retrieval is being conducted. Use 
+     * {@link DecomposableFeatureGroup#isComposed()} to determine whether the group is a feature-batched composition 
+     * to be decomposed.
      */
 
     private static class DecomposableFeatureGroup implements Comparable<DecomposableFeatureGroup>
     {
-        /** The singleton feature groups. */
-        private final Set<FeatureGroup> singletons;
-
         /** Is true if the feature groups should be decomposed because feature-batched retrieval was performed. */
         private final boolean isComposed;
 
@@ -1237,13 +1431,13 @@ public class PoolFactory
 
             // No need to check composed group as that is derived from the singleton state
             return Objects.equals( this.isComposed, in.isComposed )
-                   && Objects.equals( this.singletons, in.singletons );
+                   && Objects.equals( this.composed, in.composed );
         }
 
         @Override
         public int hashCode()
         {
-            return Objects.hash( this.singletons, this.isComposed );
+            return Objects.hash( this.composed, this.isComposed );
         }
 
         @Override
@@ -1257,21 +1451,11 @@ public class PoolFactory
                 return compare;
             }
 
-            compare = Integer.compare( this.singletons.size(), o.singletons.size() );
+            compare = this.composed.compareTo( o.composed );
+
             if ( compare != 0 )
             {
                 return compare;
-            }
-
-            Iterator<FeatureGroup> in = o.singletons.iterator();
-            for ( FeatureGroup singleton : this.singletons )
-            {
-                compare = singleton.compareTo( in.next() );
-
-                if ( compare != 0 )
-                {
-                    return compare;
-                }
             }
 
             return 0;
@@ -1281,7 +1465,6 @@ public class PoolFactory
         public String toString()
         {
             return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
-                                                                                .append( "singletons", this.singletons )
                                                                                 .append( "isComposed", this.isComposed )
                                                                                 .toString();
         }
@@ -1293,15 +1476,6 @@ public class PoolFactory
         private boolean isComposed()
         {
             return this.isComposed;
-        }
-
-        /**
-         * @return the singleton feature groups
-         */
-
-        private Set<FeatureGroup> getGroups()
-        {
-            return this.singletons;
         }
 
         /**
@@ -1322,15 +1496,65 @@ public class PoolFactory
         private DecomposableFeatureGroup( Set<FeatureGroup> singletons, boolean isComposed )
         {
             Objects.requireNonNull( singletons );
-
-            this.singletons = new HashSet<>( singletons );
             this.isComposed = isComposed;
-            Set<FeatureTuple> features = this.singletons.stream()
-                                                        .flatMap( next -> next.getFeatures()
-                                                                              .stream() )
-                                                        .collect( Collectors.toSet() );
+            Set<FeatureTuple> features = singletons.stream()
+                                                   .flatMap( next -> next.getFeatures()
+                                                                         .stream() )
+                                                   .collect( Collectors.toSet() );
 
             this.composed = FeatureGroup.of( features );
+        }
+    }
+
+    /**
+     * A supplier that keeps track of the {@link PoolRequest} that it is fulfilling.
+     */
+
+    private static class SupplierWithPoolRequest<T> implements Supplier<T>
+    {
+
+        /** Delegated supplier. */
+        private final Supplier<T> delegated;
+
+        /** The pool request. */
+        private final PoolRequest poolRequest;
+
+        @Override
+        public T get()
+        {
+            return this.delegated.get();
+        }
+
+        /**
+         * Create an instance.
+         * @param delegated the delegated supplier
+         * @param poolRequest the pool request
+         */
+
+        private static final <T> SupplierWithPoolRequest<T> of( Supplier<T> delegated, PoolRequest poolRequest )
+        {
+            return new SupplierWithPoolRequest<>( delegated, poolRequest );
+        }
+
+        /**
+         * @return the pool request
+         */
+
+        private PoolRequest getPoolRequest()
+        {
+            return this.poolRequest;
+        }
+
+        /**
+         * @param delegated the delegated supplier
+         * @param poolRequest the pool request
+         */
+        private SupplierWithPoolRequest( Supplier<T> delegated, PoolRequest poolRequest )
+        {
+            Objects.requireNonNull( delegated );
+            Objects.requireNonNull( poolRequest );
+            this.delegated = delegated;
+            this.poolRequest = poolRequest;
         }
     }
 
