@@ -24,7 +24,7 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 /**
  * Tests the {@link ThresholdsByMetric}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class ThresholdsByMetricTest
@@ -266,7 +266,7 @@ public class ThresholdsByMetricTest
      */
 
     @Test
-    public void testFilterByType()
+    public void testFilterByGroup()
     {
         ThresholdsByMetric container = this.getDefaultContainerOne();
 
@@ -291,8 +291,8 @@ public class ThresholdsByMetricTest
         assertEquals( expected, actual );
 
         // Test the empty set
-        assertEquals( container.filterByGroup().union(), Collections.emptySet() );
-        assertEquals( container.filterByGroup( (ThresholdGroup[]) null ).union(), Collections.emptySet() );
+        assertEquals( Collections.emptySet(), container.filterByGroup().union() );
+        assertEquals( Collections.emptySet(), container.filterByGroup( (ThresholdGroup[]) null ).union() );
 
         // Set all types       
         assertSame( container, container.filterByGroup( ThresholdGroup.values() ) );
