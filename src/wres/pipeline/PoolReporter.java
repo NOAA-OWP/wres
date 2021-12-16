@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -17,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigPlus;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.time.TimeWindowOuter;
@@ -31,70 +33,35 @@ import wres.datamodel.time.TimeWindowOuter;
 class PoolReporter implements Consumer<PoolProcessingResult>
 {
 
-    /**
-     * Logger.
-     */
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( PoolReporter.class );
 
-    /**
-     * List of successful pools.
-     */
+    /** Time window stringifier. */
+    private static final Function<TimeWindowOuter, String> TIME_WINDOW_STRINGIFIER =
+            PoolReporter.getTimeWindowStringifier();
 
+    /** List of successful pools.*/
     private final ConcurrentLinkedQueue<PoolRequest> successfulPools;
 
-    /**
-     * List of successful feature groups.
-     */
-
-    private final ConcurrentLinkedQueue<FeatureGroup> successfulFeatures;
-
-    /**
-     * List of successful time windows.
-     */
-
-    private final ConcurrentLinkedQueue<TimeWindowOuter> successfulTimeWindows;
-
-    /**
-     * Set of paths modified by this feature.
-     */
-
+    /** Set of paths modified by this feature. */
     private final Set<Path> pathsWrittenTo;
 
-    /**
-     * The total number of pools to process.
-     */
-
+    /** The total number of pools to process. */
     private final int totalPools;
 
-    /**
-     * The project configuration.
-     */
-
+    /** The project configuration.*/
     private final ProjectConfigPlus projectConfigPlus;
 
-    /**
-     * The number of pools processed so far.
-     */
-
+    /** The number of pools processed so far. */
     private AtomicInteger processed;
-    
-    /**
-     * The time when the first pool was completed.
-     */
 
+    /** The time when the first pool was completed. */
     private Instant startTime;
-    
-    /**
-     * The time when the last pool was completed.
-     */
 
-    private Instant endTime;    
-    
-    /**
-     * Is <code>true</code> to print a detailed report in {@link #report()}, <code>false</code> to provide a summary.
-     */
+    /** The time when the last pool was completed. */
+    private Instant endTime;
 
+    /** Is {@code true} to print a detailed report in {@link #report()}, {@code false} to provide a summary. */
     private final boolean printDetailedReport;
 
     /**
@@ -114,9 +81,7 @@ class PoolReporter implements Consumer<PoolProcessingResult>
         this.projectConfigPlus = projectConfigPlus;
         this.totalPools = totalPools;
         this.printDetailedReport = printDetailedReport;
-        this.successfulFeatures = new ConcurrentLinkedQueue<>();
         this.successfulPools = new ConcurrentLinkedQueue<>();
-        this.successfulTimeWindows = new ConcurrentLinkedQueue<>();
         this.processed = new AtomicInteger( 0 );
         this.pathsWrittenTo = new ConcurrentSkipListSet<>();
     }
@@ -133,11 +98,11 @@ class PoolReporter implements Consumer<PoolProcessingResult>
         Objects.requireNonNull( result, "cannot accept a null pool processing result." );
 
         // Register start time
-        if( Objects.isNull( this.startTime ) )
+        if ( Objects.isNull( this.startTime ) )
         {
             this.startTime = Instant.now();
         }
-        
+
         FeatureGroup featureGroup = result.getPoolRequest()
                                           .getMetadata()
                                           .getFeatureGroup();
@@ -153,15 +118,11 @@ class PoolReporter implements Consumer<PoolProcessingResult>
                          this.processed.incrementAndGet(),
                          this.totalPools,
                          featureGroup.getName(),
-                         timeWindow );
+                         TIME_WINDOW_STRINGIFIER.apply( timeWindow ) );
         }
         else
         {
             this.successfulPools.add( result.getPoolRequest() );
-            this.successfulFeatures.add( result.getPoolRequest()
-                                               .getMetadata()
-                                               .getFeatureGroup() );
-            this.successfulTimeWindows.add( timeWindow );
 
             String extra = "";
             if ( featureGroup.getFeatures().size() > 1 )
@@ -177,12 +138,12 @@ class PoolReporter implements Consumer<PoolProcessingResult>
                              this.totalPools,
                              featureGroup.getName(),
                              extra,
-                             timeWindow );
+                             TIME_WINDOW_STRINGIFIER.apply( timeWindow ) );
             }
         }
-        
+
         // Register end time
-        if( this.processed.get() == this.totalPools )
+        if ( this.processed.get() == this.totalPools )
         {
             this.endTime = Instant.now();
         }
@@ -198,8 +159,16 @@ class PoolReporter implements Consumer<PoolProcessingResult>
     {
         // Finalize results
         Set<PoolRequest> successfulPoolsToReport = Set.copyOf( this.successfulPools );
-        Set<FeatureGroup> successfulFeaturesToReport = Set.copyOf( this.successfulFeatures );
-        Set<TimeWindowOuter> successfulTimeWindowsToReport = Set.copyOf( this.successfulTimeWindows );
+        Set<FeatureGroup> successfulFeaturesToReport = new TreeSet<>();
+        Set<TimeWindowOuter> successfulTimeWindowsToReport = new TreeSet<>();
+        for ( PoolRequest poolRequest : successfulPoolsToReport )
+        {
+            PoolMetadata mainMetadata = poolRequest.getMetadata();
+            FeatureGroup nextGroup = mainMetadata.getFeatureGroup();
+            TimeWindowOuter nextWindow = mainMetadata.getTimeWindow();
+            successfulFeaturesToReport.add( nextGroup );
+            successfulTimeWindowsToReport.add( nextWindow );
+        }
 
         // Detailed report
         if ( LOGGER.isInfoEnabled() &&
@@ -207,11 +176,11 @@ class PoolReporter implements Consumer<PoolProcessingResult>
              &&
              !successfulFeaturesToReport.isEmpty() )
         {
-            if( Objects.nonNull( this.endTime ) )
+            if ( Objects.nonNull( this.endTime ) )
             {
                 this.endTime = Instant.now();
             }
-            
+
             LOGGER.info( "Statistics were created for {} pools, which included {} features groups and {} time windows. "
                          + "The feature groups were: {}. The time windows were: {}. The time elapsed between the "
                          + "completion of the first and last pools was: {}.",
@@ -219,8 +188,7 @@ class PoolReporter implements Consumer<PoolProcessingResult>
                          successfulFeaturesToReport.size(),
                          successfulTimeWindowsToReport.size(),
                          PoolReporter.getPoolItemDescription( successfulFeaturesToReport, FeatureGroup::getName ),
-                         PoolReporter.getPoolItemDescription( successfulTimeWindowsToReport,
-                                                              TimeWindowOuter::toString ),
+                         PoolReporter.getPoolItemDescription( successfulTimeWindowsToReport, TIME_WINDOW_STRINGIFIER ),
                          Duration.between( this.startTime, this.endTime ) );
         }
 
@@ -283,6 +251,34 @@ class PoolReporter implements Consumer<PoolProcessingResult>
         }
 
         return outer.toString();
+    }
+
+    /**
+     * @return a function that consumes a {@link TimeWindowOuter} and produces a string representation of it.
+     */
+
+    private static Function<TimeWindowOuter, String> getTimeWindowStringifier()
+    {
+        return timeWindow -> {
+
+            if ( timeWindow.hasUnboundedReferenceTimes() && timeWindow.hasUnboundedValidTimes()
+                 && timeWindow.bothLeadDurationsAreUnbounded() )
+            {
+                return "( Unbounded in all dimensions )";
+            }
+
+            StringJoiner joiner = new StringJoiner( ", ", "( ", " )" );
+
+            joiner.add( "Earliest reference time: " + timeWindow.getEarliestReferenceTime() )
+                  .add( "Latest reference time: " + timeWindow.getLatestReferenceTime() )
+                  .add( "Earliest valid time: " + timeWindow.getEarliestValidTime() )
+                  .add( "Latest valid time: " + timeWindow.getLatestValidTime() )
+                  .add( "Earliest lead duration: " + timeWindow.getEarliestLeadDuration() )
+                  .add( "Latest lead duration: " + timeWindow.getLatestLeadDuration() );
+
+            return joiner.toString();
+
+        };
     }
 
 }
