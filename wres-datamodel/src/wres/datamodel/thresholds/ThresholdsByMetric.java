@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -28,6 +29,8 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
  * A container of {@link ThresholdOuter} by {@link MetricConstants} that supports slicing and dicing by threshold and 
  * metric.
  * 
+ * TODO: consider moving some of this behavior to the {@link ThresholdSlicer}.
+ * 
  * @author James Brown
  */
 
@@ -37,41 +40,29 @@ public class ThresholdsByMetric
 
     private static final Logger LOGGER = LoggerFactory.getLogger( ThresholdsByMetric.class );
 
-    /**
-     * Null metric error string.
-     */
-
+    /** Null metric error string. */
     private static final String NULL_METRIC_ERROR = "Specify a non-null metric.";
 
-    /**
-     * Null threshold type error string.
-     */
-
+    /** Null threshold type error string. */
     private static final String NULL_THRESHOLD_TYPE_ERROR = "Specify a non-null threshold group type.";
 
-    /**
-     * Thresholds by {@link ThresholdGroup#PROBABILITY}.
-     */
+    /** Thresholds by {@link ThresholdGroup#PROBABILITY}. */
+    private final Map<MetricConstants, Set<ThresholdOuter>> probabilities;
 
-    private Map<MetricConstants, Set<ThresholdOuter>> probabilities = new EnumMap<>( MetricConstants.class );
+    /** Thresholds by {@link ThresholdGroup#VALUE}. */
+    private final Map<MetricConstants, Set<ThresholdOuter>> values;
 
-    /**
-     * Thresholds by {@link ThresholdGroup#VALUE}.
-     */
+    /** Thresholds by {@link ThresholdGroup#PROBABILITY_CLASSIFIER}. */
+    private final Map<MetricConstants, Set<ThresholdOuter>> probabilityClassifiers;
 
-    private Map<MetricConstants, Set<ThresholdOuter>> values = new EnumMap<>( MetricConstants.class );
+    /** Thresholds by {@link ThresholdGroup#QUANTILE}. */
+    private final Map<MetricConstants, Set<ThresholdOuter>> quantiles;
 
-    /**
-     * Thresholds by {@link ThresholdGroup#PROBABILITY_CLASSIFIER}.
-     */
+    /** Union of all metrics. */
+    private final Set<MetricConstants> unionOfMetrics;
 
-    private Map<MetricConstants, Set<ThresholdOuter>> probabilityClassifiers = new EnumMap<>( MetricConstants.class );
-
-    /**
-     * Thresholds by {@link ThresholdGroup#QUANTILE}.
-     */
-
-    private Map<MetricConstants, Set<ThresholdOuter>> quantiles = new EnumMap<>( MetricConstants.class );
+    /** Union of all thresholds. */
+    private final Set<ThresholdOuter> unionOfThresholds;
 
     @Override
     public boolean equals( Object o )
@@ -116,7 +107,8 @@ public class ThresholdsByMetric
         {
             return false;
         }
-        return !this.union( metric, types ).isEmpty();
+        return !this.union( metric, types )
+                    .isEmpty();
     }
 
     /**
@@ -124,33 +116,27 @@ public class ThresholdsByMetric
      * 
      * @param type the type of threshold
      * @return the thresholds for a specified type
-     * @throws NullPointerException if the input is null 
+     * @throws NullPointerException if the input is null
+     * @throws IllegalArgumentException if the type is unexpected
      */
 
     public Map<MetricConstants, Set<ThresholdOuter>> getThresholds( ThresholdGroup type )
     {
         Objects.requireNonNull( type, NULL_THRESHOLD_TYPE_ERROR );
 
-        Map<MetricConstants, Set<ThresholdOuter>> returnMe = new EnumMap<>( MetricConstants.class );
-
-        if ( type == ThresholdGroup.PROBABILITY )
+        switch ( type )
         {
-            returnMe.putAll( this.getProbabilities() );
+            case PROBABILITY:
+                return this.getProbabilities();
+            case VALUE:
+                return this.getValues();
+            case PROBABILITY_CLASSIFIER:
+                return this.getProbabilityClassifiers();
+            case QUANTILE:
+                return this.getQuantiles();
+            default:
+                throw new IllegalArgumentException( "Unrecognized option '" + type + "'." );
         }
-        else if ( type == ThresholdGroup.VALUE )
-        {
-            returnMe.putAll( this.getValues() );
-        }
-        else if ( type == ThresholdGroup.PROBABILITY_CLASSIFIER )
-        {
-            returnMe.putAll( this.getProbabilityClassifiers() );
-        }
-        else
-        {
-            returnMe.putAll( this.getQuantiles() );
-        }
-
-        return Collections.unmodifiableMap( returnMe );
     }
 
     /**
@@ -175,10 +161,11 @@ public class ThresholdsByMetric
         for ( MetricConstants next : union )
         {
             //Non-classifiers
-            Set<ThresholdGroup> types = new HashSet<>( this.getThresholdTypesForThisMetric( next ) );
+            Set<ThresholdGroup> nextGroup = this.getThresholdTypesForThisMetric( next );
+            Set<ThresholdGroup> types = new HashSet<>( nextGroup );
             types.removeIf( type -> type == ThresholdGroup.PROBABILITY_CLASSIFIER );
-            Set<ThresholdOuter> nonClassifiers =
-                    this.union( next, types.toArray( new ThresholdGroup[types.size()] ) );
+            ThresholdGroup[] nextArray = types.toArray( new ThresholdGroup[types.size()] );
+            Set<ThresholdOuter> nonClassifiers = this.union( next, nextArray );
 
             // Thresholds to add
             SortedSet<OneOrTwoThresholds> oneOrTwo = new TreeSet<>();
@@ -195,7 +182,8 @@ public class ThresholdsByMetric
                 {
                     for ( ThresholdOuter second : classifiers )
                     {
-                        oneOrTwo.add( OneOrTwoThresholds.of( first, second ) );
+                        OneOrTwoThresholds nextThreshold = OneOrTwoThresholds.of( first, second );
+                        oneOrTwo.add( nextThreshold );
                     }
                 }
             }
@@ -209,7 +197,8 @@ public class ThresholdsByMetric
             }
 
             // Update container
-            returnMe.put( next, Collections.unmodifiableSortedSet( oneOrTwo ) );
+            SortedSet<OneOrTwoThresholds> nextSet = Collections.unmodifiableSortedSet( oneOrTwo );
+            returnMe.put( next, nextSet );
         }
 
         return Collections.unmodifiableMap( returnMe );
@@ -227,7 +216,8 @@ public class ThresholdsByMetric
     {
         Objects.requireNonNull( group, NULL_THRESHOLD_TYPE_ERROR );
 
-        return !this.getThresholds( group ).isEmpty();
+        return !this.getThresholds( group )
+                    .isEmpty();
     }
 
     /**
@@ -243,15 +233,7 @@ public class ThresholdsByMetric
 
     public Set<ThresholdOuter> union()
     {
-        Set<ThresholdOuter> union = new HashSet<>();
-
-        // Iterate the types
-        for ( ThresholdGroup nextType : ThresholdGroup.values() )
-        {
-            this.getThresholds( nextType ).values().forEach( union::addAll );
-        }
-
-        return Collections.unmodifiableSet( union );
+        return this.unionOfThresholds;
     }
 
     /**
@@ -264,7 +246,9 @@ public class ThresholdsByMetric
     {
         Set<OneOrTwoThresholds> returnMe = new HashSet<>();
         // Add all thresholds to the set
-        this.getOneOrTwoThresholds().values().forEach( returnMe::addAll );
+        this.getOneOrTwoThresholds()
+            .values()
+            .forEach( returnMe::addAll );
 
         return Collections.unmodifiableSet( returnMe );
     }
@@ -290,9 +274,10 @@ public class ThresholdsByMetric
         {
             for ( ThresholdGroup nextType : group )
             {
-                if ( this.getThresholds( nextType ).containsKey( metric ) )
+                Map<MetricConstants, Set<ThresholdOuter>> nextThresholds = this.getThresholds( nextType );
+                if ( nextThresholds.containsKey( metric ) )
                 {
-                    union.addAll( this.getThresholds( nextType ).get( metric ) );
+                    union.addAll( nextThresholds.get( metric ) );
                 }
             }
         }
@@ -345,7 +330,8 @@ public class ThresholdsByMetric
         // Iterate the types
         for ( ThresholdGroup nextType : ThresholdGroup.values() )
         {
-            if ( this.getThresholds( nextType ).containsKey( metric ) )
+            Map<MetricConstants, Set<ThresholdOuter>> nextThresholds = this.getThresholds( nextType );
+            if ( nextThresholds.containsKey( metric ) )
             {
                 types.add( nextType );
             }
@@ -362,15 +348,7 @@ public class ThresholdsByMetric
 
     public Set<MetricConstants> getMetrics()
     {
-        Set<MetricConstants> union = new HashSet<>();
-
-        // Iterate the types
-        for ( ThresholdGroup nextType : ThresholdGroup.values() )
-        {
-            union.addAll( this.getThresholds( nextType ).keySet() );
-        }
-
-        return Collections.unmodifiableSet( union );
+        return this.unionOfMetrics;
     }
 
     /**
@@ -422,13 +400,20 @@ public class ThresholdsByMetric
 
         Builder builder = new Builder();
 
+        if ( Objects.isNull( group ) || group.length == 0 )
+        {
+            return builder.build();
+        }
+
+        List<ThresholdGroup> groupList = Arrays.asList( group );
+
         // Add the stored types within the input array
         if ( Objects.nonNull( group ) )
         {
             for ( ThresholdGroup nextType : ThresholdGroup.values() )
             {
                 // Filter by type
-                if ( Arrays.asList( group ).contains( nextType ) )
+                if ( groupList.contains( nextType ) )
                 {
                     Map<MetricConstants, Set<ThresholdOuter>> thresholds = this.getThresholds( nextType );
                     builder.addThresholds( thresholds, nextType );
@@ -473,7 +458,8 @@ public class ThresholdsByMetric
         // Add the filtered thresholds for each type
         for ( ThresholdGroup nextType : ThresholdGroup.values() )
         {
-            this.addFilteredThresholdsByGroup( builder, nextType, this.getThresholds( nextType ), test );
+            Map<MetricConstants, Set<ThresholdOuter>> nextThresholds = this.getThresholds( nextType );
+            this.addFilteredThresholdsByGroup( builder, nextType, nextThresholds, test );
         }
 
         return builder.build();
@@ -491,7 +477,8 @@ public class ThresholdsByMetric
 
     public boolean hasMetrics( SampleDataGroup inGroup, StatisticType outGroup )
     {
-        return !this.getMetrics( inGroup, outGroup ).isEmpty();
+        return !this.getMetrics( inGroup, outGroup )
+                    .isEmpty();
     }
 
     /**
@@ -872,30 +859,59 @@ public class ThresholdsByMetric
     private ThresholdsByMetric( Builder builder )
     {
         // Set immutable stores
+        Set<MetricConstants> metricsInner = new HashSet<>();
+        Set<ThresholdOuter> thresholdsInner = new HashSet<>();
+        Map<MetricConstants, Set<ThresholdOuter>> probabilitiesInner = new EnumMap<>( MetricConstants.class );
+        Map<MetricConstants, Set<ThresholdOuter>> valuesInner = new EnumMap<>( MetricConstants.class );
+        Map<MetricConstants, Set<ThresholdOuter>> probabilityClassifiersInner = new EnumMap<>( MetricConstants.class );
+        Map<MetricConstants, Set<ThresholdOuter>> quantilesInner = new EnumMap<>( MetricConstants.class );
+
         for ( Entry<MetricConstants, Set<ThresholdOuter>> next : builder.probabilities.entrySet() )
         {
-            this.probabilities.put( next.getKey(), Set.copyOf( next.getValue() ) );
+            MetricConstants nextMetric = next.getKey();
+            Set<ThresholdOuter> nextThresholds = next.getValue();
+            Set<ThresholdOuter> nextThresholdsCopy = Set.copyOf( nextThresholds );
+            probabilitiesInner.put( nextMetric, nextThresholdsCopy );
+            metricsInner.add( nextMetric );
+            thresholdsInner.addAll( nextThresholds );
         }
 
         for ( Entry<MetricConstants, Set<ThresholdOuter>> next : builder.values.entrySet() )
         {
-            this.values.put( next.getKey(), Set.copyOf( next.getValue() ) );
+            MetricConstants nextMetric = next.getKey();
+            Set<ThresholdOuter> nextThresholds = next.getValue();
+            Set<ThresholdOuter> nextThresholdsCopy = Set.copyOf( nextThresholds );
+            valuesInner.put( nextMetric, nextThresholdsCopy );
+            metricsInner.add( nextMetric );
+            thresholdsInner.addAll( nextThresholds );
         }
 
         for ( Entry<MetricConstants, Set<ThresholdOuter>> next : builder.probabilityClassifiers.entrySet() )
         {
-            this.probabilityClassifiers.put( next.getKey(), Set.copyOf( next.getValue() ) );
+            MetricConstants nextMetric = next.getKey();
+            Set<ThresholdOuter> nextThresholds = next.getValue();
+            Set<ThresholdOuter> nextThresholdsCopy = Set.copyOf( nextThresholds );
+            probabilityClassifiersInner.put( nextMetric, nextThresholdsCopy );
+            metricsInner.add( nextMetric );
+            thresholdsInner.addAll( nextThresholds );
         }
 
         for ( Entry<MetricConstants, Set<ThresholdOuter>> next : builder.quantiles.entrySet() )
         {
-            this.quantiles.put( next.getKey(), Set.copyOf( next.getValue() ) );
+            MetricConstants nextMetric = next.getKey();
+            Set<ThresholdOuter> nextThresholds = next.getValue();
+            Set<ThresholdOuter> nextThresholdsCopy = Set.copyOf( nextThresholds );
+            quantilesInner.put( nextMetric, nextThresholdsCopy );
+            metricsInner.add( nextMetric );
+            thresholdsInner.addAll( nextThresholds );
         }
 
         // Render the stores immutable       
-        this.probabilities = Collections.unmodifiableMap( this.probabilities );
-        this.probabilityClassifiers = Collections.unmodifiableMap( this.probabilityClassifiers );
-        this.values = Collections.unmodifiableMap( this.values );
-        this.quantiles = Collections.unmodifiableMap( this.quantiles );
+        this.probabilities = Collections.unmodifiableMap( probabilitiesInner );
+        this.probabilityClassifiers = Collections.unmodifiableMap( probabilityClassifiersInner );
+        this.values = Collections.unmodifiableMap( valuesInner );
+        this.quantiles = Collections.unmodifiableMap( quantilesInner );
+        this.unionOfMetrics = Collections.unmodifiableSet( metricsInner );
+        this.unionOfThresholds = Collections.unmodifiableSet( thresholdsInner );
     }
 }
