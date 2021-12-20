@@ -18,7 +18,6 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolRequest;
-import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.statistics.StatisticsStore;
 import wres.datamodel.time.TimeSeries;
 import wres.events.Evaluation;
@@ -27,7 +26,7 @@ import wres.pipeline.statistics.MetricProcessor;
 import wres.statistics.generated.Statistics;
 
 /**
- * Processes a pool of pairs, creating statistics.
+ * Processes a pool of pairs, creating and publishing statistics.
  * 
  * @param <L> the type of left-ish data in the pool of pairs
  * @param <R> the type of right-ish data in the pool of pairs

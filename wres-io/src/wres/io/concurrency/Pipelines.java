@@ -10,8 +10,8 @@ import java.util.concurrent.CompletionException;
  * Select method migrated from wres.control.ProcessorHelper 2021-01-05 for the
  * purpose of re-use in wres.io.Operations. The wres module uses wres-io jar but
  * not vice versa.
- * @author james.brown@hydrosolved.com
- * @author jesse.bickel@***REMOVED***
+ * @author James Brown
+ * @author Jesse Bickel
  */
 public class Pipelines
 {

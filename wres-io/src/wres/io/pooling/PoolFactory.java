@@ -1083,7 +1083,10 @@ public class PoolFactory
                           nextGroups );
         }
 
-        LOGGER.info( "Created {} optimized pool requests.", poolRequestCount );
+        if ( shouldBatch && LOGGER.isInfoEnabled() )
+        {
+            LOGGER.info( "Created {} optimized pool requests.", poolRequestCount );
+        }
 
         return Collections.unmodifiableMap( returnMe );
     }

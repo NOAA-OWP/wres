@@ -50,7 +50,6 @@ import wres.events.subscribe.SubscriberApprover;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.io.Operations;
 import wres.io.concurrency.Executor;
-import wres.io.concurrency.Pipelines;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.geography.FeatureFinder;
@@ -485,19 +484,19 @@ class ProcessorHelper
             // this is feature-group shaped, but additional shapes may be desired in future
             PoolGroupTracker groupTracker = PoolGroupTracker.ofFeatureGroupTracker( evaluation, poolRequests );
 
-            // Create the atomic tasks for this evaluation pipeline, i.e., pools
-            List<CompletableFuture<Void>> poolTasks = ProcessorHelper.getPoolTasks( evaluationDetails,
-                                                                                    sharedWriters,
-                                                                                    unitMapper,
-                                                                                    poolRequests,
-                                                                                    executors,
-                                                                                    poolReporter,
-                                                                                    groupTracker );
+            // Create the atomic tasks for this evaluation pipeline, i.e., pools. There are as many tasks as pools and
+            // they are composed into an asynchronous "chain" such that all pools complete successfully or one pool 
+            // completes exceptionally, whichever happens first
+            CompletableFuture<Object> poolTaskChain = ProcessorHelper.getPoolTaskChain( evaluationDetails,
+                                                                                        sharedWriters,
+                                                                                        unitMapper,
+                                                                                        poolRequests,
+                                                                                        executors,
+                                                                                        poolReporter,
+                                                                                        groupTracker );
 
-            // Run the pool tasks, and join on all tasks. The main thread will wait until all are completed successfully
-            // or one completes exceptionally (for reasons other than lack of data)
-            Pipelines.doAllOrException( poolTasks )
-                     .join();
+            // Wait for the pool chain to complete
+            poolTaskChain.join();
 
             // Report that all publication was completed. At this stage, a message is sent indicating the expected 
             // message count for all message types, thereby allowing consumers to know when all messages have arrived.
@@ -961,7 +960,8 @@ class ProcessorHelper
     }
 
     /**
-     * Creates one pool task for each pool request.
+     * Creates one pool task for each pool request and then chains them together, such that all of the pools complete 
+     * nominally or one completes exceptionally.
      * 
      * @param evaluationDetails the evaluation details
      * @param sharedWriters the shared writers
@@ -970,10 +970,10 @@ class ProcessorHelper
      * @param executors the executor services
      * @param poolReporter the pool reporter that reports on a pool execution
      * @param poolGroupTracker the group publication tracker
-     * @return the pool execution tasks
+     * @return the pool task chain
      */
 
-    private static List<CompletableFuture<Void>> getPoolTasks( EvaluationDetails evaluationDetails,
+    private static CompletableFuture<Object> getPoolTaskChain( EvaluationDetails evaluationDetails,
                                                                SharedWriters sharedWriters,
                                                                UnitMapper unitMapper,
                                                                List<PoolRequest> poolRequests,
@@ -982,7 +982,7 @@ class ProcessorHelper
                                                                PoolGroupTracker poolGroupTracker )
     {
 
-        List<CompletableFuture<Void>> poolTasks = new ArrayList<>();
+        CompletableFuture<Object> poolTasks = null;
 
         DatasourceType type = evaluationDetails.getProject()
                                                .getRight()
@@ -1006,11 +1006,9 @@ class ProcessorHelper
                                                                poolGroupTracker,
                                                                poolParameters );
 
-            List<CompletableFuture<Void>> nextPoolTasks =
-                    ProcessorHelper.getPoolTasks( poolProcessors,
-                                                  executors.getPoolExecutor(),
-                                                  poolReporter );
-            poolTasks.addAll( nextPoolTasks );
+            poolTasks = ProcessorHelper.getPoolTaskChain( poolProcessors,
+                                                          executors.getPoolExecutor(),
+                                                          poolReporter );
         }
         // All other single-valued types
         else
@@ -1024,14 +1022,12 @@ class ProcessorHelper
                                                                    poolGroupTracker,
                                                                    poolParameters );
 
-            List<CompletableFuture<Void>> nextPoolTasks =
-                    ProcessorHelper.getPoolTasks( poolProcessors,
-                                                  executors.getPoolExecutor(),
-                                                  poolReporter );
-            poolTasks.addAll( nextPoolTasks );
+            poolTasks = ProcessorHelper.getPoolTaskChain( poolProcessors,
+                                                          executors.getPoolExecutor(),
+                                                          poolReporter );
         }
 
-        return Collections.unmodifiableList( poolTasks );
+        return poolTasks;
     }
 
     /**
@@ -1199,22 +1195,39 @@ class ProcessorHelper
      * @return the pool tasks
      */
 
-    private static <L, R> List<CompletableFuture<Void>> getPoolTasks( List<PoolProcessor<L, R>> poolProcessors,
+    private static <L, R> CompletableFuture<Object> getPoolTaskChain( List<PoolProcessor<L, R>> poolProcessors,
                                                                       ExecutorService poolExecutor,
                                                                       PoolReporter poolReporter )
     {
+        // Create the composition of pool tasks for completion
         List<CompletableFuture<Void>> poolTasks = new ArrayList<>();
+
+        // Create a future that completes when any one pool task completes exceptionally
+        CompletableFuture<Void> oneExceptional = new CompletableFuture<>();
 
         for ( PoolProcessor<L, R> nextProcessor : poolProcessors )
         {
             CompletableFuture<Void> nextPoolTask = CompletableFuture.supplyAsync( nextProcessor,
                                                                                   poolExecutor )
-                                                                    .thenAccept( poolReporter );
+                                                                    .thenAccept( poolReporter )
+                                                                    //When one pool completes exceptionally, propagate
+                                                                    .exceptionally( exception -> {
+                                                                        oneExceptional.completeExceptionally( exception );
+                                                                        return null;
+                                                                    } );
 
             poolTasks.add( nextPoolTask );
         }
 
-        return Collections.unmodifiableList( poolTasks );
+        // Create a future that completes when all pool tasks succeed
+        CompletableFuture<Void> allDone =
+                CompletableFuture.allOf( poolTasks.toArray( new CompletableFuture[poolTasks.size()] ) );
+
+        LOGGER.info( "Submitted {} pool tasks for execution, which are awaiting completion. This may take some time...",
+                     poolTasks.size() );
+
+        // Chain the two futures together so that either: 1) all pool tasks succeed; or 2) one fails exceptionally.
+        return CompletableFuture.anyOf( allDone, oneExceptional );
     }
 
     /**
