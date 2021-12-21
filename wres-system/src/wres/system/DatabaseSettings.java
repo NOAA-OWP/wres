@@ -53,7 +53,7 @@ final class DatabaseSettings
     private String host = "localhost";
 	private String username = "wres";
 	private String password;
-	private String port = "5432";
+	private int port = 5432;
 	private String databaseName = "wres";
 	private String databaseType = "postgresql";
 	private String certificateFileToTrust;
@@ -123,12 +123,9 @@ final class DatabaseSettings
             postgresqlProperties.put( "databaseName", this.getDatabaseName() );
         }
 
-        if ( Objects.nonNull( this.getPort() ) )
-        {
-            postgresqlProperties.put( "portNumber", this.getPort() );
-            mariadbProperties.put( "port", this.getPort() );
-            mysqlProperties.put( "port", this.getPort() );
-        }
+        postgresqlProperties.put( "portNumber", this.getPort() );
+        mariadbProperties.put( "port", this.getPort() );
+        mysqlProperties.put( "port", this.getPort() );
 
         if ( this.shouldValidateSSL() )
         {
@@ -253,10 +250,12 @@ final class DatabaseSettings
 			LOGGER.debug( "Db settings after applying system property overrides: {}",
                           this );
 
-            this.overrideDatabaseTypeWithJdbcUrl();
+            this.overrideDatabaseAttributesUsingJdbcUrl();
 
             LOGGER.debug( "Db settings after applying jdbc url override: {}",
                           this );
+
+            this.applyPasswordOverrides();
 
             this.dataSourceProperties = this.createDatasourceProperties();
 
@@ -384,7 +383,8 @@ final class DatabaseSettings
 	DatabaseSettings()
 	{
 		this.applySystemPropertyOverrides();
-        this.overrideDatabaseTypeWithJdbcUrl();
+        this.overrideDatabaseAttributesUsingJdbcUrl();
+        this.applyPasswordOverrides();
         this.dataSourceProperties = this.createDatasourceProperties();
 	}
 
@@ -399,7 +399,7 @@ final class DatabaseSettings
         try (Socket socket = new Socket())
         {
             socket.connect( new InetSocketAddress( this.getHost(),
-                                                   Integer.parseInt( this.getPort() ) ),
+                                                   this.getPort() ),
                             2000 );
             return true;
         }
@@ -559,7 +559,7 @@ final class DatabaseSettings
 		this.password = password;
 	}
 
-    private String getPort()
+    private int getPort()
     {
         return this.port;
     }
@@ -568,7 +568,7 @@ final class DatabaseSettings
 	 * Sets the identifier for the port used to connect to the database
 	 * @param port
 	 */
-    private void setPort (String port)
+    private void setPort ( int port )
 	{
 		this.port = port;
 	}
@@ -618,11 +618,12 @@ final class DatabaseSettings
 	 * Sets the name of the database to connect to
 	 * @param databaseName The name of the database to access
 	 */
-    private void setDatabaseName (String databaseName) throws IOException
+    private void setDatabaseName( String databaseName )
     {
 	    if (databaseName.contains( ";" ) || databaseName.contains( "\"" ) || databaseName.contains( "'" ))
         {
-            throw new IOException( String.format("%s is not a valid database name.", databaseName) );
+            String message = String.format( "%s is not a valid database name.", databaseName );
+            throw new IllegalArgumentException( message );
         }
 		this.databaseName = databaseName;
 	}
@@ -664,18 +665,17 @@ final class DatabaseSettings
         connectionString.append( "jdbc:" );
         connectionString.append( this.getDatabaseType() );
 
-        if (this.databaseType == "h2" && this.useSSL)
+        if ( this.databaseType.equalsIgnoreCase( "h2" )
+             && this.useSSL )
         {
             connectionString.append(":ssl");
         }
+
         connectionString.append( "://" );
         connectionString.append( this.getHost() );
 
-        if ( this.getPort() != null )
-        {
-            connectionString.append( ":" );
-            connectionString.append( this.getPort() );
-        }
+        connectionString.append( ":" );
+        connectionString.append( this.getPort() );
 
         connectionString.append( "/" );
         connectionString.append( databaseName );
@@ -709,7 +709,7 @@ final class DatabaseSettings
                             setDatabaseType( value );
                             break;
                         case "port":
-                            setPort( value );
+                            setPort( Integer.parseInt( value ) );
                             break;
                         case "name":
                             setDatabaseName( value );
@@ -762,7 +762,7 @@ final class DatabaseSettings
                 }
             }
         }
-        catch ( IOException e )
+        catch ( IllegalArgumentException e )
         {
             throw new XMLStreamException( "Invalid settings were found within the system configuration.", e );
         }
@@ -770,14 +770,15 @@ final class DatabaseSettings
 
 
     /**
-     * If needed, override the database type with the jdbc url. To be called
-     * after applying System Property overrides. If either the original config
-     * or the System Properties has set the jdbc url with a string starting with
-     * "jdbc:" and having more than five characters, the jdbc url takes
-     * precedence and overrides any specified type.
+     * If needed, override the database attributes by parsing the jdbc url.
+     * To be called after applying System Property overrides. If either the
+     * original config or the System Properties has set the jdbc url with a
+     * string starting with "jdbc:" and having more than five characters, the
+     * jdbc url takes precedence and overrides any specified attributes. For
+     * host name and port, only the first host name and port are found.
      */
 
-    private void overrideDatabaseTypeWithJdbcUrl()
+    private void overrideDatabaseAttributesUsingJdbcUrl()
     {
 
         // The jdbcUrl overrides the database type when present and starts with
@@ -791,6 +792,13 @@ final class DatabaseSettings
         {
             String jdbcSubstring = jdbc.substring( 5 );
             int secondColonIndex = jdbcSubstring.indexOf( ":" );
+            int firstSlashIndex = jdbcSubstring.indexOf( '/' );
+            int secondSlashIndex = jdbcSubstring.indexOf( '/',
+                                                          firstSlashIndex + 1 );
+            int thirdSlashIndex = jdbcSubstring.indexOf( '/',
+                                                         secondSlashIndex + 1 );
+            int questionMarkIndex = jdbcSubstring.indexOf( '?' );
+
 
             if ( secondColonIndex < 0 )
             {
@@ -804,10 +812,81 @@ final class DatabaseSettings
                               type, jdbc );
                 setDatabaseType( type );
             }
+
+            if ( firstSlashIndex > 0
+                 && secondSlashIndex > firstSlashIndex
+                 && thirdSlashIndex > secondSlashIndex )
+            {
+                // We should be able to extract the host name following '//'.
+                String hostAndMaybePort = jdbcSubstring.substring( secondSlashIndex + 1,
+                                                                   thirdSlashIndex );
+                int portColonIndex = hostAndMaybePort.indexOf( ':' );
+
+                if ( portColonIndex > 0 )
+                {
+                    // There is a port because a colon was found after host.
+                    String portRaw = hostAndMaybePort.substring( portColonIndex + 1 );
+                    String hostName = hostAndMaybePort.substring( 0, portColonIndex );
+
+                    LOGGER.debug( "Extracted host {} from jdbcUrl {}",
+                                  hostName, jdbc );
+                    this.setHost( hostName );
+
+                    try
+                    {
+                        int port = Integer.parseInt( portRaw );
+                        LOGGER.debug( "Extracted port {} from jdbcUrl {}",
+                                      port, jdbc );
+                        this.setPort( port );
+                    }
+                    catch ( NumberFormatException nfe )
+                    {
+                        LOGGER.warn( "Unable to parse port number from jdbc url {}. Attempt from substring {} failed.",
+                                     jdbc, portRaw );
+                    }
+                }
+                else
+                {
+                    // There is no port because colon was not found after host.
+                    LOGGER.debug( "Extracted host {} from jdbcUrl {} (and no port)",
+                                  hostAndMaybePort, jdbc );
+                    this.setHost( hostAndMaybePort );
+                }
+
+                String dbName = "";
+
+                // The db name follows the third slash but not including '?'
+                if ( questionMarkIndex <= thirdSlashIndex )
+                {
+                    dbName = jdbcSubstring.substring( thirdSlashIndex + 1 );
+                }
+                else
+                {
+                    dbName = jdbcSubstring.substring( thirdSlashIndex + 1,
+                                                      questionMarkIndex );
+                }
+
+                if ( !dbName.isBlank() )
+                {
+                    LOGGER.debug( "Extracted database name {} from jdbc url {}",
+                                  dbName, jdbc );
+                    this.setDatabaseName( dbName );
+                }
+                else
+                {
+                    LOGGER.warn( "Unable to extract database name from jdbc url {}",
+                                 jdbc );
+                }
+            }
+            else
+            {
+                LOGGER.warn( "Unable to extract database host, port, or name from jdbc url {}",
+                             jdbc );
+            }
         }
         else
         {
-            LOGGER.debug( "No way to override database type with jdbc url {}",
+            LOGGER.debug( "No way to override database attributes with jdbc url {}",
                           jdbc );
         }
     }
@@ -856,12 +935,14 @@ final class DatabaseSettings
                 .append( "databaseType", databaseType )
                 .append( "certificateFileToTrust", certificateFileToTrust )
                 .append( "maxPoolSize", maxPoolSize )
+                .append( "maxHighPriorityPoolSize", maxHighPriorityPoolSize )
                 .append( "maxIdleTime", maxIdleTime )
                 // Purposely do not print passphrases.
                 //.append( "dataSourceProperties", this.dataSourceProperties )
                 .append( "useSSL", useSSL )
                 .append( "validateSSL", validateSSL )
                 .append( "queryTimeout", queryTimeout )
+                .append( "connectionTimeoutMs", connectionTimeoutMs )
                 .toString();
     }
 
@@ -893,6 +974,14 @@ final class DatabaseSettings
         if ( Objects.nonNull( hostOverride ) )
         {
             this.setHost( hostOverride );
+        }
+
+        String portOverride = System.getProperty( "wres.databasePort" );
+
+        if ( Objects.nonNull( portOverride ) )
+        {
+            int port = Integer.parseInt( portOverride );
+            this.setPort( port );
         }
 
         String jdbcUrlOverride = System.getProperty( "wres.databaseJdbcUrl" );
@@ -930,8 +1019,18 @@ final class DatabaseSettings
         {
             this.connectionTimeoutMs = Integer.parseInt( connectionTimeoutMsOverride );
         }
+	}
 
-		// Intended order of passphrase precedence:
+    /**
+     * Figure out the password based on system properties and/or wres config
+     * where host, port, and database name have already been set. Needs to be
+     * called after all other overrides have been applied and/or parsing of
+     * the jdbcUrl.
+     */
+
+    private void applyPasswordOverrides()
+    {
+        // Intended order of passphrase precedence:
         // 1) -Dwres.password (but perhaps we should remove this)
         // 2) .pgpass file
         // 3) wresconfig.xml
@@ -941,13 +1040,15 @@ final class DatabaseSettings
         // precedence, combined with the dependency of having the user name,
         // host name, database name to search the pgpass file with.
 
-		String passwordOverride = System.getProperty( "wres.password" );
+        String passwordOverride = System.getProperty( "wres.password" );
 
-		if ( passwordOverride != null )
-		{
-			this.password = passwordOverride;
-		}
-		else if ( PgPassReader.pgPassExistsAndReadable() )
+        if ( passwordOverride != null )
+        {
+            this.setPassword( passwordOverride );
+        }
+        else if ( this.getDatabaseType()
+                      .equalsIgnoreCase( "postgresql" )
+                  && PgPassReader.pgPassExistsAndReadable() )
         {
             String pgPass = null;
 
@@ -965,7 +1066,7 @@ final class DatabaseSettings
 
             if ( pgPass != null )
             {
-                this.password = pgPass;
+                this.setPassword( pgPass );
             }
             else if ( LOGGER.isWarnEnabled() )
             {
@@ -973,7 +1074,7 @@ final class DatabaseSettings
                              this.getHost(), 5432, this.getDatabaseName(), this.getUsername() );
             }
         }
-	}
+    }
 
     /**
      * To create a DatabaseLockManager we need to supply connections.
