@@ -53,7 +53,7 @@ public class CachingSupplier<T> implements Supplier<T>
             }
         }
 
-        return this.cache;
+        return localCache;
     }
 
     /**
