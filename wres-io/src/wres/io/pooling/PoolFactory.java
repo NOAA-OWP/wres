@@ -1083,9 +1083,9 @@ public class PoolFactory
                           nextGroups );
         }
 
-        if ( shouldBatch && LOGGER.isInfoEnabled() )
+        if ( shouldBatch && LOGGER.isDebugEnabled() )
         {
-            LOGGER.info( "Created {} optimized pool requests.", poolRequestCount );
+            LOGGER.debug( "Created {} optimized pool requests.", poolRequestCount );
         }
 
         return Collections.unmodifiableMap( returnMe );
@@ -1252,7 +1252,7 @@ public class PoolFactory
             Supplier<Map<FeatureTuple, Pool<TimeSeries<Pair<L, R>>>>> cachedDecomposed =
                     CachingSupplier.of( decomposed );
 
-            // Create a supplier that extracts the required feature tuple
+            // Create a supplier that extracts the required feature tuple from the multi-feature cache
             for ( FeatureTuple nextTuple : nextGroup.getFeatures() )
             {
                 PoolRequest nextDecomposedRequest = decomposedRequests.get( nextTuple );
@@ -1273,7 +1273,7 @@ public class PoolFactory
                         return Pool.of( List.of(), PoolMetadata.of() );
                     }
 
-                    // Update the metadata with the new feature group and a resequenced pool identifier
+                    // Update the metadata with the new feature group
                     Pool<TimeSeries<Pair<L, R>>> pool = decomposedMap.get( nextTuple );
                     PoolMetadata nextMain = nextDecomposedRequest.getMetadata();
 
