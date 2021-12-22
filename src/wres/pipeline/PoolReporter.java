@@ -176,7 +176,7 @@ class PoolReporter implements Consumer<PoolProcessingResult>
              &&
              !successfulFeaturesToReport.isEmpty() )
         {
-            if ( Objects.nonNull( this.endTime ) )
+            if ( Objects.isNull( this.endTime ) )
             {
                 this.endTime = Instant.now();
             }
