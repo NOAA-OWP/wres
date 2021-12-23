@@ -4,6 +4,7 @@ import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -104,7 +105,9 @@ public class PoolFactory
     /**
      * Create pools for single-valued data. This method will attempt to retrieve and re-use data that is common to 
      * multiple pools. In particular, it will cache the climatological data for all pool requests that belong to a 
-     * single feature group because the climatological data is shared across feature groups.
+     * single feature group because the climatological data is shared across feature groups. The order returned is the
+     * intended execution order for optimal heap usage because pools with data affinities are grouped together. The 
+     * order returned may differ from the order of pool requests received.
      * 
      * TODO: further optimize to re-use datasets that are shared between multiple feature groups, other than 
      * climatology, such as one feature that is part of several feature groups.
@@ -145,6 +148,7 @@ public class PoolFactory
         {
             DecomposableFeatureGroup nextGroup = nextEntry.getKey();
             FeatureGroup featureGroup = nextGroup.getComposedGroup();
+
             List<PoolRequest> nextPoolRequests = nextEntry.getValue();
 
             LOGGER.debug( "Building pool suppliers for feature group {}, which contains {} pool requests.",
@@ -184,7 +188,9 @@ public class PoolFactory
     /**
      * Create pools for ensemble data. This method will attempt to retrieve and re-use data that is common to multiple 
      * pools. In particular, it will cache the climatological data for all pool requests that belong to a single 
-     * feature group because the climatological data is shared across feature groups.
+     * feature group because the climatological data is shared across feature groups. The order returned is the intended 
+     * execution order for optimal heap usage because pools with data affinities are grouped together. The order 
+     * returned may differ from the order of pool requests received.
      * 
      * TODO: further optimize to re-use datasets that are shared between multiple feature groups, other than 
      * climatology, such as one feature that is part of several feature groups.
@@ -1301,8 +1307,46 @@ public class PoolFactory
                       toDecompose.size(),
                       flattened.size() );
 
-        // Return the flat list of suppliers in feature-group order
-        return Collections.unmodifiableList( flattened );
+        // Return the flat list of suppliers in optimal execution order
+        return PoolFactory.sortForExecution( flattened );
+    }
+
+    /**
+     * Sorts a list of feature-batched pools for optimal execution. It is assumed that all of the features in the 
+     * supplied list belong to the same feature batch and, therefore, have strong data affinities. The sorting places
+     * the suppliers in order of feature-tuple and then time window order to minimize heap usage. Pools should 
+     * complete in an order that ensures common datasets become eligible for gc as soon as possible.
+     * 
+     * @param <L> the left-ish data type
+     * @param <R> the right-ish data type
+     * @param suppliers the suppliers to sort
+     * @return the suppliers in optimal execution order
+     */
+
+    private static <L, R> List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<L, R>>>>>
+            sortForExecution( List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<L, R>>>>> toSort )
+    {
+        List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<L, R>>>>> mod = new ArrayList<>( toSort );
+        Comparator<SupplierWithPoolRequest<Pool<TimeSeries<Pair<L, R>>>>> c = ( a, b ) -> {
+            PoolMetadata left = a.getPoolRequest()
+                                 .getMetadata();
+
+            PoolMetadata right = b.getPoolRequest()
+                                  .getMetadata();
+
+            int compare = left.getFeatureGroup().compareTo( right.getFeatureGroup() );
+
+            if ( compare != 0 )
+            {
+                return compare;
+            }
+
+            return left.getTimeWindow().compareTo( right.getTimeWindow() );
+        };
+
+        mod.sort( c );
+
+        return Collections.unmodifiableList( mod );
     }
 
     /**

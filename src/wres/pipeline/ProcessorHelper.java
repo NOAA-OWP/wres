@@ -1210,7 +1210,9 @@ class ProcessorHelper
             CompletableFuture<Void> nextPoolTask = CompletableFuture.supplyAsync( nextProcessor,
                                                                                   poolExecutor )
                                                                     .thenAccept( poolReporter )
-                                                                    //When one pool completes exceptionally, propagate
+                                                                    // When one pool completes exceptionally, propagate
+                                                                    // Once chained below, all others that have not
+                                                                    // excepted will get a RejectedExecutionException
                                                                     .exceptionally( exception -> {
                                                                         oneExceptional.completeExceptionally( exception );
                                                                         return null;

@@ -9,7 +9,6 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -219,14 +218,12 @@ public class Evaluator
                                                                        .build();
         SystemSettings innerSystemSettings = this.getSystemSettings();
 
-        // Name our queues in order to easily monitor them
-        BlockingQueue<Runnable> poolQueue = new ArrayBlockingQueue<>( innerSystemSettings.getMaximumPoolThreads()
-                                                                      + 20000 );
+        // Create some unbounded work queues. For evaluations that produce faster than they consume, production is flow 
+        // controlled explicitly via the statistics messaging. See #95867.
+        BlockingQueue<Runnable> poolQueue = new LinkedBlockingQueue<>();
         BlockingQueue<Runnable> thresholdQueue = new LinkedBlockingQueue<>();
-        BlockingQueue<Runnable> metricQueue =
-                new ArrayBlockingQueue<>( innerSystemSettings.getMaximumMetricThreads() + 20000 );
-        BlockingQueue<Runnable> productQueue =
-                new ArrayBlockingQueue<>( innerSystemSettings.getMaximumProductThreads() + 20000 );
+        BlockingQueue<Runnable> metricQueue = new LinkedBlockingQueue<>();
+        BlockingQueue<Runnable> productQueue = new LinkedBlockingQueue<>();
 
         // Processes pools
         ThreadPoolExecutor poolExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumPoolThreads(),
@@ -259,11 +256,6 @@ public class Evaluator
                                                                      TimeUnit.MILLISECONDS,
                                                                      productQueue,
                                                                      productFactory );
-
-        // Set the rejection policy to run in the caller, slowing producers           
-        poolExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
-        metricExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
-        productExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
 
         ScheduledExecutorService monitoringService = new ScheduledThreadPoolExecutor( 1 );
 
