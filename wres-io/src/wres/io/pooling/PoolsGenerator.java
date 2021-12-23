@@ -465,7 +465,8 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                       this.getPoolRequests().size(),
                       this.getPoolRequests() );
 
-        ProjectConfig projectConfig = this.getProject().getProjectConfig();
+        ProjectConfig projectConfig = this.getProject()
+                                          .getProjectConfig();
         PairConfig pairConfig = projectConfig.getPair();
         Inputs inputsConfig = projectConfig.getInputs();
 
@@ -475,7 +476,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                .setRightUpscaler( this.getRightUpscaler() )
                .setPairer( this.getPairer() )
                .setCrossPairer( this.getCrossPairer() )
-               .setInputsDeclaration( inputsConfig )
+               .setProjectDeclaration( projectConfig )
                .setLeftTransformer( this.getLeftTransformer() )
                .setRightTransformer( this.getRightTransformer() )
                .setBaselineTransformer( this.getBaselineTransformer() );
@@ -493,7 +494,10 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
         {
             // Climatological data required?
             Supplier<Stream<TimeSeries<L>>> climatologySupplier = null;
-            if ( this.getProject().hasProbabilityThresholds() || this.getProject().hasGeneratedBaseline() )
+            if ( this.getProject()
+                     .hasProbabilityThresholds()
+                 || this.getProject()
+                        .hasGeneratedBaseline() )
             {
                 Set<FeatureKey> leftFeatures = this.getFeatures( FeatureTuple::getLeft );
                 climatologySupplier = this.getRetrieverFactory()
@@ -508,7 +512,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                                                                desiredTimeScale,
                                                                this.getLeftTransformer(),
                                                                this.getClimateAdmissibleValue() );
-                
+
                 // Cache the upscaled climatology, even if the raw climatology is itself cached because the upscaling
                 // is potentially expensive and there is no need to repeat it on every call to the supplier.
                 climatologyAtScale = CachingRetriever.of( climatologyAtScale );

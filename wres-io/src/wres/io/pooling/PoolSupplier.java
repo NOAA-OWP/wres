@@ -56,7 +56,10 @@ import wres.io.pooling.RescalingEvent.RescalingType;
 import wres.io.retrieval.DataAccessException;
 import wres.io.retrieval.NoSuchUnitConversionException;
 import wres.config.generated.DesiredTimeScaleConfig;
+import wres.config.generated.FeatureGroup;
+import wres.config.generated.FeatureService;
 import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.generated.ProjectConfig;
 
 /**
  * <p>Supplies a {@link Pool}, which is used to compute one or more verification statistics. The overall 
@@ -191,10 +194,10 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     private final PoolMetadata baselineMetadata;
 
     /**
-     * The inputs declaration, which is used to help compute the desired time scale, if required.
+     * The declaration.
      */
 
-    private final Inputs inputs;
+    private final ProjectConfig projectConfig;
 
     /**
      * A function that transforms according to value. Used to apply value constraints to the left-style data.
@@ -396,6 +399,12 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         private TimeScaleOuter desiredTimeScale;
 
         /**
+         * Project declaration.
+         */
+
+        private ProjectConfig projectConfig;
+
+        /**
          * Metadata for the mains pairs.
          */
 
@@ -406,12 +415,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
          */
 
         private PoolMetadata baselineMetadata;
-
-        /**
-         * Inputs declaration for the pool.
-         */
-
-        private Inputs inputs;
 
         /**
          * A function that transforms according to value. Used to apply value constraints to the left-style data.
@@ -579,12 +582,12 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         }
 
         /**
-         * @param inputs the inputs declaration to set
+         * @param projectConfig the project declaration to set
          * @return the builder
          */
-        Builder<L, R> setInputsDeclaration( Inputs inputs )
+        Builder<L, R> setProjectDeclaration( ProjectConfig projectConfig )
         {
-            this.inputs = inputs;
+            this.projectConfig = projectConfig;
 
             return this;
         }
@@ -686,8 +689,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             timeScale = miniPool.getMetadata()
                                 .getTimeScale();
 
-            // Add the pool and merge the climatology
-            builder.addPool( miniPool, true );
+            // Add the pool and merge the climatology across features if there are declared feature groups
+            builder.addPool( miniPool, this.hasDeclaredFeatureGroups() );
 
             if ( l.isEmpty() && r.isEmpty() )
             {
@@ -748,7 +751,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
         // Obtain the desired time scale. If this is unavailable, use the Least Common Scale.
         TimeScaleOuter desiredTimeScaleToUse =
-                this.getDesiredTimeScale( leftData, rightData, baselineData, this.inputs );
+                this.getDesiredTimeScale( leftData, rightData, baselineData, this.getInputs() );
 
         // Set the metadata, adjusted to include the desired time scale and feature tuple
         wres.statistics.generated.Pool.Builder newMetadataBuilder =
@@ -1274,7 +1277,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         }
 
         // Look for the LCS among the declared inputs
-        if ( Objects.nonNull( this.inputs ) )
+        if ( Objects.nonNull( this.getInputs() ) )
         {
             Set<TimeScaleOuter> declaredExistingTimeScales = new HashSet<>();
             TimeScaleConfig leftScaleConfig = inputDeclaration.getLeft().getExistingTimeScale();
@@ -2038,6 +2041,44 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     }
 
     /**
+     * @return true if feature groups are declared, false for only implicit/singleton groups, regardless of batching
+     */
+
+    private boolean hasDeclaredFeatureGroups()
+    {
+        if( Objects.isNull( this.projectConfig ) )
+        {
+            return false;
+        }
+        
+        FeatureService service = this.projectConfig.getPair()
+                                                   .getFeatureService();
+
+        // Explicit feature groups or implicitly declared groups via a feature service
+        return !this.projectConfig.getPair()
+                                  .getFeatureGroup()
+                                  .isEmpty()
+               || ( Objects.nonNull( service ) && service.getGroup()
+                                                         .stream()
+                                                         .anyMatch( FeatureGroup::isPool ) );
+    }
+
+    /**
+     * @return the inputs declaration or null
+     */
+
+    private Inputs getInputs()
+    {
+        Inputs inputs = null;
+        if ( Objects.nonNull( this.projectConfig ) )
+        {
+            inputs = this.projectConfig.getInputs();
+        }
+        
+        return inputs;
+    }
+
+    /**
      * Hidden constructor.  
      * 
      * @param builder the builder
@@ -2060,7 +2101,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         this.baselineMetadata = builder.baselineMetadata;
         this.climatologyMapper = builder.climatologyMapper;
         this.baselineGenerator = builder.baselineGenerator;
-        this.inputs = builder.inputs;
+        this.projectConfig = builder.projectConfig;
         this.leftTransformer = builder.leftTransformer;
         this.rightTransformer = builder.rightTransformer;
         this.baselineTransformer = builder.baselineTransformer;
@@ -2068,7 +2109,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         this.crossPairer = builder.crossPairer;
 
         // Set any time offsets required
-        Map<LeftOrRightOrBaseline, Duration> offsets = this.getValidTimeOffsets( this.inputs );
+        Map<LeftOrRightOrBaseline, Duration> offsets = this.getValidTimeOffsets( this.getInputs() );
         this.leftOffset = offsets.get( LeftOrRightOrBaseline.LEFT );
         this.rightOffset = offsets.get( LeftOrRightOrBaseline.RIGHT );
         this.baselineOffset = offsets.get( LeftOrRightOrBaseline.BASELINE );
@@ -2106,10 +2147,10 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                                                 + "." );
         }
 
-        if ( Objects.isNull( this.inputs ) )
+        if ( Objects.isNull( this.projectConfig ) )
         {
             LOGGER.debug( WHILE_CONSTRUCTING_A_POOL_SUPPLIER_FOR
-                          + "discovered that the inputs declaration was undefined.",
+                          + "discovered that the project declaration was undefined.",
                           this.metadata );
         }
 
