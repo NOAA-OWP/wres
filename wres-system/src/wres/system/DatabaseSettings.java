@@ -1055,7 +1055,7 @@ final class DatabaseSettings
             try
             {
                 pgPass = PgPassReader.getPassphrase( this.getHost(),
-                                                     5432,
+                                                     this.getPort(),
                                                      this.getDatabaseName(),
                                                      this.getUsername() );
             }
@@ -1071,7 +1071,7 @@ final class DatabaseSettings
             else if ( LOGGER.isWarnEnabled() )
             {
                 LOGGER.warn( "Could not find password for {}:{}:{}:{} in pgpass file.",
-                             this.getHost(), 5432, this.getDatabaseName(), this.getUsername() );
+                             this.getHost(), this.getPort(), this.getDatabaseName(), this.getUsername() );
             }
         }
     }
