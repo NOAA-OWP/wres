@@ -5,10 +5,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
-import java.util.function.UnaryOperator;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -67,9 +67,6 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 
     /** The trace count estimator. */
     private final ToIntFunction<Pool<TimeSeries<Pair<L, R>>>> traceCountEstimator;
-
-    /** An error message. */
-    private final String errorMessage;
 
     /** A group publication tracker. */
     private final PoolGroupTracker poolGroupTracker;
@@ -253,11 +250,11 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         // TODO: extract the pair writing to the product writers, i.e., publish the pairs
         // Write the main pairs
         this.getPairWritingTask( false, this.pairsWriter )
-            .apply( pool );
+            .accept( pool );
 
         // Write any baseline pairs, as needed
         this.getPairWritingTask( true, this.basePairsWriter )
-            .apply( pool );
+            .accept( pool );
 
         return new PoolProcessingResult( this.poolRequest, published );
     }
@@ -321,19 +318,18 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
     }
 
     /**
-     * Returns a task that writes pairs. Returns an empty set of paths, since pairs are not written per feature. Paths
-     * to pairs should be reported for all features, not per feature. See #71874.
+     * Returns a task that writes pairs.
      * 
      * @param useBaseline is true to write the baseline pairs
      * @param sharedWriters the consumers of paired data for writing
      * @return a task that writes pairs
      */
 
-    private UnaryOperator<Pool<TimeSeries<Pair<L, R>>>> getPairWritingTask( boolean useBaseline,
-                                                                            PairsWriter<L, R> sharedWriters )
+    private Consumer<Pool<TimeSeries<Pair<L, R>>>> getPairWritingTask( boolean useBaseline,
+                                                                       PairsWriter<L, R> sharedWriters )
     {
         return pairs -> {
-            
+
             if ( Objects.nonNull( sharedWriters ) )
             {
                 // Baseline data?
@@ -354,8 +350,6 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                     sharedWriters.accept( pairs );
                 }
             }
-            
-            return pairs;
         };
     }
 
@@ -431,7 +425,9 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
             {
                 Thread.currentThread().interrupt();
 
-                throw new WresProcessingException( this.errorMessage, e );
+                throw new WresProcessingException( "Encountered an error while processing pool " + this.poolRequest
+                                                   + ".",
+                                                   e );
             }
 
             return Collections.unmodifiableList( returnMe );
@@ -456,7 +452,6 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         this.poolRequest = builder.poolRequest;
         this.metricProcessors = List.copyOf( builder.metricProcessors ); // Validates nullity
         this.traceCountEstimator = builder.traceCountEstimator;
-        this.errorMessage = "Encountered an error while processing pool " + poolRequest + ".";
         this.poolGroupTracker = builder.poolGroupTracker;
 
         Objects.requireNonNull( this.projectConfig );
