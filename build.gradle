@@ -262,7 +262,7 @@ project(':wres-util')
         testImplementation 'junit:junit:4.13.2'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:4.1.0'
+        testImplementation 'org.mockito:mockito-core:4.2.0'
     }
 }
 
@@ -347,7 +347,7 @@ project(':wres-datamodel')
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:4.1.0'
+        testImplementation 'org.mockito:mockito-core:4.2.0'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
@@ -451,7 +451,7 @@ project(':wres-io')
         testImplementation 'org.liquibase:liquibase-core:4.6.2'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-inline:4.1.0'
+        testImplementation 'org.mockito:mockito-inline:4.2.0'
 
         // Use mockserver as a mock server for mock API responses
         testImplementation 'org.mock-server:mockserver-netty:5.11.2'
@@ -520,7 +520,7 @@ project(':wres-metrics')
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
 
         testImplementation 'junit:junit:4.13.2'
-        testImplementation 'org.mockito:mockito-core:4.1.0'
+        testImplementation 'org.mockito:mockito-core:4.2.0'
     }
 }
 
@@ -751,7 +751,7 @@ project(':wres-vis')
         testImplementation 'junit:junit:4.13.2'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:4.1.0'
+        testImplementation 'org.mockito:mockito-core:4.2.0'
 
         testRuntimeOnly files('dist/lib/conf')
     }
@@ -1663,7 +1663,7 @@ dependencies
     testCompileOnly 'junit:junit:4.13.2'
     testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.8.2'
 
-    testImplementation 'org.mockito:mockito-core:4.1.0'
+    testImplementation 'org.mockito:mockito-core:4.2.0'
 
     testImplementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 }
