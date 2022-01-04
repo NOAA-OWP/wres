@@ -52,13 +52,13 @@ plugins
     id 'com.github.ksoichiro.console.reporter' version '0.6.3'
 
     // To discover library versions with known vulnerabilities
-    id 'org.owasp.dependencycheck' version '6.5.0.1'
+    id 'org.owasp.dependencycheck' version '6.5.2.1'
     
     // Task to assist in downloading artifacts
     id "de.undercouch.download" version "4.1.2"
 
     // To discover library versions with updates available
-    id 'com.github.ben-manes.versions' version '0.39.0'
+    id 'com.github.ben-manes.versions' version '0.40.0'
 
     // Run python scripts
     // TODO: cannot install miniconda in current build environment
@@ -69,7 +69,7 @@ plugins
     id 'org.kordamp.gradle.markdown' version '2.2.0'
 
     // To generate API documentation from JAX-RS annotations and javadocs
-    id "io.swagger.core.v3.swagger-gradle-plugin" version "2.1.11"
+    id "io.swagger.core.v3.swagger-gradle-plugin" version "2.1.12"
 }
 
 repositories
@@ -250,7 +250,7 @@ project(':wres-util')
         implementation 'org.apache.httpcomponents:httpcore:4.4.15'
         implementation 'org.apache.httpcomponents:httpmime:4.5.13'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha10' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha12' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -379,12 +379,12 @@ project(':wres-io')
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
         // JSON deserialization uses jackson directly. Specify recent version.
-        implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.0'
-        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.13.0'
-        implementation 'com.fasterxml.jackson.core:jackson-core:2.13.0'
+        implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.1'
+        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.13.1'
+        implementation 'com.fasterxml.jackson.core:jackson-core:2.13.1'
 
         // For Java 8 java.time support
-        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.13.0'
+        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.13.1'
 
         implementation( 'edu.ucar:cdm-core:5.4.2' )
         {
@@ -649,7 +649,7 @@ project(':wres-statistics')
         // https://issues.sonatype.org/browse/MVNCENTRAL-348
         testImplementation group: 'javax.jms', name: 'javax.jms-api', version: '2.0.1'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha10' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha12' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -738,7 +738,7 @@ project(':wres-vis')
         // SVG graphics from JFreeChart instances
         implementation group: 'org.jfree', name: 'jfreesvg', version: '3.4.2'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha10' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha12' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -919,7 +919,7 @@ project(':wres-grid')
             exclude group: 'org.jdom', module: 'jdom2'
         }
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha10' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha12' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -996,7 +996,7 @@ project(':wres-worker')
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
         implementation 'com.rabbitmq:amqp-client:5.14.0'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha10' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha12' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -1115,7 +1115,7 @@ project(':wres-tasker')
         implementation 'org.apache.tika:tika-core:1.27'
 
         // To persist job metadata while keeping it relatively fast
-        implementation 'org.redisson:redisson:3.16.6'
+        implementation 'org.redisson:redisson:3.16.7'
 
         // These are deps of redisson, CVEs cause us to upgrade here.
         // When redisson upgrade includes non-CVE versions, remove.
@@ -1134,7 +1134,7 @@ project(':wres-tasker')
         // To send/receive messages
         implementation 'com.google.protobuf:protobuf-java:3.19.1'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha10' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha12' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -1159,7 +1159,7 @@ project(':wres-tasker')
         testImplementation 'org.apache.qpid:qpid-broker-plugins-memory-store:8.0.6'
 
         // To generate swagger's openapi.json at build time.
-        docGen 'io.swagger.core.v3:swagger-jaxrs2-jakarta:2.1.11'
+        docGen 'io.swagger.core.v3:swagger-jaxrs2-jakarta:2.1.12'
     }
 
     apply plugin: 'application'
@@ -1339,7 +1339,7 @@ project(':wres-eventsbroker')
         // QPID JMS client for AMQP 0.X (not 1.0). JMS 1.1 support only
         implementation group: 'org.apache.qpid', name: 'qpid-client', version: '6.4.0'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha10' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha12' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -1371,7 +1371,7 @@ project(':wres-events')
         // https://issues.sonatype.org/browse/MVNCENTRAL-348
         implementation group: 'javax.jms', name: 'javax.jms-api', version: '2.0.1'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha10' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha12' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -1382,9 +1382,9 @@ project(':wres-events')
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:4.1.0'
+        testImplementation 'org.mockito:mockito-core:4.2.0'
         // Mocking final classes
-        testImplementation 'org.mockito:mockito-inline:4.1.0'
+        testImplementation 'org.mockito:mockito-inline:4.2.0'
     }
 
     // Facilitate unit tests with JUnit
@@ -1649,7 +1649,7 @@ dependencies
     runtimeOnly 'org.glassfish.jersey.containers:jersey-container-jetty-http:2.35'
     runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:2.35'
 
-    runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha10' )
+    runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha12' )
     {
         // Not used at runtime, bloat
         exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
