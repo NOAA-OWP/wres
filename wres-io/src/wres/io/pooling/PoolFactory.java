@@ -285,8 +285,21 @@ public class PoolFactory
         Set<FeatureGroup> featureGroups = project.getFeatureGroups();
         ProjectConfig projectConfig = project.getProjectConfig();
 
+        PairConfig pairConfig = projectConfig.getPair();
+
+        // Get the desired time scale
+        TimeScaleOuter desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
+
+        // Get the time windows and sort them
+        Set<TimeWindowOuter> timeWindows =
+                new TreeSet<>( TimeWindowGenerator.getTimeWindowsFromPairConfig( pairConfig ) );
+
         return featureGroups.stream()
-                            .flatMap( nextGroup -> PoolFactory.getPoolRequests( evaluation, projectConfig, nextGroup )
+                            .flatMap( nextGroup -> PoolFactory.getPoolRequests( evaluation,
+                                                                                projectConfig,
+                                                                                nextGroup,
+                                                                                desiredTimeScale,
+                                                                                timeWindows )
                                                               .stream() )
                             .collect( Collectors.toUnmodifiableList() );
     }
@@ -603,6 +616,8 @@ public class PoolFactory
      * @param evaluation the evaluation description
      * @param projectConfig the project declaration
      * @param featureGroup the feature group
+     * @param desiredTimeScale the desired time scale
+     * @param timeWindows the time windows
      * @return the pool requests
      * @throws NullPointerException if any input is null
      * @throws PoolCreationException if the pool could not be created for any other reason
@@ -610,20 +625,13 @@ public class PoolFactory
 
     private static List<PoolRequest> getPoolRequests( Evaluation evaluation,
                                                       ProjectConfig projectConfig,
-                                                      FeatureGroup featureGroup )
+                                                      FeatureGroup featureGroup,
+                                                      TimeScaleOuter desiredTimeScale,
+                                                      Set<TimeWindowOuter> timeWindows )
     {
         Objects.requireNonNull( evaluation );
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( featureGroup );
-
-        PairConfig pairConfig = projectConfig.getPair();
-
-        // Get the desired time scale
-        TimeScaleOuter desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
-
-        // Get the time windows and sort them
-        Set<TimeWindowOuter> timeWindows =
-                new TreeSet<>( TimeWindowGenerator.getTimeWindowsFromPairConfig( pairConfig ) );
 
         List<PoolRequest> poolRequests = new ArrayList<>();
 
