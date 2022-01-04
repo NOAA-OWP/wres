@@ -731,7 +731,7 @@ project(':wres-vis')
 
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
 
-        implementation files('../libs/external/jcommon-1.0.12.jar')
+        implementation group: 'jfree', name: 'jcommon', version: '1.0.16'
         implementation files('../libs/external/jfreechart-1.0.9.jar')
         implementation files('../libs/external/ohdcommonchps.jar')
 
