@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
-import wres.datamodel.messages.MessageFactory;
+import net.jcip.annotations.Immutable;
 import wres.datamodel.messages.MessageUtilities;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
@@ -24,20 +24,31 @@ import wres.statistics.generated.Pool;
  * 
  * @author James Brown
  */
+
+@Immutable
 public class PoolMetadata implements Comparable<PoolMetadata>
 {
 
-    /**
-     * A description of the evaluation.
-     */
-
+    /** A description of the evaluation. */
     private final Evaluation evaluation;
 
-    /**
-     * A description of the pool to which the sample data belongs.
-     */
-
+    /** A description of the pool to which the sample data belongs. */
     private final Pool pool;
+
+    /** The wrapped measurement unit for convenient access. */
+    private final MeasurementUnit measurementUnit;
+
+    /** The wrapped time scale for convenient access. */
+    private final TimeScaleOuter timeScale;
+
+    /** The wrapped feature group for convenient access. */
+    private final FeatureGroup featureGroup;
+
+    /** The wrapped thresholds for convenient access. */
+    private final OneOrTwoThresholds thresholds;
+
+    /** The wrapped time window for convenient access. */
+    private final TimeWindowOuter timeWindow;
 
     /**
      * Creates an instance from an {@link Evaluation} and a {@link Pool}.
@@ -361,7 +372,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
      */
     public boolean hasTimeWindow()
     {
-        return Objects.nonNull( this.getTimeWindow() );
+        return Objects.nonNull( this.timeWindow );
     }
 
     /**
@@ -371,7 +382,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
      */
     public boolean hasThresholds()
     {
-        return Objects.nonNull( this.getThresholds() );
+        return Objects.nonNull( this.thresholds );
     }
 
     /**
@@ -381,7 +392,17 @@ public class PoolMetadata implements Comparable<PoolMetadata>
      */
     public boolean hasTimeScale()
     {
-        return Objects.nonNull( this.getTimeScale() );
+        return Objects.nonNull( this.timeScale );
+    }
+
+    /**
+     * Returns <code>true</code> if {@link #getFeatureGroup()} returns non-null, otherwise <code>false</code>.
+     * 
+     * @return true if {@link #getFeatureGroup()} returns non-null, false otherwise.
+     */
+    public boolean hasFeatureGroup()
+    {
+        return Objects.nonNull( this.featureGroup );
     }
 
     /**
@@ -392,8 +413,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     public MeasurementUnit getMeasurementUnit()
     {
-        String unit = this.getEvaluation().getMeasurementUnit();
-        return MeasurementUnit.of( unit );
+        return this.measurementUnit;
     }
 
     /**
@@ -404,16 +424,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     public TimeWindowOuter getTimeWindow()
     {
-        TimeWindowOuter outer = null;
-
-        if ( this.getPool().hasTimeWindow() )
-        {
-            wres.statistics.generated.TimeWindow window = this.getPool()
-                                                              .getTimeWindow();
-            outer = new TimeWindowOuter.Builder( window ).build();
-        }
-
-        return outer;
+        return this.timeWindow;
     }
 
     /**
@@ -424,11 +435,12 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     public Set<FeatureTuple> getFeatureTuples()
     {
-        return this.getPool()
-                   .getGeometryTuplesList()
-                   .stream()
-                   .map( MessageFactory::parse )
-                   .collect( Collectors.toUnmodifiableSet() );
+        if ( this.hasFeatureGroup() )
+        {
+            return this.featureGroup.getFeatures();
+        }
+
+        return Set.of();
     }
 
     /**
@@ -437,21 +449,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     public FeatureGroup getFeatureGroup()
     {
-        // Pretty print the feature tuples
-        Set<FeatureTuple> featureTuples = this.getPool()
-                                              .getGeometryTuplesList()
-                                              .stream()
-                                              .map( FeatureTuple::new )
-                                              .collect( Collectors.toSet() );
-
-        FeatureGroup featureGroup = null;
-
-        if ( !featureTuples.isEmpty() )
-        {
-            featureGroup = FeatureGroup.of( this.getPool().getRegionName(), featureTuples );
-        }
-
-        return featureGroup;
+        return this.featureGroup;
     }
 
     /**
@@ -462,26 +460,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     public OneOrTwoThresholds getThresholds()
     {
-        OneOrTwoThresholds thresholds = null;
-
-        if ( this.getPool().hasEventThreshold() )
-        {
-            wres.statistics.generated.Threshold event = this.getPool()
-                                                            .getEventThreshold();
-            ThresholdOuter eventOuter = new ThresholdOuter.Builder( event ).build();
-            ThresholdOuter decisionOuter = null;
-
-            if ( this.getPool().hasDecisionThreshold() )
-            {
-                wres.statistics.generated.Threshold decision = this.getPool()
-                                                                   .getDecisionThreshold();
-                decisionOuter = new ThresholdOuter.Builder( decision ).build();
-            }
-
-            thresholds = OneOrTwoThresholds.of( eventOuter, decisionOuter );
-        }
-
-        return thresholds;
+        return this.thresholds;
     }
 
     /**
@@ -492,13 +471,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     public TimeScaleOuter getTimeScale()
     {
-        TimeScaleOuter outer = null;
-        if ( this.getPool().hasTimeScale() )
-        {
-            outer = TimeScaleOuter.of( this.getPool().getTimeScale() );
-        }
-
-        return outer;
+        return this.timeScale;
     }
 
     /**
@@ -526,7 +499,8 @@ public class PoolMetadata implements Comparable<PoolMetadata>
     /**
      * Hidden constructor.
      * 
-     * @param builder the builder
+     * @param evaluation the evaluation
+     * @param pool the pool
      * @throws NullPointerException if either input is null or the measurement unit is not set
      */
 
@@ -538,7 +512,69 @@ public class PoolMetadata implements Comparable<PoolMetadata>
         this.evaluation = evaluation;
         this.pool = pool;
 
+        // Validate the state
         this.validate();
+
+        // Set the wrapped parameters for convenient access
+        String unit = this.getEvaluation()
+                          .getMeasurementUnit();
+
+        this.measurementUnit = MeasurementUnit.of( unit );
+
+        TimeScaleOuter timeScaleInner = null;
+        if ( this.getPool().hasTimeScale() )
+        {
+            timeScaleInner = TimeScaleOuter.of( this.getPool().getTimeScale() );
+        }
+
+        this.timeScale = timeScaleInner;
+
+        TimeWindowOuter timeWindowInner = null;
+
+        if ( this.getPool().hasTimeWindow() )
+        {
+            wres.statistics.generated.TimeWindow window = this.getPool()
+                                                              .getTimeWindow();
+            timeWindowInner = new TimeWindowOuter.Builder( window ).build();
+        }
+
+        this.timeWindow = timeWindowInner;
+
+        Set<FeatureTuple> featureTuples = this.getPool()
+                                              .getGeometryTuplesList()
+                                              .stream()
+                                              .map( FeatureTuple::new )
+                                              .collect( Collectors.toSet() );
+
+        FeatureGroup featureGroupInner = null;
+
+        if ( !featureTuples.isEmpty() )
+        {
+            featureGroupInner = FeatureGroup.of( this.getPool().getRegionName(), featureTuples );
+        }
+
+        this.featureGroup = featureGroupInner;
+
+        OneOrTwoThresholds thresholdsInner = null;
+
+        if ( this.getPool().hasEventThreshold() )
+        {
+            wres.statistics.generated.Threshold event = this.getPool()
+                                                            .getEventThreshold();
+            ThresholdOuter eventOuter = new ThresholdOuter.Builder( event ).build();
+            ThresholdOuter decisionOuter = null;
+
+            if ( this.getPool().hasDecisionThreshold() )
+            {
+                wres.statistics.generated.Threshold decision = this.getPool()
+                                                                   .getDecisionThreshold();
+                decisionOuter = new ThresholdOuter.Builder( decision ).build();
+            }
+
+            thresholdsInner = OneOrTwoThresholds.of( eventOuter, decisionOuter );
+        }
+
+        this.thresholds = thresholdsInner;
     }
 
     /**
@@ -547,7 +583,8 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     private void validate()
     {
-        String unit = this.getEvaluation().getMeasurementUnit();
+        String unit = this.getEvaluation()
+                          .getMeasurementUnit();
 
         if ( unit.isBlank() )
         {
@@ -555,5 +592,4 @@ public class PoolMetadata implements Comparable<PoolMetadata>
                                                 + "in order to build the pool metadata." );
         }
     }
-
 }
