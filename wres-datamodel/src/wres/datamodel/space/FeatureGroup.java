@@ -222,7 +222,10 @@ public class FeatureGroup implements Comparable<FeatureGroup>
         this.name = name;
         this.features = Collections.unmodifiableSortedSet( new TreeSet<>( features ) );
 
-        LOGGER.debug( "Created a feature group with name {} and features {}.", this.getName(), this.getFeatures() );
+        if ( LOGGER.isTraceEnabled() )
+        {
+            LOGGER.trace( "Created a feature group with name {} and features {}.", this.getName(), this.getFeatures() );
+        }
     }
 
 }

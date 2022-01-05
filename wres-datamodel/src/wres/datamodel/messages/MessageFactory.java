@@ -83,9 +83,6 @@ import wres.statistics.generated.Evaluation.DefaultData;
 
 /**
  * Creates statistics messages in protobuf format from internal representations.
- * 
- * TODO: most of the helpers within this class will disappear when the containers in the {@link wres.datamodel} are
- * replaced with canonical abstractions from {@link wres.statistics.generated}.
  *
  * @author James Brown
  */
@@ -923,7 +920,7 @@ public class MessageFactory
     /**
      * Class the helps to organize statistics by pool boundaries within a map.
      *
-     * @author james.brown@hydrosolved.com
+     * @author James Brown
      */
 
     private static class PoolBoundaries

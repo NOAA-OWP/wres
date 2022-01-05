@@ -1076,7 +1076,8 @@ public class PoolFactory
             {
                 LOGGER.debug( "Not performing feature batched retrieval for feature group {}.", nextGroup );
 
-                DecomposableFeatureGroup group = new DecomposableFeatureGroup( Set.of( nextGroup ), false );
+                Set<FeatureGroup> featureGroup = Set.of( nextGroup );
+                DecomposableFeatureGroup group = new DecomposableFeatureGroup( featureGroup, false );
                 returnMe.put( group, nextPools );
                 poolRequestCount += nextPools.size();
             }
@@ -1552,12 +1553,21 @@ public class PoolFactory
         {
             Objects.requireNonNull( singletons );
             this.isComposed = isComposed;
-            Set<FeatureTuple> features = singletons.stream()
-                                                   .flatMap( next -> next.getFeatures()
-                                                                         .stream() )
-                                                   .collect( Collectors.toSet() );
 
-            this.composed = FeatureGroup.of( features );
+            if ( singletons.size() == 1 )
+            {
+                this.composed = singletons.iterator()
+                                          .next();
+            }
+            else
+            {
+                Set<FeatureTuple> features = singletons.stream()
+                                                       .flatMap( next -> next.getFeatures()
+                                                                             .stream() )
+                                                       .collect( Collectors.toSet() );
+
+                this.composed = FeatureGroup.of( features );
+            }
         }
     }
 
