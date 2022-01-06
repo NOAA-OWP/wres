@@ -679,6 +679,65 @@ public class MessageFactory
     }
 
     /**
+     * Creates a geometry from the input.
+     * @param name the name, optional
+     * @param description the description, optional
+     * @param srid the spatial reference id, optional
+     * @param wkt the well-known text string, optional
+     * @return the geometry
+     */
+
+    public static Geometry getGeometry( String name,
+                                        String description,
+                                        Integer srid,
+                                        String wkt )
+    {
+        Geometry.Builder builder = Geometry.newBuilder();
+
+        if ( Objects.nonNull( name ) )
+        {
+            builder.setName( name );
+        }
+
+        if ( Objects.nonNull( description ) )
+        {
+            builder.setDescription( description );
+        }
+
+        if ( Objects.nonNull( srid ) )
+        {
+            builder.setSrid( srid );
+        }
+
+        if ( Objects.nonNull( wkt ) )
+        {
+            builder.setWkt( wkt );
+        }
+
+        if ( LOGGER.isTraceEnabled() )
+        {
+            LOGGER.trace( "Created a new geometry with name '{}', description '{}', srid '{}', and wkt '{}'.",
+                          name,
+                          description,
+                          srid,
+                          wkt );
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Creates a geometry from the input.
+     * @param name the name
+     * @return geometry
+     */
+
+    public static Geometry getGeometry( String name )
+    {
+        return MessageFactory.getGeometry( name, null, null, null );
+    }
+
+    /**
      * Creates a collection of {@link wres.statistics.generated.Statistics} by pool from a
      * {@link wres.datamodel.statistics.StatisticsStore}.
      * 

@@ -54,7 +54,8 @@ public final class EnsemblePairsWriterTest
 {
 
     private static final String VARIABLE_NAME = "ARMS";
-    private static final FeatureKey FEATURE = FeatureKey.of( "FRUIT" );
+    private static final FeatureKey FEATURE = FeatureKey.of(
+                                                             MessageFactory.getGeometry( "FRUIT" ) );
     private static final String UNIT = "SCOOBIES";
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0 )
@@ -115,8 +116,10 @@ public final class EnsemblePairsWriterTest
                                           .setMeasurementUnit( "SCOOBIES" )
                                           .build();
 
-        FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( "PLUM" ),
-                                                      FeatureKey.of( "PLUM" ),
+        FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of(
+                                                                     MessageFactory.getGeometry( "PLUM" ) ),
+                                                      FeatureKey.of(
+                                                                     MessageFactory.getGeometry( "PLUM" ) ),
                                                       null );
         FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
 
@@ -129,7 +132,8 @@ public final class EnsemblePairsWriterTest
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
         TimeSeriesMetadata boilerplate = EnsemblePairsWriterTest.getBoilerplateMetadataWithT0( basisTime );
         TimeSeriesMetadata metadata =
-                new TimeSeriesMetadata.Builder( boilerplate ).setFeature( FeatureKey.of( "PLUM" ) )
+                new TimeSeriesMetadata.Builder( boilerplate ).setFeature( FeatureKey.of(
+                                                                                         MessageFactory.getGeometry( "PLUM" ) ) )
                                                              .build();
         TimeSeries<Pair<Double, Ensemble>> timeSeriesOne =
                 TimeSeries.of( metadata, setOfPairs );
@@ -152,8 +156,10 @@ public final class EnsemblePairsWriterTest
                                              .setMeasurementUnit( "SCOOBIES" )
                                              .build();
 
-        FeatureTuple featureTupleTwo = new FeatureTuple( FeatureKey.of( "ORANGE" ),
-                                                         FeatureKey.of( "ORANGE" ),
+        FeatureTuple featureTupleTwo = new FeatureTuple( FeatureKey.of(
+                                                                        MessageFactory.getGeometry( "ORANGE" ) ),
+                                                         FeatureKey.of(
+                                                                        MessageFactory.getGeometry( "ORANGE" ) ),
                                                          null );
         FeatureGroup featureGroupTwo = FeatureGroup.of( featureTupleTwo );
 
@@ -166,7 +172,8 @@ public final class EnsemblePairsWriterTest
         PoolMetadata metaTwo = PoolMetadata.of( evaluationTwo, poolTwo );
         TimeSeriesMetadata boilerplateTwo = EnsemblePairsWriterTest.getBoilerplateMetadataWithT0( basisTimeTwo );
         TimeSeriesMetadata metadataTwo =
-                new TimeSeriesMetadata.Builder( boilerplateTwo ).setFeature( FeatureKey.of( "ORANGE" ) )
+                new TimeSeriesMetadata.Builder( boilerplateTwo ).setFeature( FeatureKey.of(
+                                                                                            MessageFactory.getGeometry( "ORANGE" ) ) )
                                                                 .build();
         TimeSeries<Pair<Double, Ensemble>> timeSeriesTwo =
                 TimeSeries.of( metadataTwo, setOfPairsTwo );
@@ -191,8 +198,10 @@ public final class EnsemblePairsWriterTest
                                                .setMeasurementUnit( "SCOOBIES" )
                                                .build();
 
-        FeatureTuple featureTupleThree = new FeatureTuple( FeatureKey.of( "BANANA" ),
-                                                           FeatureKey.of( "BANANA" ),
+        FeatureTuple featureTupleThree = new FeatureTuple( FeatureKey.of(
+                                                                          MessageFactory.getGeometry( "BANANA" ) ),
+                                                           FeatureKey.of(
+                                                                          MessageFactory.getGeometry( "BANANA" ) ),
                                                            null );
         FeatureGroup featureGroupThree = FeatureGroup.of( featureTupleThree );
 
@@ -206,7 +215,8 @@ public final class EnsemblePairsWriterTest
 
         TimeSeriesMetadata boilerplateThree = EnsemblePairsWriterTest.getBoilerplateMetadataWithT0( basisTimeThree );
         TimeSeriesMetadata metadataThree =
-                new TimeSeriesMetadata.Builder( boilerplateThree ).setFeature( FeatureKey.of( "BANANA" ) )
+                new TimeSeriesMetadata.Builder( boilerplateThree ).setFeature( FeatureKey.of(
+                                                                                              MessageFactory.getGeometry( "BANANA" ) ) )
                                                                   .build();
 
         TimeSeries<Pair<Double, Ensemble>> timeSeriesThree =
@@ -241,8 +251,10 @@ public final class EnsemblePairsWriterTest
                 Builder<TimeSeries<Pair<Double, Ensemble>>> tsBuilder = new Builder<>();
 
                 // Set the measurement units and time scale
-                FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( "PINEAPPLE" ),
-                                                              FeatureKey.of( "PINEAPPLE" ),
+                FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of(
+                                                                             MessageFactory.getGeometry( "PINEAPPLE" ) ),
+                                                              FeatureKey.of(
+                                                                             MessageFactory.getGeometry( "PINEAPPLE" ) ),
                                                               null );
 
                 Evaluation evaluation = Evaluation.newBuilder()
@@ -310,7 +322,8 @@ public final class EnsemblePairsWriterTest
 
                 TimeSeriesMetadata boilerplate = EnsemblePairsWriterTest.getBoilerplateMetadata();
                 TimeSeriesMetadata metadata =
-                        new TimeSeriesMetadata.Builder( boilerplate ).setFeature( FeatureKey.of( "PINEAPPLE" ) )
+                        new TimeSeriesMetadata.Builder( boilerplate ).setFeature( FeatureKey.of(
+                                                                                                 MessageFactory.getGeometry( "PINEAPPLE" ) ) )
                                                                      .build();
 
                 TimeSeries<Pair<Double, Ensemble>> timeSeriesNaN = TimeSeries.of( metadata,
@@ -318,8 +331,10 @@ public final class EnsemblePairsWriterTest
                 tsBuilder.addData( timeSeriesNaN );
 
                 // Set the measurement units and time scale
-                FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( "PINEAPPLE" ),
-                                                              FeatureKey.of( "PINEAPPLE" ),
+                FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of(
+                                                                             MessageFactory.getGeometry( "PINEAPPLE" ) ),
+                                                              FeatureKey.of(
+                                                                             MessageFactory.getGeometry( "PINEAPPLE" ) ),
                                                               null );
                 Evaluation evaluation = Evaluation.newBuilder()
                                                   .setRightVariableName( "MORTARS" )

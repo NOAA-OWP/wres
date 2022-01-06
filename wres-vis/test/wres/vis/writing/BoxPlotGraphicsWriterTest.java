@@ -129,7 +129,8 @@ public class BoxPlotGraphicsWriterTest
     private static List<BoxplotStatisticOuter> getBoxPlotPerPoolForTwoPools()
     {
         // location id
-        FeatureKey feature = FeatureKey.of( "JUNP1" );
+        FeatureKey feature = FeatureKey.of( 
+                                            MessageFactory.getGeometry( "JUNP1" ) );
 
         // Create fake outputs
         TimeWindowOuter timeOne =
@@ -221,7 +222,8 @@ public class BoxPlotGraphicsWriterTest
     private static List<BoxplotStatisticOuter> getBoxPlotPerPairForOnePool()
     {
         // location id
-        FeatureKey feature = FeatureKey.of( "JUNP1" );
+        FeatureKey feature = FeatureKey.of( 
+                                            MessageFactory.getGeometry( "JUNP1" ) );
 
         // Create fake outputs
         TimeWindowOuter timeOne =

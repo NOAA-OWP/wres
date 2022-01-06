@@ -41,6 +41,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.space.FeatureKey;
@@ -61,7 +62,7 @@ import wres.system.SystemSettings;
 
 /**
  * Tests the {@link EnsembleForecastRetriever}.
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class EnsembleForecastRetrieverTest
@@ -109,7 +110,8 @@ public class EnsembleForecastRetrieverTest
 
     private static final String UNITS = "CFS";
 
-    private static final FeatureKey FEATURE = FeatureKey.of( "F" );
+    private static final FeatureKey FEATURE = FeatureKey.of( 
+                                                             MessageFactory.getGeometry( "F" ) );
     private static final String VARIABLE_NAME = "Q";
     /**
      * Unit mapper.

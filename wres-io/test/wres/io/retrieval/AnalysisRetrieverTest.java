@@ -38,6 +38,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.space.FeatureKey;
@@ -58,7 +59,7 @@ import wres.system.SystemSettings;
 
 /**
  * Tests the {@link AnalysisRetriever}.
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class AnalysisRetrieverTest
@@ -70,7 +71,8 @@ public class AnalysisRetrieverTest
     private static final Instant T2023_04_01T00_00_00Z = Instant.parse( "2023-04-01T00:00:00Z" );
     private static final Instant T2023_04_01T03_00_00Z = Instant.parse( "2023-04-01T03:00:00Z" );
     private static final Instant T2023_04_01T06_00_00Z = Instant.parse( "2023-04-01T06:00:00Z" );
-    private static final FeatureKey FEATURE = FeatureKey.of( "F" );
+    private static final FeatureKey FEATURE = FeatureKey.of( 
+                                                             MessageFactory.getGeometry( "F" ) );
     private static final String VARIABLE_NAME = "Q";
     // Comparator for ordering time-series by reference time
     private final Comparator<TimeSeries<Double>> comparator =

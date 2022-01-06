@@ -12,6 +12,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.Ensemble;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.space.FeatureKey;
@@ -20,13 +21,14 @@ import wres.datamodel.time.TimeSeries.Builder;
 /**
  * Tests the {@link TimeSeriesOfEnsembleUpscaler}
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class TimeSeriesOfEnsembleUpscalerTest
 {
     private static final String VARIABLE_NAME = "Fruit";
-    private static final FeatureKey FEATURE_NAME = FeatureKey.of( "Tropics" );
+    private static final FeatureKey FEATURE_NAME = FeatureKey.of(
+                                                                  MessageFactory.getGeometry( "Tropics" ) );
     private static final String UNIT = "kg/h";
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0AndTimeScale( Instant t0,
@@ -76,11 +78,11 @@ public class TimeSeriesOfEnsembleUpscalerTest
                 getBoilerplateMetadataWithT0AndTimeScale( referenceTime,
                                                           existingScale );
         TimeSeries<Ensemble> forecast = new Builder<Ensemble>().addEvent( one )
-                                                                         .addEvent( two )
-                                                                         .addEvent( three )
-                                                                         .addEvent( four )
-                                                                         .setMetadata( existingMetadata )
-                                                                         .build();
+                                                               .addEvent( two )
+                                                               .addEvent( three )
+                                                               .addEvent( four )
+                                                               .setMetadata( existingMetadata )
+                                                               .build();
 
         // Upscaled forecasts must end at these times
         SortedSet<Instant> endsAt = new TreeSet<>();
@@ -100,9 +102,9 @@ public class TimeSeriesOfEnsembleUpscalerTest
                                                           desiredTimeScale );
         TimeSeries<Ensemble> expectedForecast =
                 new Builder<Ensemble>().addEvent( Event.of( second, expectedOne ) )
-                                                 .addEvent( Event.of( fourth, expectedTwo ) )
-                                                 .setMetadata( expectedMetadata )
-                                                 .build();
+                                       .addEvent( Event.of( fourth, expectedTwo ) )
+                                       .setMetadata( expectedMetadata )
+                                       .build();
 
         assertEquals( expectedForecast, actualForecast );
     }

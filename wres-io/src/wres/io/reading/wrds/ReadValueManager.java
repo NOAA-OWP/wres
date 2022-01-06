@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.net.UnknownHostException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -41,6 +40,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MissingValues;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
@@ -58,6 +58,7 @@ import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.PreIngestException;
 import wres.io.utilities.WebClient;
+import wres.statistics.generated.Geometry;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SSLStuffThatTrustsOneCertificate;
@@ -326,7 +327,10 @@ public class ReadValueManager
         String featureDescription = forecast.getLocation()
                                             .getNames()
                                             .getNwsName();
-        FeatureKey feature = new FeatureKey( featureName, featureDescription, null, null );
+        
+        Geometry geometry = MessageFactory.getGeometry( featureName, featureDescription, null, null );
+        FeatureKey feature = FeatureKey.of( geometry );
+        
         TimeSeriesMetadata metadata =
                 TimeSeriesMetadata.of( datetimes,
                                        timeScale,

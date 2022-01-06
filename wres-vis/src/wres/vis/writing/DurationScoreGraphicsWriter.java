@@ -133,7 +133,7 @@ public class DurationScoreGraphicsWriter extends GraphicsWriter
 
 
                 // Build the output file name
-                Path outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
+                Path outputImage = DataFactory.getPathFromPoolMetadata( outputDirectory,
                                                                           metadata,
                                                                           metricName,
                                                                           null );

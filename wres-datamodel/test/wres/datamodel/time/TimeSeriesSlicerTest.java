@@ -25,6 +25,7 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.Ensemble.Labels;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -33,14 +34,15 @@ import wres.datamodel.space.FeatureKey;
 /**
  * Tests the {@link TimeSeriesSlicer}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class TimeSeriesSlicerTest
 {
 
     private static final String CFS = "CFS";
     private static final String STREAMFLOW = "STREAMFLOW";
-    private static final FeatureKey DRRC2 = FeatureKey.of( "DRRC2" );
+    private static final FeatureKey DRRC2 = FeatureKey.of( 
+                                                           MessageFactory.getGeometry( "DRRC2" ) );
     private static final String T2010_01_01T16_00_00Z = "2010-01-01T16:00:00Z";
     private static final Instant T2010_01_01T15_00_00Z = Instant.parse( "2010-01-01T15:00:00Z" );
     private static final Instant T2010_01_01T12_00_00Z = Instant.parse( "2010-01-01T12:00:00Z" );
@@ -59,7 +61,8 @@ public final class TimeSeriesSlicerTest
     private static final Instant T2086_05_01T00_00_00Z = Instant.parse( "2086-05-01T00:00:00Z" );
 
     private static final String VARIABLE_NAME = "Fruit";
-    private static final FeatureKey FEATURE_NAME = FeatureKey.of( "Tropics" );
+    private static final FeatureKey FEATURE_NAME = FeatureKey.of( 
+                                                                  MessageFactory.getGeometry( "Tropics" ) );
     private static final String UNIT = "kg/h";
 
     @Test

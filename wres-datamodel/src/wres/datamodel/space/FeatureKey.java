@@ -18,47 +18,6 @@ public class FeatureKey implements Comparable<FeatureKey>
 {
     private final Geometry geometry;
 
-    public FeatureKey( String name,
-                       String description,
-                       Integer srid,
-                       String wkt )
-    {
-        Geometry.Builder builder = Geometry.newBuilder();
-
-        if ( Objects.nonNull( name ) )
-        {
-            builder.setName( name );
-        }
-
-        if ( Objects.nonNull( description ) )
-        {
-            builder.setDescription( description );
-        }
-
-        if ( Objects.nonNull( srid ) )
-        {
-            builder.setSrid( srid );
-        }
-
-        if ( Objects.nonNull( wkt ) )
-        {
-            builder.setWkt( wkt );
-        }
-
-        this.geometry = builder.build();
-    }
-
-    /**
-     * Replaces wres.datamodel.FeatureKey.of
-     * @param name The lid or gage id.
-     * @return feature.
-     */
-
-    public static FeatureKey of( String name )
-    {
-        return new FeatureKey( name, null, null, null );
-    }
-
     /**
      * Returns an instance from a {@link Geometry}.
      * 

@@ -17,6 +17,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.Ensemble;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.TimeSeries.Builder;
@@ -24,14 +25,15 @@ import wres.datamodel.time.TimeSeries.Builder;
 /**
  * Tests the {@link TimeSeries}
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class TimeSeriesTest
 {
 
     private static final String VARIABLE_NAME = "Chickens";
-    private static final FeatureKey FEATURE_NAME = FeatureKey.of( "Georgia" );
+    private static final FeatureKey FEATURE_NAME = FeatureKey.of(
+                                                                  MessageFactory.getGeometry( "Georgia" ) );
     private static final String UNIT = "kg/h";
 
     /**
@@ -70,7 +72,7 @@ public class TimeSeriesTest
         Iterator<Event<Double>> iterator = events.iterator();
 
         this.metadata =
-                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, this.referenceTime),
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, this.referenceTime ),
                                        TimeScaleOuter.of(),
                                        VARIABLE_NAME,
                                        FEATURE_NAME,
@@ -126,8 +128,8 @@ public class TimeSeriesTest
         // Consistent when invoked multiple times
         TimeSeries<Double> test =
                 new Builder<Double>().setMetadata( this.metadata )
-                                               .addEvents( this.events )
-                                               .build();
+                                     .addEvents( this.events )
+                                     .build();
         TimeSeries.of( this.metadata,
                        this.events );
         for ( int i = 0; i < 100; i++ )
@@ -149,16 +151,16 @@ public class TimeSeriesTest
         // Symmetric
         TimeSeries<Double> anotherTestSeries =
                 new Builder<Double>().setMetadata( this.metadata )
-                                               .addEvents( this.events )
-                                               .build();
+                                     .addEvents( this.events )
+                                     .build();
 
         assertTrue( anotherTestSeries.equals( this.testSeries ) && this.testSeries.equals( anotherTestSeries ) );
 
         // Transitive
         TimeSeries<Double> oneMoreTestSeries =
                 new Builder<Double>().setMetadata( this.metadata )
-                                               .addEvents( this.events )
-                                               .build();
+                                     .addEvents( this.events )
+                                     .build();
 
         assertTrue( this.testSeries.equals( anotherTestSeries ) && anotherTestSeries.equals( oneMoreTestSeries )
                     && this.testSeries.equals( oneMoreTestSeries ) );
@@ -213,15 +215,15 @@ public class TimeSeriesTest
 
         TimeSeries<Ensemble> theseEventValues =
                 new Builder<Ensemble>().setMetadata( this.metadata )
-                                                 .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ),
-                                                                      Ensemble.of( 30.0, 65.0, 100.0 ) ) )
-                                                 .build();
+                                       .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ),
+                                                            Ensemble.of( 30.0, 65.0, 100.0 ) ) )
+                                       .build();
 
         TimeSeries<Ensemble> doNotEqualThese =
                 new Builder<Ensemble>().setMetadata( this.metadata )
-                                                 .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ),
-                                                                      Ensemble.of( 30.0, 65.0, 93.0 ) ) )
-                                                 .build();
+                                       .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ),
+                                                            Ensemble.of( 30.0, 65.0, 93.0 ) ) )
+                                       .build();
 
         assertNotEquals( theseEventValues, doNotEqualThese );
     }
@@ -232,8 +234,10 @@ public class TimeSeriesTest
     @Test
     public void assertThatATimeSeriesCanBeEmpty()
     {
-        assertEquals( Collections.emptySortedSet(), TimeSeries.of( this.metadata,
-                                                                   Collections.emptySortedSet() ).getEvents() );
+        assertEquals( Collections.emptySortedSet(),
+                      TimeSeries.of( this.metadata,
+                                     Collections.emptySortedSet() )
+                                .getEvents() );
     }
 
     /**

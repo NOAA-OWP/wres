@@ -38,6 +38,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.space.FeatureKey;
@@ -57,7 +58,7 @@ import wres.system.SystemSettings;
 
 /**
  * Tests the {@link ObservationRetriever}.
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class ObservationRetrieverTest
@@ -65,7 +66,8 @@ public class ObservationRetrieverTest
     private static final String SECOND_TIME = "2023-04-01T09:00:00Z";
     private static final String FIRST_TIME = "2023-04-01T03:00:00Z";
 
-    private static final FeatureKey FEATURE = FeatureKey.of( "FEAT" );
+    private static final FeatureKey FEATURE = FeatureKey.of( 
+                                                             MessageFactory.getGeometry( "FEAT" ) );
     private static final String VARIABLE_NAME = "VAR";
 
     @Mock

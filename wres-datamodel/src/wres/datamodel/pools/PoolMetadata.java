@@ -22,6 +22,9 @@ import wres.statistics.generated.Pool;
 /**
  * An immutable store of metadata that describes a {@link Pool}.
  * 
+ * TODO: eliminate the evaluation description from this class. This would be aided by integrating the measurement units 
+ * into the pool description and deprecating the corresponding attribute of the evaluation description.
+ * 
  * @author James Brown
  */
 

@@ -37,7 +37,8 @@ class PoolRequestTest
                                     .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
                                     .build();
 
-        FeatureKey featureOne = FeatureKey.of( "DRRC2" );
+        FeatureKey featureOne = FeatureKey.of(
+                                               MessageFactory.getGeometry( "DRRC2" ) );
         this.featureGroup = FeatureGroup.of( new FeatureTuple( featureOne, featureOne, featureOne ) );
 
         this.timeWindow = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
@@ -101,7 +102,8 @@ class PoolRequestTest
         assertNotEquals( this.poolRequest, null );
 
         // Unequal cases
-        FeatureKey aFeature = FeatureKey.of( "DRRC3" );
+        FeatureKey aFeature = FeatureKey.of(
+                                             MessageFactory.getGeometry( "DRRC3" ) );
 
         Pool oneMorePool = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( aFeature, aFeature, aFeature ) ),
                                                  this.timeWindow,
@@ -122,21 +124,21 @@ class PoolRequestTest
     void testCompareTo()
     {
         assertEquals( 0, this.poolRequest.compareTo( this.poolRequest ) );
-        
+
         PoolRequest withBaseline = PoolRequest.of( this.poolMetadata, this.poolMetadata );
-        
+
         assertTrue( this.poolRequest.compareTo( withBaseline ) < 0 );
-        
+
         assertTrue( withBaseline.compareTo( this.poolRequest ) > 0 );
-        
+
         assertEquals( 0, withBaseline.compareTo( withBaseline ) );
-        
+
         PoolMetadata newMetadata = PoolMetadata.of( this.poolMetadata, TimeScaleOuter.of( Duration.ofHours( 1 ) ) );
         PoolRequest newPoolRequest = PoolRequest.of( newMetadata );
-        
+
         assertTrue( newPoolRequest.compareTo( this.poolRequest ) > 0 );
     }
-    
+
     @Test
     void testHashCode()
     {

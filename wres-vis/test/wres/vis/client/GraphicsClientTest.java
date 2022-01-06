@@ -28,6 +28,7 @@ import wres.eventsbroker.BrokerConnectionFactory;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
+import wres.statistics.generated.Geometry;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Outputs.PngFormat;
@@ -169,7 +170,8 @@ public class GraphicsClientTest
                                                                                     Operator.GREATER,
                                                                                     ThresholdDataType.LEFT ) );
 
-        FeatureKey location = new FeatureKey( "DRRC2", null, null, "POINT ( 23.45, 56.21 )" );
+        Geometry geometry = MessageFactory.getGeometry( "DRRC2", null, null, "POINT ( 23.45, 56.21 )" );
+        FeatureKey location = FeatureKey.of( geometry );
 
         Instant earliestValid = Instant.parse( "2551-03-20T01:00:00Z" );
         Instant latestValid = Instant.parse( "2551-03-20T12:00:00Z" );

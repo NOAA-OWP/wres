@@ -21,6 +21,7 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -64,7 +65,8 @@ public final class MetricProcessorTest
     @Test
     public void testHasMetricsForMetricInputGroup() throws MetricParameterException, IOException
     {
-        ProjectConfig config = TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithAllValidMetricsAndIssuedDatePools();
+        ProjectConfig config =
+                TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithAllValidMetricsAndIssuedDatePools();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
                 MetricProcessorTest.ofMetricProcessorForSingleValuedPairs( config );
         //Check for existence of metrics
@@ -74,7 +76,8 @@ public final class MetricProcessorTest
     @Test
     public void testHasMetricsForMetricOutputGroup() throws MetricParameterException, IOException
     {
-        ProjectConfig config = TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithAllValidMetricsAndIssuedDatePools();
+        ProjectConfig config =
+                TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithAllValidMetricsAndIssuedDatePools();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
                 MetricProcessorTest.ofMetricProcessorForSingleValuedPairs( config );
         //Check for existence of metrics
@@ -84,7 +87,8 @@ public final class MetricProcessorTest
     @Test
     public void testHasMetricsForMetricInputGroupAndMetricOutputGroup() throws MetricParameterException, IOException
     {
-        ProjectConfig config = TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithAllValidMetricsAndIssuedDatePools();
+        ProjectConfig config =
+                TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithAllValidMetricsAndIssuedDatePools();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
                 MetricProcessorTest.ofMetricProcessorForSingleValuedPairs( config );
         //Check for existence of metrics
@@ -95,7 +99,8 @@ public final class MetricProcessorTest
     public void testDisallowNonScoresWithSingleValuedInput()
             throws IOException, MetricParameterException
     {
-        ProjectConfig config = TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithAllValidMetricsAndIssuedDatePools();
+        ProjectConfig config =
+                TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithAllValidMetricsAndIssuedDatePools();
         MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
                 MetricProcessorTest.ofMetricProcessorForSingleValuedPairs( config );
 
@@ -125,7 +130,11 @@ public final class MetricProcessorTest
                 TestDeclarationGenerator.getDeclarationForEnsembleForecastsWithAllValidMetricsAndIssuedDatePools();
 
         ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( configEnsemble );
-        FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( DRRC2 ), FeatureKey.of( DRRC2 ), null );
+        FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of(
+                                                                     MessageFactory.getGeometry( DRRC2 ) ),
+                                                      FeatureKey.of(
+                                                                     MessageFactory.getGeometry( DRRC2 ) ),
+                                                      null );
         Map<FeatureTuple, ThresholdsByMetric> thresholds = Map.of( featureTuple, thresholdsByMetric );
         ThresholdsByMetricAndFeature metrics = ThresholdsByMetricAndFeature.of( thresholds, 0 );
 
@@ -180,7 +189,11 @@ public final class MetricProcessorTest
             ofMetricProcessorForSingleValuedPairs( ProjectConfig config )
     {
         ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( config );
-        FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( DRRC2 ), FeatureKey.of( DRRC2 ), null );
+        FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of(
+                                                                     MessageFactory.getGeometry( DRRC2 ) ),
+                                                      FeatureKey.of(
+                                                                     MessageFactory.getGeometry( DRRC2 ) ),
+                                                      null );
         Map<FeatureTuple, ThresholdsByMetric> thresholds = Map.of( featureTuple, thresholdsByMetric );
         ThresholdsByMetricAndFeature metrics = ThresholdsByMetricAndFeature.of( thresholds, 0 );
 

@@ -29,7 +29,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 /**
  * Factory class for generating test datasets for metric calculations.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class DataModelTestDataFactory
 {
@@ -46,7 +46,8 @@ public final class DataModelTestDataFactory
 
     private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
 
-    private static final FeatureKey DRRC2 = FeatureKey.of( "DRRC2" );
+    private static final FeatureKey DRRC2 = FeatureKey.of(
+                                                           MessageFactory.getGeometry( "DRRC2" ) );
     private static final FeatureGroup DRRC2_GROUP = FeatureGroup.of( new FeatureTuple( DRRC2, DRRC2, DRRC2 ) );
 
     /**

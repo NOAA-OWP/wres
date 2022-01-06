@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
@@ -47,8 +48,12 @@ class ThresholdSlicerTest
     @Test
     void testDecompose()
     {
-        FeatureTuple oneTuple = new FeatureTuple( FeatureKey.of( "a" ), FeatureKey.of( "b" ), null );
-        FeatureTuple anotherTuple = new FeatureTuple( FeatureKey.of( "c" ), FeatureKey.of( "d" ), null );
+        FeatureTuple oneTuple = new FeatureTuple( FeatureKey.of( MessageFactory.getGeometry( "a" ) ),
+                                                  FeatureKey.of( MessageFactory.getGeometry( "b" ) ),
+                                                  null );
+        FeatureTuple anotherTuple = new FeatureTuple( FeatureKey.of( MessageFactory.getGeometry( "c" ) ),
+                                                      FeatureKey.of( MessageFactory.getGeometry( "d" ) ),
+                                                      null );
 
         ThresholdOuter oneThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                          Operator.GREATER,
@@ -149,8 +154,12 @@ class ThresholdSlicerTest
                                                         .build();
 
 
-        FeatureTuple oneTuple = new FeatureTuple( FeatureKey.of( "a" ), FeatureKey.of( "b" ), null );
-        FeatureTuple anotherTuple = new FeatureTuple( FeatureKey.of( "c" ), FeatureKey.of( "d" ), null );
+        FeatureTuple oneTuple = new FeatureTuple( FeatureKey.of( MessageFactory.getGeometry( "a" ) ),
+                                                  FeatureKey.of( MessageFactory.getGeometry( "b" ) ),
+                                                  null );
+        FeatureTuple anotherTuple = new FeatureTuple( FeatureKey.of( MessageFactory.getGeometry( "c" ) ),
+                                                      FeatureKey.of( MessageFactory.getGeometry( "d" ) ),
+                                                      null );
         Map<FeatureTuple, ThresholdsByMetric> wrapped = new HashMap<>();
         wrapped.put( oneTuple, unfilteredOne );
         wrapped.put( anotherTuple, unfilteredTwo );

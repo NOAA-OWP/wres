@@ -457,7 +457,7 @@ public class PoolSlicer
             throw new IllegalArgumentException( "Cannot find the union of empty input." );
         }
 
-        // Preserve order because the message models these as lists
+        // Preserve order
         Set<TimeWindowOuter> unionWindows = new TreeSet<>();
         Set<FeatureTuple> unionFeatures = new TreeSet<>();
         Set<OneOrTwoThresholds> unionThresholds = new TreeSet<>();

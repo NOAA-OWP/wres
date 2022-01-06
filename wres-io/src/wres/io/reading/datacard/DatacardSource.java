@@ -25,7 +25,7 @@ import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MissingValues;
-import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -41,6 +41,7 @@ import wres.io.reading.DataSource;
 import wres.io.reading.IngestResult;
 import wres.io.reading.InvalidInputDataException;
 import wres.io.utilities.Database;
+import wres.statistics.generated.Geometry;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 import wres.util.Strings;
@@ -382,7 +383,8 @@ public class DatacardSource extends BasicSource
             LOGGER.debug( "Parsed timeseries from '{}'", this.getFilename() );
         }
 
-        FeatureKey location = new FeatureKey( featureName, featureDescription, null, null );
+        Geometry geometry = MessageFactory.getGeometry( featureName, featureDescription, null, null );
+        FeatureKey location = FeatureKey.of( geometry );
         TimeSeriesMetadata metadata = TimeSeriesMetadata.of(
                                                              Map.of( LATEST_OBSERVATION, values.lastKey() ),
                                                              // No time scale information: #92480 and #59536

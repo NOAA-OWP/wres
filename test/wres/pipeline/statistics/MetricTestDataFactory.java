@@ -109,12 +109,21 @@ public final class MetricTestDataFactory
     /** Unit name for boilerplate metadata */
     private static final String UNIT = "CMS";
 
-    private static final FeatureKey NWS_FEATURE = new FeatureKey( "DRRC2", null, null, null );
-    private static final FeatureKey USGS_FEATURE = new FeatureKey( "09165000",
-                                                                   "DOLORES RIVER BELOW RICO, CO.",
-                                                                   4326,
-                                                                   "POINT ( -108.0603517 37.63888428 )" );
-    private static final FeatureKey NWM_FEATURE = new FeatureKey( "18384141", null, null, null );
+    private static final FeatureKey NWS_FEATURE = FeatureKey.of(
+                                                                 MessageFactory.getGeometry( "DRRC2",
+                                                                                             null,
+                                                                                             null,
+                                                                                             null ) );
+    private static final FeatureKey USGS_FEATURE = FeatureKey.of(
+                                                                  MessageFactory.getGeometry( "09165000",
+                                                                                              "DOLORES RIVER BELOW RICO, CO.",
+                                                                                              4326,
+                                                                                              "POINT ( -108.0603517 37.63888428 )" ) );
+    private static final FeatureKey NWM_FEATURE = FeatureKey.of(
+                                                                 MessageFactory.getGeometry( "18384141",
+                                                                                             null,
+                                                                                             null,
+                                                                                             null ) );
     private static final FeatureTuple FEATURE_TUPLE = new FeatureTuple( USGS_FEATURE, NWS_FEATURE, NWM_FEATURE );
     private static final FeatureGroup FEATURE_GROUP = FeatureGroup.of( FEATURE_TUPLE );
 
@@ -165,7 +174,8 @@ public final class MetricTestDataFactory
 
     static FeatureGroup getFeatureGroup( final String featureId, boolean baseline )
     {
-        FeatureKey featureKey = new FeatureKey( featureId, null, null, null );
+        FeatureKey featureKey = FeatureKey.of(
+                                               MessageFactory.getGeometry( featureId, null, null, null ) );
 
         if ( baseline )
         {
@@ -874,7 +884,8 @@ public final class MetricTestDataFactory
         return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
                                       TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
-                                      FeatureKey.of( FEATURE_NAME ),
+                                      FeatureKey.of(
+                                                     MessageFactory.getGeometry( FEATURE_NAME ) ),
                                       UNIT );
     }
 
@@ -887,7 +898,8 @@ public final class MetricTestDataFactory
         return TimeSeriesMetadata.of( Collections.emptyMap(),
                                       TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
-                                      FeatureKey.of( FEATURE_NAME ),
+                                      FeatureKey.of(
+                                                     MessageFactory.getGeometry( FEATURE_NAME ) ),
                                       UNIT );
     }
 

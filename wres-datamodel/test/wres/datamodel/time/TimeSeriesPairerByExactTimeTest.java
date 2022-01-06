@@ -13,6 +13,7 @@ import java.util.TreeSet;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.pairs.PairingException;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
@@ -21,7 +22,7 @@ import wres.datamodel.time.TimeSeries.Builder;
 /**
  * Tests the {@link TimeSeriesPairerByExactTime}
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class TimeSeriesPairerByExactTimeTest
@@ -56,7 +57,8 @@ public class TimeSeriesPairerByExactTimeTest
     private static final String APPLE = "apple";
 
     private static final String VARIABLE_NAME = "Fruit";
-    private static final FeatureKey FEATURE_NAME = FeatureKey.of( "Tropics" );
+    private static final FeatureKey FEATURE_NAME = FeatureKey.of(
+                                                                  MessageFactory.getGeometry( "Tropics" ) );
     private static final String UNIT = "kg/h";
 
     private static TimeSeriesMetadata getBoilerplateMetadata()
@@ -269,7 +271,8 @@ public class TimeSeriesPairerByExactTimeTest
                                                                         T2551_03_17T12_00_00Z ),
                                                                 TimeScaleOuter.of( Duration.ofHours( 3 ) ),
                                                                 "STREAMFLOW",
-                                                                FeatureKey.of( "FAKE2" ),
+                                                                FeatureKey.of(
+                                                                               MessageFactory.getGeometry( "FAKE2" ) ),
                                                                 "CMS" );
         SortedSet<Event<Double>> firstEvents = new TreeSet<>();
         firstEvents.add( Event.of( T2551_03_17T15_00_00Z, 73.0 ) );
@@ -291,7 +294,8 @@ public class TimeSeriesPairerByExactTimeTest
                                                                         T2551_03_18T00_00_00Z ),
                                                                 TimeScaleOuter.of( Duration.ofHours( 3 ) ),
                                                                 "STREAMFLOW",
-                                                                FeatureKey.of( "FAKE2" ),
+                                                                FeatureKey.of(
+                                                                               MessageFactory.getGeometry( "FAKE2" ) ),
                                                                 "CMS" );
         SortedSet<Event<Double>> secondEvents = new TreeSet<>();
         secondEvents.add( Event.of( T2551_03_18T03_00_00Z, 131.0 ) );
@@ -316,29 +320,29 @@ public class TimeSeriesPairerByExactTimeTest
         TimeSeries<Pair<Double, Double>> firstActual = pairer.pair( first, first );
         TimeSeries<Pair<Double, Double>> firstExpected =
                 new Builder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_17T15_00_00Z,
-                                                                                  Pair.of( 73.0, 73.0 ) ) )
-                                                             .addEvent( Event.of( T2551_03_17T18_00_00Z,
-                                                                                  Pair.of( 79.0, 79.0 ) ) )
-                                                             .addEvent( Event.of( T2551_03_17T21_00_00Z,
-                                                                                  Pair.of( 83.0, 83.0 ) ) )
-                                                             .addEvent( Event.of( T2551_03_18T00_00_00Z,
-                                                                                  Pair.of( 89.0, 89.0 ) ) )
-                                                             .addEvent( Event.of( T2551_03_18T03_00_00Z,
-                                                                                  Pair.of( 97.0, 97.0 ) ) )
-                                                             .addEvent( Event.of( T2551_03_18T06_00_00Z,
-                                                                                  Pair.of( 101.0, 101.0 ) ) )
-                                                             .addEvent( Event.of( T2551_03_18T09_00_00Z,
-                                                                                  Pair.of( 103.0, 103.0 ) ) )
-                                                             .addEvent( Event.of( T2551_03_18T12_00_00Z,
-                                                                                  Pair.of( 107.0, 107.0 ) ) )
-                                                             .addEvent( Event.of( T2551_03_18T15_00_00Z,
-                                                                                  Pair.of( 109.0, 109.0 ) ) )
-                                                             .addEvent( Event.of( T2551_03_18T18_00_00Z,
-                                                                                  Pair.of( 113.0, 113.0 ) ) )
-                                                             .addEvent( Event.of( T2551_03_18T21_00_00Z,
-                                                                                  Pair.of( 127.0, 127.0 ) ) )
-                                                             .setMetadata( metadataOne )
-                                                             .build();
+                                                                        Pair.of( 73.0, 73.0 ) ) )
+                                                   .addEvent( Event.of( T2551_03_17T18_00_00Z,
+                                                                        Pair.of( 79.0, 79.0 ) ) )
+                                                   .addEvent( Event.of( T2551_03_17T21_00_00Z,
+                                                                        Pair.of( 83.0, 83.0 ) ) )
+                                                   .addEvent( Event.of( T2551_03_18T00_00_00Z,
+                                                                        Pair.of( 89.0, 89.0 ) ) )
+                                                   .addEvent( Event.of( T2551_03_18T03_00_00Z,
+                                                                        Pair.of( 97.0, 97.0 ) ) )
+                                                   .addEvent( Event.of( T2551_03_18T06_00_00Z,
+                                                                        Pair.of( 101.0, 101.0 ) ) )
+                                                   .addEvent( Event.of( T2551_03_18T09_00_00Z,
+                                                                        Pair.of( 103.0, 103.0 ) ) )
+                                                   .addEvent( Event.of( T2551_03_18T12_00_00Z,
+                                                                        Pair.of( 107.0, 107.0 ) ) )
+                                                   .addEvent( Event.of( T2551_03_18T15_00_00Z,
+                                                                        Pair.of( 109.0, 109.0 ) ) )
+                                                   .addEvent( Event.of( T2551_03_18T18_00_00Z,
+                                                                        Pair.of( 113.0, 113.0 ) ) )
+                                                   .addEvent( Event.of( T2551_03_18T21_00_00Z,
+                                                                        Pair.of( 127.0, 127.0 ) ) )
+                                                   .setMetadata( metadataOne )
+                                                   .build();
 
         assertEquals( firstExpected, firstActual );
 
@@ -347,29 +351,29 @@ public class TimeSeriesPairerByExactTimeTest
 
         TimeSeries<Pair<Double, Double>> secondExpected =
                 new Builder<Pair<Double, Double>>().addEvent( Event.of( T2551_03_18T03_00_00Z,
-                                                                                  Pair.of( 131.0, 131.0 ) ) )
-                                                             .addEvent( Event.of( T2551_03_18T06_00_00Z,
-                                                                                  Pair.of( 137.0, 137.0 ) ) )
-                                                             .addEvent( Event.of( T2551_03_18T09_00_00Z,
-                                                                                  Pair.of( 139.0, 139.0 ) ) )
-                                                             .addEvent( Event.of( T2551_03_18T12_00_00Z,
-                                                                                  Pair.of( 149.0, 149.0 ) ) )
-                                                             .addEvent( Event.of( T2551_03_18T15_00_00Z,
-                                                                                  Pair.of( 191.0, 191.0 ) ) )
-                                                             .addEvent( Event.of( T2551_03_18T18_00_00Z,
-                                                                                  Pair.of( 157.0, 157.0 ) ) )
-                                                             .addEvent( Event.of( T2551_03_18T21_00_00Z,
-                                                                                  Pair.of( 163.0, 163.0 ) ) )
-                                                             .addEvent( Event.of( T2551_03_19T00_00_00Z,
-                                                                                  Pair.of( 167.0, 167.0 ) ) )
-                                                             .addEvent( Event.of( T2551_03_19T03_00_00Z,
-                                                                                  Pair.of( 173.0, 173.0 ) ) )
-                                                             .addEvent( Event.of( T2551_03_19T06_00_00Z,
-                                                                                  Pair.of( 179.0, 179.0 ) ) )
-                                                             .addEvent( Event.of( T2551_03_19T09_00_00Z,
-                                                                                  Pair.of( 181.0, 181.0 ) ) )
-                                                             .setMetadata( metadataTwo )
-                                                             .build();
+                                                                        Pair.of( 131.0, 131.0 ) ) )
+                                                   .addEvent( Event.of( T2551_03_18T06_00_00Z,
+                                                                        Pair.of( 137.0, 137.0 ) ) )
+                                                   .addEvent( Event.of( T2551_03_18T09_00_00Z,
+                                                                        Pair.of( 139.0, 139.0 ) ) )
+                                                   .addEvent( Event.of( T2551_03_18T12_00_00Z,
+                                                                        Pair.of( 149.0, 149.0 ) ) )
+                                                   .addEvent( Event.of( T2551_03_18T15_00_00Z,
+                                                                        Pair.of( 191.0, 191.0 ) ) )
+                                                   .addEvent( Event.of( T2551_03_18T18_00_00Z,
+                                                                        Pair.of( 157.0, 157.0 ) ) )
+                                                   .addEvent( Event.of( T2551_03_18T21_00_00Z,
+                                                                        Pair.of( 163.0, 163.0 ) ) )
+                                                   .addEvent( Event.of( T2551_03_19T00_00_00Z,
+                                                                        Pair.of( 167.0, 167.0 ) ) )
+                                                   .addEvent( Event.of( T2551_03_19T03_00_00Z,
+                                                                        Pair.of( 173.0, 173.0 ) ) )
+                                                   .addEvent( Event.of( T2551_03_19T06_00_00Z,
+                                                                        Pair.of( 179.0, 179.0 ) ) )
+                                                   .addEvent( Event.of( T2551_03_19T09_00_00Z,
+                                                                        Pair.of( 181.0, 181.0 ) ) )
+                                                   .setMetadata( metadataTwo )
+                                                   .build();
 
         assertEquals( secondExpected, secondActual );
 

@@ -241,13 +241,15 @@ class PoolSlicerTest
                 Pool.of( List.of( TimeSeries.of( TimeSeriesMetadata.of( Collections.emptyMap(),
                                                                         TimeScaleOuter.of(),
                                                                         "foo",
-                                                                        FeatureKey.of( "bar" ),
+                                                                        FeatureKey.of(
+                                                                                       MessageFactory.getGeometry( "bar" ) ),
                                                                         "baz" ),
                                                  eventsOne ),
                                   TimeSeries.of( TimeSeriesMetadata.of( Collections.emptyMap(),
                                                                         TimeScaleOuter.of(),
                                                                         "bla",
-                                                                        FeatureKey.of( "smeg" ),
+                                                                        FeatureKey.of(
+                                                                                       MessageFactory.getGeometry( "smeg" ) ),
                                                                         "faz" ),
                                                  eventsTwo ) ),
                          PoolMetadata.of() );
@@ -268,13 +270,13 @@ class PoolSlicerTest
                 Pool.of( List.of( TimeSeries.of( TimeSeriesMetadata.of( Collections.emptyMap(),
                                                                         TimeScaleOuter.of(),
                                                                         "foo",
-                                                                        FeatureKey.of( "bar" ),
+                                                                        FeatureKey.of( MessageFactory.getGeometry( "bar" ) ),
                                                                         "baz" ),
                                                  eventsOne ),
                                   TimeSeries.of( TimeSeriesMetadata.of( Collections.emptyMap(),
                                                                         TimeScaleOuter.of(),
                                                                         "bla",
-                                                                        FeatureKey.of( "smeg" ),
+                                                                        FeatureKey.of( MessageFactory.getGeometry( "smeg" ) ),
                                                                         "faz" ),
                                                  eventsTwo ) ),
                          PoolMetadata.of() );
@@ -322,8 +324,18 @@ class PoolSlicerTest
 
         Map<FeatureTuple, Pool<String>> expected = new HashMap<>();
 
-        expected.put( new FeatureTuple( FeatureKey.of( "foo" ), FeatureKey.of( "bar" ), null ), aPool );
-        expected.put( new FeatureTuple( FeatureKey.of( "baz" ), FeatureKey.of( "qux" ), null ), anotherPool );
+        expected.put( new FeatureTuple( FeatureKey.of(
+                                                       MessageFactory.getGeometry( "foo" ) ),
+                                        FeatureKey.of(
+                                                       MessageFactory.getGeometry( "bar" ) ),
+                                        null ),
+                      aPool );
+        expected.put( new FeatureTuple( FeatureKey.of(
+                                                       MessageFactory.getGeometry( "baz" ) ),
+                                        FeatureKey.of(
+                                                       MessageFactory.getGeometry( "qux" ) ),
+                                        null ),
+                      anotherPool );
 
         assertEquals( expected, actual );
     }
@@ -331,7 +343,8 @@ class PoolSlicerTest
     @Test
     void testUnionOf()
     {
-        FeatureKey l1 = FeatureKey.of( DRRC2 );
+        FeatureKey l1 = FeatureKey.of(
+                                       MessageFactory.getGeometry( DRRC2 ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( SQIN )
@@ -350,7 +363,8 @@ class PoolSlicerTest
 
         PoolMetadata m1 = PoolMetadata.of( evaluation, poolOne );
 
-        FeatureKey l2 = FeatureKey.of( DRRC2 );
+        FeatureKey l2 = FeatureKey.of(
+                                       MessageFactory.getGeometry( DRRC2 ) );
 
         wres.statistics.generated.Pool poolTwo =
                 MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l2, l2, l2 ) ),
@@ -363,7 +377,7 @@ class PoolSlicerTest
 
         PoolMetadata m2 = PoolMetadata.of( evaluation, poolTwo );
 
-        FeatureKey l3 = FeatureKey.of( DRRC2 );
+        FeatureKey l3 = FeatureKey.of( MessageFactory.getGeometry( DRRC2 ) );
 
         wres.statistics.generated.Pool poolThree =
                 MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l3, l3, l3 ) ),
@@ -376,7 +390,8 @@ class PoolSlicerTest
 
         PoolMetadata m3 = PoolMetadata.of( evaluation, poolThree );
 
-        FeatureKey benchmarkLocation = FeatureKey.of( DRRC2 );
+        FeatureKey benchmarkLocation = FeatureKey.of(
+                                                      MessageFactory.getGeometry( DRRC2 ) );
 
         wres.statistics.generated.Pool poolFour =
                 MessageFactory.parse( FeatureGroup.of( new FeatureTuple( benchmarkLocation,
@@ -439,9 +454,9 @@ class PoolSlicerTest
     @Test
     void testUnionOfThrowsExceptionWithUnequalInputs()
     {
-        FeatureTuple drrc3 = new FeatureTuple( FeatureKey.of( DRRC3 ),
-                                               FeatureKey.of( DRRC3 ),
-                                               FeatureKey.of( DRRC3 ) );
+        FeatureTuple drrc3 = new FeatureTuple( FeatureKey.of( MessageFactory.getGeometry( DRRC3 ) ),
+                                               FeatureKey.of( MessageFactory.getGeometry( DRRC3 ) ),
+                                               FeatureKey.of( MessageFactory.getGeometry( DRRC3 ) ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( SQIN )
@@ -512,9 +527,12 @@ class PoolSlicerTest
                                           .build();
 
         wres.statistics.generated.Pool poolOne =
-                MessageFactory.parse( FeatureGroup.of( new FeatureTuple( FeatureKey.of( "A" ),
-                                                                         FeatureKey.of( "B" ),
-                                                                         FeatureKey.of( "C" ) ) ),
+                MessageFactory.parse( FeatureGroup.of( new FeatureTuple( FeatureKey.of(
+                                                                                        MessageFactory.getGeometry( "A" ) ),
+                                                                         FeatureKey.of(
+                                                                                        MessageFactory.getGeometry( "B" ) ),
+                                                                         FeatureKey.of(
+                                                                                        MessageFactory.getGeometry( "C" ) ) ) ),
                                       TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                           Instant.parse( SECOND_TIME ) ),
                                       TimeScaleOuter.of(),
@@ -525,9 +543,12 @@ class PoolSlicerTest
                                       1 );
 
         wres.statistics.generated.Pool poolTwo =
-                MessageFactory.parse( FeatureGroup.of( new FeatureTuple( FeatureKey.of( "D" ),
-                                                                         FeatureKey.of( "E" ),
-                                                                         FeatureKey.of( "F" ) ) ),
+                MessageFactory.parse( FeatureGroup.of( new FeatureTuple( FeatureKey.of(
+                                                                                        MessageFactory.getGeometry( "D" ) ),
+                                                                         FeatureKey.of(
+                                                                                        MessageFactory.getGeometry( "E" ) ),
+                                                                         FeatureKey.of(
+                                                                                        MessageFactory.getGeometry( "F" ) ) ) ),
                                       TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                           Instant.parse( FIRST_TIME ) ),
                                       TimeScaleOuter.of(),
@@ -545,12 +566,18 @@ class PoolSlicerTest
         PoolMetadata actual = PoolSlicer.unionOf( pools );
 
         wres.statistics.generated.Pool expectedPool =
-                MessageFactory.parse( FeatureGroup.of( Set.of( new FeatureTuple( FeatureKey.of( "A" ),
-                                                                                 FeatureKey.of( "B" ),
-                                                                                 FeatureKey.of( "C" ) ),
-                                                               new FeatureTuple( FeatureKey.of( "D" ),
-                                                                                 FeatureKey.of( "E" ),
-                                                                                 FeatureKey.of( "F" ) ) ) ),
+                MessageFactory.parse( FeatureGroup.of( Set.of( new FeatureTuple( FeatureKey.of(
+                                                                                                MessageFactory.getGeometry( "A" ) ),
+                                                                                 FeatureKey.of(
+                                                                                                MessageFactory.getGeometry( "B" ) ),
+                                                                                 FeatureKey.of(
+                                                                                                MessageFactory.getGeometry( "C" ) ) ),
+                                                               new FeatureTuple( FeatureKey.of(
+                                                                                                MessageFactory.getGeometry( "D" ) ),
+                                                                                 FeatureKey.of(
+                                                                                                MessageFactory.getGeometry( "E" ) ),
+                                                                                 FeatureKey.of(
+                                                                                                MessageFactory.getGeometry( "F" ) ) ) ) ),
                                       TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                           Instant.parse( SECOND_TIME ) ),
                                       TimeScaleOuter.of(),

@@ -232,7 +232,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
             }
 
             // Build the output file name
-            Path outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
+            Path outputImage = DataFactory.getPathFromPoolMetadata( outputDirectory,
                                                                       metadata,
                                                                       append,
                                                                       metricName,

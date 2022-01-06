@@ -18,6 +18,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.pools.Pool;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.MetricGroup;
 import wres.datamodel.pools.PoolException;
@@ -150,7 +151,8 @@ public final class MeanSquareErrorSkillScoreTest
     public void testApplyAsCoefficientOfPersistence()
     {
         // Create the raw time-series
-        FeatureKey feature = FeatureKey.of( "FAKE2" );
+        FeatureKey feature = FeatureKey.of( 
+                                            MessageFactory.getGeometry( "FAKE2" ) );
 
         TimeSeriesMetadata observedMetadata = TimeSeriesMetadata.of( Map.of(),
                                                                      TimeScaleOuter.of( Duration.ofHours( 1 ),

@@ -141,7 +141,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                     Object append = nextEntry.getKey();
                     if ( append instanceof TimeWindowOuter )
                     {
-                        outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
+                        outputImage = DataFactory.getPathFromPoolMetadata( outputDirectory,
                                                                              metadata,
                                                                              (TimeWindowOuter) append,
                                                                              helper.getDurationUnits(),
@@ -150,7 +150,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                     }
                     else if ( append instanceof OneOrTwoThresholds )
                     {
-                        outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
+                        outputImage = DataFactory.getPathFromPoolMetadata( outputDirectory,
                                                                              metadata,
                                                                              (OneOrTwoThresholds) append,
                                                                              metricName,

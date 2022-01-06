@@ -37,6 +37,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -54,6 +55,7 @@ import wres.io.reading.IngestResult;
 import wres.io.reading.PreIngestException;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
+import wres.statistics.generated.Geometry;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 import wres.util.Strings;
@@ -271,10 +273,11 @@ public class CSVSource extends BasicSource
             }
 
             String unitName = data.getString( "measurement_unit" );
-            FeatureKey location = new FeatureKey( locationName,
-                                                  locationDescription,
-                                                  locationSrid,
-                                                  locationWkt );
+            Geometry geometry = MessageFactory.getGeometry( locationName,
+                                                            locationDescription,
+                                                            locationSrid,
+                                                            locationWkt );
+            FeatureKey location = FeatureKey.of( geometry );
             currentTimeSeriesMetadata =
                     TimeSeriesMetadata.of( Map.of( UNKNOWN, referenceDatetime ),
                                            null,

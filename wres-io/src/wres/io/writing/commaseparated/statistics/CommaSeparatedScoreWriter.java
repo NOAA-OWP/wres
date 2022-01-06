@@ -233,11 +233,11 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
                 }
 
                 PoolMetadata meta = nextOutput.get( 0 ).getMetadata();
-                Path outputPath = DataFactory.getPathFromSampleMetadata( outputDirectory,
-                                                                         meta,
-                                                                         append,
-                                                                         m,
-                                                                         null );
+                Path outputPath = DataFactory.getPathFromPoolMetadata( outputDirectory,
+                                                                       meta,
+                                                                       append,
+                                                                       m,
+                                                                       null );
 
                 Path finishedPath = CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
 

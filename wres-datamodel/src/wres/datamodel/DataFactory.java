@@ -543,12 +543,12 @@ public final class DataFactory
      * @throws IOException if the path cannot be produced
      */
 
-    public static Path getPathFromSampleMetadata( Path outputDirectory,
-                                                  PoolMetadata meta,
-                                                  TimeWindowOuter timeWindow,
-                                                  ChronoUnit leadUnits,
-                                                  MetricConstants metricName,
-                                                  MetricConstants metricComponentName )
+    public static Path getPathFromPoolMetadata( Path outputDirectory,
+                                                PoolMetadata meta,
+                                                TimeWindowOuter timeWindow,
+                                                ChronoUnit leadUnits,
+                                                MetricConstants metricName,
+                                                MetricConstants metricComponentName )
             throws IOException
     {
         Objects.requireNonNull( meta, DataFactory.ENTER_NON_NULL_METADATA_TO_ESTABLISH_A_PATH_FOR_WRITING );
@@ -558,14 +558,14 @@ public final class DataFactory
         Objects.requireNonNull( leadUnits,
                                 "Enter a non-null time unit for the lead durations to establish a path for writing." );
 
-        return DataFactory.getPathFromSampleMetadata( outputDirectory,
-                                                      meta,
-                                                      DataFactory.durationToLongUnits( timeWindow.getLatestLeadDuration(),
-                                                                                       leadUnits )
-                                                            + "_"
-                                                            + leadUnits.name().toUpperCase(),
-                                                      metricName,
-                                                      metricComponentName );
+        return DataFactory.getPathFromPoolMetadata( outputDirectory,
+                                                    meta,
+                                                    DataFactory.durationToLongUnits( timeWindow.getLatestLeadDuration(),
+                                                                                     leadUnits )
+                                                          + "_"
+                                                          + leadUnits.name().toUpperCase(),
+                                                    metricName,
+                                                    metricComponentName );
     }
 
     /**
@@ -584,11 +584,11 @@ public final class DataFactory
      * @throws ProjectConfigException when the destination configuration is invalid
      */
 
-    public static Path getPathFromSampleMetadata( Path outputDirectory,
-                                                  PoolMetadata meta,
-                                                  String append,
-                                                  MetricConstants metricName,
-                                                  MetricConstants metricComponentName )
+    public static Path getPathFromPoolMetadata( Path outputDirectory,
+                                                PoolMetadata meta,
+                                                String append,
+                                                MetricConstants metricName,
+                                                MetricConstants metricComponentName )
             throws IOException
     {
         Objects.requireNonNull( meta, ENTER_NON_NULL_METADATA_TO_ESTABLISH_A_PATH_FOR_WRITING );
@@ -649,22 +649,22 @@ public final class DataFactory
      * @throws IOException if the path cannot be produced
      */
 
-    public static Path getPathFromSampleMetadata( Path outputDirectory,
-                                                  PoolMetadata meta,
-                                                  OneOrTwoThresholds threshold,
-                                                  MetricConstants metricName,
-                                                  MetricConstants metricComponentName )
+    public static Path getPathFromPoolMetadata( Path outputDirectory,
+                                                PoolMetadata meta,
+                                                OneOrTwoThresholds threshold,
+                                                MetricConstants metricName,
+                                                MetricConstants metricComponentName )
             throws IOException
     {
         Objects.requireNonNull( meta, ENTER_NON_NULL_METADATA_TO_ESTABLISH_A_PATH_FOR_WRITING );
 
         Objects.requireNonNull( threshold, "Enter non-null threshold to establish a path for writing." );
 
-        return getPathFromSampleMetadata( outputDirectory,
-                                          meta,
-                                          threshold.toStringSafe(),
-                                          metricName,
-                                          metricComponentName );
+        return getPathFromPoolMetadata( outputDirectory,
+                                        meta,
+                                        threshold.toStringSafe(),
+                                        metricName,
+                                        metricComponentName );
     }
 
     /**
@@ -679,17 +679,17 @@ public final class DataFactory
      * @throws IOException if the path cannot be produced
      */
 
-    public static Path getPathFromSampleMetadata( Path outputDirectory,
-                                                  PoolMetadata meta,
-                                                  MetricConstants metricName,
-                                                  MetricConstants metricComponentName )
+    public static Path getPathFromPoolMetadata( Path outputDirectory,
+                                                PoolMetadata meta,
+                                                MetricConstants metricName,
+                                                MetricConstants metricComponentName )
             throws IOException
     {
-        return DataFactory.getPathFromSampleMetadata( outputDirectory,
-                                                      meta,
-                                                      (String) null,
-                                                      metricName,
-                                                      metricComponentName );
+        return DataFactory.getPathFromPoolMetadata( outputDirectory,
+                                                    meta,
+                                                    (String) null,
+                                                    metricName,
+                                                    metricComponentName );
     }
 
     /**
@@ -741,13 +741,13 @@ public final class DataFactory
 
     private static Set<MetricConstants> getSummaryStatisticsFor( TimeSeriesMetricConfig config )
     {
-        if( Objects.isNull( config ) || Objects.isNull( config.getSummaryStatistics() ) )
+        if ( Objects.isNull( config ) || Objects.isNull( config.getSummaryStatistics() ) )
         {
             LOGGER.debug( "No summary statistics found for the input declaration." );
-            
+
             return Set.of();
         }
-        
+
         List<SummaryStatisticsName> summaryStats = config.getSummaryStatistics()
                                                          .getName();
 
@@ -915,7 +915,7 @@ public final class DataFactory
         {
             returnMe.addAll( SampleDataGroup.SINGLE_VALUED_TIME_SERIES.getMetrics() );
         }
-        
+
         // Remove any general purpose timing error metrics that do not map to specific metric functions
         returnMe.remove( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC );
         returnMe.remove( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC );

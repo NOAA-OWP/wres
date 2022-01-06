@@ -30,8 +30,10 @@ import wres.config.generated.Circle;
 import wres.config.generated.Polygon;
 import wres.config.generated.Polygon.Point;
 import wres.config.generated.UnnamedFeature;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
+import wres.statistics.generated.Geometry;
 import wres.util.NetCDF;
 
 /**
@@ -239,10 +241,13 @@ class GriddedFeatures implements Supplier<Set<FeatureTuple>>
 
         GriddedFeatures.validateLonLat( x, y );
 
-        FeatureKey featureKey = new FeatureKey( GriddedFeatures.getGriddedNameFromLonLat( x, y ),
-                                                GriddedFeatures.getGriddedDescriptionFromLonLat( x, y ),
-                                                4326,
-                                                wkt );
+        Geometry geometry = MessageFactory.getGeometry(
+                                                        GriddedFeatures.getGriddedNameFromLonLat( x, y ),
+                                                        GriddedFeatures.getGriddedDescriptionFromLonLat( x, y ),
+                                                        4326,
+                                                        wkt );
+
+        FeatureKey featureKey = FeatureKey.of( geometry );
         return new FeatureTuple( featureKey, featureKey, featureKey );
     }
 

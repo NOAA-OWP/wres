@@ -10,6 +10,7 @@ import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Test;
 
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.space.FeatureKey;
@@ -23,7 +24,7 @@ import wres.datamodel.time.TimeSeries.Builder;
 /**
  * Tests the {@link PersistenceGenerator}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class PersistenceGeneratorTest
@@ -32,7 +33,8 @@ public class PersistenceGeneratorTest
     private static final String STREAMFLOW = "STREAMFLOW";
     private static final String CMS = "CMS";
     private static final String DISCHARGE = "DISCHARGE";
-    private static final FeatureKey FAKE2 = FeatureKey.of( "FAKE2" );
+    private static final FeatureKey FAKE2 = FeatureKey.of(
+                                                           MessageFactory.getGeometry( "FAKE2" ) );
 
     // Times used    
     private static final Instant T2551_03_20T12_00_00Z = Instant.parse( "2551-03-20T12:00:00Z" );

@@ -37,6 +37,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Geometry;
 import wres.statistics.generated.Pool;
 
 /**
@@ -152,9 +153,6 @@ public final class MetricTestDataFactory
     /** Variable name for boilerplate metadata */
     private static final String VARIABLE_NAME = "SQIN";
 
-    /** Feature name for boilerplate metadata */
-    private static final String FEATURE_NAME = DRRC2;
-
     /** Unit name for boilerplate metadata */
     private static final String UNIT = "CMS";
 
@@ -168,7 +166,8 @@ public final class MetricTestDataFactory
         return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
                                       TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
-                                      FeatureKey.of( FEATURE_NAME ),
+                                      FeatureKey.of( 
+                                                     MessageFactory.getGeometry( DRRC2 ) ),
                                       UNIT );
     }
 
@@ -181,7 +180,8 @@ public final class MetricTestDataFactory
         return TimeSeriesMetadata.of( Collections.emptyMap(),
                                       TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
-                                      FeatureKey.of( FEATURE_NAME ),
+                                      FeatureKey.of( 
+                                                     MessageFactory.getGeometry( DRRC2 ) ),
                                       UNIT );
     }
 
@@ -283,7 +283,8 @@ public final class MetricTestDataFactory
 
     public static FeatureGroup getFeatureGroup( final String featureId, boolean baseline )
     {
-        FeatureKey featureKey = new FeatureKey( featureId, null, null, null );
+        Geometry geometry = MessageFactory.getGeometry( featureId );
+        FeatureKey featureKey = FeatureKey.of( geometry );
         
         if( baseline )
         {
