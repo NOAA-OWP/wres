@@ -3,9 +3,11 @@ package wres.vis;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jfree.data.xy.AbstractXYDataset;
 
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
+import wres.statistics.generated.Geometry;
 
 /**
  * An {@link AbstractXYDataset} for single-valued pairs.
@@ -71,7 +73,8 @@ class SingleValuedPairsXYDataset
                               .getLeft()
                               .getName();
 
-        FeatureKey leftKey = FeatureKey.of( leftName );
+        Geometry leftGeom = MessageFactory.getGeometry( leftName );
+        FeatureKey leftKey = FeatureKey.of( leftGeom );
 
         String rightName = this.getPlotData()
                                .getMetadata()
@@ -81,7 +84,8 @@ class SingleValuedPairsXYDataset
                                .getRight()
                                .getName();
 
-        FeatureKey rightKey = FeatureKey.of( rightName );
+        Geometry rightGeom = MessageFactory.getGeometry( rightName ); 
+        FeatureKey rightKey = FeatureKey.of( rightGeom );
 
         FeatureKey baselineKey = null;
         
@@ -102,7 +106,8 @@ class SingleValuedPairsXYDataset
                     .getBaseline()
                     .getName();
             
-            baselineKey = FeatureKey.of( baselineName );
+            Geometry baselineGeom = MessageFactory.getGeometry( baselineName );
+            baselineKey = FeatureKey.of( baselineGeom );
         }
         
         FeatureTuple tuple = new FeatureTuple( leftKey, rightKey, baselineKey );

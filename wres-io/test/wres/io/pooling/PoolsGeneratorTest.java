@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -135,7 +134,8 @@ public class PoolsGeneratorTest
 
         ProjectConfig projectConfig = new ProjectConfig( inputsConfig, pairsConfig, null, null, null, null );
 
-        FeatureKey feature = FeatureKey.of( "FAKE2" );
+        FeatureKey feature = FeatureKey.of( 
+                                            MessageFactory.getGeometry( "FAKE2" ) );
 
         FeatureGroup featureGroup = FeatureGroup.of( new FeatureTuple( feature, feature, null ) );
 
@@ -252,7 +252,8 @@ public class PoolsGeneratorTest
 
         ProjectConfig projectConfig = new ProjectConfig( inputsConfig, pairsConfig, null, null, null, null );
 
-        FeatureKey feature = FeatureKey.of( "FAKE2" );
+        FeatureKey feature = FeatureKey.of( 
+                                            MessageFactory.getGeometry( "FAKE2" ) );
         FeatureGroup featureGroup = FeatureGroup.of( new FeatureTuple( feature, feature, null ) );
 
         // Mock the sufficient elements of Project

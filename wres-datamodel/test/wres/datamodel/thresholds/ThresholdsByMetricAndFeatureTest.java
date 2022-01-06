@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
@@ -46,7 +47,12 @@ class ThresholdsByMetricAndFeatureTest
                                                              .build();
 
         Map<FeatureTuple, ThresholdsByMetric> thresholds =
-                Map.of( new FeatureTuple( FeatureKey.of( "a" ), FeatureKey.of( "a" ), null ), thresholdsByMetric );
+                Map.of( new FeatureTuple( FeatureKey.of(
+                                                         MessageFactory.getGeometry( "a" ) ),
+                                          FeatureKey.of(
+                                                         MessageFactory.getGeometry( "a" ) ),
+                                          null ),
+                        thresholdsByMetric );
 
         this.testInstance = ThresholdsByMetricAndFeature.of( thresholds, 7 );
     }
@@ -78,7 +84,12 @@ class ThresholdsByMetricAndFeatureTest
                                                              .build();
 
         Map<FeatureTuple, ThresholdsByMetric> expected =
-                Map.of( new FeatureTuple( FeatureKey.of( "a" ), FeatureKey.of( "a" ), null ), thresholdsByMetric );
+                Map.of( new FeatureTuple( FeatureKey.of(
+                                                         MessageFactory.getGeometry( "a" ) ),
+                                          FeatureKey.of(
+                                                         MessageFactory.getGeometry( "a" ) ),
+                                          null ),
+                        thresholdsByMetric );
 
         assertEquals( expected, actual );
     }
@@ -86,7 +97,9 @@ class ThresholdsByMetricAndFeatureTest
     @Test
     void testGetThresholdsByMetricAndFeatureByFeatureGroup()
     {
-        FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( "a" ), FeatureKey.of( "a" ), null );
+        FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( MessageFactory.getGeometry( "a" ) ),
+                                                      FeatureKey.of( MessageFactory.getGeometry( "a" ) ),
+                                                      null );
         FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
         ThresholdsByMetricAndFeature actual = this.testInstance.getThresholdsByMetricAndFeature( featureGroup );
         assertEquals( this.testInstance, actual );

@@ -7,10 +7,12 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.FeatureKey;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
+import wres.statistics.generated.Geometry;
 
 /**
  * Defines the important details of a feature as stored in the database
@@ -47,7 +49,8 @@ public class FeatureDetails extends CachedDetail<FeatureDetails, FeatureKey>
         Integer srid = row.getValue( "srid" );
         String wkt = row.getValue( "wkt" );
 
-        this.key = new FeatureKey( name, description, srid, wkt );
+        Geometry geometry = MessageFactory.getGeometry( name, description, srid, wkt );
+        this.key = FeatureKey.of( geometry );
 
         if (row.hasColumn(this.getIDName() ))
         {

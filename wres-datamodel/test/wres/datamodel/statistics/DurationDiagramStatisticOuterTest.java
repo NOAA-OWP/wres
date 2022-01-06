@@ -25,7 +25,7 @@ import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDurati
 /**
  * Tests the {@link DurationDiagramStatisticOuter}.
  * 
- * @author james.brown@hydrosolveDataFactory.com
+ * @author James Brown
  */
 public final class DurationDiagramStatisticOuterTest
 {
@@ -62,7 +62,8 @@ public final class DurationDiagramStatisticOuterTest
                                                        .addStatistics( one )
                                                        .build();
 
-        FeatureKey feature = FeatureKey.of( "A" );
+        FeatureKey feature = FeatureKey.of(
+                                            MessageFactory.getGeometry( "A" ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "B" )
@@ -89,7 +90,8 @@ public final class DurationDiagramStatisticOuterTest
     @Test
     public void testEquals()
     {
-        FeatureKey l2 = FeatureKey.of( "A" );
+        FeatureKey l2 = FeatureKey.of(
+                                       MessageFactory.getGeometry( "A" ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "B" )
@@ -106,7 +108,8 @@ public final class DurationDiagramStatisticOuterTest
                                           1 );
 
         PoolMetadata m2 = PoolMetadata.of( evaluation, pool );
-        FeatureKey l3 = FeatureKey.of( "B" );
+        FeatureKey l3 = FeatureKey.of(
+                                       MessageFactory.getGeometry( "B" ) );
 
         Pool poolTwo = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l3, l3, l3 ) ),
                                              null,
@@ -216,7 +219,8 @@ public final class DurationDiagramStatisticOuterTest
     @Test
     public void testHashCode()
     {
-        FeatureKey l2 = FeatureKey.of( "A" );
+        FeatureKey l2 = FeatureKey.of(
+                                       MessageFactory.getGeometry( "A" ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "B" )

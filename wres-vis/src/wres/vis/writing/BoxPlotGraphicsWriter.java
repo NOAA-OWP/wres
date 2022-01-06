@@ -212,7 +212,7 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
                 // Build the outputs
                 for ( final Entry<Pair<TimeWindowOuter, OneOrTwoThresholds>, ChartEngine> nextEntry : engines.entrySet() )
                 {
-                    Path outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
+                    Path outputImage = DataFactory.getPathFromPoolMetadata( outputDirectory,
                                                                               metadata,
                                                                               nextEntry.getKey().getLeft(),
                                                                               helper.getDurationUnits(),
@@ -276,7 +276,7 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
                                                                     helper.getGraphicsString(),
                                                                     helper.getDurationUnits() );
 
-                Path outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
+                Path outputImage = DataFactory.getPathFromPoolMetadata( outputDirectory,
                                                                           metadata,
                                                                           metricName,
                                                                           null );

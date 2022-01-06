@@ -9,7 +9,6 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -46,12 +45,14 @@ import ucar.nc2.Variable;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.MissingValues;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.reading.PreIngestException;
+import wres.statistics.generated.Geometry;
 import wres.system.SystemSettings;
 
 /**
@@ -516,11 +517,11 @@ class NWMTimeSeries implements Closeable
                 sortedEvents.add( ensembleEvent );
             }
 
-            FeatureKey feature = new FeatureKey( entriesForOne.getKey()
-                                                              .toString(),
-                                                 null,
-                                                 null,
-                                                 null );
+            Geometry geometry = MessageFactory.getGeometry(
+                                                            entriesForOne.getKey()
+                                                                         .toString() );
+            FeatureKey feature = FeatureKey.of( geometry );
+
             TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, this.getReferenceDatetime() ),
                                                                  null,
                                                                  variableName,
@@ -880,21 +881,22 @@ class NWMTimeSeries implements Closeable
                                                                          - this.featuresNotFound.size() );
 
         // Create each TimeSeries
-        for ( Map.Entry<Integer,SortedSet<Event<Double>>> series : events.entrySet() )
+        for ( Map.Entry<Integer, SortedSet<Event<Double>>> series : events.entrySet() )
         {
             // TODO: use the reference datetime from actual data, not args.
             // The datetimes seem to be synchronized but this is not true for
             // analyses.
-            FeatureKey feature = new FeatureKey( series.getKey()
-                                                       .toString(),
-                                                 null,
-                                                 null,
-                                                 null );
-            TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, this.getReferenceDatetime() ),
-                                                                 null,
-                                                                 variableName,
-                                                                 feature,
-                                                                 unitName );
+            Geometry geometry = MessageFactory.getGeometry(
+                                                            series.getKey()
+                                                                  .toString() );
+            FeatureKey feature = FeatureKey.of( geometry );
+
+            TimeSeriesMetadata metadata =
+                    TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, this.getReferenceDatetime() ),
+                                           null,
+                                           variableName,
+                                           feature,
+                                           unitName );
             TimeSeries<Double> timeSeries = TimeSeries.of( metadata,
                                                            series.getValue() );
             allTimeSerieses.put( series.getKey(), timeSeries );

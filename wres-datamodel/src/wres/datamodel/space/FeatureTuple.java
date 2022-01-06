@@ -42,13 +42,17 @@ public class FeatureTuple implements Comparable<FeatureTuple>
     {
         Objects.requireNonNull( feature );
 
-        FeatureKey left = FeatureKey.of( feature.getLeft() );
-        FeatureKey right = FeatureKey.of( feature.getRight() );
+        Geometry lg = MessageFactory.getGeometry( feature.getLeft() );
+        Geometry rg = MessageFactory.getGeometry( feature.getRight() );
+
+        FeatureKey left = FeatureKey.of( lg );
+        FeatureKey right = FeatureKey.of( rg );
         FeatureKey baseline = null;
 
         if ( Objects.nonNull( feature.getBaseline() ) )
         {
-            baseline = FeatureKey.of( feature.getBaseline() );
+            Geometry bg = MessageFactory.getGeometry( feature.getBaseline() );
+            baseline = FeatureKey.of( bg );
         }
 
         this.geometryTuple = this.getGeometryFromFeatureKeys( left, right, baseline );

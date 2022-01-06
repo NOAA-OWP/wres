@@ -18,6 +18,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.MissingValues;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.RescalingException;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
@@ -27,13 +28,14 @@ import wres.datamodel.time.TimeSeries.Builder;
 /**
  * Tests the {@link TimeSeriesOfDoubleUpscaler}
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class TimeSeriesOfDoubleUpscalerTest
 {
     private static final String VARIABLE_NAME = "Fruit";
-    private static final FeatureKey FEATURE_NAME = FeatureKey.of( "Tropics" );
+    private static final FeatureKey FEATURE_NAME = FeatureKey.of( 
+                                                                  MessageFactory.getGeometry( "Tropics" ) );
     private static final String UNIT = "kg/h";
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0AndTimeScale( Instant t0,

@@ -5,7 +5,6 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.StringJoiner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,12 +14,14 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 
 import ucar.nc2.NetcdfFile;
 import wres.config.generated.UnnamedFeature;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.io.data.details.FeatureDetails;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
+import wres.statistics.generated.Geometry;
 
 /**
  * Caches details about Features
@@ -150,7 +151,8 @@ public class Features
                 String description = dataProvider.getString( "description" );
                 Integer srid = dataProvider.getInt( "srid" );
                 String wkt = dataProvider.getString( "wkt" );
-                value = new FeatureKey( name, description, srid, wkt );
+                Geometry geometry = MessageFactory.getGeometry( name, description, srid, wkt );
+                value = FeatureKey.of( geometry );
             }
 
             this.keyToValue.put( featureId, value );

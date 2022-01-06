@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.commons.math3.util.Precision.EPSILON;
 
 import wres.datamodel.MissingValues;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
@@ -31,6 +32,7 @@ import wres.io.reading.waterml.timeseries.Method;
 import wres.io.reading.waterml.timeseries.SiteCode;
 import wres.io.reading.waterml.timeseries.TimeSeriesValue;
 import wres.io.reading.waterml.timeseries.TimeSeriesValues;
+import wres.statistics.generated.Geometry;
 
 /**
  * Tranforms parsed WaterML data into WRES TimeSeries data.
@@ -332,6 +334,7 @@ class WaterMLSource implements Callable<List<TimeSeries<Double>>>
             }
         }
 
-        return new FeatureKey( usgsSiteCode, siteDescription, siteSrid, siteWkt );
+        Geometry geometry = MessageFactory.getGeometry( usgsSiteCode, siteDescription, siteSrid, siteWkt );
+        return FeatureKey.of( geometry );
     }
 }

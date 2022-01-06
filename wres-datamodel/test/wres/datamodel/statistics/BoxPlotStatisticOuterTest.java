@@ -28,7 +28,7 @@ import wres.statistics.generated.BoxplotStatistic.Box;
 /**
  * Tests the {@link BoxplotStatisticOuter}.
  * 
- * @author james.brown@hydrosolveDataFactory.com
+ * @author James Brown
  */
 public final class BoxPlotStatisticOuterTest
 {
@@ -70,7 +70,8 @@ public final class BoxPlotStatisticOuterTest
         }
 
         this.basic = boxplotOne.build();
-        FeatureKey l2 = FeatureKey.of( "A" );
+        FeatureKey l2 = FeatureKey.of(
+                                       MessageFactory.getGeometry( "A" ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "B" )
@@ -97,7 +98,8 @@ public final class BoxPlotStatisticOuterTest
     {
 
         //Build datasets
-        FeatureKey l1 = FeatureKey.of( "A" );
+        FeatureKey l1 = FeatureKey.of(
+                                       MessageFactory.getGeometry( "A" ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "B" )
@@ -113,7 +115,8 @@ public final class BoxPlotStatisticOuterTest
                                           1 );
 
         PoolMetadata m1 = PoolMetadata.of( evaluation, pool );
-        FeatureKey l2 = FeatureKey.of( "A" );
+        FeatureKey l2 = FeatureKey.of(
+                                       MessageFactory.getGeometry( "A" ) );
 
         Pool poolTwo = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l2, l2, l2 ) ),
                                              null,
@@ -124,7 +127,8 @@ public final class BoxPlotStatisticOuterTest
 
 
         PoolMetadata m2 = PoolMetadata.of( evaluation, poolTwo );
-        FeatureKey l3 = FeatureKey.of( "B" );
+        FeatureKey l3 = FeatureKey.of(
+                                       MessageFactory.getGeometry( "B" ) );
 
         Pool poolThree = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l3, l3, l3 ) ),
                                                null,
@@ -281,7 +285,8 @@ public final class BoxPlotStatisticOuterTest
         assertThat( basic.hashCode(), is( basic.hashCode() ) );
 
         // Consistent with equals
-        FeatureKey l2 = FeatureKey.of( "A" );
+        FeatureKey l2 = FeatureKey.of(
+                                       MessageFactory.getGeometry( "A" ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "B" )

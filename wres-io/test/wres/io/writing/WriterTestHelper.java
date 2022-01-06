@@ -143,7 +143,8 @@ public class WriterTestHelper
     public static List<BoxplotStatisticOuter> getBoxPlotPerPoolForTwoPools()
     {
         // location id
-        FeatureKey feature = FeatureKey.of( "JUNP1" );
+        FeatureKey feature = FeatureKey.of( 
+                                            MessageFactory.getGeometry( "JUNP1" ) );
 
         // Create fake outputs
         TimeWindowOuter timeOne =
@@ -236,7 +237,8 @@ public class WriterTestHelper
     public static List<BoxplotStatisticOuter> getBoxPlotPerPairForOnePool()
     {
         // location id
-        FeatureKey feature = FeatureKey.of( "JUNP1" );
+        FeatureKey feature = FeatureKey.of( 
+                                            MessageFactory.getGeometry( "JUNP1" ) );
 
         // Create fake outputs
         TimeWindowOuter timeOne =
@@ -318,7 +320,8 @@ public class WriterTestHelper
     {
 
         // location id
-        FeatureKey feature = FeatureKey.of( "CREC1" );
+        FeatureKey feature = FeatureKey.of( 
+                                            MessageFactory.getGeometry( "CREC1" ) );
 
         TimeWindowOuter timeOne =
                 TimeWindowOuter.of( Instant.MIN,
@@ -416,7 +419,8 @@ public class WriterTestHelper
     {
 
         // location id
-        FeatureKey feature = FeatureKey.of( "FTSC1" );
+        FeatureKey feature = FeatureKey.of( 
+                                            MessageFactory.getGeometry( "FTSC1" ) );
 
         TimeWindowOuter timeOne =
                 TimeWindowOuter.of( Instant.MIN,
@@ -512,7 +516,8 @@ public class WriterTestHelper
     {
 
         // location id
-        final FeatureKey feature = FeatureKey.of( "DRRC2" );
+        final FeatureKey feature = FeatureKey.of( 
+                                                  MessageFactory.getGeometry( "DRRC2" ) );
 
         TimeWindowOuter timeOne = TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
 
@@ -599,7 +604,8 @@ public class WriterTestHelper
     {
 
         // location id
-        final FeatureKey feature = FeatureKey.of( "DOLC2" );
+        final FeatureKey feature = FeatureKey.of( 
+                                                  MessageFactory.getGeometry( "DOLC2" ) );
 
         TimeWindowOuter timeOne =
                 TimeWindowOuter.of( Instant.MIN,
@@ -677,7 +683,8 @@ public class WriterTestHelper
     {
 
         // location id
-        final FeatureKey feature = FeatureKey.of( "FTSC1" );
+        final FeatureKey feature = FeatureKey.of( 
+                                                  MessageFactory.getGeometry( "FTSC1" ) );
 
         TimeWindowOuter timeOne = TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
 

@@ -25,7 +25,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 /**
  * Tests the {@link ScoreStatistic}.
  * 
- * @author james.brown@hydrosolveDataFactory.com
+ * @author James Brown
  */
 public final class ScoreStatisticOuterTest
 {
@@ -45,7 +45,8 @@ public final class ScoreStatisticOuterTest
     @Before
     public void runBeforeEachTest()
     {
-        FeatureKey feature = FeatureKey.of( "A" );
+        FeatureKey feature = FeatureKey.of(
+                                            MessageFactory.getGeometry( "A" ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "B" )
@@ -80,7 +81,8 @@ public final class ScoreStatisticOuterTest
     @Test
     public void testEquals()
     {
-        FeatureKey l1 = FeatureKey.of( "A" );
+        FeatureKey l1 = FeatureKey.of(
+                                       MessageFactory.getGeometry( "A" ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "B" )
@@ -100,7 +102,8 @@ public final class ScoreStatisticOuterTest
 
         PoolMetadata m2 = PoolMetadata.of( evaluation, pool );
 
-        FeatureKey l3 = FeatureKey.of( "B" );
+        FeatureKey l3 = FeatureKey.of(
+                                       MessageFactory.getGeometry( "B" ) );
 
         Pool poolTwo = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l3, l3, l3 ) ),
                                              null,

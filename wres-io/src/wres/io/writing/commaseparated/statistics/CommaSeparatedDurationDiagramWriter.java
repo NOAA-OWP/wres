@@ -173,7 +173,7 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
             PoolMetadata meta = nextOutput.get( 0 ).getMetadata();
             MetricConstants metricName = nextOutput.get( 0 ).getMetricName();
 
-            Path outputPath = DataFactory.getPathFromSampleMetadata( outputDirectory,
+            Path outputPath = DataFactory.getPathFromPoolMetadata( outputDirectory,
                                                                      meta,
                                                                      metricName,
                                                                      null );

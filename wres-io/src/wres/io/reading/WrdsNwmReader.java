@@ -37,6 +37,7 @@ import wres.config.generated.DatasourceType;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
@@ -60,6 +61,7 @@ import wres.io.reading.wrds.nwm.NwmRootDocument;
 import wres.io.reading.wrds.nwm.NwmRootDocumentWithError;
 import wres.io.utilities.Database;
 import wres.io.utilities.WebClient;
+import wres.statistics.generated.Geometry;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 
@@ -508,11 +510,11 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                 }
             }
 
-            FeatureKey feature = new FeatureKey( Integer.toString( rawLocationId ),
-                                                 null,
-                                                 null,
-                                                 null );
-            TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( referenceTimeType, referenceDatetime ),
+            Geometry geometry = MessageFactory.getGeometry(
+                                                            Integer.toString( rawLocationId ) );
+            FeatureKey feature = FeatureKey.of( geometry );
+            TimeSeriesMetadata metadata = TimeSeriesMetadata.of( 
+                                                                 Map.of( referenceTimeType, referenceDatetime ),
                                                                  timeScale,
                                                                  variableName,
                                                                  feature,
@@ -584,11 +586,11 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
             }
 
             // Re-shape the data to match the WRES metrics/datamodel expectation
-            FeatureKey feature = new FeatureKey( Integer.toString( rawLocationId ),
-                                                 null,
-                                                 null,
-                                                 null );
-            TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, referenceDatetime ),
+            Geometry geometry = MessageFactory.getGeometry(
+                                                            Integer.toString( rawLocationId ) );
+            FeatureKey feature = FeatureKey.of( geometry );
+            TimeSeriesMetadata metadata = TimeSeriesMetadata.of(
+                                                                 Map.of( ReferenceTimeType.T0, referenceDatetime ),
                                                                  timeScale,
                                                                  variableName,
                                                                  feature,

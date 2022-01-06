@@ -242,7 +242,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                                                                                          headerRow ) ) );
 
             // Write the output
-            Path outputPath = DataFactory.getPathFromSampleMetadata( outputDirectory,
+            Path outputPath = DataFactory.getPathFromPoolMetadata( outputDirectory,
                                                                      meta,
                                                                      timeWindow,
                                                                      durationUnits,
@@ -302,7 +302,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                                            CommaSeparatedDiagramWriter.getDiagramHeader( next, headerRow ) ) );
 
             // Write the output
-            Path outputPath = DataFactory.getPathFromSampleMetadata( outputDirectory,
+            Path outputPath = DataFactory.getPathFromPoolMetadata( outputDirectory,
                                                                      meta,
                                                                      threshold,
                                                                      metricName,

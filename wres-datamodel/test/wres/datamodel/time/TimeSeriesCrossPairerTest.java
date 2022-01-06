@@ -12,6 +12,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
 
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.pairs.CrossPairs;
 import wres.datamodel.pools.pairs.PairingException;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -22,13 +23,14 @@ import wres.datamodel.time.TimeSeriesCrossPairer.MatchMode;
 /**
  * Tests the {@link Event}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class TimeSeriesCrossPairerTest
 {
 
     private static final String KG_H = "kg/h";
-    private static final FeatureKey GEORGIA = FeatureKey.of( "Georgia" );
+    private static final FeatureKey GEORGIA = FeatureKey.of( 
+                                                             MessageFactory.getGeometry( "Georgia" ) );
     private static final String CHICKENS = "Chickens";
     private static final Instant ZEROTH = Instant.parse( "2123-12-01T00:00:00Z" );
     private static final Instant FIRST = Instant.parse( "2123-12-01T06:00:00Z" );

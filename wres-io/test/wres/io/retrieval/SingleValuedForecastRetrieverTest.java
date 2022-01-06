@@ -38,6 +38,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.space.FeatureKey;
@@ -58,7 +59,7 @@ import wres.system.SystemSettings;
 
 /**
  * Tests the {@link SingleValuedForecastRetriever}.
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class SingleValuedForecastRetrieverTest
@@ -67,7 +68,8 @@ public class SingleValuedForecastRetrieverTest
     private static final String T2023_04_01T17_00_00Z = "2023-04-01T17:00:00Z";
     private static final String T2023_04_01T00_00_00Z = "2023-04-01T00:00:00Z";
     private static final String VARIABLE_NAME = "V";
-    private static final FeatureKey FEATURE = FeatureKey.of( "F" );
+    private static final FeatureKey FEATURE = FeatureKey.of( 
+                                                             MessageFactory.getGeometry( "F" ) );
     @Mock
     private SystemSettings mockSystemSettings;
     private wres.io.utilities.Database wresDatabase;

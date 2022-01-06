@@ -35,6 +35,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.space.FeatureGroup;
@@ -58,9 +59,10 @@ import wres.system.SystemSettings;
 
 class ProjectTest
 {
-
-    private static final FeatureKey FEATURE = FeatureKey.of( "F" );
-    private static final FeatureKey ANOTHER_FEATURE = FeatureKey.of( "G" );
+    private static final FeatureKey FEATURE = FeatureKey.of(
+                                                             MessageFactory.getGeometry( "F" ) );
+    private static final FeatureKey ANOTHER_FEATURE = FeatureKey.of(
+                                                                     MessageFactory.getGeometry( "G" ) );
     private static final String PROJECT_HASH = "881hfEaffja267";
     private static final String UNITS = "CFS";
     private static final String T2023_04_01T00_00_00Z = "2023-04-01T00:00:00Z";

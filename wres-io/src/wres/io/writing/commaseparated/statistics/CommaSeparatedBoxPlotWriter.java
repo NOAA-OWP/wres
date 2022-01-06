@@ -231,7 +231,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
                                            CommaSeparatedBoxPlotWriter.getBoxPlotHeader( next, headerRow ) ) );
             // Write the output
             Path outputPath =
-                    DataFactory.getPathFromSampleMetadata( outputDirectory,
+                    DataFactory.getPathFromPoolMetadata( outputDirectory,
                                                            meta,
                                                            nextWindow,
                                                            durationUnits,
@@ -281,7 +281,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
             rows.add( RowCompareByLeft.of( HEADER_INDEX,
                                            CommaSeparatedBoxPlotWriter.getBoxPlotHeader( output, headerRow ) ) );
             // Write the output
-            Path outputPath = DataFactory.getPathFromSampleMetadata( outputDirectory,
+            Path outputPath = DataFactory.getPathFromPoolMetadata( outputDirectory,
                                                                      meta,
                                                                      metricName,
                                                                      null );

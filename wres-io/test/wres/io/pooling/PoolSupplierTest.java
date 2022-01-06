@@ -139,7 +139,8 @@ public class PoolSupplierTest
     private static final Instant T2551_03_17T00_00_00Z = Instant.parse( "2551-03-17T00:00:00Z" );
 
     private static final String VARIABLE_NAME = "STREAMFLOW";
-    private static final FeatureKey FEATURE = FeatureKey.of( "DRRC2" );
+    private static final FeatureKey FEATURE = FeatureKey.of( 
+                                                             MessageFactory.getGeometry( "DRRC2" ) );
     private static final String UNIT = "CMS";
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithTimeScale( TimeScaleOuter timeScale )
@@ -761,7 +762,8 @@ public class PoolSupplierTest
     {
         // Create the duplicate observed series for a different feature
         String featureName = "DOSC1";
-        FeatureKey feature = FeatureKey.of( featureName );
+        FeatureKey feature = FeatureKey.of( 
+                                            MessageFactory.getGeometry( featureName ) );
 
         TimeSeriesMetadata obsMeta = this.observations.getMetadata();
         TimeSeries<Double> observationsTwo = new TimeSeries.Builder<Double>().addEvents( this.observations.getEvents() )

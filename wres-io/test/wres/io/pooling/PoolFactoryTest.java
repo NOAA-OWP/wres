@@ -104,9 +104,12 @@ class PoolFactoryTest
 
         Evaluation evaluationDescription = MessageFactory.parse( projectConfigPlus );
 
-        FeatureKey keyOne = new FeatureKey( "DRRC2", null, null, null );
-        FeatureKey keyTwo = new FeatureKey( "DRRC2HSF", null, null, null );
-        FeatureKey keyThree = new FeatureKey( "DRRC2HSF", null, null, null );
+        FeatureKey keyOne = FeatureKey.of(
+                                           MessageFactory.getGeometry( "DRRC2", null, null, null ) );
+        FeatureKey keyTwo = FeatureKey.of(
+                                           MessageFactory.getGeometry( "DRRC2HSF", null, null, null ) );
+        FeatureKey keyThree = FeatureKey.of(
+                                             MessageFactory.getGeometry( "DRRC2HSF", null, null, null ) );
         FeatureTuple aTuple = new FeatureTuple( keyOne, keyTwo, keyThree );
 
         FeatureGroup groupOne = FeatureGroup.of( aTuple );

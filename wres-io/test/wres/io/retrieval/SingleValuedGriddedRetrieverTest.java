@@ -29,6 +29,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.FeatureKey;
 import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
@@ -44,7 +45,7 @@ import wres.system.SystemSettings;
 
 /**
  * Tests the {@link SingleValuedGriddedRetriever}.
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class SingleValuedGriddedRetrieverTest
@@ -62,7 +63,11 @@ public class SingleValuedGriddedRetrieverTest
     /**
      * A feature for testing.
      */
-    private static final FeatureKey FEATURE = new FeatureKey( "POINT( 1 2 )", null, 4326, "POINT( 1 2 )" );
+    private static final FeatureKey FEATURE = FeatureKey.of(
+                                                             MessageFactory.getGeometry( "POINT( 1 2 )",
+                                                                                         null,
+                                                                                         4326,
+                                                                                         "POINT( 1 2 )" ) );
 
     /**
      * A variable name for testing.

@@ -71,7 +71,8 @@ public final class SingleValuedPairsWriterTest
     private static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Double>>> pairsThree = null;
 
     private static final String VARIABLE_NAME = "ARMS";
-    private static final FeatureKey FEATURE = FeatureKey.of( "FRUIT" );
+    private static final FeatureKey FEATURE = FeatureKey.of(
+                                                             MessageFactory.getGeometry( "FRUIT" ) );
     private static final String UNIT = "SCOOBIES";
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0 )
@@ -111,8 +112,10 @@ public final class SingleValuedPairsWriterTest
                                           .setMeasurementUnit( "SCOOBIES" )
                                           .build();
 
-        FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( "PLUM" ),
-                                                      FeatureKey.of( "PLUM" ),
+        FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of(
+                                                                     MessageFactory.getGeometry( "PLUM" ) ),
+                                                      FeatureKey.of(
+                                                                     MessageFactory.getGeometry( "PLUM" ) ),
                                                       null );
         FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
 
@@ -126,7 +129,8 @@ public final class SingleValuedPairsWriterTest
 
         TimeSeriesMetadata boilerplate = SingleValuedPairsWriterTest.getBoilerplateMetadataWithT0( basisTime );
         TimeSeriesMetadata metadata =
-                new TimeSeriesMetadata.Builder( boilerplate ).setFeature( FeatureKey.of( "PLUM" ) )
+                new TimeSeriesMetadata.Builder( boilerplate ).setFeature( FeatureKey.of(
+                                                                                         MessageFactory.getGeometry( "PLUM" ) ) )
                                                              .build();
 
         TimeSeries<Pair<Double, Double>> timeSeriesOne =
@@ -152,8 +156,10 @@ public final class SingleValuedPairsWriterTest
                                              .setMeasurementUnit( "SCOOBIES" )
                                              .build();
 
-        FeatureTuple featureTupleTwo = new FeatureTuple( FeatureKey.of( "ORANGE" ),
-                                                         FeatureKey.of( "ORANGE" ),
+        FeatureTuple featureTupleTwo = new FeatureTuple( FeatureKey.of(
+                                                                        MessageFactory.getGeometry( "ORANGE" ) ),
+                                                         FeatureKey.of(
+                                                                        MessageFactory.getGeometry( "ORANGE" ) ),
                                                          null );
         FeatureGroup featureGroupTwo = FeatureGroup.of( featureTupleTwo );
 
@@ -167,7 +173,8 @@ public final class SingleValuedPairsWriterTest
 
         TimeSeriesMetadata boilerplateTwo = getBoilerplateMetadataWithT0( basisTimeTwo );
         TimeSeriesMetadata metadataTwo =
-                new TimeSeriesMetadata.Builder( boilerplateTwo ).setFeature( FeatureKey.of( "ORANGE" ) )
+                new TimeSeriesMetadata.Builder( boilerplateTwo ).setFeature( FeatureKey.of(
+                                                                                            MessageFactory.getGeometry( "ORANGE" ) ) )
                                                                 .build();
 
         TimeSeries<Pair<Double, Double>> timeSeriesTwo =
@@ -193,8 +200,10 @@ public final class SingleValuedPairsWriterTest
                                                .setMeasurementUnit( "SCOOBIES" )
                                                .build();
 
-        FeatureTuple featureTupleThree = new FeatureTuple( FeatureKey.of( "BANANA" ),
-                                                           FeatureKey.of( "BANANA" ),
+        FeatureTuple featureTupleThree = new FeatureTuple( FeatureKey.of(
+                                                                          MessageFactory.getGeometry( "BANANA" ) ),
+                                                           FeatureKey.of(
+                                                                          MessageFactory.getGeometry( "BANANA" ) ),
                                                            null );
         FeatureGroup featureGroupThree = FeatureGroup.of( featureTupleThree );
 
@@ -209,7 +218,8 @@ public final class SingleValuedPairsWriterTest
         TimeSeriesMetadata boilerplateThree =
                 SingleValuedPairsWriterTest.getBoilerplateMetadataWithT0( basisTimeThree );
         TimeSeriesMetadata metadataThree =
-                new TimeSeriesMetadata.Builder( boilerplateThree ).setFeature( FeatureKey.of( "BANANA" ) )
+                new TimeSeriesMetadata.Builder( boilerplateThree ).setFeature( FeatureKey.of(
+                                                                                              MessageFactory.getGeometry( "BANANA" ) ) )
                                                                   .build();
         TimeSeries<Pair<Double, Double>> timeSeriesThree =
                 TimeSeries.of( metadataThree, setOfPairsThree );
@@ -242,8 +252,10 @@ public final class SingleValuedPairsWriterTest
                 Builder<TimeSeries<Pair<Double, Double>>> tsBuilder = new Builder<>();
 
                 // Set the measurement units and time scale
-                FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( "PINEAPPLE" ),
-                                                              FeatureKey.of( "PINEAPPLE" ),
+                FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of(
+                                                                             MessageFactory.getGeometry( "PINEAPPLE" ) ),
+                                                              FeatureKey.of(
+                                                                             MessageFactory.getGeometry( "PINEAPPLE" ) ),
                                                               null );
 
                 Evaluation evaluation = Evaluation.newBuilder()

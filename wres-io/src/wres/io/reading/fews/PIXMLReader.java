@@ -41,6 +41,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MissingValues;
 import wres.datamodel.Ensemble.Labels;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
@@ -59,6 +60,7 @@ import wres.io.reading.IngestResult;
 import wres.io.reading.InvalidInputDataException;
 import wres.io.reading.PreIngestException;
 import wres.io.utilities.Database;
+import wres.statistics.generated.Geometry;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 import wres.system.xml.XMLHelper;
@@ -675,11 +677,13 @@ public final class PIXMLReader extends XMLReader
             wktGeometry.add( ")" );
             locationWkt = wktGeometry.toString();
         }
+        
+        Geometry geometry = MessageFactory.getGeometry( locationName, 
+                                                        locationDescription,
+                                                        null,
+                                                        locationWkt );
+        FeatureKey feature = FeatureKey.of( geometry );
 
-        FeatureKey feature = new FeatureKey( locationName,
-                                             locationDescription,
-                                             null,
-                                             locationWkt );
         TimeSeriesMetadata justParsed = TimeSeriesMetadata.of( basisDatetimes,
                                                                scale,
                                                                variableName,

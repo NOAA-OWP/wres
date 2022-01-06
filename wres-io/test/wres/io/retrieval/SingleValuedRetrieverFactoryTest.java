@@ -43,6 +43,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.DataSourceConfig.Variable;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.space.FeatureKey;
@@ -64,7 +65,7 @@ import wres.system.SystemSettings;
 
 /**
  * Tests the {@link SingleValuedRetrieverFactory}.
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class SingleValuedRetrieverFactoryTest
@@ -90,7 +91,8 @@ public class SingleValuedRetrieverFactoryTest
      * The feature name.
      */
 
-    private static final FeatureKey FAKE_FEATURE = FeatureKey.of( "FAKE" );
+    private static final FeatureKey FAKE_FEATURE = FeatureKey.of( 
+                                                                  MessageFactory.getGeometry( "FAKE" ) );
 
     /**
      * The variable name.

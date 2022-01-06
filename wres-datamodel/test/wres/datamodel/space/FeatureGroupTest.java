@@ -10,6 +10,8 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import wres.datamodel.messages.MessageFactory;
+
 /**
  * Tests the {@link FeatureGroup}.
  * 
@@ -31,14 +33,18 @@ class FeatureGroupTest
     @BeforeEach
     void runBeforeEachTest()
     {
-        FeatureKey keyOne = new FeatureKey( "A", null, null, null );
-        FeatureKey keyTwo = new FeatureKey( "B", null, null, null );
-        FeatureKey keyThree = new FeatureKey( "C", null, null, null );
+        FeatureKey keyOne = FeatureKey.of(
+                                           MessageFactory.getGeometry( "A" ) );
+        FeatureKey keyTwo = FeatureKey.of(
+                                           MessageFactory.getGeometry( "B" ) );
+        FeatureKey keyThree = FeatureKey.of(
+                                             MessageFactory.getGeometry( "C" ) );
         this.aTuple = new FeatureTuple( keyOne, keyTwo, keyThree );
 
         this.aGroup = FeatureGroup.of( "aGroup", this.aTuple );
 
-        FeatureKey keyFour = new FeatureKey( "A", "a feature", null, null );
+        FeatureKey keyFour = FeatureKey.of(
+                                            MessageFactory.getGeometry( "A", "a feature", null, null ) );
         this.anotherTuple = new FeatureTuple( keyOne, keyTwo, keyFour );
     }
 
@@ -112,8 +118,10 @@ class FeatureGroupTest
         assertTrue( smallerGroup.compareTo( biggerGroup ) < 0 );
 
         // Equal size, equal group name, lesser tuple name
-        FeatureKey keyOne = new FeatureKey( "A", null, null, null );
-        FeatureKey keyTwo = new FeatureKey( "B", null, null, null );
+        FeatureKey keyOne = FeatureKey.of(
+                                           MessageFactory.getGeometry( "A" ) );
+        FeatureKey keyTwo = FeatureKey.of(
+                                           MessageFactory.getGeometry( "B" ) );
         FeatureGroup lesserGroup = FeatureGroup.of( new FeatureTuple( keyOne, keyOne, null ) );
         FeatureGroup greaterGroup = FeatureGroup.of( new FeatureTuple( keyTwo, keyTwo, null ) );
 
@@ -149,9 +157,9 @@ class FeatureGroupTest
         IllegalArgumentException exception =
                 assertThrows( IllegalArgumentException.class,
                               () -> FeatureGroup.of( new String( new char[99] ), this.aTuple ) );
-        
+
         String actualMessage = exception.getMessage();
-        String expectedMessageStartsWith = "A feature group name cannot be longer than" ;
+        String expectedMessageStartsWith = "A feature group name cannot be longer than";
 
         assertTrue( actualMessage.startsWith( expectedMessageStartsWith ) );
     }

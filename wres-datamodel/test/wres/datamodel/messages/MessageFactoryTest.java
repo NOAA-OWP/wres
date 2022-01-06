@@ -116,7 +116,7 @@ public class MessageFactoryTest
 
     private static final String VARIABLE_NAME = "Streamflow";
     private static final String FEATURE_NAME = "DRRC2";
-    private static final FeatureKey FEATURE = FeatureKey.of( FEATURE_NAME );
+    private static final FeatureKey FEATURE = FeatureKey.of( MessageFactory.getGeometry( FEATURE_NAME ) );
     private static final MeasurementUnit CMS = MeasurementUnit.of( "CMS" );
 
     private static final wres.datamodel.time.TimeWindowOuter TIME_WINDOW =
@@ -126,8 +126,9 @@ public class MessageFactoryTest
                                                     TWELFTH_TIME,
                                                     EARLIEST_LEAD,
                                                     LATEST_LEAD );
-    private static final FeatureKey LOCATION = new FeatureKey( FEATURE_NAME, null, null, "POINT ( 23.45, 56.21 )" );
-    private static final FeatureKey ANOTHER_LOCATION = FeatureKey.of( "DOLC2" );
+    private static final FeatureKey LOCATION =
+            FeatureKey.of( MessageFactory.getGeometry( FEATURE_NAME, null, null, "POINT ( 23.45, 56.21 )" ) );
+    private static final FeatureKey ANOTHER_LOCATION = FeatureKey.of( MessageFactory.getGeometry( "DOLC2" ) );
     private static final FeatureGroup FEATURE_GROUP = FeatureGroup.of( new FeatureTuple( LOCATION,
                                                                                          LOCATION,
                                                                                          LOCATION ) );
