@@ -538,7 +538,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
         {
             wres.statistics.generated.TimeWindow window = this.getPool()
                                                               .getTimeWindow();
-            timeWindowInner = new TimeWindowOuter.Builder( window ).build();
+            timeWindowInner = TimeWindowOuter.of( window );
         }
 
         this.timeWindow = timeWindowInner;

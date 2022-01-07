@@ -369,7 +369,7 @@ public class MessageFactoryTest
                                              .build();
 
         // Scores and diagrams should be split due to threshold difference
-        Collection<Statistics> actual = MessageFactory.parse( statistics );
+        Collection<Statistics> actual = MessageFactory.getStatistics( statistics );
 
         assertEquals( 2, actual.size() );
 
@@ -682,7 +682,7 @@ public class MessageFactoryTest
                                           .setMeasurementUnit( CMS.toString() )
                                           .build();
 
-        Pool pool = MessageFactory.parse( FEATURE_GROUP,
+        Pool pool = MessageFactory.getPool( FEATURE_GROUP,
                                           TIME_WINDOW,
                                           timeScale,
                                           threshold,
@@ -754,7 +754,7 @@ public class MessageFactoryTest
                                           .setMeasurementUnit( CMS.toString() )
                                           .build();
 
-        Pool pool = MessageFactory.parse( FEATURE_GROUP,
+        Pool pool = MessageFactory.getPool( FEATURE_GROUP,
                                           TIME_WINDOW,
                                           timeScale,
                                           threshold,
@@ -836,7 +836,7 @@ public class MessageFactoryTest
                                           .setMeasurementUnit( CMS.toString() )
                                           .build();
 
-        Pool pool = MessageFactory.parse( FEATURE_GROUP,
+        Pool pool = MessageFactory.getPool( FEATURE_GROUP,
                                           TIME_WINDOW,
                                           timeScale,
                                           threshold,
@@ -966,7 +966,7 @@ public class MessageFactoryTest
                                           .setMeasurementUnit( CMS.toString() )
                                           .build();
 
-        Pool pool = MessageFactory.parse( ANOTHER_FEATURE_GROUP,
+        Pool pool = MessageFactory.getPool( ANOTHER_FEATURE_GROUP,
                                           timeOne,
                                           null,
                                           threshold,
@@ -1024,7 +1024,7 @@ public class MessageFactoryTest
                                           .setMeasurementUnit( CMS.toString() )
                                           .build();
 
-        Pool pool = MessageFactory.parse( ANOTHER_FEATURE_GROUP,
+        Pool pool = MessageFactory.getPool( ANOTHER_FEATURE_GROUP,
                                           timeOne,
                                           null,
                                           threshold,

@@ -650,7 +650,9 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                       + SampleDataGroup.DISCRETE_PROBABILITY.getMetrics().size()
                       + SampleDataGroup.SINGLE_VALUED.getMetrics().size()
                       - 1,
-                      processor.metrics.getMetrics().size() );
+                      processor.getMetrics()
+                               .getMetrics()
+                               .size() );
     }
 
     @Test
@@ -822,7 +824,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup(),
+        wres.statistics.generated.Pool pool = MessageFactory.getPool( MetricTestDataFactory.getFeatureGroup(),
                                                                     expectedWindow,
                                                                     null,
                                                                     null,

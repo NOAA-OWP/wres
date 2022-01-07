@@ -703,7 +703,7 @@ public class PoolFactory
     {
         long poolId = PoolFactory.getNextPoolId();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( featureGroup,
+        wres.statistics.generated.Pool pool = MessageFactory.getPool( featureGroup,
                                                                     timeWindow, // Default to start with
                                                                     desiredTimeScale,
                                                                     null,

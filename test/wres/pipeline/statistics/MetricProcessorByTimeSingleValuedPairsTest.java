@@ -231,11 +231,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                           ThresholdDataType.LEFT,
                                                           MeasurementUnit.of( "CMS" ) ) );
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup(),
-                                                                    expectedWindow,
-                                                                    null,
-                                                                    expectedThreshold,
-                                                                    false );
+        wres.statistics.generated.Pool pool = MessageFactory.getPool( MetricTestDataFactory.getFeatureGroup(),
+                                                                      expectedWindow,
+                                                                      null,
+                                                                      expectedThreshold,
+                                                                      false );
 
         PoolMetadata expectedMeta = PoolMetadata.of( evaluation, pool );
 
@@ -282,7 +282,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         int expected = SampleDataGroup.SINGLE_VALUED.getMetrics().size()
                        + SampleDataGroup.DICHOTOMOUS.getMetrics().size()
                        - MetricConstants.CONTINGENCY_TABLE.getAllComponents().size();
-        int actual = processor.metrics.getMetrics().size();
+        int actual = processor.getMetrics()
+                              .getMetrics()
+                              .size();
 
         assertEquals( expected, actual );
     }
@@ -341,19 +343,19 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup(),
-                                                                    firstWindow,
-                                                                    null,
-                                                                    thresholds,
-                                                                    false );
+        wres.statistics.generated.Pool pool = MessageFactory.getPool( MetricTestDataFactory.getFeatureGroup(),
+                                                                      firstWindow,
+                                                                      null,
+                                                                      thresholds,
+                                                                      false );
 
         PoolMetadata m1 = PoolMetadata.of( evaluation, pool );
 
-        wres.statistics.generated.Pool poolTwo = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup(),
-                                                                       secondWindow,
-                                                                       null,
-                                                                       thresholds,
-                                                                       false );
+        wres.statistics.generated.Pool poolTwo = MessageFactory.getPool( MetricTestDataFactory.getFeatureGroup(),
+                                                                         secondWindow,
+                                                                         null,
+                                                                         thresholds,
+                                                                         false );
 
         PoolMetadata m2 = PoolMetadata.of( evaluation, poolTwo );
 
@@ -456,11 +458,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup(),
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    false );
+        wres.statistics.generated.Pool pool = MessageFactory.getPool( MetricTestDataFactory.getFeatureGroup(),
+                                                                      null,
+                                                                      null,
+                                                                      null,
+                                                                      false );
 
         PoolMetadata source = PoolMetadata.of( evaluation, pool );
 
@@ -572,11 +574,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup(),
-                                                                    timeWindow,
-                                                                    null,
-                                                                    thresholds,
-                                                                    false );
+        wres.statistics.generated.Pool pool = MessageFactory.getPool( MetricTestDataFactory.getFeatureGroup(),
+                                                                      timeWindow,
+                                                                      null,
+                                                                      thresholds,
+                                                                      false );
 
         PoolMetadata scoreMeta = PoolMetadata.of( evaluation, pool );
 
@@ -730,11 +732,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                               .setRightDataName( "HEFS" )
                                               .build();
 
-            wres.statistics.generated.Pool pool = MessageFactory.parse( featureGroup,
-                                                                        window,
-                                                                        null,
-                                                                        null,
-                                                                        false );
+            wres.statistics.generated.Pool pool = MessageFactory.getPool( featureGroup,
+                                                                          window,
+                                                                          null,
+                                                                          null,
+                                                                          false );
 
             PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
@@ -777,11 +779,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup(),
-                                                                    expectedWindow,
-                                                                    null,
-                                                                    expectedThreshold,
-                                                                    false );
+        wres.statistics.generated.Pool pool = MessageFactory.getPool( MetricTestDataFactory.getFeatureGroup(),
+                                                                      expectedWindow,
+                                                                      null,
+                                                                      expectedThreshold,
+                                                                      false );
 
         PoolMetadata expectedMeta = PoolMetadata.of( evaluation, pool );
 
@@ -841,11 +843,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                               .setMeasurementUnit( "CMS" )
                                               .build();
 
-            wres.statistics.generated.Pool pool = MessageFactory.parse( featureGroup,
-                                                                        window,
-                                                                        null,
-                                                                        null,
-                                                                        false );
+            wres.statistics.generated.Pool pool = MessageFactory.getPool( featureGroup,
+                                                                          window,
+                                                                          null,
+                                                                          null,
+                                                                          false );
 
             PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
@@ -893,11 +895,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup(),
-                                                                    timeWindow,
-                                                                    null,
-                                                                    thresholds,
-                                                                    false );
+        wres.statistics.generated.Pool pool = MessageFactory.getPool( MetricTestDataFactory.getFeatureGroup(),
+                                                                      timeWindow,
+                                                                      null,
+                                                                      thresholds,
+                                                                      false );
 
         PoolMetadata scoreMeta = PoolMetadata.of( evaluation, pool );
 
@@ -936,11 +938,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( featureGroup,
-                                                                    window,
-                                                                    null,
-                                                                    null,
-                                                                    false );
+        wres.statistics.generated.Pool pool = MessageFactory.getPool( featureGroup,
+                                                                      window,
+                                                                      null,
+                                                                      null,
+                                                                      false );
 
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
@@ -1043,8 +1045,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         ThresholdException actual = assertThrows( ThresholdException.class, () -> processor.apply( pairs ) );
 
         assertTrue( actual.getMessage()
-                    .startsWith( "Cannot add quantiles to probability thresholds without a "
-                                 + "climatological data source." ) );
+                          .startsWith( "Cannot add quantiles to probability thresholds without a "
+                                       + "climatological data source." ) );
     }
 
     @Test
@@ -1191,11 +1193,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         features.addAll( groupTwo.getFeatures() );
         FeatureGroup featureGroup = FeatureGroup.of( features );
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( featureGroup,
-                                                                    expectedWindow,
-                                                                    null,
-                                                                    expectedThreshold,
-                                                                    false );
+        wres.statistics.generated.Pool pool = MessageFactory.getPool( featureGroup,
+                                                                      expectedWindow,
+                                                                      null,
+                                                                      expectedThreshold,
+                                                                      false );
 
         PoolMetadata expectedMeta = PoolMetadata.of( evaluation, pool );
 

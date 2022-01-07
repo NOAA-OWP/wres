@@ -11,6 +11,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 
 import com.google.protobuf.Timestamp;
 
+import wres.datamodel.messages.MessageFactory;
 import wres.statistics.generated.TimeWindow;
 
 
@@ -699,57 +700,12 @@ public class TimeWindowOuter implements Comparable<TimeWindowOuter>
     private TimeWindowOuter( Builder builder )
     {
         // Set then validate
-        Instant earliestReferenceTime = builder.earliestReferenceTime;
-        Instant latestReferenceTime = builder.latestReferenceTime;
-        Instant earliestValidTime = builder.earliestValidTime;
-        Instant latestValidTime = builder.latestValidTime;
-        Duration earliestLead = builder.earliestLead;
-        Duration latestLead = builder.latestLead;
-        TimeWindow.Builder timeWindowBuilder = TimeWindow.newBuilder();
-
-        if ( Objects.nonNull( earliestReferenceTime ) )
-        {
-            timeWindowBuilder.setEarliestReferenceTime( Timestamp.newBuilder()
-                                                                 .setSeconds( earliestReferenceTime.getEpochSecond() )
-                                                                 .setNanos( earliestReferenceTime.getNano() ) );
-        }
-
-        if ( Objects.nonNull( latestReferenceTime ) )
-        {
-            timeWindowBuilder.setLatestReferenceTime( Timestamp.newBuilder()
-                                                               .setSeconds( latestReferenceTime.getEpochSecond() )
-                                                               .setNanos( latestReferenceTime.getNano() ) );
-        }
-
-        if ( Objects.nonNull( earliestValidTime ) )
-        {
-            timeWindowBuilder.setEarliestValidTime( Timestamp.newBuilder()
-                                                             .setSeconds( earliestValidTime.getEpochSecond() )
-                                                             .setNanos( earliestValidTime.getNano() ) );
-        }
-
-        if ( Objects.nonNull( latestValidTime ) )
-        {
-            timeWindowBuilder.setLatestValidTime( Timestamp.newBuilder()
-                                                           .setSeconds( latestValidTime.getEpochSecond() )
-                                                           .setNanos( latestValidTime.getNano() ) );
-        }
-
-        if ( Objects.nonNull( earliestLead ) )
-        {
-            timeWindowBuilder.setEarliestLeadDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                   .setSeconds( earliestLead.getSeconds() )
-                                                                                   .setNanos( earliestLead.getNano() ) );
-        }
-
-        if ( Objects.nonNull( latestLead ) )
-        {
-            timeWindowBuilder.setLatestLeadDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                 .setSeconds( latestLead.getSeconds() )
-                                                                                 .setNanos( latestLead.getNano() ) );
-        }
-
-        this.timeWindow = timeWindowBuilder.build();
+        this.timeWindow = MessageFactory.getTimeWindow( builder.earliestReferenceTime,
+                                                        builder.latestReferenceTime,
+                                                        builder.earliestValidTime,
+                                                        builder.latestValidTime,
+                                                        builder.earliestLead,
+                                                        builder.latestLead );
 
         // Validate
         this.validate();

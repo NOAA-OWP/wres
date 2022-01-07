@@ -70,7 +70,7 @@ public final class DataModelTestDataFactory
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( DataModelTestDataFactory.DRRC2_GROUP,
+        Pool pool = MessageFactory.getPool( DataModelTestDataFactory.DRRC2_GROUP,
                                           null,
                                           null,
                                           null,

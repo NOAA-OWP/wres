@@ -40,14 +40,14 @@
     <!-- Limit the output of JdbcOperationEvent.-->
     <event name="com.github.marschall.jfr.jdbc.JdbcOperationEvent">
       <setting name="enabled">true</setting>
-      <setting name="threshold">10 ms</setting>
+      <setting name="threshold">100 ms</setting>
       <setting name="stackTrace">true</setting>
     </event>
 
     <!-- Limit the output of JdbcCallEvent.-->
     <event name="com.github.marschall.jfr.jdbc.JdbcCallEvent">
       <setting name="enabled">true</setting>
-      <setting name="threshold">10 ms</setting>
+      <setting name="threshold">100 ms</setting>
       <setting name="stackTrace">true</setting>
     </event>
 
@@ -630,13 +630,13 @@
     <event name="jdk.FileRead">
       <setting name="enabled">true</setting>
       <setting name="stackTrace">true</setting>
-      <setting name="threshold" control="file-io-threshold">20 ms</setting>
+      <setting name="threshold" control="file-io-threshold">100 ms</setting>
     </event>
 
     <event name="jdk.FileWrite">
       <setting name="enabled">true</setting>
       <setting name="stackTrace">true</setting>
-      <setting name="threshold" control="file-io-threshold">20 ms</setting>
+      <setting name="threshold" control="file-io-threshold">100 ms</setting>
     </event>
 
     <event name="jdk.SocketRead">

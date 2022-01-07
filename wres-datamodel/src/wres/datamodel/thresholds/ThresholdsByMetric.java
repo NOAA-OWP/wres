@@ -366,18 +366,35 @@ public class ThresholdsByMetric
     {
 
         // Unconditional set
-        Set<MetricConstants> returnMe = new HashSet<>( this.getMetrics() );
+        Set<MetricConstants> metrics = this.getMetrics();
 
-        // Remove metrics not in the input group
-        if ( Objects.nonNull( inGroup ) )
+        // Create predicate to test the metric
+        Predicate<MetricConstants> tester = null;
+        if ( Objects.nonNull( inGroup ) && Objects.nonNull( outGroup ) )
         {
-            returnMe.removeIf( a -> !a.isInGroup( inGroup ) );
+            tester = a -> a.isInGroup( inGroup ) && a.isInGroup( outGroup );
+        }
+        else if ( Objects.nonNull( inGroup ) )
+        {
+            tester = a -> a.isInGroup( inGroup );
+        }
+        else if ( Objects.nonNull( outGroup ) )
+        {
+            tester = a -> a.isInGroup( outGroup );
+        }
+        else
+        {
+            tester = a -> true;
         }
 
-        // Remove metrics not in the output group
-        if ( Objects.nonNull( outGroup ) )
+        // Create the subset
+        Set<MetricConstants> returnMe = new HashSet<>();
+        for ( MetricConstants next : metrics )
         {
-            returnMe.removeIf( a -> !a.isInGroup( outGroup ) );
+            if ( tester.test( next ) )
+            {
+                returnMe.add( next );
+            }
         }
 
         return Collections.unmodifiableSet( returnMe );
@@ -408,16 +425,13 @@ public class ThresholdsByMetric
         List<ThresholdGroup> groupList = Arrays.asList( group );
 
         // Add the stored types within the input array
-        if ( Objects.nonNull( group ) )
+        for ( ThresholdGroup nextType : ThresholdGroup.values() )
         {
-            for ( ThresholdGroup nextType : ThresholdGroup.values() )
+            // Filter by type
+            if ( groupList.contains( nextType ) )
             {
-                // Filter by type
-                if ( groupList.contains( nextType ) )
-                {
-                    Map<MetricConstants, Set<ThresholdOuter>> thresholds = this.getThresholds( nextType );
-                    builder.addThresholds( thresholds, nextType );
-                }
+                Map<MetricConstants, Set<ThresholdOuter>> thresholds = this.getThresholds( nextType );
+                builder.addThresholds( thresholds, nextType );
             }
         }
 
@@ -463,51 +477,6 @@ public class ThresholdsByMetric
         }
 
         return builder.build();
-    }
-
-    /**
-     * Returns true if metrics are available for the input {@link SampleDataGroup} and {@link StatisticType}, false
-     * otherwise.
-     * 
-     * @param inGroup the {@link SampleDataGroup}
-     * @param outGroup the {@link StatisticType}
-     * @return true if metrics are available for the input {@link SampleDataGroup} and {@link StatisticType}, false
-     *         otherwise
-     */
-
-    public boolean hasMetrics( SampleDataGroup inGroup, StatisticType outGroup )
-    {
-        return !this.getMetrics( inGroup, outGroup )
-                    .isEmpty();
-    }
-
-    /**
-     * Returns true if metrics are available for the input {@link SampleDataGroup}, false otherwise.
-     * 
-     * @param inGroup the {@link SampleDataGroup}
-     * @return true if metrics are available for the input {@link SampleDataGroup} false otherwise
-     */
-
-    public boolean hasMetrics( SampleDataGroup inGroup )
-    {
-        return this.getMetrics()
-                   .stream()
-                   .anyMatch( a -> a.isInGroup( inGroup ) );
-
-    }
-
-    /**
-     * Returns true if metrics are available for the input {@link StatisticType}, false otherwise.
-     * 
-     * @param outGroup the {@link StatisticType}
-     * @return true if metrics are available for the input {@link StatisticType} false otherwise
-     */
-
-    public boolean hasMetrics( StatisticType outGroup )
-    {
-        return this.getMetrics()
-                   .stream()
-                   .anyMatch( a -> a.isInGroup( outGroup ) );
     }
 
     @Override

@@ -82,7 +82,9 @@ import wres.statistics.generated.ValueFilter;
 import wres.statistics.generated.Evaluation.DefaultData;
 
 /**
- * Creates statistics messages in protobuf format from internal representations.
+ * A factory class for mapping between canonical (protobuf) representations and corresponding Java representations, 
+ * which often provide extra behavior. The "parse" methods provide a direct (one-to-one) translation in each direction
+ * and the "get" methods involve an indirect or one-to-many/many-to-one translation.
  *
  * @author James Brown
  */
@@ -103,7 +105,7 @@ public class MessageFactory
      * @throws InterruptedException if the statistics could not be retrieved from the project
      */
 
-    public static Collection<Statistics> parse( StatisticsStore project )
+    public static Collection<Statistics> getStatistics( StatisticsStore project )
             throws InterruptedException
     {
         Objects.requireNonNull( project );
@@ -127,64 +129,6 @@ public class MessageFactory
     }
 
     /**
-     * Creates an evaluation from a project declaration.
-     * 
-     * @param projectConfigPlus the project declaration plus graphics strings
-     * @return an evaluation
-     * @throws NullPointerException if the project is null
-     */
-
-    public static Evaluation parse( ProjectConfigPlus projectConfigPlus )
-    {
-        Objects.requireNonNull( projectConfigPlus );
-
-        Evaluation.Builder builder = Evaluation.newBuilder();
-
-        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
-
-        // Add the inputs and default baseline, as needed
-        MessageFactory.addInputs( projectConfig.getInputs(), builder );
-        MessageFactory.addDefaultBaseline( projectConfig, builder );
-
-        // Populate the evaluation from the supplied information as reasonably as possible
-        if ( Objects.nonNull( projectConfig.getPair() ) && Objects.nonNull( projectConfig.getPair().getUnit() ) )
-        {
-            builder.setMeasurementUnit( projectConfig.getPair().getUnit() );
-
-            LOGGER.debug( "Populated the evaluation with a measurement unit of {}.",
-                          projectConfig.getPair().getUnit() );
-        }
-
-        if ( Objects.nonNull( projectConfig.getPair() ) && Objects.nonNull( projectConfig.getPair().getSeason() ) )
-        {
-            Season season = MessageFactory.parse( projectConfig.getPair().getSeason() );
-            builder.setSeason( season );
-
-            LOGGER.debug( "Populated the evaluation with a season of {}.",
-                          season );
-        }
-
-        if ( Objects.nonNull( projectConfig.getPair() ) && Objects.nonNull( projectConfig.getPair().getValues() ) )
-        {
-            ValueFilter filter = MessageFactory.parse( projectConfig.getPair().getValues() );
-            builder.setValueFilter( filter );
-
-            LOGGER.debug( "Populated the evaluation with a value filter of {}.",
-                          projectConfig.getPair().getValues() );
-        }
-
-        if ( Objects.nonNull( projectConfig.getOutputs() ) )
-        {
-            MessageFactory.addOutputs( projectConfigPlus, builder );
-
-            LOGGER.debug( "Populated the evaluation with outputs of {}.",
-                          builder.getOutputs() );
-        }
-
-        return builder.build();
-    }
-
-    /**
      * Builds a pool from the input, some of which may be missing. The pool is assigned the default identifier.
      * 
      * @param featureGroup the feature group
@@ -195,15 +139,15 @@ public class MessageFactory
      * @return the pool
      */
 
-    public static Pool parse( FeatureGroup featureGroup,
-                              TimeWindowOuter timeWindow,
-                              TimeScaleOuter timeScale,
-                              OneOrTwoThresholds thresholds,
-                              boolean isBaselinePool )
+    public static Pool getPool( FeatureGroup featureGroup,
+                                TimeWindowOuter timeWindow,
+                                TimeScaleOuter timeScale,
+                                OneOrTwoThresholds thresholds,
+                                boolean isBaselinePool )
     {
-        return MessageFactory.parse( featureGroup, timeWindow, timeScale, thresholds, isBaselinePool, 0 );
+        return MessageFactory.getPool( featureGroup, timeWindow, timeScale, thresholds, isBaselinePool, 0 );
     }
-    
+
     /**
      * Builds a pool from the input, some of which may be missing.
      * 
@@ -216,12 +160,12 @@ public class MessageFactory
      * @return the pool
      */
 
-    public static Pool parse( FeatureGroup featureGroup,
-                              TimeWindowOuter timeWindow,
-                              TimeScaleOuter timeScale,
-                              OneOrTwoThresholds thresholds,
-                              boolean isBaselinePool,
-                              long poolId )
+    public static Pool getPool( FeatureGroup featureGroup,
+                                TimeWindowOuter timeWindow,
+                                TimeScaleOuter timeScale,
+                                OneOrTwoThresholds thresholds,
+                                boolean isBaselinePool,
+                                long poolId )
     {
         Pool.Builder poolBuilder = Pool.newBuilder()
                                        .setIsBaselinePool( isBaselinePool )
@@ -295,7 +239,7 @@ public class MessageFactory
      */
 
     public static Pairs
-            parseTimeSeriesOfEnsemblePairs( wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> pairs )
+            getTimeSeriesOfEnsemblePairs( wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> pairs )
     {
         Objects.requireNonNull( pairs );
 
@@ -341,6 +285,244 @@ public class MessageFactory
             }
 
             builder.addTimeSeries( series );
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Returns the graphical destinations associated with the outputs message.
+     * 
+     * @param outputs the outputs message
+     * @return the graphical destinations
+     * @throws NullPointerException if the input is null 
+     */
+
+    public static Set<DestinationType> getGraphicsTypes( Outputs outputs )
+    {
+        Objects.requireNonNull( outputs );
+
+        Set<DestinationType> returnMe = new HashSet<>();
+
+        if ( outputs.hasPng() )
+        {
+            returnMe.add( DestinationType.PNG );
+            returnMe.add( DestinationType.GRAPHIC );
+        }
+
+        if ( outputs.hasSvg() )
+        {
+            returnMe.add( DestinationType.SVG );
+        }
+
+        return Collections.unmodifiableSet( returnMe );
+    }
+
+    /**
+     * Uncovers a set of declared formats from a description of the outputs.
+     * 
+     * @param outputs the outputs that declare the formats to write
+     * @return the declared formats to write
+     */
+
+    public static Set<Format> getDeclaredFormats( Outputs outputs )
+    {
+        return wres.statistics.MessageUtilities.getDeclaredFormats( outputs );
+    }
+
+    /**
+     * Creates a geometry from the input.
+     * @param name the name, optional
+     * @param description the description, optional
+     * @param srid the spatial reference id, optional
+     * @param wkt the well-known text string, optional
+     * @return the geometry
+     */
+
+    public static Geometry getGeometry( String name,
+                                        String description,
+                                        Integer srid,
+                                        String wkt )
+    {
+        Geometry.Builder builder = Geometry.newBuilder();
+
+        if ( Objects.nonNull( name ) )
+        {
+            builder.setName( name );
+        }
+
+        if ( Objects.nonNull( description ) )
+        {
+            builder.setDescription( description );
+        }
+
+        if ( Objects.nonNull( srid ) )
+        {
+            builder.setSrid( srid );
+        }
+
+        if ( Objects.nonNull( wkt ) )
+        {
+            builder.setWkt( wkt );
+        }
+
+        if ( LOGGER.isTraceEnabled() )
+        {
+            LOGGER.trace( "Created a new geometry with name '{}', description '{}', srid '{}', and wkt '{}'.",
+                          name,
+                          description,
+                          srid,
+                          wkt );
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Creates a geometry from the input.
+     * @param name the name
+     * @return geometry
+     */
+
+    public static Geometry getGeometry( String name )
+    {
+        return MessageFactory.getGeometry( name, null, null, null );
+    }
+
+    /**
+     * Creates a {@link wres.statistics.generated.TimeWindow} from the input. Times on the lower and upper bounds 
+     * default to {@link Instant#MIN} and {@link Instant#MAX}, respectively. Durations on the lower and upper bounds 
+     * default to {@link TimeWindowOuter#DURATION_MIN} and {@link TimeWindowOuter#DURATION_MAX}, respectively.
+     * 
+     * @param earliestReferenceTime the earliest reference time, optional
+     * @param latestReferenceTime the latest reference time, optional
+     * @param earliestValidTime the earliest valid time, optional
+     * @param latestValidTime the latest valid time, optional 
+     * @param earliestLead the earliest lead time, optional
+     * @param latestLead the latest lead time, optional
+     * @return the time window
+     */
+
+    public static TimeWindow getTimeWindow( Instant earliestReferenceTime,
+                                            Instant latestReferenceTime,
+                                            Instant earliestValidTime,
+                                            Instant latestValidTime,
+                                            java.time.Duration earliestLead,
+                                            java.time.Duration latestLead )
+    {
+        Instant earliestR = Instant.MIN;
+        Instant latestR = Instant.MAX;
+        Instant earliestV = Instant.MIN;
+        Instant latestV = Instant.MAX;
+        java.time.Duration earliestL = TimeWindowOuter.DURATION_MIN;
+        java.time.Duration latestL = TimeWindowOuter.DURATION_MAX;
+
+        if ( Objects.nonNull( earliestReferenceTime ) )
+        {
+            earliestR = earliestReferenceTime;
+        }
+
+        if ( Objects.nonNull( latestReferenceTime ) )
+        {
+            latestR = latestReferenceTime;
+        }
+
+        if ( Objects.nonNull( earliestValidTime ) )
+        {
+            earliestV = earliestValidTime;
+        }
+
+        if ( Objects.nonNull( latestValidTime ) )
+        {
+            latestV = latestValidTime;
+        }
+
+        if ( Objects.nonNull( earliestLead ) )
+        {
+            earliestL = earliestLead;
+        }
+
+        if ( Objects.nonNull( latestLead ) )
+        {
+            latestL = latestLead;
+        }
+        
+        if ( LOGGER.isTraceEnabled() )
+        {
+            LOGGER.trace( "Created a new time window with an earliest reference time of {}, a latest reference time "
+                          + "of {}, an earliest valid time of {}, a latest valid time of {}, an earliest lead duration "
+                          + "of {} and a latest lead duration of {}.",
+                          earliestR,
+                          latestR,
+                          earliestV,
+                          latestV,
+                          earliestL,
+                          latestL );
+        }
+
+        return TimeWindow.newBuilder()
+                         .setEarliestReferenceTime( MessageFactory.parse( earliestR ) )
+                         .setLatestReferenceTime( MessageFactory.parse( latestR ) )
+                         .setEarliestValidTime( MessageFactory.parse( earliestV ) )
+                         .setLatestValidTime( MessageFactory.parse( latestV ) )
+                         .setEarliestLeadDuration( MessageFactory.parse( earliestL ) )
+                         .setLatestLeadDuration( MessageFactory.parse( latestL ) )
+                         .build();
+    }
+
+    /**
+     * Creates an evaluation from a project declaration.
+     * 
+     * @param projectConfigPlus the project declaration plus graphics strings
+     * @return an evaluation
+     * @throws NullPointerException if the project is null
+     */
+
+    public static Evaluation parse( ProjectConfigPlus projectConfigPlus )
+    {
+        Objects.requireNonNull( projectConfigPlus );
+
+        Evaluation.Builder builder = Evaluation.newBuilder();
+
+        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+
+        // Add the inputs and default baseline, as needed
+        MessageFactory.addInputs( projectConfig.getInputs(), builder );
+        MessageFactory.addDefaultBaseline( projectConfig, builder );
+
+        // Populate the evaluation from the supplied information as reasonably as possible
+        if ( Objects.nonNull( projectConfig.getPair() ) && Objects.nonNull( projectConfig.getPair().getUnit() ) )
+        {
+            builder.setMeasurementUnit( projectConfig.getPair().getUnit() );
+
+            LOGGER.debug( "Populated the evaluation with a measurement unit of {}.",
+                          projectConfig.getPair().getUnit() );
+        }
+
+        if ( Objects.nonNull( projectConfig.getPair() ) && Objects.nonNull( projectConfig.getPair().getSeason() ) )
+        {
+            Season season = MessageFactory.parse( projectConfig.getPair().getSeason() );
+            builder.setSeason( season );
+
+            LOGGER.debug( "Populated the evaluation with a season of {}.",
+                          season );
+        }
+
+        if ( Objects.nonNull( projectConfig.getPair() ) && Objects.nonNull( projectConfig.getPair().getValues() ) )
+        {
+            ValueFilter filter = MessageFactory.parse( projectConfig.getPair().getValues() );
+            builder.setValueFilter( filter );
+
+            LOGGER.debug( "Populated the evaluation with a value filter of {}.",
+                          projectConfig.getPair().getValues() );
+        }
+
+        if ( Objects.nonNull( projectConfig.getOutputs() ) )
+        {
+            MessageFactory.addOutputs( projectConfigPlus, builder );
+
+            LOGGER.debug( "Populated the evaluation with outputs of {}.",
+                          builder.getOutputs() );
         }
 
         return builder.build();
@@ -448,6 +630,37 @@ public class MessageFactory
                        .setSeconds( duration.getSeconds() )
                        .setNanos( duration.getNano() )
                        .build();
+    }
+
+    /**
+     * Creates a {@link java.time.Instant} from a {@link Timestamp}.
+     *
+     * @param timeStamp the time stamp to parse
+     * @return the instant
+     */
+
+    public static java.time.Instant parse( Timestamp timeStamp )
+    {
+        Objects.requireNonNull( timeStamp );
+
+        return java.time.Instant.ofEpochSecond( timeStamp.getSeconds(), timeStamp.getNanos() );
+    }
+
+    /**
+     * Creates a {@link Timestamp} from a {@link java.time.Instant}.
+     *
+     * @param instant the instant to parse
+     * @return the time stamp
+     */
+
+    public static Timestamp parse( java.time.Instant instant )
+    {
+        Objects.requireNonNull( instant );
+
+        return Timestamp.newBuilder()
+                        .setSeconds( instant.getEpochSecond() )
+                        .setNanos( instant.getNano() )
+                        .build();
     }
 
     /**
@@ -639,105 +852,6 @@ public class MessageFactory
     }
 
     /**
-     * Returns the graphical destinations associated with the outputs message.
-     * 
-     * @param outputs the outputs message
-     * @return the graphical destinations
-     * @throws NullPointerException if the input is null 
-     */
-
-    public static Set<DestinationType> getGraphicsTypes( Outputs outputs )
-    {
-        Objects.requireNonNull( outputs );
-
-        Set<DestinationType> returnMe = new HashSet<>();
-
-        if ( outputs.hasPng() )
-        {
-            returnMe.add( DestinationType.PNG );
-            returnMe.add( DestinationType.GRAPHIC );
-        }
-
-        if ( outputs.hasSvg() )
-        {
-            returnMe.add( DestinationType.SVG );
-        }
-
-        return Collections.unmodifiableSet( returnMe );
-    }
-
-    /**
-     * Uncovers a set of declared formats from a description of the outputs.
-     * 
-     * @param outputs the outputs that declare the formats to write
-     * @return the declared formats to write
-     */
-
-    public static Set<Format> getDeclaredFormats( Outputs outputs )
-    {
-        return wres.statistics.MessageUtilities.getDeclaredFormats( outputs );
-    }
-
-    /**
-     * Creates a geometry from the input.
-     * @param name the name, optional
-     * @param description the description, optional
-     * @param srid the spatial reference id, optional
-     * @param wkt the well-known text string, optional
-     * @return the geometry
-     */
-
-    public static Geometry getGeometry( String name,
-                                        String description,
-                                        Integer srid,
-                                        String wkt )
-    {
-        Geometry.Builder builder = Geometry.newBuilder();
-
-        if ( Objects.nonNull( name ) )
-        {
-            builder.setName( name );
-        }
-
-        if ( Objects.nonNull( description ) )
-        {
-            builder.setDescription( description );
-        }
-
-        if ( Objects.nonNull( srid ) )
-        {
-            builder.setSrid( srid );
-        }
-
-        if ( Objects.nonNull( wkt ) )
-        {
-            builder.setWkt( wkt );
-        }
-
-        if ( LOGGER.isTraceEnabled() )
-        {
-            LOGGER.trace( "Created a new geometry with name '{}', description '{}', srid '{}', and wkt '{}'.",
-                          name,
-                          description,
-                          srid,
-                          wkt );
-        }
-
-        return builder.build();
-    }
-
-    /**
-     * Creates a geometry from the input.
-     * @param name the name
-     * @return geometry
-     */
-
-    public static Geometry getGeometry( String name )
-    {
-        return MessageFactory.getGeometry( name, null, null, null );
-    }
-
-    /**
      * Creates a collection of {@link wres.statistics.generated.Statistics} by pool from a
      * {@link wres.datamodel.statistics.StatisticsStore}.
      * 
@@ -761,7 +875,7 @@ public class MessageFactory
         {
             Pool prototypeSample = statistics.getPool();
             Pool.Builder sampleBuilder = Pool.newBuilder( prototypeSample );
-            sampleBuilder.setPairs( MessageFactory.parseTimeSeriesOfEnsemblePairs( pairs ) );
+            sampleBuilder.setPairs( MessageFactory.getTimeSeriesOfEnsemblePairs( pairs ) );
             statistics.setPool( sampleBuilder );
         }
 
@@ -945,7 +1059,7 @@ public class MessageFactory
         for ( StatisticsStore.Builder builder : mappedStatistics.values() )
         {
             StatisticsStore statistics = builder.setMinimumSampleSize( project.getMinimumSampleSize() )
-                                                     .build();
+                                                .build();
             returnMe.add( statistics );
         }
 

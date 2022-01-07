@@ -79,7 +79,7 @@ public final class BoxPlotStatisticOuterTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l2, l2, l2 ) ),
+        Pool pool = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l2, l2, l2 ) ),
                                           null,
                                           null,
                                           null,
@@ -107,7 +107,7 @@ public final class BoxPlotStatisticOuterTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l1, l1, l1 ) ),
+        Pool pool = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l1, l1, l1 ) ),
                                           null,
                                           null,
                                           null,
@@ -118,7 +118,7 @@ public final class BoxPlotStatisticOuterTest
         FeatureKey l2 = FeatureKey.of(
                                        MessageFactory.getGeometry( "A" ) );
 
-        Pool poolTwo = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l2, l2, l2 ) ),
+        Pool poolTwo = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l2, l2, l2 ) ),
                                              null,
                                              null,
                                              null,
@@ -130,7 +130,7 @@ public final class BoxPlotStatisticOuterTest
         FeatureKey l3 = FeatureKey.of(
                                        MessageFactory.getGeometry( "B" ) );
 
-        Pool poolThree = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l3, l3, l3 ) ),
+        Pool poolThree = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l3, l3, l3 ) ),
                                                null,
                                                null,
                                                null,
@@ -294,7 +294,7 @@ public final class BoxPlotStatisticOuterTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l2, l2, l2 ) ),
+        Pool pool = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l2, l2, l2 ) ),
                                           null,
                                           null,
                                           null,
