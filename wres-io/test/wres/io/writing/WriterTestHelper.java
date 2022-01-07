@@ -170,7 +170,7 @@ public class WriterTestHelper
                                                       feature,
                                                       null );
         FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
-        Pool pool = MessageFactory.parse( featureGroup,
+        Pool pool = MessageFactory.getPool( featureGroup,
                                           timeOne,
                                           null,
                                           threshold,
@@ -205,7 +205,7 @@ public class WriterTestHelper
                                     Duration.ofHours( 48 ),
                                     Duration.ofHours( 48 ) );
 
-        Pool poolTwo = MessageFactory.parse( featureGroup,
+        Pool poolTwo = MessageFactory.getPool( featureGroup,
                                              timeTwo,
                                              null,
                                              threshold,
@@ -265,7 +265,7 @@ public class WriterTestHelper
                                                       null );
         FeatureGroup featureGroup = FeatureGroup.of( "JUNP1-JUNP1", featureTuple );
 
-        Pool pool = MessageFactory.parse( featureGroup,
+        Pool pool = MessageFactory.getPool( featureGroup,
                                           timeOne,
                                           null,
                                           threshold,
@@ -348,7 +348,7 @@ public class WriterTestHelper
                                                       null );
         FeatureGroup featureGroup = FeatureGroup.of( "CREC1-CREC1", featureTuple );
 
-        Pool pool = MessageFactory.parse( featureGroup,
+        Pool pool = MessageFactory.getPool( featureGroup,
                                           timeOne,
                                           null,
                                           threshold,
@@ -446,7 +446,7 @@ public class WriterTestHelper
                                                       null );
         FeatureGroup featureGroup = FeatureGroup.of( "FTSC1-FTSC1", featureTuple );
 
-        Pool pool = MessageFactory.parse( featureGroup,
+        Pool pool = MessageFactory.getPool( featureGroup,
                                           timeOne,
                                           null,
                                           threshold,
@@ -539,7 +539,7 @@ public class WriterTestHelper
                                                       null );
         FeatureGroup featureGroup = FeatureGroup.of( "DRRC2-DRRC2", featureTuple );
 
-        Pool pool = MessageFactory.parse( featureGroup,
+        Pool pool = MessageFactory.getPool( featureGroup,
                                           timeOne,
                                           null,
                                           threshold,
@@ -631,7 +631,7 @@ public class WriterTestHelper
                                                       null );
         FeatureGroup featureGroup = FeatureGroup.of( "DOLC2-DOLC2", featureTuple );
 
-        Pool pool = MessageFactory.parse( featureGroup,
+        Pool pool = MessageFactory.getPool( featureGroup,
                                           timeOne,
                                           null,
                                           threshold,
@@ -703,7 +703,7 @@ public class WriterTestHelper
                                                       null );
         FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
 
-        Pool pool = MessageFactory.parse( featureGroup,
+        Pool pool = MessageFactory.getPool( featureGroup,
                                           timeOne,
                                           null,
                                           thresholdOne,
@@ -729,7 +729,7 @@ public class WriterTestHelper
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        Pool poolTwo = MessageFactory.parse( featureGroup,
+        Pool poolTwo = MessageFactory.getPool( featureGroup,
                                              timeOne,
                                              null,
                                              thresholdTwo,
@@ -743,7 +743,7 @@ public class WriterTestHelper
         // Add data for another time, and one threshold only
         TimeWindowOuter timeTwo = TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
 
-        Pool poolThree = MessageFactory.parse( featureGroup,
+        Pool poolThree = MessageFactory.getPool( featureGroup,
                                                timeTwo,
                                                null,
                                                thresholdOne,

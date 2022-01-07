@@ -368,7 +368,7 @@ public abstract class Chart2DTestDataGenerator
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( FEATURE_GROUP,
+        Pool pool = MessageFactory.getPool( FEATURE_GROUP,
                                           null,
                                           null,
                                           threshold,
@@ -491,7 +491,7 @@ public abstract class Chart2DTestDataGenerator
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( FEATURE_GROUP,
+        Pool pool = MessageFactory.getPool( FEATURE_GROUP,
                                           null,
                                           null,
                                           threshold,
@@ -712,7 +712,7 @@ public abstract class Chart2DTestDataGenerator
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( FEATURE_GROUP,
+        Pool pool = MessageFactory.getPool( FEATURE_GROUP,
                                           window,
                                           null,
                                           threshold,
@@ -757,7 +757,7 @@ public abstract class Chart2DTestDataGenerator
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( FEATURE_GROUP,
+        Pool pool = MessageFactory.getPool( FEATURE_GROUP,
                                           window,
                                           null,
                                           threshold,

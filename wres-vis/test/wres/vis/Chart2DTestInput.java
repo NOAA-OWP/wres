@@ -52,7 +52,7 @@ public class Chart2DTestInput extends TestCase
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        wres.statistics.generated.Pool pool = MessageFactory.parse( FEATURE_GROUP,
+        wres.statistics.generated.Pool pool = MessageFactory.getPool( FEATURE_GROUP,
                                                                     null,
                                                                     null,
                                                                     null,

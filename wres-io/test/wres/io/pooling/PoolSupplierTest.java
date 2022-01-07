@@ -422,7 +422,7 @@ public class PoolSupplierTest
                                                       FEATURE,
                                                       FEATURE );
         FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
-        wres.statistics.generated.Pool pool = MessageFactory.parse( featureGroup,
+        wres.statistics.generated.Pool pool = MessageFactory.getPool( featureGroup,
                                                                     null,
                                                                     null,
                                                                     null,

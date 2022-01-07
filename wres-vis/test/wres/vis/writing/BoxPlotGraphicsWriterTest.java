@@ -157,7 +157,7 @@ public class BoxPlotGraphicsWriterTest
 
         FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
 
-        Pool pool = MessageFactory.parse( featureGroup,
+        Pool pool = MessageFactory.getPool( featureGroup,
                                           timeOne,
                                           null,
                                           threshold,
@@ -191,7 +191,7 @@ public class BoxPlotGraphicsWriterTest
                                     Duration.ofHours( 48 ),
                                     Duration.ofHours( 48 ) );
 
-        Pool poolTwo = MessageFactory.parse( featureGroup,
+        Pool poolTwo = MessageFactory.getPool( featureGroup,
                                              timeTwo,
                                              null,
                                              threshold,
@@ -250,7 +250,7 @@ public class BoxPlotGraphicsWriterTest
 
         FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
 
-        Pool pool = MessageFactory.parse( featureGroup,
+        Pool pool = MessageFactory.getPool( featureGroup,
                                           timeOne,
                                           null,
                                           threshold,

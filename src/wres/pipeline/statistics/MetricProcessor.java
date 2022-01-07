@@ -60,8 +60,20 @@ public abstract class MetricProcessor<S extends Pool<?>> implements Function<S, 
      * The all data threshold.
      */
 
-    final ThresholdOuter allDataThreshold;
+    private final ThresholdOuter allDataThreshold;
 
+    /**
+     * The metrics by threshold and feature.
+     */
+
+    private final ThresholdsByMetricAndFeature metrics;
+    
+    /**
+     * The raw metrics (the union for all thresholds and features).
+     */
+
+    private final Set<MetricConstants> rawMetrics;
+    
     /**
      * A {@link MetricCollection} of {@link Metric} that consume single-valued pairs and produce {@link ScoreStatistic}.
      */
@@ -87,13 +99,7 @@ public abstract class MetricProcessor<S extends Pool<?>> implements Function<S, 
      */
 
     final MetricCollection<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> dichotomousScalar;
-
-    /**
-     * The metrics to process.
-     */
-
-    final ThresholdsByMetricAndFeature metrics;
-
+    
     /**
      * An {@link ExecutorService} used to process the thresholds.
      */
@@ -123,11 +129,8 @@ public abstract class MetricProcessor<S extends Pool<?>> implements Function<S, 
 
     boolean hasMetrics( SampleDataGroup inGroup, StatisticType outGroup )
     {
-        return this.getMetrics()
-                   .getThresholdsByMetricAndFeature()
-                   .values()
-                   .stream()
-                   .anyMatch( next -> next.hasMetrics( inGroup, outGroup ) );
+        return this.rawMetrics.stream()
+                              .anyMatch( next -> next.isInGroup( inGroup ) && next.isInGroup( outGroup ) );
     }
 
     /**
@@ -139,11 +142,8 @@ public abstract class MetricProcessor<S extends Pool<?>> implements Function<S, 
 
     boolean hasMetrics( SampleDataGroup inGroup )
     {
-        return this.getMetrics()
-                   .getThresholdsByMetricAndFeature()
-                   .values()
-                   .stream()
-                   .anyMatch( next -> next.hasMetrics( inGroup ) );
+        return this.rawMetrics.stream()
+                              .anyMatch( next -> next.isInGroup( inGroup ) );
     }
 
     /**
@@ -155,11 +155,8 @@ public abstract class MetricProcessor<S extends Pool<?>> implements Function<S, 
 
     boolean hasMetrics( StatisticType outGroup )
     {
-        return this.getMetrics()
-                   .getThresholdsByMetricAndFeature()
-                   .values()
-                   .stream()
-                   .anyMatch( next -> next.hasMetrics( outGroup ) );
+        return this.rawMetrics.stream()
+                              .anyMatch( next -> next.isInGroup( outGroup ) );
     }
 
     /**
@@ -184,7 +181,8 @@ public abstract class MetricProcessor<S extends Pool<?>> implements Function<S, 
         Objects.requireNonNull( metrics, "Specify a non-null collection of metrics to process." );
 
         this.metrics = metrics;
-
+        this.rawMetrics = this.metrics.getMetrics();
+        
         LOGGER.debug( "Based on the project declaration, the following metrics will be computed: {}.", this.metrics );
 
         //Construct the metrics that are common to more than one type of input pairs

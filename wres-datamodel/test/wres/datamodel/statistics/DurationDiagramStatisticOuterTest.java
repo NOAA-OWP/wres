@@ -72,7 +72,7 @@ public final class DurationDiagramStatisticOuterTest
                                           .build();
 
 
-        Pool pool = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( feature, feature, feature ) ),
+        Pool pool = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( feature, feature, feature ) ),
                                           null,
                                           null,
                                           null,
@@ -100,7 +100,7 @@ public final class DurationDiagramStatisticOuterTest
                                           .build();
 
 
-        Pool pool = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l2, l2, l2 ) ),
+        Pool pool = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l2, l2, l2 ) ),
                                           null,
                                           null,
                                           null,
@@ -111,7 +111,7 @@ public final class DurationDiagramStatisticOuterTest
         FeatureKey l3 = FeatureKey.of(
                                        MessageFactory.getGeometry( "B" ) );
 
-        Pool poolTwo = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l3, l3, l3 ) ),
+        Pool poolTwo = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l3, l3, l3 ) ),
                                              null,
                                              null,
                                              null,
@@ -228,7 +228,7 @@ public final class DurationDiagramStatisticOuterTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l2, l2, l2 ) ),
+        Pool pool = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l2, l2, l2 ) ),
                                           null,
                                           null,
                                           null,

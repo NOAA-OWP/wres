@@ -157,7 +157,7 @@ public final class MetricTestDataFactory
                                           .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
                                           .build();
 
-        Pool pool = MessageFactory.parse( MetricTestDataFactory.FEATURE_GROUP,
+        Pool pool = MessageFactory.getPool( MetricTestDataFactory.FEATURE_GROUP,
                                           null,
                                           null,
                                           null,
@@ -217,7 +217,7 @@ public final class MetricTestDataFactory
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( featureGroup,
+        Pool pool = MessageFactory.getPool( featureGroup,
                                           window,
                                           null,
                                           null,
@@ -267,7 +267,7 @@ public final class MetricTestDataFactory
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( featureGroup,
+        Pool pool = MessageFactory.getPool( featureGroup,
                                           window,
                                           null,
                                           null,
@@ -306,7 +306,7 @@ public final class MetricTestDataFactory
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( featureGroup,
+        Pool pool = MessageFactory.getPool( featureGroup,
                                           window,
                                           null,
                                           null,
@@ -354,7 +354,7 @@ public final class MetricTestDataFactory
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( MetricTestDataFactory.getFeatureGroup(),
+        Pool pool = MessageFactory.getPool( MetricTestDataFactory.getFeatureGroup(),
                                           window,
                                           null,
                                           null,
@@ -448,7 +448,7 @@ public final class MetricTestDataFactory
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( featureGroup,
+        Pool pool = MessageFactory.getPool( featureGroup,
                                           timeWindow,
                                           null,
                                           null,
@@ -484,7 +484,7 @@ public final class MetricTestDataFactory
                                           .setMeasurementUnit( MM_DAY )
                                           .build();
 
-        Pool pool = MessageFactory.parse( featureGroup,
+        Pool pool = MessageFactory.getPool( featureGroup,
                                           window,
                                           null,
                                           null,
@@ -545,7 +545,7 @@ public final class MetricTestDataFactory
         features.addAll( groupTwo.getFeatures() );
         FeatureGroup featureGroup = FeatureGroup.of( features );
 
-        Pool pool = MessageFactory.parse( featureGroup,
+        Pool pool = MessageFactory.getPool( featureGroup,
                                           timeWindow,
                                           null,
                                           null,
@@ -605,7 +605,7 @@ public final class MetricTestDataFactory
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( featureGroup,
+        Pool pool = MessageFactory.getPool( featureGroup,
                                           window,
                                           null,
                                           null,
@@ -613,7 +613,7 @@ public final class MetricTestDataFactory
 
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
-        Pool poolTwo = MessageFactory.parse( featureGroup,
+        Pool poolTwo = MessageFactory.getPool( featureGroup,
                                              window,
                                              null,
                                              null,
@@ -691,7 +691,7 @@ public final class MetricTestDataFactory
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( featureGroup,
+        Pool pool = MessageFactory.getPool( featureGroup,
                                           window,
                                           null,
                                           null,
@@ -699,7 +699,7 @@ public final class MetricTestDataFactory
 
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
-        Pool poolTwo = MessageFactory.parse( featureGroup,
+        Pool poolTwo = MessageFactory.getPool( featureGroup,
                                              window,
                                              null,
                                              null,
@@ -770,7 +770,7 @@ public final class MetricTestDataFactory
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.parse( featureGroup,
+        Pool pool = MessageFactory.getPool( featureGroup,
                                           window,
                                           null,
                                           null,
@@ -811,7 +811,7 @@ public final class MetricTestDataFactory
                                           .setMeasurementUnit( MM_DAY )
                                           .build();
 
-        Pool pool = MessageFactory.parse( featureGroup,
+        Pool pool = MessageFactory.getPool( featureGroup,
                                           window,
                                           null,
                                           null,
@@ -847,7 +847,7 @@ public final class MetricTestDataFactory
                                           .setMeasurementUnit( MM_DAY )
                                           .build();
 
-        Pool pool = MessageFactory.parse( featureGroup,
+        Pool pool = MessageFactory.getPool( featureGroup,
                                           window,
                                           null,
                                           null,
@@ -855,7 +855,7 @@ public final class MetricTestDataFactory
 
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
-        Pool basePool = MessageFactory.parse( featureGroup,
+        Pool basePool = MessageFactory.getPool( featureGroup,
                                               window,
                                               null,
                                               null,

@@ -123,7 +123,7 @@ public final class EnsemblePairsWriterTest
                                                       null );
         FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
 
-        Pool pool = MessageFactory.parse( featureGroup,
+        Pool pool = MessageFactory.getPool( featureGroup,
                                           null,
                                           null,
                                           null,
@@ -163,7 +163,7 @@ public final class EnsemblePairsWriterTest
                                                          null );
         FeatureGroup featureGroupTwo = FeatureGroup.of( featureTupleTwo );
 
-        Pool poolTwo = MessageFactory.parse( featureGroupTwo,
+        Pool poolTwo = MessageFactory.getPool( featureGroupTwo,
                                              null,
                                              null,
                                              null,
@@ -205,7 +205,7 @@ public final class EnsemblePairsWriterTest
                                                            null );
         FeatureGroup featureGroupThree = FeatureGroup.of( featureTupleThree );
 
-        Pool poolThree = MessageFactory.parse( featureGroupThree,
+        Pool poolThree = MessageFactory.getPool( featureGroupThree,
                                                null,
                                                null,
                                                null,
@@ -262,7 +262,7 @@ public final class EnsemblePairsWriterTest
                                                   .setMeasurementUnit( "SCOOBIES" )
                                                   .build();
 
-                Pool pool = MessageFactory.parse( FeatureGroup.of( featureTuple ),
+                Pool pool = MessageFactory.getPool( FeatureGroup.of( featureTuple ),
                                                   null,
                                                   TimeScaleOuter.of( Duration.ofSeconds( 3600 ),
                                                                      TimeScaleFunction.MEAN ),
@@ -341,7 +341,7 @@ public final class EnsemblePairsWriterTest
                                                   .setMeasurementUnit( "SCOOBIES" )
                                                   .build();
 
-                Pool pool = MessageFactory.parse( FeatureGroup.of( featureTuple ),
+                Pool pool = MessageFactory.getPool( FeatureGroup.of( featureTuple ),
                                                   null,
                                                   TimeScaleOuter.of( Duration.ofSeconds( 3600 ),
                                                                      TimeScaleFunction.MEAN ),

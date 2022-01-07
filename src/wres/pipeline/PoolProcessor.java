@@ -283,7 +283,7 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         {
             for ( StatisticsStore nextStatistics : statistics )
             {
-                Collection<Statistics> publishMe = MessageFactory.parse( nextStatistics );
+                Collection<Statistics> publishMe = MessageFactory.getStatistics( nextStatistics );
 
                 for ( Statistics next : publishMe )
                 {

@@ -20,7 +20,7 @@ import wres.statistics.generated.TimeWindow;
 /**
  * Tests the {@link TimeWindowOuter}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class TimeWindowOuterTest
 {
@@ -355,109 +355,6 @@ public final class TimeWindowOuterTest
                                                                                   Duration.ZERO ) );
         assertEquals( "Cannot define a time window whose latest lead duration is before its earliest "
                       + "lead duration.",
-                      thrown.getMessage() );
-    }
-
-    /**
-     * Constructs a {@link TimeWindowOuter} and tests for an exception when the earliest reference time is null.
-     */
-
-    @Test
-    public void testExceptionWhenEarliestReferenceTimeIsNull()
-    {
-        NullPointerException thrown = assertThrows( NullPointerException.class,
-                                                    () -> TimeWindowOuter.of( null,
-                                                                              Instant.MAX,
-                                                                              Duration.ZERO ) );
-        assertEquals( "The earliest reference time cannot be null.",
-                      thrown.getMessage() );
-    }
-
-    /**
-     * Constructs a {@link TimeWindowOuter} and tests for an exception when the latest reference time is null.
-     */
-
-    @Test
-    public void testExceptionWhenLatestReferenceTimeIsNull()
-    {
-        NullPointerException thrown = assertThrows( NullPointerException.class,
-                                                    () -> TimeWindowOuter.of( Instant.MIN,
-                                                                              null,
-                                                                              Duration.ofHours( 1 ),
-                                                                              Duration.ZERO ) );
-        assertEquals( "The latest reference time cannot be null.",
-                      thrown.getMessage() );
-    }
-
-    /**
-     * Constructs a {@link TimeWindowOuter} and tests for an exception when the earliest valid time is null.
-     */
-
-    @Test
-    public void testExceptionWhenEarliestValidTimeIsNull()
-    {
-        NullPointerException thrown = assertThrows( NullPointerException.class,
-                                                    () -> TimeWindowOuter.of( Instant.MIN,
-                                                                              Instant.MAX,
-                                                                              null,
-                                                                              Instant.MAX,
-                                                                              Duration.ZERO,
-                                                                              Duration.ZERO ) );
-        assertEquals( "The earliest valid time cannot be null.",
-                      thrown.getMessage() );
-    }
-
-    /**
-     * Constructs a {@link TimeWindowOuter} and tests for an exception when the latest valid time is null.
-     */
-
-    @Test
-    public void testExceptionWhenLatestValidTimeIsNull()
-    {
-        NullPointerException thrown = assertThrows( NullPointerException.class,
-                                                    () -> TimeWindowOuter.of( Instant.MIN,
-                                                                              Instant.MAX,
-                                                                              Instant.MIN,
-                                                                              null,
-                                                                              Duration.ZERO,
-                                                                              Duration.ZERO ) );
-        assertEquals( "The latest valid time cannot be null.",
-                      thrown.getMessage() );
-    }
-
-    /**
-     * Constructs a {@link TimeWindowOuter} and tests for an exception when the earliest lead duration is null.
-     */
-
-    @Test
-    public void testExceptionWhenEarliestLeadDurationIsNull()
-    {
-        NullPointerException thrown = assertThrows( NullPointerException.class,
-                                                    () -> TimeWindowOuter.of( Instant.MIN,
-                                                                              Instant.MAX,
-                                                                              Instant.MIN,
-                                                                              Instant.MAX,
-                                                                              null,
-                                                                              Duration.ZERO ) );
-        assertEquals( "The earliest lead duration cannot be null.",
-                      thrown.getMessage() );
-    }
-
-    /**
-     * Constructs a {@link TimeWindowOuter} and tests for an exception when the latest lead duration is null.
-     */
-
-    @Test
-    public void testExceptionWhenLatestLeadDurationTimeIsNull()
-    {
-        NullPointerException thrown = assertThrows( NullPointerException.class,
-                                                    () -> TimeWindowOuter.of( Instant.MIN,
-                                                                              Instant.MAX,
-                                                                              Instant.MIN,
-                                                                              Instant.MAX,
-                                                                              Duration.ZERO,
-                                                                              null ) );
-        assertEquals( "The latest lead duration cannot be null.",
                       thrown.getMessage() );
     }
 

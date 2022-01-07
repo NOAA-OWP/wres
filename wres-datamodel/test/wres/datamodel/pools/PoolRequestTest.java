@@ -44,7 +44,7 @@ class PoolRequestTest
         this.timeWindow = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                               Instant.parse( "1985-12-31T23:59:59Z" ) );
 
-        Pool poolOne = MessageFactory.parse( this.featureGroup,
+        Pool poolOne = MessageFactory.getPool( this.featureGroup,
                                              this.timeWindow,
                                              null,
                                              null,
@@ -63,7 +63,7 @@ class PoolRequestTest
         assertEquals( this.poolRequest, this.poolRequest );
 
         // Symmetric
-        Pool anotherPool = MessageFactory.parse( this.featureGroup,
+        Pool anotherPool = MessageFactory.getPool( this.featureGroup,
                                                  this.timeWindow,
                                                  null,
                                                  null,
@@ -77,7 +77,7 @@ class PoolRequestTest
                     && this.poolRequest.equals( anotherPoolRequest ) );
 
         // Transitive
-        Pool yetAnotherPool = MessageFactory.parse( this.featureGroup,
+        Pool yetAnotherPool = MessageFactory.getPool( this.featureGroup,
                                                     this.timeWindow,
                                                     null,
                                                     null,
@@ -105,7 +105,7 @@ class PoolRequestTest
         FeatureKey aFeature = FeatureKey.of(
                                              MessageFactory.getGeometry( "DRRC3" ) );
 
-        Pool oneMorePool = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( aFeature, aFeature, aFeature ) ),
+        Pool oneMorePool = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( aFeature, aFeature, aFeature ) ),
                                                  this.timeWindow,
                                                  null,
                                                  null,

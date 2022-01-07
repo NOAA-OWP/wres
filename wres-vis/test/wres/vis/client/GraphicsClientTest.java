@@ -194,7 +194,7 @@ public class GraphicsClientTest
 
         FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
 
-        Pool pool = MessageFactory.parse( featureGroup,
+        Pool pool = MessageFactory.getPool( featureGroup,
                                           timeWindow,
                                           timeScale,
                                           threshold,

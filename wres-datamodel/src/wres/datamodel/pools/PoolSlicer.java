@@ -536,7 +536,7 @@ public class PoolSlicer
             threshold = unionThresholds.iterator().next();
         }
 
-        wres.statistics.generated.Pool unionPool = MessageFactory.parse( featureGroup,
+        wres.statistics.generated.Pool unionPool = MessageFactory.getPool( featureGroup,
                                                                          unionWindow,
                                                                          timeScale,
                                                                          threshold,

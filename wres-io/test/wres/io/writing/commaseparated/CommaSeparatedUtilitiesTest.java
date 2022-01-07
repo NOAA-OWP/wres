@@ -48,7 +48,7 @@ public class CommaSeparatedUtilitiesTest
     @Test
     public void testGetTimeWindowHeaderFromSampleMetadataWithInstantaneousTimeScale()
     {
-        Pool pool = MessageFactory.parse( (FeatureGroup) null,
+        Pool pool = MessageFactory.getPool( (FeatureGroup) null,
                                           this.timeWindow,
                                           TimeScaleOuter.of(),
                                           null,
@@ -74,7 +74,7 @@ public class CommaSeparatedUtilitiesTest
     {
         TimeScaleOuter timeScale = TimeScaleOuter.of( Duration.ofHours( 1 ), TimeScaleFunction.TOTAL );
 
-        Pool pool = MessageFactory.parse( (FeatureGroup) null,
+        Pool pool = MessageFactory.getPool( (FeatureGroup) null,
                                           this.timeWindow,
                                           timeScale,
                                           null,

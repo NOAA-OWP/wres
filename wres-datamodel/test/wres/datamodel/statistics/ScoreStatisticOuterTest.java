@@ -55,7 +55,7 @@ public final class ScoreStatisticOuterTest
                                           .build();
 
 
-        Pool pool = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( feature, feature, feature ) ),
+        Pool pool = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( feature, feature, feature ) ),
                                           null,
                                           null,
                                           null,
@@ -91,7 +91,7 @@ public final class ScoreStatisticOuterTest
                                           .build();
 
 
-        Pool pool = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l1, l1, l1 ) ),
+        Pool pool = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l1, l1, l1 ) ),
                                           null,
                                           null,
                                           null,
@@ -105,7 +105,7 @@ public final class ScoreStatisticOuterTest
         FeatureKey l3 = FeatureKey.of(
                                        MessageFactory.getGeometry( "B" ) );
 
-        Pool poolTwo = MessageFactory.parse( FeatureGroup.of( new FeatureTuple( l3, l3, l3 ) ),
+        Pool poolTwo = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l3, l3, l3 ) ),
                                              null,
                                              null,
                                              null,

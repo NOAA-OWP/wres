@@ -53,7 +53,7 @@ public class Boilerplate
                                           .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
                                           .build();
 
-        Pool pool = MessageFactory.parse( Boilerplate.FEATURE_GROUP,
+        Pool pool = MessageFactory.getPool( Boilerplate.FEATURE_GROUP,
                                           null,
                                           null,
                                           null,
