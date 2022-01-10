@@ -352,55 +352,6 @@ public class ThresholdsByMetric
     }
 
     /**
-     * Returns a set of {@link MetricConstants} for a specified {@link SampleDataGroup} and {@link StatisticType}.
-     * Individual elements of the contingency table are not considered.
-     * 
-     * @param inGroup the {@link SampleDataGroup}, may be null
-     * @param outGroup the {@link StatisticType}, may be null
-     * @return a set of {@link MetricConstants} for a specified {@link SampleDataGroup} and {@link StatisticType}
-     *         or an empty array if both inputs are defined and no corresponding metrics are present
-     */
-
-    public Set<MetricConstants> getMetrics( SampleDataGroup inGroup,
-                                            StatisticType outGroup )
-    {
-
-        // Unconditional set
-        Set<MetricConstants> metrics = this.getMetrics();
-
-        // Create predicate to test the metric
-        Predicate<MetricConstants> tester = null;
-        if ( Objects.nonNull( inGroup ) && Objects.nonNull( outGroup ) )
-        {
-            tester = a -> a.isInGroup( inGroup ) && a.isInGroup( outGroup );
-        }
-        else if ( Objects.nonNull( inGroup ) )
-        {
-            tester = a -> a.isInGroup( inGroup );
-        }
-        else if ( Objects.nonNull( outGroup ) )
-        {
-            tester = a -> a.isInGroup( outGroup );
-        }
-        else
-        {
-            tester = a -> true;
-        }
-
-        // Create the subset
-        Set<MetricConstants> returnMe = new HashSet<>();
-        for ( MetricConstants next : metrics )
-        {
-            if ( tester.test( next ) )
-            {
-                returnMe.add( next );
-            }
-        }
-
-        return Collections.unmodifiableSet( returnMe );
-    }
-
-    /**
      * Returns a filtered view that contains the union of thresholds for the given input types. If no types are 
      * defined, returns the empty set. If all types are defined, returns this container.
      * 

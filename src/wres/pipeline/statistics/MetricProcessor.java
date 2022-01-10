@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.DoublePredicate;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -282,19 +283,35 @@ public abstract class MetricProcessor<S extends Pool<?>> implements Function<S, 
     MetricConstants[] getMetrics( SampleDataGroup inGroup,
                                   StatisticType outGroup )
     {
-        Set<MetricConstants> filtered = this.getMetrics()
-                                            .getThresholdsByMetricAndFeature()
-                                            .values()
-                                            .stream()
-                                            .flatMap( next -> next.getMetrics( inGroup, outGroup ).stream() )
-                                            .collect( Collectors.toCollection( HashSet::new ) );
+        // Create a filter based on input
+        Predicate<MetricConstants> tester = null;
+        if ( Objects.nonNull( inGroup ) && Objects.nonNull( outGroup ) )
+        {
+            tester = a -> a.isInGroup( inGroup ) && a.isInGroup( outGroup );
+        }
+        else if ( Objects.nonNull( inGroup ) )
+        {
+            tester = a -> a.isInGroup( inGroup );
+        }
+        else if ( Objects.nonNull( outGroup ) )
+        {
+            tester = a -> a.isInGroup( outGroup );
+        }
+        else
+        {
+            tester = a -> true;
+        }
+
+        Set<MetricConstants> filtered = this.rawMetrics.stream()
+                                                       .filter( tester )
+                                                       .collect( Collectors.toCollection( HashSet::new ) );
 
         // Remove contingency table elements
         filtered.remove( MetricConstants.TRUE_POSITIVES );
         filtered.remove( MetricConstants.FALSE_POSITIVES );
         filtered.remove( MetricConstants.FALSE_NEGATIVES );
         filtered.remove( MetricConstants.TRUE_NEGATIVES );
-        
+
         return filtered.toArray( new MetricConstants[filtered.size()] );
     }
     
