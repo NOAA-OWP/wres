@@ -36,17 +36,6 @@ public class FeatureGroup implements Comparable<FeatureGroup>
     private final SortedSet<FeatureTuple> features;
 
     /**
-     * @param features the grouped features, not null, not empty
-     * @return an instance
-     * @throws NullPointerException if the features are null
-     * @throws IllegalArgumentException if the features are empty
-     */
-    public static FeatureGroup of( Set<FeatureTuple> features )
-    {
-        return FeatureGroup.of( null, features );
-    }
-
-    /**
      * @param name the group name, may be null
      * @param features the grouped features, not null, not empty
      * @return an instance
@@ -56,6 +45,17 @@ public class FeatureGroup implements Comparable<FeatureGroup>
     public static FeatureGroup of( String name, Set<FeatureTuple> features )
     {
         return new FeatureGroup( name, features );
+    }
+    
+    /**
+     * @param features the grouped features, not null, not empty
+     * @return an instance
+     * @throws NullPointerException if the features are null
+     * @throws IllegalArgumentException if the features are empty
+     */
+    public static FeatureGroup of( Set<FeatureTuple> features )
+    {
+        return FeatureGroup.of( null, features );
     }
 
     /**
