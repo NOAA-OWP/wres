@@ -15,6 +15,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.pools.Pool;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
@@ -27,6 +28,7 @@ import wres.metrics.MetricTestDataFactory;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
 import wres.statistics.generated.BoxplotMetric.QuantileValueType;
 import wres.statistics.generated.BoxplotStatistic.Box;
@@ -103,7 +105,8 @@ public final class BoxPlotPercentageErrorTest
         {
             List<Event<Pair<Double, Double>>> events = new ArrayList<>();
 
-            TimeWindowOuter window = TimeWindowOuter.of( duration, duration );
+            TimeWindow inner = MessageFactory.getTimeWindow( duration, duration );
+            TimeWindowOuter window = TimeWindowOuter.of( inner );
 
             for ( TimeSeries<Pair<Double, Double>> next : input.get() )
             {

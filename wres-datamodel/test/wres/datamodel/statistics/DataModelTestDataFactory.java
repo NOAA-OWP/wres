@@ -22,6 +22,7 @@ import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
@@ -71,11 +72,11 @@ public final class DataModelTestDataFactory
                                           .build();
 
         Pool pool = MessageFactory.getPool( DataModelTestDataFactory.DRRC2_GROUP,
-                                          null,
-                                          null,
-                                          null,
-                                          false,
-                                          1 );
+                                            null,
+                                            null,
+                                            null,
+                                            false,
+                                            1 );
 
         final PoolMetadata source = PoolMetadata.of( evaluation, pool );
 
@@ -84,9 +85,10 @@ public final class DataModelTestDataFactory
         //Iterate through the lead times
         for ( int leadTime : leadTimes )
         {
-            final TimeWindowOuter timeWindow = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                                   Instant.parse( SECOND_TIME ),
-                                                                   Duration.ofHours( leadTime ) );
+            TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                             Instant.parse( SECOND_TIME ),
+                                                             Duration.ofHours( leadTime ) );
+            TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
             // Add first result
             OneOrTwoThresholds first =

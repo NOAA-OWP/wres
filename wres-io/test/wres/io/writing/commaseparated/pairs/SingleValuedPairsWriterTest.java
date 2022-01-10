@@ -43,6 +43,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.TimeWindow;
 
 /**
  * Tests the {@link SingleValuedPairsWriter}.
@@ -120,10 +121,10 @@ public final class SingleValuedPairsWriterTest
         FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
 
         Pool pool = MessageFactory.getPool( featureGroup,
-                                          null,
-                                          null,
-                                          null,
-                                          false );
+                                            null,
+                                            null,
+                                            null,
+                                            false );
 
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
@@ -164,10 +165,10 @@ public final class SingleValuedPairsWriterTest
         FeatureGroup featureGroupTwo = FeatureGroup.of( featureTupleTwo );
 
         Pool poolTwo = MessageFactory.getPool( featureGroupTwo,
-                                             null,
-                                             null,
-                                             null,
-                                             false );
+                                               null,
+                                               null,
+                                               null,
+                                               false );
 
         PoolMetadata metaTwo = PoolMetadata.of( evaluationTwo, poolTwo );
 
@@ -208,10 +209,10 @@ public final class SingleValuedPairsWriterTest
         FeatureGroup featureGroupThree = FeatureGroup.of( featureTupleThree );
 
         Pool poolThree = MessageFactory.getPool( featureGroupThree,
-                                               null,
-                                               null,
-                                               null,
-                                               false );
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 false );
 
         PoolMetadata metaThree = PoolMetadata.of( evaluationThree, poolThree );
 
@@ -264,11 +265,11 @@ public final class SingleValuedPairsWriterTest
                                                   .build();
 
                 Pool pool = MessageFactory.getPool( FeatureGroup.of( featureTuple ),
-                                                  null,
-                                                  TimeScaleOuter.of( Duration.ofSeconds( 3600 ),
-                                                                     TimeScaleFunction.MEAN ),
-                                                  null,
-                                                  false );
+                                                    null,
+                                                    TimeScaleOuter.of( Duration.ofSeconds( 3600 ),
+                                                                       TimeScaleFunction.MEAN ),
+                                                    null,
+                                                    false );
 
                 PoolMetadata metadata = PoolMetadata.of( evaluation, pool );
 
@@ -351,10 +352,12 @@ public final class SingleValuedPairsWriterTest
                 // Create the pairs with a time window
                 Builder<TimeSeries<Pair<Double, Double>>> tsBuilder = new Builder<>();
                 tsBuilder.addPool( SingleValuedPairsWriterTest.pairs, false );
+                TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                 Instant.parse( "1990-01-01T00:00:00Z" ),
+                                                                 Duration.ZERO );
+                TimeWindowOuter outer = TimeWindowOuter.of( inner );
                 tsBuilder.setMetadata( PoolMetadata.of( SingleValuedPairsWriterTest.pairs.getMetadata(),
-                                                        TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                            Instant.parse( "1990-01-01T00:00:00Z" ),
-                                                                            Duration.ZERO ) ) );
+                                                        outer ) );
 
 
                 // Write the pairs

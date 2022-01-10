@@ -1,5 +1,6 @@
 package wres.io.retrieval;
 
+import java.time.Duration;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.DoubleUnaryOperator;
@@ -13,6 +14,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.TimeSeries;
@@ -21,6 +23,7 @@ import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesStore;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
+import wres.statistics.generated.TimeWindow;
 
 /**
  * <p>A factory class that creates retrievers for the single-valued left and ensemble right datasets associated with one 
@@ -28,7 +31,7 @@ import wres.io.config.ConfigHelper;
  * future, other implementations may not take a per-feature view (e.g., a multiple-feature-view or a grid-view). This 
  * implementation is backed by a {@link TimeSeriesStore} that is supplied on construction.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class EnsembleRetrieverFactory2 implements RetrieverFactory<Double, Ensemble>
@@ -67,8 +70,8 @@ public class EnsembleRetrieverFactory2 implements RetrieverFactory<Double, Ensem
     {
         // No distinction between climatology and left for now
         return this.getLeftRetriever( features );
-    }    
-    
+    }
+
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<FeatureKey> features )
     {
@@ -83,10 +86,25 @@ public class EnsembleRetrieverFactory2 implements RetrieverFactory<Double, Ensem
                                                                   TimeWindowOuter timeWindow )
     {
         // Consider all possible lead durations
-        TimeWindowOuter adjustedWindow = timeWindow.toBuilder()
-                                                   .setEarliestLeadDuration( TimeWindowOuter.DURATION_MIN )
-                                                   .setLatestLeadDuration( TimeWindowOuter.DURATION_MAX )
-                                                   .build();
+        com.google.protobuf.Duration lower =
+                com.google.protobuf.Duration.newBuilder()
+                                            .setSeconds( TimeWindowOuter.DURATION_MIN.getSeconds() )
+                                            .setNanos( TimeWindowOuter.DURATION_MIN.getNano() )
+                                            .build();
+
+        com.google.protobuf.Duration upper =
+                com.google.protobuf.Duration.newBuilder()
+                                            .setSeconds( TimeWindowOuter.DURATION_MAX.getSeconds() )
+                                            .setNanos( TimeWindowOuter.DURATION_MAX.getNano() )
+                                            .build();
+
+        TimeWindow inner = timeWindow.getTimeWindow()
+                                     .toBuilder()
+                                     .setEarliestLeadDuration( lower )
+                                     .setLatestLeadDuration( upper )
+                                     .build();
+
+        TimeWindowOuter adjustedWindow = TimeWindowOuter.of( inner );
 
         // Wrap in a caching retriever to allow re-use of left-ish data
         return CachingRetriever.of( () -> this.timeSeriesStore.getSingleValuedSeries( adjustedWindow,
@@ -111,7 +129,9 @@ public class EnsembleRetrieverFactory2 implements RetrieverFactory<Double, Ensem
     public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( Set<FeatureKey> features )
     {
         // TODO: allow for unit mapping
-        return this.getBaselineRetriever( features, TimeWindowOuter.of() );
+        TimeWindow inner = MessageFactory.getTimeWindow();
+        TimeWindowOuter outer = TimeWindowOuter.of( inner );
+        return this.getBaselineRetriever( features, outer );
     }
 
     @Override
@@ -136,10 +156,20 @@ public class EnsembleRetrieverFactory2 implements RetrieverFactory<Double, Ensem
 
     private TimeWindowOuter adjustByTimeScalePeriod( TimeWindowOuter timeWindow )
     {
-        TimeWindowOuter adjusted = timeWindow.toBuilder()
-                                             .setEarliestLeadDuration( timeWindow.getEarliestLeadDuration()
-                                                                                 .minus( this.desiredTimeScale.getPeriod() ) )
-                                             .build();
+        Duration lowerD = timeWindow.getEarliestLeadDuration()
+                .minus( this.desiredTimeScale.getPeriod() );
+        com.google.protobuf.Duration lower =
+                com.google.protobuf.Duration.newBuilder()
+                                            .setSeconds( lowerD.getSeconds() )
+                                            .setNanos( lowerD.getNano() )
+                                            .build();
+
+        TimeWindow inner = timeWindow.getTimeWindow()
+                                     .toBuilder()
+                                     .setEarliestLeadDuration( lower )
+                                     .build();
+
+        TimeWindowOuter adjustedWindow = TimeWindowOuter.of( inner );
 
         if ( LOGGER.isDebugEnabled() )
         {
@@ -147,10 +177,10 @@ public class EnsembleRetrieverFactory2 implements RetrieverFactory<Double, Ensem
                           + "for rescaling.",
                           timeWindow,
                           this.desiredTimeScale.getPeriod(),
-                          adjusted );
+                          adjustedWindow );
         }
 
-        return adjusted;
+        return adjustedWindow;
     }
 
     /**

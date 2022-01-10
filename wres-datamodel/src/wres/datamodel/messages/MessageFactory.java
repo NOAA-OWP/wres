@@ -446,7 +446,7 @@ public class MessageFactory
         {
             latestL = latestLead;
         }
-        
+
         if ( LOGGER.isTraceEnabled() )
         {
             LOGGER.trace( "Created a new time window with an earliest reference time of {}, a latest reference time "
@@ -468,6 +468,121 @@ public class MessageFactory
                          .setEarliestLeadDuration( MessageFactory.parse( earliestL ) )
                          .setLatestLeadDuration( MessageFactory.parse( latestL ) )
                          .build();
+    }
+
+    /**
+     * Creates a {@link wres.statistics.generated.TimeWindow} from the input. Times on the lower and upper bounds 
+     * default to {@link Instant#MIN} and {@link Instant#MAX}, respectively.
+     * 
+     * @param earliestValidTime the earliest valid time, optional
+     * @param latestValidTime the latest valid time, optional
+     * @return the time window
+     */
+
+    public static TimeWindow getTimeWindow( Instant earliestValidTime,
+                                            Instant latestValidTime )
+    {
+        return MessageFactory.getTimeWindow( null, null, earliestValidTime, latestValidTime, null, null );
+    }
+
+    /**
+     * Creates a {@link wres.statistics.generated.TimeWindow} from the input. Durations on the lower and upper bounds 
+     * default to {@link TimeWindowOuter#DURATION_MIN} and {@link TimeWindowOuter#DURATION_MAX}, respectively.
+     * 
+     * @param earliestLead the earliest lead time, optional
+     * @param latestLead the latest lead time, optional
+     * @return the time window
+     */
+
+    public static TimeWindow getTimeWindow( java.time.Duration earliestLead,
+                                            java.time.Duration latestLead )
+    {
+        return MessageFactory.getTimeWindow( null, null, null, null, earliestLead, latestLead );
+    }
+
+    /**
+     * Creates a {@link wres.statistics.generated.TimeWindow} from the input. Times on the lower and upper bounds 
+     * default to {@link Instant#MIN} and {@link Instant#MAX}, respectively.
+     * 
+     * @param earliestReferenceTime the earliest reference time, optional
+     * @param latestReferenceTime the latest reference time, optional
+     * @param earliestValidTime the earliest valid time, optional
+     * @param latestValidTime the latest valid time, optional
+     * @return the time window
+     */
+
+    public static TimeWindow getTimeWindow( Instant earliestReferenceTime,
+                                            Instant latestReferenceTime,
+                                            Instant earliestValidTime,
+                                            Instant latestValidTime )
+    {
+        return MessageFactory.getTimeWindow( earliestReferenceTime,
+                                             latestReferenceTime,
+                                             earliestValidTime,
+                                             latestValidTime,
+                                             null,
+                                             null );
+    }
+
+    /**
+     * Creates a {@link wres.statistics.generated.TimeWindow} from the input. Times on the lower and upper bounds 
+     * default to {@link Instant#MIN} and {@link Instant#MAX}, respectively. Durations on the lower and upper bounds 
+     * default to {@link TimeWindowOuter#DURATION_MIN} and {@link TimeWindowOuter#DURATION_MAX}, respectively.
+     * 
+     * @param earliestReferenceTime the earliest reference time, optional
+     * @param latestReferenceTime the latest reference time, optional
+     * @param lead the earliest and latest lead time, optional
+     * @return the time window
+     */
+
+    public static TimeWindow getTimeWindow( Instant earliestReferenceTime,
+                                            Instant latestReferenceTime,
+                                            java.time.Duration lead )
+    {
+        return MessageFactory.getTimeWindow( earliestReferenceTime, latestReferenceTime, null, null, lead, lead );
+    }
+
+    /**
+     * Creates a {@link wres.statistics.generated.TimeWindow} from the input. Times on the lower and upper bounds 
+     * default to {@link Instant#MIN} and {@link Instant#MAX}, respectively. Durations on the lower and upper bounds 
+     * default to {@link TimeWindowOuter#DURATION_MIN} and {@link TimeWindowOuter#DURATION_MAX}, respectively.
+     * 
+     * @param earliestReferenceTime the earliest reference time, optional
+     * @param latestReferenceTime the latest reference time, optional
+     * @param earliestLead the earliest lead time, optional
+     * @param latestLead the latest lead time, optional
+     * @return the time window
+     */
+
+    public static TimeWindow getTimeWindow( Instant earliestReferenceTime,
+                                            Instant latestReferenceTime,
+                                            java.time.Duration earliestLead,
+                                            java.time.Duration latestLead )
+    {
+        return MessageFactory.getTimeWindow( earliestReferenceTime,
+                                             latestReferenceTime,
+                                             null,
+                                             null,
+                                             earliestLead,
+                                             latestLead );
+    }
+
+    /**
+     * Creates an empty {@link wres.statistics.generated.TimeWindow} in which the times on the lower and upper bounds 
+     * default to {@link Instant#MIN} and {@link Instant#MAX}, respectively, and the durations on the lower and upper 
+     * bounds default to {@link TimeWindowOuter#DURATION_MIN} and {@link TimeWindowOuter#DURATION_MAX}, respectively.
+     * 
+     * @return the empty time window
+     */
+
+    public static TimeWindow getTimeWindow()
+    {
+        return MessageFactory.getTimeWindow( null,
+                                             null,
+                                             null,
+                                             null,
+                                             null,
+                                             null );
     }
 
     /**

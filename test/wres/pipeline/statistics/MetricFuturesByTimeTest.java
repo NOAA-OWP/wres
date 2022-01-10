@@ -15,6 +15,7 @@ import org.junit.Test;
 
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -38,6 +39,7 @@ import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.TimeWindow;
 
 /**
  * Tests the {@link MetricFuturesByTime}.
@@ -92,8 +94,9 @@ public final class MetricFuturesByTimeTest
     @Before
     public void setupBeforeEachTest()
     {
-        this.key = Pair.of( TimeWindowOuter.of( Instant.parse( "1985-05-01T12:00:00Z" ),
-                                                Instant.parse( "1985-05-03T12:00:00Z" ) ),
+        TimeWindow timeWindow = MessageFactory.getTimeWindow( Instant.parse( "1985-05-01T12:00:00Z" ),
+                                                              Instant.parse( "1985-05-03T12:00:00Z" ) );
+        this.key = Pair.of( TimeWindowOuter.of( timeWindow ),
                             OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                                       Operator.GREATER,
                                                                       ThresholdDataType.LEFT ) ) );

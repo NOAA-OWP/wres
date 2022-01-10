@@ -34,6 +34,7 @@ import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Outputs.PngFormat;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.Statistics;
+import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 
@@ -180,13 +181,15 @@ public class GraphicsClientTest
         Duration earliestLead = Duration.ofHours( 1 );
         Duration latestLead = Duration.ofHours( 7 );
 
+        TimeWindow inner = MessageFactory.getTimeWindow( earliestReference,
+                                                         latestReference,
+                                                         earliestValid,
+                                                         latestValid,
+                                                         earliestLead,
+                                                         latestLead  );
+                                                        
         TimeWindowOuter timeWindow =
-                TimeWindowOuter.of( earliestReference,
-                                    latestReference,
-                                    earliestValid,
-                                    latestValid,
-                                    earliestLead,
-                                    latestLead );
+                TimeWindowOuter.of( inner );
 
         FeatureTuple featureTuple = new FeatureTuple( location,
                                                       location,

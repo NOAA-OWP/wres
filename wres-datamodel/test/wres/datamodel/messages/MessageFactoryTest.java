@@ -120,12 +120,12 @@ public class MessageFactoryTest
     private static final MeasurementUnit CMS = MeasurementUnit.of( "CMS" );
 
     private static final wres.datamodel.time.TimeWindowOuter TIME_WINDOW =
-            wres.datamodel.time.TimeWindowOuter.of( NINTH_TIME,
-                                                    TENTH_TIME,
-                                                    ELEVENTH_TIME,
-                                                    TWELFTH_TIME,
-                                                    EARLIEST_LEAD,
-                                                    LATEST_LEAD );
+            wres.datamodel.time.TimeWindowOuter.of( MessageFactory.getTimeWindow( NINTH_TIME,
+                                                                                  TENTH_TIME,
+                                                                                  ELEVENTH_TIME,
+                                                                                  TWELFTH_TIME,
+                                                                                  EARLIEST_LEAD,
+                                                                                  LATEST_LEAD ) );
     private static final FeatureKey LOCATION =
             FeatureKey.of( MessageFactory.getGeometry( FEATURE_NAME, null, null, "POINT ( 23.45, 56.21 )" ) );
     private static final FeatureKey ANOTHER_LOCATION = FeatureKey.of( MessageFactory.getGeometry( "DOLC2" ) );
@@ -683,11 +683,11 @@ public class MessageFactoryTest
                                           .build();
 
         Pool pool = MessageFactory.getPool( FEATURE_GROUP,
-                                          TIME_WINDOW,
-                                          timeScale,
-                                          threshold,
-                                          false,
-                                          1 );
+                                            TIME_WINDOW,
+                                            timeScale,
+                                            threshold,
+                                            false,
+                                            1 );
 
         PoolMetadata metadata = PoolMetadata.of( evaluation, pool );
 
@@ -755,11 +755,11 @@ public class MessageFactoryTest
                                           .build();
 
         Pool pool = MessageFactory.getPool( FEATURE_GROUP,
-                                          TIME_WINDOW,
-                                          timeScale,
-                                          threshold,
-                                          false,
-                                          1 );
+                                            TIME_WINDOW,
+                                            timeScale,
+                                            threshold,
+                                            false,
+                                            1 );
 
         PoolMetadata metadata = PoolMetadata.of( evaluation, pool );
 
@@ -837,11 +837,11 @@ public class MessageFactoryTest
                                           .build();
 
         Pool pool = MessageFactory.getPool( FEATURE_GROUP,
-                                          TIME_WINDOW,
-                                          timeScale,
-                                          threshold,
-                                          false,
-                                          1 );
+                                            TIME_WINDOW,
+                                            timeScale,
+                                            threshold,
+                                            false,
+                                            1 );
 
         PoolMetadata metadata = PoolMetadata.of( evaluation, pool );
 
@@ -946,13 +946,12 @@ public class MessageFactoryTest
 
     private List<DurationScoreStatisticOuter> getDurationScoreStatisticsForOnePool()
     {
-        TimeWindowOuter timeOne =
-                TimeWindowOuter.of( FIRST_TIME,
-                                    FIFTH_TIME,
-                                    FIRST_TIME,
-                                    SEVENTH_TIME,
-                                    Duration.ofHours( 1 ),
-                                    Duration.ofHours( 18 ) );
+        TimeWindowOuter timeOne = TimeWindowOuter.of( MessageFactory.getTimeWindow( FIRST_TIME,
+                                                                                    FIFTH_TIME,
+                                                                                    FIRST_TIME,
+                                                                                    SEVENTH_TIME,
+                                                                                    Duration.ofHours( 1 ),
+                                                                                    Duration.ofHours( 18 ) ) );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
@@ -967,11 +966,11 @@ public class MessageFactoryTest
                                           .build();
 
         Pool pool = MessageFactory.getPool( ANOTHER_FEATURE_GROUP,
-                                          timeOne,
-                                          null,
-                                          threshold,
-                                          false,
-                                          1 );
+                                            timeOne,
+                                            null,
+                                            threshold,
+                                            false,
+                                            1 );
 
         PoolMetadata fakeMetadata = PoolMetadata.of( evaluation, pool );
 
@@ -1004,13 +1003,12 @@ public class MessageFactoryTest
 
     private List<DurationDiagramStatisticOuter> getDurationDiagramStatisticsForOnePool()
     {
-        TimeWindowOuter timeOne =
-                TimeWindowOuter.of( FIRST_TIME,
-                                    FIFTH_TIME,
-                                    FIRST_TIME,
-                                    SEVENTH_TIME,
-                                    Duration.ofHours( 1 ),
-                                    Duration.ofHours( 18 ) );
+        TimeWindowOuter timeOne = TimeWindowOuter.of( MessageFactory.getTimeWindow( FIRST_TIME,
+                                                                                    FIFTH_TIME,
+                                                                                    FIRST_TIME,
+                                                                                    SEVENTH_TIME,
+                                                                                    Duration.ofHours( 1 ),
+                                                                                    Duration.ofHours( 18 ) ) );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
@@ -1025,11 +1023,11 @@ public class MessageFactoryTest
                                           .build();
 
         Pool pool = MessageFactory.getPool( ANOTHER_FEATURE_GROUP,
-                                          timeOne,
-                                          null,
-                                          threshold,
-                                          false,
-                                          1 );
+                                            timeOne,
+                                            null,
+                                            threshold,
+                                            false,
+                                            1 );
 
         PoolMetadata fakeMetadata = PoolMetadata.of( evaluation, pool );
 

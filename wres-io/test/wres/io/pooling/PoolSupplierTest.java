@@ -35,6 +35,7 @@ import wres.io.retrieval.CachingRetriever;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
+import wres.statistics.generated.TimeWindow;
 import wres.datamodel.time.TimeSeriesOfDoubleUpscaler;
 import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesPairerByExactTime;
@@ -139,7 +140,7 @@ public class PoolSupplierTest
     private static final Instant T2551_03_17T00_00_00Z = Instant.parse( "2551-03-17T00:00:00Z" );
 
     private static final String VARIABLE_NAME = "STREAMFLOW";
-    private static final FeatureKey FEATURE = FeatureKey.of( 
+    private static final FeatureKey FEATURE = FeatureKey.of(
                                                              MessageFactory.getGeometry( "DRRC2" ) );
     private static final String UNIT = "CMS";
 
@@ -423,10 +424,10 @@ public class PoolSupplierTest
                                                       FEATURE );
         FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
         wres.statistics.generated.Pool pool = MessageFactory.getPool( featureGroup,
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    false );
+                                                                      null,
+                                                                      null,
+                                                                      null,
+                                                                      false );
 
         this.metadata = PoolMetadata.of( evaluation, pool );
 
@@ -453,10 +454,11 @@ public class PoolSupplierTest
 
         Supplier<Stream<TimeSeries<Double>>> forcSupplierOne = this.forecastRetriever;
 
-        TimeWindowOuter poolOneWindow = TimeWindowOuter.of( T2551_03_17T00_00_00Z, //2551-03-17T00:00:00Z
-                                                            T2551_03_17T13_00_00Z, //2551-03-17T13:00:00Z
-                                                            Duration.ofHours( 0 ),
-                                                            Duration.ofHours( 23 ) );
+        TimeWindow inner = MessageFactory.getTimeWindow( T2551_03_17T00_00_00Z, //2551-03-17T00:00:00Z
+                                                         T2551_03_17T13_00_00Z, //2551-03-17T13:00:00Z
+                                                         Duration.ofHours( 0 ),
+                                                         Duration.ofHours( 23 ) );
+        TimeWindowOuter poolOneWindow = TimeWindowOuter.of( inner );
 
         PoolMetadata poolOneMetadata = PoolMetadata.of( this.metadata,
                                                         poolOneWindow,
@@ -505,8 +507,8 @@ public class PoolSupplierTest
 
         Pool<TimeSeries<Pair<Double, Double>>> poolOneExpected =
                 new Pool.Builder<TimeSeries<Pair<Double, Double>>>().addData( poolOneSeries )
-                                                                         .setMetadata( poolOneMetadata )
-                                                                         .build();
+                                                                    .setMetadata( poolOneMetadata )
+                                                                    .build();
 
         assertEquals( poolOneExpected, poolOneActual );
     }
@@ -533,10 +535,11 @@ public class PoolSupplierTest
 
         Supplier<Stream<TimeSeries<Double>>> forcSupplierOne = this.forecastRetriever;
 
-        TimeWindowOuter poolOneWindow = TimeWindowOuter.of( T2551_03_17T00_00_00Z, //2551-03-17T00:00:00Z
-                                                            T2551_03_17T13_00_00Z, //2551-03-17T13:00:00Z
-                                                            Duration.ofHours( 0 ),
-                                                            Duration.ofHours( 23 ) );
+        TimeWindow inner = MessageFactory.getTimeWindow( T2551_03_17T00_00_00Z, //2551-03-17T00:00:00Z
+                                                         T2551_03_17T13_00_00Z, //2551-03-17T13:00:00Z
+                                                         Duration.ofHours( 0 ),
+                                                         Duration.ofHours( 23 ) );
+        TimeWindowOuter poolOneWindow = TimeWindowOuter.of( inner );
 
         PoolMetadata poolOneMetadata = PoolMetadata.of( this.metadata,
                                                         poolOneWindow,
@@ -603,9 +606,9 @@ public class PoolSupplierTest
 
         Pool<TimeSeries<Pair<Double, Double>>> poolOneExpected =
                 new Pool.Builder<TimeSeries<Pair<Double, Double>>>().addData( poolOneSeries )
-                                                                         .setClimatology( expectedClimatology )
-                                                                         .setMetadata( poolOneMetadataBaseline )
-                                                                         .build();
+                                                                    .setClimatology( expectedClimatology )
+                                                                    .setMetadata( poolOneMetadataBaseline )
+                                                                    .build();
 
         assertEquals( poolOneExpected, poolOneActual );
     }
@@ -627,10 +630,11 @@ public class PoolSupplierTest
 
         Supplier<Stream<TimeSeries<Double>>> forcSupplierEleven = CachingRetriever.of( this.forecastRetriever );
 
-        TimeWindowOuter poolElevenWindow = TimeWindowOuter.of( T2551_03_18T11_00_00Z, //2551-03-18T11:00:00Z
-                                                               T2551_03_19T00_00_00Z, //2551-03-19T00:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 23 ) );
+        TimeWindow inner = MessageFactory.getTimeWindow( T2551_03_18T11_00_00Z, //2551-03-18T11:00:00Z
+                                                         T2551_03_19T00_00_00Z, //2551-03-19T00:00:00Z
+                                                         Duration.ofHours( 0 ),
+                                                         Duration.ofHours( 23 ) );
+        TimeWindowOuter poolElevenWindow = TimeWindowOuter.of( inner );
 
         PoolMetadata poolElevenMetadata = PoolMetadata.of( this.metadata,
                                                            poolElevenWindow,
@@ -706,9 +710,9 @@ public class PoolSupplierTest
 
         Pool<TimeSeries<Pair<Double, Double>>> poolElevenExpected =
                 new Pool.Builder<TimeSeries<Pair<Double, Double>>>().addData( poolElevenOneSeries )
-                                                                         .addData( poolElevenTwoSeries )
-                                                                         .setMetadata( poolElevenMetadata )
-                                                                         .build();
+                                                                    .addData( poolElevenTwoSeries )
+                                                                    .setMetadata( poolElevenMetadata )
+                                                                    .build();
 
         assertEquals( poolElevenExpected, poolElevenActual );
     }
@@ -730,10 +734,11 @@ public class PoolSupplierTest
                .thenReturn( Stream.of( this.forecastOne, this.forecastTwo, this.forecastThree, this.forecastFour ) );
         Supplier<Stream<TimeSeries<Double>>> forcSupplierEighteen = CachingRetriever.of( this.forecastRetriever );
 
-        TimeWindowOuter poolEighteenWindow = TimeWindowOuter.of( T2551_03_19T08_00_00Z, //2551-03-19T08:00:00Z
-                                                                 T2551_03_19T21_00_00Z, //2551-03-19T21:00:00Z
-                                                                 Duration.ofHours( 17 ),
-                                                                 Duration.ofHours( 40 ) );
+        TimeWindow inner = MessageFactory.getTimeWindow( T2551_03_19T08_00_00Z, //2551-03-19T08:00:00Z
+                                                         T2551_03_19T21_00_00Z, //2551-03-19T21:00:00Z
+                                                         Duration.ofHours( 17 ),
+                                                         Duration.ofHours( 40 ) );
+        TimeWindowOuter poolEighteenWindow = TimeWindowOuter.of( inner );
 
         PoolMetadata poolEighteenMetadata = PoolMetadata.of( this.metadata,
                                                              poolEighteenWindow,
@@ -752,7 +757,7 @@ public class PoolSupplierTest
 
         Pool<TimeSeries<Pair<Double, Double>>> poolEighteenExpected =
                 new Pool.Builder<TimeSeries<Pair<Double, Double>>>().setMetadata( poolEighteenMetadata )
-                                                                         .build();
+                                                                    .build();
 
         assertEquals( poolEighteenExpected, poolEighteenActual );
     }
@@ -762,7 +767,7 @@ public class PoolSupplierTest
     {
         // Create the duplicate observed series for a different feature
         String featureName = "DOSC1";
-        FeatureKey feature = FeatureKey.of( 
+        FeatureKey feature = FeatureKey.of(
                                             MessageFactory.getGeometry( featureName ) );
 
         TimeSeriesMetadata obsMeta = this.observations.getMetadata();
@@ -804,10 +809,11 @@ public class PoolSupplierTest
 
         Supplier<Stream<TimeSeries<Double>>> forcSupplier = CachingRetriever.of( this.forecastRetriever );
 
-        TimeWindowOuter poolWindow = TimeWindowOuter.of( T2551_03_18T11_00_00Z, //2551-03-18T11:00:00Z
+        TimeWindow inner = MessageFactory.getTimeWindow( T2551_03_18T11_00_00Z, //2551-03-18T11:00:00Z
                                                          T2551_03_19T00_00_00Z, //2551-03-19T00:00:00Z
                                                          Duration.ofHours( 0 ),
                                                          Duration.ofHours( 23 ) );
+        TimeWindowOuter poolWindow = TimeWindowOuter.of( inner );
 
         Geometry geometry = Geometry.newBuilder()
                                     .setName( featureName )

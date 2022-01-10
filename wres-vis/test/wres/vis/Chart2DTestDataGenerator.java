@@ -43,6 +43,7 @@ import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
@@ -112,9 +113,11 @@ public abstract class Chart2DTestDataGenerator
         final int[] allow = new int[] { 42, 258, 474, 690 };
         for ( final int next : allow )
         {
-            TimeWindowOuter filter = TimeWindowOuter.of( Instant.MIN,
-                                                         Instant.MAX,
-                                                         Duration.ofHours( next ) );
+            TimeWindow inner = MessageFactory.getTimeWindow( Instant.MIN,
+                                                             Instant.MAX,
+                                                             Duration.ofHours( next ) );
+            TimeWindowOuter filter = TimeWindowOuter.of( inner );
+
             Slicer.filter( full, data -> filter.equals( data.getMetadata().getTimeWindow() ) )
                   .forEach( statistics::add );
         }
@@ -369,10 +372,10 @@ public abstract class Chart2DTestDataGenerator
                                           .build();
 
         Pool pool = MessageFactory.getPool( FEATURE_GROUP,
-                                          null,
-                                          null,
-                                          threshold,
-                                          false );
+                                            null,
+                                            null,
+                                            threshold,
+                                            false );
 
         PoolMetadata source = PoolMetadata.of( evaluation, pool );
 
@@ -393,9 +396,10 @@ public abstract class Chart2DTestDataGenerator
             Instant begin = start.plus( frequency.multipliedBy( i ) );
             Instant end = begin.plus( period );
             //Add the 6h data
-            TimeWindowOuter sixHourWindow = TimeWindowOuter.of( begin,
+            TimeWindow innerSix = MessageFactory.getTimeWindow( begin,
                                                                 end,
                                                                 Duration.ofHours( 6 ) );
+            TimeWindowOuter sixHourWindow = TimeWindowOuter.of( innerSix );
 
             DoubleScoreStatistic sixHour =
                     DoubleScoreStatistic.newBuilder()
@@ -411,9 +415,10 @@ public abstract class Chart2DTestDataGenerator
                     DoubleScoreStatisticOuter.of( sixHour, PoolMetadata.of( source, sixHourWindow ) );
             rawData.add( sixHourOutput );
             //Add the 12h data
-            TimeWindowOuter twelveHourWindow = TimeWindowOuter.of( begin,
+            TimeWindow innerTwelve = MessageFactory.getTimeWindow( begin,
                                                                    end,
                                                                    Duration.ofHours( 12 ) );
+            TimeWindowOuter twelveHourWindow = TimeWindowOuter.of( innerTwelve );
 
             DoubleScoreStatistic twelveHour =
                     DoubleScoreStatistic.newBuilder()
@@ -429,9 +434,10 @@ public abstract class Chart2DTestDataGenerator
                     DoubleScoreStatisticOuter.of( twelveHour, PoolMetadata.of( source, twelveHourWindow ) );
             rawData.add( twelveHourOutput );
             //Add the 18h data
-            TimeWindowOuter eighteenHourWindow = TimeWindowOuter.of( begin,
+            TimeWindow innerEighteen = MessageFactory.getTimeWindow( begin,
                                                                      end,
                                                                      Duration.ofHours( 18 ) );
+            TimeWindowOuter eighteenHourWindow = TimeWindowOuter.of( innerEighteen );
 
             DoubleScoreStatistic eighteenHour =
                     DoubleScoreStatistic.newBuilder()
@@ -447,9 +453,10 @@ public abstract class Chart2DTestDataGenerator
                     DoubleScoreStatisticOuter.of( eighteenHour, PoolMetadata.of( source, eighteenHourWindow ) );
             rawData.add( eighteenHourOutput );
             //Add the 24h data
-            TimeWindowOuter twentyFourHourWindow = TimeWindowOuter.of( begin,
+            TimeWindow innerTwentyFour = MessageFactory.getTimeWindow( begin,
                                                                        end,
                                                                        Duration.ofHours( 24 ) );
+            TimeWindowOuter twentyFourHourWindow = TimeWindowOuter.of( innerTwentyFour );
 
             DoubleScoreStatistic twentyFourHour =
                     DoubleScoreStatistic.newBuilder()
@@ -492,10 +499,10 @@ public abstract class Chart2DTestDataGenerator
                                           .build();
 
         Pool pool = MessageFactory.getPool( FEATURE_GROUP,
-                                          null,
-                                          null,
-                                          threshold,
-                                          false );
+                                            null,
+                                            null,
+                                            threshold,
+                                            false );
 
         PoolMetadata source = PoolMetadata.of( evaluation, pool );
 
@@ -530,10 +537,12 @@ public abstract class Chart2DTestDataGenerator
         {
             String nextDate = "2017-08-08T" + String.format( "%02d", i ) + ":00:00Z";
 
-            TimeWindowOuter timeWindow = TimeWindowOuter.of( Instant.parse( nextDate ),
+            TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( nextDate ),
                                                              Instant.parse( nextDate ),
                                                              Duration.ofHours( 0 ),
                                                              Duration.ofHours( 18 ) );
+                                                                      
+            TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
             DoubleScoreStatistic one =
                     DoubleScoreStatistic.newBuilder()
@@ -696,10 +705,11 @@ public abstract class Chart2DTestDataGenerator
                                                                           .build();
 
         // Create the metadata
-        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                     Instant.parse( "1985-01-10T00:00:00Z" ),
-                                                     Duration.ofHours( 6 ),
-                                                     Duration.ofHours( 336 ) );
+        TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                         Instant.parse( "1985-01-10T00:00:00Z" ),
+                                                         Duration.ofHours( 6 ),
+                                                         Duration.ofHours( 336 ) );
+        TimeWindowOuter window = TimeWindowOuter.of( inner);
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
@@ -713,10 +723,10 @@ public abstract class Chart2DTestDataGenerator
                                           .build();
 
         Pool pool = MessageFactory.getPool( FEATURE_GROUP,
-                                          window,
-                                          null,
-                                          threshold,
-                                          false );
+                                            window,
+                                            null,
+                                            threshold,
+                                            false );
 
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
@@ -741,10 +751,11 @@ public abstract class Chart2DTestDataGenerator
     public static List<DurationScoreStatisticOuter> getTimeToPeakErrorStatistics()
     {
         // Expected, which uses identifier of MetricConstants.MAIN for convenience
-        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                     Instant.parse( "1985-01-10T00:00:00Z" ),
-                                                     Duration.ofHours( 6 ),
-                                                     Duration.ofHours( 336 ) );
+        TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                         Instant.parse( "1985-01-10T00:00:00Z" ),
+                                                         Duration.ofHours( 6 ),
+                                                         Duration.ofHours( 336 ) );
+        TimeWindowOuter window = TimeWindowOuter.of( inner );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
@@ -758,10 +769,10 @@ public abstract class Chart2DTestDataGenerator
                                           .build();
 
         Pool pool = MessageFactory.getPool( FEATURE_GROUP,
-                                          window,
-                                          null,
-                                          threshold,
-                                          false );
+                                            window,
+                                            null,
+                                            threshold,
+                                            false );
 
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 

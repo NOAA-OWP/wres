@@ -23,6 +23,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.datamodel.Ensemble.Labels;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
@@ -266,8 +267,8 @@ public final class SlicerTest
         assertEquals( expectedValues, sliced.getBaselineData().get() );
         assertTrue( Arrays.equals( sliced.getClimatology().getDoubles(), climatologyExpected.getDoubles() ) );
         assertTrue( !Arrays.equals( PoolSlicer.filter( pairs, Slicer.leftAndRight( Double::isFinite ), null )
-                                          .getClimatology()
-                                          .getDoubles(),
+                                              .getClimatology()
+                                              .getDoubles(),
                                     climatologyExpected.getDoubles() ) );
         assertNotEquals( values, sliced.get() );
 
@@ -322,14 +323,17 @@ public final class SlicerTest
         // Populate a list of outputs
         PoolMetadata metadata = PoolMetadata.of();
 
-        TimeWindowOuter windowOne =
-                TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
+        TimeWindowOuter windowOne = TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.MIN,
+                                                                                      Instant.MAX,
+                                                                                      Duration.ofHours( 1 ) ) );
 
-        TimeWindowOuter windowTwo =
-                TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
+        TimeWindowOuter windowTwo = TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.MIN,
+                                                                                      Instant.MAX,
+                                                                                      Duration.ofHours( 2 ) ) );
 
-        TimeWindowOuter windowThree =
-                TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 3 ) );
+        TimeWindowOuter windowThree = TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.MIN,
+                                                                                        Instant.MAX,
+                                                                                        Duration.ofHours( 3 ) ) );
 
         OneOrTwoThresholds thresholdOne =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
@@ -416,14 +420,17 @@ public final class SlicerTest
         // Populate a list of outputs
         PoolMetadata metadata = PoolMetadata.of();
 
-        TimeWindowOuter windowOne =
-                TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
+        TimeWindowOuter windowOne = TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.MIN,
+                                                                                      Instant.MAX,
+                                                                                      Duration.ofHours( 1 ) ) );
 
-        TimeWindowOuter windowTwo =
-                TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
+        TimeWindowOuter windowTwo = TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.MIN,
+                                                                                      Instant.MAX,
+                                                                                      Duration.ofHours( 2 ) ) );
 
-        TimeWindowOuter windowThree =
-                TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
+        TimeWindowOuter windowThree = TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.MIN,
+                                                                                        Instant.MAX,
+                                                                                        Duration.ofHours( 2 ) ) );
 
         OneOrTwoThresholds thresholdOne =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
@@ -561,14 +568,17 @@ public final class SlicerTest
         // Populate a list of outputs
         PoolMetadata metadata = PoolMetadata.of();
 
-        TimeWindowOuter windowOne =
-                TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
+        TimeWindowOuter windowOne = TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.MIN,
+                                                                                      Instant.MAX,
+                                                                                      Duration.ofHours( 1 ) ) );
 
-        TimeWindowOuter windowTwo =
-                TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
+        TimeWindowOuter windowTwo = TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.MIN,
+                                                                                      Instant.MAX,
+                                                                                      Duration.ofHours( 2 ) ) );
 
-        TimeWindowOuter windowThree =
-                TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
+        TimeWindowOuter windowThree = TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.MIN,
+                                                                                        Instant.MAX,
+                                                                                        Duration.ofHours( 2 ) ) );
 
         OneOrTwoThresholds thresholdOne =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),

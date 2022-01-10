@@ -19,6 +19,7 @@ import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.TimeWindow;
 
 /**
  * Tests the {@link CommaSeparatedUtilities}.
@@ -42,17 +43,23 @@ public class CommaSeparatedUtilitiesTest
         Duration earlyLead = Duration.ofHours( 6 );
         Duration lateLead = Duration.ofHours( 120 );
 
-        timeWindow = TimeWindowOuter.of( earlyRef, lateRef, earlyValid, lateValid, earlyLead, lateLead );
+        TimeWindow inner = MessageFactory.getTimeWindow( earlyRef,
+                                                         lateRef,
+                                                         earlyValid,
+                                                         lateValid,
+                                                         earlyLead,
+                                                         lateLead );
+        this.timeWindow = TimeWindowOuter.of( inner );
     }
 
     @Test
     public void testGetTimeWindowHeaderFromSampleMetadataWithInstantaneousTimeScale()
     {
         Pool pool = MessageFactory.getPool( (FeatureGroup) null,
-                                          this.timeWindow,
-                                          TimeScaleOuter.of(),
-                                          null,
-                                          false );
+                                            this.timeWindow,
+                                            TimeScaleOuter.of(),
+                                            null,
+                                            false );
 
         PoolMetadata metadata = PoolMetadata.of( CommaSeparatedUtilitiesTest.EVALUATION, pool );
 
@@ -75,10 +82,10 @@ public class CommaSeparatedUtilitiesTest
         TimeScaleOuter timeScale = TimeScaleOuter.of( Duration.ofHours( 1 ), TimeScaleFunction.TOTAL );
 
         Pool pool = MessageFactory.getPool( (FeatureGroup) null,
-                                          this.timeWindow,
-                                          timeScale,
-                                          null,
-                                          false );
+                                            this.timeWindow,
+                                            timeScale,
+                                            null,
+                                            false );
 
         PoolMetadata metadata = PoolMetadata.of( CommaSeparatedUtilitiesTest.EVALUATION, pool );
 

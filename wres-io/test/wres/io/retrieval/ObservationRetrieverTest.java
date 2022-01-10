@@ -54,6 +54,7 @@ import wres.io.data.details.SourceDetails;
 import wres.io.project.Project;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.TestDatabase;
+import wres.statistics.generated.TimeWindow;
 import wres.system.SystemSettings;
 
 /**
@@ -66,7 +67,7 @@ public class ObservationRetrieverTest
     private static final String SECOND_TIME = "2023-04-01T09:00:00Z";
     private static final String FIRST_TIME = "2023-04-01T03:00:00Z";
 
-    private static final FeatureKey FEATURE = FeatureKey.of( 
+    private static final FeatureKey FEATURE = FeatureKey.of(
                                                              MessageFactory.getGeometry( "FEAT" ) );
     private static final String VARIABLE_NAME = "VAR";
 
@@ -203,8 +204,9 @@ public class ObservationRetrieverTest
     public void testRetrievalOfPoolShapedObservedTimeSeriesWithSevenEvents()
     {
         // Build the pool boundaries
-        TimeWindowOuter poolBoundaries =
-                TimeWindowOuter.of( Instant.parse( "2023-04-01T02:00:00Z" ), Instant.parse( SECOND_TIME ) );
+        TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( "2023-04-01T02:00:00Z" ),
+                                                         Instant.parse( SECOND_TIME ) );
+        TimeWindowOuter poolBoundaries = TimeWindowOuter.of( inner );
 
         // Build the retriever
         Retriever<TimeSeries<Double>> observedRetriever =

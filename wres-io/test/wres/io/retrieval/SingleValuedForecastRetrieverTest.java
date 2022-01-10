@@ -55,6 +55,7 @@ import wres.io.data.details.SourceDetails;
 import wres.io.project.Project;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.TestDatabase;
+import wres.statistics.generated.TimeWindow;
 import wres.system.SystemSettings;
 
 /**
@@ -222,8 +223,13 @@ public class SingleValuedForecastRetrieverTest
         Duration leadStart = Duration.ofHours( 1 );
         Duration leadEnd = Duration.ofHours( 4 );
 
-        TimeWindowOuter timeWindow =
-                TimeWindowOuter.of( referenceStart, referenceEnd, validStart, validEnd, leadStart, leadEnd );
+        TimeWindow inner = MessageFactory.getTimeWindow( referenceStart,
+                                                         referenceEnd,
+                                                         validStart,
+                                                         validEnd,
+                                                         leadStart,
+                                                         leadEnd );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
         // Build the retriever
         Retriever<TimeSeries<Double>> forecastRetriever =

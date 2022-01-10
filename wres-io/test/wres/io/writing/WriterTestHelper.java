@@ -43,6 +43,7 @@ import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
 import wres.statistics.generated.BoxplotMetric.QuantileValueType;
 import wres.statistics.generated.BoxplotStatistic;
@@ -143,15 +144,15 @@ public class WriterTestHelper
     public static List<BoxplotStatisticOuter> getBoxPlotPerPoolForTwoPools()
     {
         // location id
-        FeatureKey feature = FeatureKey.of( 
+        FeatureKey feature = FeatureKey.of(
                                             MessageFactory.getGeometry( "JUNP1" ) );
 
         // Create fake outputs
-        TimeWindowOuter timeOne =
-                TimeWindowOuter.of( Instant.MIN,
-                                    Instant.MAX,
-                                    Duration.ofHours( 24 ),
-                                    Duration.ofHours( 24 ) );
+        TimeWindow innerOne = MessageFactory.getTimeWindow( Instant.MIN,
+                                                            Instant.MAX,
+                                                            Duration.ofHours( 24 ),
+                                                            Duration.ofHours( 24 ) );
+        TimeWindowOuter timeOne = TimeWindowOuter.of( innerOne );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
@@ -171,11 +172,11 @@ public class WriterTestHelper
                                                       null );
         FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
         Pool pool = MessageFactory.getPool( featureGroup,
-                                          timeOne,
-                                          null,
-                                          threshold,
-                                          false,
-                                          1 );
+                                            timeOne,
+                                            null,
+                                            threshold,
+                                            false,
+                                            1 );
 
         PoolMetadata fakeMetadataOne = PoolMetadata.of( evaluation, pool );
 
@@ -199,18 +200,18 @@ public class WriterTestHelper
 
         BoxplotStatisticOuter fakeOutputsOne = BoxplotStatisticOuter.of( boxOne, fakeMetadataOne );
 
-        TimeWindowOuter timeTwo =
-                TimeWindowOuter.of( Instant.MIN,
-                                    Instant.MAX,
-                                    Duration.ofHours( 48 ),
-                                    Duration.ofHours( 48 ) );
+        TimeWindow innerTwo = MessageFactory.getTimeWindow( Instant.MIN,
+                                                            Instant.MAX,
+                                                            Duration.ofHours( 48 ),
+                                                            Duration.ofHours( 48 ) );
+        TimeWindowOuter timeTwo = TimeWindowOuter.of( innerTwo );
 
         Pool poolTwo = MessageFactory.getPool( featureGroup,
-                                             timeTwo,
-                                             null,
-                                             threshold,
-                                             false,
-                                             2 );
+                                               timeTwo,
+                                               null,
+                                               threshold,
+                                               false,
+                                               2 );
 
         PoolMetadata fakeMetadataTwo = PoolMetadata.of( evaluation, poolTwo );
 
@@ -237,15 +238,15 @@ public class WriterTestHelper
     public static List<BoxplotStatisticOuter> getBoxPlotPerPairForOnePool()
     {
         // location id
-        FeatureKey feature = FeatureKey.of( 
+        FeatureKey feature = FeatureKey.of(
                                             MessageFactory.getGeometry( "JUNP1" ) );
 
         // Create fake outputs
-        TimeWindowOuter timeOne =
-                TimeWindowOuter.of( Instant.MIN,
-                                    Instant.MAX,
-                                    Duration.ofHours( 24 ),
-                                    Duration.ofHours( 24 ) );
+        TimeWindow innerOne = MessageFactory.getTimeWindow( Instant.MIN,
+                                                            Instant.MAX,
+                                                            Duration.ofHours( 24 ),
+                                                            Duration.ofHours( 24 ) );
+        TimeWindowOuter timeOne = TimeWindowOuter.of( innerOne );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
@@ -266,11 +267,11 @@ public class WriterTestHelper
         FeatureGroup featureGroup = FeatureGroup.of( "JUNP1-JUNP1", featureTuple );
 
         Pool pool = MessageFactory.getPool( featureGroup,
-                                          timeOne,
-                                          null,
-                                          threshold,
-                                          false,
-                                          1 );
+                                            timeOne,
+                                            null,
+                                            threshold,
+                                            false,
+                                            1 );
 
         PoolMetadata fakeMetadata = PoolMetadata.of( evaluation, pool );
 
@@ -320,14 +321,13 @@ public class WriterTestHelper
     {
 
         // location id
-        FeatureKey feature = FeatureKey.of( 
+        FeatureKey feature = FeatureKey.of(
                                             MessageFactory.getGeometry( "CREC1" ) );
-
-        TimeWindowOuter timeOne =
-                TimeWindowOuter.of( Instant.MIN,
-                                    Instant.MAX,
-                                    Duration.ofHours( 24 ),
-                                    Duration.ofHours( 24 ) );
+        TimeWindow innerOne = MessageFactory.getTimeWindow( Instant.MIN,
+                                                            Instant.MAX,
+                                                            Duration.ofHours( 24 ),
+                                                            Duration.ofHours( 24 ) );
+        TimeWindowOuter timeOne = TimeWindowOuter.of( innerOne );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),
@@ -349,11 +349,11 @@ public class WriterTestHelper
         FeatureGroup featureGroup = FeatureGroup.of( "CREC1-CREC1", featureTuple );
 
         Pool pool = MessageFactory.getPool( featureGroup,
-                                          timeOne,
-                                          null,
-                                          threshold,
-                                          false,
-                                          1 );
+                                            timeOne,
+                                            null,
+                                            threshold,
+                                            false,
+                                            1 );
 
         PoolMetadata fakeMetadata = PoolMetadata.of( evaluation, pool );
 
@@ -419,14 +419,13 @@ public class WriterTestHelper
     {
 
         // location id
-        FeatureKey feature = FeatureKey.of( 
+        FeatureKey feature = FeatureKey.of(
                                             MessageFactory.getGeometry( "FTSC1" ) );
-
-        TimeWindowOuter timeOne =
-                TimeWindowOuter.of( Instant.MIN,
-                                    Instant.MAX,
-                                    Duration.ofHours( 1 ),
-                                    Duration.ofHours( 18 ) );
+        TimeWindow innerOne = MessageFactory.getTimeWindow( Instant.MIN,
+                                                            Instant.MAX,
+                                                            Duration.ofHours( 1 ),
+                                                            Duration.ofHours( 18 ) );
+        TimeWindowOuter timeOne = TimeWindowOuter.of( innerOne );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
@@ -447,11 +446,11 @@ public class WriterTestHelper
         FeatureGroup featureGroup = FeatureGroup.of( "FTSC1-FTSC1", featureTuple );
 
         Pool pool = MessageFactory.getPool( featureGroup,
-                                          timeOne,
-                                          null,
-                                          threshold,
-                                          false,
-                                          1 );
+                                            timeOne,
+                                            null,
+                                            threshold,
+                                            false,
+                                            1 );
 
         PoolMetadata fakeMetadata = PoolMetadata.of( evaluation, pool );
 
@@ -516,10 +515,11 @@ public class WriterTestHelper
     {
 
         // location id
-        final FeatureKey feature = FeatureKey.of( 
-                                                  MessageFactory.getGeometry( "DRRC2" ) );
+        FeatureKey feature = FeatureKey.of(
+                                            MessageFactory.getGeometry( "DRRC2" ) );
 
-        TimeWindowOuter timeOne = TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
+        TimeWindow innerOne = MessageFactory.getTimeWindow( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
+        TimeWindowOuter timeOne = TimeWindowOuter.of( innerOne );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
@@ -540,11 +540,11 @@ public class WriterTestHelper
         FeatureGroup featureGroup = FeatureGroup.of( "DRRC2-DRRC2", featureTuple );
 
         Pool pool = MessageFactory.getPool( featureGroup,
-                                          timeOne,
-                                          null,
-                                          threshold,
-                                          false,
-                                          1 );
+                                            timeOne,
+                                            null,
+                                            threshold,
+                                            false,
+                                            1 );
 
         PoolMetadata fakeMetadata = PoolMetadata.of( evaluation, pool );
 
@@ -604,14 +604,15 @@ public class WriterTestHelper
     {
 
         // location id
-        final FeatureKey feature = FeatureKey.of( 
-                                                  MessageFactory.getGeometry( "DOLC2" ) );
+        FeatureKey feature = FeatureKey.of(
+                                            MessageFactory.getGeometry( "DOLC2" ) );
 
-        TimeWindowOuter timeOne =
-                TimeWindowOuter.of( Instant.MIN,
-                                    Instant.MAX,
-                                    Duration.ofHours( 1 ),
-                                    Duration.ofHours( 18 ) );
+        TimeWindow innerOne = MessageFactory.getTimeWindow( Instant.MIN,
+                                                            Instant.MAX,
+                                                            Duration.ofHours( 1 ),
+                                                            Duration.ofHours( 18 ) );
+
+        TimeWindowOuter timeOne = TimeWindowOuter.of( innerOne );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
@@ -632,11 +633,11 @@ public class WriterTestHelper
         FeatureGroup featureGroup = FeatureGroup.of( "DOLC2-DOLC2", featureTuple );
 
         Pool pool = MessageFactory.getPool( featureGroup,
-                                          timeOne,
-                                          null,
-                                          threshold,
-                                          false,
-                                          1 );
+                                            timeOne,
+                                            null,
+                                            threshold,
+                                            false,
+                                            1 );
 
         PoolMetadata fakeMetadata = PoolMetadata.of( evaluation, pool );
 
@@ -683,10 +684,11 @@ public class WriterTestHelper
     {
 
         // location id
-        final FeatureKey feature = FeatureKey.of( 
-                                                  MessageFactory.getGeometry( "FTSC1" ) );
+        FeatureKey feature = FeatureKey.of(
+                                            MessageFactory.getGeometry( "FTSC1" ) );
 
-        TimeWindowOuter timeOne = TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
+        TimeWindow innerOne = MessageFactory.getTimeWindow( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
+        TimeWindowOuter timeOne = TimeWindowOuter.of( innerOne );
 
         OneOrTwoThresholds thresholdOne = OneOrTwoThresholds.of( ThresholdOuter.ALL_DATA );
 
@@ -704,11 +706,11 @@ public class WriterTestHelper
         FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
 
         Pool pool = MessageFactory.getPool( featureGroup,
-                                          timeOne,
-                                          null,
-                                          thresholdOne,
-                                          false,
-                                          1 );
+                                            timeOne,
+                                            null,
+                                            thresholdOne,
+                                            false,
+                                            1 );
 
         PoolMetadata fakeMetadataA = PoolMetadata.of( evaluation, pool );
 
@@ -730,25 +732,26 @@ public class WriterTestHelper
                                                           ThresholdDataType.LEFT ) );
 
         Pool poolTwo = MessageFactory.getPool( featureGroup,
-                                             timeOne,
-                                             null,
-                                             thresholdTwo,
-                                             false,
-                                             2 );
+                                               timeOne,
+                                               null,
+                                               thresholdTwo,
+                                               false,
+                                               2 );
 
         PoolMetadata fakeMetadataB = PoolMetadata.of( evaluation, poolTwo );
 
         DoubleScoreStatisticOuter fakeOutputB = DoubleScoreStatisticOuter.of( one, fakeMetadataB );
 
         // Add data for another time, and one threshold only
-        TimeWindowOuter timeTwo = TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
+        TimeWindow innerTwo = MessageFactory.getTimeWindow( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
+        TimeWindowOuter timeTwo = TimeWindowOuter.of( innerTwo );
 
         Pool poolThree = MessageFactory.getPool( featureGroup,
-                                               timeTwo,
-                                               null,
-                                               thresholdOne,
-                                               false,
-                                               3 );
+                                                 timeTwo,
+                                                 null,
+                                                 thresholdOne,
+                                                 false,
+                                                 3 );
 
         PoolMetadata fakeMetadataC = PoolMetadata.of( evaluation, poolThree );
 

@@ -354,12 +354,12 @@ class PoolSlicerTest
 
         wres.statistics.generated.Pool poolOne =
                 MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l1, l1, l1 ) ),
-                                      TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                          Instant.parse( "1985-12-31T23:59:59Z" ) ),
-                                      null,
-                                      null,
-                                      false,
-                                      1 );
+                                        TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                                                          Instant.parse( "1985-12-31T23:59:59Z" ) ) ),
+                                        null,
+                                        null,
+                                        false,
+                                        1 );
 
         PoolMetadata m1 = PoolMetadata.of( evaluation, poolOne );
 
@@ -368,12 +368,12 @@ class PoolSlicerTest
 
         wres.statistics.generated.Pool poolTwo =
                 MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l2, l2, l2 ) ),
-                                      TimeWindowOuter.of( Instant.parse( SECOND_TIME ),
-                                                          Instant.parse( "1986-12-31T23:59:59Z" ) ),
-                                      null,
-                                      null,
-                                      false,
-                                      1 );
+                                        TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( SECOND_TIME ),
+                                                                                          Instant.parse( "1986-12-31T23:59:59Z" ) ) ),
+                                        null,
+                                        null,
+                                        false,
+                                        1 );
 
         PoolMetadata m2 = PoolMetadata.of( evaluation, poolTwo );
 
@@ -381,12 +381,12 @@ class PoolSlicerTest
 
         wres.statistics.generated.Pool poolThree =
                 MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l3, l3, l3 ) ),
-                                      TimeWindowOuter.of( Instant.parse( "1987-01-01T00:00:00Z" ),
-                                                          Instant.parse( "1988-01-01T00:00:00Z" ) ),
-                                      null,
-                                      null,
-                                      false,
-                                      1 );
+                                        TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "1987-01-01T00:00:00Z" ),
+                                                                                          Instant.parse( "1988-01-01T00:00:00Z" ) ) ),
+                                        null,
+                                        null,
+                                        false,
+                                        1 );
 
         PoolMetadata m3 = PoolMetadata.of( evaluation, poolThree );
 
@@ -395,14 +395,14 @@ class PoolSlicerTest
 
         wres.statistics.generated.Pool poolFour =
                 MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( benchmarkLocation,
-                                                                         benchmarkLocation,
-                                                                         benchmarkLocation ) ),
-                                      TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                          Instant.parse( "1988-01-01T00:00:00Z" ) ),
-                                      null,
-                                      null,
-                                      false,
-                                      1 );
+                                                                           benchmarkLocation,
+                                                                           benchmarkLocation ) ),
+                                        TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                                                          Instant.parse( "1988-01-01T00:00:00Z" ) ) ),
+                                        null,
+                                        null,
+                                        false,
+                                        1 );
 
 
         PoolMetadata benchmark = PoolMetadata.of( evaluation, poolFour );
@@ -466,11 +466,11 @@ class PoolSlicerTest
 
         wres.statistics.generated.Pool poolOne =
                 MessageFactory.getPool( FeatureGroup.of( drrc3 ),
-                                      null,
-                                      TimeScaleOuter.of( Duration.ofHours( 1 ) ),
-                                      null,
-                                      false,
-                                      1 );
+                                        null,
+                                        TimeScaleOuter.of( Duration.ofHours( 1 ) ),
+                                        null,
+                                        false,
+                                        1 );
 
         PoolMetadata failOne = PoolMetadata.of( evaluation, poolOne );
 
@@ -528,35 +528,35 @@ class PoolSlicerTest
 
         wres.statistics.generated.Pool poolOne =
                 MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( FeatureKey.of(
-                                                                                        MessageFactory.getGeometry( "A" ) ),
-                                                                         FeatureKey.of(
-                                                                                        MessageFactory.getGeometry( "B" ) ),
-                                                                         FeatureKey.of(
-                                                                                        MessageFactory.getGeometry( "C" ) ) ) ),
-                                      TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                          Instant.parse( SECOND_TIME ) ),
-                                      TimeScaleOuter.of(),
-                                      OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
-                                                                                Operator.GREATER,
-                                                                                ThresholdDataType.LEFT ) ),
-                                      false,
-                                      1 );
+                                                                                          MessageFactory.getGeometry( "A" ) ),
+                                                                           FeatureKey.of(
+                                                                                          MessageFactory.getGeometry( "B" ) ),
+                                                                           FeatureKey.of(
+                                                                                          MessageFactory.getGeometry( "C" ) ) ) ),
+                                        TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                                                          Instant.parse( SECOND_TIME ) ) ),
+                                        TimeScaleOuter.of(),
+                                        OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
+                                                                                  Operator.GREATER,
+                                                                                  ThresholdDataType.LEFT ) ),
+                                        false,
+                                        1 );
 
         wres.statistics.generated.Pool poolTwo =
                 MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( FeatureKey.of(
-                                                                                        MessageFactory.getGeometry( "D" ) ),
-                                                                         FeatureKey.of(
-                                                                                        MessageFactory.getGeometry( "E" ) ),
-                                                                         FeatureKey.of(
-                                                                                        MessageFactory.getGeometry( "F" ) ) ) ),
-                                      TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                          Instant.parse( FIRST_TIME ) ),
-                                      TimeScaleOuter.of(),
-                                      OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 2.0 ),
-                                                                                Operator.GREATER,
-                                                                                ThresholdDataType.LEFT ) ),
-                                      false,
-                                      1 );
+                                                                                          MessageFactory.getGeometry( "D" ) ),
+                                                                           FeatureKey.of(
+                                                                                          MessageFactory.getGeometry( "E" ) ),
+                                                                           FeatureKey.of(
+                                                                                          MessageFactory.getGeometry( "F" ) ) ) ),
+                                        TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                                                          Instant.parse( FIRST_TIME ) ) ),
+                                        TimeScaleOuter.of(),
+                                        OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 2.0 ),
+                                                                                  Operator.GREATER,
+                                                                                  ThresholdDataType.LEFT ) ),
+                                        false,
+                                        1 );
 
         PoolMetadata poolMetaOne = PoolMetadata.of( evaluation, poolOne );
         PoolMetadata poolMetaTwo = PoolMetadata.of( evaluation, poolTwo );
@@ -567,23 +567,23 @@ class PoolSlicerTest
 
         wres.statistics.generated.Pool expectedPool =
                 MessageFactory.getPool( FeatureGroup.of( Set.of( new FeatureTuple( FeatureKey.of(
-                                                                                                MessageFactory.getGeometry( "A" ) ),
-                                                                                 FeatureKey.of(
-                                                                                                MessageFactory.getGeometry( "B" ) ),
-                                                                                 FeatureKey.of(
-                                                                                                MessageFactory.getGeometry( "C" ) ) ),
-                                                               new FeatureTuple( FeatureKey.of(
-                                                                                                MessageFactory.getGeometry( "D" ) ),
-                                                                                 FeatureKey.of(
-                                                                                                MessageFactory.getGeometry( "E" ) ),
-                                                                                 FeatureKey.of(
-                                                                                                MessageFactory.getGeometry( "F" ) ) ) ) ),
-                                      TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                          Instant.parse( SECOND_TIME ) ),
-                                      TimeScaleOuter.of(),
-                                      null,
-                                      false,
-                                      1 );
+                                                                                                  MessageFactory.getGeometry( "A" ) ),
+                                                                                   FeatureKey.of(
+                                                                                                  MessageFactory.getGeometry( "B" ) ),
+                                                                                   FeatureKey.of(
+                                                                                                  MessageFactory.getGeometry( "C" ) ) ),
+                                                                 new FeatureTuple( FeatureKey.of(
+                                                                                                  MessageFactory.getGeometry( "D" ) ),
+                                                                                   FeatureKey.of(
+                                                                                                  MessageFactory.getGeometry( "E" ) ),
+                                                                                   FeatureKey.of(
+                                                                                                  MessageFactory.getGeometry( "F" ) ) ) ) ),
+                                        TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                                                          Instant.parse( SECOND_TIME ) ) ),
+                                        TimeScaleOuter.of(),
+                                        null,
+                                        false,
+                                        1 );
 
         PoolMetadata expected = PoolMetadata.of( evaluation, expectedPool );
 

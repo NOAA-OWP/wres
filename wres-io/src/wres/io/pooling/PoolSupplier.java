@@ -30,6 +30,7 @@ import net.jcip.annotations.ThreadSafe;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
@@ -55,6 +56,7 @@ import wres.io.config.ConfigHelper;
 import wres.io.pooling.RescalingEvent.RescalingType;
 import wres.io.retrieval.DataAccessException;
 import wres.io.retrieval.NoSuchUnitConversionException;
+import wres.statistics.generated.TimeWindow;
 import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.FeatureGroup;
 import wres.config.generated.FeatureService;
@@ -1822,11 +1824,12 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         {
 
             // Snip datetimes first, because lead durations are only snipped with respect to 
-            // the ReferenceTimeType.T0            
-            TimeWindowOuter partialSnip = TimeWindowOuter.of( snipTo.getEarliestReferenceTime(),
-                                                              snipTo.getLatestReferenceTime(),
-                                                              snipTo.getEarliestValidTime(),
-                                                              snipTo.getLatestValidTime() );
+            // the ReferenceTimeType.T0
+            TimeWindow inner = MessageFactory.getTimeWindow( snipTo.getEarliestReferenceTime(),
+                                                             snipTo.getLatestReferenceTime(),
+                                                             snipTo.getEarliestValidTime(),
+                                                             snipTo.getLatestValidTime() );
+            TimeWindowOuter partialSnip = TimeWindowOuter.of( inner );
 
             LOGGER.debug( "Snipping paired time-series {} to the pool boundaries of {}.",
                           toSnip.hashCode(),
@@ -1957,7 +1960,9 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             lowerBound = lowerBound.minus( timeScale.getPeriod() );
         }
 
-        return TimeWindowOuter.of( lowerBound, upperBound );
+        TimeWindow inner = MessageFactory.getTimeWindow( lowerBound, upperBound );
+
+        return TimeWindowOuter.of( inner );
     }
 
     /**

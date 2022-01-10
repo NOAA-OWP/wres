@@ -38,6 +38,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.TimeWindow;
 
 /**
  * Factory class for generating test datasets for metric calculations.
@@ -158,10 +159,10 @@ public final class MetricTestDataFactory
                                           .build();
 
         Pool pool = MessageFactory.getPool( MetricTestDataFactory.FEATURE_GROUP,
-                                          null,
-                                          null,
-                                          null,
-                                          false );
+                                            null,
+                                            null,
+                                            null,
+                                            false );
 
         return PoolMetadata.of( evaluation, pool );
     }
@@ -205,10 +206,11 @@ public final class MetricTestDataFactory
         firstValues.add( Event.of( Instant.parse( "1985-01-01T18:00:00Z" ), Pair.of( 5.0, 1.0 ) ) );
 
         // Create some default metadata for the time-series
-        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                           Instant.parse( FIRST_TIME ),
-                                                           Duration.ofHours( 6 ),
-                                                           Duration.ofHours( 18 ) );
+        TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                         Instant.parse( FIRST_TIME ),
+                                                         Duration.ofHours( 6 ),
+                                                         Duration.ofHours( 18 ) );
+        TimeWindowOuter window = TimeWindowOuter.of( inner );
 
         FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup();
 
@@ -218,10 +220,10 @@ public final class MetricTestDataFactory
                                           .build();
 
         Pool pool = MessageFactory.getPool( featureGroup,
-                                          window,
-                                          null,
-                                          null,
-                                          false );
+                                            window,
+                                            null,
+                                            null,
+                                            false );
 
         PoolMetadata metaData = PoolMetadata.of( evaluation, pool );
 
@@ -255,10 +257,11 @@ public final class MetricTestDataFactory
         secondValues.add( Event.of( Instant.parse( SIXTH_TIME ), Pair.of( 1.0, 10.0 ) ) );
 
         // Create some default metadata for the time-series
-        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( THIRD_TIME ),
-                                                           Instant.parse( THIRD_TIME ),
-                                                           Duration.ofHours( 6 ),
-                                                           Duration.ofHours( 18 ) );
+        TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( THIRD_TIME ),
+                                                         Instant.parse( THIRD_TIME ),
+                                                         Duration.ofHours( 6 ),
+                                                         Duration.ofHours( 18 ) );
+        TimeWindowOuter window = TimeWindowOuter.of( inner );
 
         FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup();
 
@@ -268,10 +271,10 @@ public final class MetricTestDataFactory
                                           .build();
 
         Pool pool = MessageFactory.getPool( featureGroup,
-                                          window,
-                                          null,
-                                          null,
-                                          false );
+                                            window,
+                                            null,
+                                            null,
+                                            false );
 
         PoolMetadata metaData = PoolMetadata.of( evaluation, pool );
 
@@ -296,8 +299,9 @@ public final class MetricTestDataFactory
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
 
         // Create some default metadata for the time-series
-        final TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
-                                                           Instant.MAX );
+        TimeWindow inner = MessageFactory.getTimeWindow( Instant.MIN,
+                                                         Instant.MAX );
+        TimeWindowOuter window = TimeWindowOuter.of( inner );
 
         FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup();
 
@@ -307,10 +311,10 @@ public final class MetricTestDataFactory
                                           .build();
 
         Pool pool = MessageFactory.getPool( featureGroup,
-                                          window,
-                                          null,
-                                          null,
-                                          false );
+                                            window,
+                                            null,
+                                            null,
+                                            false );
 
         PoolMetadata metaData = PoolMetadata.of( evaluation, pool );
 
@@ -344,9 +348,10 @@ public final class MetricTestDataFactory
             }
         }
 
-        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                           Instant.parse( SECOND_TIME ),
-                                                           Duration.ofHours( 1 ) );
+        TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                         Instant.parse( SECOND_TIME ),
+                                                         Duration.ofHours( 1 ) );
+        TimeWindowOuter window = TimeWindowOuter.of( inner );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "SQIN" )
@@ -355,10 +360,10 @@ public final class MetricTestDataFactory
                                           .build();
 
         Pool pool = MessageFactory.getPool( MetricTestDataFactory.getFeatureGroup(),
-                                          window,
-                                          null,
-                                          null,
-                                          false );
+                                            window,
+                                            null,
+                                            null,
+                                            false );
 
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
@@ -436,9 +441,10 @@ public final class MetricTestDataFactory
 
         Builder<TimeSeries<Pair<Double, Double>>> builder = new Builder<>();
 
-        TimeWindowOuter timeWindow = TimeWindowOuter.of( Instant.MIN,
+        TimeWindow inner = MessageFactory.getTimeWindow( Instant.MIN,
                                                          Instant.MAX,
                                                          Duration.ZERO );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
         FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup();
 
@@ -449,10 +455,10 @@ public final class MetricTestDataFactory
                                           .build();
 
         Pool pool = MessageFactory.getPool( featureGroup,
-                                          timeWindow,
-                                          null,
-                                          null,
-                                          false );
+                                            timeWindow,
+                                            null,
+                                            null,
+                                            false );
         return builder.addData( TimeSeries.of( MetricTestDataFactory.getBoilerplateMetadata(),
                                                events ) )
                       .setMetadata( PoolMetadata.of( evaluation, pool ) )
@@ -473,9 +479,10 @@ public final class MetricTestDataFactory
 
         List<Event<Pair<Double, Double>>> values = new ArrayList<>();
         values.add( Event.of( Instant.parse( "1985-01-01T00:00:00Z" ), Pair.of( 22.9, 22.8 ) ) );
-        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                     Instant.parse( SECOND_TIME ),
-                                                     Duration.ofHours( 24 ) );
+        TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                         Instant.parse( SECOND_TIME ),
+                                                         Duration.ofHours( 24 ) );
+        TimeWindowOuter window = TimeWindowOuter.of( inner );
 
         FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup();
 
@@ -485,10 +492,10 @@ public final class MetricTestDataFactory
                                           .build();
 
         Pool pool = MessageFactory.getPool( featureGroup,
-                                          window,
-                                          null,
-                                          null,
-                                          false );
+                                            window,
+                                            null,
+                                            null,
+                                            false );
 
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
@@ -528,9 +535,10 @@ public final class MetricTestDataFactory
 
         Builder<TimeSeries<Pair<Double, Double>>> builder = new Builder<>();
 
-        TimeWindowOuter timeWindow = TimeWindowOuter.of( Instant.MIN,
+        TimeWindow inner = MessageFactory.getTimeWindow( Instant.MIN,
                                                          Instant.MAX,
                                                          Duration.ZERO );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "SQIN" )
@@ -546,10 +554,10 @@ public final class MetricTestDataFactory
         FeatureGroup featureGroup = FeatureGroup.of( features );
 
         Pool pool = MessageFactory.getPool( featureGroup,
-                                          timeWindow,
-                                          null,
-                                          null,
-                                          false );
+                                            timeWindow,
+                                            null,
+                                            null,
+                                            false );
         return builder.addData( TimeSeries.of( MetricTestDataFactory.getBoilerplateMetadata(),
                                                events ) )
                       .setMetadata( PoolMetadata.of( evaluation, pool ) )
@@ -592,9 +600,10 @@ public final class MetricTestDataFactory
             }
         }
 
-        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                     Instant.parse( SECOND_TIME ),
-                                                     Duration.ofHours( 24 ) );
+        TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                         Instant.parse( SECOND_TIME ),
+                                                         Duration.ofHours( 24 ) );
+        TimeWindowOuter window = TimeWindowOuter.of( inner );
 
         FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup();
 
@@ -606,18 +615,18 @@ public final class MetricTestDataFactory
                                           .build();
 
         Pool pool = MessageFactory.getPool( featureGroup,
-                                          window,
-                                          null,
-                                          null,
-                                          false );
+                                            window,
+                                            null,
+                                            null,
+                                            false );
 
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
         Pool poolTwo = MessageFactory.getPool( featureGroup,
-                                             window,
-                                             null,
-                                             null,
-                                             true );
+                                               window,
+                                               null,
+                                               null,
+                                               true );
 
         PoolMetadata baseMeta = PoolMetadata.of( evaluation, poolTwo );
 
@@ -678,9 +687,10 @@ public final class MetricTestDataFactory
                               Pair.of( Double.NaN,
                                        Ensemble.of( Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN ) ) ) );
 
-        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                     Instant.parse( SECOND_TIME ),
-                                                     Duration.ofHours( 24 ) );
+        TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                         Instant.parse( SECOND_TIME ),
+                                                         Duration.ofHours( 24 ) );
+        TimeWindowOuter window = TimeWindowOuter.of( inner );
 
         FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup();
 
@@ -692,18 +702,18 @@ public final class MetricTestDataFactory
                                           .build();
 
         Pool pool = MessageFactory.getPool( featureGroup,
-                                          window,
-                                          null,
-                                          null,
-                                          false );
+                                            window,
+                                            null,
+                                            null,
+                                            false );
 
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
         Pool poolTwo = MessageFactory.getPool( featureGroup,
-                                             window,
-                                             null,
-                                             null,
-                                             true );
+                                               window,
+                                               null,
+                                               null,
+                                               true );
 
         PoolMetadata baseMeta = PoolMetadata.of( evaluation, poolTwo );
 
@@ -758,9 +768,10 @@ public final class MetricTestDataFactory
             }
         }
 
-        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                           Instant.parse( SECOND_TIME ),
-                                                           Duration.ofHours( 24 ) );
+        TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                         Instant.parse( SECOND_TIME ),
+                                                         Duration.ofHours( 24 ) );
+        TimeWindowOuter window = TimeWindowOuter.of( inner );
 
         FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup();
 
@@ -771,10 +782,10 @@ public final class MetricTestDataFactory
                                           .build();
 
         Pool pool = MessageFactory.getPool( featureGroup,
-                                          window,
-                                          null,
-                                          null,
-                                          false );
+                                            window,
+                                            null,
+                                            null,
+                                            false );
 
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
@@ -800,9 +811,10 @@ public final class MetricTestDataFactory
         SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
         values.add( Event.of( Instant.parse( "1985-03-12T00:00:00Z" ), Pair.of( 22.9, Ensemble.of( 22.8, 23.9 ) ) ) );
 
-        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                     Instant.parse( SECOND_TIME ),
-                                                     Duration.ofHours( 24 ) );
+        TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                         Instant.parse( SECOND_TIME ),
+                                                         Duration.ofHours( 24 ) );
+        TimeWindowOuter window = TimeWindowOuter.of( inner );
 
         FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup();
 
@@ -812,10 +824,10 @@ public final class MetricTestDataFactory
                                           .build();
 
         Pool pool = MessageFactory.getPool( featureGroup,
-                                          window,
-                                          null,
-                                          null,
-                                          false );
+                                            window,
+                                            null,
+                                            null,
+                                            false );
 
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
@@ -836,9 +848,10 @@ public final class MetricTestDataFactory
     public static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> getTimeSeriesOfEnsemblePairsFour()
     {
         //Construct some ensemble pairs
-        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                           Instant.parse( SECOND_TIME ),
-                                                           Duration.ofHours( 24 ) );
+        TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                         Instant.parse( SECOND_TIME ),
+                                                         Duration.ofHours( 24 ) );
+        TimeWindowOuter window = TimeWindowOuter.of( inner );
 
         FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup();
 
@@ -848,18 +861,18 @@ public final class MetricTestDataFactory
                                           .build();
 
         Pool pool = MessageFactory.getPool( featureGroup,
-                                          window,
-                                          null,
-                                          null,
-                                          false );
+                                            window,
+                                            null,
+                                            null,
+                                            false );
 
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
         Pool basePool = MessageFactory.getPool( featureGroup,
-                                              window,
-                                              null,
-                                              null,
-                                              true );
+                                                window,
+                                                null,
+                                                null,
+                                                true );
 
         PoolMetadata base = PoolMetadata.of( evaluation, basePool );
 

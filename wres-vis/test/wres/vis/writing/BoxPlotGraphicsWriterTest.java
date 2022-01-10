@@ -34,6 +34,7 @@ import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Outputs.PngFormat;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
 import wres.statistics.generated.BoxplotMetric.QuantileValueType;
 import wres.statistics.generated.BoxplotStatistic.Box;
@@ -133,11 +134,11 @@ public class BoxPlotGraphicsWriterTest
                                             MessageFactory.getGeometry( "JUNP1" ) );
 
         // Create fake outputs
-        TimeWindowOuter timeOne =
-                TimeWindowOuter.of( Instant.MIN,
-                                    Instant.MAX,
-                                    Duration.ofHours( 24 ),
-                                    Duration.ofHours( 24 ) );
+        TimeWindow innerOne = MessageFactory.getTimeWindow( Instant.MIN,
+                                                            Instant.MAX,
+                                                            Duration.ofHours( 24 ),
+                                                            Duration.ofHours( 24 ) );
+        TimeWindowOuter timeOne = TimeWindowOuter.of( innerOne );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
@@ -185,11 +186,11 @@ public class BoxPlotGraphicsWriterTest
 
         BoxplotStatisticOuter fakeOutputsOne = BoxplotStatisticOuter.of( boxOne, fakeMetadataOne );
 
-        TimeWindowOuter timeTwo =
-                TimeWindowOuter.of( Instant.MIN,
-                                    Instant.MAX,
-                                    Duration.ofHours( 48 ),
-                                    Duration.ofHours( 48 ) );
+        TimeWindow innerTwo = MessageFactory.getTimeWindow( Instant.MIN,
+                                                            Instant.MAX,
+                                                            Duration.ofHours( 48 ),
+                                                            Duration.ofHours( 48 ) );
+        TimeWindowOuter timeTwo = TimeWindowOuter.of( innerTwo );
 
         Pool poolTwo = MessageFactory.getPool( featureGroup,
                                              timeTwo,
@@ -226,11 +227,11 @@ public class BoxPlotGraphicsWriterTest
                                             MessageFactory.getGeometry( "JUNP1" ) );
 
         // Create fake outputs
-        TimeWindowOuter timeOne =
-                TimeWindowOuter.of( Instant.MIN,
-                                    Instant.MAX,
-                                    Duration.ofHours( 24 ),
-                                    Duration.ofHours( 24 ) );
+        TimeWindow innerOne = MessageFactory.getTimeWindow( Instant.MIN,
+                                                            Instant.MAX,
+                                                            Duration.ofHours( 24 ),
+                                                            Duration.ofHours( 24 ) );
+        TimeWindowOuter timeOne = TimeWindowOuter.of( innerOne );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),

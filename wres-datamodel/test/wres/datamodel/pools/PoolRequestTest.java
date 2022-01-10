@@ -41,15 +41,15 @@ class PoolRequestTest
                                                MessageFactory.getGeometry( "DRRC2" ) );
         this.featureGroup = FeatureGroup.of( new FeatureTuple( featureOne, featureOne, featureOne ) );
 
-        this.timeWindow = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                              Instant.parse( "1985-12-31T23:59:59Z" ) );
+        this.timeWindow = TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                            Instant.parse( "1985-12-31T23:59:59Z" ) ) );
 
         Pool poolOne = MessageFactory.getPool( this.featureGroup,
-                                             this.timeWindow,
-                                             null,
-                                             null,
-                                             false,
-                                             1 );
+                                               this.timeWindow,
+                                               null,
+                                               null,
+                                               false,
+                                               1 );
 
         this.poolMetadata = PoolMetadata.of( this.evaluation, poolOne );
 
@@ -64,11 +64,11 @@ class PoolRequestTest
 
         // Symmetric
         Pool anotherPool = MessageFactory.getPool( this.featureGroup,
-                                                 this.timeWindow,
-                                                 null,
-                                                 null,
-                                                 false,
-                                                 1 );
+                                                   this.timeWindow,
+                                                   null,
+                                                   null,
+                                                   false,
+                                                   1 );
 
         PoolMetadata anotherPoolMetadata = PoolMetadata.of( this.evaluation, anotherPool );
         PoolRequest anotherPoolRequest = PoolRequest.of( anotherPoolMetadata );
@@ -78,11 +78,11 @@ class PoolRequestTest
 
         // Transitive
         Pool yetAnotherPool = MessageFactory.getPool( this.featureGroup,
-                                                    this.timeWindow,
-                                                    null,
-                                                    null,
-                                                    false,
-                                                    1 );
+                                                      this.timeWindow,
+                                                      null,
+                                                      null,
+                                                      false,
+                                                      1 );
 
         PoolMetadata yetAnotherPoolMetadata = PoolMetadata.of( this.evaluation, yetAnotherPool );
         PoolRequest yetAnotherPoolRequest = PoolRequest.of( yetAnotherPoolMetadata );
@@ -106,11 +106,11 @@ class PoolRequestTest
                                              MessageFactory.getGeometry( "DRRC3" ) );
 
         Pool oneMorePool = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( aFeature, aFeature, aFeature ) ),
-                                                 this.timeWindow,
-                                                 null,
-                                                 null,
-                                                 false,
-                                                 1 );
+                                                   this.timeWindow,
+                                                   null,
+                                                   null,
+                                                   false,
+                                                   1 );
 
         PoolMetadata oneMorePoolMetadata = PoolMetadata.of( this.evaluation, oneMorePool );
         PoolRequest oneMorePoolRequest = PoolRequest.of( oneMorePoolMetadata );

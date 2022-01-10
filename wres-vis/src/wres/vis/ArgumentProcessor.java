@@ -18,6 +18,7 @@ import ohd.hseb.hefs.utils.arguments.DefaultArgumentsProcessor;
 import ohd.hseb.hefs.utils.plugins.UniqueGenericParameterList;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.Slicer;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.MetricGroup;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
@@ -29,6 +30,7 @@ import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
+import wres.statistics.generated.TimeWindow;
 import wres.vis.ChartEngineFactory.ChartType;
 
 /**
@@ -206,12 +208,13 @@ class ArgumentProcessor extends DefaultArgumentsProcessor
             SortedSet<TimeWindowOuter> timeWindows =
                     Slicer.discover( displayedPlotInput,
                                      next -> next.getMetadata().getTimeWindow() );
-            TimeWindowOuter timeWindow = TimeWindowOuter.of( timeWindows.first().getEarliestReferenceTime(),
+            TimeWindow inner = MessageFactory.getTimeWindow( timeWindows.first().getEarliestReferenceTime(),
                                                              timeWindows.last().getLatestReferenceTime(),
                                                              timeWindows.first().getEarliestValidTime(),
                                                              timeWindows.last().getLatestValidTime(),
                                                              timeWindows.first().getEarliestLeadDuration(),
                                                              timeWindows.last().getLatestLeadDuration() );
+            TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
             recordWindowingArguments( timeWindow );
         }
         else

@@ -17,7 +17,9 @@ import wres.config.generated.IntBoundsType;
 import wres.config.generated.PairConfig;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.TimeWindow;
 
 /**
  * <p>Helper class whose methods generate collections of {@link TimeWindowOuter} from project declaration.
@@ -190,12 +192,14 @@ public final class TimeWindowGenerator
         // Window increments are zero?
         if ( Duration.ZERO.equals( increment ) )
         {
-            timeWindows.add( TimeWindowOuter.of( baseWindow.getEarliestReferenceTime(),
-                                                 baseWindow.getLatestReferenceTime(),
-                                                 baseWindow.getEarliestValidTime(),
-                                                 baseWindow.getLatestValidTime(),
-                                                 earliestExclusive,
-                                                 latestInclusive ) );
+            TimeWindow inner = MessageFactory.getTimeWindow( baseWindow.getEarliestReferenceTime(),
+                                                             baseWindow.getLatestReferenceTime(),
+                                                             baseWindow.getEarliestValidTime(),
+                                                             baseWindow.getLatestValidTime(),
+                                                             earliestExclusive,
+                                                             latestInclusive );
+            TimeWindowOuter outer = TimeWindowOuter.of( inner );
+            timeWindows.add( outer );
         }
         // Create as many windows as required at the prescribed increment
         else
@@ -203,12 +207,14 @@ public final class TimeWindowGenerator
             while ( latestInclusive.compareTo( latestLeadDurationInclusive ) <= 0 )
             {
                 // Add the current time window
-                timeWindows.add( TimeWindowOuter.of( baseWindow.getEarliestReferenceTime(),
-                                                     baseWindow.getLatestReferenceTime(),
-                                                     baseWindow.getEarliestValidTime(),
-                                                     baseWindow.getLatestValidTime(),
-                                                     earliestExclusive,
-                                                     latestInclusive ) );
+                TimeWindow inner = MessageFactory.getTimeWindow( baseWindow.getEarliestReferenceTime(),
+                                                                 baseWindow.getLatestReferenceTime(),
+                                                                 baseWindow.getEarliestValidTime(),
+                                                                 baseWindow.getLatestValidTime(),
+                                                                 earliestExclusive,
+                                                                 latestInclusive );
+                TimeWindowOuter outer = TimeWindowOuter.of( inner );
+                timeWindows.add( outer );
 
                 // Increment from left-to-right: #56213-104
                 earliestExclusive = earliestExclusive.plus( increment );
@@ -373,22 +379,24 @@ public final class TimeWindowGenerator
         // Issued dates
         if ( areIssuedTimes )
         {
-            return TimeWindowOuter.of( earliestExclusive,
-                                       latestInclusive,
-                                       baseWindow.getEarliestValidTime(),
-                                       baseWindow.getLatestValidTime(),
-                                       baseWindow.getEarliestLeadDuration(),
-                                       baseWindow.getLatestLeadDuration() );
+            TimeWindow inner = MessageFactory.getTimeWindow( earliestExclusive,
+                                                             latestInclusive,
+                                                             baseWindow.getEarliestValidTime(),
+                                                             baseWindow.getLatestValidTime(),
+                                                             baseWindow.getEarliestLeadDuration(),
+                                                             baseWindow.getLatestLeadDuration() );
+            return TimeWindowOuter.of( inner );
         }
         // Valid dates
         else
         {
-            return TimeWindowOuter.of( baseWindow.getEarliestReferenceTime(),
-                                       baseWindow.getLatestReferenceTime(),
-                                       earliestExclusive,
-                                       latestInclusive,
-                                       baseWindow.getEarliestLeadDuration(),
-                                       baseWindow.getLatestLeadDuration() );
+            TimeWindow inner = MessageFactory.getTimeWindow( baseWindow.getEarliestReferenceTime(),
+                                                             baseWindow.getLatestReferenceTime(),
+                                                             earliestExclusive,
+                                                             latestInclusive,
+                                                             baseWindow.getEarliestLeadDuration(),
+                                                             baseWindow.getLatestLeadDuration() );
+            return TimeWindowOuter.of( inner );
         }
     }
 
@@ -417,12 +425,13 @@ public final class TimeWindowGenerator
         {
             for ( TimeWindowOuter nextLeadWindow : leadDurationWindows )
             {
-                TimeWindowOuter composite = TimeWindowOuter.of( nextIssuedWindow.getEarliestReferenceTime(),
-                                                                nextIssuedWindow.getLatestReferenceTime(),
-                                                                nextIssuedWindow.getEarliestValidTime(),
-                                                                nextIssuedWindow.getLatestValidTime(),
-                                                                nextLeadWindow.getEarliestLeadDuration(),
-                                                                nextLeadWindow.getLatestLeadDuration() );
+                TimeWindow inner = MessageFactory.getTimeWindow( nextIssuedWindow.getEarliestReferenceTime(),
+                                                                 nextIssuedWindow.getLatestReferenceTime(),
+                                                                 nextIssuedWindow.getEarliestValidTime(),
+                                                                 nextIssuedWindow.getLatestValidTime(),
+                                                                 nextLeadWindow.getEarliestLeadDuration(),
+                                                                 nextLeadWindow.getLatestLeadDuration() );
+                TimeWindowOuter composite = TimeWindowOuter.of( inner );
                 timeWindows.add( composite );
             }
         }
@@ -455,12 +464,13 @@ public final class TimeWindowGenerator
         {
             for ( TimeWindowOuter nextIssuedWindow : issuedDatesWindows )
             {
-                TimeWindowOuter composite = TimeWindowOuter.of( nextIssuedWindow.getEarliestReferenceTime(),
-                                                                nextIssuedWindow.getLatestReferenceTime(),
-                                                                nextValidWindow.getEarliestValidTime(),
-                                                                nextValidWindow.getLatestValidTime(),
-                                                                nextValidWindow.getEarliestLeadDuration(),
-                                                                nextValidWindow.getLatestLeadDuration() );
+                TimeWindow inner = MessageFactory.getTimeWindow( nextIssuedWindow.getEarliestReferenceTime(),
+                                                                 nextIssuedWindow.getLatestReferenceTime(),
+                                                                 nextValidWindow.getEarliestValidTime(),
+                                                                 nextValidWindow.getLatestValidTime(),
+                                                                 nextValidWindow.getEarliestLeadDuration(),
+                                                                 nextValidWindow.getLatestLeadDuration() );
+                TimeWindowOuter composite = TimeWindowOuter.of( inner );
                 timeWindows.add( composite );
             }
         }
@@ -493,12 +503,13 @@ public final class TimeWindowGenerator
         {
             for ( TimeWindowOuter nextLeadWindow : leadDurationWindows )
             {
-                TimeWindowOuter composite = TimeWindowOuter.of( nextValidWindow.getEarliestReferenceTime(),
-                                                                nextValidWindow.getLatestReferenceTime(),
-                                                                nextValidWindow.getEarliestValidTime(),
-                                                                nextValidWindow.getLatestValidTime(),
-                                                                nextLeadWindow.getEarliestLeadDuration(),
-                                                                nextLeadWindow.getLatestLeadDuration() );
+                TimeWindow inner = MessageFactory.getTimeWindow( nextValidWindow.getEarliestReferenceTime(),
+                                                                 nextValidWindow.getLatestReferenceTime(),
+                                                                 nextValidWindow.getEarliestValidTime(),
+                                                                 nextValidWindow.getLatestValidTime(),
+                                                                 nextLeadWindow.getEarliestLeadDuration(),
+                                                                 nextLeadWindow.getLatestLeadDuration() );
+                TimeWindowOuter composite = TimeWindowOuter.of( inner );
                 timeWindows.add( composite );
             }
         }
@@ -534,12 +545,13 @@ public final class TimeWindowGenerator
             {
                 for ( TimeWindowOuter nextLeadWindow : leadDurationWindows )
                 {
-                    TimeWindowOuter composite = TimeWindowOuter.of( nextIssuedWindow.getEarliestReferenceTime(),
-                                                                    nextIssuedWindow.getLatestReferenceTime(),
-                                                                    nextValidWindow.getEarliestValidTime(),
-                                                                    nextValidWindow.getLatestValidTime(),
-                                                                    nextLeadWindow.getEarliestLeadDuration(),
-                                                                    nextLeadWindow.getLatestLeadDuration() );
+                    TimeWindow inner = MessageFactory.getTimeWindow( nextIssuedWindow.getEarliestReferenceTime(),
+                                                                     nextIssuedWindow.getLatestReferenceTime(),
+                                                                     nextValidWindow.getEarliestValidTime(),
+                                                                     nextValidWindow.getLatestValidTime(),
+                                                                     nextLeadWindow.getEarliestLeadDuration(),
+                                                                     nextLeadWindow.getLatestLeadDuration() );
+                    TimeWindowOuter composite = TimeWindowOuter.of( inner );
                     timeWindows.add( composite );
                 }
             }
@@ -621,12 +633,14 @@ public final class TimeWindowGenerator
             }
         }
 
-        return TimeWindowOuter.of( earliestReferenceTime,
-                                   latestReferenceTime,
-                                   earliestValidTime,
-                                   latestValidTime,
-                                   smallestLeadDuration,
-                                   largestLeadDuration );
+        TimeWindow inner = MessageFactory.getTimeWindow( earliestReferenceTime,
+                                                         latestReferenceTime,
+                                                         earliestValidTime,
+                                                         latestValidTime,
+                                                         smallestLeadDuration,
+                                                         largestLeadDuration );
+
+        return TimeWindowOuter.of( inner );
     }
 
     /**
