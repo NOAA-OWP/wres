@@ -8,7 +8,11 @@ import java.util.Set;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.protobuf.Timestamp;
 
 import net.jcip.annotations.Immutable;
@@ -65,10 +69,15 @@ public class TimeWindowOuter implements Comparable<TimeWindowOuter>
 
     public static final Duration DURATION_MAX = Duration.ofSeconds( Long.MAX_VALUE, 999_999_999 );
 
-    /**
-     * The internal state.
-     */
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( TimeWindowOuter.class );
 
+    /** Cache of time windows, one per class loader. Arbitrarily constrained, more than a handful. */
+    private static final Cache<TimeWindow, TimeWindowOuter> TIME_WINDOW_CACHE = Caffeine.newBuilder()
+                                                                                        .maximumSize( 500 )
+                                                                                        .build();
+
+    /** The canonical description. */
     private final TimeWindow timeWindow;
 
     /**
@@ -80,7 +89,16 @@ public class TimeWindowOuter implements Comparable<TimeWindowOuter>
 
     public static TimeWindowOuter of( TimeWindow timeWindow )
     {
-        return new TimeWindowOuter( timeWindow );
+        // Check the cache
+        TimeWindowOuter cached = TIME_WINDOW_CACHE.getIfPresent( timeWindow );
+        if ( Objects.nonNull( cached ) )
+        {
+            return cached;
+        }
+
+        TimeWindowOuter newInstance = new TimeWindowOuter( timeWindow );
+        TIME_WINDOW_CACHE.put( timeWindow, newInstance );
+        return newInstance;
     }
 
     /**
@@ -421,6 +439,11 @@ public class TimeWindowOuter implements Comparable<TimeWindowOuter>
         {
             throw new IllegalArgumentException( "Cannot define a time window whose latest lead duration is "
                                                 + "before its earliest lead duration." );
+        }
+
+        if ( LOGGER.isTraceEnabled() )
+        {
+            LOGGER.trace( "Created a new time window: {}.", this );
         }
     }
 
