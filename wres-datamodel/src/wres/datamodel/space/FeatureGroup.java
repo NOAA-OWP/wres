@@ -43,7 +43,7 @@ public class FeatureGroup implements Comparable<FeatureGroup>
      */
     public static FeatureGroup of( Set<FeatureTuple> features )
     {
-        return new FeatureGroup( null, features );
+        return FeatureGroup.of( null, features );
     }
 
     /**
@@ -79,7 +79,7 @@ public class FeatureGroup implements Comparable<FeatureGroup>
     {
         Objects.requireNonNull( feature );
 
-        return new FeatureGroup( name, Collections.singleton( feature ) );
+        return FeatureGroup.of( name, Collections.singleton( feature ) );
     }
 
     /**

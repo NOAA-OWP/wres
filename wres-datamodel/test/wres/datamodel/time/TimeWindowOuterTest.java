@@ -15,6 +15,7 @@ import org.junit.Test;
 
 import com.google.protobuf.Timestamp;
 
+import wres.datamodel.messages.MessageFactory;
 import wres.statistics.generated.TimeWindow;
 
 /**
@@ -41,18 +42,19 @@ public final class TimeWindowOuterTest
     public void testAccessors()
     {
         //Construct a window from 1985-01-01T00:00:00Z to 2010-12-31T11:59:59Z with lead times of 6-120h
-        TimeWindowOuter window = TimeWindowOuter.of( SECOND_TIME,
-                                                     FIFTH_TIME,
-                                                     THIRD_TIME,
-                                                     FOURTH_TIME,
-                                                     Duration.ofHours( 6 ),
-                                                     Duration.ofHours( 120 ) );
-        assertEquals( window.getEarliestReferenceTime(), SECOND_TIME );
-        assertEquals( window.getLatestReferenceTime(), FIFTH_TIME );
-        assertEquals( window.getEarliestValidTime(), THIRD_TIME );
-        assertEquals( window.getLatestValidTime(), FOURTH_TIME );
-        assertEquals( window.getEarliestLeadDuration(), Duration.ofHours( 6 ) );
-        assertEquals( window.getLatestLeadDuration(), Duration.ofHours( 120 ) );
+        TimeWindow inner = MessageFactory.getTimeWindow( SECOND_TIME,
+                                                         FIFTH_TIME,
+                                                         THIRD_TIME,
+                                                         FOURTH_TIME,
+                                                         Duration.ofHours( 6 ),
+                                                         Duration.ofHours( 120 ) );
+        TimeWindowOuter window = TimeWindowOuter.of( inner );
+        assertEquals( SECOND_TIME, window.getEarliestReferenceTime() );
+        assertEquals( FIFTH_TIME, window.getLatestReferenceTime() );
+        assertEquals( THIRD_TIME, window.getEarliestValidTime() );
+        assertEquals( FOURTH_TIME, window.getLatestValidTime() );
+        assertEquals( Duration.ofHours( 6 ), window.getEarliestLeadDuration() );
+        assertEquals( Duration.ofHours( 120 ), window.getLatestLeadDuration() );
     }
 
     /**
@@ -62,82 +64,59 @@ public final class TimeWindowOuterTest
     @Test
     public void testEquals()
     {
-        TimeWindowOuter window = TimeWindowOuter.of( SECOND_TIME,
-                                                     FIFTH_TIME,
-                                                     Duration.ofSeconds( Long.MIN_VALUE ),
-                                                     Duration.ofSeconds( Long.MAX_VALUE, 999_999_999 ) );
+        TimeWindow inner = MessageFactory.getTimeWindow( SECOND_TIME,
+                                                         FIFTH_TIME,
+                                                         Duration.ofSeconds( Long.MIN_VALUE ),
+                                                         Duration.ofSeconds( Long.MAX_VALUE, 999_999_999 ) );
+        TimeWindowOuter window = TimeWindowOuter.of( inner );
 
-        TimeWindowOuter equalWindow = TimeWindowOuter.of( SECOND_TIME,
-                                                          FIFTH_TIME,
-                                                          TimeWindowOuter.DURATION_MIN,
-                                                          TimeWindowOuter.DURATION_MAX );
+        TimeWindow innerEqual = MessageFactory.getTimeWindow( SECOND_TIME,
+                                                              FIFTH_TIME,
+                                                              TimeWindowOuter.DURATION_MIN,
+                                                              TimeWindowOuter.DURATION_MAX );
+
+        TimeWindowOuter equalWindow = TimeWindowOuter.of( innerEqual );
         assertEquals( window, equalWindow );
         assertNotEquals( Double.valueOf( 1.0 ), window );
-        assertTrue( !window.equals( TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:01Z" ),
-                                                        FIFTH_TIME ) ) );
-        assertTrue( !window.equals( TimeWindowOuter.of( SECOND_TIME,
-                                                        Instant.parse( "2011-01-01T00:00:00Z" ) ) ) );
-        assertTrue( !window.equals( TimeWindowOuter.of( SECOND_TIME,
-                                                        FIFTH_TIME,
-                                                        SECOND_TIME,
-                                                        Instant.MAX,
-                                                        Duration.ZERO,
-                                                        Duration.ZERO ) ) );
-        assertTrue( !window.equals( TimeWindowOuter.of( SECOND_TIME,
-                                                        FIFTH_TIME,
-                                                        Instant.MIN,
-                                                        FIFTH_TIME,
-                                                        Duration.ZERO,
-                                                        Duration.ZERO ) ) );
-        assertTrue( !window.equals( TimeWindowOuter.of( SECOND_TIME,
-                                                        FIFTH_TIME,
-                                                        Duration.ofHours( -1 ),
-                                                        Duration.ZERO ) ) );
-        assertTrue( !window.equals( TimeWindowOuter.of( SECOND_TIME,
-                                                        FIFTH_TIME,
-                                                        Duration.ZERO,
-                                                        Duration.ofHours( 1 ) ) ) );
-        TimeWindowOuter hours = TimeWindowOuter.of( SECOND_TIME,
-                                                    FIFTH_TIME,
-                                                    Duration.ofHours( 1 ),
-                                                    Duration.ofHours( 1 ) );
-        TimeWindowOuter days = TimeWindowOuter.of( SECOND_TIME,
-                                                   FIFTH_TIME,
-                                                   Duration.ofDays( 1 ),
-                                                   Duration.ofDays( 1 ) );
-        assertTrue( !hours.equals( days ) );
-    }
-
-    @Test
-    public void testEqualsOnTwoDifferentConstructionRoutes()
-    {
-        TimeWindowOuter window = TimeWindowOuter.of( SECOND_TIME,
-                                                     FIFTH_TIME,
-                                                     Duration.ofSeconds( Long.MIN_VALUE ),
-                                                     Duration.ofSeconds( Long.MAX_VALUE, 999_999_999 ) );
-
-        TimeWindow innerWindow = TimeWindow.newBuilder()
-                                           .setEarliestReferenceTime( Timestamp.newBuilder()
-                                                                               .setSeconds( SECOND_TIME.getEpochSecond() ) )
-                                           .setLatestReferenceTime( Timestamp.newBuilder()
-                                                                             .setSeconds( FIFTH_TIME.getEpochSecond() ) )
-                                           .setEarliestValidTime( Timestamp.newBuilder()
-                                                                           .setSeconds( Instant.MIN.getEpochSecond() )
-                                                                           .setNanos( Instant.MIN.getNano() ) )
-                                           .setLatestValidTime( Timestamp.newBuilder()
-                                                                         .setSeconds( Instant.MAX.getEpochSecond() )
-                                                                         .setNanos( Instant.MAX.getNano() ) )
-                                           .setEarliestLeadDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                                 .setSeconds( Long.MIN_VALUE ) )
-                                           .setLatestLeadDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                               .setSeconds( Long.MAX_VALUE )
-                                                                                               .setNanos( 999_999_999 ) )
-                                           .build();
-
-
-        TimeWindowOuter equalWindow = new TimeWindowOuter.Builder( innerWindow ).build();
-
-        assertEquals( window, equalWindow );
+        assertNotEquals( window,
+                         TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "1985-01-01T00:00:01Z" ),
+                                                                           FIFTH_TIME ) ) );
+        assertNotEquals( window,
+                         TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                           Instant.parse( "2011-01-01T00:00:00Z" ) ) ) );
+        assertNotEquals( window,
+                         TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                           FIFTH_TIME,
+                                                                           SECOND_TIME,
+                                                                           Instant.MAX,
+                                                                           Duration.ZERO,
+                                                                           Duration.ZERO ) ) );
+        assertNotEquals( window,
+                         TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                           FIFTH_TIME,
+                                                                           Instant.MIN,
+                                                                           FIFTH_TIME,
+                                                                           Duration.ZERO,
+                                                                           Duration.ZERO ) ) );
+        assertNotEquals( window,
+                         TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                           FIFTH_TIME,
+                                                                           Duration.ofHours( -1 ),
+                                                                           Duration.ZERO ) ) );
+        assertNotEquals( window,
+                         TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                           FIFTH_TIME,
+                                                                           Duration.ZERO,
+                                                                           Duration.ofHours( 1 ) ) ) );
+        TimeWindowOuter hours = TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                  FIFTH_TIME,
+                                                                                  Duration.ofHours( 1 ),
+                                                                                  Duration.ofHours( 1 ) ) );
+        TimeWindowOuter days = TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                 FIFTH_TIME,
+                                                                                 Duration.ofDays( 1 ),
+                                                                                 Duration.ofDays( 1 ) ) );
+        assertNotEquals( hours, days );
     }
 
     /**
@@ -147,27 +126,28 @@ public final class TimeWindowOuterTest
     @Test
     public void testHashCode()
     {
-        TimeWindowOuter first = TimeWindowOuter.of( SECOND_TIME,
-                                                    FIFTH_TIME,
-                                                    Duration.ofSeconds( Long.MIN_VALUE ),
-                                                    Duration.ofSeconds( Long.MAX_VALUE, 999_999_999 ) );
-        TimeWindowOuter second = TimeWindowOuter.of( SECOND_TIME,
-                                                     FIFTH_TIME,
-                                                     TimeWindowOuter.DURATION_MIN,
-                                                     TimeWindowOuter.DURATION_MAX );
+        TimeWindowOuter first = TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                  FIFTH_TIME,
+                                                                                  Duration.ofSeconds( Long.MIN_VALUE ),
+                                                                                  Duration.ofSeconds( Long.MAX_VALUE,
+                                                                                                      999_999_999 ) ) );
+        TimeWindowOuter second = TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                   FIFTH_TIME,
+                                                                                   TimeWindowOuter.DURATION_MIN,
+                                                                                   TimeWindowOuter.DURATION_MAX ) );
 
-        TimeWindowOuter third = TimeWindowOuter.of( SECOND_TIME,
-                                                    FIFTH_TIME,
-                                                    THIRD_TIME,
-                                                    FOURTH_TIME,
-                                                    Duration.ZERO,
-                                                    Duration.ofHours( 120 ) );
-        TimeWindowOuter fourth = TimeWindowOuter.of( SECOND_TIME,
-                                                     FIFTH_TIME,
-                                                     THIRD_TIME,
-                                                     FOURTH_TIME,
-                                                     Duration.ZERO,
-                                                     Duration.ofHours( 120 ) );
+        TimeWindowOuter third = TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                  FIFTH_TIME,
+                                                                                  THIRD_TIME,
+                                                                                  FOURTH_TIME,
+                                                                                  Duration.ZERO,
+                                                                                  Duration.ofHours( 120 ) ) );
+        TimeWindowOuter fourth = TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                   FIFTH_TIME,
+                                                                                   THIRD_TIME,
+                                                                                   FOURTH_TIME,
+                                                                                   Duration.ZERO,
+                                                                                   Duration.ofHours( 120 ) ) );
         assertEquals( first.hashCode(), second.hashCode() );
         assertEquals( third.hashCode(), fourth.hashCode() );
     }
@@ -180,68 +160,70 @@ public final class TimeWindowOuterTest
     public void testCompareTo()
     {
         //Construct a window from 1985-01-01T00:00:00Z to 2010-12-31T11:59:59Z with lead times of 6-120h
-        TimeWindowOuter window = TimeWindowOuter.of( SECOND_TIME,
-                                                     FIFTH_TIME,
-                                                     Duration.ZERO );
+        TimeWindowOuter window = TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                   FIFTH_TIME,
+                                                                                   Duration.ZERO ) );
 
         //EQUAL
-        assertTrue( window.compareTo( TimeWindowOuter.of( SECOND_TIME,
-                                                          FIFTH_TIME,
-                                                          Duration.ZERO ) ) == 0 );
-        assertTrue( TimeWindowOuter.of( SECOND_TIME,
-                                        FIFTH_TIME,
-                                        Duration.ZERO )
-                                   .compareTo( window ) == 0 );
+        assertEquals( 0,
+                      window.compareTo( TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                          FIFTH_TIME,
+                                                                                          Duration.ZERO ) ) ) );
+        assertEquals( 0,
+                      TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                        FIFTH_TIME,
+                                                                        Duration.ZERO ) )
+                                     .compareTo( window ) );
         //Transitive
         //x.compareTo(y) > 0
-        assertTrue( window.compareTo( TimeWindowOuter.of( Instant.parse( "1984-01-01T00:00:00Z" ),
-                                                          FIFTH_TIME,
-                                                          Duration.ZERO ) ) > 0 );
+        assertTrue( window.compareTo( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "1984-01-01T00:00:00Z" ),
+                                                                                        FIFTH_TIME,
+                                                                                        Duration.ZERO ) ) ) > 0 );
         //y.compareTo(z) > 0
-        assertTrue( TimeWindowOuter.of( Instant.parse( "1984-01-01T00:00:00Z" ),
-                                        FIFTH_TIME,
-                                        Duration.ZERO )
-                                   .compareTo( TimeWindowOuter.of( FIRST_TIME,
-                                                                   FIFTH_TIME,
-                                                                   Duration.ZERO ) ) > 0 );
+        assertTrue( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "1984-01-01T00:00:00Z" ),
+                                                                      FIFTH_TIME,
+                                                                      Duration.ZERO ) )
+                                   .compareTo( TimeWindowOuter.of( MessageFactory.getTimeWindow( FIRST_TIME,
+                                                                                                 FIFTH_TIME,
+                                                                                                 Duration.ZERO ) ) ) > 0 );
         //x.compareTo(z) > 0
-        assertTrue( window.compareTo( TimeWindowOuter.of( FIRST_TIME,
-                                                          FIFTH_TIME,
-                                                          Duration.ZERO ) ) > 0 );
+        assertTrue( window.compareTo( TimeWindowOuter.of( MessageFactory.getTimeWindow( FIRST_TIME,
+                                                                                        FIFTH_TIME,
+                                                                                        Duration.ZERO ) ) ) > 0 );
         //DIFFERENCES ON EARLIEST TIME
-        assertTrue( window.compareTo( TimeWindowOuter.of( THIRD_TIME,
-                                                          FIFTH_TIME,
-                                                          Duration.ZERO ) ) < 0 );
+        assertTrue( window.compareTo( TimeWindowOuter.of( MessageFactory.getTimeWindow( THIRD_TIME,
+                                                                                        FIFTH_TIME,
+                                                                                        Duration.ZERO ) ) ) < 0 );
         //DIFFERENCES ON LATEST TIME
-        assertTrue( window.compareTo( TimeWindowOuter.of( SECOND_TIME,
-                                                          Instant.parse( "2011-12-31T11:59:59Z" ),
-                                                          Duration.ZERO ) ) < 0 );
+        assertTrue( window.compareTo( TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                        Instant.parse( "2011-12-31T11:59:59Z" ),
+                                                                                        Duration.ZERO ) ) ) < 0 );
 
         //DIFFERENCES ON EARLIEST VALID TIME
-        assertTrue( window.compareTo( TimeWindowOuter.of( SECOND_TIME,
-                                                          FIFTH_TIME,
-                                                          SECOND_TIME,
-                                                          Instant.MAX,
-                                                          Duration.ZERO,
-                                                          Duration.ZERO ) ) < 0 );
+        assertTrue( window.compareTo( TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                        FIFTH_TIME,
+                                                                                        SECOND_TIME,
+                                                                                        Instant.MAX,
+                                                                                        Duration.ZERO,
+                                                                                        Duration.ZERO ) ) ) < 0 );
 
         //DIFFERENCES ON LATEST VALID TIME
-        assertTrue( window.compareTo( TimeWindowOuter.of( SECOND_TIME,
-                                                          FIFTH_TIME,
-                                                          Instant.MIN,
-                                                          Instant.parse( "2011-12-31T11:59:59Z" ),
-                                                          Duration.ZERO,
-                                                          Duration.ZERO ) ) > 0 );
+        assertTrue( window.compareTo( TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                        FIFTH_TIME,
+                                                                                        Instant.MIN,
+                                                                                        Instant.parse( "2011-12-31T11:59:59Z" ),
+                                                                                        Duration.ZERO,
+                                                                                        Duration.ZERO ) ) ) > 0 );
 
         //DIFFERENCES ON EARLIEST LEAD TIME
-        assertTrue( window.compareTo( TimeWindowOuter.of( SECOND_TIME,
-                                                          FIFTH_TIME,
-                                                          Duration.ofHours( 1 ) ) ) < 0 );
+        assertTrue( window.compareTo( TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                        FIFTH_TIME,
+                                                                                        Duration.ofHours( 1 ) ) ) ) < 0 );
         //DIFFERENCES ON LATEST LEAD TIME
-        assertTrue( window.compareTo( TimeWindowOuter.of( SECOND_TIME,
-                                                          FIFTH_TIME,
-                                                          Duration.ZERO,
-                                                          Duration.ofHours( 1 ) ) ) < 0 );
+        assertTrue( window.compareTo( TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                        FIFTH_TIME,
+                                                                                        Duration.ZERO,
+                                                                                        Duration.ofHours( 1 ) ) ) ) < 0 );
     }
 
     /**
@@ -252,22 +234,22 @@ public final class TimeWindowOuterTest
     public void testToString()
     {
         //Construct a window from 1985-01-01T00:00:00Z to 2010-12-31T11:59:59Z with lead times of 6-120h
-        TimeWindowOuter window = TimeWindowOuter.of( SECOND_TIME,
-                                                     FIFTH_TIME,
-                                                     SECOND_TIME,
-                                                     FIFTH_TIME,
-                                                     Duration.ZERO,
-                                                     Duration.ZERO );
+        TimeWindow inner = MessageFactory.getTimeWindow( SECOND_TIME,
+                                                         FIFTH_TIME,
+                                                         SECOND_TIME,
+                                                         FIFTH_TIME,
+                                                         Duration.ZERO,
+                                                         Duration.ZERO );
+        TimeWindowOuter window = TimeWindowOuter.of( inner );
         //Equality of strings for equal objects
-        assertTrue( "Unexpected inequality between the string representation of two time windows that are equal.",
-                    window.toString()
-                          .equals( TimeWindowOuter.of( SECOND_TIME,
-                                                       FIFTH_TIME,
-                                                       SECOND_TIME,
-                                                       FIFTH_TIME,
-                                                       Duration.ZERO,
-                                                       Duration.ZERO )
-                                                  .toString() ) );
+        assertEquals( TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                        FIFTH_TIME,
+                                                                        SECOND_TIME,
+                                                                        FIFTH_TIME,
+                                                                        Duration.ZERO,
+                                                                        Duration.ZERO ) )
+                                     .toString(),
+                      window.toString() );
 
         //Equality against a benchmark
         assertEquals( "TimeWindowOuter[earliestReferenceTime=1985-01-01T00:00:00Z,latestReferenceTime="
@@ -279,9 +261,10 @@ public final class TimeWindowOuterTest
     @Test
     public void testGetTimeWindow()
     {
-        TimeWindowOuter window = TimeWindowOuter.of( SECOND_TIME,
-                                                     FIFTH_TIME,
-                                                     Duration.ZERO );
+        TimeWindow inner = MessageFactory.getTimeWindow( SECOND_TIME,
+                                                         FIFTH_TIME,
+                                                         Duration.ZERO );
+        TimeWindowOuter window = TimeWindowOuter.of( inner );
 
         TimeWindow expected = TimeWindow.newBuilder()
                                         .setEarliestReferenceTime( Timestamp.newBuilder()
@@ -311,10 +294,11 @@ public final class TimeWindowOuterTest
     @Test
     public void testExceptionOnEarliestReferenceTimeAfterLatestReferenceTime()
     {
+        TimeWindow timeWindow = MessageFactory.getTimeWindow( SECOND_TIME,
+                                                              Instant.parse( "1984-12-31T11:59:59Z" ),
+                                                              Duration.ZERO );
         IllegalArgumentException thrown = assertThrows( IllegalArgumentException.class,
-                                                        () -> TimeWindowOuter.of( SECOND_TIME,
-                                                                                  Instant.parse( "1984-12-31T11:59:59Z" ),
-                                                                                  Duration.ZERO ) );
+                                                        () -> TimeWindowOuter.of( timeWindow ) );
         assertEquals( "Cannot define a time window whose latest reference time is before its "
                       + "earliest reference time.",
                       thrown.getMessage() );
@@ -329,13 +313,14 @@ public final class TimeWindowOuterTest
     @Test
     public void testExceptionOnEarliestValidTimeAfterLatestValidTime()
     {
+        TimeWindow timeWindow = MessageFactory.getTimeWindow( SECOND_TIME,
+                                                              Instant.parse( "1986-12-31T11:59:59Z" ),
+                                                              SECOND_TIME,
+                                                              Instant.parse( "1984-12-31T11:59:59Z" ),
+                                                              Duration.ZERO,
+                                                              Duration.ZERO );
         IllegalArgumentException thrown = assertThrows( IllegalArgumentException.class,
-                                                        () -> TimeWindowOuter.of( SECOND_TIME,
-                                                                                  Instant.parse( "1986-12-31T11:59:59Z" ),
-                                                                                  SECOND_TIME,
-                                                                                  Instant.parse( "1984-12-31T11:59:59Z" ),
-                                                                                  Duration.ZERO,
-                                                                                  Duration.ZERO ) );
+                                                        () -> TimeWindowOuter.of( timeWindow ) );
         assertEquals( "Cannot define a time window whose latest valid time is before its earliest valid time.",
                       thrown.getMessage() );
     }
@@ -348,11 +333,12 @@ public final class TimeWindowOuterTest
     @Test
     public void testExceptionOnEarliestLeadTimeAfterLatestLeadTime()
     {
+        TimeWindow timeWindow = MessageFactory.getTimeWindow( SECOND_TIME,
+                                                              FIFTH_TIME,
+                                                              Duration.ofHours( 1 ),
+                                                              Duration.ZERO );
         IllegalArgumentException thrown = assertThrows( IllegalArgumentException.class,
-                                                        () -> TimeWindowOuter.of( SECOND_TIME,
-                                                                                  FIFTH_TIME,
-                                                                                  Duration.ofHours( 1 ),
-                                                                                  Duration.ZERO ) );
+                                                        () -> TimeWindowOuter.of( timeWindow ) );
         assertEquals( "Cannot define a time window whose latest lead duration is before its earliest "
                       + "lead duration.",
                       thrown.getMessage() );
@@ -365,24 +351,28 @@ public final class TimeWindowOuterTest
     @Test
     public void testHasUnboundedReferenceTimes()
     {
-        TimeWindowOuter bounded = TimeWindowOuter.of( SECOND_TIME,
-                                                      SIXTH_TIME,
-                                                      Duration.ZERO );
+        TimeWindow innerBounded = MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                SIXTH_TIME,
+                                                                Duration.ZERO );
+        TimeWindowOuter bounded = TimeWindowOuter.of( innerBounded );
 
         assertFalse( bounded.hasUnboundedReferenceTimes() );
 
-        TimeWindowOuter unbounded = TimeWindowOuter.of();
+        TimeWindow innerUnbounded = MessageFactory.getTimeWindow();
+        TimeWindowOuter unbounded = TimeWindowOuter.of( innerUnbounded );
         assertTrue( unbounded.hasUnboundedReferenceTimes() );
 
-        TimeWindowOuter partlyLow = TimeWindowOuter.of( Instant.MIN,
-                                                        SIXTH_TIME,
-                                                        Duration.ZERO );
+        TimeWindow innerBoundedLow = MessageFactory.getTimeWindow( Instant.MIN,
+                                                                   SIXTH_TIME,
+                                                                   Duration.ZERO );
+        TimeWindowOuter partlyLow = TimeWindowOuter.of( innerBoundedLow );
 
         assertTrue( partlyLow.hasUnboundedReferenceTimes() );
 
-        TimeWindowOuter partlyHigh = TimeWindowOuter.of( SECOND_TIME,
-                                                         Instant.MAX,
-                                                         Duration.ZERO );
+        TimeWindow innerBoundedHigh = MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                    Instant.MAX,
+                                                                    Duration.ZERO );
+        TimeWindowOuter partlyHigh = TimeWindowOuter.of( innerBoundedHigh );
 
         assertTrue( partlyHigh.hasUnboundedReferenceTimes() );
     }
@@ -394,28 +384,32 @@ public final class TimeWindowOuterTest
     @Test
     public void testHasUnboundedValidTimes()
     {
-        TimeWindowOuter bounded = TimeWindowOuter.of( FIRST_TIME,
-                                                      SECOND_TIME,
-                                                      THIRD_TIME,
-                                                      FOURTH_TIME );
+        TimeWindow innerBounded = MessageFactory.getTimeWindow( FIRST_TIME,
+                                                                SECOND_TIME,
+                                                                THIRD_TIME,
+                                                                FOURTH_TIME );
+        TimeWindowOuter bounded = TimeWindowOuter.of( innerBounded );
 
         assertFalse( bounded.hasUnboundedValidTimes() );
 
-        TimeWindowOuter unbounded = TimeWindowOuter.of();
+        TimeWindow innerUnbounded = MessageFactory.getTimeWindow();
+        TimeWindowOuter unbounded = TimeWindowOuter.of( innerUnbounded );
 
         assertTrue( unbounded.hasUnboundedValidTimes() );
 
-        TimeWindowOuter partlyLow = TimeWindowOuter.of( FIRST_TIME,
-                                                        SECOND_TIME,
-                                                        Instant.MIN,
-                                                        FOURTH_TIME );
+        TimeWindow innerBoundedLow = MessageFactory.getTimeWindow( FIRST_TIME,
+                                                                   SECOND_TIME,
+                                                                   Instant.MIN,
+                                                                   FOURTH_TIME );
+        TimeWindowOuter partlyLow = TimeWindowOuter.of( innerBoundedLow );
 
         assertTrue( partlyLow.hasUnboundedValidTimes() );
 
-        TimeWindowOuter partlyHigh = TimeWindowOuter.of( FIRST_TIME,
-                                                         SECOND_TIME,
-                                                         THIRD_TIME,
-                                                         Instant.MAX );
+        TimeWindow innerBoundedHigh = MessageFactory.getTimeWindow( FIRST_TIME,
+                                                                    SECOND_TIME,
+                                                                    THIRD_TIME,
+                                                                    Instant.MAX );
+        TimeWindowOuter partlyHigh = TimeWindowOuter.of( innerBoundedHigh );
 
         assertTrue( partlyHigh.hasUnboundedValidTimes() );
     }
@@ -427,13 +421,15 @@ public final class TimeWindowOuterTest
     @Test
     public void testBothLeadDurationsAreUnbounded()
     {
-        TimeWindowOuter bounded = TimeWindowOuter.of( FIRST_TIME,
-                                                      SECOND_TIME,
-                                                      Duration.ZERO );
+        TimeWindow innerBounded = MessageFactory.getTimeWindow( FIRST_TIME,
+                                                                SECOND_TIME,
+                                                                Duration.ZERO );
+        TimeWindowOuter bounded = TimeWindowOuter.of( innerBounded );
 
         assertFalse( bounded.bothLeadDurationsAreUnbounded() );
 
-        TimeWindowOuter unbounded = TimeWindowOuter.of();
+        TimeWindow innerUnbounded = MessageFactory.getTimeWindow();
+        TimeWindowOuter unbounded = TimeWindowOuter.of( innerUnbounded );
 
         assertTrue( unbounded.bothLeadDurationsAreUnbounded() );
     }
@@ -445,18 +441,21 @@ public final class TimeWindowOuterTest
     @Test
     public void testUnionOf()
     {
-        TimeWindowOuter first = TimeWindowOuter.of( SECOND_TIME,
-                                                    SEVENTH_TIME,
-                                                    Duration.ofHours( 5 ),
-                                                    Duration.ofHours( 25 ) );
-        TimeWindowOuter second = TimeWindowOuter.of( FIRST_TIME,
-                                                     SIXTH_TIME,
-                                                     Duration.ofHours( -5 ),
-                                                     Duration.ofHours( 20 ) );
-        TimeWindowOuter expected = TimeWindowOuter.of( FIRST_TIME,
-                                                       SEVENTH_TIME,
-                                                       Duration.ofHours( -5 ),
-                                                       Duration.ofHours( 25 ) );
+        TimeWindow firstInner = MessageFactory.getTimeWindow( SECOND_TIME,
+                                                              SEVENTH_TIME,
+                                                              Duration.ofHours( 5 ),
+                                                              Duration.ofHours( 25 ) );
+        TimeWindowOuter first = TimeWindowOuter.of( firstInner );
+        TimeWindow secondInner = MessageFactory.getTimeWindow( FIRST_TIME,
+                                                               SIXTH_TIME,
+                                                               Duration.ofHours( -5 ),
+                                                               Duration.ofHours( 20 ) );
+        TimeWindowOuter second = TimeWindowOuter.of( secondInner );
+        TimeWindow expectedInner = MessageFactory.getTimeWindow( FIRST_TIME,
+                                                                 SEVENTH_TIME,
+                                                                 Duration.ofHours( -5 ),
+                                                                 Duration.ofHours( 25 ) );
+        TimeWindowOuter expected = TimeWindowOuter.of( expectedInner );
         Set<TimeWindowOuter> union = new HashSet<>();
         union.add( first );
         union.add( second );
@@ -465,25 +464,27 @@ public final class TimeWindowOuterTest
 
         assertEquals( expected, actual );
 
-
-        TimeWindowOuter third = TimeWindowOuter.of( SECOND_TIME,
-                                                    SEVENTH_TIME,
-                                                    FIRST_TIME,
-                                                    Instant.parse( "2019-12-31T11:59:59Z" ),
-                                                    Duration.ofHours( 5 ),
-                                                    Duration.ofHours( 21 ) );
-        TimeWindowOuter fourth = TimeWindowOuter.of( FIRST_TIME,
-                                                     SIXTH_TIME,
-                                                     Instant.parse( "1982-01-01T00:00:00Z" ),
-                                                     SEVENTH_TIME,
-                                                     Duration.ZERO,
-                                                     Duration.ofHours( 20 ) );
-        TimeWindowOuter expectedTwo = TimeWindowOuter.of( FIRST_TIME,
-                                                          SEVENTH_TIME,
-                                                          Instant.parse( "1982-01-01T00:00:00Z" ),
-                                                          Instant.parse( "2019-12-31T11:59:59Z" ),
-                                                          Duration.ZERO,
-                                                          Duration.ofHours( 21 ) );
+        TimeWindow thirdInner = MessageFactory.getTimeWindow( SECOND_TIME,
+                                                              SEVENTH_TIME,
+                                                              FIRST_TIME,
+                                                              Instant.parse( "2019-12-31T11:59:59Z" ),
+                                                              Duration.ofHours( 5 ),
+                                                              Duration.ofHours( 21 ) );
+        TimeWindowOuter third = TimeWindowOuter.of( thirdInner );
+        TimeWindow fourthInner = MessageFactory.getTimeWindow( FIRST_TIME,
+                                                               SIXTH_TIME,
+                                                               Instant.parse( "1982-01-01T00:00:00Z" ),
+                                                               SEVENTH_TIME,
+                                                               Duration.ZERO,
+                                                               Duration.ofHours( 20 ) );
+        TimeWindowOuter fourth = TimeWindowOuter.of( fourthInner );
+        TimeWindow fifthInner = MessageFactory.getTimeWindow( FIRST_TIME,
+                                                              SEVENTH_TIME,
+                                                              Instant.parse( "1982-01-01T00:00:00Z" ),
+                                                              Instant.parse( "2019-12-31T11:59:59Z" ),
+                                                              Duration.ZERO,
+                                                              Duration.ofHours( 21 ) );
+        TimeWindowOuter expectedTwo = TimeWindowOuter.of( fifthInner );
         Set<TimeWindowOuter> unionTwo = new HashSet<>();
         unionTwo.add( third );
         unionTwo.add( fourth );
@@ -493,22 +494,6 @@ public final class TimeWindowOuterTest
         assertEquals( expectedTwo, actualTwo );
     }
 
-    @Test
-    public void testToBuilder()
-    {
-        TimeWindowOuter expected = TimeWindowOuter.of( SECOND_TIME,
-                                                       FIFTH_TIME,
-                                                       THIRD_TIME,
-                                                       FOURTH_TIME,
-                                                       Duration.ZERO,
-                                                       Duration.ofHours( 120 ) );
-
-        TimeWindowOuter actual = expected.toBuilder()
-                                         .build();
-
-        assertEquals( expected, actual );
-    }
-
     /**
      * Tests that {@link TimeWindowOuter#unionWith(TimeWindowOuter)} throws an {@link IllegalArgumentException} on empty input.
      */
@@ -516,9 +501,10 @@ public final class TimeWindowOuterTest
     @Test
     public void testUnionWithThrowsExceptionOnEmptyInput()
     {
+        Set<TimeWindowOuter> emptySet = Set.of();
         IllegalArgumentException thrown =
                 assertThrows( IllegalArgumentException.class,
-                              () -> TimeWindowOuter.unionOf( Set.of() ) );
+                              () -> TimeWindowOuter.unionOf( emptySet ) );
 
         assertEquals( "Cannot determine the union of time windows for empty input.", thrown.getMessage() );
     }

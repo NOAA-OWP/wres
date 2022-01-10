@@ -313,8 +313,13 @@ public class PoolMetadata implements Comparable<PoolMetadata>
     }
 
     @Override
-    public boolean equals( final Object o )
+    public boolean equals( Object o )
     {
+        if( this == o )
+        {
+            return true;
+        }
+        
         if ( ! ( o instanceof PoolMetadata ) )
         {
             return false;

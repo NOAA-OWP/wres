@@ -56,6 +56,7 @@ import wres.metrics.MetricParameterException;
 import wres.metrics.categorical.ContingencyTable;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -814,9 +815,10 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         StatisticsStore statistics = processor.apply( MetricTestDataFactory.getTimeSeriesOfEnsemblePairsTwo() );
 
         // Expected result
-        final TimeWindowOuter expectedWindow = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                   Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                                   Duration.ofHours( 24 ) );
+        TimeWindow timeWindow = MessageFactory.getTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                              Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                              Duration.ofHours( 24 ) );
+        TimeWindowOuter expectedWindow = TimeWindowOuter.of( timeWindow );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "SQIN" )
@@ -825,10 +827,10 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                           .build();
 
         wres.statistics.generated.Pool pool = MessageFactory.getPool( MetricTestDataFactory.getFeatureGroup(),
-                                                                    expectedWindow,
-                                                                    null,
-                                                                    null,
-                                                                    false );
+                                                                      expectedWindow,
+                                                                      null,
+                                                                      null,
+                                                                      false );
 
         PoolMetadata expectedSampleMeta = PoolMetadata.of( evaluation, pool );
 

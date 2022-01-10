@@ -473,8 +473,8 @@ public class Pool<T> implements Supplier<List<T>>
             this.miniPools.add( pool );
             this.sampleData.addAll( pool.get() );
 
-            // Merge metadata?
-            if ( Objects.nonNull( this.mainMeta ) )
+            // Merge metadata? Yes, if the existing metadata is not null and not equal
+            if ( Objects.nonNull( this.mainMeta ) && !this.mainMeta.equals( pool.getMetadata() ) )
             {
                 LOGGER.debug( "Merging metadata for pool {} into pool {}.", pool.getMetadata(), this.mainMeta );
 
@@ -502,8 +502,8 @@ public class Pool<T> implements Supplier<List<T>>
                 Pool<T> base = pool.getBaselineData();
                 this.baselineSampleData.addAll( base.get() );
 
-                // Merge metadata?
-                if ( Objects.nonNull( this.baselineMeta ) )
+                // Merge metadata? Yes, if the existing metadata is not null and not equal
+                if ( Objects.nonNull( this.baselineMeta ) && ! this.baselineMeta.equals( base.getMetadata() ) )
                 {
                     LOGGER.debug( "Merging metadata for baseline pool {} into baseline pool {}.",
                                   base.getMetadata(),

@@ -20,11 +20,13 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.TimeWindow;
 
 /**
  * Retrieves data from the wres.TimeSeries and wres.TimeSeriesValue tables but
@@ -108,12 +110,14 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
                 latestValidTime = originalRanges.getLatestValidTime();
             }
 
-            analysisRanges = TimeWindowOuter.of( Instant.MIN,
-                                            Instant.MAX,
-                                            earliestValidTime,
-                                            latestValidTime,
-                                            this.getEarliestAnalysisDuration(),
-                                            this.getLatestAnalysisDuration() );
+            TimeWindow inner = MessageFactory.getTimeWindow( Instant.MIN,
+                                                             Instant.MAX,
+                                                             earliestValidTime,
+                                                             latestValidTime,
+                                                             this.getEarliestAnalysisDuration(),
+                                                             this.getLatestAnalysisDuration() );
+            
+            analysisRanges = TimeWindowOuter.of( inner );
         }
         else
         {
@@ -122,12 +126,13 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
             // See discussion around #74987-174. Ignoring reference times when forming this selection is arbitrary. At 
             // the same time, the declaration does not provide a mechanism to clarify how specific types of reference 
             // time should be treated when that declaration is concerned with filtering or pooling by reference time.
-            // TODO: be explicit about the connection between reference times/types and declaration options. 
+            // TODO: be explicit about the connection between reference times/types and declaration options.
             // For now, reference times are not used to filter here
-            analysisRanges = TimeWindowOuter.of( Instant.MIN,
-                                            Instant.MAX,
-                                            originalRanges.getEarliestValidTime(),
-                                            originalRanges.getLatestValidTime() );
+            TimeWindow inner = MessageFactory.getTimeWindow( Instant.MIN,
+                                                             Instant.MAX,
+                                                             originalRanges.getEarliestValidTime(),
+                                                             originalRanges.getLatestValidTime() );
+            analysisRanges = TimeWindowOuter.of( inner );
         }
 
         LOGGER.debug( "Using a duplicate handling policy of {} for the retrieval of analysis time-series.",

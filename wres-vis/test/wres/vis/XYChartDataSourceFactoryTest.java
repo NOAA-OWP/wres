@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.junit.Test;
 
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
@@ -33,7 +34,7 @@ public class XYChartDataSourceFactoryTest
                                                             .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
                                                             .build(),
                                                   Pool.getDefaultInstance() ),
-                               TimeWindowOuter.of() );
+                               TimeWindowOuter.of( MessageFactory.getTimeWindow() ) );
 
     /**
      * Do not throw an IndexOutOfBoundsException when the input is empty. See #65503.

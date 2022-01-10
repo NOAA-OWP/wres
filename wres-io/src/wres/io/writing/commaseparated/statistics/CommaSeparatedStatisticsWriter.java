@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MissingValues;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.time.TimeWindowOuter;
@@ -54,9 +55,10 @@ abstract class CommaSeparatedStatisticsWriter
      * Earliest possible time window to index the header.
      */
 
-    static final TimeWindowOuter HEADER_INDEX = TimeWindowOuter.of( Instant.MIN,
-                                                                    Instant.MIN,
-                                                                    Duration.ofSeconds( Long.MIN_VALUE ) );
+    static final TimeWindowOuter HEADER_INDEX = TimeWindowOuter.of(
+                                                                    MessageFactory.getTimeWindow( Instant.MIN,
+                                                                                                  Instant.MIN,
+                                                                                                  Duration.ofSeconds( Long.MIN_VALUE ) ) );
 
     /**
      * Resolution for writing duration outputs.

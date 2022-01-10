@@ -62,6 +62,7 @@ import wres.io.data.details.SourceDetails;
 import wres.io.project.Project;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.TestDatabase;
+import wres.statistics.generated.TimeWindow;
 import wres.system.SystemSettings;
 
 /**
@@ -106,7 +107,7 @@ public class EnsembleRetrieverFactoryTest
      * The feature name.
      */
 
-    private static final FeatureKey FAKE_FEATURE = FeatureKey.of( 
+    private static final FeatureKey FAKE_FEATURE = FeatureKey.of(
                                                                   MessageFactory.getGeometry( "FAKE" ) );
 
     /**
@@ -229,8 +230,9 @@ public class EnsembleRetrieverFactoryTest
     {
 
         // The time window to select events
-        TimeWindowOuter timeWindow = TimeWindowOuter.of( Instant.parse( T2023_04_01T02_00_00Z ),
+        TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( T2023_04_01T02_00_00Z ),
                                                          Instant.parse( T2023_04_01T07_00_00Z ) );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
         // Get the actual left series
         List<TimeSeries<Double>> actualCollection = this.factoryToTest.getLeftRetriever( Set.of( FAKE_FEATURE ),
@@ -268,10 +270,11 @@ public class EnsembleRetrieverFactoryTest
     {
 
         // The time window to select events
-        TimeWindowOuter timeWindow = TimeWindowOuter.of( Instant.parse( "2023-03-31T11:00:00Z" ),
+        TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( "2023-03-31T11:00:00Z" ),
                                                          Instant.parse( T2023_04_01T00_00_00Z ),
                                                          Instant.parse( T2023_04_01T01_00_00Z ),
                                                          Instant.parse( T2023_04_01T04_00_00Z ) );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
         // Get the actual left series
         List<TimeSeries<Ensemble>> actualCollection = this.factoryToTest.getRightRetriever( Set.of( FAKE_FEATURE ),
@@ -314,10 +317,11 @@ public class EnsembleRetrieverFactoryTest
     {
 
         // The time window to select events
-        TimeWindowOuter timeWindow = TimeWindowOuter.of( Instant.parse( "2023-03-31T11:00:00Z" ),
+        TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( "2023-03-31T11:00:00Z" ),
                                                          Instant.parse( T2023_04_01T00_00_00Z ),
                                                          Instant.parse( T2023_04_01T01_00_00Z ),
                                                          Instant.parse( T2023_04_01T04_00_00Z ) );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
         // Get the actual left series
         List<TimeSeries<Ensemble>> actualCollection = this.factoryToTest.getBaselineRetriever( Set.of( FAKE_FEATURE ),
