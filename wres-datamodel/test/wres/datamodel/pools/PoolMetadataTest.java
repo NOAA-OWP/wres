@@ -8,7 +8,6 @@ import static org.junit.Assert.assertTrue;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Set;
 
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -27,14 +26,15 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureKey;
-import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Pool;
 
 /**
@@ -68,14 +68,18 @@ public class PoolMetadataTest
                                                   .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
                                                   .build(),
                                         Pool.getDefaultInstance() ) );
-        FeatureKey a = FeatureKey.of( MessageFactory.getGeometry( "A" ) );
+
+        Geometry geo = MessageFactory.getGeometry( "A" );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geo, geo, geo );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        FeatureGroup group = FeatureGroup.of( geoGroup );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "B" )
                                           .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
                                           .build();
 
-        Pool poolOne = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( a, a, a ) ),
+        Pool poolOne = MessageFactory.getPool( group,
                                                null,
                                                null,
                                                null,
@@ -97,7 +101,7 @@ public class PoolMetadataTest
 
         assertNotNull( PoolMetadata.of( PoolMetadata.of(), timeWindow, thresholds ) );
 
-        Pool pool = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( a, a, a ) ),
+        Pool pool = MessageFactory.getPool( group,
                                             timeWindow,
                                             TimeScaleOuter.of( Duration.ofDays( 1 ),
                                                                TimeScaleFunction.MEAN ),
@@ -116,7 +120,6 @@ public class PoolMetadataTest
     public void testEquals()
     {
         assertEquals( PoolMetadata.of(), PoolMetadata.of() );
-        FeatureKey l1 = FeatureKey.of( MessageFactory.getGeometry( DRRC2 ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( SQIN )
@@ -124,7 +127,12 @@ public class PoolMetadataTest
                                           .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
                                           .build();
 
-        Pool pool = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l1, l1, l1 ) ),
+        Geometry geoOne = MessageFactory.getGeometry( DRRC2 );
+        GeometryTuple geoTupleOne = MessageFactory.getGeometryTuple( geoOne, geoOne, geoOne );
+        GeometryGroup geoGroupOne = MessageFactory.getGeometryGroup( null, geoTupleOne );
+        FeatureGroup featureGroupOne = FeatureGroup.of( geoGroupOne );
+
+        Pool pool = MessageFactory.getPool( featureGroupOne,
                                             null,
                                             null,
                                             null,
@@ -135,7 +143,6 @@ public class PoolMetadataTest
 
         // Reflexive
         assertEquals( m1, m1 );
-        FeatureKey l2 = FeatureKey.of( MessageFactory.getGeometry( DRRC2 ) );
 
         Evaluation evaluationTwo = Evaluation.newBuilder()
                                              .setRightVariableName( SQIN )
@@ -143,15 +150,13 @@ public class PoolMetadataTest
                                              .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
                                              .build();
 
-        Pool poolTwo =
-                MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l2, l2, l2 ) ), null, null, null, false, 1 );
+        Pool poolTwo = MessageFactory.getPool( featureGroupOne, null, null, null, false, 1 );
 
         PoolMetadata m2 = PoolMetadata.of( evaluationTwo, poolTwo );
 
         // Symmetric
         assertEquals( m1, m2 );
         assertEquals( m2, m1 );
-        FeatureKey l3 = FeatureKey.of( MessageFactory.getGeometry( DRRC2 ) );
 
         Evaluation evaluationThree = Evaluation.newBuilder()
                                                .setRightVariableName( SQIN )
@@ -159,12 +164,9 @@ public class PoolMetadataTest
                                                .setMeasurementUnit( TEST_DIMENSION )
                                                .build();
 
-        Pool poolThree =
-                MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l3, l3, l3 ) ), null, null, null, false, 1 );
+        Pool poolThree = MessageFactory.getPool( featureGroupOne, null, null, null, false, 1 );
 
         PoolMetadata m3 = PoolMetadata.of( evaluationThree, poolThree );
-
-        FeatureKey l4 = FeatureKey.of( MessageFactory.getGeometry( DRRC2 ) );
 
         Evaluation evaluationFour = Evaluation.newBuilder()
                                               .setRightVariableName( SQIN )
@@ -172,38 +174,37 @@ public class PoolMetadataTest
                                               .setMeasurementUnit( TEST_DIMENSION )
                                               .build();
 
-        Pool poolFour =
-                MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l4, l4, l4 ) ), null, null, null, false, 1 );
+        Pool poolFour = MessageFactory.getPool( featureGroupOne, null, null, null, false, 1 );
 
         PoolMetadata m4 = PoolMetadata.of( evaluationFour, poolFour );
         assertEquals( m3, m4 );
         assertNotEquals( m1, m3 );
 
         // Transitive
-        FeatureKey l4t = FeatureKey.of( MessageFactory.getGeometry( DRRC2 ) );
-
         Evaluation evaluationFive = Evaluation.newBuilder()
                                               .setRightVariableName( SQIN )
                                               .setRightDataName( HEFS )
                                               .setMeasurementUnit( TEST_DIMENSION )
                                               .build();
 
-        Pool poolFive =
-                MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l4t, l4t, l4t ) ),
-                                        null,
-                                        null,
-                                        null,
-                                        false,
-                                        1 );
+        Pool poolFive = MessageFactory.getPool( featureGroupOne,
+                                                null,
+                                                null,
+                                                null,
+                                                false,
+                                                1 );
 
         PoolMetadata m4t = PoolMetadata.of( evaluationFive, poolFive );
         assertEquals( m4, m4t );
         assertEquals( m3, m4t );
 
         // Unequal
-        FeatureKey l5 = FeatureKey.of( MessageFactory.getGeometry( DRRC3 ) );
-        Pool poolSix =
-                MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l5, l5, l5 ) ), null, null, null, false, 1 );
+        Geometry geoTwo = MessageFactory.getGeometry( DRRC3 );
+        GeometryTuple geoTupleTwo = MessageFactory.getGeometryTuple( geoTwo, geoTwo, geoTwo );
+        GeometryGroup geoGroupTwo = MessageFactory.getGeometryGroup( null, geoTupleTwo );
+        FeatureGroup featureGroupTwo = FeatureGroup.of( geoGroupTwo );
+
+        Pool poolSix = MessageFactory.getPool( featureGroupTwo, null, null, null, false, 1 );
         PoolMetadata m5 = PoolMetadata.of( evaluationFive, poolSix );
         assertNotEquals( m4, m5 );
         PoolMetadata m5NoDim = PoolMetadata.of( Evaluation.newBuilder()
@@ -220,9 +221,8 @@ public class PoolMetadataTest
         // Add a time window
         TimeWindowOuter firstWindow = TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
                                                                                         Instant.parse( SECOND_TIME ) ) );
-        FeatureKey l6 = FeatureKey.of( MessageFactory.getGeometry( DRRC3 ) );
 
-        Pool poolSeven = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l6, l6, l6 ) ),
+        Pool poolSeven = MessageFactory.getPool( featureGroupTwo,
                                                  firstWindow,
                                                  null,
                                                  null,
@@ -231,12 +231,10 @@ public class PoolMetadataTest
 
         PoolMetadata m6 = PoolMetadata.of( evaluationFive, poolSeven );
 
-        FeatureKey l7 = FeatureKey.of( MessageFactory.getGeometry( DRRC3 ) );
-
         TimeWindowOuter secondWindow = TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
                                                                                          Instant.parse( SECOND_TIME ) ) );
 
-        Pool poolEight = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l7, l7, l7 ) ),
+        Pool poolEight = MessageFactory.getPool( featureGroupTwo,
                                                  secondWindow,
                                                  null,
                                                  null,
@@ -253,9 +251,8 @@ public class PoolMetadataTest
                                                                                         Instant.parse( SECOND_TIME ),
                                                                                         Instant.parse( FIRST_TIME ),
                                                                                         Instant.parse( SECOND_TIME ) ) );
-        FeatureKey l8 = FeatureKey.of( MessageFactory.getGeometry( DRRC3 ) );
 
-        Pool poolNine = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l8, l8, l8 ) ),
+        Pool poolNine = MessageFactory.getPool( featureGroupTwo,
                                                 thirdWindow,
                                                 null,
                                                 null,
@@ -272,7 +269,7 @@ public class PoolMetadataTest
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        Pool poolTen = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l8, l8, l8 ) ),
+        Pool poolTen = MessageFactory.getPool( featureGroupTwo,
                                                thirdWindow,
                                                null,
                                                thresholds,
@@ -382,7 +379,7 @@ public class PoolMetadataTest
 
         Evaluation evaluationSix = MessageFactory.parse( mockConfigOnePlus );
 
-        Pool poolEleven = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l8, l8, l8 ) ),
+        Pool poolEleven = MessageFactory.getPool( featureGroupTwo,
                                                   timeWindow,
                                                   null,
                                                   thresholds1,
@@ -400,7 +397,7 @@ public class PoolMetadataTest
 
         Evaluation evaluationSeven = MessageFactory.parse( mockConfigTwoPlus );
 
-        Pool poolTwelve = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l8, l8, l8 ) ),
+        Pool poolTwelve = MessageFactory.getPool( featureGroupTwo,
                                                   timeWindow1,
                                                   null,
                                                   thresholds2,
@@ -412,7 +409,7 @@ public class PoolMetadataTest
         assertEquals( m11, m12 );
 
         // Add a time scale
-        Pool poolThirteen = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l8, l8, l8 ) ),
+        Pool poolThirteen = MessageFactory.getPool( featureGroupTwo,
                                                     timeWindow1,
                                                     TimeScaleOuter.of( Duration.ofDays( 1 ), TimeScaleFunction.MEAN ),
                                                     thresholds2,
@@ -424,7 +421,7 @@ public class PoolMetadataTest
 
         PoolMetadata m14 = PoolMetadata.of( evaluationSeven, poolThirteen );
 
-        Pool poolFourteen = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l8, l8, l8 ) ),
+        Pool poolFourteen = MessageFactory.getPool( featureGroupTwo,
                                                     timeWindow1,
                                                     TimeScaleOuter.of( Duration.ofDays( 2 ), TimeScaleFunction.MEAN ),
                                                     thresholds2,
@@ -454,7 +451,11 @@ public class PoolMetadataTest
     {
         // Equal
         assertEquals( PoolMetadata.of().hashCode(), PoolMetadata.of().hashCode() );
-        FeatureKey l1 = FeatureKey.of( MessageFactory.getGeometry( DRRC2 ) );
+
+        Geometry geoOne = MessageFactory.getGeometry( DRRC2 );
+        GeometryTuple geoTupleOne = MessageFactory.getGeometryTuple( geoOne, geoOne, geoOne );
+        GeometryGroup geoGroupOne = MessageFactory.getGeometryGroup( null, geoTupleOne );
+        FeatureGroup featureGroupOne = FeatureGroup.of( geoGroupOne );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( SQIN )
@@ -462,7 +463,7 @@ public class PoolMetadataTest
                                           .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
                                           .build();
 
-        Pool pool = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l1, l1, l1 ) ),
+        Pool pool = MessageFactory.getPool( featureGroupOne,
                                             null,
                                             null,
                                             null,
@@ -471,7 +472,6 @@ public class PoolMetadataTest
 
         PoolMetadata m1 = PoolMetadata.of( evaluation, pool );
         assertEquals( m1.hashCode(), m1.hashCode() );
-        FeatureKey l2 = FeatureKey.of( MessageFactory.getGeometry( DRRC2 ) );
 
         Evaluation evaluationTwo = Evaluation.newBuilder()
                                              .setRightVariableName( SQIN )
@@ -479,12 +479,10 @@ public class PoolMetadataTest
                                              .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
                                              .build();
 
-        Pool poolTwo =
-                MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l2, l2, l2 ) ), null, null, null, false, 1 );
+        Pool poolTwo = MessageFactory.getPool( featureGroupOne, null, null, null, false, 1 );
 
         PoolMetadata m2 = PoolMetadata.of( evaluationTwo, poolTwo );
         assertEquals( m1.hashCode(), m2.hashCode() );
-        FeatureKey l3 = FeatureKey.of( MessageFactory.getGeometry( DRRC2 ) );
 
         Evaluation evaluationThree = Evaluation.newBuilder()
                                                .setRightVariableName( SQIN )
@@ -492,26 +490,21 @@ public class PoolMetadataTest
                                                .setMeasurementUnit( PoolMetadataTest.TEST_DIMENSION )
                                                .build();
 
-        Pool poolThree =
-                MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l3, l3, l3 ) ), null, null, null, false, 1 );
+        Pool poolThree = MessageFactory.getPool( featureGroupOne, null, null, null, false, 1 );
 
         PoolMetadata m3 = PoolMetadata.of( evaluationThree, poolThree );
-        FeatureKey l4 = FeatureKey.of( MessageFactory.getGeometry( DRRC2 ) );
 
-        Pool poolFour =
-                MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l4, l4, l4 ) ), null, null, null, false, 1 );
+        Pool poolFour = MessageFactory.getPool( featureGroupOne, null, null, null, false, 1 );
 
         PoolMetadata m4 = PoolMetadata.of( evaluationThree, poolFour );
         assertEquals( m3.hashCode(), m4.hashCode() );
-        FeatureKey l4t = FeatureKey.of( MessageFactory.getGeometry( DRRC2 ) );
 
-        Pool poolFive =
-                MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l4t, l4t, l4t ) ),
-                                        null,
-                                        null,
-                                        null,
-                                        false,
-                                        1 );
+        Pool poolFive = MessageFactory.getPool( featureGroupOne,
+                                                null,
+                                                null,
+                                                null,
+                                                false,
+                                                1 );
 
         PoolMetadata m4t = PoolMetadata.of( evaluationThree, poolFive );
         assertEquals( m4.hashCode(), m4t.hashCode() );
@@ -526,9 +519,13 @@ public class PoolMetadataTest
         // Add a time window
         TimeWindowOuter firstWindow = TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
                                                                                         Instant.parse( SECOND_TIME ) ) );
-        FeatureKey l6 = FeatureKey.of( MessageFactory.getGeometry( DRRC3 ) );
 
-        Pool poolSix = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l6, l6, l6 ) ),
+        Geometry geoTwo = MessageFactory.getGeometry( DRRC3 );
+        GeometryTuple geoTupleTwo = MessageFactory.getGeometryTuple( geoTwo, geoTwo, geoTwo );
+        GeometryGroup geoGroupTwo = MessageFactory.getGeometryGroup( null, geoTupleTwo );
+        FeatureGroup featureGroupTwo = FeatureGroup.of( geoGroupTwo );
+
+        Pool poolSix = MessageFactory.getPool( featureGroupTwo,
                                                firstWindow,
                                                null,
                                                null,
@@ -537,12 +534,10 @@ public class PoolMetadataTest
 
         PoolMetadata m6 = PoolMetadata.of( evaluationThree, poolSix );
 
-        FeatureKey l7 = FeatureKey.of( MessageFactory.getGeometry( DRRC3 ) );
-
         TimeWindowOuter secondWindow = TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
                                                                                          Instant.parse( SECOND_TIME ) ) );
 
-        Pool poolSeven = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l7, l7, l7 ) ),
+        Pool poolSeven = MessageFactory.getPool( featureGroupTwo,
                                                  secondWindow,
                                                  null,
                                                  null,
@@ -558,7 +553,6 @@ public class PoolMetadataTest
                                                                                         Instant.parse( SECOND_TIME ),
                                                                                         Instant.parse( FIRST_TIME ),
                                                                                         Instant.parse( SECOND_TIME ) ) );
-        FeatureKey l8 = FeatureKey.of( MessageFactory.getGeometry( DRRC3 ) );
 
         // Add a threshold
         OneOrTwoThresholds thresholds =
@@ -566,7 +560,7 @@ public class PoolMetadataTest
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        Pool poolEight = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l8, l8, l8 ) ),
+        Pool poolEight = MessageFactory.getPool( featureGroupTwo,
                                                  thirdWindow,
                                                  null,
                                                  thresholds,
@@ -674,7 +668,7 @@ public class PoolMetadataTest
 
         Evaluation evaluationFour = MessageFactory.parse( mockConfigOnePlus );
 
-        Pool poolNine = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l8, l8, l8 ) ),
+        Pool poolNine = MessageFactory.getPool( featureGroupTwo,
                                                 timeWindow,
                                                 null,
                                                 thresholds1,
@@ -689,7 +683,7 @@ public class PoolMetadataTest
 
         Evaluation evaluationFive = MessageFactory.parse( mockConfigTwoPlus );
 
-        Pool poolTen = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l8, l8, l8 ) ),
+        Pool poolTen = MessageFactory.getPool( featureGroupTwo,
                                                thirdWindow,
                                                null,
                                                thresholds,
@@ -711,10 +705,13 @@ public class PoolMetadataTest
         OneOrTwoThresholds thresholds = OneOrTwoThresholds.of( ThresholdOuter.ALL_DATA );
         TimeWindowOuter timeWindow = TimeWindowOuter.of( MessageFactory.getTimeWindow() );
 
-        FeatureKey left = FeatureKey.of( MessageFactory.getGeometry( DRRC2 ) );
-        FeatureKey right = FeatureKey.of( MessageFactory.getGeometry( DRRC3 ) );
+        Geometry geoOne = MessageFactory.getGeometry( DRRC2 );
+        Geometry geoTwo = MessageFactory.getGeometry( DRRC3 );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geoOne, geoTwo, null );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
-        Pool pool = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( left, right, null ) ),
+        Pool pool = MessageFactory.getPool( featureGroup,
                                             timeWindow,
                                             TimeScaleOuter.of( Duration.ofDays( 1 ),
                                                                TimeScaleFunction.MEAN ),
@@ -724,7 +721,7 @@ public class PoolMetadataTest
 
         PoolMetadata metadata = PoolMetadata.of( evaluation, pool );
 
-        assertEquals( Set.of( new FeatureTuple( left, right, null ) ), metadata.getFeatureTuples() );
+        assertEquals( featureGroup, metadata.getFeatureGroup() );
     }
 
 }

@@ -17,6 +17,7 @@ import com.google.protobuf.Timestamp;
 
 import net.jcip.annotations.Immutable;
 import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.messages.MessageUtilities;
 import wres.statistics.generated.TimeWindow;
 
 
@@ -178,33 +179,9 @@ public class TimeWindowOuter implements Comparable<TimeWindowOuter>
     @Override
     public int compareTo( TimeWindowOuter o )
     {
-        int compare = this.getEarliestReferenceTime().compareTo( o.getEarliestReferenceTime() );
-        if ( compare != 0 )
-        {
-            return compare;
-        }
-        compare = this.getLatestReferenceTime().compareTo( o.getLatestReferenceTime() );
-        if ( compare != 0 )
-        {
-            return compare;
-        }
-        compare = this.getEarliestValidTime().compareTo( o.getEarliestValidTime() );
-        if ( compare != 0 )
-        {
-            return compare;
-        }
-        compare = this.getLatestValidTime().compareTo( o.getLatestValidTime() );
-        if ( compare != 0 )
-        {
-            return compare;
-        }
-        compare = this.getEarliestLeadDuration().compareTo( o.getEarliestLeadDuration() );
-        if ( compare != 0 )
-        {
-            return compare;
-        }
+        Objects.requireNonNull( o );
 
-        return this.getLatestLeadDuration().compareTo( o.getLatestLeadDuration() );
+        return MessageUtilities.compare( this.getTimeWindow(), o.getTimeWindow() );
     }
 
     @Override
@@ -215,23 +192,15 @@ public class TimeWindowOuter implements Comparable<TimeWindowOuter>
             return false;
         }
         TimeWindowOuter in = (TimeWindowOuter) o;
-        boolean timesEqual = in.getEarliestReferenceTime().equals( this.getEarliestReferenceTime() )
-                             && in.getLatestReferenceTime().equals( this.getLatestReferenceTime() )
-                             && in.getEarliestValidTime().equals( this.getEarliestValidTime() )
-                             && in.getLatestValidTime().equals( this.getLatestValidTime() );
-        return timesEqual && in.getEarliestLeadDuration().equals( this.getEarliestLeadDuration() )
-               && in.getLatestLeadDuration().equals( this.getLatestLeadDuration() );
+
+        return Objects.equals( this.getTimeWindow(), in.getTimeWindow() );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( this.getEarliestReferenceTime(),
-                             this.getLatestReferenceTime(),
-                             this.getEarliestValidTime(),
-                             this.getLatestValidTime(),
-                             this.getEarliestLeadDuration(),
-                             this.getLatestLeadDuration() );
+        return this.getTimeWindow()
+                   .hashCode();
     }
 
     @Override

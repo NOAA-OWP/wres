@@ -396,7 +396,7 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 
                     builder.addStatistics( statistics )
                            .setMinimumSampleSize( processor.getMetrics().getMinimumSampleSize() );
-
+                    
                     // Compute separate statistics for the baseline?
                     int baselineTraceCount = 0;
                     if ( pool.hasBaseline() )

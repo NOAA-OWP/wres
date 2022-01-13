@@ -781,7 +781,8 @@ public final class DataFactory
 
     private static String getGeographicName( Pool pool )
     {
-        int geoCount = pool.getGeometryTuplesCount();
+        int geoCount = pool.getGeometryGroup()
+                           .getGeometryTuplesCount();
         if ( geoCount == 0 )
         {
             throw new IllegalArgumentException( "Expected metadata with at least one feature tuple, but found none." );
@@ -789,7 +790,8 @@ public final class DataFactory
 
         if ( geoCount > 1 )
         {
-            if ( "".equals( pool.getRegionName() ) )
+            if ( "".equals( pool.getGeometryGroup()
+                                .getRegionName() ) )
             {
                 throw new IllegalArgumentException( "Discovered a pool with " + geoCount
                                                     + " features, but no region "
@@ -797,11 +799,13 @@ public final class DataFactory
                                                     + "context." );
             }
 
-            return pool.getRegionName();
+            return pool.getGeometryGroup()
+                       .getRegionName();
         }
 
         // Exactly one tuple
-        GeometryTuple firstTuple = pool.getGeometryTuples( 0 );
+        GeometryTuple firstTuple = pool.getGeometryGroup()
+                                       .getGeometryTuples( 0 );
 
         StringJoiner joiner = new StringJoiner( "_" );
 
@@ -822,9 +826,12 @@ public final class DataFactory
             LOGGER.debug( "Creating a geographic name from the single feature tuple, {}.", firstTuple );
 
             // Region name?
-            if ( !"".equals( pool.getRegionName() ) )
+            if ( !"".equals( pool.getGeometryGroup()
+                                 .getRegionName() ) )
             {
-                joiner.add( pool.getRegionName().replace( "-", "_" ) );
+                joiner.add( pool.getGeometryGroup()
+                                .getRegionName()
+                                .replace( "-", "_" ) );
             }
             // No, use the first tuple instead
             else

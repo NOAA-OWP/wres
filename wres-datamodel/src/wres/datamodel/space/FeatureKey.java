@@ -50,6 +50,11 @@ public class FeatureKey implements Comparable<FeatureKey>
     {
         return this.geometry.getWkt();
     }
+    
+    public Geometry getGeometry()
+    {
+        return this.geometry;
+    }
 
     @Override
     public boolean equals( Object o )

@@ -34,6 +34,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.space.FeatureTuple;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.io.concurrency.Executor;
@@ -45,6 +46,8 @@ import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
+import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.GeometryTuple;
 import wres.system.SystemSettings;
 import wres.util.CalculationException;
 
@@ -55,7 +58,8 @@ import wres.util.CalculationException;
  */
 public class Project
 {
-    private static final String FAILED_TO_MATCH_ANY_FEATURES_WITH_TIME_SERIES_DATA_FOR_DECLARED_FEATURE_WHEN = "Failed to match any features with time-series data for declared feature {} when ";
+    private static final String FAILED_TO_MATCH_ANY_FEATURES_WITH_TIME_SERIES_DATA_FOR_DECLARED_FEATURE_WHEN =
+            "Failed to match any features with time-series data for declared feature {} when ";
 
     private static final String DATA_SOURCES_TO_DISAMBIGUATE = " data sources to disambiguate.";
 
@@ -747,8 +751,8 @@ public class Project
                 Set<FeatureTuple> innerSingletons = this.readFeaturesFromScript( script, fCache );
                 singletons.addAll( innerSingletons );
                 LOGGER.debug( "getIntersectingFeatures completed for singleton features, which identified "
-                        + "{} features.",
-                        innerSingletons.size() );
+                              + "{} features.",
+                              innerSingletons.size() );
             }
 
             // Now deal with feature groups that contain one or more
@@ -821,9 +825,8 @@ public class Project
                     }
                 }
 
-                FeatureTuple featureTuple = new FeatureTuple( leftKey,
-                                                              rightKey,
-                                                              baselineKey );
+                GeometryTuple geometryTuple = MessageFactory.getGeometryTuple( leftKey, rightKey, baselineKey );
+                FeatureTuple featureTuple = FeatureTuple.of( geometryTuple );
 
                 featureTuples.add( featureTuple );
             }
@@ -1186,7 +1189,8 @@ public class Project
         Set<FeatureGroup> innerGroups = new HashSet<>();
 
         // Add the singletons
-        singletons.forEach( next -> innerGroups.add( FeatureGroup.of( next.toStringShort(), next ) ) );
+        singletons.forEach( next -> innerGroups.add( FeatureGroup.of( MessageFactory.getGeometryGroup( next.toStringShort(),
+                                                                                                       next ) ) ) );
         LOGGER.debug( "Added {} singleton feature groups to project {}.", innerGroups.size(), this.getId() );
 
         // Add the multi-feature groups
@@ -1219,7 +1223,8 @@ public class Project
 
                 if ( Objects.isNull( foundTuple ) )
                 {
-                    FeatureTuple noData = new FeatureTuple( nextFeature );
+                    GeometryTuple geometryTuple = MessageFactory.parse( nextFeature );
+                    FeatureTuple noData = FeatureTuple.of( geometryTuple );
                     noDataTuples.add( noData );
                 }
                 else
@@ -1232,7 +1237,8 @@ public class Project
 
             if ( !groupedTuples.isEmpty() )
             {
-                FeatureGroup newGroup = FeatureGroup.of( groupName, groupedTuples );
+                GeometryGroup geoGroup = MessageFactory.getGeometryGroup( groupName, groupedTuples );
+                FeatureGroup newGroup = FeatureGroup.of( geoGroup );
                 innerGroups.add( newGroup );
                 LOGGER.debug( "Discovered a new feature group, {}.", newGroup );
 
@@ -1406,7 +1412,7 @@ public class Project
     {
         return ConfigHelper.hasGeneratedBaseline( this.getBaseline() );
     }
-    
+
     public long getId()
     {
         return this.projectId;

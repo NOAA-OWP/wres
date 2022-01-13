@@ -19,8 +19,6 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureKey;
-import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -30,6 +28,9 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Outputs.PngFormat;
@@ -130,8 +131,7 @@ public class BoxPlotGraphicsWriterTest
     private static List<BoxplotStatisticOuter> getBoxPlotPerPoolForTwoPools()
     {
         // location id
-        FeatureKey feature = FeatureKey.of( 
-                                            MessageFactory.getGeometry( "JUNP1" ) );
+        Geometry geometry = MessageFactory.getGeometry( "JUNP1" );
 
         // Create fake outputs
         TimeWindow innerOne = MessageFactory.getTimeWindow( Instant.MIN,
@@ -152,17 +152,16 @@ public class BoxPlotGraphicsWriterTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        FeatureTuple featureTuple = new FeatureTuple( feature,
-                                                      feature,
-                                                      null );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, null );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
 
-        FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
+        FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( featureGroup,
-                                          timeOne,
-                                          null,
-                                          threshold,
-                                          false );
+                                            timeOne,
+                                            null,
+                                            threshold,
+                                            false );
 
         PoolMetadata fakeMetadataOne = PoolMetadata.of( evaluation, pool );
 
@@ -193,10 +192,10 @@ public class BoxPlotGraphicsWriterTest
         TimeWindowOuter timeTwo = TimeWindowOuter.of( innerTwo );
 
         Pool poolTwo = MessageFactory.getPool( featureGroup,
-                                             timeTwo,
-                                             null,
-                                             threshold,
-                                             false );
+                                               timeTwo,
+                                               null,
+                                               threshold,
+                                               false );
 
         PoolMetadata fakeMetadataTwo = PoolMetadata.of( evaluation, poolTwo );
 
@@ -223,8 +222,7 @@ public class BoxPlotGraphicsWriterTest
     private static List<BoxplotStatisticOuter> getBoxPlotPerPairForOnePool()
     {
         // location id
-        FeatureKey feature = FeatureKey.of( 
-                                            MessageFactory.getGeometry( "JUNP1" ) );
+        Geometry geometry = MessageFactory.getGeometry( "JUNP1" );
 
         // Create fake outputs
         TimeWindow innerOne = MessageFactory.getTimeWindow( Instant.MIN,
@@ -245,17 +243,15 @@ public class BoxPlotGraphicsWriterTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        FeatureTuple featureTuple = new FeatureTuple( feature,
-                                                      feature,
-                                                      null );
-
-        FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, null );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( featureGroup,
-                                          timeOne,
-                                          null,
-                                          threshold,
-                                          false );
+                                            timeOne,
+                                            null,
+                                            threshold,
+                                            false );
 
         PoolMetadata fakeMetadata = PoolMetadata.of( evaluation, pool );
 

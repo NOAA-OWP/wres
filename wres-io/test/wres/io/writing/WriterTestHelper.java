@@ -19,8 +19,6 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureKey;
-import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
@@ -41,6 +39,9 @@ import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.TimeWindow;
@@ -144,8 +145,7 @@ public class WriterTestHelper
     public static List<BoxplotStatisticOuter> getBoxPlotPerPoolForTwoPools()
     {
         // location id
-        FeatureKey feature = FeatureKey.of(
-                                            MessageFactory.getGeometry( "JUNP1" ) );
+        Geometry geometry = MessageFactory.getGeometry( "JUNP1" );
 
         // Create fake outputs
         TimeWindow innerOne = MessageFactory.getTimeWindow( Instant.MIN,
@@ -167,10 +167,9 @@ public class WriterTestHelper
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        FeatureTuple featureTuple = new FeatureTuple( feature,
-                                                      feature,
-                                                      null );
-        FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, null );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
         Pool pool = MessageFactory.getPool( featureGroup,
                                             timeOne,
                                             null,
@@ -238,8 +237,7 @@ public class WriterTestHelper
     public static List<BoxplotStatisticOuter> getBoxPlotPerPairForOnePool()
     {
         // location id
-        FeatureKey feature = FeatureKey.of(
-                                            MessageFactory.getGeometry( "JUNP1" ) );
+        Geometry geometry = MessageFactory.getGeometry( "JUNP1" );
 
         // Create fake outputs
         TimeWindow innerOne = MessageFactory.getTimeWindow( Instant.MIN,
@@ -261,10 +259,9 @@ public class WriterTestHelper
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        FeatureTuple featureTuple = new FeatureTuple( feature,
-                                                      feature,
-                                                      null );
-        FeatureGroup featureGroup = FeatureGroup.of( "JUNP1-JUNP1", featureTuple );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, null );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( "JUNP1-JUNP1", geoTuple );
+        FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( featureGroup,
                                             timeOne,
@@ -321,8 +318,7 @@ public class WriterTestHelper
     {
 
         // location id
-        FeatureKey feature = FeatureKey.of(
-                                            MessageFactory.getGeometry( "CREC1" ) );
+        Geometry geometry = MessageFactory.getGeometry( "CREC1" );
         TimeWindow innerOne = MessageFactory.getTimeWindow( Instant.MIN,
                                                             Instant.MAX,
                                                             Duration.ofHours( 24 ),
@@ -343,10 +339,9 @@ public class WriterTestHelper
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        FeatureTuple featureTuple = new FeatureTuple( feature,
-                                                      feature,
-                                                      null );
-        FeatureGroup featureGroup = FeatureGroup.of( "CREC1-CREC1", featureTuple );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, null );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( "CREC1-CREC1", geoTuple );
+        FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( featureGroup,
                                             timeOne,
@@ -419,8 +414,7 @@ public class WriterTestHelper
     {
 
         // location id
-        FeatureKey feature = FeatureKey.of(
-                                            MessageFactory.getGeometry( "FTSC1" ) );
+        Geometry geometry = MessageFactory.getGeometry( "FTSC1" );
         TimeWindow innerOne = MessageFactory.getTimeWindow( Instant.MIN,
                                                             Instant.MAX,
                                                             Duration.ofHours( 1 ),
@@ -440,10 +434,9 @@ public class WriterTestHelper
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        FeatureTuple featureTuple = new FeatureTuple( feature,
-                                                      feature,
-                                                      null );
-        FeatureGroup featureGroup = FeatureGroup.of( "FTSC1-FTSC1", featureTuple );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, null );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( "FTSC1-FTSC1", geoTuple );
+        FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( featureGroup,
                                             timeOne,
@@ -515,8 +508,7 @@ public class WriterTestHelper
     {
 
         // location id
-        FeatureKey feature = FeatureKey.of(
-                                            MessageFactory.getGeometry( "DRRC2" ) );
+        Geometry geometry = MessageFactory.getGeometry( "DRRC2" );
 
         TimeWindow innerOne = MessageFactory.getTimeWindow( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
         TimeWindowOuter timeOne = TimeWindowOuter.of( innerOne );
@@ -534,10 +526,9 @@ public class WriterTestHelper
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        FeatureTuple featureTuple = new FeatureTuple( feature,
-                                                      feature,
-                                                      null );
-        FeatureGroup featureGroup = FeatureGroup.of( "DRRC2-DRRC2", featureTuple );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, null );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( "DRRC2-DRRC2", geoTuple );
+        FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( featureGroup,
                                             timeOne,
@@ -604,8 +595,7 @@ public class WriterTestHelper
     {
 
         // location id
-        FeatureKey feature = FeatureKey.of(
-                                            MessageFactory.getGeometry( "DOLC2" ) );
+        Geometry geometry = MessageFactory.getGeometry( "DOLC2" );
 
         TimeWindow innerOne = MessageFactory.getTimeWindow( Instant.MIN,
                                                             Instant.MAX,
@@ -627,10 +617,9 @@ public class WriterTestHelper
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        FeatureTuple featureTuple = new FeatureTuple( feature,
-                                                      feature,
-                                                      null );
-        FeatureGroup featureGroup = FeatureGroup.of( "DOLC2-DOLC2", featureTuple );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, null );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( "DOLC2-DOLC2", geoTuple );
+        FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( featureGroup,
                                             timeOne,
@@ -684,8 +673,7 @@ public class WriterTestHelper
     {
 
         // location id
-        FeatureKey feature = FeatureKey.of(
-                                            MessageFactory.getGeometry( "FTSC1" ) );
+        Geometry geometry = MessageFactory.getGeometry( "FTSC1" );
 
         TimeWindow innerOne = MessageFactory.getTimeWindow( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
         TimeWindowOuter timeOne = TimeWindowOuter.of( innerOne );
@@ -700,10 +688,9 @@ public class WriterTestHelper
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        FeatureTuple featureTuple = new FeatureTuple( feature,
-                                                      feature,
-                                                      null );
-        FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, null );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( featureGroup,
                                             timeOne,

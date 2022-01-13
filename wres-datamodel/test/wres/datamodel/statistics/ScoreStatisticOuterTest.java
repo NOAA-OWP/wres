@@ -10,12 +10,13 @@ import org.junit.Test;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureKey;
-import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
@@ -42,25 +43,32 @@ public final class ScoreStatisticOuterTest
 
     private PoolMetadata metadata;
 
+    /**
+     * Feature group.
+     */
+
+    private FeatureGroup featureGroup;
+
     @Before
     public void runBeforeEachTest()
     {
-        FeatureKey feature = FeatureKey.of(
-                                            MessageFactory.getGeometry( "A" ) );
-
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "B" )
                                           .setBaselineDataName( "C" )
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
+        Geometry geometry = MessageFactory.getGeometry( "A" );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, geometry );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        this.featureGroup = FeatureGroup.of( geoGroup );
 
-        Pool pool = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( feature, feature, feature ) ),
-                                          null,
-                                          null,
-                                          null,
-                                          false,
-                                          1 );
+        Pool pool = MessageFactory.getPool( this.featureGroup,
+                                            null,
+                                            null,
+                                            null,
+                                            false,
+                                            1 );
         this.metadata = PoolMetadata.of( evaluation, pool );
 
         this.one =
@@ -81,9 +89,6 @@ public final class ScoreStatisticOuterTest
     @Test
     public void testEquals()
     {
-        FeatureKey l1 = FeatureKey.of(
-                                       MessageFactory.getGeometry( "A" ) );
-
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "B" )
                                           .setBaselineDataName( "C" )
@@ -91,26 +96,28 @@ public final class ScoreStatisticOuterTest
                                           .build();
 
 
-        Pool pool = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l1, l1, l1 ) ),
-                                          null,
-                                          null,
-                                          null,
-                                          false,
-                                          1 );
+        Pool pool = MessageFactory.getPool( this.featureGroup,
+                                            null,
+                                            null,
+                                            null,
+                                            false,
+                                            1 );
 
         PoolMetadata m1 = PoolMetadata.of( evaluation, pool );
 
         PoolMetadata m2 = PoolMetadata.of( evaluation, pool );
 
-        FeatureKey l3 = FeatureKey.of(
-                                       MessageFactory.getGeometry( "B" ) );
+        Geometry geometry = MessageFactory.getGeometry( "B" );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, geometry );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        FeatureGroup anotherFeatureGroup = FeatureGroup.of( geoGroup );
 
-        Pool poolTwo = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( l3, l3, l3 ) ),
-                                             null,
-                                             null,
-                                             null,
-                                             false,
-                                             1 );
+        Pool poolTwo = MessageFactory.getPool( anotherFeatureGroup,
+                                               null,
+                                               null,
+                                               null,
+                                               false,
+                                               1 );
 
         PoolMetadata m3 = PoolMetadata.of( evaluation, poolTwo );
 

@@ -63,6 +63,7 @@ import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
@@ -1113,9 +1114,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                            .build();
 
         ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( config );
-        Map<FeatureTuple, ThresholdsByMetric> thresholds = Map.of( new FeatureTuple( drrc2 ),
+        Map<FeatureTuple, ThresholdsByMetric> thresholds = Map.of( FeatureTuple.of( drrc2 ),
                                                                    thresholdsByMetric,
-                                                                   new FeatureTuple( drrc3 ),
+                                                                   FeatureTuple.of( drrc3 ),
                                                                    thresholdsByMetric );
         ThresholdsByMetricAndFeature metrics = ThresholdsByMetricAndFeature.of( thresholds, 0 );
 
@@ -1143,8 +1144,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         wres.statistics.generated.Pool poolOneDescription = pairs.getMetadata()
                                                                  .getPool()
                                                                  .toBuilder()
-                                                                 .clearGeometryTuples()
-                                                                 .addGeometryTuples( drrc2 )
+                                                                 .setGeometryGroup( GeometryGroup.newBuilder()
+                                                                                                 .addGeometryTuples( drrc2 ) )
                                                                  .setTimeWindow( window.getTimeWindow() )
                                                                  .build();
 
@@ -1158,8 +1159,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         wres.statistics.generated.Pool poolTwoDescription = pairs.getMetadata()
                                                                  .getPool()
                                                                  .toBuilder()
-                                                                 .clearGeometryTuples()
-                                                                 .addGeometryTuples( drrc3 )
+                                                                 .setGeometryGroup( GeometryGroup.newBuilder()
+                                                                                                 .addGeometryTuples( drrc3 ) )
                                                                  .setTimeWindow( window.getTimeWindow() )
                                                                  .build();
 
@@ -1207,7 +1208,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         Set<FeatureTuple> features = new HashSet<>();
         features.addAll( groupOne.getFeatures() );
         features.addAll( groupTwo.getFeatures() );
-        FeatureGroup featureGroup = FeatureGroup.of( features );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( features );
+        FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         wres.statistics.generated.Pool pool = MessageFactory.getPool( featureGroup,
                                                                       expectedWindow,

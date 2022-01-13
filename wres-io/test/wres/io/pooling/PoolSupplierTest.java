@@ -26,7 +26,6 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
-import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -34,6 +33,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.retrieval.CachingRetriever;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.TimeWindow;
 import wres.datamodel.time.TimeSeriesOfDoubleUpscaler;
@@ -419,10 +419,10 @@ public class PoolSupplierTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        FeatureTuple featureTuple = new FeatureTuple( FEATURE,
-                                                      FEATURE,
-                                                      FEATURE );
-        FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( FEATURE, FEATURE, FEATURE );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
+
         wres.statistics.generated.Pool pool = MessageFactory.getPool( featureGroup,
                                                                       null,
                                                                       null,
@@ -821,13 +821,21 @@ public class PoolSupplierTest
         PoolMetadata start = PoolMetadata.of( this.metadata,
                                               poolWindow,
                                               this.desiredTimeScale );
+
+        GeometryGroup geometryGroup = GeometryGroup.newBuilder()
+                                                   .addGeometryTuples( GeometryTuple.newBuilder()
+                                                                                    .setLeft( geometry )
+                                                                                    .setRight( geometry ) )
+                                                   .addGeometryTuples( GeometryTuple.newBuilder()
+                                                                                    .setLeft( FEATURE.getGeometry() )
+                                                                                    .setRight( FEATURE.getGeometry() ) )
+                                                   .build();
+
         PoolMetadata poolMetadata =
                 PoolMetadata.of( start.getEvaluation(),
                                  start.getPool()
                                       .toBuilder()
-                                      .addGeometryTuples( GeometryTuple.newBuilder()
-                                                                       .setLeft( geometry )
-                                                                       .setRight( geometry ) )
+                                      .setGeometryGroup( geometryGroup )
                                       .build() );
 
         Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolSupplier =

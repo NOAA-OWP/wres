@@ -49,6 +49,7 @@ import wres.io.data.details.MeasurementDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.TestDatabase;
+import wres.statistics.generated.GeometryTuple;
 import wres.system.SystemSettings;
 
 /**
@@ -138,8 +139,13 @@ class ProjectTest
         this.project.prepareForExecution();
 
         Set<FeatureTuple> actual = this.project.getFeatures();
-        Set<FeatureTuple> expected = Set.of( new FeatureTuple( FEATURE, FEATURE, null ),
-                                             new FeatureTuple( ANOTHER_FEATURE, ANOTHER_FEATURE, null ) );
+
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( FEATURE, FEATURE, null );
+        FeatureTuple aTuple = FeatureTuple.of( geoTuple );
+        GeometryTuple anotherGeoTuple = MessageFactory.getGeometryTuple( ANOTHER_FEATURE, ANOTHER_FEATURE, null );
+        FeatureTuple anotherTuple = FeatureTuple.of( anotherGeoTuple );
+
+        Set<FeatureTuple> expected = Set.of( aTuple, anotherTuple );
 
         assertEquals( expected, actual );
     }
@@ -151,14 +157,16 @@ class ProjectTest
 
         Set<FeatureGroup> actual = this.project.getFeatureGroups();
 
-        FeatureGroup firstGroup = FeatureGroup.of( "F-F", new FeatureTuple( FEATURE, FEATURE, null ) );
-        FeatureGroup secondGroup = FeatureGroup.of( "G-G",
-                                                    new FeatureTuple( ANOTHER_FEATURE, ANOTHER_FEATURE, null ) );
-        FeatureGroup overallGroup = FeatureGroup.of( "A feature group!",
-                                                     Set.of( new FeatureTuple( FEATURE, FEATURE, null ),
-                                                             new FeatureTuple( ANOTHER_FEATURE,
-                                                                               ANOTHER_FEATURE,
-                                                                               null ) ) );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( FEATURE, FEATURE, null );
+        FeatureTuple aTuple = FeatureTuple.of( geoTuple );
+        GeometryTuple anotherGeoTuple = MessageFactory.getGeometryTuple( ANOTHER_FEATURE, ANOTHER_FEATURE, null );
+        FeatureTuple anotherTuple = FeatureTuple.of( anotherGeoTuple );
+
+        FeatureGroup firstGroup = FeatureGroup.of( MessageFactory.getGeometryGroup( "F-F", aTuple ) );
+        FeatureGroup secondGroup = FeatureGroup.of( MessageFactory.getGeometryGroup( "G-G", anotherTuple ) );
+        FeatureGroup overallGroup =
+                FeatureGroup.of( MessageFactory.getGeometryGroup( "A feature group!",
+                                                                  Set.of( aTuple, anotherTuple ) ) );
 
         Set<FeatureGroup> expected = Set.of( firstGroup, secondGroup, overallGroup );
 

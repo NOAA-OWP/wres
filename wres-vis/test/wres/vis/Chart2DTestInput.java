@@ -18,22 +18,22 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureKey;
-import wres.datamodel.space.FeatureTuple;
 import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Geometry;
 
 public class Chart2DTestInput extends TestCase
 {
-    private static final FeatureKey NWS_FEATURE = FeatureKey.of( MessageFactory.getGeometry( "DRRC2" ) );
-    private static final FeatureKey USGS_FEATURE = FeatureKey.of(
-                                                                  MessageFactory.getGeometry( "09165000",
-                                                                                              "DOLORES RIVER BELOW RICO, CO.",
-                                                                                              4326,
-                                                                                              "POINT ( -108.0603517 37.63888428 )" ) );
-    private static final FeatureKey NWM_FEATURE = FeatureKey.of(
-                                                                 MessageFactory.getGeometry( "18384141" ) );
+    private static final Geometry NWS_FEATURE = MessageFactory.getGeometry( "DRRC2" );
+    private static final Geometry USGS_FEATURE = MessageFactory.getGeometry( "09165000",
+                                                                             "DOLORES RIVER BELOW RICO, CO.",
+                                                                             4326,
+                                                                             "POINT ( -108.0603517 37.63888428 )" );
+    private static final Geometry NWM_FEATURE = MessageFactory.getGeometry( "18384141" );
     private static final FeatureGroup FEATURE_GROUP =
-            FeatureGroup.of( new FeatureTuple( USGS_FEATURE, NWS_FEATURE, NWM_FEATURE ) );
+            FeatureGroup.of( MessageFactory.getGeometryGroup( null,
+                                                              MessageFactory.getGeometryTuple( USGS_FEATURE,
+                                                                                               NWS_FEATURE,
+                                                                                               NWM_FEATURE ) ) );
 
     public void test1SingleValuedPairsScatter()
             throws ChartEngineException, XYChartDataSourceException, IOException

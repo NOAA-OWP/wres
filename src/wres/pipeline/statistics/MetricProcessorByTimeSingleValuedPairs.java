@@ -83,7 +83,7 @@ public class MetricProcessorByTimeSingleValuedPairs
 
         Objects.requireNonNull( pool.getMetadata().getTimeWindow(),
                                 "Expected a non-null time window in the input metadata." );
-
+        
         //Remove missing values from pairs that do not preserver time order
         Pool<Pair<Double, Double>> unpackedNoMissing = null;
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED ) || this.hasMetrics( SampleDataGroup.DICHOTOMOUS ) )

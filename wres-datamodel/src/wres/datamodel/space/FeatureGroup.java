@@ -1,8 +1,6 @@
 package wres.datamodel.space;
 
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
@@ -13,6 +11,13 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+
+import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.messages.MessageUtilities;
+import wres.statistics.generated.GeometryGroup;
 
 /**
  * A set of {@link FeatureTuple}, which may be named.
@@ -25,75 +30,40 @@ public class FeatureGroup implements Comparable<FeatureGroup>
     /** The maximum length of a feature group name: 32 characters for each name in a feature tuple, plus two separator 
      * characters. */
     public static final int MAXIMUM_NAME_LENGTH = 98;
-    
+
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( FeatureGroup.class );
 
-    /** An optional name for the group. */
-    private final String name;
+    /** Cache of geometry groups, one per class loader. Unlimited number. */
+    private static final Cache<GeometryGroup, FeatureGroup> FEATURE_GROUP_CACHE = Caffeine.newBuilder()
+                                                                                          .build();
 
-    /** The features. */
+    /** The canonical group. */
+    private final GeometryGroup geometryGroup;
+
+    /** The wrapped features, cached for convenience. */
     private final SortedSet<FeatureTuple> features;
 
     /**
-     * @param name the group name, may be null
-     * @param features the grouped features, not null, not empty
+     * Creates an instance from a canonical instance.
+     * 
+     * @param geometryGroup the geometry group
      * @return an instance
-     * @throws NullPointerException if the features are null
-     * @throws IllegalArgumentException if the features are empty
+     * @throws NullPointerException if the input is null
+     * @throws IllegalArgumentException if the group is empty
      */
-    public static FeatureGroup of( String name, Set<FeatureTuple> features )
+    public static FeatureGroup of( GeometryGroup geometryGroup )
     {
-        return new FeatureGroup( name, features );
-    }
-    
-    /**
-     * @param features the grouped features, not null, not empty
-     * @return an instance
-     * @throws NullPointerException if the features are null
-     * @throws IllegalArgumentException if the features are empty
-     */
-    public static FeatureGroup of( Set<FeatureTuple> features )
-    {
-        return FeatureGroup.of( null, features );
-    }
+        // Check the cache
+        FeatureGroup cached = FEATURE_GROUP_CACHE.getIfPresent( geometryGroup );
+        if ( Objects.nonNull( cached ) )
+        {
+            return cached;
+        }
 
-    /**
-     * @param feature the feature, not null
-     * @return an instance
-     * @throws NullPointerException if the features are null
-     */
-    public static FeatureGroup of( FeatureTuple feature )
-    {
-        return FeatureGroup.of( null, feature );
-    }
-
-    /**
-     * @param name the group name, may be null
-     * @param feature the feature, not null, not empty
-     * @return an instance
-     * @throws NullPointerException if the feature is null
-     * @throws IllegalArgumentException if the features are empty
-     */
-    public static FeatureGroup of( String name, FeatureTuple feature )
-    {
-        Objects.requireNonNull( feature );
-
-        return FeatureGroup.of( name, Collections.singleton( feature ) );
-    }
-
-    /**
-     * @param features the features
-     * @return one unnamed, singleton feature group for each feature in the input
-     * @throws NullPointerException if the features are null
-     */
-    public static Set<FeatureGroup> ofSingletons( Set<FeatureTuple> features )
-    {
-        Objects.requireNonNull( features );
-
-        return features.stream()
-                       .map( FeatureGroup::of )
-                       .collect( Collectors.toUnmodifiableSet() );
+        FeatureGroup newInstance = new FeatureGroup( geometryGroup );
+        FEATURE_GROUP_CACHE.put( geometryGroup, newInstance );
+        return newInstance;
     }
 
     /**
@@ -102,18 +72,27 @@ public class FeatureGroup implements Comparable<FeatureGroup>
 
     public String getName()
     {
-        return this.name;
+        return this.geometryGroup.getRegionName();
     }
 
     /**
-     * @return the features
+     * @return the wrapped feature tuples
      */
 
     public Set<FeatureTuple> getFeatures()
     {
         return this.features; //Immutable on construction
     }
-    
+
+    /**
+     * @return the canonical geometry group
+     */
+
+    public GeometryGroup getGeometryGroup()
+    {
+        return this.geometryGroup;
+    }
+
     /**
      * @return whether the feature group contains precisely one feature tuple
      */
@@ -138,8 +117,7 @@ public class FeatureGroup implements Comparable<FeatureGroup>
 
         FeatureGroup in = (FeatureGroup) o;
 
-        return Objects.equals( in.getName(), this.getName() )
-               && Objects.equals( in.getFeatures(), this.getFeatures() );
+        return Objects.equals( in.getGeometryGroup(), this.getGeometryGroup() );
     }
 
     @Override
@@ -161,70 +139,48 @@ public class FeatureGroup implements Comparable<FeatureGroup>
     {
         Objects.requireNonNull( o );
 
-        // Name
-        int returnMe = Objects.compare( this.name, o.name, Comparator.nullsFirst( String::compareTo ) );
-
-        if ( returnMe != 0 )
-        {
-            return returnMe;
-        }
-
-        // Size of group
-        returnMe = Integer.compare( this.features.size(), o.features.size() );
-
-        if ( returnMe != 0 )
-        {
-            return returnMe;
-        }
-
-        // Group members, which belong to a sorted set
-        Iterator<FeatureTuple> iterator = o.features.iterator();
-        for ( FeatureTuple next : this.features )
-        {
-            returnMe = next.compareTo( iterator.next() );
-
-            if ( returnMe != 0 )
-            {
-                return returnMe;
-            }
-        }
-
-        return 0;
+        return MessageUtilities.compare( this.geometryGroup, o.getGeometryGroup() );
     }
 
     /**
      * Hidden constructor.
-     * @param name the group name, may be null
-     * @param features the grouped features, not null, not empty
+     * @param geometryGroup the geometry group
      * @throws NullPointerException if the features are null
-     * @throws IllegalArgumentException if the features are empty
+     * @throws IllegalArgumentException if the features are empty or the group name exceeds the maximum length
      */
 
-    private FeatureGroup( String name, Set<FeatureTuple> features )
+    private FeatureGroup( GeometryGroup geometryGroup )
     {
-        Objects.requireNonNull( features );
+        Objects.requireNonNull( geometryGroup );
 
-        if ( features.isEmpty() )
+        if ( geometryGroup.getGeometryTuplesCount() == 0 )
         {
             throw new IllegalArgumentException( "A feature group requires one or more features." );
         }
-        
-        if ( Objects.nonNull( name ) && name.length() > FeatureGroup.MAXIMUM_NAME_LENGTH )
+
+        if ( !geometryGroup.getRegionName().isBlank()
+             && geometryGroup.getRegionName().length() > FeatureGroup.MAXIMUM_NAME_LENGTH )
         {
             throw new IllegalArgumentException( "A feature group name cannot be longer than " +
                                                 FeatureGroup.MAXIMUM_NAME_LENGTH
                                                 + " characters. The supplied name is too long, please shorten the name"
                                                 + "and try again: "
-                                                + name
+                                                + geometryGroup.getRegionName()
                                                 + "." );
         }
 
-        this.name = name;
-        this.features = Collections.unmodifiableSortedSet( new TreeSet<>( features ) );
+        this.geometryGroup = geometryGroup;
+        SortedSet<FeatureTuple> innerFeatures = geometryGroup.getGeometryTuplesList()
+                                                             .stream()
+                                                             .map( MessageFactory::parse )
+                                                             .collect( Collectors.toCollection( TreeSet::new ) );
+        this.features = Collections.unmodifiableSortedSet( innerFeatures );
 
         if ( LOGGER.isTraceEnabled() )
         {
-            LOGGER.trace( "Created a feature group with name {} and features {}.", this.getName(), this.getFeatures() );
+            LOGGER.trace( "Created a feature group with name '{}' and features {}.",
+                          this.getName(),
+                          this.getFeatures() );
         }
     }
 

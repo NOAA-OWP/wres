@@ -30,7 +30,6 @@ import wres.datamodel.pools.Pool.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
-import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -38,6 +37,8 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.TimeWindow;
 
@@ -285,14 +286,17 @@ public final class MetricTestDataFactory
     public static FeatureGroup getFeatureGroup( final String featureId, boolean baseline )
     {
         Geometry geometry = MessageFactory.getGeometry( featureId );
-        FeatureKey featureKey = FeatureKey.of( geometry );
 
         if ( baseline )
         {
-            return FeatureGroup.of( new FeatureTuple( featureKey, featureKey, featureKey ) );
+            GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, geometry );
+            GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+            return FeatureGroup.of( geoGroup );
         }
 
-        return FeatureGroup.of( new FeatureTuple( featureKey, featureKey, null ) );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, null );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        return FeatureGroup.of( geoGroup );
     }
 
     /**

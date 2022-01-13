@@ -37,7 +37,6 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
-import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -64,6 +63,7 @@ import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
 import wres.statistics.generated.Evaluation.DefaultData;
+import wres.statistics.generated.Geometry;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Outputs.CsvFormat;
@@ -126,15 +126,21 @@ public class MessageFactoryTest
                                                                                   TWELFTH_TIME,
                                                                                   EARLIEST_LEAD,
                                                                                   LATEST_LEAD ) );
-    private static final FeatureKey LOCATION =
-            FeatureKey.of( MessageFactory.getGeometry( FEATURE_NAME, null, null, "POINT ( 23.45, 56.21 )" ) );
-    private static final FeatureKey ANOTHER_LOCATION = FeatureKey.of( MessageFactory.getGeometry( "DOLC2" ) );
-    private static final FeatureGroup FEATURE_GROUP = FeatureGroup.of( new FeatureTuple( LOCATION,
-                                                                                         LOCATION,
-                                                                                         LOCATION ) );
-    private static final FeatureGroup ANOTHER_FEATURE_GROUP = FeatureGroup.of( new FeatureTuple( ANOTHER_LOCATION,
-                                                                                                 ANOTHER_LOCATION,
-                                                                                                 ANOTHER_LOCATION ) );
+    private static final Geometry LOCATION = MessageFactory.getGeometry( FEATURE_NAME,
+                                                                         null,
+                                                                         null,
+                                                                         "POINT ( 23.45, 56.21 )" );
+    private static final Geometry ANOTHER_LOCATION = MessageFactory.getGeometry( "DOLC2" );
+    private static final FeatureGroup FEATURE_GROUP =
+            FeatureGroup.of( MessageFactory.getGeometryGroup( null,
+                                                              MessageFactory.getGeometryTuple( LOCATION,
+                                                                                               LOCATION,
+                                                                                               LOCATION ) ) );
+    private static final FeatureGroup ANOTHER_FEATURE_GROUP =
+            FeatureGroup.of( MessageFactory.getGeometryGroup( null,
+                                                              MessageFactory.getGeometryTuple( ANOTHER_LOCATION,
+                                                                                               ANOTHER_LOCATION,
+                                                                                               ANOTHER_LOCATION ) ) );
 
     /**
      * Scores to serialize.

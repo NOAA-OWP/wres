@@ -873,7 +873,6 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
     private <T extends Statistic<?>> void
             log( List<T> output, DestinationType type, boolean startOfProcess )
     {
-
         String positionString = "Completed ";
         if ( startOfProcess )
         {

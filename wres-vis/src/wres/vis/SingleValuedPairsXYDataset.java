@@ -5,9 +5,9 @@ import org.jfree.data.xy.AbstractXYDataset;
 
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryTuple;
 
 /**
  * An {@link AbstractXYDataset} for single-valued pairs.
@@ -68,30 +68,31 @@ class SingleValuedPairsXYDataset
         String leftName = this.getPlotData()
                               .getMetadata()
                               .getPool()
+                              .getGeometryGroup()
                               .getGeometryTuplesList()
                               .get( 0 )
                               .getLeft()
                               .getName();
 
-        Geometry leftGeom = MessageFactory.getGeometry( leftName );
-        FeatureKey leftKey = FeatureKey.of( leftGeom );
+        Geometry left = MessageFactory.getGeometry( leftName );
 
         String rightName = this.getPlotData()
                                .getMetadata()
                                .getPool()
+                               .getGeometryGroup()
                                .getGeometryTuplesList()
                                .get( 0 )
                                .getRight()
                                .getName();
 
-        Geometry rightGeom = MessageFactory.getGeometry( rightName ); 
-        FeatureKey rightKey = FeatureKey.of( rightGeom );
+        Geometry right = MessageFactory.getGeometry( rightName );
 
-        FeatureKey baselineKey = null;
+        Geometry baseline = null;
         
         boolean hasBaseline = this.getPlotData()
                 .getMetadata()
                 .getPool()
+                .getGeometryGroup()
                 .getGeometryTuplesList()
                 .get( 0 )
                 .hasBaseline();
@@ -101,16 +102,17 @@ class SingleValuedPairsXYDataset
             String baselineName = this.getPlotData()
                     .getMetadata()
                     .getPool()
+                    .getGeometryGroup()
                     .getGeometryTuplesList()
                     .get( 0 )
                     .getBaseline()
                     .getName();
             
-            Geometry baselineGeom = MessageFactory.getGeometry( baselineName );
-            baselineKey = FeatureKey.of( baselineGeom );
+            baseline = MessageFactory.getGeometry( baselineName );
         }
         
-        FeatureTuple tuple = new FeatureTuple( leftKey, rightKey, baselineKey );
+        GeometryTuple geometryTuple = MessageFactory.getGeometryTuple( left, right, baseline );
+        FeatureTuple tuple = FeatureTuple.of( geometryTuple );
         
         return tuple + "."
                + getPlotData().getMetadata().getEvaluation().getRightVariableName()

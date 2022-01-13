@@ -31,9 +31,9 @@ import wres.config.generated.Polygon;
 import wres.config.generated.Polygon.Point;
 import wres.config.generated.UnnamedFeature;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryTuple;
 import wres.util.NetCDF;
 
 /**
@@ -223,7 +223,7 @@ class GriddedFeatures implements Supplier<Set<FeatureTuple>>
     /**
      * @param point the point
      * @return the feature tuple
-     * @throws IllegalArgumentException if the llongitude or latitude are invalid
+     * @throws IllegalArgumentException if the longitude or latitude are invalid
      */
 
     private static FeatureTuple getFeatureFromCoordinate( LatLonPoint point )
@@ -247,8 +247,9 @@ class GriddedFeatures implements Supplier<Set<FeatureTuple>>
                                                         4326,
                                                         wkt );
 
-        FeatureKey featureKey = FeatureKey.of( geometry );
-        return new FeatureTuple( featureKey, featureKey, featureKey );
+        GeometryTuple geometryTuple = MessageFactory.getGeometryTuple( geometry, geometry, geometry );
+        
+        return FeatureTuple.of( geometryTuple );
     }
 
     /**

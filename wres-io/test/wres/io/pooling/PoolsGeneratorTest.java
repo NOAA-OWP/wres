@@ -30,8 +30,6 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureKey;
-import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.TimeSeries;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
@@ -42,6 +40,9 @@ import wres.io.retrieval.SingleValuedRetrieverFactory;
 import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.Database;
 import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.GeometryTuple;
 
 /**
  * Tests the {@link PoolsGenerator}.
@@ -134,10 +135,10 @@ public class PoolsGeneratorTest
 
         ProjectConfig projectConfig = new ProjectConfig( inputsConfig, pairsConfig, null, null, null, null );
 
-        FeatureKey feature = FeatureKey.of( 
-                                            MessageFactory.getGeometry( "FAKE2" ) );
-
-        FeatureGroup featureGroup = FeatureGroup.of( new FeatureTuple( feature, feature, null ) );
+        Geometry feature = MessageFactory.getGeometry( "FAKE2" );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( feature, feature, null );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         // Mock the sufficient elements of Project
         Project project = Mockito.mock( Project.class );
@@ -251,10 +252,11 @@ public class PoolsGeneratorTest
                                                                       null );
 
         ProjectConfig projectConfig = new ProjectConfig( inputsConfig, pairsConfig, null, null, null, null );
-
-        FeatureKey feature = FeatureKey.of( 
-                                            MessageFactory.getGeometry( "FAKE2" ) );
-        FeatureGroup featureGroup = FeatureGroup.of( new FeatureTuple( feature, feature, null ) );
+        
+        Geometry feature = MessageFactory.getGeometry( "FAKE2" );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( feature, feature, null );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         // Mock the sufficient elements of Project
         Project project = Mockito.mock( Project.class );

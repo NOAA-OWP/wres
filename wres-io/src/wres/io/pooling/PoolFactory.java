@@ -69,6 +69,7 @@ import wres.io.retrieval.CachingRetriever;
 import wres.io.retrieval.CachingSupplier;
 import wres.io.retrieval.RetrieverFactory;
 import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.GeometryGroup;
 
 /**
  * A factory class for generating the pools of pairs associated with an evaluation.
@@ -704,11 +705,11 @@ public class PoolFactory
         long poolId = PoolFactory.getNextPoolId();
 
         wres.statistics.generated.Pool pool = MessageFactory.getPool( featureGroup,
-                                                                    timeWindow, // Default to start with
-                                                                    desiredTimeScale,
-                                                                    null,
-                                                                    leftOrRightOrBaseline == LeftOrRightOrBaseline.BASELINE,
-                                                                    poolId );
+                                                                      timeWindow, // Default to start with
+                                                                      desiredTimeScale,
+                                                                      null,
+                                                                      leftOrRightOrBaseline == LeftOrRightOrBaseline.BASELINE,
+                                                                      poolId );
 
         return PoolMetadata.of( evaluation, pool );
     }
@@ -1169,6 +1170,7 @@ public class PoolFactory
                                                            .getPool()
                                                            .toBuilder()
                                                            .clearPoolId()
+                                                           .clearGeometryGroup()
                                                            .clearGeometryTuples()
                                                            .clearRegionName()
                                                            .build();
@@ -1182,6 +1184,7 @@ public class PoolFactory
                                                                    .getPool()
                                                                    .toBuilder()
                                                                    .clearPoolId()
+                                                                   .clearGeometryGroup()
                                                                    .clearGeometryTuples()
                                                                    .clearRegionName()
                                                                    .build();
@@ -1373,7 +1376,8 @@ public class PoolFactory
         Map<FeatureTuple, PoolRequest> returnMe = new HashMap<>();
         for ( FeatureTuple nextFeature : main.getFeatureGroup().getFeatures() )
         {
-            FeatureGroup singleton = FeatureGroup.of( nextFeature.toStringShort(), nextFeature );
+            GeometryGroup geoGroup = MessageFactory.getGeometryGroup( nextFeature.toStringShort(), nextFeature );
+            FeatureGroup singleton = FeatureGroup.of( geoGroup );
             wres.statistics.generated.Pool poolInner = main.getPool();
             wres.statistics.generated.Pool poolInnerWithId = poolInner.toBuilder()
                                                                       .clearPoolId()
@@ -1565,8 +1569,8 @@ public class PoolFactory
                                                        .flatMap( next -> next.getFeatures()
                                                                              .stream() )
                                                        .collect( Collectors.toSet() );
-
-                this.composed = FeatureGroup.of( features );
+                GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, features );
+                this.composed = FeatureGroup.of( geoGroup );
             }
         }
     }

@@ -22,10 +22,11 @@ import wres.config.generated.DataSourceConfig.Variable;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureKey;
-import wres.datamodel.space.FeatureTuple;
 import wres.io.project.Project;
 import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.GeometryTuple;
 
 /**
  * Tests the {@link PoolFactory}.
@@ -104,15 +105,13 @@ class PoolFactoryTest
 
         Evaluation evaluationDescription = MessageFactory.parse( projectConfigPlus );
 
-        FeatureKey keyOne = FeatureKey.of(
-                                           MessageFactory.getGeometry( "DRRC2", null, null, null ) );
-        FeatureKey keyTwo = FeatureKey.of(
-                                           MessageFactory.getGeometry( "DRRC2HSF", null, null, null ) );
-        FeatureKey keyThree = FeatureKey.of(
-                                             MessageFactory.getGeometry( "DRRC2HSF", null, null, null ) );
-        FeatureTuple aTuple = new FeatureTuple( keyOne, keyTwo, keyThree );
+        Geometry keyOne = MessageFactory.getGeometry( "DRRC2", null, null, null );
+        Geometry keyTwo = MessageFactory.getGeometry( "DRRC2HSF", null, null, null );
+        Geometry keyThree = MessageFactory.getGeometry( "DRRC2HSF", null, null, null );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( keyOne, keyTwo, keyThree );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
 
-        FeatureGroup groupOne = FeatureGroup.of( aTuple );
+        FeatureGroup groupOne = FeatureGroup.of( geoGroup );
 
         Project project = Mockito.mock( Project.class );
         Mockito.when( project.getFeatureGroups() )

@@ -11,6 +11,7 @@ import com.google.protobuf.Timestamp;
 
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
@@ -383,17 +384,18 @@ class MessageUtilitiesTest
         assertEquals( 0, MessageUtilities.compare( Pool.getDefaultInstance(), Pool.getDefaultInstance() ) );
         // Compare full instance
         Pool first = Pool.newBuilder()
-                         .addGeometryTuples( GeometryTuple.newBuilder()
-                                                          .setLeft( Geometry.newBuilder()
-                                                                            .setName( "left" )
-                                                                            .setDescription( "description" )
-                                                                            .setSrid( 5643 )
-                                                                            .setWkt( "POINT( 1 2 )" ) )
-                                                          .setRight( Geometry.newBuilder()
-                                                                             .setName( "right" )
-                                                                             .setDescription( "description" )
-                                                                             .setSrid( 5643 )
-                                                                             .setWkt( "POINT( 1 2 )" ) ) )
+                         .setGeometryGroup( GeometryGroup.newBuilder()
+                                                         .addGeometryTuples( GeometryTuple.newBuilder()
+                                                                                          .setLeft( Geometry.newBuilder()
+                                                                                                            .setName( "left" )
+                                                                                                            .setDescription( "description" )
+                                                                                                            .setSrid( 5643 )
+                                                                                                            .setWkt( "POINT( 1 2 )" ) )
+                                                                                          .setRight( Geometry.newBuilder()
+                                                                                                             .setName( "right" )
+                                                                                                             .setDescription( "description" )
+                                                                                                             .setSrid( 5643 )
+                                                                                                             .setWkt( "POINT( 1 2 )" ) ) ) )
                          .setIsBaselinePool( false )
                          .setEventThreshold( Threshold.newBuilder()
                                                       .setLeftThresholdValue( DoubleValue.newBuilder()
@@ -430,21 +432,23 @@ class MessageUtilitiesTest
 
         // Less than and greater than examples
         Pool third = Pool.newBuilder()
-                         .addGeometryTuples( GeometryTuple.newBuilder()
-                                                          .setLeft( Geometry.newBuilder()
-                                                                            .setName( "left" )
-                                                                            .setDescription( "description" )
-                                                                            .setSrid( 5643 )
-                                                                            .setWkt( "POINT( 1 2 )" ) ) )
+                         .setGeometryGroup( GeometryGroup.newBuilder()
+                                                         .addGeometryTuples( GeometryTuple.newBuilder()
+                                                                                          .setLeft( Geometry.newBuilder()
+                                                                                                            .setName( "left" )
+                                                                                                            .setDescription( "description" )
+                                                                                                            .setSrid( 5643 )
+                                                                                                            .setWkt( "POINT( 1 2 )" ) ) ) )
                          .build();
 
         Pool fourth = Pool.newBuilder()
-                          .addGeometryTuples( GeometryTuple.newBuilder()
-                                                           .setLeft( Geometry.newBuilder()
-                                                                             .setName( "left" )
-                                                                             .setDescription( "description" )
-                                                                             .setSrid( 5643 )
-                                                                             .setWkt( "POINT( 3 4 )" ) ) )
+                          .setGeometryGroup( GeometryGroup.newBuilder()
+                                                          .addGeometryTuples( GeometryTuple.newBuilder()
+                                                                                           .setLeft( Geometry.newBuilder()
+                                                                                                             .setName( "left" )
+                                                                                                             .setDescription( "description" )
+                                                                                                             .setSrid( 5643 )
+                                                                                                             .setWkt( "POINT( 3 4 )" ) ) ) )
                           .build();
 
         assertTrue( MessageUtilities.compare( third, fourth ) < 0 );
@@ -552,4 +556,36 @@ class MessageUtilitiesTest
 
         assertTrue( MessageUtilities.compare( fifteenth, sixteenth ) < 0 );
     }
+    
+    @Test
+    void testCompareGeometry()
+    {
+        // Consistent with equals
+        assertEquals( 0, MessageUtilities.compare( Geometry.getDefaultInstance(), Geometry.getDefaultInstance() ) );
+
+        Geometry first = Geometry.newBuilder()
+                                 .setName( "left" )
+                                 .setDescription( "description" )
+                                 .setSrid( 5643 )
+                                 .setWkt( "POINT( 1 2 )" )
+                                 .build();
+
+        Geometry second = first.toBuilder()
+                               .build();
+
+        assertEquals( first, second );
+        assertEquals( 0, MessageUtilities.compare( first, first ) );
+        assertEquals( 0, MessageUtilities.compare( first, second ) );
+
+        // Less than and greater than examples
+        assertTrue( MessageUtilities.compare( null, first ) < 0 );
+        assertTrue( MessageUtilities.compare( first, null ) > 0 );
+        
+        Geometry third = first.toBuilder()
+                .setName( "leftTwo" )
+                .build();
+        
+        assertTrue( MessageUtilities.compare( first, third ) < 0 );
+    }
+    
 }

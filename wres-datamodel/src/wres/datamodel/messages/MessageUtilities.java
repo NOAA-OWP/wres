@@ -1,5 +1,6 @@
 package wres.datamodel.messages;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
@@ -7,6 +8,7 @@ import com.google.protobuf.ProtocolStringList;
 
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
@@ -357,28 +359,28 @@ public class MessageUtilities
         {
             return 0;
         }
-        
+
         int compare = Boolean.compare( first.getIsBaselinePool(), second.getIsBaselinePool() );
 
         if ( compare != 0 )
         {
             return compare;
         }
-        
+
         compare = Boolean.compare( first.hasTimeWindow(), second.hasTimeWindow() );
 
         if ( compare != 0 )
         {
             return compare;
         }
-        
+
         compare = Boolean.compare( first.hasEventThreshold(), second.hasEventThreshold() );
 
         if ( compare != 0 )
         {
             return compare;
         }
-        
+
         compare = Boolean.compare( first.hasDecisionThreshold(), second.hasDecisionThreshold() );
 
         if ( compare != 0 )
@@ -392,14 +394,14 @@ public class MessageUtilities
         {
             return compare;
         }
-        
+
         compare = Boolean.compare( first.hasPairs(), second.hasPairs() );
 
         if ( compare != 0 )
         {
             return compare;
         }
-        
+
         compare = MessageUtilities.compare( first.getTimeWindow(), second.getTimeWindow() );
 
         if ( compare != 0 )
@@ -427,9 +429,9 @@ public class MessageUtilities
         {
             return compare;
         }
-        
-        compare = MessageUtilities.compareListOfGeometryTuples( first.getGeometryTuplesList(),
-                                                                second.getGeometryTuplesList() );
+
+        compare = MessageUtilities.compare( first.getGeometryGroup(),
+                                            second.getGeometryGroup() );
 
         if ( compare != 0 )
         {
@@ -437,6 +439,52 @@ public class MessageUtilities
         }
 
         return MessageUtilities.compare( first.getPairs(), second.getPairs() );
+    }
+
+    /**
+     * Compares two {@link GeometryGroup} and returns a zero, negative or positive value as to whether the 
+     * first is equal to, less than or greater than the second. 
+     * 
+     * @param first the first group
+     * @param second the second group
+     * @throws NullPointerException if either list is null
+     */
+
+    public static int compare( GeometryGroup first, GeometryGroup second )
+    {
+        Objects.requireNonNull( first );
+        Objects.requireNonNull( second );
+
+        int compare = first.getRegionName().compareTo( second.getRegionName() );
+
+        if ( compare != 0 )
+        {
+            return compare;
+        }
+
+        List<GeometryTuple> one = first.getGeometryTuplesList();
+        List<GeometryTuple> two = second.getGeometryTuplesList();
+
+        compare = Integer.compare( one.size(), two.size() );
+
+        if ( compare != 0 )
+        {
+            return compare;
+        }
+
+        int count = one.size();
+
+        for ( int i = 0; i < count; i++ )
+        {
+            int compareTuple = MessageUtilities.compare( one.get( i ), two.get( i ) );
+
+            if ( compareTuple != 0 )
+            {
+                return compareTuple;
+            }
+        }
+
+        return 0;
     }
 
     /**
@@ -747,48 +795,49 @@ public class MessageUtilities
 
     /**
      * Compares the first {@link Geometry} against the second and returns zero, a positive or negative value as to 
-     * whether the first description is equal to, greater than or less than the second description.
+     * whether the first description is equal to, greater than or less than the second description. Null friendly.
      * 
      * @param first the first description
      * @param second the second description
      * @return a number that is zero, negative or positive when first description is the same as, less than or greater 
      *            than the second, respectively
-     * @throws NullPointerException if either input is null
      */
 
     public static int compare( Geometry first, Geometry second )
     {
-        Objects.requireNonNull( first );
-        Objects.requireNonNull( second );
+        Comparator<Geometry> comparator = ( f, s ) -> {
+            // For efficiency, check that the objects are identity equals
+            if ( f == s )
+            {
+                return 0;
+            }
 
-        // For efficiency, check that the objects are identity equals
-        if ( first == second )
-        {
-            return 0;
-        }
+            int compare = Integer.compare( f.getSrid(), s.getSrid() );
 
-        int compare = Integer.compare( first.getSrid(), second.getSrid() );
+            if ( compare != 0 )
+            {
+                return compare;
+            }
 
-        if ( compare != 0 )
-        {
-            return compare;
-        }
+            compare = f.getName().compareTo( s.getName() );
 
-        compare = first.getName().compareTo( second.getName() );
+            if ( compare != 0 )
+            {
+                return compare;
+            }
 
-        if ( compare != 0 )
-        {
-            return compare;
-        }
+            compare = f.getDescription().compareTo( s.getDescription() );
 
-        compare = first.getDescription().compareTo( second.getDescription() );
+            if ( compare != 0 )
+            {
+                return compare;
+            }
 
-        if ( compare != 0 )
-        {
-            return compare;
-        }
+            return f.getWkt().compareTo( s.getWkt() );
+        };
 
-        return first.getWkt().compareTo( second.getWkt() );
+        return Comparator.nullsFirst( comparator )
+                         .compare( first, second );
     }
 
     /**
@@ -1064,42 +1113,6 @@ public class MessageUtilities
             if ( compareType != 0 )
             {
                 return compareType;
-            }
-        }
-
-        return 0;
-    }
-
-    /**
-     * Compares two lists of {@link GeometryTuple} and returns a zero, negative or positive value as to whether the 
-     * first list is equal to, less than or greater than the second list. 
-     * 
-     * @param first the first list
-     * @param second the second list
-     * @throws NullPointerException if either list is null
-     */
-
-    private static int compareListOfGeometryTuples( List<GeometryTuple> first, List<GeometryTuple> second )
-    {
-        Objects.requireNonNull( first );
-        Objects.requireNonNull( second );
-
-        int compare = Integer.compare( first.size(), second.size() );
-
-        if ( compare != 0 )
-        {
-            return compare;
-        }
-
-        int count = first.size();
-
-        for ( int i = 0; i < count; i++ )
-        {
-            int compareTuple = MessageUtilities.compare( first.get( i ), second.get( i ) );
-
-            if ( compareTuple != 0 )
-            {
-                return compareTuple;
             }
         }
 

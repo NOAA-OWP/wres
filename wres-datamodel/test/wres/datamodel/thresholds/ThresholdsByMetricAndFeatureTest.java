@@ -15,12 +15,14 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric.Builder;
+import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.GeometryTuple;
 
 /**
  * Tests the {@link ThresholdsByMetricAndFeature}.
@@ -32,6 +34,9 @@ class ThresholdsByMetricAndFeatureTest
 
     /** Instance to test. */
     private ThresholdsByMetricAndFeature testInstance;
+
+    /** Feature tuple. */
+    private FeatureTuple featureTuple;
 
     @BeforeEach
     private void runBeforeEachTest()
@@ -46,13 +51,12 @@ class ThresholdsByMetricAndFeatureTest
         ThresholdsByMetric thresholdsByMetric = new Builder().addThresholds( values, ThresholdGroup.VALUE )
                                                              .build();
 
-        Map<FeatureTuple, ThresholdsByMetric> thresholds =
-                Map.of( new FeatureTuple( FeatureKey.of(
-                                                         MessageFactory.getGeometry( "a" ) ),
-                                          FeatureKey.of(
-                                                         MessageFactory.getGeometry( "a" ) ),
-                                          null ),
-                        thresholdsByMetric );
+        Geometry geometry = MessageFactory.getGeometry( "a" );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, null );
+        this.featureTuple = FeatureTuple.of( geoTuple );
+
+        Map<FeatureTuple, ThresholdsByMetric> thresholds = Map.of( this.featureTuple,
+                                                                   thresholdsByMetric );
 
         this.testInstance = ThresholdsByMetricAndFeature.of( thresholds, 7 );
     }
@@ -84,11 +88,7 @@ class ThresholdsByMetricAndFeatureTest
                                                              .build();
 
         Map<FeatureTuple, ThresholdsByMetric> expected =
-                Map.of( new FeatureTuple( FeatureKey.of(
-                                                         MessageFactory.getGeometry( "a" ) ),
-                                          FeatureKey.of(
-                                                         MessageFactory.getGeometry( "a" ) ),
-                                          null ),
+                Map.of( this.featureTuple,
                         thresholdsByMetric );
 
         assertEquals( expected, actual );
@@ -97,10 +97,8 @@ class ThresholdsByMetricAndFeatureTest
     @Test
     void testGetThresholdsByMetricAndFeatureByFeatureGroup()
     {
-        FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( MessageFactory.getGeometry( "a" ) ),
-                                                      FeatureKey.of( MessageFactory.getGeometry( "a" ) ),
-                                                      null );
-        FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( this.featureTuple );
+        FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
         ThresholdsByMetricAndFeature actual = this.testInstance.getThresholdsByMetricAndFeature( featureGroup );
         assertEquals( this.testInstance, actual );
     }
