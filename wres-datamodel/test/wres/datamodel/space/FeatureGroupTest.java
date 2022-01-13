@@ -11,6 +11,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import wres.datamodel.messages.MessageFactory;
+import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.GeometryTuple;
 
 /**
  * Tests the {@link FeatureGroup}.
@@ -33,19 +36,17 @@ class FeatureGroupTest
     @BeforeEach
     void runBeforeEachTest()
     {
-        FeatureKey keyOne = FeatureKey.of(
-                                           MessageFactory.getGeometry( "A" ) );
-        FeatureKey keyTwo = FeatureKey.of(
-                                           MessageFactory.getGeometry( "B" ) );
-        FeatureKey keyThree = FeatureKey.of(
-                                             MessageFactory.getGeometry( "C" ) );
-        this.aTuple = new FeatureTuple( keyOne, keyTwo, keyThree );
+        Geometry keyOne = MessageFactory.getGeometry( "A" );
+        Geometry keyTwo = MessageFactory.getGeometry( "B" );
+        Geometry keyThree = MessageFactory.getGeometry( "C" );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( keyOne, keyTwo, keyThree );
+        this.aTuple = FeatureTuple.of( geoTuple );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( "aGroup", geoTuple );
+        this.aGroup = FeatureGroup.of( geoGroup );
 
-        this.aGroup = FeatureGroup.of( "aGroup", this.aTuple );
-
-        FeatureKey keyFour = FeatureKey.of(
-                                            MessageFactory.getGeometry( "A", "a feature", null, null ) );
-        this.anotherTuple = new FeatureTuple( keyOne, keyTwo, keyFour );
+        Geometry keyFour = MessageFactory.getGeometry( "A", "a feature", null, null );
+        GeometryTuple anotherGeoTuple = MessageFactory.getGeometryTuple( keyOne, keyTwo, keyFour );
+        this.anotherTuple = FeatureTuple.of( anotherGeoTuple );
     }
 
     @Test
@@ -55,13 +56,15 @@ class FeatureGroupTest
         assertEquals( this.aGroup, this.aGroup );
 
         // Symmetric
-        FeatureGroup anotherGroup = FeatureGroup.of( "aGroup", this.aTuple );
+        GeometryGroup anotherGeoGroup = MessageFactory.getGeometryGroup( "aGroup", this.aTuple );
+        FeatureGroup anotherGroup = FeatureGroup.of( anotherGeoGroup );
 
         assertTrue( anotherGroup.equals( this.aGroup )
                     && this.aGroup.equals( anotherGroup ) );
 
         // Transitive
-        FeatureGroup yetAnotherGroup = FeatureGroup.of( "aGroup", this.aTuple );
+        GeometryGroup yetAnotherGeoGroup = MessageFactory.getGeometryGroup( "aGroup", this.aTuple );
+        FeatureGroup yetAnotherGroup = FeatureGroup.of( yetAnotherGeoGroup );
 
         assertTrue( this.aGroup.equals( anotherGroup )
                     && anotherGroup.equals( yetAnotherGroup )
@@ -78,17 +81,22 @@ class FeatureGroupTest
         assertNotEquals( this.aGroup, null );
 
         // Unequal cases
-        FeatureGroup oneMoreGroup = FeatureGroup.of( "anotherGroup", this.aTuple );
+        GeometryGroup oneMoreGeo = MessageFactory.getGeometryGroup( "anotherGroup", this.aTuple );
+        FeatureGroup oneMoreGroup = FeatureGroup.of( oneMoreGeo );
 
         assertNotEquals( this.aGroup, oneMoreGroup );
 
-        FeatureGroup yetOneMoreGroup = FeatureGroup.of( "aGroup", Set.of( this.aTuple, this.anotherTuple ) );
+        GeometryGroup yetOneMoreGeoGroup =
+                MessageFactory.getGeometryGroup( "aGroup", Set.of( this.aTuple, this.anotherTuple ) );
+        FeatureGroup yetOneMoreGroup = FeatureGroup.of( yetOneMoreGeoGroup );
 
-        assertNotEquals( yetOneMoreGroup, aGroup );
+        assertNotEquals( yetOneMoreGroup, this.aGroup );
 
-        FeatureGroup oneLastGroup = FeatureGroup.of( "aGroup", this.anotherTuple );
+        GeometryGroup oneLastGeoGroup =
+                MessageFactory.getGeometryGroup( "aGroup", Set.of( this.aTuple, this.anotherTuple ) );
+        FeatureGroup oneLastGroup = FeatureGroup.of( oneLastGeoGroup );
 
-        assertNotEquals( oneLastGroup, aGroup );
+        assertNotEquals( oneLastGroup, this.aGroup );
     }
 
     @Test
@@ -109,21 +117,27 @@ class FeatureGroupTest
     {
         // Consistent with equals
         assertEquals( 0, this.aGroup.compareTo( this.aGroup ) );
-        FeatureGroup anotherGroup = FeatureGroup.of( "anotherName", this.aTuple );
+
+        GeometryGroup anotherGeoGroup = MessageFactory.getGeometryGroup( "anotherName", this.aTuple );
+        FeatureGroup anotherGroup = FeatureGroup.of( anotherGeoGroup );
         assertNotEquals( 0, this.aGroup.compareTo( anotherGroup ) );
 
         // Unequal size
-        FeatureGroup smallerGroup = FeatureGroup.of( Set.of( this.aTuple ) );
-        FeatureGroup biggerGroup = FeatureGroup.of( Set.of( this.aTuple, this.anotherTuple ) );
+        FeatureGroup smallerGroup = FeatureGroup.of( MessageFactory.getGeometryGroup( Set.of( this.aTuple ) ) );
+        FeatureGroup biggerGroup =
+                FeatureGroup.of( MessageFactory.getGeometryGroup( Set.of( this.aTuple, this.anotherTuple ) ) );
         assertTrue( smallerGroup.compareTo( biggerGroup ) < 0 );
 
-        // Equal size, equal group name, lesser tuple name
-        FeatureKey keyOne = FeatureKey.of(
-                                           MessageFactory.getGeometry( "A" ) );
-        FeatureKey keyTwo = FeatureKey.of(
-                                           MessageFactory.getGeometry( "B" ) );
-        FeatureGroup lesserGroup = FeatureGroup.of( new FeatureTuple( keyOne, keyOne, null ) );
-        FeatureGroup greaterGroup = FeatureGroup.of( new FeatureTuple( keyTwo, keyTwo, null ) );
+        // Equal size, equal group name, lesser tuple name        
+        Geometry keyOne = MessageFactory.getGeometry( "A" );
+        Geometry keyTwo = MessageFactory.getGeometry( "B" );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( keyOne, keyTwo, null );
+        GeometryTuple geoTupleTwo = MessageFactory.getGeometryTuple( keyTwo, keyTwo, null );
+        FeatureTuple featureTuple = FeatureTuple.of( geoTuple );
+        FeatureTuple featureTupleTwo = FeatureTuple.of( geoTupleTwo );
+
+        FeatureGroup lesserGroup = FeatureGroup.of( MessageFactory.getGeometryGroup( featureTuple ) );
+        FeatureGroup greaterGroup = FeatureGroup.of( MessageFactory.getGeometryGroup( featureTupleTwo ) );
 
         assertTrue( greaterGroup.compareTo( lesserGroup ) > 0 );
     }
@@ -141,22 +155,12 @@ class FeatureGroupTest
     }
 
     @Test
-    void testOfSingletons()
-    {
-        Set<FeatureGroup> groups = FeatureGroup.ofSingletons( Set.of( this.aTuple, this.anotherTuple ) );
-
-        FeatureGroup firstExpected = FeatureGroup.of( this.aTuple );
-        FeatureGroup secondExpected = FeatureGroup.of( this.anotherTuple );
-
-        assertEquals( Set.of( firstExpected, secondExpected ), groups );
-    }
-
-    @Test
     void testFeatureGroupThrowsExpectedExceptionWhenNameTooLong()
     {
         IllegalArgumentException exception =
                 assertThrows( IllegalArgumentException.class,
-                              () -> FeatureGroup.of( new String( new char[99] ), this.aTuple ) );
+                              () -> FeatureGroup.of( MessageFactory.getGeometryGroup( new String( new char[99] ),
+                                                                                      this.aTuple ) ) );
 
         String actualMessage = exception.getMessage();
         String expectedMessageStartsWith = "A feature group name cannot be longer than";

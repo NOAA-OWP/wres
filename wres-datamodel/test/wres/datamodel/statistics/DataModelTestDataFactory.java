@@ -10,8 +10,6 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureKey;
-import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -20,6 +18,7 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Geometry;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.TimeWindow;
@@ -47,9 +46,12 @@ public final class DataModelTestDataFactory
 
     private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
 
-    private static final FeatureKey DRRC2 = FeatureKey.of(
-                                                           MessageFactory.getGeometry( "DRRC2" ) );
-    private static final FeatureGroup DRRC2_GROUP = FeatureGroup.of( new FeatureTuple( DRRC2, DRRC2, DRRC2 ) );
+    private static final Geometry DRRC2 = MessageFactory.getGeometry( "DRRC2" );
+    private static final FeatureGroup DRRC2_GROUP =
+            FeatureGroup.of( MessageFactory.getGeometryGroup( null,
+                                                              MessageFactory.getGeometryTuple( DRRC2,
+                                                                                               DRRC2,
+                                                                                               DRRC2 ) ) );
 
     /**
      * Returns a {@link List} of {@link ScoreStatistic} comprising the MAE for selected

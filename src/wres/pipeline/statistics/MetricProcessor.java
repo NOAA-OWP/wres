@@ -327,8 +327,8 @@ public abstract class MetricProcessor<S extends Pool<?>> implements Function<S, 
     {
         Objects.requireNonNull( pool );
         Objects.requireNonNull( threshold );
-
-        Pool.Builder<T> builder = new Pool.Builder<T>();
+        
+        Pool.Builder<T> builder = new Pool.Builder<T>().setMetadata( pool.getMetadata() );
         for ( Pool<T> nextPool : pool.getMiniPools() )
         {
             Pool<T> inner = this.addThresholdToPoolMetadataInner( nextPool, threshold );

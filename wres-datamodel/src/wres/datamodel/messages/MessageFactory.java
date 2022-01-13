@@ -26,6 +26,7 @@ import wres.config.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.DoubleBoundsType;
+import wres.config.generated.Feature;
 import wres.config.generated.GraphicalType;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
@@ -55,6 +56,7 @@ import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
@@ -84,7 +86,7 @@ import wres.statistics.generated.Evaluation.DefaultData;
 /**
  * A factory class for mapping between canonical (protobuf) representations and corresponding Java representations, 
  * which often provide extra behavior. The "parse" methods provide a direct (one-to-one) translation in each direction
- * and the "get" methods involve an indirect or one-to-many/many-to-one translation.
+ * and the "get" methods involve an indirect translation or one-to-many/many-to-one translation.
  *
  * @author James Brown
  */
@@ -181,11 +183,17 @@ public class MessageFactory
                                                         .collect( Collectors.toList() );
             poolBuilder.addAllGeometryTuples( geoTuples );
 
+            GeometryGroup.Builder geometryBuilder = GeometryGroup.newBuilder()
+                                                                 .addAllGeometryTuples( geoTuples );
+
             // Region name?
             if ( Objects.nonNull( featureGroup.getName() ) )
             {
                 poolBuilder.setRegionName( featureGroup.getName() );
+                geometryBuilder.setRegionName( featureGroup.getName() );
             }
+
+            poolBuilder.setGeometryGroup( geometryBuilder );
 
             LOGGER.debug( "While creating sample metadata, populated the pool with a feature group of {}.",
                           featureGroup );
@@ -329,6 +337,152 @@ public class MessageFactory
     {
         return wres.statistics.MessageUtilities.getDeclaredFormats( outputs );
     }
+
+    /**
+     * Creates a geometry tuple from the input.
+     * 
+     * @param left the left feature, required
+     * @param right the right feature, required
+     * @param baseline the baseline feature, optional
+     * @return the geometry tuple
+     * @throws NullPointerException if either the left or right input is null
+     */
+
+    public static GeometryTuple getGeometryTuple( FeatureKey left, FeatureKey right, FeatureKey baseline )
+    {
+        Objects.requireNonNull( left );
+        Objects.requireNonNull( right );
+
+        GeometryTuple.Builder builder = GeometryTuple.newBuilder()
+                                                     .setLeft( left.getGeometry() )
+                                                     .setRight( right.getGeometry() );
+
+        if ( Objects.nonNull( baseline ) )
+        {
+            builder.setBaseline( baseline.getGeometry() );
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Creates a geometry tuple from the input.
+     * 
+     * @param left the left geometry, required
+     * @param right the right geometry, required
+     * @param baseline the baseline geometry, optional
+     * @return the geometry tuple
+     * @throws NullPointerException if either the left or right input is null
+     */
+
+    public static GeometryTuple getGeometryTuple( Geometry left, Geometry right, Geometry baseline )
+    {
+        Objects.requireNonNull( left );
+        Objects.requireNonNull( right );
+
+        GeometryTuple.Builder builder = GeometryTuple.newBuilder()
+                                                     .setLeft( left )
+                                                     .setRight( right );
+
+        if ( Objects.nonNull( baseline ) )
+        {
+            builder.setBaseline( baseline );
+        }
+
+        return builder.build();
+    }  
+    
+    /**
+     * Creates a geometry group from the input.
+     * 
+     * @param groupName the group name
+     * @param singleton the single geometry tuple
+     * @return the geometry group
+     * @throws NullPointerException if the singleton is null
+     */
+
+    public static GeometryGroup getGeometryGroup( String groupName, GeometryTuple singleton )
+    {
+        Objects.requireNonNull( singleton );
+
+        GeometryGroup.Builder builder = GeometryGroup.newBuilder()
+                                                     .addGeometryTuples( singleton );
+
+        if ( Objects.nonNull( groupName ) )
+        {
+            builder.setRegionName( groupName );
+        }
+
+        return builder.build();
+    }   
+
+    /**
+     * Creates a geometry group from the input.
+     * 
+     * @param name the group name, optional
+     * @param features the features, required
+     * @return the geometry tuple
+     * @throws NullPointerException if the features are null
+     */
+
+    public static GeometryGroup getGeometryGroup( String name, Set<FeatureTuple> features )
+    {
+        Objects.requireNonNull( features );
+
+        Set<GeometryTuple> geometries = features.stream()
+                                                .map( FeatureTuple::getGeometryTuple )
+                                                .collect( Collectors.toSet() );
+
+        GeometryGroup.Builder builder = GeometryGroup.newBuilder()
+                                                     .addAllGeometryTuples( geometries );
+
+        if ( Objects.nonNull( name ) )
+        {
+            builder.setRegionName( name );
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Creates a geometry group from the input.
+     * 
+     * @param features the features, required
+     * @return the geometry tuple
+     * @throws NullPointerException if the features are null
+     */
+
+    public static GeometryGroup getGeometryGroup( Set<FeatureTuple> features )
+    {
+        return MessageFactory.getGeometryGroup( null, features );
+    }
+
+    /**
+     * Creates a geometry group from the input.
+     * 
+     * @param name the group name, optional
+     * @param singleton the singleton feature, required
+     * @return the geometry tuple
+     * @throws NullPointerException if the singleton is null
+     */
+
+    public static GeometryGroup getGeometryGroup( String name, FeatureTuple singleton )
+    {
+        return MessageFactory.getGeometryGroup( name, Collections.singleton( singleton ) );
+    }
+
+    /**
+     * Creates a geometry group from the input.
+     * 
+     * @param singleton the singleton feature, required
+     * @return the geometry tuple
+     * @throws NullPointerException if the singleton is null
+     */
+
+    public static GeometryGroup getGeometryGroup( FeatureTuple singleton )
+    {
+        return MessageFactory.getGeometryGroup( null, Collections.singleton( singleton ) );
+    }   
 
     /**
      * Creates a geometry from the input.
@@ -884,6 +1038,32 @@ public class MessageFactory
     }
 
     /**
+     * Creates a {@link wres.statistics.generated.GeometryTuple} from a {@link Feature}.
+     * 
+     * @param feature a declared feature from which to build the instance, not null
+     * @return the message
+     */
+
+    public static GeometryTuple parse( Feature feature )
+    {
+        Objects.requireNonNull( feature );
+
+        Geometry left = MessageFactory.getGeometry( feature.getLeft() );
+        Geometry right = MessageFactory.getGeometry( feature.getRight() );
+        GeometryTuple.Builder builder = GeometryTuple.newBuilder()
+                                                     .setLeft( left )
+                                                     .setRight( right );
+
+        if ( Objects.nonNull( feature.getBaseline() ) )
+        {
+            Geometry baseline = MessageFactory.getGeometry( feature.getBaseline() );
+            builder.setBaseline( baseline );
+        }
+
+        return builder.build();
+    }
+
+    /**
      * Creates a {@link wres.statistics.generated.Geometry} from a {@link wres.datamodel.space.FeatureKey}.
      * 
      * @param featureKey the feature key from which to create a message
@@ -930,7 +1110,7 @@ public class MessageFactory
     {
         Objects.requireNonNull( location );
 
-        return new FeatureTuple( location );
+        return FeatureTuple.of( location );
     }
 
     /**
@@ -1197,6 +1377,7 @@ public class MessageFactory
         wres.datamodel.thresholds.OneOrTwoThresholds thresholds = metadata.getThresholds();
 
         Set<wres.datamodel.space.FeatureTuple> features = metadata.getPool()
+                                                                  .getGeometryGroup()
                                                                   .getGeometryTuplesList()
                                                                   .stream()
                                                                   .map( MessageFactory::parse )

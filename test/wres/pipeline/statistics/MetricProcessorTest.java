@@ -18,7 +18,6 @@ import org.junit.Test;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
@@ -30,6 +29,7 @@ import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;
 import wres.datamodel.thresholds.ThresholdsGenerator;
 import wres.datamodel.time.TimeSeries;
 import wres.metrics.MetricParameterException;
+import wres.statistics.generated.GeometryTuple;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 
@@ -130,11 +130,10 @@ public final class MetricProcessorTest
                 TestDeclarationGenerator.getDeclarationForEnsembleForecastsWithAllValidMetricsAndIssuedDatePools();
 
         ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( configEnsemble );
-        FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of(
-                                                                     MessageFactory.getGeometry( DRRC2 ) ),
-                                                      FeatureKey.of(
-                                                                     MessageFactory.getGeometry( DRRC2 ) ),
-                                                      null );
+        GeometryTuple geometryTuple = MessageFactory.getGeometryTuple( MessageFactory.getGeometry( DRRC2 ),
+                                                                       MessageFactory.getGeometry( DRRC2 ),
+                                                                       null );
+        FeatureTuple featureTuple = FeatureTuple.of( geometryTuple );
         Map<FeatureTuple, ThresholdsByMetric> thresholds = Map.of( featureTuple, thresholdsByMetric );
         ThresholdsByMetricAndFeature metrics = ThresholdsByMetricAndFeature.of( thresholds, 0 );
 
@@ -189,11 +188,10 @@ public final class MetricProcessorTest
             ofMetricProcessorForSingleValuedPairs( ProjectConfig config )
     {
         ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( config );
-        FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of(
-                                                                     MessageFactory.getGeometry( DRRC2 ) ),
-                                                      FeatureKey.of(
-                                                                     MessageFactory.getGeometry( DRRC2 ) ),
-                                                      null );
+        GeometryTuple geometryTuple = MessageFactory.getGeometryTuple( MessageFactory.getGeometry( DRRC2 ),
+                                                                       MessageFactory.getGeometry( DRRC2 ),
+                                                                       null );
+        FeatureTuple featureTuple = FeatureTuple.of( geometryTuple );
         Map<FeatureTuple, ThresholdsByMetric> thresholds = Map.of( featureTuple, thresholdsByMetric );
         ThresholdsByMetricAndFeature metrics = ThresholdsByMetricAndFeature.of( thresholds, 0 );
 

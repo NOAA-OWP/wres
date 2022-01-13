@@ -28,6 +28,7 @@ import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.GeometryGroup;
 
 /**
  * A utility class for slicing/dicing and transforming pool-shaped datasets
@@ -492,15 +493,16 @@ public class PoolSlicer
                 unionThresholds.add( next.getThresholds() );
             }
 
-            if( Objects.isNull( timeScale ) )
+            if ( Objects.isNull( timeScale ) )
             {
                 timeScale = next.getTimeScale();
             }
-            
+
             unionFeatures.addAll( next.getFeatureTuples() );
-            unionRegionNames.add( next.getPool().getRegionName() );
+
+            PoolSlicer.addRegionName( unionRegionNames, next );
         }
-        
+
         LOGGER.debug( "While building the union metadata from {}, discovered these time windows in common: {}; and "
                       + "these features in common: {}; and these thresholds in common: {}; and these feature group"
                       + "names in common: {}. ",
@@ -520,13 +522,14 @@ public class PoolSlicer
 
         if ( !unionFeatures.isEmpty() )
         {
-            String regionName = "";
+            String regionName = null;
             if ( unionRegionNames.size() == 1 )
             {
                 regionName = unionRegionNames.iterator().next();
             }
 
-            featureGroup = FeatureGroup.of( regionName, unionFeatures );
+            GeometryGroup geoGroup = MessageFactory.getGeometryGroup( regionName, unionFeatures );
+            featureGroup = FeatureGroup.of( geoGroup );
         }
 
         OneOrTwoThresholds threshold = null;
@@ -537,15 +540,34 @@ public class PoolSlicer
         }
 
         wres.statistics.generated.Pool unionPool = MessageFactory.getPool( featureGroup,
-                                                                         unionWindow,
-                                                                         timeScale,
-                                                                         threshold,
-                                                                         test.getPool().getIsBaselinePool(),
-                                                                         test.getPool().getPoolId() );
+                                                                           unionWindow,
+                                                                           timeScale,
+                                                                           threshold,
+                                                                           test.getPool().getIsBaselinePool(),
+                                                                           test.getPool().getPoolId() );
 
         return PoolMetadata.of( test.getEvaluation(), unionPool );
     }
-    
+
+    /**
+     * Adds a region name to the set of region names.
+     * @param regionNames the region names
+     * @param pool the pool metadata
+     */
+
+    private static void addRegionName( Set<String> regionNames, PoolMetadata pool )
+    {
+        if ( !pool.getPool()
+                  .getGeometryGroup()
+                  .getRegionName()
+                  .isBlank() )
+        {
+            regionNames.add( pool.getPool()
+                                 .getGeometryGroup()
+                                 .getRegionName() );
+        }
+    }
+
     /**
      * Returns <code>true</code> if the two metadatas are equal after ignoring the time windows, thresholds and 
      * features. In addition, the time scale will be ignored (lenient) if one of the time scales is null/unknown.
@@ -568,26 +590,28 @@ public class PoolSlicer
         }
 
         // Lenient about the time scale when it is missing from one
-        boolean ignoreTimeScale = ! first.hasTimeScale() || ! second.hasTimeScale();
-        
+        boolean ignoreTimeScale = !first.hasTimeScale() || !second.hasTimeScale();
+
         // Adjust the pools to remove the time window and thresholds and feature-ish information
         wres.statistics.generated.Pool.Builder adjustedPoolFirst = first.getPool()
-                                                                .toBuilder()
-                                                                .clearTimeWindow()
-                                                                .clearEventThreshold()
-                                                                .clearDecisionThreshold()
-                                                                .clearGeometryTuples()
-                                                                .clearRegionName();
+                                                                        .toBuilder()
+                                                                        .clearTimeWindow()
+                                                                        .clearEventThreshold()
+                                                                        .clearDecisionThreshold()
+                                                                        .clearGeometryGroup()
+                                                                        .clearGeometryTuples()
+                                                                        .clearRegionName();
 
         wres.statistics.generated.Pool.Builder adjustedPoolSecond = second.getPool()
-                                                                  .toBuilder()
-                                                                  .clearTimeWindow()
-                                                                  .clearEventThreshold()
-                                                                  .clearDecisionThreshold()
-                                                                  .clearGeometryTuples()
-                                                                  .clearRegionName();
-        
-        if( ignoreTimeScale )
+                                                                          .toBuilder()
+                                                                          .clearTimeWindow()
+                                                                          .clearEventThreshold()
+                                                                          .clearDecisionThreshold()
+                                                                          .clearGeometryGroup()
+                                                                          .clearGeometryTuples()
+                                                                          .clearRegionName();
+
+        if ( ignoreTimeScale )
         {
             adjustedPoolFirst.clearTimeScale();
             adjustedPoolSecond.clearTimeScale();
@@ -595,7 +619,7 @@ public class PoolSlicer
 
         return first.getEvaluation().equals( second.getEvaluation() )
                && adjustedPoolFirst.build().equals( adjustedPoolSecond.build() );
-    }    
+    }
 
     /**
      * Unpacks a pool of time-series into their raw event values, eliminating the time-series view.

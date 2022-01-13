@@ -61,6 +61,7 @@ import wres.io.data.details.SourceDetails;
 import wres.io.project.Project;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.TestDatabase;
+import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.TimeWindow;
 import wres.system.SystemSettings;
 
@@ -436,7 +437,9 @@ public class SingleValuedRetrieverFactoryTest
 
         ProjectConfig projectConfig = new ProjectConfig( inputsConfig, pairsConfig, null, null, null, null );
 
-        FeatureTuple featureTuple = new FeatureTuple( FAKE_FEATURE, FAKE_FEATURE, null );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( FAKE_FEATURE, FAKE_FEATURE, null );
+        FeatureTuple featureTuple = FeatureTuple.of( geoTuple );
+        
         Set<FeatureTuple> allFeatures = Set.of( featureTuple );
 
         // Mock the sufficient elements of Project

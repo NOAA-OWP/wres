@@ -291,6 +291,12 @@ public class PoolMetadata implements Comparable<PoolMetadata>
             {
                 pool.clearRegionName();
             }
+
+            pool.setGeometryGroup( featureGroup.getGeometryGroup() );
+        }
+        else
+        {
+            pool.clearGeometryGroup();
         }
 
         return new PoolMetadata( evaluation, pool.build() );
@@ -315,11 +321,11 @@ public class PoolMetadata implements Comparable<PoolMetadata>
     @Override
     public boolean equals( Object o )
     {
-        if( this == o )
+        if ( this == o )
         {
             return true;
         }
-        
+
         if ( ! ( o instanceof PoolMetadata ) )
         {
             return false;
@@ -549,16 +555,17 @@ public class PoolMetadata implements Comparable<PoolMetadata>
         this.timeWindow = timeWindowInner;
 
         Set<FeatureTuple> featureTuples = this.getPool()
+                                              .getGeometryGroup()
                                               .getGeometryTuplesList()
                                               .stream()
-                                              .map( FeatureTuple::new )
+                                              .map( FeatureTuple::of )
                                               .collect( Collectors.toSet() );
 
         FeatureGroup featureGroupInner = null;
 
         if ( !featureTuples.isEmpty() )
         {
-            featureGroupInner = FeatureGroup.of( this.getPool().getRegionName(), featureTuples );
+            featureGroupInner = FeatureGroup.of( this.getPool().getGeometryGroup() );
         }
 
         this.featureGroup = featureGroupInner;

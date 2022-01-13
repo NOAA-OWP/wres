@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.Before;
 import org.junit.jupiter.api.Test;
 
 import wres.datamodel.OneOrTwoDoubles;
@@ -23,7 +24,6 @@ import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
@@ -31,6 +31,7 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric.Builder;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 
 /**
@@ -45,16 +46,28 @@ class ThresholdSlicerTest
     private static final String CMS = "CMS";
     private static final String FLOOD = "FLOOD";
 
+    private FeatureTuple featureTuple;
+    private FeatureTuple anotherFeatureTuple;
+
+    @Before
+    public void runBeforeEachTest()
+    {
+        Geometry a = MessageFactory.getGeometry( "a" );
+        Geometry b = MessageFactory.getGeometry( "b" );
+
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( a, b, null );
+        this.featureTuple = FeatureTuple.of( geoTuple );
+
+        Geometry c = MessageFactory.getGeometry( "c" );
+        Geometry d = MessageFactory.getGeometry( "d" );
+
+        GeometryTuple anotherGeoTuple = MessageFactory.getGeometryTuple( c, d, null );
+        this.anotherFeatureTuple = FeatureTuple.of( anotherGeoTuple );
+    }
+
     @Test
     void testDecompose()
     {
-        FeatureTuple oneTuple = new FeatureTuple( FeatureKey.of( MessageFactory.getGeometry( "a" ) ),
-                                                  FeatureKey.of( MessageFactory.getGeometry( "b" ) ),
-                                                  null );
-        FeatureTuple anotherTuple = new FeatureTuple( FeatureKey.of( MessageFactory.getGeometry( "c" ) ),
-                                                      FeatureKey.of( MessageFactory.getGeometry( "d" ) ),
-                                                      null );
-
         ThresholdOuter oneThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                          Operator.GREATER,
                                                          ThresholdDataType.LEFT,
@@ -85,20 +98,20 @@ class ThresholdSlicerTest
 
         Map<FeatureTuple, Set<ThresholdOuter>> mapOfThresholds = new HashMap<>();
 
-        mapOfThresholds.put( oneTuple, someThresholds );
-        mapOfThresholds.put( anotherTuple, someMoreThresholds );
+        mapOfThresholds.put( this.featureTuple, someThresholds );
+        mapOfThresholds.put( this.anotherFeatureTuple, someMoreThresholds );
 
         List<Map<FeatureTuple, ThresholdOuter>> actual = ThresholdSlicer.decompose( mapOfThresholds );
 
         List<Map<FeatureTuple, ThresholdOuter>> expected = new ArrayList<>();
 
         Map<FeatureTuple, ThresholdOuter> aMap = new HashMap<>();
-        aMap.put( oneTuple, oneThreshold );
-        aMap.put( anotherTuple, oneMoreThreshold );
+        aMap.put( this.featureTuple, oneThreshold );
+        aMap.put( this.anotherFeatureTuple, oneMoreThreshold );
 
         Map<FeatureTuple, ThresholdOuter> anotherMap = new HashMap<>();
-        anotherMap.put( oneTuple, anotherThreshold );
-        anotherMap.put( anotherTuple, yetAnotherThreshold );
+        anotherMap.put( this.featureTuple, anotherThreshold );
+        anotherMap.put( this.anotherFeatureTuple, yetAnotherThreshold );
 
         expected.add( aMap );
         expected.add( anotherMap );
@@ -153,16 +166,9 @@ class ThresholdSlicerTest
                                                                         ThresholdGroup.PROBABILITY_CLASSIFIER )
                                                         .build();
 
-
-        FeatureTuple oneTuple = new FeatureTuple( FeatureKey.of( MessageFactory.getGeometry( "a" ) ),
-                                                  FeatureKey.of( MessageFactory.getGeometry( "b" ) ),
-                                                  null );
-        FeatureTuple anotherTuple = new FeatureTuple( FeatureKey.of( MessageFactory.getGeometry( "c" ) ),
-                                                      FeatureKey.of( MessageFactory.getGeometry( "d" ) ),
-                                                      null );
         Map<FeatureTuple, ThresholdsByMetric> wrapped = new HashMap<>();
-        wrapped.put( oneTuple, unfilteredOne );
-        wrapped.put( anotherTuple, unfilteredTwo );
+        wrapped.put( this.featureTuple, unfilteredOne );
+        wrapped.put( this.anotherFeatureTuple, unfilteredTwo );
 
         Map<FeatureTuple, ThresholdsByMetric> actual = ThresholdSlicer.filterByGroup( wrapped,
                                                                                       SampleDataGroup.DICHOTOMOUS,
@@ -176,8 +182,8 @@ class ThresholdSlicerTest
         ThresholdsByMetric expectedTwo = new Builder().addThresholds( probabilities, ThresholdGroup.PROBABILITY )
                                                       .build();
 
-        expected.put( oneTuple, expectedOne );
-        expected.put( anotherTuple, expectedTwo );
+        expected.put( this.featureTuple, expectedOne );
+        expected.put( this.anotherFeatureTuple, expectedTwo );
 
         assertEquals( expected, actual );
     }
@@ -193,7 +199,7 @@ class ThresholdSlicerTest
                                                  .setLeft( Geometry.newBuilder().setName( "a" ) )
                                                  .setRight( Geometry.newBuilder().setName( "b" ) )
                                                  .build();
-        builder.addGeometryTuples( geoTupleOne );
+        builder.setGeometryGroup( GeometryGroup.newBuilder().addGeometryTuples( geoTupleOne ) );
 
         Pool<String> pool = new Pool.Builder<String>().setClimatology( climatology )
                                                       .setMetadata( PoolMetadata.of( Evaluation.newBuilder()
@@ -202,7 +208,7 @@ class ThresholdSlicerTest
                                                                                      builder.build() ) )
                                                       .build();
 
-        FeatureTuple oneTuple = new FeatureTuple( geoTupleOne );
+        FeatureTuple oneTuple = FeatureTuple.of( geoTupleOne );
 
         Map<FeatureTuple, Set<ThresholdOuter>> thresholds =
                 Map.of( oneTuple,

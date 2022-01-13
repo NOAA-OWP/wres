@@ -3,6 +3,7 @@ syntax = "proto3";
 package wres.statistics.generated;
 
 import "wresproto/geometry_tuple.proto";
+import "wresproto/geometry_group.proto";
 import "wresproto/time_window.proto";
 import "wresproto/pairs.proto";
 import "wresproto/threshold.proto";
@@ -17,7 +18,8 @@ message Pool
     /*A message that encapsulates a pool, which is the atomic collection of 
     pairs and statistics.*/
     
-    repeated GeometryTuple geometry_tuples = 1;
+    repeated GeometryTuple geometry_tuples = 1 [deprecated = true];
+    // Deprecated for removal. Use the geometry_group instead.
     // Zero or more geometry tuples that characterize this pool.
         
     TimeWindow time_window = 2;
@@ -49,10 +51,14 @@ message Pool
     // baseline pairs, this allows the resulting statistics to be discriminated 
     // between.
 
-    string region_name = 8;
+    string region_name = 8 [deprecated = true];
+    // Deprecated for removal. Use the geometry_group instead.
     // The name of the spatial aggregation or geographic region associated with 
     // the geometries (e.g., Patagonia).
 
     int64 pool_id = 9;
     // A unique identifier for the pool.
+
+    GeometryGroup geometry_group = 10;
+    // The group of geometries associated with the pool.
 }

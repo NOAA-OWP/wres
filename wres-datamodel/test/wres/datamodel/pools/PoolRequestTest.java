@@ -14,10 +14,11 @@ import org.junit.jupiter.api.Test;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureKey;
-import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Pool;
 
 class PoolRequestTest
@@ -37,9 +38,10 @@ class PoolRequestTest
                                     .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
                                     .build();
 
-        FeatureKey featureOne = FeatureKey.of(
-                                               MessageFactory.getGeometry( "DRRC2" ) );
-        this.featureGroup = FeatureGroup.of( new FeatureTuple( featureOne, featureOne, featureOne ) );
+        Geometry geometry = MessageFactory.getGeometry( "DRRC2" );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, geometry );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        this.featureGroup = FeatureGroup.of( geoGroup );
 
         this.timeWindow = TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                             Instant.parse( "1985-12-31T23:59:59Z" ) ) );
@@ -102,10 +104,12 @@ class PoolRequestTest
         assertNotEquals( this.poolRequest, null );
 
         // Unequal cases
-        FeatureKey aFeature = FeatureKey.of(
-                                             MessageFactory.getGeometry( "DRRC3" ) );
+        Geometry geometry = MessageFactory.getGeometry( "DRRC3" );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, geometry );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        FeatureGroup group = FeatureGroup.of( geoGroup );
 
-        Pool oneMorePool = MessageFactory.getPool( FeatureGroup.of( new FeatureTuple( aFeature, aFeature, aFeature ) ),
+        Pool oneMorePool = MessageFactory.getPool( group,
                                                    this.timeWindow,
                                                    null,
                                                    null,

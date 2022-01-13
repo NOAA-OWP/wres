@@ -37,12 +37,13 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
-import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Pool;
 
 /**
@@ -116,18 +117,17 @@ public final class EnsemblePairsWriterTest
                                           .setMeasurementUnit( "SCOOBIES" )
                                           .build();
 
-        FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of(
-                                                                     MessageFactory.getGeometry( "PLUM" ) ),
-                                                      FeatureKey.of(
-                                                                     MessageFactory.getGeometry( "PLUM" ) ),
-                                                      null );
-        FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( MessageFactory.getGeometry( "PLUM" ),
+                                                                  MessageFactory.getGeometry( "PLUM" ),
+                                                                  null );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( featureGroup,
-                                          null,
-                                          null,
-                                          null,
-                                          false );
+                                            null,
+                                            null,
+                                            null,
+                                            false );
 
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
         TimeSeriesMetadata boilerplate = EnsemblePairsWriterTest.getBoilerplateMetadataWithT0( basisTime );
@@ -156,18 +156,17 @@ public final class EnsemblePairsWriterTest
                                              .setMeasurementUnit( "SCOOBIES" )
                                              .build();
 
-        FeatureTuple featureTupleTwo = new FeatureTuple( FeatureKey.of(
-                                                                        MessageFactory.getGeometry( "ORANGE" ) ),
-                                                         FeatureKey.of(
-                                                                        MessageFactory.getGeometry( "ORANGE" ) ),
-                                                         null );
-        FeatureGroup featureGroupTwo = FeatureGroup.of( featureTupleTwo );
+        GeometryTuple geoTupleTwo = MessageFactory.getGeometryTuple( MessageFactory.getGeometry( "ORANGE" ),
+                                                                     MessageFactory.getGeometry( "ORANGE" ),
+                                                                     null );
+        GeometryGroup geoGroupTwo = MessageFactory.getGeometryGroup( null, geoTupleTwo );
+        FeatureGroup featureGroupTwo = FeatureGroup.of( geoGroupTwo );
 
         Pool poolTwo = MessageFactory.getPool( featureGroupTwo,
-                                             null,
-                                             null,
-                                             null,
-                                             false );
+                                               null,
+                                               null,
+                                               null,
+                                               false );
 
         PoolMetadata metaTwo = PoolMetadata.of( evaluationTwo, poolTwo );
         TimeSeriesMetadata boilerplateTwo = EnsemblePairsWriterTest.getBoilerplateMetadataWithT0( basisTimeTwo );
@@ -198,18 +197,17 @@ public final class EnsemblePairsWriterTest
                                                .setMeasurementUnit( "SCOOBIES" )
                                                .build();
 
-        FeatureTuple featureTupleThree = new FeatureTuple( FeatureKey.of(
-                                                                          MessageFactory.getGeometry( "BANANA" ) ),
-                                                           FeatureKey.of(
-                                                                          MessageFactory.getGeometry( "BANANA" ) ),
-                                                           null );
-        FeatureGroup featureGroupThree = FeatureGroup.of( featureTupleThree );
+        GeometryTuple geoTupleThree = MessageFactory.getGeometryTuple( MessageFactory.getGeometry( "BANANA" ),
+                                                                       MessageFactory.getGeometry( "BANANA" ),
+                                                                       null );
+        GeometryGroup geoGroupThree = MessageFactory.getGeometryGroup( null, geoTupleThree );
+        FeatureGroup featureGroupThree = FeatureGroup.of( geoGroupThree );
 
         Pool poolThree = MessageFactory.getPool( featureGroupThree,
-                                               null,
-                                               null,
-                                               null,
-                                               false );
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 false );
 
         PoolMetadata metaThree = PoolMetadata.of( evaluationThree, poolThree );
 
@@ -251,23 +249,23 @@ public final class EnsemblePairsWriterTest
                 Builder<TimeSeries<Pair<Double, Ensemble>>> tsBuilder = new Builder<>();
 
                 // Set the measurement units and time scale
-                FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of(
-                                                                             MessageFactory.getGeometry( "PINEAPPLE" ) ),
-                                                              FeatureKey.of(
-                                                                             MessageFactory.getGeometry( "PINEAPPLE" ) ),
-                                                              null );
+                GeometryTuple geoTuple = MessageFactory.getGeometryTuple( MessageFactory.getGeometry( "PINEAPPLE" ),
+                                                                          MessageFactory.getGeometry( "PINEAPPLE" ),
+                                                                          null );
+                GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+                FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
                 Evaluation evaluation = Evaluation.newBuilder()
                                                   .setRightVariableName( "MORTARS" )
                                                   .setMeasurementUnit( "SCOOBIES" )
                                                   .build();
 
-                Pool pool = MessageFactory.getPool( FeatureGroup.of( featureTuple ),
-                                                  null,
-                                                  TimeScaleOuter.of( Duration.ofSeconds( 3600 ),
-                                                                     TimeScaleFunction.MEAN ),
-                                                  null,
-                                                  false );
+                Pool pool = MessageFactory.getPool( featureGroup,
+                                                    null,
+                                                    TimeScaleOuter.of( Duration.ofSeconds( 3600 ),
+                                                                       TimeScaleFunction.MEAN ),
+                                                    null,
+                                                    false );
 
                 PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
@@ -331,22 +329,23 @@ public final class EnsemblePairsWriterTest
                 tsBuilder.addData( timeSeriesNaN );
 
                 // Set the measurement units and time scale
-                FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of(
-                                                                             MessageFactory.getGeometry( "PINEAPPLE" ) ),
-                                                              FeatureKey.of(
-                                                                             MessageFactory.getGeometry( "PINEAPPLE" ) ),
-                                                              null );
+                GeometryTuple geoTuple = MessageFactory.getGeometryTuple( MessageFactory.getGeometry( "PINEAPPLE" ),
+                                                                          MessageFactory.getGeometry( "PINEAPPLE" ),
+                                                                          null );
+                GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+                FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
+
                 Evaluation evaluation = Evaluation.newBuilder()
                                                   .setRightVariableName( "MORTARS" )
                                                   .setMeasurementUnit( "SCOOBIES" )
                                                   .build();
 
-                Pool pool = MessageFactory.getPool( FeatureGroup.of( featureTuple ),
-                                                  null,
-                                                  TimeScaleOuter.of( Duration.ofSeconds( 3600 ),
-                                                                     TimeScaleFunction.MEAN ),
-                                                  null,
-                                                  false );
+                Pool pool = MessageFactory.getPool( featureGroup,
+                                                    null,
+                                                    TimeScaleOuter.of( Duration.ofSeconds( 3600 ),
+                                                                       TimeScaleFunction.MEAN ),
+                                                    null,
+                                                    false );
 
                 PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 

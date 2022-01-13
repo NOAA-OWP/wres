@@ -37,6 +37,9 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.TimeWindow;
 
@@ -110,23 +113,23 @@ public final class MetricTestDataFactory
     /** Unit name for boilerplate metadata */
     private static final String UNIT = "CMS";
 
-    private static final FeatureKey NWS_FEATURE = FeatureKey.of(
-                                                                 MessageFactory.getGeometry( "DRRC2",
-                                                                                             null,
-                                                                                             null,
-                                                                                             null ) );
-    private static final FeatureKey USGS_FEATURE = FeatureKey.of(
-                                                                  MessageFactory.getGeometry( "09165000",
-                                                                                              "DOLORES RIVER BELOW RICO, CO.",
-                                                                                              4326,
-                                                                                              "POINT ( -108.0603517 37.63888428 )" ) );
-    private static final FeatureKey NWM_FEATURE = FeatureKey.of(
-                                                                 MessageFactory.getGeometry( "18384141",
-                                                                                             null,
-                                                                                             null,
-                                                                                             null ) );
-    private static final FeatureTuple FEATURE_TUPLE = new FeatureTuple( USGS_FEATURE, NWS_FEATURE, NWM_FEATURE );
-    private static final FeatureGroup FEATURE_GROUP = FeatureGroup.of( FEATURE_TUPLE );
+    private static final Geometry NWS_FEATURE = MessageFactory.getGeometry( "DRRC2",
+                                                                            null,
+                                                                            null,
+                                                                            null );
+    private static final Geometry USGS_FEATURE = MessageFactory.getGeometry( "09165000",
+                                                                             "DOLORES RIVER BELOW RICO, CO.",
+                                                                             4326,
+                                                                             "POINT ( -108.0603517 37.63888428 )" );
+    private static final Geometry NWM_FEATURE = MessageFactory.getGeometry( "18384141",
+                                                                            null,
+                                                                            null,
+                                                                            null );
+    private static final FeatureTuple FEATURE_TUPLE = FeatureTuple.of(
+                                                                       MessageFactory.getGeometryTuple( USGS_FEATURE,
+                                                                                                        NWS_FEATURE,
+                                                                                                        NWM_FEATURE ) );
+    private static final FeatureGroup FEATURE_GROUP = FeatureGroup.of( MessageFactory.getGeometryGroup( FEATURE_TUPLE ) );
 
     /**
      * @return a feature group
@@ -175,15 +178,20 @@ public final class MetricTestDataFactory
 
     static FeatureGroup getFeatureGroup( final String featureId, boolean baseline )
     {
-        FeatureKey featureKey = FeatureKey.of(
-                                               MessageFactory.getGeometry( featureId, null, null, null ) );
+        Geometry geometry = MessageFactory.getGeometry( featureId, null, null, null );
 
         if ( baseline )
         {
-            return FeatureGroup.of( new FeatureTuple( featureKey, featureKey, featureKey ) );
+            GeometryTuple geometryTuple = MessageFactory.getGeometryTuple( geometry, geometry, geometry );
+            FeatureTuple featureTuple = FeatureTuple.of( geometryTuple );
+            GeometryGroup geoGroup = MessageFactory.getGeometryGroup( featureTuple );
+            return FeatureGroup.of( geoGroup );
         }
 
-        return FeatureGroup.of( new FeatureTuple( featureKey, featureKey, null ) );
+        GeometryTuple geometryTuple = MessageFactory.getGeometryTuple( geometry, geometry, null );
+        FeatureTuple featureTuple = FeatureTuple.of( geometryTuple );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( featureTuple );
+        return FeatureGroup.of( geoGroup );
     }
 
     /**
@@ -551,7 +559,8 @@ public final class MetricTestDataFactory
         Set<FeatureTuple> features = new HashSet<>();
         features.addAll( groupOne.getFeatures() );
         features.addAll( groupTwo.getFeatures() );
-        FeatureGroup featureGroup = FeatureGroup.of( features );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( features );
+        FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( featureGroup,
                                             timeWindow,

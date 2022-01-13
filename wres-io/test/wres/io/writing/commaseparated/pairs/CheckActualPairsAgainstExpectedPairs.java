@@ -92,60 +92,61 @@ public final class CheckActualPairsAgainstExpectedPairs
     public void testActualPairsEqualExpectedPairsWithConditions() throws IOException
     {
         // To edit per test
-        String scenarioNumber = "001";  // The system test scenario number
+        String scenarioNumber = "001"; // The system test scenario number
         String actualOutputNumber = "6033086960545198915"; //The temp directory name assigned by WRES
-        
+
         // Expected pairs
-        Path expectedPairs = Paths.get( "../systests/scenario"+scenarioNumber+"/benchmarks/", "sorted_pairs.csv" );
+        Path expectedPairs = Paths.get( "../systests/scenario" + scenarioNumber + "/benchmarks/", "sorted_pairs.csv" );
         assertTrue( expectedPairs.toFile().canRead() );
-        
+
         // Actual pairs
         Path actualPairs = Paths.get( "some/path" + scenarioNumber
-                               + "/more/path/wres_evaluation_output_"+actualOutputNumber,
-                               "pairs.csv" );
-        
+                                      + "/more/path/wres_evaluation_output_"
+                                      + actualOutputNumber,
+                                      "pairs.csv" );
+
         // Readable
         assertTrue( actualPairs.toFile().canRead() );
-        
+
         List<String> actualRows = Files.readAllLines( actualPairs );
         List<String> expectedRows = Files.readAllLines( expectedPairs );
-        
+
         // Some data read for both
         assertTrue( actualRows.size() > 0 && expectedRows.size() > 0 );
-        
+
         // Same number of rows
         assertEquals( actualRows.size(), expectedRows.size() );
-        
+
         // Compare row-by-row, building from tokens to account for expected differences
         // ignore header
         // Store them for subsequent comparison because they are not ordered yet
         List<String> actualForComparison = new ArrayList<>();
         List<String> expectedForComparison = new ArrayList<>();
-        
-        for( int i = 0; i < actualRows.size(); i++ )
+
+        for ( int i = 0; i < actualRows.size(); i++ )
         {
             String actualRow = actualRows.get( i );
             String expectedRow = expectedRows.get( i );
-            
-            if( ! actualRow.startsWith( "FEATURE DESCRIPTION" ) ) 
+
+            if ( !actualRow.startsWith( "FEATURE DESCRIPTION" ) )
             {
                 String[] actualSplit = actualRow.split( "," );
-                
+
                 // Sort ensemble members in ascending OOM
                 Arrays.sort( actualSplit, 10, actualSplit.length );
-                
+
                 // Eliminate new columns
-                actualForComparison.add( String.join( ",", ArrayUtils.removeAll( actualSplit, 1,2,3,4,5,6 ) ) );
+                actualForComparison.add( String.join( ",", ArrayUtils.removeAll( actualSplit, 1, 2, 3, 4, 5, 6 ) ) );
 
             }
-            
-            if( ! expectedRow.startsWith( "FEATURE DESCRIPTION" ) ) 
+
+            if ( !expectedRow.startsWith( "FEATURE DESCRIPTION" ) )
             {
                 String[] expectedSplit = expectedRow.split( "," );
-                
+
                 // Sort ensemble members in ascending OOM
                 Arrays.sort( expectedSplit, 5, expectedSplit.length );
-                
+
                 // Eliminate the time window index
                 expectedForComparison.add( String.join( ",", ArrayUtils.remove( expectedSplit, 3 ) ) );
             }
@@ -154,7 +155,7 @@ public final class CheckActualPairsAgainstExpectedPairs
         // Sort in natural order
         Collections.sort( actualForComparison );
         Collections.sort( expectedForComparison );
-        
+
         // Verify by row, rather than all at once        
         for ( int i = 0; i < actualForComparison.size(); i++ )
         {

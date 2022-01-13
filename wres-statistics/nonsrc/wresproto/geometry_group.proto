@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package wres.statistics.generated;
+
+import "wresproto/geometry_tuple.proto";
+
+option java_package = "wres.statistics.generated";
+option java_outer_classname = "GeometryGroupProto";
+option java_multiple_files = true;
+
+message GeometryGroup
+{
+    // A group of geometries associated with an evaluation.
+
+    repeated GeometryTuple geometry_tuples = 1;
+    // Zero or more geometry tuples.
+
+    string region_name = 2;
+    // The name of the spatial aggregation or geographic region associated with 
+    // the geometries (e.g., Patagonia).
+}

@@ -120,27 +120,27 @@ abstract class MetricProcessorByTime<S extends Pool<?>>
      * 
      * TODO: collapse this with a generic call to futures.addOutput and take an input collection of metrics
      * 
-     * @param singleValued the input pairs
+     * @param pool the input pairs
      * @param futures the metric futures
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    void processSingleValuedPairs( Pool<Pair<Double, Double>> singleValued,
+    void processSingleValuedPairs( Pool<Pair<Double, Double>> pool,
                                    MetricFuturesByTime.MetricFuturesByTimeBuilder futures )
     {
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ) )
         {
-            this.processSingleValuedPairsByThreshold( singleValued, futures, StatisticType.DOUBLE_SCORE );
+            this.processSingleValuedPairsByThreshold( pool, futures, StatisticType.DOUBLE_SCORE );
         }
 
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DIAGRAM ) )
         {
-            this.processSingleValuedPairsByThreshold( singleValued, futures, StatisticType.DIAGRAM );
+            this.processSingleValuedPairsByThreshold( pool, futures, StatisticType.DIAGRAM );
         }
 
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.BOXPLOT_PER_POOL ) )
         {
-            this.processSingleValuedPairsByThreshold( singleValued, futures, StatisticType.BOXPLOT_PER_POOL );
+            this.processSingleValuedPairsByThreshold( pool, futures, StatisticType.BOXPLOT_PER_POOL );
         }
 
     }
@@ -320,7 +320,7 @@ abstract class MetricProcessorByTime<S extends Pool<?>>
                                                                                     OneOrTwoThresholds.of( composed ) );
 
             Pool<Pair<Double, Double>> sliced = PoolSlicer.filter( innerPool, slicers, PoolSlicer.getFeatureMapper() );
-
+            
             this.processSingleValuedPairs( sliced,
                                            futures,
                                            outGroup );

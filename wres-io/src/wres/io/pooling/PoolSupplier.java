@@ -56,6 +56,7 @@ import wres.io.config.ConfigHelper;
 import wres.io.pooling.RescalingEvent.RescalingType;
 import wres.io.retrieval.DataAccessException;
 import wres.io.retrieval.NoSuchUnitConversionException;
+import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.TimeWindow;
 import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.FeatureGroup;
@@ -663,7 +664,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     {
 
         Pool.Builder<TimeSeries<Pair<L, R>>> builder = new Pool.Builder<>();
-
+        
         // Get the mapped series
         Map<FeatureKey, List<TimeSeries<L>>> mappedLeft = this.getMappedSeries( leftData );
         Map<FeatureKey, List<TimeSeries<R>>> mappedRight = this.getMappedSeries( rightData );
@@ -760,7 +761,9 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                 this.metadata.getPool()
                              .toBuilder()
                              .clearGeometryTuples()
-                             .addAllGeometryTuples( List.of( feature.getGeometryTuple() ) );
+                             .addAllGeometryTuples( List.of( feature.getGeometryTuple() ) )
+                             .setGeometryGroup( GeometryGroup.newBuilder()
+                                                             .addAllGeometryTuples( List.of( feature.getGeometryTuple() ) ) );
 
         if ( Objects.nonNull( desiredTimeScaleToUse ) )
         {
@@ -799,7 +802,9 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                     this.baselineMetadata.getPool()
                                          .toBuilder()
                                          .clearGeometryTuples()
-                                         .addAllGeometryTuples( List.of( feature.getGeometryTuple() ) );
+                                         .addAllGeometryTuples( List.of( feature.getGeometryTuple() ) )
+                                         .setGeometryGroup( GeometryGroup.newBuilder()
+                                                                         .addAllGeometryTuples( List.of( feature.getGeometryTuple() ) ) );
 
             if ( Objects.nonNull( desiredTimeScaleToUse ) )
             {
@@ -2038,7 +2043,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         {
             return Collections.emptyMap();
         }
-
+        
         return timeSeries.stream()
                          .collect( Collectors.groupingBy( next -> next.getMetadata().getFeature(),
                                                           Collectors.mapping( Function.identity(),
@@ -2051,11 +2056,11 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
     private boolean hasDeclaredFeatureGroups()
     {
-        if( Objects.isNull( this.projectConfig ) )
+        if ( Objects.isNull( this.projectConfig ) )
         {
             return false;
         }
-        
+
         FeatureService service = this.projectConfig.getPair()
                                                    .getFeatureService();
 
@@ -2079,7 +2084,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         {
             inputs = this.projectConfig.getInputs();
         }
-        
+
         return inputs;
     }
 

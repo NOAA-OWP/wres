@@ -17,8 +17,6 @@ import org.junit.Test;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureKey;
-import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
@@ -29,6 +27,8 @@ import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Outputs.PngFormat;
@@ -172,7 +172,6 @@ public class GraphicsClientTest
                                                                                     ThresholdDataType.LEFT ) );
 
         Geometry geometry = MessageFactory.getGeometry( "DRRC2", null, null, "POINT ( 23.45, 56.21 )" );
-        FeatureKey location = FeatureKey.of( geometry );
 
         Instant earliestValid = Instant.parse( "2551-03-20T01:00:00Z" );
         Instant latestValid = Instant.parse( "2551-03-20T12:00:00Z" );
@@ -191,11 +190,9 @@ public class GraphicsClientTest
         TimeWindowOuter timeWindow =
                 TimeWindowOuter.of( inner );
 
-        FeatureTuple featureTuple = new FeatureTuple( location,
-                                                      location,
-                                                      location );
-
-        FeatureGroup featureGroup = FeatureGroup.of( featureTuple );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, geometry );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( featureGroup,
                                           timeWindow,
