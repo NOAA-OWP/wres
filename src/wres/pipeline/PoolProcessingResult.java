@@ -12,33 +12,41 @@ import wres.datamodel.pools.PoolRequest;
 
 class PoolProcessingResult
 {
+    enum Status
+    {
+        /** Nominal situation. */
+        STATISTICS_PUBLISHED,
+        /** Exceptional situation where an evaluation has failed and some statistics were created and not published. */
+        STATISTICS_AVAILABLE_NOT_PUBLISHED,
+        /** No data situation. */
+        STATISTICS_NOT_AVAILABLE;
+    }
+    
     /** The pool description. */
     private final PoolRequest poolRequest;
 
-    /** Is <code>true</code> if statistics were produced for the pool, otherwise <code>false</code>. */
-    private final boolean hasStatistics;
+    /** Pool status. */
+    private final Status status;
 
     /**
-     * @param poolrequest the pool description
-     * @param hasStatistics is true if the group produced statistics
+     * @param poolRequest the pool description
+     * @param hasStatistics is true if statistics were published
      */
     PoolProcessingResult( PoolRequest poolRequest,
-                          boolean hasStatistics )
+                          Status status )
     {
         Objects.requireNonNull( poolRequest );
-        this.hasStatistics = hasStatistics;
+        this.status = status;
         this.poolRequest = poolRequest;
     }
 
     /**
-     * Returns <code>true</code> if statistics were produced for the pool, otherwise <code>false</code>.
-     * 
-     * @return true if statistics were produced, false if no statistics were produced
+     * @return the status of the pool that completed
      */
 
-    boolean hasStatistics()
+    Status getStatus()
     {
-        return this.hasStatistics;
+        return this.status;
     }
     
     /**
@@ -55,8 +63,8 @@ class PoolProcessingResult
     {
         return "Pool "
                + this.poolRequest
-               + " produced statistics: "
-               + this.hasStatistics()
+               + " has status: "
+               + this.getStatus()
                + ".";
     }
 

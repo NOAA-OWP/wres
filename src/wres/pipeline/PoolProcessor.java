@@ -22,6 +22,7 @@ import wres.datamodel.statistics.StatisticsStore;
 import wres.datamodel.time.TimeSeries;
 import wres.events.Evaluation;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
+import wres.pipeline.PoolProcessingResult.Status;
 import wres.pipeline.statistics.MetricProcessor;
 import wres.statistics.generated.Statistics;
 
@@ -230,6 +231,18 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
     @Override
     public PoolProcessingResult get()
     {
+        // Is the evaluation still alive? If not, do not proceed.
+        if ( this.evaluation.isFailed() )
+        {
+            throw new WresProcessingException( "While processong a pool, discovered that a messaging client has marked "
+                                               + "evaluation "
+                                               + this.evaluation.getEvaluationId()
+                                               + " as failed without the possibility of recovery. Processing of the "
+                                               + "pool cannot continue. The pool that encountered the error is: "
+                                               + this.poolRequest
+                                               + "." );
+        }
+
         // Get the pool
         Pool<TimeSeries<Pair<L, R>>> pool = this.poolSupplier.get();
 
@@ -240,12 +253,12 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                                                .apply( pool );
 
         // Publish the statistics 
-        boolean published = this.publish( this.evaluation,
-                                          statistics,
-                                          this.getMessageGroupId() );
+        Status status = this.publish( this.evaluation,
+                                      statistics,
+                                      this.getMessageGroupId() );
 
         // Register publication of the pool with the pool group tracker
-        this.poolGroupTracker.registerPublication( this.getMessageGroupId(), published );
+        this.poolGroupTracker.registerPublication( this.getMessageGroupId(), status == Status.STATISTICS_PUBLISHED );
 
         // TODO: extract the pair writing to the product writers, i.e., publish the pairs
         // Write the main pairs
@@ -256,7 +269,7 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         this.getPairWritingTask( true, this.basePairsWriter )
             .accept( pool );
 
-        return new PoolProcessingResult( this.poolRequest, published );
+        return new PoolProcessingResult( this.poolRequest, status );
     }
 
     /**
@@ -265,19 +278,19 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
      * @param evaluation the evaluation
      * @param statistics the statistics
      * @param groupId the statistics group identifier
-     * @return true if something was published, otherwise false
+     * @return the status
      * @throws EvaluationEventException if the statistics could not be published
      */
 
-    private boolean publish( Evaluation evaluation,
-                             List<StatisticsStore> statistics,
-                             String groupId )
+    private Status publish( Evaluation evaluation,
+                            List<StatisticsStore> statistics,
+                            String groupId )
     {
         Objects.requireNonNull( evaluation, "Cannot publish statistics without an evaluation." );
         Objects.requireNonNull( statistics, "Cannot publish null statistics." );
         Objects.requireNonNull( groupId, "Cannot publish statistics without a group identifier." );
 
-        boolean returnMe = false;
+        Status status = Status.STATISTICS_NOT_AVAILABLE;
 
         try
         {
@@ -287,12 +300,22 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 
                 for ( Statistics next : publishMe )
                 {
-                    evaluation.publish( next, groupId );
-                    returnMe = true;
+                    if ( !evaluation.isFailed() )
+                    {
+                        evaluation.publish( next, groupId );
+                        status = Status.STATISTICS_PUBLISHED;
+                    }
+                    else
+                    {
+                        status = Status.STATISTICS_AVAILABLE_NOT_PUBLISHED;
+                        LOGGER.debug( "Statistics were available for a pool but were not published, because the "
+                                      + "evaluation was marked failed. The pool is: {}.",
+                                      this.poolRequest );
+                    }
                 }
             }
 
-            LOGGER.debug( "Published statistics: {}.", returnMe );
+            LOGGER.debug( "Statistics publication status: {}.", status );
 
         }
         catch ( InterruptedException e )
@@ -305,7 +328,7 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                                                e );
         }
 
-        return returnMe;
+        return status;
     }
 
     /**
@@ -396,7 +419,7 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 
                     builder.addStatistics( statistics )
                            .setMinimumSampleSize( processor.getMetrics().getMinimumSampleSize() );
-                    
+
                     // Compute separate statistics for the baseline?
                     int baselineTraceCount = 0;
                     if ( pool.hasBaseline() )

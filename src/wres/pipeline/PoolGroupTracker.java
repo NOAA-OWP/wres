@@ -205,7 +205,7 @@ class PoolGroupTracker
 
             Pair<Long, Boolean> result = this.publicationState.updateAndGet( updater );
 
-            if ( result.getLeft() == 0 && result.getRight().booleanValue() )
+            if ( result.getLeft() == 0 && result.getRight().booleanValue() && ! this.evaluation.isFailed() )
             {
                 this.evaluation.markGroupPublicationCompleteReportedSuccess( this.groupId );
 
