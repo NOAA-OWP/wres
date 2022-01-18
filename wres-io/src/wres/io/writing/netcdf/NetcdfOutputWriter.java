@@ -26,13 +26,7 @@ import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -40,6 +34,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.jcip.annotations.GuardedBy;
 import ucar.ma2.Array;
 import ucar.ma2.DataType;
 import ucar.ma2.Index;
@@ -75,14 +70,12 @@ import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.generators.TimeWindowGenerator;
-import wres.io.concurrency.Executor;
 import wres.io.utilities.NoDataException;
-import wres.io.writing.WriteException;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Pool;
 import wres.system.SystemSettings;
-import wres.util.FutureQueue;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 
@@ -98,8 +91,7 @@ import wres.util.TimeHelper;
  * evaluation cannot be exposed to such a writer. See #80267-137.
  */
 
-public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOuter>,
-        Closeable
+public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOuter>, Closeable
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( NetcdfOutputWriter.class );
 
@@ -112,14 +104,17 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     // TODO: it is very unlikely that classloading datetime should be used here.
     private static final ZonedDateTime ANALYSIS_TIME = ZonedDateTime.now( ZoneId.of( "UTC" ) );
 
-    private final Executor executor;
     private final Object windowLock = new Object();
 
     private final DestinationConfig destinationConfig;
     private final Path outputDirectory;
     private NetcdfType netcdfConfiguration;
+    
+    // TODO: remove when netcdf writing is one stage. Until then, we must return the paths to blobs created rather than
+    // statistics written, i.e., more paths are created than necessary
+    private Set<Path> pathToBlobs;
 
-    // Guarded by windowLock
+    @GuardedBy( "windowLock" )
     private final Map<TimeWindowOuter, TimeWindowWriter> writersMap = new HashMap<>();
 
     /**
@@ -127,18 +122,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      */
 
     private final ChronoUnit durationUnits;
-
-    /**
-     * Set of paths that this writer actually wrote to
-     * Guarded by windowLock
-     */
-    private final Set<Path> pathsWrittenTo;
-
-    /**
-     * Writing tasks submitted
-     * Guarded by windowLock
-     */
-    private final List<Future<Set<Path>>> writingTasksSubmitted = new ArrayList<>();
 
     /**
      * Project declaration.
@@ -172,18 +155,16 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      * Returns an instance of the writer. 
      *
      * @param systemSettings The system settings to use.
-     * @param executor The executor to use.
      * @param projectConfig the project configuration
      * @param destinationDeclaration the destination declaration
      * @param durationUnits the time units for durations
      * @param outputDirectory the directory into which to write
      * @param deprecatedVersion True if using deprecated code, false otherwise
      * @return an instance of the writer
-     * @throws WriteException if the blobs could not be created for any reason
+     * @throws NetcdfWriteException if the blobs could not be created for any reason
      */
 
     public static NetcdfOutputWriter of( SystemSettings systemSettings,
-                                         Executor executor,
                                          ProjectConfig projectConfig,
                                          DestinationConfig destinationDeclaration,
                                          ChronoUnit durationUnits,
@@ -191,7 +172,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                          boolean deprecatedVersion )
     {
         return new NetcdfOutputWriter( systemSettings,
-                                       executor,
                                        projectConfig,
                                        destinationDeclaration,
                                        durationUnits,
@@ -211,7 +191,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     }
 
     private NetcdfOutputWriter( SystemSettings systemSettings,
-                                Executor executor,
                                 ProjectConfig projectConfig,
                                 DestinationConfig destinationDeclaration,
                                 ChronoUnit durationUnits,
@@ -219,19 +198,16 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                 boolean deprecatedVersion )
     {
         Objects.requireNonNull( systemSettings );
-        Objects.requireNonNull( executor );
         Objects.requireNonNull( projectConfig, "Specify non-null project config." );
         Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
         Objects.requireNonNull( outputDirectory, "Specify non-null output directory." );
         Objects.requireNonNull( destinationDeclaration );
         LOGGER.debug( "Created NetcdfOutputWriter {}", this );
-        this.executor = executor;
         this.destinationConfig = destinationDeclaration;
         this.netcdfConfiguration = this.destinationConfig.getNetcdf();
         this.durationUnits = durationUnits;
         this.outputDirectory = outputDirectory;
         this.projectConfig = projectConfig;
-        this.pathsWrittenTo = new TreeSet<>();
         this.isReadyToWrite = new AtomicBoolean();
         this.deprecatedVersion = deprecatedVersion;
 
@@ -247,17 +223,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         Objects.requireNonNull( this.destinationConfig, "The NetcdfOutputWriter wasn't properly initialized." );
     }
 
-    private Executor getExecutor()
-    {
-        return this.executor;
-    }
-
     /**
      * Creates the blobs into which outputs will be written.
      *
      * @param featureGroups The super-set of feature groups used in the evaluation.
      * @param thresholdsByMetricAndFeature Thresholds imposed upon input data
-     * @throws WriteException if the blobs have already been created
+     * @throws NetcdfWriteException if the blobs have already been created
      * @throws IOException if the blobs could not be created for any reason
      */
 
@@ -269,7 +240,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
         if ( this.getIsReadyToWrite().get() )
         {
-            throw new WriteException( "The netcdf blobs have already been created." );
+            throw new NetcdfWriteException( "The netcdf blobs have already been created." );
         }
 
         // Time windows
@@ -279,9 +250,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
         // Find the thresholds-by-metric for which blobs should be created
         ThresholdsByMetric thresholdsToWrite = this.getUniqueThresholdsForScoreMetrics( thresholdsByMetricAndFeature );
-        
+
         // Should be at least one metric with at least one threshold
-        if( thresholdsToWrite.getMetrics().isEmpty() )
+        if ( thresholdsToWrite.getMetrics().isEmpty() )
         {
             throw new IOException( "Could not identify any thresholds from which to create blobs." );
         }
@@ -300,6 +271,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             desiredTimeScale = TimeScaleOuter.of( pairConfig.getDesiredTimeScale() );
         }
 
+        Set<Path> allPathsCreated = new HashSet<>();
+
         // Create blobs from components
         synchronized ( this.windowLock )
         {
@@ -311,14 +284,18 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                                      units,
                                                                      desiredTimeScale,
                                                                      this.deprecatedVersion );
-            this.pathsWrittenTo.addAll( pathsCreated );
+
+            allPathsCreated.addAll( pathsCreated );
 
             // Flag ready
             this.getIsReadyToWrite()
                 .set( true );
         }
+
+        // Expose the paths
+        this.pathToBlobs = Collections.unmodifiableSet( allPathsCreated );
         
-        LOGGER.debug( "Created the following netcdf paths for writing: {}.", this.getPathsWrittenTo() );
+        LOGGER.debug( "Created the following netcdf paths for writing: {}.", allPathsCreated );
     }
 
     /**
@@ -338,7 +315,16 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     {
         return this.projectConfig;
     }
+    
+    /**
+     * @return the paths to blobs created
+     */
 
+    private Set<Path> getPathsToBlobsCreated()
+    {
+        return this.pathToBlobs;
+    }
+    
     /**
      * Creates the blobs into which outputs will be written.
      * 
@@ -422,7 +408,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
         return Collections.unmodifiableSet( returnMe );
     }
-    
+
     /**
      * Returns a formatted file name for writing outputs to a specific time window using the destination 
      * information and other hints provided.
@@ -472,7 +458,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
             filename.add( lastTime );
         }
-        
+
         // Add latest valid time identifier (good enough for an ordered sequence of pools, not for arbitrary pools)
         // For backwards compatibility of file names, only qualify when valid dates pooling windows are supplied
         if ( Objects.nonNull( pairConfig.getValidDatesPoolingWindow() )
@@ -704,7 +690,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     {
 
         Map<String, SortedSet<OneOrTwoThresholds>> returnMe = new TreeMap<>();
-        
+
         for ( Map.Entry<MetricConstants, SortedSet<OneOrTwoThresholds>> nextEntry : thresholdsByMetric.entrySet() )
         {
             MetricConstants nextMetric = nextEntry.getKey();
@@ -740,7 +726,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 returnMe.put( nextMetric.name(), nextThresholds );
             }
         }
-        
+
         return Collections.unmodifiableMap( returnMe );
     }
 
@@ -769,9 +755,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     {
         if ( !this.getIsReadyToWrite().get() )
         {
-            throw new WriteException( "This netcdf output writer is not ready for writing. The blobs must be "
-                                      + "created first. The caller has made an error by asking the writer to accept statistics "
-                                      + "before calling createBlobsForWriting." );
+            throw new NetcdfWriteException( "This netcdf output writer is not ready for writing. The blobs must be "
+                                            + "created first. The caller has made an error by asking the writer to "
+                                            + "accept statistics before calling createBlobsForWriting." );
         }
 
         LOGGER.debug( "NetcdfOutputWriter {} accepted output {}.", this, output );
@@ -781,77 +767,43 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                                                                                 score -> score.getMetadata()
                                                                                                                               .getTimeWindow() );
 
+        Set<Path> pathsWritten = new HashSet<>();
+
         for ( Map.Entry<TimeWindowOuter, List<DoubleScoreStatisticOuter>> entries : outputByTimeWindow.entrySet() )
         {
             TimeWindowOuter timeWindow = entries.getKey();
             List<DoubleScoreStatisticOuter> scores = entries.getValue();
 
-            synchronized ( this.windowLock )
+            // All writers have been created by now, as asserted above
+            TimeWindowWriter writer = this.writersMap.get( timeWindow );
+            try
             {
-                Callable<Set<Path>> writerTask = new Callable<Set<Path>>()
-                {
-                    @Override
-                    public Set<Path> call() throws IOException, InvalidRangeException, CoordinateNotFoundException
-                    {
-                        Set<Path> pathsWritten = new HashSet<>( 1 );
-                        NetcdfOutputWriter.TimeWindowWriter writer = writersMap.get( this.window );
-                        writer.write( this.output );
-                        Path pathWritten = Paths.get( writer.outputPath );
-                        pathsWritten.add( pathWritten );
-                        return Collections.unmodifiableSet( pathsWritten );
-                    }
-
-                    Callable<Set<Path>> initialize( final TimeWindowOuter window,
-                                                    final List<DoubleScoreStatisticOuter> scores )
-                    {
-                        this.output = scores;
-                        this.window = window;
-                        return this;
-                    }
-
-                    private List<DoubleScoreStatisticOuter> output;
-                    private TimeWindowOuter window;
-                }.initialize( timeWindow, scores );
-
-                LOGGER.debug( "Submitting a task to write to a netcdf file." );
-                Executor writerExecutor = this.getExecutor();
-                Future<Set<Path>> taskFuture = writerExecutor.submit( writerTask );
-                this.writingTasksSubmitted.add( taskFuture );
+                writer.write( scores );
             }
+            catch ( CoordinateNotFoundException | IOException | InvalidRangeException e )
+            {
+                throw new NetcdfWriteException( "Encountered an error while writing statistics to NetCDF.", e );
+            }
+            Path pathWritten = Paths.get( writer.outputPath );
+            pathsWritten.add( pathWritten );
         }
 
-        return this.getPathsWrittenTo();
+        // Add the blobs created too, which is the superset. Ideally, only those blobs that receive statistics would
+        // be created, but this cannot be resolved until netcdf writing is one-stage rather than two stage.
+        // TODO: eliminate this step when writing is one stage, thereby returning the paths with actual statistics
+        Set<Path> pathsToBlobsCreated = this.getPathsToBlobsCreated();
+        pathsWritten.addAll( pathsToBlobsCreated );
+        
+        return Collections.unmodifiableSet( pathsWritten );
     }
 
     @Override
-    public void close()
+    public void close() throws IOException
     {
-
-        LOGGER.debug( "About to wait for writing tasks to finish from {}", this );
+        LOGGER.debug( "About to wait for writing tasks to finish from {}.", this );
 
         synchronized ( this.windowLock )
         {
-            try
-            {
-                // Complete outstanding tasks
-                for ( Future<Set<Path>> writingTaskResult : this.writingTasksSubmitted )
-                {
-                    writingTaskResult.get();
-                }
-            }
-            catch ( InterruptedException ie )
-            {
-                LOGGER.warn( "Interrupted while completing a netcdf writing task.", ie );
-
-                Thread.currentThread().interrupt();
-            }
-            catch ( ExecutionException ee )
-            {
-                String message = "Failed to complete a netcdf writing task for " + this.destinationConfig;
-
-                throw new WriteException( message, ee );
-            }
-
             LOGGER.debug( "About to close writers from {}", this );
 
             if ( this.writersMap.isEmpty() )
@@ -859,83 +811,34 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 return;
             }
 
-            ExecutorService closeExecutor = null;
-
-            try
+            // Make an attempt to close each writer before excepting
+            List<String> failedToClose = new ArrayList<>();
+            IOException lastException = null;
+            for ( TimeWindowWriter writer : this.writersMap.values() )
             {
-                closeExecutor = Executors.newFixedThreadPool( this.writersMap.size() );
-
-                FutureQueue<Object> closeQueue = new FutureQueue<>( 3000, TimeUnit.MILLISECONDS );
-
                 try
                 {
-                    for ( TimeWindowWriter writer : this.writersMap.values() )
-                    {
-                        Callable<Object> closeTask = new Callable<Object>()
-                        {
-                            @Override
-                            public Object call() throws IOException
-                            {
-                                try
-                                {
-                                    LOGGER.debug( "Calling writer.close on {}", writer );
-                                    writer.close();
-                                }
-                                catch ( IOException ioe )
-                                {
-                                    throw new IOException( "The writer for " + writer.toString()
-                                                           + " could not be closed.",
-                                                           ioe );
-                                }
-                                return null;
-                            }
-
-                            Callable<Object> initialize( TimeWindowWriter writer )
-                            {
-                                this.writer = writer;
-                                return this;
-                            }
-
-                            private TimeWindowWriter writer;
-                        }.initialize( writer );
-                        closeQueue.add( closeExecutor.submit( closeTask ) );
-                    }
-
-                    closeQueue.loop();
+                    LOGGER.debug( "Calling writer.close on {}.", writer );
+                    writer.close();
                 }
-                catch ( ExecutionException e )
+                catch ( IOException ioe )
                 {
-                    throw new WriteException(
-                                              "A netCDF output could not be written",
-                                              e );
+                    failedToClose.add( writer.toString() );
+                    lastException = ioe;
                 }
             }
-            finally
+
+            if ( !failedToClose.isEmpty() )
             {
-                if ( closeExecutor != null && !closeExecutor.isShutdown() )
-                {
-                    closeExecutor.shutdown();
-                }
+                throw new IOException( "The following writers could not be closed: " + failedToClose + ".",
+                                       lastException );
             }
+
         }
 
-        LOGGER.debug( "Closed writers from {}", this );
-
+        LOGGER.debug( "Closed writers from {}.", this );
     }
 
-    /**
-     * Return a snapshot of the paths written to (so far)
-     */
-
-    private Set<Path> getPathsWrittenTo()
-    {
-        LOGGER.debug( "getPathsWrittenTo from NetcdfOutputWriter {}: {}",
-                      this,
-                      this.pathsWrittenTo );
-        return Collections.unmodifiableSet( this.pathsWrittenTo );
-    }
-
-    
     /**
      * <p>Returns a {@link ThresholdsByMetric} that contains the union of thresholds across all features and metrics for 
      * which blobs should be created. The goal is to identify the thresholds whose statistics should be recorded in the 
@@ -1001,7 +904,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         return new ThresholdsByMetric.Builder().addThresholds( thresholdsMap )
                                                .build();
     }
-    
+
     /**
      * Writes output for a specific pair of lead times, representing the {@link TimeWindowOuter#getEarliestLeadDuration()} and
      * the {@link TimeWindowOuter#getLatestLeadDuration()}.
@@ -1022,7 +925,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
         private final String outputPath;
         private final TimeWindowOuter timeWindow;
-        private final ReentrantLock writeLock;
+        private final Object writeLock;
         private final boolean isDeprecatedWriter;
 
         /**
@@ -1044,7 +947,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         }
 
         void write( List<DoubleScoreStatisticOuter> scores )
-                throws IOException, InvalidRangeException, CoordinateNotFoundException
+                throws IOException, InvalidRangeException
         {
             //this now needs to somehow get all metadata for all metrics
             // Ensure that the output file exists
@@ -1066,10 +969,10 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
          * @throws InvalidRangeException if the data range could not be reconciled
          * @throws IOException if the write fails for any other reason
          */
-        
+
         private void writeInner( DoubleScoreStatisticOuter score, MetricConstants nextComponent )
-                throws CoordinateNotFoundException, IOException, InvalidRangeException
-        { 
+                throws IOException, InvalidRangeException
+        {
             // Remove clause when the deprecated netcdf format is removed
             if ( this.isDeprecatedWriter )
             {
@@ -1084,8 +987,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             // Figure out the location of all values and build the origin in each variable grid
             Pool pool = score.getMetadata()
                              .getPool();
-            List<GeometryTuple> geometries = pool.getGeometryTuplesList();
-            String featureGroupName = pool.getRegionName();
+            GeometryGroup group = pool.getGeometryGroup();
+            List<GeometryTuple> geometries = group.getGeometryTuplesList();
+            String featureGroupName = group.getRegionName();
 
             // Iterate the features, writing the statistics for each tuple in the group
             for ( GeometryTuple nextGeometry : geometries )
@@ -1125,7 +1029,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 this.saveValues( name, origin, actualValue );
             }
         }
-        
+
         /**
          * @param score the score to write
          * @param nextComponent the score component to write
@@ -1134,9 +1038,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
          * @throws IOException if the write fails for any other reason
          * @deprecated to remove when the deprecated format is removed
          */
-        @Deprecated(since="5.14", forRemoval = true)
+        @Deprecated( since = "5.14", forRemoval = true )
         private void writeInnerWithoutGroup( DoubleScoreStatisticOuter score, MetricConstants nextComponent )
-                throws CoordinateNotFoundException, IOException, InvalidRangeException
+                throws IOException, InvalidRangeException
         {
             DoubleScoreComponentOuter componentScore = score.getComponent( nextComponent );
 
@@ -1173,24 +1077,23 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                           actualValue );
             this.saveValues( name, origin, actualValue );
         }
-        
+
         private void writeMetricResults() throws IOException, InvalidRangeException
         {
-            this.writeLock.lock();
-
-            Array netcdfValue;
-            Index ima;
-
-            // Open a writer to write to the path. Must be closed when closing the overall NetcdfOutputWriter instance
-            if ( Objects.isNull( this.writer ) )
+            synchronized ( this.writeLock )
             {
-                this.writer = NetcdfFileWriter.openExisting( this.outputPath );
+                Array netcdfValue;
+                Index ima;
 
-                LOGGER.trace( "Opened an underlying netcdf writer {} for pool {}.", this.writer, this.timeWindow );
-            }
+                // Open a writer to write to the path. Must be closed when closing the overall NetcdfOutputWriter instance
+                if ( Objects.isNull( this.writer ) )
+                {
+                    this.writer = NetcdfFileWriter.openExisting( this.outputPath );
 
-            try
-            {
+                    LOGGER.trace( "Opened an underlying netcdf writer {} for pool {}.", this.writer, this.timeWindow );
+                }
+
+
                 for ( NetcdfValueKey key : this.valuesToSave )
                 {
                     int[] shape = new int[key.getOrigin().length];
@@ -1224,7 +1127,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
                     try
                     {
-                        writer.write( key.getVariableName(), key.getOrigin(), netcdfValue );
+                        this.writer.write( key.getVariableName(), key.getOrigin(), netcdfValue );
                     }
                     catch ( NullPointerException | IOException | InvalidRangeException e )
                     {
@@ -1241,16 +1144,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                     }
                 }
 
-                writer.flush();
+                this.writer.flush();
 
                 this.valuesToSave.clear();
-            }
-            finally
-            {
-                if ( this.writeLock.isHeldByCurrentThread() )
-                {
-                    this.writeLock.unlock();
-                }
             }
         }
 
@@ -1406,14 +1302,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             }
 
             return null;
-        }     
-        
+        }
+
         private void saveValues( String name, int[] origin, double value )
                 throws IOException, InvalidRangeException
         {
-            this.writeLock.lock();
-
-            try
+            synchronized ( this.writeLock )
             {
                 this.valuesToSave.add( new NetcdfValueKey( name, origin, value ) );
 
@@ -1421,13 +1315,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 {
                     this.writeMetricResults();
                     LOGGER.trace( "Output {} values to {}", VALUE_SAVE_LIMIT, this.outputPath );
-                }
-            }
-            finally
-            {
-                if ( this.writeLock.isHeldByCurrentThread() )
-                {
-                    this.writeLock.unlock();
                 }
             }
         }
@@ -1439,7 +1326,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
          * @return The coordinates for the location within the Netcdf variable describing where to place data
          */
         private int[] getOrigin( GeometryTuple feature, String featureGroupName )
-                throws IOException, CoordinateNotFoundException
+                throws IOException
         {
             int[] origin;
             LOGGER.trace( "Looking for the origin of {} in feature group {}.", feature, featureGroupName );
@@ -1471,7 +1358,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
          * @deprecated As of 5.1, TODO remove this whole method, keep 1-arg one
          */
         @Deprecated( since = "5.1", forRemoval = true )
-        private int[] getOrigin( String name, GeometryTuple tuple ) throws IOException, CoordinateNotFoundException
+        private int[] getOrigin( String name, GeometryTuple tuple ) throws IOException
         {
             int[] origin;
             Geometry location = tuple.getRight();
@@ -1536,9 +1423,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         }
 
 
-        private Integer getVectorCoordinate( GeometryTuple feature, 
+        private Integer getVectorCoordinate( GeometryTuple feature,
                                              String featureGroupName )
-                throws IOException, CoordinateNotFoundException
+                throws IOException
         {
             synchronized ( this.vectorCoordinatesMap )
             {
@@ -1552,10 +1439,10 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 if ( !this.isDeprecatedWriter )
                 {
                     String tupleNameInNetcdfFile = NetcdfOutputFileCreator2.getGeometryTupleName( feature );
-                    
+
                     // Qualify the feature tuple name with the group name, as mapped
                     String tupleNameInNetcdfFilePlusGroupName = tupleNameInNetcdfFile + "_" + featureGroupName;
-                    
+
                     this.checkForCoordinateAndThrowExceptionIfNotFound( tupleNameInNetcdfFilePlusGroupName, true );
                     return this.vectorCoordinatesMap.get( tupleNameInNetcdfFilePlusGroupName );
                 }
@@ -1563,7 +1450,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 {
                     // TODO remove this whole block, remove the "if/else"
                     String loc = feature.getRight()
-                                         .getName();
+                                        .getName();
 
                     if ( this.useLidForLocationIdentifier )
                     {
@@ -1583,7 +1470,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
          * Populates a map of coordinates with those in the netcdf blob.
          * @throws IOException if blob could not be inspected
          */
-        
+
         private void populateCoordinateMap() throws IOException
         {
             try ( NetcdfFile outputFile = NetcdfFiles.open( this.outputPath ) )
@@ -1598,7 +1485,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
                     LOGGER.debug( "Using {} as the name of the vector variable with the location information.",
                                   nameToUse );
-                    
+
                     coordinate = outputFile.findVariable( nameToUse );
 
                     if ( coordinate.getDataType() == DataType.CHAR )
@@ -1690,7 +1577,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 throw new IOException( "A coordinate could not be read.", e );
             }
         }
-        
+
         /**
          * Checks for the presence of a coordinate corresponding to the prescribed location and throws an exception
          * if the coordinate cannot be found.
@@ -1701,7 +1588,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
          */
 
         private void checkForCoordinateAndThrowExceptionIfNotFound( String location, boolean isLocationName )
-                throws CoordinateNotFoundException
         {
             // Location name is the glue
             if ( isLocationName )
@@ -1788,7 +1674,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                     {
                         this.writeMetricResults();
                     }
-                    catch ( InvalidRangeException e )
+                    catch ( IllegalArgumentException | InvalidRangeException e )
                     {
                         throw new IOException(
                                                "Lingering NetCDF results could not be written to disk.",
@@ -1799,6 +1685,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                     // decrease in file size. Early tests had files dropping
                     // from 135MB to 6.3MB
                 }
+
             }
             finally
             {

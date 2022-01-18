@@ -632,6 +632,7 @@ public class Evaluation implements Closeable
             this.stopFlowControl();
 
             // Set a non-normal exit code
+            LOGGER.debug( "Setting exit code to {}.", 1 );
             this.exitCode.set( 1 );
         }
     }
@@ -656,7 +657,7 @@ public class Evaluation implements Closeable
         }
 
         LOGGER.debug( "Closing evaluation {}.", this.getEvaluationId() );
-
+        
         // Close the publishers gracefully
         this.closeGracefully( this.evaluationPublisher );
         this.closeGracefully( this.evaluationStatusPublisher );
@@ -754,6 +755,7 @@ public class Evaluation implements Closeable
         {
             // Await completion
             int exit = this.statusTracker.await();
+            LOGGER.debug( "Setting exit code to {}.", exit );
             this.exitCode.set( exit );
 
             Instant now = Instant.now();
@@ -788,14 +790,12 @@ public class Evaluation implements Closeable
                                                 + this.getEvaluationId() );
         }
 
-        // Evaluation finished (but not yet closed)
-        this.isStopped.set( true );
-
         // Do not publish success because no subscriber can leverage it for any purpose (subscribers must report 
         // success to reach this point). Equally, a short-running subscriber (one that dies with an evaluation) may 
         // receive it while shutting down, which can lead to an exception. See #90908.
 
-        return this.getExitCode();
+        // Inspect internally rather than using the public api, as the evaluation has not stopped
+        return this.exitCode.get();
     }
 
     /**
@@ -832,7 +832,7 @@ public class Evaluation implements Closeable
     /**
      * Builds an evaluation.
      * 
-     * @author james.brown@hydrosolved.com
+     * @author James Brown
      */
 
     public static class Builder

@@ -27,7 +27,7 @@
     <maximum_pool_threads>6</maximum_pool_threads>
     <maximum_threshold_threads>1</maximum_threshold_threads>
     <maximum_metric_threads>1</maximum_metric_threads>
-    <maximum_product_threads>3</maximum_product_threads>
+    <maximum_product_threads>5</maximum_product_threads>
     <fetch_size>50000</fetch_size>
     <maximum_copies>10000</maximum_copies>
     <update_frequency>1</update_frequency>

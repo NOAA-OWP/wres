@@ -49,7 +49,6 @@ import wres.events.subscribe.EvaluationSubscriber;
 import wres.events.subscribe.SubscriberApprover;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.io.Operations;
-import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.geography.FeatureFinder;
@@ -62,7 +61,6 @@ import wres.io.retrieval.SingleValuedRetrieverFactory;
 import wres.io.retrieval.UnitMapper;
 import wres.io.thresholds.ThresholdReader;
 import wres.io.writing.SharedSampleDataWriters;
-import wres.io.writing.WriteException;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
 import wres.pipeline.Evaluator.DatabaseServices;
@@ -85,11 +83,14 @@ import wres.system.SystemSettings;
  */
 class ProcessorHelper
 {
+    /** Re-used error message. */
+    private static final String FORCIBLY_STOPPING_EVALUATION_UPON_ENCOUNTERING_AN_INTERNAL_ERROR = 
+            "Forcibly stopping evaluation {} upon encountering an internal error.";
+
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( ProcessorHelper.class );
 
-    /**
-     * Unique identifier for this instance of the core messaging client.
-     */
+    /** Unique identifier for this instance of the core messaging client. */
 
     private static final String CLIENT_ID = EvaluationEventUtilities.getId();
 
@@ -153,7 +154,6 @@ class ProcessorHelper
         List<NetcdfOutputWriter> netcdfWriters =
                 ProcessorHelper.getNetcdfWriters( projectConfig,
                                                   systemSettings,
-                                                  executors.getIoExecutor(),
                                                   outputDirectory );
 
         // Obtain any formats delivered by out-of-process subscribers.
@@ -267,7 +267,7 @@ class ProcessorHelper
             if ( Objects.nonNull( evaluation ) )
             {
                 // Stop forcibly
-                LOGGER.debug( "Forcibly stopping evaluation {} upon encountering an internal error.", evaluationId );
+                LOGGER.debug( FORCIBLY_STOPPING_EVALUATION_UPON_ENCOUNTERING_AN_INTERNAL_ERROR, evaluationId );
 
                 evaluation.stop( internalError );
             }
@@ -280,20 +280,6 @@ class ProcessorHelper
         }
         finally
         {
-            // Close the evaluation always (even if stopped on exception)
-            try
-            {
-                if ( Objects.nonNull( evaluation ) )
-                {
-                    evaluation.close();
-                }
-            }
-            catch ( IOException e )
-            {
-                String message = "Failed to close evaluation " + evaluationId + ".";
-                LOGGER.warn( message, e );
-            }
-
             // Close the netCDF writers if not closed
             for ( NetcdfOutputWriter writer : netcdfWriters )
             {
@@ -301,16 +287,17 @@ class ProcessorHelper
                 {
                     writer.close();
                 }
-                catch ( WriteException we )
+                catch ( IOException we )
                 {
+                    if ( Objects.nonNull( evaluation ) )
+                    {
+                        LOGGER.debug( FORCIBLY_STOPPING_EVALUATION_UPON_ENCOUNTERING_AN_INTERNAL_ERROR,
+                                      evaluationId );
+
+                        evaluation.stop( we );
+                    }
                     LOGGER.warn( "Failed to close a netcdf writer.", we );
                 }
-            }
-
-            // Add the paths written by external subscribers
-            if ( Objects.nonNull( evaluation ) )
-            {
-                resources.addAll( evaluation.getPathsWrittenBySubscribers() );
             }
 
             // Clean-up an empty output directory: #67088
@@ -327,6 +314,26 @@ class ProcessorHelper
                 }
             }
 
+            // Close the evaluation always (even if stopped on exception)
+            try
+            {
+                if ( Objects.nonNull( evaluation ) )
+                {
+                    evaluation.close();
+                }
+            }
+            catch ( IOException e )
+            {
+                String message = "Failed to close evaluation " + evaluationId + ".";
+                LOGGER.warn( message, e );
+            }
+            
+            // Add the paths written by external subscribers
+            if ( Objects.nonNull( evaluation ) )
+            {
+                resources.addAll( evaluation.getPathsWrittenBySubscribers() );
+            }
+            
             LOGGER.info( "Wrote the following output: {}", resources );
         }
     }
@@ -512,7 +519,7 @@ class ProcessorHelper
         {
             if ( Objects.nonNull( evaluation ) )
             {
-                LOGGER.debug( "Forcibly stopping evaluation {} upon encountering an internal error.",
+                LOGGER.debug( FORCIBLY_STOPPING_EVALUATION_UPON_ENCOUNTERING_AN_INTERNAL_ERROR,
                               evaluation.getEvaluationId() );
 
                 evaluation.stop( internalError );
@@ -595,7 +602,6 @@ class ProcessorHelper
 
     private static List<NetcdfOutputWriter> getNetcdfWriters( ProjectConfig projectConfig,
                                                               SystemSettings systemSettings,
-                                                              Executor executor,
                                                               Path outputDirectory )
     {
         List<NetcdfOutputWriter> writers = new ArrayList<>( 2 );
@@ -633,7 +639,6 @@ class ProcessorHelper
             // Use the template-based netcdf writer.
             NetcdfOutputWriter netcdfWriterDeprecated = NetcdfOutputWriter.of(
                                                                                systemSettings,
-                                                                               executor,
                                                                                projectConfig,
                                                                                firstDeprecatedNetcdf,
                                                                                durationUnits,
@@ -648,7 +653,6 @@ class ProcessorHelper
             // Use the newer from-scratch netcdf writer.
             NetcdfOutputWriter netcdfWriter = NetcdfOutputWriter.of(
                                                                      systemSettings,
-                                                                     executor,
                                                                      projectConfig,
                                                                      firstNetcdf2,
                                                                      durationUnits,

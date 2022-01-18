@@ -111,35 +111,20 @@ class PoolReporter implements Consumer<PoolProcessingResult>
                                            .getMetadata()
                                            .getTimeWindow();
 
-        if ( !result.hasStatistics() && LOGGER.isWarnEnabled() )
+        switch ( result.getStatus() )
         {
-            LOGGER.warn( "[{}/{}] Completed a pool in feature group '{}', but no statistics were produced. This "
-                         + "probably occurred because the pool did not contain any pairs. The time window was: {}.",
-                         this.processed.incrementAndGet(),
-                         this.totalPools,
-                         featureGroup.getName(),
-                         TIME_WINDOW_STRINGIFIER.apply( timeWindow ) );
-        }
-        else
-        {
-            this.successfulPools.add( result.getPoolRequest() );
-
-            String extra = "";
-            if ( featureGroup.getFeatures().size() > 1 )
-            {
-                extra = ", which contained " + featureGroup.getFeatures().size() + " features";
-            }
-
-            if ( LOGGER.isInfoEnabled() )
-            {
-                LOGGER.info( "[{}/{}] Completed statistics for a pool in feature group '{}'{}. The time window was: "
-                             + "{}.",
-                             this.processed.incrementAndGet(),
-                             this.totalPools,
-                             featureGroup.getName(),
-                             extra,
-                             TIME_WINDOW_STRINGIFIER.apply( timeWindow ) );
-            }
+            case STATISTICS_AVAILABLE_NOT_PUBLISHED:
+                reportStatisticsAvailableNotPublished( featureGroup, timeWindow );
+                break;
+            case STATISTICS_NOT_AVAILABLE:
+                reportStatisticsNotAvailable( featureGroup, timeWindow );
+                break;
+            case STATISTICS_PUBLISHED:
+                this.successfulPools.add( result.getPoolRequest() );
+                reportStatisticsPublished( featureGroup, timeWindow );
+                break;
+            default:
+                break;
         }
 
         // Register end time
@@ -251,6 +236,71 @@ class PoolReporter implements Consumer<PoolProcessingResult>
         }
 
         return outer.toString();
+    }
+
+    /**
+     * Report statistics not produced.
+     * @param featureGroup the feature group
+     * @param timeWindow the time window
+     */
+
+    private void reportStatisticsNotAvailable( FeatureGroup featureGroup, TimeWindowOuter timeWindow )
+    {
+        if ( LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "[{}/{}] Completed a pool in feature group '{}', but no statistics were produced. This "
+                         + "probably occurred because the pool did not contain any pairs. The time window was: {}.",
+                         this.processed.incrementAndGet(),
+                         this.totalPools,
+                         featureGroup.getName(),
+                         TIME_WINDOW_STRINGIFIER.apply( timeWindow ) );
+        }
+    }
+
+    /**
+     * Report statistics available and published.
+     * @param featureGroup the feature group
+     * @param timeWindow the time window
+     */
+
+    private void reportStatisticsPublished( FeatureGroup featureGroup, TimeWindowOuter timeWindow )
+    {
+        if ( LOGGER.isInfoEnabled() )
+        {
+            String extra = "";
+            if ( featureGroup.getFeatures().size() > 1 )
+            {
+                extra = ", which contained " + featureGroup.getFeatures().size() + " features";
+            }
+
+            LOGGER.info( "[{}/{}] Completed statistics for a pool in feature group '{}'{}. The time window was: "
+                         + "{}.",
+                         this.processed.incrementAndGet(),
+                         this.totalPools,
+                         featureGroup.getName(),
+                         extra,
+                         TIME_WINDOW_STRINGIFIER.apply( timeWindow ) );
+        }
+    }
+
+    /**
+     * Report statistics produced, not published.
+     * @param featureGroup the feature group
+     * @param timeWindow the time window
+     */
+
+    private void reportStatisticsAvailableNotPublished( FeatureGroup featureGroup, TimeWindowOuter timeWindow )
+    {
+        if ( LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "[{}/{}] Completed a pool in feature group '{}', which produced statistics, but these "
+                         + "statistics were not published because the evaluation was in an errored state and closing. "
+                         + "The time window was: {}.",
+                         this.processed.incrementAndGet(),
+                         this.totalPools,
+                         featureGroup.getName(),
+                         TIME_WINDOW_STRINGIFIER.apply( timeWindow ) );
+        }
     }
 
     /**

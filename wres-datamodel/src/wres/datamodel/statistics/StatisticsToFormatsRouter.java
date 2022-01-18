@@ -38,7 +38,7 @@ import wres.statistics.generated.DurationDiagramStatistic;
  * {@link DestinationType}, which includes aggregate destinations, such as {@link DestinationType#GRAPHIC} and 
  * {@link DestinationType#NUMERIC}, as well as specific format destinations, such as {@link DestinationType#PNG}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class StatisticsToFormatsRouter implements Function<Collection<Statistics>, Set<Path>>
@@ -336,7 +336,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
     {
         if ( Objects.isNull( statistics ) )
         {
-            throw new StatisticsToFormatsRoutingException( "Cannot consumer null statistics." );
+            throw new StatisticsToFormatsRoutingException( "Cannot consume null statistics." );
         }
 
         Set<Path> paths = new HashSet<>();

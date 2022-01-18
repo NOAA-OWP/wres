@@ -1,6 +1,6 @@
 package wres.io.writing.netcdf;
 
-public class CoordinateNotFoundException extends Exception
+public class CoordinateNotFoundException extends RuntimeException
 {
 
     private static final long serialVersionUID = 194816125215945933L;
