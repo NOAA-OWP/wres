@@ -1,4 +1,4 @@
-FROM redis:6.2.6-alpine3.14
+FROM redis:6.2.6-alpine3.15
 
 RUN apk add --no-cache busybox=1.33.1-r6
 
