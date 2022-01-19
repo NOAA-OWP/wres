@@ -52,7 +52,7 @@ plugins
     id 'com.github.ksoichiro.console.reporter' version '0.6.3'
 
     // To discover library versions with known vulnerabilities
-    id 'org.owasp.dependencycheck' version '6.5.2.1'
+    id 'org.owasp.dependencycheck' version '6.5.3'
     
     // Task to assist in downloading artifacts
     id "de.undercouch.download" version "4.1.2"
@@ -225,7 +225,7 @@ project(':wres-util')
     {
         implementation project(':wres-datamodel')
 
-        implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
+        implementation 'org.slf4j:slf4j-api:2.0.0-alpha6'
 
         implementation( 'com.google.guava:guava:31.0.1-jre' )
         {
@@ -257,7 +257,7 @@ project(':wres-util')
         }
 
         // Because cdm uses apache commons logging, bridge to slf4j
-        runtimeOnly 'org.slf4j:jcl-over-slf4j:2.0.0-alpha5'
+        runtimeOnly 'org.slf4j:jcl-over-slf4j:2.0.0-alpha6'
 
         testImplementation 'junit:junit:4.13.2'
 
@@ -271,7 +271,7 @@ project(':wres-system')
     dependencies
     {
         implementation project(':wres-util')
-        implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
+        implementation 'org.slf4j:slf4j-api:2.0.0-alpha6'
 
         implementation( 'com.google.guava:guava:31.0.1-jre' )
         {
@@ -288,20 +288,20 @@ project(':wres-system')
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
 
-        implementation 'org.liquibase:liquibase-core:4.6.2'
+        implementation 'org.liquibase:liquibase-core:4.7.0'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
         runtimeOnly 'com.mattbertolini:liquibase-slf4j:4.0.0'
 
         // connection pooling:
-        implementation 'com.zaxxer:HikariCP:5.0.0'
+        implementation 'com.zaxxer:HikariCP:5.0.1'
 
         // Java Flight Recorder statistics for JDBC
         implementation 'com.github.marschall:jfr-jdbc:0.4.0'
 
         // Because org.postgresql:postgresql uses JUL logging, bridge it, here
         // at compile time because we need to expose a class to JUL.
-        implementation 'org.slf4j:jul-to-slf4j:2.0.0-alpha5'
+        implementation 'org.slf4j:jul-to-slf4j:2.0.0-alpha6'
 
         //JB @ 02/16/17
         testImplementation group: 'com.google.guava', name: 'guava-testlib', version: '31.0.1-jre'
@@ -328,7 +328,7 @@ project(':wres-datamodel')
 
         api 'org.apache.commons:commons-lang3:3.12.0'
 
-        implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
+        implementation 'org.slf4j:slf4j-api:2.0.0-alpha6'
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
         implementation( 'com.github.ben-manes.caffeine:caffeine:3.0.5' )
         {
@@ -375,7 +375,7 @@ project(':wres-io')
         implementation project(':wres-grid')
         implementation project(':wres-events')
 
-        implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
+        implementation 'org.slf4j:slf4j-api:2.0.0-alpha6'
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
         // JSON deserialization uses jackson directly. Specify recent version.
@@ -409,7 +409,7 @@ project(':wres-io')
         implementation 'com.h2database:h2:1.4.200'
 
         // connection pooling:
-        implementation 'com.zaxxer:HikariCP:5.0.0'
+        implementation 'com.zaxxer:HikariCP:5.0.1'
 
         // wres.io.utilities uses javax.json.* imports
         implementation 'org.glassfish:javax.json:1.1.4'
@@ -440,15 +440,15 @@ project(':wres-io')
         compileOnly 'net.jcip:jcip-annotations:1.0'
 
         // Because org.postgresql:postgresql uses JUL logging, bridge at runtime
-        runtimeOnly 'org.slf4j:jul-to-slf4j:2.0.0-alpha5'
+        runtimeOnly 'org.slf4j:jul-to-slf4j:2.0.0-alpha6'
 
         // Because cdm and aws sdk uses apache commons logging, bridge to slf4j
-        runtimeOnly 'org.slf4j:jcl-over-slf4j:2.0.0-alpha5'
+        runtimeOnly 'org.slf4j:jcl-over-slf4j:2.0.0-alpha6'
 
         //JB @ 02/16/17
         testImplementation 'com.google.guava:guava-testlib:31.0.1-jre'
 
-        testImplementation 'org.liquibase:liquibase-core:4.6.2'
+        testImplementation 'org.liquibase:liquibase-core:4.7.0'
 
         // Mocking help
         testImplementation 'org.mockito:mockito-inline:4.2.0'
@@ -517,7 +517,7 @@ project(':wres-metrics')
         implementation project(':wres-datamodel')
         implementation project(':wres-config')
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
-        implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
+        implementation 'org.slf4j:slf4j-api:2.0.0-alpha6'
 
         testImplementation 'junit:junit:4.13.2'
         testImplementation 'org.mockito:mockito-core:4.2.0'
@@ -543,7 +543,7 @@ project(':wres-statistics')
         // Automatically download and use the correct protobuf compiler
         protoc
         {
-            artifact = 'com.google.protobuf:protoc:3.19.1'
+            artifact = 'com.google.protobuf:protoc:3.19.3'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
@@ -641,8 +641,8 @@ project(':wres-statistics')
 
     dependencies
     {
-        api 'com.google.protobuf:protobuf-java:3.19.1'
-        implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
+        api 'com.google.protobuf:protobuf-java:3.19.3'
+        implementation 'org.slf4j:slf4j-api:2.0.0-alpha6'
         implementation project(':wres-config')
 
         // JMS API ( QPID client implements 1.1, but 1.1 is not available on maven )
@@ -729,7 +729,7 @@ project(':wres-vis')
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
 
-        implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
+        implementation 'org.slf4j:slf4j-api:2.0.0-alpha6'
 
         implementation group: 'jfree', name: 'jcommon', version: '1.0.16'
         implementation files('../libs/external/jfreechart-1.0.9.jar')
@@ -745,7 +745,7 @@ project(':wres-vis')
         }
 
         // For ohdcommonchps.jar:
-        runtimeOnly group: 'org.slf4j', name: 'log4j-over-slf4j', version: '2.0.0-alpha5'
+        runtimeOnly group: 'org.slf4j', name: 'log4j-over-slf4j', version: '2.0.0-alpha6'
 
         
         testImplementation 'junit:junit:4.13.2'
@@ -793,7 +793,7 @@ project(':wres-config')
 
     dependencies
     {
-        implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
+        implementation 'org.slf4j:slf4j-api:2.0.0-alpha6'
 
         // For Java 9+ compatibility:
         implementation 'jakarta.xml.bind:jakarta.xml.bind-api:2.3.3'
@@ -908,7 +908,7 @@ project(':wres-grid')
         implementation project(':wres-system')
         implementation project(':wres-datamodel')
 
-        implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
+        implementation 'org.slf4j:slf4j-api:2.0.0-alpha6'
         implementation 'org.apache.commons:commons-lang3:3.12.0'
 
         implementation( 'edu.ucar:cdm-core:5.4.2' )
@@ -926,7 +926,7 @@ project(':wres-grid')
         }
 
         // Because cdm uses apache commons logging, bridge to slf4j
-        runtimeOnly 'org.slf4j:jcl-over-slf4j:2.0.0-alpha5'
+        runtimeOnly 'org.slf4j:jcl-over-slf4j:2.0.0-alpha6'
 
         testImplementation 'junit:junit:4.13.2'
     }
@@ -943,7 +943,7 @@ project(':wres-messages')
         // Automatically download and use the correct protobuf compiler
         protoc
         {
-            artifact = 'com.google.protobuf:protoc:3.19.1'
+            artifact = 'com.google.protobuf:protoc:3.19.3'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
@@ -979,9 +979,9 @@ project(':wres-messages')
 
     dependencies
     {
-        api 'com.google.protobuf:protobuf-java:3.19.1'
+        api 'com.google.protobuf:protobuf-java:3.19.3'
 
-        implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
+        implementation 'org.slf4j:slf4j-api:2.0.0-alpha6'
 
         testImplementation 'junit:junit:4.13.2'
     }
@@ -993,8 +993,8 @@ project(':wres-worker')
     dependencies
     {
         implementation project( ':wres-messages' )
-        implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
-        implementation 'com.rabbitmq:amqp-client:5.14.0'
+        implementation 'org.slf4j:slf4j-api:2.0.0-alpha6'
+        implementation 'com.rabbitmq:amqp-client:5.14.1'
 
         runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha12' )
         {
@@ -1077,8 +1077,8 @@ project(':wres-tasker')
         implementation project( ':wres-config' )
 
         implementation project( ':wres-messages' )
-        implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
-        implementation 'com.rabbitmq:amqp-client:5.14.0'
+        implementation 'org.slf4j:slf4j-api:2.0.0-alpha6'
+        implementation 'com.rabbitmq:amqp-client:5.14.1'
         implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.0.0'
         implementation 'jakarta.annotation:jakarta.annotation-api:2.1.0-B1'
 
@@ -1132,7 +1132,7 @@ project(':wres-tasker')
         implementation 'org.apache.commons:commons-lang3:3.12.0'
 
         // To send/receive messages
-        implementation 'com.google.protobuf:protobuf-java:3.19.1'
+        implementation 'com.google.protobuf:protobuf-java:3.19.3'
 
         runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha12' )
         {
@@ -1311,7 +1311,7 @@ project(':wres-eventsbroker')
 {
     dependencies
     {
-        implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
+        implementation 'org.slf4j:slf4j-api:2.0.0-alpha6'
 
         implementation 'org.apache.commons:commons-lang3:3.12.0'
 
@@ -1355,7 +1355,7 @@ project(':wres-events')
     {
         implementation project( ':wres-eventsbroker' )
         implementation project( ':wres-statistics' )
-        implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
+        implementation 'org.slf4j:slf4j-api:2.0.0-alpha6'
 
         // JCIP annotations
         implementation group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
@@ -1613,7 +1613,7 @@ dependencies
     implementation project(':wres-eventsbroker')
     implementation project(':wres-util')
 
-    implementation 'org.slf4j:slf4j-api:2.0.0-alpha5'
+    implementation 'org.slf4j:slf4j-api:2.0.0-alpha6'
 
     implementation 'javax.ws.rs:javax.ws.rs-api:2.1.1'
     implementation 'javax.annotation:javax.annotation-api:1.3.2'
