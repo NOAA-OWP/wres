@@ -99,7 +99,8 @@ public class TestDatabase
         //return "jdbc:h2:mem:" + this.name + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL;TRACE_LEVEL_SYSTEM_OUT=3";
         //return "jdbc:h2:mem:" + this.name + ";MODE=PostgreSQL;TRACE_LEVEL_SYSTEM_OUT=3";
 
-        return "jdbc:h2:mem:" + this.name + ";MODE=PostgreSQL;TRACE_LEVEL_FILE=4";
+        // See #99919 for why this is set to MODE=REGULAR for now.
+        return "jdbc:h2:mem:" + this.name + ";MODE=REGULAR;TRACE_LEVEL_FILE=4";
     }
 
     /**

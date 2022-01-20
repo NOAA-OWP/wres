@@ -406,7 +406,7 @@ project(':wres-io')
         }
 
         // Use H2 for truly embedded SQL db
-        implementation 'com.h2database:h2:1.4.200'
+        implementation 'com.h2database:h2:2.1.210'
 
         // connection pooling:
         implementation 'com.zaxxer:HikariCP:5.0.1'
@@ -457,7 +457,7 @@ project(':wres-io')
         testImplementation 'org.mock-server:mockserver-netty:5.11.2'
 
         // Use H2 for truly embedded SQL db
-        testImplementation 'com.h2database:h2:1.4.200'
+        testImplementation 'com.h2database:h2:2.1.210'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
