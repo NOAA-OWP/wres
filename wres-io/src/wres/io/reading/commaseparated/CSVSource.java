@@ -1,8 +1,10 @@
 package wres.io.reading.commaseparated;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,6 +40,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -70,6 +73,8 @@ public class CSVSource extends BasicSource
     private static final String FEATURE_DESCRIPTION_COLUMN = "location_description";
     private static final String FEATURE_SRID_COLUMN = "location_srid";
     private static final String FEATURE_WKT_COLUMN = "location_wkt";
+    private static final String TIMESCALE_IN_MINUTES_COLUMN = "timescale_in_minutes";
+    private static final String TIMESCALE_FUNCTION_COLUMN = "timescale_function";
 
     private static final String DEFAULT_ENSEMBLE_NAME = "default";
 
@@ -255,24 +260,58 @@ public class CSVSource extends BasicSource
 
             if ( data.hasColumn( FEATURE_DESCRIPTION_COLUMN ) )
             {
-                locationDescription = data.getString( "location_description" );
+                locationDescription = data.getString( FEATURE_DESCRIPTION_COLUMN );
             }
 
             Integer locationSrid = null;
 
             if ( data.hasColumn( FEATURE_SRID_COLUMN ) )
             {
-                locationSrid = data.getInt( "location_srid" );
+                locationSrid = data.getInt( FEATURE_SRID_COLUMN );
             }
 
             String locationWkt = null;
 
             if ( data.hasColumn( FEATURE_WKT_COLUMN ) )
             {
-                locationWkt = data.getString( "location_wkt" );
+                locationWkt = data.getString( FEATURE_WKT_COLUMN );
             }
 
             String unitName = data.getString( "measurement_unit" );
+
+            Integer timeScaleInMinutes = null;
+
+            if ( data.hasColumn( TIMESCALE_IN_MINUTES_COLUMN ) )
+            {
+                timeScaleInMinutes = data.getInt( TIMESCALE_IN_MINUTES_COLUMN );
+            }
+
+            String timeScaleFunction = null;
+
+            if ( data.hasColumn( TIMESCALE_FUNCTION_COLUMN ) )
+            {
+                timeScaleFunction = data.getString( TIMESCALE_FUNCTION_COLUMN );
+            }
+
+            TimeScaleOuter timeScale = null;
+
+            if ( timeScaleInMinutes != null )
+            {
+                Duration duration = Duration.of( timeScaleInMinutes,
+                                                 ChronoUnit.MINUTES );
+
+                if ( timeScaleFunction != null )
+                {
+                    TimeScaleOuter.TimeScaleFunction function =
+                            TimeScaleOuter.TimeScaleFunction.valueOf( timeScaleFunction );
+                    timeScale = TimeScaleOuter.of( duration, function );
+                }
+                else
+                {
+                    timeScale = TimeScaleOuter.of( duration );
+                }
+            }
+
             Geometry geometry = MessageFactory.getGeometry( locationName,
                                                             locationDescription,
                                                             locationSrid,
@@ -280,7 +319,7 @@ public class CSVSource extends BasicSource
             FeatureKey location = FeatureKey.of( geometry );
             currentTimeSeriesMetadata =
                     TimeSeriesMetadata.of( Map.of( UNKNOWN, referenceDatetime ),
-                                           null,
+                                           timeScale,
                                            variableName,
                                            location,
                                            unitName );
