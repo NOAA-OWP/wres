@@ -23,7 +23,6 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Probability;
 import wres.datamodel.Slicer;
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.space.FeatureGroup;

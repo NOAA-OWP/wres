@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
