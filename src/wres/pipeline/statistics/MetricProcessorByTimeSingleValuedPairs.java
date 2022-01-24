@@ -83,7 +83,7 @@ public class MetricProcessorByTimeSingleValuedPairs
 
         Objects.requireNonNull( pool.getMetadata().getTimeWindow(),
                                 "Expected a non-null time window in the input metadata." );
-        
+
         //Remove missing values from pairs that do not preserver time order
         Pool<Pair<Double, Double>> unpackedNoMissing = null;
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED ) || this.hasMetrics( SampleDataGroup.DICHOTOMOUS ) )
@@ -117,7 +117,7 @@ public class MetricProcessorByTimeSingleValuedPairs
 
         // Log
         LOGGER.debug( PROCESSING_COMPLETE_MESSAGE,
-                      MessageFactory.parse( pool.getMetadata().getPool().getGeometryTuples( 0 ) ),
+                      pool.getMetadata().getFeatureGroup(),
                       pool.getMetadata().getTimeWindow() );
 
         //Process and return the result       
@@ -238,7 +238,7 @@ public class MetricProcessorByTimeSingleValuedPairs
         FeatureGroup featureGroup = pool.getMetadata()
                                         .getFeatureGroup();
         thresholdsByMetricAndFeature = thresholdsByMetricAndFeature.getThresholdsByMetricAndFeature( featureGroup );
-        
+
         Map<FeatureTuple, ThresholdsByMetric> filtered = thresholdsByMetricAndFeature.getThresholdsByMetricAndFeature();
         filtered = ThresholdSlicer.filterByGroup( filtered,
                                                   SampleDataGroup.DICHOTOMOUS,
@@ -303,7 +303,7 @@ public class MetricProcessorByTimeSingleValuedPairs
         FeatureGroup featureGroup = pool.getMetadata()
                                         .getFeatureGroup();
         thresholdsByMetricAndFeature = thresholdsByMetricAndFeature.getThresholdsByMetricAndFeature( featureGroup );
-        
+
         Map<FeatureTuple, ThresholdsByMetric> filtered = thresholdsByMetricAndFeature.getThresholdsByMetricAndFeature();
         filtered = ThresholdSlicer.filterByGroup( filtered,
                                                   SampleDataGroup.SINGLE_VALUED_TIME_SERIES,

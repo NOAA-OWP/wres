@@ -54,7 +54,7 @@ abstract class MetricProcessorByTime<S extends Pool<?>>
      * Message that indicates processing is complete.
      */
 
-    static final String PROCESSING_COMPLETE_MESSAGE = "Completed processing of metrics for feature '{}' "
+    static final String PROCESSING_COMPLETE_MESSAGE = "Completed processing of metrics for feature group '{}' "
                                                       + "at time window '{}'.";
 
     /**

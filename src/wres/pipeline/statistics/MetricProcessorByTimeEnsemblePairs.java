@@ -170,7 +170,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
 
         // Log
         LOGGER.debug( PROCESSING_COMPLETE_MESSAGE,
-                      MessageFactory.parse( input.getMetadata().getPool().getGeometryTuples( 0 ) ),
+                      input.getMetadata().getFeatureGroup(),
                       input.getMetadata().getTimeWindow() );
 
         // Process and return the result       
