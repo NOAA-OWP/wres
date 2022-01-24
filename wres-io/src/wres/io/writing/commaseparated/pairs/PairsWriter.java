@@ -38,6 +38,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.writing.WriteException;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
+import wres.statistics.generated.GeometryGroup;
 import wres.util.TimeHelper;
 
 /**
@@ -235,8 +236,10 @@ public abstract class PairsWriter<L, R>
     {
         Objects.requireNonNull( pairs, "Cannot write null pairs." );
 
-        Objects.requireNonNull( pairs.getMetadata().getPool().getGeometryTuplesList().isEmpty(),
-                                "Cannot write pairs with an empty list of geometries." );
+        if ( pairs.getMetadata().getPool().getGeometryGroup().getGeometryTuplesCount() == 0 )
+        {
+            throw new WriteException( "Cannot write pairs with an empty list of geometries." );
+        }
 
         try
         {
@@ -248,13 +251,14 @@ public abstract class PairsWriter<L, R>
                 this.writeHeaderIfRequired( pairs );
 
                 // Feature group name
-                String featureGroupName = this.getFeatureNameFrom( pairs.getMetadata().getPool().getRegionName() );
+                GeometryGroup geoGroup = pairs.getMetadata().getPool().getGeometryGroup();
+                String featureGroupName = this.getFeatureNameFrom( geoGroup.getRegionName() );
 
                 // Time window to write, which is fixed across all pairs
                 TimeWindowOuter timeWindow = pairs.getMetadata().getTimeWindow();
 
-                LOGGER.debug( "Writing pairs for geometries {} at time window {} to {}",
-                              pairs.getMetadata().getPool().getGeometryTuplesList(),
+                LOGGER.debug( "Writing pairs for feature group {} at time window {} to {}",
+                              pairs.getMetadata().getFeatureGroup(),
                               timeWindow,
                               this.getPath() );
 
@@ -331,12 +335,12 @@ public abstract class PairsWriter<L, R>
 
                     if ( LOGGER.isDebugEnabled() )
                     {
-                        LOGGER.debug( "{} time-series of pairs containing {} pairs written to {} for geometries {} at time "
-                                      + "window {}.",
+                        LOGGER.debug( "{} time-series of pairs containing {} pairs written to {} for feature group {} "
+                                      + "at time window {}.",
                                       pairs.get().size(),
                                       PoolSlicer.getPairCount( pairs ),
                                       this.getPath(),
-                                      pairs.getMetadata().getPool().getGeometryTuplesList(),
+                                      pairs.getMetadata().getFeatureGroup(),
                                       timeWindow );
                     }
                 }

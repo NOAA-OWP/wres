@@ -62,6 +62,7 @@ import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Pool;
@@ -318,8 +319,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         }
 
         // Merge in geometry description
-        String featureGroupName = pool.getRegionName();
-        List<GeometryTuple> geometries = pool.getGeometryTuplesList();
+        GeometryGroup geoGroup = pool.getGeometryGroup();
+        String featureGroupName = geoGroup.getRegionName();
+        List<GeometryTuple> geometries = geoGroup.getGeometryTuplesList();
         StringJoiner geometryDescription = this.getGeometryTupleDescription( geometries, featureGroupName );
         joiner = joiner.merge( geometryDescription );
 

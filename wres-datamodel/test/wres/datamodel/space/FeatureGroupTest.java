@@ -103,12 +103,14 @@ class FeatureGroupTest
     void testHashcode()
     {
         // Equals consistent with hashcode
-        assertEquals( this.aGroup, this.aGroup );
+        GeometryGroup anotherGeoGroup = MessageFactory.getGeometryGroup( "aGroup", this.aTuple );
+        FeatureGroup anotherFeatureGroup = FeatureGroup.of( anotherGeoGroup );
+        assertEquals( this.aGroup, anotherFeatureGroup );
 
         // Consistent
         for ( int i = 0; i < 100; i++ )
         {
-            assertEquals( this.aGroup.hashCode(), this.aGroup.hashCode() );
+            assertEquals( this.aGroup.hashCode(), anotherFeatureGroup.hashCode() );
         }
     }
 
