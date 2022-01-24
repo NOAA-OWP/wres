@@ -123,7 +123,7 @@ public class FeatureGroup implements Comparable<FeatureGroup>
     @Override
     public int hashCode()
     {
-        return Objects.hash( this.getName(), this.getFeatures() );
+        return this.getGeometryGroup().hashCode();
     }
 
     @Override

@@ -284,7 +284,9 @@ class ArgumentProcessor extends DefaultArgumentsProcessor
     private void recordIdentifierArguments( PoolMetadata meta, MetricConstants metric, MetricConstants component )
     {
 
-        String regionName = meta.getPool().getRegionName();
+        String regionName = meta.getPool()
+                                .getGeometryGroup()
+                                .getRegionName();
 
         if ( Objects.isNull( regionName ) )
         {

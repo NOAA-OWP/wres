@@ -27,6 +27,7 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Pool;
 import wres.util.TimeHelper;
@@ -498,21 +499,22 @@ abstract class CommaSeparatedStatisticsWriter
 
         Pool pool = metadata.getPool();
 
-        if ( Objects.nonNull( pool ) && pool.getGeometryTuplesCount() > 0 )
+        GeometryGroup geoGroup = pool.getGeometryGroup();
+        if ( Objects.nonNull( pool ) && geoGroup.getGeometryTuplesCount() > 0 )
         {
-            List<GeometryTuple> geometries = pool.getGeometryTuplesList();
+            List<GeometryTuple> geometries = geoGroup.getGeometryTuplesList();
 
             // Preserve backwards compatibility of names, even though this is a partial naming
             if ( geometries.size() == 1 )
             {
-                featureName = pool.getGeometryTuples( 0 )
-                                  .getRight()
-                                  .getName();
+                featureName = geometries.get( 0 )
+                                        .getRight()
+                                        .getName();
             }
             else
             {
                 // Use the region name
-                featureName = pool.getRegionName();
+                featureName = geoGroup.getRegionName();
             }
         }
 

@@ -1049,7 +1049,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             // Figure out the location of all values and build the origin in each variable grid
             Pool pool = score.getMetadata()
                              .getPool();
-            GeometryTuple geometry = pool.getGeometryTuplesList().get( 0 );
+            GeometryGroup geoGroup = pool.getGeometryGroup();
+            GeometryTuple geometry = geoGroup.getGeometryTuplesList()
+                                             .get( 0 );
 
             int[] origin;
 
