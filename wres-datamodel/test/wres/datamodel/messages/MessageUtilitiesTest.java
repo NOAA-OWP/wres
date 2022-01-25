@@ -39,7 +39,7 @@ import wres.statistics.generated.Pairs.TimeSeriesOfPairs;
 /**
  * Tests the {@link MessageUtilities}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 class MessageUtilitiesTest
@@ -577,9 +577,23 @@ class MessageUtilitiesTest
         assertEquals( 0, MessageUtilities.compare( first, first ) );
         assertEquals( 0, MessageUtilities.compare( first, second ) );
 
+        Geometry greater = Geometry.newBuilder()
+                .setName( "right" )
+                .setDescription( "description" )
+                .setSrid( 5643 )
+                .setWkt( "POINT( 1 2 )" )
+                .build();
+        
+        Geometry lesser = Geometry.newBuilder()
+                .setName( "baseline" )
+                .setDescription( "description" )
+                .setSrid( 5643 )
+                .setWkt( "POINT( 1 2 )" )
+                .build();
+        
         // Less than and greater than examples
-        assertTrue( MessageUtilities.compare( null, first ) < 0 );
-        assertTrue( MessageUtilities.compare( first, null ) > 0 );
+        assertTrue( MessageUtilities.compare( lesser, first ) < 0 );
+        assertTrue( MessageUtilities.compare( greater, first ) > 0 );
         
         Geometry third = first.toBuilder()
                 .setName( "leftTwo" )

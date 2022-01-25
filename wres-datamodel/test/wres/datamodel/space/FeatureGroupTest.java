@@ -118,7 +118,10 @@ class FeatureGroupTest
     void testCompareTo()
     {
         // Consistent with equals
-        assertEquals( 0, this.aGroup.compareTo( this.aGroup ) );
+        GeometryGroup aGeoGroup = MessageFactory.getGeometryGroup( "aGroup", this.aTuple );
+        FeatureGroup aFeatureGroup = FeatureGroup.of( aGeoGroup );
+        assertEquals( this.aGroup, aFeatureGroup );
+        assertEquals( 0, this.aGroup.compareTo( aFeatureGroup ) );
 
         GeometryGroup anotherGeoGroup = MessageFactory.getGeometryGroup( "anotherName", this.aTuple );
         FeatureGroup anotherGroup = FeatureGroup.of( anotherGeoGroup );
