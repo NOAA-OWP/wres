@@ -1,6 +1,5 @@
 package wres.datamodel.messages;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
@@ -795,49 +794,48 @@ public class MessageUtilities
 
     /**
      * Compares the first {@link Geometry} against the second and returns zero, a positive or negative value as to 
-     * whether the first description is equal to, greater than or less than the second description. Null friendly.
+     * whether the first description is equal to, greater than or less than the second description.
      * 
      * @param first the first description
      * @param second the second description
      * @return a number that is zero, negative or positive when first description is the same as, less than or greater 
      *            than the second, respectively
+     * @throws NullPointerException if either input is null
      */
 
     public static int compare( Geometry first, Geometry second )
     {
-        Comparator<Geometry> comparator = ( f, s ) -> {
-            // For efficiency, check that the objects are identity equals
-            if ( f == s )
-            {
-                return 0;
-            }
+        Objects.requireNonNull( first );
+        Objects.requireNonNull( second );
 
-            int compare = Integer.compare( f.getSrid(), s.getSrid() );
+        // For efficiency, check that the objects are identity equals
+        if ( first == second )
+        {
+            return 0;
+        }
 
-            if ( compare != 0 )
-            {
-                return compare;
-            }
+        int compare = Integer.compare( first.getSrid(), second.getSrid() );
 
-            compare = f.getName().compareTo( s.getName() );
+        if ( compare != 0 )
+        {
+            return compare;
+        }
 
-            if ( compare != 0 )
-            {
-                return compare;
-            }
+        compare = first.getName().compareTo( second.getName() );
 
-            compare = f.getDescription().compareTo( s.getDescription() );
+        if ( compare != 0 )
+        {
+            return compare;
+        }
 
-            if ( compare != 0 )
-            {
-                return compare;
-            }
+        compare = first.getDescription().compareTo( second.getDescription() );
 
-            return f.getWkt().compareTo( s.getWkt() );
-        };
+        if ( compare != 0 )
+        {
+            return compare;
+        }
 
-        return Comparator.nullsFirst( comparator )
-                         .compare( first, second );
+        return first.getWkt().compareTo( second.getWkt() );
     }
 
     /**
