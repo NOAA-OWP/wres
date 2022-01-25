@@ -29,7 +29,7 @@ post_result=$( curl -i -s --cacert $wres_ca_file --data "projectConfig=none&verb
 post_result_http_code=$( echo -n "$post_result" | grep HTTP | tail -n 1 | cut -d' ' -f2 )
 echo "The last status code in the response was $post_result_http_code"
 
-if [ "$post_result_http_code" -eq "201" ] || [ "$post_result_http_code" -eq "200" ]
+if [ "$post_result_http_code" == "201" ] || [ "$post_result_http_code" == "200" ]
 then
     echo "The response code was successful: $post_result_http_code"
 else
