@@ -29,11 +29,8 @@
     <include file="wres.Ensemble_v4.xml" relativeToChangelogFile="true" />
     <include file="wres.TimeSeries_v4.xml" relativeToChangelogFile="true" />
     <include file="wres.TimeSeriesValue_v2.xml" relativeToChangelogFile="true" />
-    <include file="wres.gridprojection_v1.xml" relativeToChangelogFile="true" />
-    <include file="wres.netcdfcoordinate_v1.xml" relativeToChangelogFile="true" />
     <include file="Obsolete_tables_v1.xml" relativeToChangelogFile="true" />
     <include file="keys_v1.0.xml" relativeToChangelogFile="true" />
-    <include file="wres.netcdfcoordinate_add_grid_projection.xml" relativeToChangelogFile="true" />
     <include file="wres.executionlog_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.TimeSeriesValue_generated_partitions_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.TimeSeriesValue_generated_partitions_v2.xml" relativeToChangelogFile="true" />
