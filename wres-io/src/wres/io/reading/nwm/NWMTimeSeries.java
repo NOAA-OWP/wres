@@ -877,8 +877,7 @@ class NWMTimeSeries implements Closeable
             events.remove( notFoundFeature );
         }
 
-        Map<Integer,TimeSeries<Double>> allTimeSerieses = new HashMap<>( featureIds.length
-                                                                         - this.featuresNotFound.size() );
+        Map<Integer,TimeSeries<Double>> allTimeSerieses = new HashMap<>( featureIds.length );
 
         // Create each TimeSeries
         for ( Map.Entry<Integer, SortedSet<Event<Double>>> series : events.entrySet() )
