@@ -31,7 +31,9 @@ plugins
 
     //id 'com.github.jacobono.jaxb' version '1.3.5'
     // Above is unmaintained, less gradle-y, below fork has several improvements
-    id 'org.openrepose.gradle.plugins.jaxb' version '2.5.0'
+    //id 'org.openrepose.gradle.plugins.jaxb' version '2.5.0'
+    // Above has no releases since 2018, below fork supports gradle 7+
+    id 'com.github.seanrl.jaxb' version '2.5.1'
 
     // For ability to use git ids for versioning jar files:
     id 'org.ajoberstar.grgit' version '4.1.1'
@@ -789,7 +791,7 @@ project(':wres-vis')
 
 project(':wres-config')
 {
-    apply plugin: 'org.openrepose.gradle.plugins.jaxb'
+    apply plugin: 'com.github.seanrl.jaxb'
 
     dependencies
     {
