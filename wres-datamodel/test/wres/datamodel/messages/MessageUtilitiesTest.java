@@ -74,22 +74,18 @@ class MessageUtilitiesTest
                                                                                                       .setDecimalFormat( "0.0" ) ) )
                                                           .setPng( PngFormat.newBuilder()
                                                                             .setOptions( GraphicFormat.newBuilder()
-                                                                                                      .setConfiguration( "someConfiguration" )
                                                                                                       .setHeight( 600 )
                                                                                                       .setWidth( 800 )
                                                                                                       .addIgnore( MetricName.BIAS_FRACTION )
                                                                                                       .setLeadUnit( DurationUnit.HOURS )
-                                                                                                      .setShape( GraphicShape.ISSUED_DATE_POOLS )
-                                                                                                      .setTemplateName( "aTemplate" ) ) )
+                                                                                                      .setShape( GraphicShape.ISSUED_DATE_POOLS ) ) )
                                                           .setSvg( SvgFormat.newBuilder()
                                                                             .setOptions( GraphicFormat.newBuilder()
-                                                                                                      .setConfiguration( "moreConfiguration" )
                                                                                                       .setHeight( 600 )
                                                                                                       .setWidth( 800 )
                                                                                                       .addIgnore( MetricName.BOX_PLOT_OF_ERRORS )
                                                                                                       .setLeadUnit( DurationUnit.MINUTES )
-                                                                                                      .setShape( GraphicShape.LEAD_THRESHOLD )
-                                                                                                      .setTemplateName( "anotherTemplate" ) ) )
+                                                                                                      .setShape( GraphicShape.LEAD_THRESHOLD ) ) )
                                                           .setProtobuf( ProtobufFormat.newBuilder() )
                                                           .setNetcdf( NetcdfFormat.newBuilder() ) )
                                       .setValueFilter( ValueFilter.newBuilder()
@@ -215,22 +211,18 @@ class MessageUtilitiesTest
                                                                             .setDecimalFormat( "0.0" ) ) )
                                 .setPng( PngFormat.newBuilder()
                                                   .setOptions( GraphicFormat.newBuilder()
-                                                                            .setConfiguration( "someConfiguration" )
                                                                             .setHeight( 600 )
                                                                             .setWidth( 800 )
                                                                             .addIgnore( MetricName.BIAS_FRACTION )
                                                                             .setLeadUnit( DurationUnit.HOURS )
-                                                                            .setShape( GraphicShape.ISSUED_DATE_POOLS )
-                                                                            .setTemplateName( "aTemplate" ) ) )
+                                                                            .setShape( GraphicShape.ISSUED_DATE_POOLS ) ) )
                                 .setSvg( SvgFormat.newBuilder()
                                                   .setOptions( GraphicFormat.newBuilder()
-                                                                            .setConfiguration( "moreConfiguration" )
                                                                             .setHeight( 600 )
                                                                             .setWidth( 800 )
                                                                             .addIgnore( MetricName.BOX_PLOT_OF_ERRORS )
                                                                             .setLeadUnit( DurationUnit.MINUTES )
-                                                                            .setShape( GraphicShape.LEAD_THRESHOLD )
-                                                                            .setTemplateName( "anotherTemplate" ) ) )
+                                                                            .setShape( GraphicShape.LEAD_THRESHOLD ) ) )
                                 .setProtobuf( ProtobufFormat.newBuilder() )
                                 .setNetcdf( NetcdfFormat.newBuilder() )
                                 .build();
@@ -261,25 +253,21 @@ class MessageUtilitiesTest
         Outputs fourth = Outputs.newBuilder()
                                 .setPng( PngFormat.newBuilder()
                                                   .setOptions( GraphicFormat.newBuilder()
-                                                                            .setConfiguration( "someConfiguration" )
                                                                             .setHeight( 600 )
                                                                             .setWidth( 800 )
                                                                             .addIgnore( MetricName.BIAS_FRACTION )
                                                                             .setLeadUnit( DurationUnit.HOURS )
-                                                                            .setShape( GraphicShape.ISSUED_DATE_POOLS )
-                                                                            .setTemplateName( "aTemplate" ) ) )
+                                                                            .setShape( GraphicShape.ISSUED_DATE_POOLS ) ) )
                                 .build();
 
         Outputs fifth = Outputs.newBuilder()
                                .setPng( PngFormat.newBuilder()
                                                  .setOptions( GraphicFormat.newBuilder()
-                                                                           .setConfiguration( "someConfiguration" )
                                                                            .setHeight( 600 )
                                                                            .setWidth( 800 )
                                                                            .addIgnore( MetricName.BIAS_FRACTION )
                                                                            .setLeadUnit( DurationUnit.DAYS )
-                                                                           .setShape( GraphicShape.ISSUED_DATE_POOLS )
-                                                                           .setTemplateName( "aTemplate" ) ) )
+                                                                           .setShape( GraphicShape.ISSUED_DATE_POOLS ) ) )
                                .build();
 
         assertTrue( MessageUtilities.compare( fourth, fifth ) < 0 );
@@ -556,7 +544,7 @@ class MessageUtilitiesTest
 
         assertTrue( MessageUtilities.compare( fifteenth, sixteenth ) < 0 );
     }
-    
+
     @Test
     void testCompareGeometry()
     {
@@ -578,28 +566,28 @@ class MessageUtilitiesTest
         assertEquals( 0, MessageUtilities.compare( first, second ) );
 
         Geometry greater = Geometry.newBuilder()
-                .setName( "right" )
-                .setDescription( "description" )
-                .setSrid( 5643 )
-                .setWkt( "POINT( 1 2 )" )
-                .build();
-        
+                                   .setName( "right" )
+                                   .setDescription( "description" )
+                                   .setSrid( 5643 )
+                                   .setWkt( "POINT( 1 2 )" )
+                                   .build();
+
         Geometry lesser = Geometry.newBuilder()
-                .setName( "baseline" )
-                .setDescription( "description" )
-                .setSrid( 5643 )
-                .setWkt( "POINT( 1 2 )" )
-                .build();
-        
+                                  .setName( "baseline" )
+                                  .setDescription( "description" )
+                                  .setSrid( 5643 )
+                                  .setWkt( "POINT( 1 2 )" )
+                                  .build();
+
         // Less than and greater than examples
         assertTrue( MessageUtilities.compare( lesser, first ) < 0 );
         assertTrue( MessageUtilities.compare( greater, first ) > 0 );
-        
+
         Geometry third = first.toBuilder()
-                .setName( "leftTwo" )
-                .build();
-        
+                              .setName( "leftTwo" )
+                              .build();
+
         assertTrue( MessageUtilities.compare( first, third ) < 0 );
     }
-    
+
 }

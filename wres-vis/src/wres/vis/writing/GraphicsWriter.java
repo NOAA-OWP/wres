@@ -14,7 +14,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
@@ -375,26 +374,14 @@ abstract class GraphicsWriter
 
     /**
      * Uncovers the graphic parameters from a description of the outputs. Assumes that all graphics contain the same
-     * graphics declarations. Use {@link GraphicsWriter#getOutputsGroupedByGraphicsParameters(List)} to obtain output 
+     * graphics declarations. Use {@link GraphicsWriter#getOutputsGroupedByGraphicsParameters(Outputs)} to obtain output 
      * groups.
      * 
-     * @author james.brown@hydrosolved.com
+     * @author James Brown
      */
 
     static class GraphicsHelper
     {
-
-        /**
-         * The template resource name.
-         */
-
-        private final String templateResourceName;
-
-        /**
-         * The graphics string.
-         */
-
-        private final String graphicsString;
 
         /**
          * The shape of graphic.
@@ -444,26 +431,12 @@ abstract class GraphicsWriter
 
             // Default to global type parameter
             GraphicShape innerGraphicShape = GraphicShape.DEFAULT;
-            String innerTemplateResourceName = null;
-            String innerGraphicsString = null;
             if ( Objects.nonNull( graphicsOptions ) )
             {
                 innerGraphicShape = graphicsOptions.getShape();
-
-                if ( !graphicsOptions.getTemplateName().isBlank() )
-                {
-                    innerTemplateResourceName = graphicsOptions.getTemplateName();
-                }
-
-                if ( !graphicsOptions.getConfiguration().isBlank() )
-                {
-                    innerGraphicsString = graphicsOptions.getConfiguration();
-                }
             }
 
-            this.templateResourceName = innerTemplateResourceName;
             this.graphicShape = innerGraphicShape;
-            this.graphicsString = innerGraphicsString;
             this.durationUnits = this.getDurationUnitsFromOutputs( outputs );
         }
 
@@ -516,24 +489,6 @@ abstract class GraphicsWriter
         GraphicShape getGraphicShape()
         {
             return this.graphicShape;
-        }
-
-        /**
-         * @return the graphics string.
-         */
-
-        String getGraphicsString()
-        {
-            return this.graphicsString;
-        }
-
-        /**
-         * @return the template resource name.
-         */
-
-        String getTemplateResourceName()
-        {
-            return this.templateResourceName;
         }
 
         /**

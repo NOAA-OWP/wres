@@ -3327,7 +3327,7 @@ public class WRDSSourceTest
     @Before
     public void beforeTest() throws Exception
     {
-        MockitoAnnotations.initMocks( this );
+        MockitoAnnotations.openMocks( this );
         // Needed only if there are more @Tests added:
         //WRDSSourceTest.mockServer.reset();
     }
@@ -3365,7 +3365,6 @@ public class WRDSSourceTest
                                                         null,
                                                         null,
                                                         null,
-                                                        null,
                                                         null );
 
         ProjectConfig.Inputs inputs = new ProjectConfig.Inputs( null,
@@ -3382,7 +3381,6 @@ public class WRDSSourceTest
                                                 null,
                                                 null,
                                                 features,
-                                                null,
                                                 null,
                                                 null,
                                                 null,
@@ -3506,7 +3504,6 @@ public class WRDSSourceTest
                                                         null,
                                                         null,
                                                         null,
-                                                        null,
                                                         null );
 
         ProjectConfig.Inputs inputs = new ProjectConfig.Inputs( null,
@@ -3523,7 +3520,6 @@ public class WRDSSourceTest
                                                 null,
                                                 null,
                                                 features,
-                                                null,
                                                 null,
                                                 null,
                                                 null,
@@ -3637,7 +3633,6 @@ public class WRDSSourceTest
                                                         null,
                                                         null,
                                                         null,
-                                                        null,
                                                         null );
 
         ProjectConfig.Inputs inputs = new ProjectConfig.Inputs( null,
@@ -3654,7 +3649,6 @@ public class WRDSSourceTest
                                                 null,
                                                 null,
                                                 features,
-                                                null,
                                                 null,
                                                 null,
                                                 null,
@@ -3757,7 +3751,6 @@ public class WRDSSourceTest
                                                         null,
                                                         null,
                                                         null,
-                                                        null,
                                                         null );
 
         ProjectConfig.Inputs inputs = new ProjectConfig.Inputs( null,
@@ -3774,7 +3767,6 @@ public class WRDSSourceTest
                                                 null,
                                                 null,
                                                 features,
-                                                null,
                                                 null,
                                                 null,
                                                 null,

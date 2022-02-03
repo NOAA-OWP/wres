@@ -39,7 +39,6 @@ public class FeatureFinderTest
                                   null,
                                   null,
                                   null,
-                                  null,
                                   null );
 
     private static final DataSourceConfig BOILERPLATE_RIGHT_DATASOURCE_NO_DIMENSION =
@@ -47,7 +46,6 @@ public class FeatureFinderTest
                                   Collections.emptyList(),
                                   new DataSourceConfig.Variable( "streamflow",
                                                                  null ),
-                                  null,
                                   null,
                                   null,
                                   null,
@@ -69,14 +67,12 @@ public class FeatureFinderTest
                                           null,
                                           null,
                                           null,
-                                          null,
                                           true );
     private static final DataSourceConfig BOILERPLATE_LEFT_DATASOURCE_CUSTOM_DIMENSION =
             new DataSourceConfig( DatasourceType.SIMULATIONS,
                                   Collections.emptyList(),
                                   new DataSourceConfig.Variable( "discharge",
                                                                  null ),
-                                  null,
                                   null,
                                   null,
                                   null,
@@ -97,14 +93,12 @@ public class FeatureFinderTest
                                   null,
                                   null,
                                   null,
-                                  null,
                                   FeatureDimension.CUSTOM );
     private static final DataSourceBaselineConfig BOILERPLATE_BASELINE_DATASOURCE_CUSTOM_DIMENSION =
             new DataSourceBaselineConfig( DatasourceType.SIMULATIONS,
                                           Collections.emptyList(),
                                           new DataSourceConfig.Variable( "flow",
                                                                          null ),
-                                          null,
                                           null,
                                           null,
                                           null,
@@ -126,7 +120,6 @@ public class FeatureFinderTest
                                   null,
                                   null,
                                   null,
-                                  null,
                                   FeatureDimension.USGS_SITE_CODE );
     
     private static final DataSourceConfig BOILERPLATE_RIGHT_DATASOURCE_NWS_LID_DIMENSION =
@@ -134,7 +127,6 @@ public class FeatureFinderTest
                                   Collections.emptyList(),
                                   new DataSourceConfig.Variable( "streamflow",
                                                                  null ),
-                                  null,
                                   null,
                                   null,
                                   null,
@@ -202,7 +194,6 @@ public class FeatureFinderTest
                                featureService,
                                features,
                                featureGroups,
-                               null,
                                null,
                                null,
                                null,

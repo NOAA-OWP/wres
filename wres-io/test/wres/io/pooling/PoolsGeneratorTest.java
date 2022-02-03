@@ -88,7 +88,6 @@ public class PoolsGeneratorTest
                                                  null,
                                                  null,
                                                  null,
-                                                 null,
                                                  leadBoundsConfig,
                                                  null,
                                                  null,
@@ -113,13 +112,11 @@ public class PoolsGeneratorTest
                                                       null,
                                                       null,
                                                       null,
-                                                      null,
                                                       null );
 
         DataSourceConfig right = new DataSourceConfig( DatasourceType.fromValue( "single valued forecasts" ),
                                                        sourceList,
                                                        new Variable( STREAMFLOW, null ),
-                                                       null,
                                                        null,
                                                        null,
                                                        null,
@@ -206,7 +203,6 @@ public class PoolsGeneratorTest
                                                  null,
                                                  null,
                                                  null,
-                                                 null,
                                                  leadBoundsConfig,
                                                  null,
                                                  null,
@@ -231,13 +227,11 @@ public class PoolsGeneratorTest
                                                       null,
                                                       null,
                                                       null,
-                                                      null,
                                                       null );
 
         DataSourceConfig right = new DataSourceConfig( DatasourceType.fromValue( "ensemble forecasts" ),
                                                        sourceList,
                                                        new Variable( STREAMFLOW, null ),
-                                                       null,
                                                        null,
                                                        null,
                                                        null,

@@ -28,7 +28,6 @@ public class ConfigHelperTest
                                                                   null,
                                                                   null,
                                                                   null,
-                                                                  null,
                                                                   null );
 
         Duration timeShift = ConfigHelper.getTimeShift( dataSourceConfig );
@@ -41,7 +40,6 @@ public class ConfigHelperTest
     public void getNullTimeshift()
     {
         DataSourceConfig dataSourceConfig = new DataSourceConfig( null,
-                                                                  null,
                                                                   null,
                                                                   null,
                                                                   null,

@@ -904,10 +904,6 @@ class NWMTimeSeries implements Closeable
         return Collections.unmodifiableMap( allTimeSerieses );
     }
 
-
-
-
-
     private static Instant readValidDatetime( NWMProfile profile,
                                               NetcdfFile netcdfFile )
     {

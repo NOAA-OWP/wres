@@ -159,12 +159,6 @@
         <xs:attribute name="label" type="xs:string" />
         <xs:attribute name="name" type="xs:string" />
 
-        <!-- member_id is deprecated, ignored by WRES! Do not use! -->
-        <xs:attribute name="member_id" type="xs:string" />
-
-        <!-- qualifier is deprecated, ignored by WRES! Do not use! -->
-        <xs:attribute name="qualifier" type="xs:string" />
-
         <xs:attribute name="exclude" type="xs:boolean" default="false" />
     </xs:complexType>
 
@@ -404,22 +398,9 @@
             </xs:element>
             <xs:element name="existingTimeScale" type="timeScale" minOccurs="0" maxOccurs="1"/>
             <xs:element name="urlParameter" type="urlParameterType" minOccurs="0" maxOccurs="unbounded" />
-            <!-- This option is marked deprecated for removal as of WRES version 5.12. See #93972. -->
-            <xs:element name="removeMemberByValidYear" type="removeMemberByValidYear" minOccurs="0" maxOccurs="1"/>
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
         <xs:attribute name="featureDimension" type="featureDimension" />
-    </xs:complexType>
-
-    <xs:complexType name ="removeMemberByValidYear">
-           <xs:annotation>
-                <xs:documentation>If present, remove the ensemble member whose
-                    label matches the valid year of the event for a year that 
-                    begins on the prescribed monthday. When the monthday is 
-                    undefined, it defaults to 1 January.</xs:documentation>
-               </xs:annotation>
-        <xs:attribute name="earliestDay" type="xs:short" default = "1" />
-        <xs:attribute name="earliestMonth" type="xs:short" default = "1" />
     </xs:complexType>
 
     <xs:simpleType name="thresholdFormat">
@@ -707,15 +688,6 @@
     <xs:complexType name="graphicalType">
 
         <xs:sequence>
-            <!-- Specifies the override chart drawing parameters.  Will be processed as a String and passed to 
-            charting tool so it can parse it.  Hence, the reason it is skipped. -->
-            <xs:element name="config" minOccurs="0" maxOccurs="1">
-                <xs:complexType>
-                    <xs:sequence>
-                        <xs:any processContents="skip" namespace="##any" minOccurs="0" maxOccurs="unbounded" />
-                    </xs:sequence>
-                </xs:complexType>
-            </xs:element>
             <!-- Allow for metrics to be suppressed for this format -->
             <xs:sequence>
                 <xs:element name="suppressMetric" type="metricConfigName" minOccurs="0" maxOccurs="unbounded" />
@@ -727,12 +699,6 @@
         
         <!-- Image height. -->
         <xs:attribute name="height" type="xs:int" />
-        
-        <!-- Location of the template file.  Every plot type has a default file.
-        This allows for using a user customized file.  When searching for the 
-        file it will begin by loading it as a system resource from the lib/conf
-        directory and, if it is not found, then as a file on the file system. -->
-        <xs:attribute name="template" type="xs:string" />
     </xs:complexType>
 
     <!-- Element to store options related to generating Netcdf output -->
@@ -940,7 +906,6 @@ time scale within a single class, rather than two classes.
             <xs:element name="feature" type="feature" minOccurs="0" maxOccurs="unbounded"/>
             <xs:element name="featureGroup" type="featurePool" minOccurs="0" maxOccurs="unbounded"/>
             <xs:element name="gridSelection" type="unnamedFeature" minOccurs="0" maxOccurs="unbounded"/>
-            <xs:element name="byTimeSeries" type="xs:boolean" default="false" minOccurs="0" />
             <xs:element name="leadHours" type="intBoundsType" minOccurs="0" />
 
             <!-- analysisDurations chooses which analysis durations to evaluate #65216, #61593 -->

@@ -127,8 +127,6 @@ public class DurationDiagramGraphicsWriter extends GraphicsWriter
                 ChartEngine engine =
                         ChartEngineFactory.buildDurationDiagramChartEngine( output,
                                                                             helper.getGraphicShape(),
-                                                                            helper.getTemplateResourceName(),
-                                                                            helper.getGraphicsString(),
                                                                             helper.getDurationUnits() );
 
                 // Build the output file name

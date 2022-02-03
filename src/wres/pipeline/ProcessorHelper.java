@@ -68,7 +68,6 @@ import wres.pipeline.Evaluator.Executors;
 import wres.pipeline.statistics.MetricProcessor;
 import wres.pipeline.statistics.MetricProcessorByTimeEnsemblePairs;
 import wres.pipeline.statistics.MetricProcessorByTimeSingleValuedPairs;
-import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Consumer.Format;
 import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
@@ -147,8 +146,7 @@ class ProcessorHelper
         ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
 
         // Create a description of the evaluation
-        wres.statistics.generated.Evaluation evaluationDescription =
-                ProcessorHelper.getEvaluationDescription( projectConfigPlus );
+        wres.statistics.generated.Evaluation evaluationDescription = MessageFactory.parse( projectConfigPlus );
 
         // Create netCDF writers
         List<NetcdfOutputWriter> netcdfWriters =
@@ -743,73 +741,6 @@ class ProcessorHelper
         }
 
         return Collections.unmodifiableSet( formats );
-    }
-
-    /**
-     * @param projectConfigPlus the project declaration with graphics information
-     * @return a description of the evaluation.
-     * @deprecated for removal as templates should not be configurable
-     */
-
-    @Deprecated( since = "5.0", forRemoval = true )
-    private static wres.statistics.generated.Evaluation getEvaluationDescription( ProjectConfigPlus projectConfigPlus )
-    {
-        wres.statistics.generated.Evaluation returnMe = MessageFactory.parse( projectConfigPlus );
-
-        Outputs outputs = returnMe.getOutputs();
-
-        if ( outputs.hasPng() && outputs.getPng().hasOptions() )
-        {
-            String template = outputs.getPng().getOptions().getTemplateName();
-
-            template = ProcessorHelper.getAbsolutePathFromRelativePath( template );
-
-            Outputs.Builder builder = outputs.toBuilder();
-            builder.getPngBuilder()
-                   .getOptionsBuilder()
-                   .setTemplateName( template );
-            returnMe = returnMe.toBuilder()
-                               .setOutputs( builder )
-                               .build();
-        }
-
-        if ( outputs.hasSvg() && outputs.getSvg().hasOptions() )
-        {
-            String template = outputs.getSvg().getOptions().getTemplateName();
-
-            template = ProcessorHelper.getAbsolutePathFromRelativePath( template );
-
-            Outputs.Builder builder = outputs.toBuilder();
-            builder.getSvgBuilder()
-                   .getOptionsBuilder()
-                   .setTemplateName( template );
-            returnMe = returnMe.toBuilder()
-                               .setOutputs( builder )
-                               .build();
-        }
-
-        return returnMe;
-    }
-
-    /**
-     * @return an absolute path string from a relative one.
-     */
-
-    private static String getAbsolutePathFromRelativePath( String pathString )
-    {
-        if ( Objects.isNull( pathString ) || pathString.isBlank() )
-        {
-            return pathString;
-        }
-
-        Path path = Path.of( pathString );
-
-        if ( !path.isAbsolute() )
-        {
-            return path.toAbsolutePath().toString();
-        }
-
-        return pathString;
     }
 
     /**

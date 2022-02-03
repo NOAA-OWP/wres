@@ -467,7 +467,6 @@ public class ProjectConfigs
                                       oldLeftDataset.getTimeShift(),
                                       oldLeftDataset.getExistingTimeScale(),
                                       oldLeftDataset.getUrlParameter(),
-                                      oldLeftDataset.getRemoveMemberByValidYear(),
                                       oldLeftDataset.getLabel(),
                                       oldLeftDataset.getFeatureDimension() );
         DataSourceConfig oldRightDataset = oldDeclaration.getInputs()
@@ -485,7 +484,6 @@ public class ProjectConfigs
                                       oldRightDataset.getTimeShift(),
                                       oldRightDataset.getExistingTimeScale(),
                                       oldRightDataset.getUrlParameter(),
-                                      oldRightDataset.getRemoveMemberByValidYear(),
                                       oldRightDataset.getLabel(),
                                       oldRightDataset.getFeatureDimension() );
         DataSourceBaselineConfig oldBaselineDataset = oldDeclaration.getInputs()
@@ -506,7 +504,6 @@ public class ProjectConfigs
                                                   oldBaselineDataset.getTimeShift(),
                                                   oldBaselineDataset.getExistingTimeScale(),
                                                   oldBaselineDataset.getUrlParameter(),
-                                                  oldBaselineDataset.getRemoveMemberByValidYear(),
                                                   oldBaselineDataset.getLabel(),
                                                   oldBaselineDataset.getFeatureDimension(),
                                                   oldBaselineDataset.isSeparateMetrics() );
