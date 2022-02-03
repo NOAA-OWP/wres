@@ -50,7 +50,6 @@ class TestDeclarationGenerator
                                                  null,
                                                  null,
                                                  null,
-                                                 null,
                                                  issuedDatesConfig,
                                                  null,
                                                  null,
@@ -71,13 +70,11 @@ class TestDeclarationGenerator
                                                       null,
                                                       null,
                                                       null,
-                                                      null,
                                                       null );
 
         DataSourceConfig right = new DataSourceConfig( DatasourceType.fromValue( "single valued forecasts" ),
                                                        List.of(),
                                                        new Variable( "STREAMFLOW", null ),
-                                                       null,
                                                        null,
                                                        null,
                                                        null,
@@ -126,11 +123,9 @@ class TestDeclarationGenerator
                                                        null,
                                                        null,
                                                        null,
-                                                       null,
                                                        null );
 
         DataSourceBaselineConfig baseline = new DataSourceBaselineConfig( null,
-                                                                          null,
                                                                           null,
                                                                           null,
                                                                           null,
@@ -174,7 +169,6 @@ class TestDeclarationGenerator
                                                  null,
                                                  null,
                                                  null,
-                                                 null,
                                                  null );
 
         DataSourceConfig left = new DataSourceConfig( DatasourceType.fromValue( "observations" ),
@@ -187,13 +181,11 @@ class TestDeclarationGenerator
                                                       null,
                                                       null,
                                                       null,
-                                                      null,
                                                       null );
 
         DataSourceConfig right = new DataSourceConfig( DatasourceType.fromValue( "single valued forecasts" ),
                                                        List.of(),
                                                        new Variable( "STREAMFLOW", null ),
-                                                       null,
                                                        null,
                                                        null,
                                                        null,
@@ -246,7 +238,6 @@ class TestDeclarationGenerator
                                                  null,
                                                  null,
                                                  null,
-                                                 null,
                                                  null );
 
         DataSourceConfig left = new DataSourceConfig( DatasourceType.fromValue( "observations" ),
@@ -259,13 +250,11 @@ class TestDeclarationGenerator
                                                       null,
                                                       null,
                                                       null,
-                                                      null,
                                                       null );
 
         DataSourceConfig right = new DataSourceConfig( DatasourceType.fromValue( "single valued forecasts" ),
                                                        List.of(),
                                                        new Variable( "SQIN", null ),
-                                                       null,
                                                        null,
                                                        null,
                                                        null,
@@ -328,7 +317,6 @@ class TestDeclarationGenerator
                                                  null,
                                                  null,
                                                  null,
-                                                 null,
                                                  null );
 
         DataSourceConfig left = new DataSourceConfig( DatasourceType.fromValue( "observations" ),
@@ -341,13 +329,11 @@ class TestDeclarationGenerator
                                                       null,
                                                       null,
                                                       null,
-                                                      null,
                                                       null );
 
         DataSourceConfig right = new DataSourceConfig( DatasourceType.fromValue( "single valued forecasts" ),
                                                        List.of(),
                                                        new Variable( "STREAMFLOW", null ),
-                                                       null,
                                                        null,
                                                        null,
                                                        null,
@@ -400,7 +386,6 @@ class TestDeclarationGenerator
                                                  null,
                                                  null,
                                                  null,
-                                                 null,
                                                  null );
 
         DataSourceConfig left = new DataSourceConfig( DatasourceType.fromValue( "observations" ),
@@ -413,13 +398,11 @@ class TestDeclarationGenerator
                                                       null,
                                                       null,
                                                       null,
-                                                      null,
                                                       null );
 
         DataSourceConfig right = new DataSourceConfig( DatasourceType.fromValue( "single valued forecasts" ),
                                                        List.of(),
                                                        new Variable( "STREAMFLOW", null ),
-                                                       null,
                                                        null,
                                                        null,
                                                        null,
@@ -570,7 +553,6 @@ class TestDeclarationGenerator
                                                  null,
                                                  null,
                                                  null,
-                                                 null,
                                                  null );
 
         return new ProjectConfig( projectConfig.getInputs(),
@@ -591,7 +573,6 @@ class TestDeclarationGenerator
                 TestDeclarationGenerator.getDeclarationForEnsembleForecastsWithAllValidMetricsAndIssuedDatePools();
 
         PairConfig pairsConfig = new PairConfig( null,
-                                                 null,
                                                  null,
                                                  null,
                                                  null,

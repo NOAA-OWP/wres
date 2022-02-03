@@ -164,8 +164,6 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                     ConcurrentMap<MetricConstants, ChartEngine> engines =
                             ChartEngineFactory.buildScoreOutputChartEngine( nextOutput,
                                                                             helper.getGraphicShape(),
-                                                                            helper.getTemplateResourceName(),
-                                                                            helper.getGraphicsString(),
                                                                             helper.getDurationUnits() );
 
                     String append = null;

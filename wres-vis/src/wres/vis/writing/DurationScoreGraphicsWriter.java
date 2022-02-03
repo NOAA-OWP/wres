@@ -127,8 +127,6 @@ public class DurationScoreGraphicsWriter extends GraphicsWriter
                 ChartEngine engine =
                         ChartEngineFactory.buildCategoricalDurationScoreChartEngine( output,
                                                                                      helper.getGraphicShape(),
-                                                                                     helper.getTemplateResourceName(),
-                                                                                     helper.getGraphicsString(),
                                                                                      helper.getDurationUnits() );
 
 

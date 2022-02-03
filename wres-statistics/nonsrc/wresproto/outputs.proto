@@ -53,13 +53,6 @@ message Outputs
         int32 width = 3;
         // Graphic width in pixels.
 
-        string template_name = 4;
-        // The name of a drawing template to use when creating the graphic.
-
-        string configuration = 5;
-        // An inband configuration string that is understood by the application 
-        // or service that delivers this graphic.
-
         enum DurationUnit
         {
              // Display lead durations in these units.
@@ -70,10 +63,10 @@ message Outputs
              DAYS = 3;
         }
 
-        DurationUnit lead_unit = 6;
+        DurationUnit lead_unit = 4;
         // The units of the lead durations.
 
-        repeated MetricName ignore = 7;
+        repeated MetricName ignore = 5;
         // Zero or more metrics for which graphics should be suppressed.
     }
 

@@ -1,6 +1,5 @@
 package wres.io.pooling;
 
-import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -36,7 +35,6 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
-import wres.config.generated.RemoveMemberByValidYear;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.MissingValues;
@@ -58,7 +56,6 @@ import wres.datamodel.time.TimeSeriesOfEnsembleUpscaler;
 import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesPairer.TimePairingType;
 import wres.datamodel.time.TimeSeriesPairerByExactTime;
-import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.generators.PersistenceGenerator;
@@ -461,14 +458,10 @@ public class PoolFactory
         DoubleUnaryOperator leftTransformer = PoolFactory.getSingleValuedTransformer( pairConfig.getValues() );
 
         // Right transformer
-        MonthDay removeMemberByValidYearRight = PoolFactory.getRemoveMemberByValidYear( inputsConfig.getRight() );
-        UnaryOperator<Event<Ensemble>> rightTransformer = PoolFactory.getEnsembleTransformer( leftTransformer,
-                                                                                              removeMemberByValidYearRight );
+        UnaryOperator<Event<Ensemble>> rightTransformer = PoolFactory.getEnsembleTransformer( leftTransformer );
 
         // Baseline transformer
-        MonthDay removeMemberByValidYearBaseline = PoolFactory.getRemoveMemberByValidYear( inputsConfig.getBaseline() );
-        UnaryOperator<Event<Ensemble>> baselineTransformer = PoolFactory.getEnsembleTransformer( leftTransformer,
-                                                                                                 removeMemberByValidYearBaseline );
+        UnaryOperator<Event<Ensemble>> baselineTransformer = PoolFactory.getEnsembleTransformer( leftTransformer );
 
         // Build and return the pool suppliers
         List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> rawSuppliers =
@@ -802,79 +795,32 @@ public class PoolFactory
     }
 
     /**
-     * Returns a transformer for ensemble data if required. Applies up to two separate transforms. If the 
-     * {@code valueTransformer} is not {code null}, then the ensemble member values are re-mapped with that
-     * transformer. Separately, if the prescribed {@code removeMemberByValidYear} is not {@code null}, then any
-     * ensemble member whose label corresponds to the valid year that begins on that monthday will be removed. 
-     * See the {@link TimeSeriesSlicer#filter(Event, java.time.MonthDay)} for the second transformer.
+     * Returns a transformer for ensemble data if required.
      * 
      * @param valueTransformer the value transformer to compose
      * @return a transformer or null
      */
 
-    private static UnaryOperator<Event<Ensemble>> getEnsembleTransformer( DoubleUnaryOperator valueTransformer,
-                                                                          MonthDay removeMemberByValidYear )
+    private static UnaryOperator<Event<Ensemble>> getEnsembleTransformer( DoubleUnaryOperator valueTransformer )
     {
         // Return null to avoid iterating a no-op function
-        if ( Objects.isNull( valueTransformer ) && Objects.isNull( removeMemberByValidYear ) )
+        if ( Objects.isNull( valueTransformer ) )
         {
             return null;
         }
 
-        // At least one function must be iterated, so create no-op as a baseline
-        UnaryOperator<Event<Ensemble>> valueFunction = event -> event;
-        UnaryOperator<Event<Ensemble>> validYearFunction = event -> event;
+        return toTransform -> {
 
-        // Create the value function
-        if ( Objects.nonNull( valueTransformer ) )
-        {
-            valueFunction = toTransform -> {
+            Ensemble ensemble = toTransform.getValue();
+            double[] members = ensemble.getMembers();
+            double[] transformed = Arrays.stream( members )
+                                         .map( valueTransformer )
+                                         .toArray();
 
-                Ensemble ensemble = toTransform.getValue();
-                double[] members = ensemble.getMembers();
-                double[] transformed = Arrays.stream( members )
-                                             .map( valueTransformer )
-                                             .toArray();
+            Labels labels = ensemble.getLabels();
 
-                Labels labels = ensemble.getLabels();
-
-                return Event.of( toTransform.getTime(), Ensemble.of( transformed, labels ) );
-            };
-        }
-
-        // Create the valid year function
-        if ( Objects.nonNull( removeMemberByValidYear ) )
-        {
-            validYearFunction = event -> TimeSeriesSlicer.filter( event, removeMemberByValidYear );
-        }
-
-        // Compose them (this should be way easier, but compose and andThen are defined in the Function interface!)
-        final UnaryOperator<Event<Ensemble>> outer = valueFunction;
-        final UnaryOperator<Event<Ensemble>> inner = validYearFunction;
-
-        return event -> outer.apply( inner.apply( event ) );
-    }
-
-    /**
-     * Returns a monthday on which a year begins when removing an ensemble member whose label matches the valid year.
-     * Returns {@code null} if no member should be removed.
-     * 
-     * @param rightOrBaseline the right or baseline data source configuration
-     * @return the monthday on which a year begins when removing an ensemble member whose label matches the valid year 
-     *            or null if no filtering is required
-     */
-
-    private static MonthDay getRemoveMemberByValidYear( DataSourceConfig rightOrBaseline )
-    {
-        // Return null to avoid iterating a no-op function
-        if ( Objects.isNull( rightOrBaseline ) || Objects.isNull( rightOrBaseline.getRemoveMemberByValidYear() ) )
-        {
-            return null;
-        }
-
-        RemoveMemberByValidYear remove = rightOrBaseline.getRemoveMemberByValidYear();
-
-        return MonthDay.of( remove.getEarliestMonth(), remove.getEarliestDay() );
+            return Event.of( toTransform.getTime(), Ensemble.of( transformed, labels ) );
+        };
     }
 
     /**

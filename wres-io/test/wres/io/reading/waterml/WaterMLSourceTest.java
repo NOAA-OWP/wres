@@ -46,7 +46,6 @@ public class WaterMLSourceTest
                                                           null,
                                                           null,
                                                           null,
-                                                          null,
                                                           null ),
                                     Collections.emptyList(),
                                     URI.create( "https://fake.uri/somewhere" ) );

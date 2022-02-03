@@ -68,8 +68,6 @@ public class Chart2DTestInput extends TestCase
         final String scenarioName = "test1";
         //Build the ChartEngine instance.
         final ChartEngine engine = ChartEngineFactory.buildSingleValuedPairsChartEngine( pairs,
-                                                                                         "singleValuedPairsTemplate.xml",
-                                                                                         null,
                                                                                          ChronoUnit.HOURS );
 
         //Generate the output file.

@@ -205,8 +205,6 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
                 Map<Pair<TimeWindowOuter, OneOrTwoThresholds>, ChartEngine> engines =
                         ChartEngineFactory.buildBoxPlotChartEnginePerPool( output,
                                                                            helper.getGraphicShape(),
-                                                                           helper.getTemplateResourceName(),
-                                                                           helper.getGraphicsString(),
                                                                            helper.getDurationUnits() );
 
                 // Build the outputs
@@ -272,8 +270,6 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
                 ChartEngine engine =
                         ChartEngineFactory.buildBoxPlotChartEngine( output,
                                                                     helper.getGraphicShape(),
-                                                                    helper.getTemplateResourceName(),
-                                                                    helper.getGraphicsString(),
                                                                     helper.getDurationUnits() );
 
                 Path outputImage = DataFactory.getPathFromPoolMetadata( outputDirectory,

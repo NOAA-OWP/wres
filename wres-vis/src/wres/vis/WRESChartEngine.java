@@ -35,7 +35,6 @@ class WRESChartEngine extends ChartEngine
      * @param sources The sources for the chart.
      * @param arguments The arguments.
      * @param defaultParameters Loaded default chart drawing parameters.
-     * @param overrideParameters Loaded override parameters or null if none.
      * @param diagonalDataSourceIndices Array of indices indicating the data sources which are actually defining
      *            diagonal lines to draw. From these, parameters will be extracted defining the diagonal line
      *            appearance. Note that such parameters must be defined for the series index -1 (i.e., the default
@@ -46,7 +45,6 @@ class WRESChartEngine extends ChartEngine
     WRESChartEngine( final List<XYChartDataSource> sources,
                      final ArgumentsProcessor arguments,
                      final ChartDrawingParameters defaultParameters,
-                     final ChartDrawingParameters overrideParameters,
                      final int[] diagonalDataSourceIndices,
                      final String axisToSquareAgainstDomain )
             throws ChartEngineException
@@ -59,13 +57,8 @@ class WRESChartEngine extends ChartEngine
             //For each data source index...
             for ( final int diagSourceIndex : diagonalDataSourceIndices )
             {
-                setupSeriesDrawingParametersForDiagonal( defaultParameters, overrideParameters, diagSourceIndex );
+                setupSeriesDrawingParametersForDiagonal( defaultParameters, diagSourceIndex );
             }
-        }
-
-        if ( overrideParameters != null )
-        {
-            overrideParameters( overrideParameters );
         }
         
         this.axisToSquareAgainstDomain = axisToSquareAgainstDomain;
@@ -74,11 +67,9 @@ class WRESChartEngine extends ChartEngine
     /**
      * Adds series drawing parameter for a diagonal series.
      * @param defaultParameters
-     * @param overrideParameters
      * @param diagSourceIndex Index of the diagonal source with the data source parameters.
      */
     private void setupSeriesDrawingParametersForDiagonal( ChartDrawingParameters defaultParameters,
-                                                          final ChartDrawingParameters overrideParameters,
                                                           int diagSourceIndex )
     {
         //Setup the default drawing parameters to use as a basis.  Note that the parameters will be stored
@@ -97,15 +88,6 @@ class WRESChartEngine extends ChartEngine
             if ( defaultParms != null )
             {
                 diagonalDrawingParameters.copyOverriddenParameters( defaultParms );
-            }
-        }
-        if ( overrideParameters != null )
-        {
-            final DataSourceDrawingParameters overrideParms =
-                    overrideParameters.getDataSourceParameters( diagSourceIndex );
-            if ( overrideParms != null )
-            {
-                diagonalDrawingParameters.copyOverriddenParameters( overrideParms );
             }
         }
 

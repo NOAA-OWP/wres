@@ -1,6 +1,5 @@
 package wres.config;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,11 +9,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.stream.Collectors;
 import javax.xml.XMLConstants;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
@@ -31,8 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
-import wres.config.generated.DestinationConfig;
-import wres.config.generated.GraphicalType;
 import wres.config.generated.ObjectFactory;
 import wres.config.generated.ProjectConfig;
 
@@ -64,24 +58,18 @@ public class ProjectConfigPlus
     private final String origin;
     private final String rawConfig;
     private final ProjectConfig projectConfig;
-    private final Map<DestinationConfig, String> graphicsStrings;
     private final List<ValidationEvent> validationEvents;
-
-    /** Used to find the end of the graphics custom configuration */
-    private static final String GFX_END_TAG = "</config>";
 
     private static final String XSD_NAME = "ProjectConfig.xsd";
 
     private ProjectConfigPlus( String origin,
                                String rawConfig,
                                ProjectConfig projectConfig,
-                               Map<DestinationConfig, String> graphicsStrings,
                                List<ValidationEvent> validationEvents )
     {
         this.origin = origin;
         this.rawConfig = rawConfig;
         this.projectConfig = projectConfig;
-        this.graphicsStrings = Collections.unmodifiableMap(graphicsStrings);
         List<ValidationEvent> copiedList = new ArrayList<>(validationEvents);
         this.validationEvents = Collections.unmodifiableList(copiedList);
     }
@@ -107,12 +95,6 @@ public class ProjectConfigPlus
     {
         // safety ops performed at construction
         return this.projectConfig;
-    }
-
-    public Map<DestinationConfig, String> getGraphicsStrings()
-    {
-        // safety ops performed at construction
-        return this.graphicsStrings;
     }
 
     public List<ValidationEvent> getValidationEvents()
@@ -191,18 +173,6 @@ public class ProjectConfigPlus
                 throw new IOException("Please add required sections in project config from "
                                       + origin + " : <inputs>, <outputs>, <pair>");
             }
-
-            for (final DestinationConfig d : projectConfig.getOutputs().getDestination())
-            {
-                if (d.getGraphical() != null && d.getGraphical().getConfig() != null)
-                {
-                    final GraphicalType.Config conf = d.getGraphical().getConfig();
-                    LOGGER.debug("Location of project for {} is line {} col {}",
-                                 d,
-                                 conf.sourceLocation().getLineNumber(),
-                                 conf.sourceLocation().getColumnNumber());
-                }
-            }
         }
         catch (final JAXBException je)
         {
@@ -224,16 +194,11 @@ public class ProjectConfigPlus
             throw new IOException( message, e );
         }
 
-        Map<DestinationConfig, String> visConfigs =
-                ProjectConfigPlus.getVisConfigs( projectConfig,
-                                                 rawConfig );
-
         List<ValidationEvent> validationEvents = validationEventCollector.call();
 
         return new ProjectConfigPlus( origin,
                                       rawConfig,
                                       projectConfig,
-                                      visConfigs,
                                       validationEvents );
     }
 
@@ -282,63 +247,6 @@ public class ProjectConfigPlus
         String rawConfig = String.join(System.lineSeparator(), xmlLines);
 
         return ProjectConfigPlus.from( rawConfig, projectConfigOrigin );
-    }
-
-
-    /**
-     * Get wres-vis graphical configuration xml strings mapped to Destinations
-     * @param projectConfig the config containing the destinations
-     * @param rawConfig the raw xml String that was parsed to produce projectConfig
-     * @return a Map of DestinationConfig to graphical configuration xml
-     */
-
-    private static Map<DestinationConfig, String> getVisConfigs( ProjectConfig projectConfig,
-                                                                 String rawConfig )
-    {
-        // To read the xml configuration for vis into a string, we go find the
-        // start of each, then find the first occurance of </config> ?
-
-        // Convert the rawConfig into lines for historical reasons.
-        // Could change the logic to only reference the string and skip this step.
-        List<String> xmlLines = new BufferedReader( new StringReader( rawConfig) )
-                .lines()
-                .collect( Collectors.toList() );
-
-        Map<DestinationConfig, String> visConfigs = new HashMap<>();
-
-        for (DestinationConfig d : projectConfig.getOutputs().getDestination())
-        {
-            if (d.getGraphical() != null && d.getGraphical().getConfig() != null)
-            {
-                GraphicalType.Config conf = d.getGraphical().getConfig();
-                int lineNum = conf.sourceLocation().getLineNumber();
-                int colNum = conf.sourceLocation().getColumnNumber();
-
-                LOGGER.debug("Location of config for {} is line {} col {}", d,
-                        lineNum, colNum);
-
-                // lines seem to be 1-based in sourceLocation.
-                StringBuilder config = new StringBuilder();
-                String result = xmlLines.get(lineNum - 1).substring(colNum - 1);
-
-                for (int i = lineNum; !result.contains(GFX_END_TAG); i++)
-                {
-                    config.append( result );
-                    config.append( System.lineSeparator() );
-                    result = xmlLines.get(i);
-                }
-
-                result = result.substring(0, result.indexOf(GFX_END_TAG));
-                config.append(result);
-
-                String configToAdd = config.toString();
-                visConfigs.put(d, configToAdd);
-
-                LOGGER.debug("Added following to visConfigs: {}", configToAdd);
-            }
-        }
-
-        return visConfigs;
     }
 
     @Override

@@ -129,8 +129,6 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                 Map<Object, ChartEngine> engines =
                         ChartEngineFactory.buildDiagramChartEngine( output,
                                                                     helper.getGraphicShape(),
-                                                                    helper.getTemplateResourceName(),
-                                                                    helper.getGraphicsString(),
                                                                     helper.getDurationUnits() );
 
                 // Build the outputs

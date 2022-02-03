@@ -40,16 +40,7 @@
         <destination type="numeric" decimalFormat="0.000000" />
         <destination type="pairs" decimalFormat="0.000000" />
         <destination type="graphic">
-            <graphical width="800" height="600" template="template/scenario007/testTemplateCopiedFromDefault.xml">
-                <!-- Test of the capability to override chart template options in project configuration. -->
-                <config>
-                    <chartDrawingParameters>
-                        <plotTitle>
-                            <text>OVERRIDDEN CHART DRAWING PARAMETERS TEST!
-@referenceTime@ Evaluation Period: @dataPoolingWindow(yyyy-MM-dd;GMT)@</text>
-                        </plotTitle>
-                    </chartDrawingParameters>
-                </config>
+            <graphical width="800" height="600">
                 <!-- Test the supression of graphical output for one metric -->
                 <suppressMetric>sample size</suppressMetric>
             </graphical>

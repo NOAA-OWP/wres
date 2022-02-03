@@ -178,7 +178,6 @@ public class WrdsNwmReaderTest
                                                         null,
                                                         null,
                                                         null,
-                                                        null,
                                                         null );
 
         ProjectConfig.Inputs inputs = new ProjectConfig.Inputs( null,
@@ -195,7 +194,6 @@ public class WrdsNwmReaderTest
                                                 null,
                                                 null,
                                                 features,
-                                                null,
                                                 null,
                                                 null,
                                                 null,
@@ -360,7 +358,6 @@ public class WrdsNwmReaderTest
                                                         null,
                                                         null,
                                                         null,
-                                                        null,
                                                         null );
 
         ProjectConfig.Inputs inputs = new ProjectConfig.Inputs( null,
@@ -377,7 +374,6 @@ public class WrdsNwmReaderTest
                                                 null,
                                                 null,
                                                 features,
-                                                null,
                                                 null,
                                                 null,
                                                 null,

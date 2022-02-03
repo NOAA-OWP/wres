@@ -164,7 +164,6 @@ public class FeatureFinder
                                                                filledSingletonFeatures,
                                                                filledGroupedFeatures,
                                                                originalPairDeclaration.getGridSelection(),
-                                                               originalPairDeclaration.isByTimeSeries(),
                                                                originalPairDeclaration.getLeadHours(),
                                                                originalPairDeclaration.getAnalysisDurations(),
                                                                originalPairDeclaration.getDates(),

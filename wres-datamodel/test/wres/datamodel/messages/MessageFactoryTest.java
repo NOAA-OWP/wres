@@ -492,11 +492,7 @@ public class MessageFactoryTest
                                +
                                "        <destination type=\"graphic\">\r\n"
                                +
-                               "            <graphical width=\"800\" height=\"600\" template=\"template/scenario007/testTemplateCopiedFromDefault.xml\">\r\n"
-                               +
-                               "                <!-- Test of the capability to override chart template options in project configuration. -->\r\n"
-                               +
-                               "                <config>fake drawing parameters</config>\r\n"
+                               "            <graphical width=\"800\" height=\"600\">\r\n"
                                +
                                "                <!-- Test the supression of graphical output for one metric -->\r\n"
                                +
@@ -525,9 +521,6 @@ public class MessageFactoryTest
                                                            .setHeight( 600 )
                                                            .setWidth( 800 )
                                                            .addIgnore( MetricName.SAMPLE_SIZE )
-                                                           .setTemplateName( "template/scenario007/"
-                                                                             + "testTemplateCopiedFromDefault.xml" )
-                                                           .setConfiguration( "fake drawing parameters" )
                                                            .setShape( GraphicShape.LEAD_THRESHOLD ) ) );
 
         Evaluation expected = Evaluation.newBuilder()

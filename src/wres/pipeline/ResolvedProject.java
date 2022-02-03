@@ -4,11 +4,9 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import wres.config.ProjectConfigPlus;
-import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;
@@ -97,19 +95,6 @@ class ResolvedProject
             throw new UnsupportedOperationException( "Might not be implemented" );
         }
         return this.projectIdentifier;
-    }
-
-
-    /**
-     * The graphics module needs to get its specific xml snippets from the
-     * project config.
-     * @return a Map from a DestinationConfig to a String
-     */
-
-    Map<DestinationConfig, String> getGraphicsStrings()
-    {
-        return this.getProjectConfigPlus()
-                   .getGraphicsStrings();
     }
     
     /**
