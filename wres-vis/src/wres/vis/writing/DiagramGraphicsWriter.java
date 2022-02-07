@@ -13,8 +13,8 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.Function;
 
-import ohd.hseb.charter.ChartEngine;
-import ohd.hseb.charter.ChartEngineException;
+import org.jfree.chart.JFreeChart;
+
 import wres.config.ProjectConfigException;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.DataFactory;
@@ -25,12 +25,13 @@ import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Outputs;
+import wres.vis.ChartBuildingException;
 import wres.vis.ChartEngineFactory;
 
 /**
  * Helps write charts comprising {@link DiagramStatisticOuter} to graphics formats.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class DiagramGraphicsWriter extends GraphicsWriter
@@ -126,13 +127,13 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                 // One helper per set of graphics parameters.
                 GraphicsHelper helper = GraphicsHelper.of( nextOutput );
                 
-                Map<Object, ChartEngine> engines =
+                Map<Object, JFreeChart> engines =
                         ChartEngineFactory.buildDiagramChartEngine( output,
                                                                     helper.getGraphicShape(),
                                                                     helper.getDurationUnits() );
 
                 // Build the outputs
-                for ( Entry<Object, ChartEngine> nextEntry : engines.entrySet() )
+                for ( Entry<Object, JFreeChart> nextEntry : engines.entrySet() )
                 {
                     // Build the output file name
                     Path outputImage = null;
@@ -160,16 +161,18 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                                 + "outputImage path" );
                     }
 
+                    JFreeChart chart = nextEntry.getValue();
+                    
                     // Write formats
                     Set<Path> finishedPaths = GraphicsWriter.writeGraphic( outputImage,
-                                                                           nextEntry.getValue(),
+                                                                           chart,
                                                                            nextOutput );
 
                     pathsWrittenTo.addAll( finishedPaths );
                 }
             }
         }
-        catch ( ChartEngineException | IOException e )
+        catch ( ChartBuildingException | IOException e )
         {
             throw new GraphicsWriteException( "Error while generating diagram charts: ", e );
         }
