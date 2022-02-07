@@ -14,9 +14,8 @@ import java.util.SortedSet;
 import java.util.function.Function;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.jfree.chart.JFreeChart;
 
-import ohd.hseb.charter.ChartEngine;
-import ohd.hseb.charter.ChartEngineException;
 import wres.config.ProjectConfigException;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.DataFactory;
@@ -28,12 +27,13 @@ import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Outputs;
+import wres.vis.ChartBuildingException;
 import wres.vis.ChartEngineFactory;
 
 /**
  * Helps write charts comprising {@link BoxplotStatisticOuter} to graphics formats.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class BoxPlotGraphicsWriter extends GraphicsWriter
@@ -202,31 +202,33 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
                 // One helper per set of graphics parameters.
                 GraphicsHelper helper = GraphicsHelper.of( nextOutput );
 
-                Map<Pair<TimeWindowOuter, OneOrTwoThresholds>, ChartEngine> engines =
+                Map<Pair<TimeWindowOuter, OneOrTwoThresholds>, JFreeChart> engines =
                         ChartEngineFactory.buildBoxPlotChartEnginePerPool( output,
                                                                            helper.getGraphicShape(),
                                                                            helper.getDurationUnits() );
 
                 // Build the outputs
-                for ( final Entry<Pair<TimeWindowOuter, OneOrTwoThresholds>, ChartEngine> nextEntry : engines.entrySet() )
+                for ( final Entry<Pair<TimeWindowOuter, OneOrTwoThresholds>, JFreeChart> nextEntry : engines.entrySet() )
                 {
                     Path outputImage = DataFactory.getPathFromPoolMetadata( outputDirectory,
-                                                                              metadata,
-                                                                              nextEntry.getKey().getLeft(),
-                                                                              helper.getDurationUnits(),
-                                                                              metricName,
-                                                                              null );
+                                                                            metadata,
+                                                                            nextEntry.getKey().getLeft(),
+                                                                            helper.getDurationUnits(),
+                                                                            metricName,
+                                                                            null );
+
+                    JFreeChart chart = nextEntry.getValue();
 
                     // Write formats
                     Set<Path> finishedPaths = GraphicsWriter.writeGraphic( outputImage,
-                                                                           nextEntry.getValue(),
+                                                                           chart,
                                                                            nextOutput );
 
                     pathsWrittenTo.addAll( finishedPaths );
                 }
             }
         }
-        catch ( ChartEngineException | IOException e )
+        catch ( ChartBuildingException | IOException e )
         {
             throw new GraphicsWriteException( "Error while generating box plot charts: ", e );
         }
@@ -267,25 +269,25 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
                 GraphicsHelper helper = GraphicsHelper.of( nextOutput );
 
                 // Build the chart engine
-                ChartEngine engine =
+                JFreeChart chart =
                         ChartEngineFactory.buildBoxPlotChartEngine( output,
                                                                     helper.getGraphicShape(),
                                                                     helper.getDurationUnits() );
 
                 Path outputImage = DataFactory.getPathFromPoolMetadata( outputDirectory,
-                                                                          metadata,
-                                                                          metricName,
-                                                                          null );
+                                                                        metadata,
+                                                                        metricName,
+                                                                        null );
 
                 // Write formats
                 Set<Path> finishedPaths = GraphicsWriter.writeGraphic( outputImage,
-                                                                       engine,
+                                                                       chart,
                                                                        nextOutput );
 
                 pathsWrittenTo.addAll( finishedPaths );
             }
         }
-        catch ( ChartEngineException | IOException e )
+        catch ( ChartBuildingException | IOException e )
         {
             throw new GraphicsWriteException( "Error while generating box plot charts: ", e );
         }

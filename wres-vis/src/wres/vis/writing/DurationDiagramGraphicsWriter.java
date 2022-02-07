@@ -12,8 +12,8 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.Function;
 
-import ohd.hseb.charter.ChartEngine;
-import ohd.hseb.charter.ChartEngineException;
+import org.jfree.chart.JFreeChart;
+
 import wres.config.ProjectConfigException;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.DataFactory;
@@ -22,16 +22,17 @@ import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.statistics.generated.Outputs;
+import wres.vis.ChartBuildingException;
 import wres.vis.ChartEngineFactory;
 
 /**
  * Helps write charts comprising {@link DurationDiagramStatisticOuter} to graphics formats.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class DurationDiagramGraphicsWriter extends GraphicsWriter
-        implements Function<List<DurationDiagramStatisticOuter>,Set<Path>>
+        implements Function<List<DurationDiagramStatisticOuter>, Set<Path>>
 {
 
     /**
@@ -65,7 +66,7 @@ public class DurationDiagramGraphicsWriter extends GraphicsWriter
         Objects.requireNonNull( output, "Specify non-null input data when writing duration diagram outputs." );
 
         Set<Path> paths = new HashSet<>();
-        
+
         // Iterate through each metric 
         SortedSet<MetricConstants> metrics =
                 Slicer.discover( output, DurationDiagramStatisticOuter::getMetricName );
@@ -88,7 +89,7 @@ public class DurationDiagramGraphicsWriter extends GraphicsWriter
                 paths.addAll( innerPathsWrittenTo );
             }
         }
-        
+
         return Collections.unmodifiableSet( paths );
     }
 
@@ -124,25 +125,26 @@ public class DurationDiagramGraphicsWriter extends GraphicsWriter
                 // One helper per set of graphics parameters.
                 GraphicsHelper helper = GraphicsHelper.of( nextOutput );
 
-                ChartEngine engine =
+                JFreeChart chart =
                         ChartEngineFactory.buildDurationDiagramChartEngine( output,
                                                                             helper.getGraphicShape(),
                                                                             helper.getDurationUnits() );
 
                 // Build the output file name
                 Path outputImage = DataFactory.getPathFromPoolMetadata( outputDirectory,
-                                                                          metadata,
-                                                                          metricName,
-                                                                          null );
+                                                                        metadata,
+                                                                        metricName,
+                                                                        null );
+
                 // Write formats
                 Set<Path> finishedPaths = GraphicsWriter.writeGraphic( outputImage,
-                                                                       engine,
+                                                                       chart,
                                                                        nextOutput );
 
                 pathsWrittenTo.addAll( finishedPaths );
             }
         }
-        catch ( ChartEngineException | IOException e )
+        catch ( ChartBuildingException | IOException e )
         {
             throw new GraphicsWriteException( "Error while generating duration diagram charts: ", e );
         }

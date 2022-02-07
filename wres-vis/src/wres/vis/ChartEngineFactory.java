@@ -1,9 +1,14 @@
 package wres.vis;
 
+import java.awt.Font;
+import java.awt.FontFormatException;
+import java.awt.GraphicsEnvironment;
 import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -36,6 +41,9 @@ import ohd.hseb.charter.datasource.instances.CategoricalXYChartDataSource;
 import ohd.hseb.charter.datasource.instances.DataSetXYChartDataSource;
 import ohd.hseb.charter.datasource.instances.NumericalXYChartDataSource;
 import ohd.hseb.charter.parameters.ChartDrawingParameters;
+import ohd.hseb.charter.parameters.SubPlotParameters;
+import ohd.hseb.charter.parameters.SubtitleParameters;
+import ohd.hseb.charter.parameters.ThresholdParameters;
 import ohd.hseb.hefs.utils.arguments.ArgumentsProcessor;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
 import ohd.hseb.hefs.utils.xml.XMLTools;
@@ -57,6 +65,7 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
+
 
 /**
  * Factory to use in order to construct a wres-vis chart.
@@ -253,9 +262,7 @@ public abstract class ChartEngineFactory
 
         // One diagram for each qualifier name in the diagram statistic. This accounts for diagrams that contain the
         // same metric dimensions multiple times, such as ensemble QQ diagrams
-        List<DiagramStatisticOuter> diagrams = ChartEngineFactory.getDecomposedDiagrams( inputSlice );
-
-        return diagrams;
+        return ChartEngineFactory.getDecomposedDiagrams( inputSlice );
     }
 
     /**
@@ -343,18 +350,15 @@ public abstract class ChartEngineFactory
      * @param usedPlotType Name of the resource to load which provides the default template for
      *            chart construction. May be null to use default template identified in static table.
      * @param templateName The name of the template to use based on the plot type.  
-     * @return A {@link ChartEngine} to be stored with the inputKeyInstance in a results map.
+     * @return A {@link JFreeChart} instance.
      * @param durationUnits the duration units
-     * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
-     * @throws WRESVisXMLReadingException when reading template fails.
+     * @throws ChartBuildingException If the chart fails to construct.
      */
-    private static WRESChartEngine
-            processReliabilityDiagram( Object inputKeyInstance,
-                                       List<DiagramStatisticOuter> input,
-                                       ChartType usedPlotType,
-                                       String templateName,
-                                       ChronoUnit durationUnits )
-                    throws ChartEngineException, WRESVisXMLReadingException
+    private static JFreeChart processReliabilityDiagram( Object inputKeyInstance,
+                                                         List<DiagramStatisticOuter> input,
+                                                         ChartType usedPlotType,
+                                                         String templateName,
+                                                         ChronoUnit durationUnits )
     {
         final List<XYChartDataSource> dataSources = new ArrayList<>();
         int[] diagonalDataSourceIndices = null;
@@ -393,11 +397,11 @@ public abstract class ChartEngineFactory
         ChartParameters parameters = new ChartParameters( templateName, inputSlice.size() );
 
         //Build the ChartEngine instance.
-        return generateChartEngine( dataSources,
-                                    arguments,
-                                    parameters,
-                                    diagonalDataSourceIndices,
-                                    axisToSquareAgainstDomain );
+        return generateJFreeChart( dataSources,
+                                   arguments,
+                                   parameters,
+                                   diagonalDataSourceIndices,
+                                   axisToSquareAgainstDomain );
     }
 
 
@@ -409,18 +413,14 @@ public abstract class ChartEngineFactory
      *            chart construction. May be null to use default template identified in static table.
      * @param templateName The name of the template to use based on the plot type.  
      * @param durationUnits the duration units
-     * @return A {@link ChartEngine} to be stored with the inputKeyInstance in a results map.
-     * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
-     * @throws WRESVisXMLReadingException when reading template fails
+     * @return A {@link JFreeChart} instance.
+     * @throws ChartBuildingException If the chart fails to construct.
      */
-    private static WRESChartEngine
-            processROCDiagram(
-                               Object inputKeyInstance,
-                               List<DiagramStatisticOuter> input,
-                               ChartType usedPlotType,
-                               String templateName,
-                               ChronoUnit durationUnits )
-                    throws ChartEngineException, WRESVisXMLReadingException
+    private static JFreeChart processROCDiagram( Object inputKeyInstance,
+                                                 List<DiagramStatisticOuter> input,
+                                                 ChartType usedPlotType,
+                                                 String templateName,
+                                                 ChronoUnit durationUnits )
     {
         final List<XYChartDataSource> dataSources = new ArrayList<>();
         int[] diagonalDataSourceIndices = null;
@@ -449,11 +449,11 @@ public abstract class ChartEngineFactory
         ChartParameters parameters = new ChartParameters( templateName, inputSlice.size() );
 
         //Build the ChartEngine instance.
-        return generateChartEngine( dataSources,
-                                    arguments,
-                                    parameters,
-                                    diagonalDataSourceIndices,
-                                    axisToSquareAgainstDomain );
+        return generateJFreeChart( dataSources,
+                                   arguments,
+                                   parameters,
+                                   diagonalDataSourceIndices,
+                                   axisToSquareAgainstDomain );
     }
 
 
@@ -465,17 +465,14 @@ public abstract class ChartEngineFactory
      *            chart construction. May be null to use default template identified in static table.
      * @param templateName The name of the template to use based on the plot type.  
      * @param durationUnits the duration units
-     * @return A {@link ChartEngine} to be stored with the inputKeyInstance in a results map.
-     * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
-     * @throws WRESVisXMLReadingException when reading template fails
+     * @return A {@link JFreeChart} instance.
+     * @throws ChartBuildingException If the chart fails to construct.
      */
-    private static WRESChartEngine
-            processQQDiagram( Object inputKeyInstance,
-                              List<DiagramStatisticOuter> input,
-                              ChartType usedPlotType,
-                              String templateName,
-                              ChronoUnit durationUnits )
-                    throws ChartEngineException, WRESVisXMLReadingException
+    private static JFreeChart processQQDiagram( Object inputKeyInstance,
+                                                List<DiagramStatisticOuter> input,
+                                                ChartType usedPlotType,
+                                                String templateName,
+                                                ChronoUnit durationUnits )
     {
         final List<XYChartDataSource> dataSources = new ArrayList<>();
         int[] diagonalDataSourceIndices = null;
@@ -507,11 +504,11 @@ public abstract class ChartEngineFactory
         ChartParameters parameters = new ChartParameters( templateName, inputSlice.size() );
 
         //Build the ChartEngine instance.
-        return generateChartEngine( dataSources,
-                                    arguments,
-                                    parameters,
-                                    diagonalDataSourceIndices,
-                                    axisToSquareAgainstDomain );
+        return generateJFreeChart( dataSources,
+                                   arguments,
+                                   parameters,
+                                   diagonalDataSourceIndices,
+                                   axisToSquareAgainstDomain );
     }
 
     /**
@@ -522,17 +519,14 @@ public abstract class ChartEngineFactory
      *            chart construction. May be null to use default template identified in static table.
      * @param templateName The name of the template to use based on the plot type.  
      * @param durationUnits the duration units
-     * @return A {@link ChartEngine} to be stored with the inputKeyInstance in a results map.
-     * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
-     * @throws WRESVisXMLReadingException when reading template fails
+     * @return A {@link JFreeChart} instance.
+     * @throws ChartBuildingException If the chart fails to construct.
      */
-    private static WRESChartEngine
-            processEnsembleQQDiagram( Object inputKeyInstance,
-                                      List<DiagramStatisticOuter> input,
-                                      ChartType usedPlotType,
-                                      String templateName,
-                                      ChronoUnit durationUnits )
-                    throws ChartEngineException, WRESVisXMLReadingException
+    private static JFreeChart processEnsembleQQDiagram( Object inputKeyInstance,
+                                                        List<DiagramStatisticOuter> input,
+                                                        ChartType usedPlotType,
+                                                        String templateName,
+                                                        ChronoUnit durationUnits )
     {
         final List<XYChartDataSource> dataSources = new ArrayList<>();
         int[] diagonalDataSourceIndices = null;
@@ -564,11 +558,11 @@ public abstract class ChartEngineFactory
         ChartParameters parameters = new ChartParameters( templateName, inputSlice.size() );
 
         //Build the ChartEngine instance.
-        return generateChartEngine( dataSources,
-                                    arguments,
-                                    parameters,
-                                    diagonalDataSourceIndices,
-                                    axisToSquareAgainstDomain );
+        return generateJFreeChart( dataSources,
+                                   arguments,
+                                   parameters,
+                                   diagonalDataSourceIndices,
+                                   axisToSquareAgainstDomain );
     }
 
     /**
@@ -579,17 +573,14 @@ public abstract class ChartEngineFactory
      *            chart construction. May be null to use default template identified in static table.
      * @param templateName The name of the template to use based on the plot type.  
      * @param durationUnits the duration units
-     * @return A {@link ChartEngine} to be stored with the inputKeyInstance in a results map.
-     * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
-     * @throws WRESVisXMLReadingException when reading template fails.
+     * @return A {@link JFreeChart} instance.
+     * @throws ChartBuildingException If the chart fails to construct.
      */
-    private static WRESChartEngine
-            processRankHistogram( Object inputKeyInstance,
-                                  List<DiagramStatisticOuter> input,
-                                  ChartType usedPlotType,
-                                  String templateName,
-                                  ChronoUnit durationUnits )
-                    throws ChartEngineException, WRESVisXMLReadingException
+    private static JFreeChart processRankHistogram( Object inputKeyInstance,
+                                                    List<DiagramStatisticOuter> input,
+                                                    ChartType usedPlotType,
+                                                    String templateName,
+                                                    ChronoUnit durationUnits )
     {
         final List<XYChartDataSource> dataSources = new ArrayList<>();
         int[] diagonalDataSourceIndices = null;
@@ -619,30 +610,25 @@ public abstract class ChartEngineFactory
         ChartParameters parameters = new ChartParameters( templateName, inputSlice.size() );
 
         //Build the ChartEngine instance.
-        return generateChartEngine( dataSources,
-                                    arguments,
-                                    parameters,
-                                    diagonalDataSourceIndices,
-                                    axisToSquareAgainstDomain );
+        return generateJFreeChart( dataSources,
+                                   arguments,
+                                   parameters,
+                                   diagonalDataSourceIndices,
+                                   axisToSquareAgainstDomain );
     }
 
     /**Calls the process methods as appropriate for the given plot type.
      * @param input The metric output to plot.
      * @param graphicShape The shape of the graphic to plot.
      * @param durationUnits the duration units
-     * @return A map of keys to ChartEngine instances.  The instances can be
-     *         passed to {@link ChartTools#generateOutputImageFile(java.io.File, JFreeChart, int, int)} in order to
-     *         construct the image file.  The keys depend on the provided plot type selection.
-     * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
-     * @throws WRESVisXMLReadingException when reading template fails.
+     * @return A map of charts.
+     * @throws ChartBuildingException If the chart fails to construct.
      */
-    public static ConcurrentMap<Object, ChartEngine>
-            buildDiagramChartEngine( List<DiagramStatisticOuter> input,
-                                     GraphicShape graphicShape,
-                                     ChronoUnit durationUnits )
-                    throws ChartEngineException, WRESVisXMLReadingException
+    public static ConcurrentMap<Object, JFreeChart> buildDiagramChartEngine( List<DiagramStatisticOuter> input,
+                                                                             GraphicShape graphicShape,
+                                                                             ChronoUnit durationUnits )
     {
-        final ConcurrentMap<Object, ChartEngine> results = new ConcurrentSkipListMap<>();
+        final ConcurrentMap<Object, JFreeChart> results = new ConcurrentSkipListMap<>();
 
         // Find the metadata for the first element, which is sufficient here
         MetricConstants metricName = input.get( 0 ).getMetricName();
@@ -664,7 +650,7 @@ public abstract class ChartEngineFactory
         //For each key instance, do the following....
         for ( final Object keyInstance : keySetValues )
         {
-            ChartEngine engine;
+            JFreeChart engine;
             switch ( metricName )
             {
                 case RELIABILITY_DIAGRAM:
@@ -722,15 +708,12 @@ public abstract class ChartEngineFactory
      * @param input Input providing the box plot data.
      * @param templateName The name of the template to use, if not the standard template.
      * @param durationUnits the duration units
-     * @return A single instance of {@link WRESChartEngine}.
-     * @throws ChartEngineException If the chart could not build for whatever reason.
-     * @throws WRESVisXMLReadingException when reading template fails.
+     * @return A single instance of {@link JFreeChart}.
+     * @throws ChartBuildingException If the chart could not build for whatever reason.
      */
-    private static WRESChartEngine
-            processBoxPlotErrorsDiagram( List<BoxplotStatisticOuter> input,
-                                         String templateName,
-                                         ChronoUnit durationUnits )
-                    throws ChartEngineException, WRESVisXMLReadingException
+    private static JFreeChart processBoxPlotErrorsDiagram( List<BoxplotStatisticOuter> input,
+                                                           String templateName,
+                                                           ChronoUnit durationUnits )
     {
         final List<XYChartDataSource> dataSources = new ArrayList<>();
         ArgumentProcessor arguments = null;
@@ -762,11 +745,11 @@ public abstract class ChartEngineFactory
         ChartParameters parameters = new ChartParameters( templateName, 1 );
 
         //Build the ChartEngine instance.
-        return ChartEngineFactory.generateChartEngine( dataSources,
-                                                       arguments,
-                                                       parameters,
-                                                       diagonalDataSourceIndices,
-                                                       axisToSquareAgainstDomain );
+        return ChartEngineFactory.generateJFreeChart( dataSources,
+                                                      arguments,
+                                                      parameters,
+                                                      diagonalDataSourceIndices,
+                                                      axisToSquareAgainstDomain );
     }
 
     /**
@@ -774,17 +757,15 @@ public abstract class ChartEngineFactory
      * @param input The metric output to plot.
      * @param graphicShape The shape of the graphic to plot.
      * @param durationUnits the duration units
-     * @return Map where the keys are instances of {@link Pair} with the two keys being an integer and a threshold.
-     * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
-     * @throws WRESVisXMLReadingException when reading template fails
+     * @return a map of charts.
+     * @throws ChartBuildingException If the chart fails to construct.
      */
-    public static Map<Pair<TimeWindowOuter, OneOrTwoThresholds>, ChartEngine>
+    public static Map<Pair<TimeWindowOuter, OneOrTwoThresholds>, JFreeChart>
             buildBoxPlotChartEnginePerPool( List<BoxplotStatisticOuter> input,
                                             GraphicShape graphicShape,
                                             ChronoUnit durationUnits )
-                    throws ChartEngineException, WRESVisXMLReadingException
     {
-        final Map<Pair<TimeWindowOuter, OneOrTwoThresholds>, ChartEngine> results = new ConcurrentSkipListMap<>();
+        final Map<Pair<TimeWindowOuter, OneOrTwoThresholds>, JFreeChart> results = new ConcurrentSkipListMap<>();
 
         // Find the metadata for the first element, which is sufficient here
         MetricConstants metricName = input.get( 0 ).getMetricName();
@@ -801,9 +782,9 @@ public abstract class ChartEngineFactory
             // Skip empty outputs: #65503
             if ( next.getData().getStatisticsCount() != 0 )
             {
-                ChartEngine engine = ChartEngineFactory.processBoxPlotErrorsDiagram( List.of( next ),
-                                                                                     templateName,
-                                                                                     durationUnits );
+                JFreeChart engine = ChartEngineFactory.processBoxPlotErrorsDiagram( List.of( next ),
+                                                                                    templateName,
+                                                                                    durationUnits );
                 results.put( Pair.of( next.getMetadata().getTimeWindow(),
                                       next.getMetadata().getThresholds() ),
                              engine );
@@ -824,16 +805,13 @@ public abstract class ChartEngineFactory
      * @param input The metric output to plot.
      * @param graphicShape The shape of the graphic to plot.
      * @param durationUnits the duration units
-     * @return Map where the keys are instances of {@link Pair} with the two keys being an integer and a threshold.
-     * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
-     * @throws WRESVisXMLReadingException when reading template fails
+     * @return A {@link JFreeChart} instance.
+     * @throws ChartBuildingException If the chart fails to construct.
      * @throws NullPointerException if the config, input or durationUnits is null
-     * @throws IllegalArgumentException if no box plots are available
      */
-    public static ChartEngine buildBoxPlotChartEngine( List<BoxplotStatisticOuter> input,
-                                                       GraphicShape graphicShape,
-                                                       ChronoUnit durationUnits )
-            throws ChartEngineException, WRESVisXMLReadingException
+    public static JFreeChart buildBoxPlotChartEngine( List<BoxplotStatisticOuter> input,
+                                                      GraphicShape graphicShape,
+                                                      ChronoUnit durationUnits )
     {
         Objects.requireNonNull( input );
 
@@ -865,26 +843,24 @@ public abstract class ChartEngineFactory
      * @param input The metric output to plot.
      * @param graphicShape The shape of the graphic to plot.
      * @param durationUnits the duration units
-     * @return a map of {@link ChartEngine} containing the plots
-     * @throws ChartEngineException if the ChartEngine fails to construct
-     * @throws WRESVisXMLReadingException when reading template fails
+     * @return a map of {@link JFreeChart} containing the plots
+     * @throws ChartBuildingException if the chart fails to construct
      */
-    public static ConcurrentMap<MetricConstants, ChartEngine>
+    public static ConcurrentMap<MetricConstants, JFreeChart>
             buildScoreOutputChartEngine( List<DoubleScoreStatisticOuter> input,
                                          GraphicShape graphicShape,
                                          ChronoUnit durationUnits )
-                    throws ChartEngineException, WRESVisXMLReadingException
     {
-        final ConcurrentMap<MetricConstants, ChartEngine> results = new ConcurrentSkipListMap<>();
+        final ConcurrentMap<MetricConstants, JFreeChart> results = new ConcurrentSkipListMap<>();
 
         final Map<MetricConstants, List<DoubleScoreComponentOuter>> slicedInput =
                 Slicer.filterByMetricComponent( input );
         for ( final Map.Entry<MetricConstants, List<DoubleScoreComponentOuter>> entry : slicedInput.entrySet() )
         {
-            final ChartEngine engine = buildScoreOutputChartEngineForOneComponent( input.get( 0 ).getMetricName(),
-                                                                                   entry.getValue(),
-                                                                                   graphicShape,
-                                                                                   durationUnits );
+            JFreeChart engine = buildScoreOutputChartEngineForOneComponent( input.get( 0 ).getMetricName(),
+                                                                            entry.getValue(),
+                                                                            graphicShape,
+                                                                            durationUnits );
             results.put( entry.getKey(), engine );
         }
         return results;
@@ -897,18 +873,13 @@ public abstract class ChartEngineFactory
      * @param input The metric output to plot.   
      * @param graphicShape The shape of the graphic to plot.
      * @param durationUnits the duration units
-     * @return A {@link ChartEngine} that can be used to build the {@link JFreeChart} and output the image. This can be
-     *         passed to {@link ChartTools#generateOutputImageFile(java.io.File, JFreeChart, int, int)} in order to
-     *         construct the image file.
-     * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
-     * @throws WRESVisXMLReadingException when reading template fails
+     * @return A {@link JFreeChart} instance.
+     * @throws ChartBuildingException If the chart fails to construct.
      */
-    private static ChartEngine
-            buildScoreOutputChartEngineForOneComponent( MetricConstants metricName,
-                                                        List<DoubleScoreComponentOuter> input,
-                                                        GraphicShape graphicShape,
-                                                        ChronoUnit durationUnits )
-                    throws ChartEngineException, WRESVisXMLReadingException
+    private static JFreeChart buildScoreOutputChartEngineForOneComponent( MetricConstants metricName,
+                                                                          List<DoubleScoreComponentOuter> input,
+                                                                          GraphicShape graphicShape,
+                                                                          ChronoUnit durationUnits )
     {
 
         // Find the metadata for the first element, which is sufficient here
@@ -977,11 +948,11 @@ public abstract class ChartEngineFactory
                                                           source.getNumberOfSeries() );
 
         //Build the ChartEngine instance.
-        return generateChartEngine( List.of( source ),
-                                    arguments,
-                                    parameters,
-                                    null,
-                                    null );
+        return generateJFreeChart( List.of( source ),
+                                   arguments,
+                                   parameters,
+                                   null,
+                                   null );
     }
 
 
@@ -991,15 +962,12 @@ public abstract class ChartEngineFactory
      * @param input the statistics to plot.
      * @param graphicShape The shape of the graphic to plot.
      * @param durationUnits the duration units
-     * @return {@link ChartEngine} ready for plot production.
-     * @throws ChartEngineException If the {@link ChartEngine} fails to build for any reason.
-     * @throws WRESVisXMLReadingException when reading template fails
+     * @return {@link JFreeChart} ready for plot production.
+     * @throws ChartBuildingException If the chart fails to build for any reason.
      */
-    public static ChartEngine
-            buildDurationDiagramChartEngine( List<DurationDiagramStatisticOuter> input,
-                                             GraphicShape graphicShape,
-                                             ChronoUnit durationUnits )
-                    throws ChartEngineException, WRESVisXMLReadingException
+    public static JFreeChart buildDurationDiagramChartEngine( List<DurationDiagramStatisticOuter> input,
+                                                              GraphicShape graphicShape,
+                                                              ChronoUnit durationUnits )
     {
         // Find the metadata for the first element, which is sufficient here
         MetricConstants metricName = input.get( 0 ).getMetricName();
@@ -1026,21 +994,18 @@ public abstract class ChartEngineFactory
         arguments.addBaselineArguments( metadata, metricName );
 
         //Build the source.
-        XYChartDataSource source = null;
-
-        //Setup the assumed source and arguments.
-        source = XYChartDataSourceFactory.ofPairedOutputInstantDuration( 0, input );
+        XYChartDataSource source = XYChartDataSourceFactory.ofPairedOutputInstantDuration( 0, input );
 
         // Create the chart parameters
         ChartParameters parameters = new ChartParameters( templateName,
                                                           source.getNumberOfSeries() );
 
         //Build the ChartEngine instance.
-        return generateChartEngine( List.of( source ),
-                                    arguments,
-                                    parameters,
-                                    null,
-                                    null );
+        return generateJFreeChart( List.of( source ),
+                                   arguments,
+                                   parameters,
+                                   null,
+                                   null );
     }
 
 
@@ -1049,15 +1014,12 @@ public abstract class ChartEngineFactory
      * @param input The input for which to build the categorical plot.
      * @param graphicShape The shape of the graphic to plot.
      * @param durationUnits the duration units
-     * @return A {@link ChartEngine} ready to be used to build a chart.
-     * @throws ChartEngineException A problem was encountered building the {@link ChartEngine}.
-     * @throws WRESVisXMLReadingException when reading templates fails
+     * @return A {@link JFreeChart} ready to be used to build a chart.
+     * @throws ChartBuildingException A problem was encountered building the chart.
      */
-    public static ChartEngine
-            buildCategoricalDurationScoreChartEngine( List<DurationScoreStatisticOuter> input,
-                                                      GraphicShape graphicShape,
-                                                      ChronoUnit durationUnits )
-                    throws ChartEngineException, WRESVisXMLReadingException
+    public static JFreeChart buildCategoricalDurationScoreChartEngine( List<DurationScoreStatisticOuter> input,
+                                                                       GraphicShape graphicShape,
+                                                                       ChronoUnit durationUnits )
     {
         // Find the metadata for the first element, which is sufficient here
         MetricConstants metricName = input.get( 0 ).getMetricName();
@@ -1092,20 +1054,11 @@ public abstract class ChartEngineFactory
                                                           source.getNumberOfSeries() );
 
         //Build the ChartEngine instance.
-        return generateChartEngine( List.of( source ),
-                                    arguments,
-                                    parameters,
-                                    null,
-                                    null );
-    }
-
-    @SuppressWarnings( "serial" )
-    private static class WRESVisXMLReadingException extends IOException
-    {
-        public WRESVisXMLReadingException( String message, Throwable t )
-        {
-            super( message, t );
-        }
+        return generateJFreeChart( List.of( source ),
+                                   arguments,
+                                   parameters,
+                                   null,
+                                   null );
     }
 
     /**
@@ -1115,11 +1068,10 @@ public abstract class ChartEngineFactory
      *         passed to {@link ChartTools#generateOutputImageFile(java.io.File, JFreeChart, int, int)} in order to
      *         construct the image file.
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
-     * @throws WRESVisXMLReadingException when reading or parsing the template fails.
      */
     public static ChartEngine buildSingleValuedPairsChartEngine( final Pool<Pair<Double, Double>> input,
                                                                  final ChronoUnit durationUnits )
-            throws ChartEngineException, WRESVisXMLReadingException
+            throws ChartEngineException
     {
 
         String templateName = "singleValuedPairsTemplate.xml";
@@ -1137,7 +1089,7 @@ public abstract class ChartEngineFactory
         return ChartTools.buildChartEngine( List.of( source ),
                                             arguments,
                                             templateName,
-                                            null);
+                                            null );
     }
 
     /**
@@ -1193,24 +1145,98 @@ public abstract class ChartEngineFactory
      *            use of the constructConnectedPointsDataSource method.
      * @param axisToSquareAgainstDomain A string indicating the axes to square against the domain; either "left" or
      *            "right".
-     * @return A {@link WRESChartEngine} instance ready to use.
-     * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
-     * @throws WRESVisXMLReadingException when reading or parsing template fails
+     * @return A {@link JFreeChart} instance ready to use.
+     * @throws ChartBuildingException If the chart could not be created.
      */
 
-    public static WRESChartEngine generateChartEngine( final List<XYChartDataSource> dataSources,
-                                                       final ArgumentsProcessor arguments,
-                                                       final ChartParameters chartParameters,
-                                                       final int[] diagonalDataSourceIndices,
-                                                       final String axisToSquareAgainstDomain )
-            throws ChartEngineException, WRESVisXMLReadingException
+    public static JFreeChart generateJFreeChart( final List<XYChartDataSource> dataSources,
+                                                 final ArgumentsProcessor arguments,
+                                                 final ChartParameters chartParameters,
+                                                 final int[] diagonalDataSourceIndices,
+                                                 final String axisToSquareAgainstDomain )
     {
-        return new WRESChartEngine( dataSources,
-                                    arguments,
-                                    chartParameters.getParameters(),
-                                    diagonalDataSourceIndices,
-                                    axisToSquareAgainstDomain );
+        try
+        {
+            ChartEngine engine = new WRESChartEngine( dataSources,
+                                                      arguments,
+                                                      chartParameters.getParameters(),
+                                                      diagonalDataSourceIndices,
+                                                      axisToSquareAgainstDomain );
+
+            ChartEngineFactory.prepareChartEngineForWriting( engine );
+
+            return engine.buildChart();
+        }
+        catch ( ChartEngineException | FontFormatException | XYChartDataSourceException | IOException e )
+        {
+            throw new ChartBuildingException( "Encountered an error while building a chart.", e );
+        }
     }
+
+    /**
+     * Overrides the appearance of the chart to support comparisons between SVG and image outputs across platforms.  
+     * 
+     * @param engine The charting engine to modify.  This is modified in place.
+     * @throws FontLoadingException If the liberation font, captured in LiberationSans-Regular.ttf, 
+     *            which should be on the classpath when this is executed, cannot be found.
+     * @throws IOException The font file cannot be opened and used to create a font for whatever reason.
+     * @throws FontFormatException The format of the font information cannot be understood.
+     * @throws FontLoadingException If the fon could not be loaded.
+     */
+    private static void prepareChartEngineForWriting( ChartEngine engine )
+            throws IOException, FontFormatException
+    {
+        // #81628 change.  Create the chart and force it to use a Liberation Sans font.  Below is a test run.
+        // It will need to be enhanced later to modify *all* fonts in the JFreeChart.
+        // Create the chart
+        String fontResource = "LiberationSans-Regular.ttf";
+        URL fontUrl = ChartEngineFactory.class.getClassLoader().getResource( fontResource );
+
+        // Load the font and force it into the chart.
+        if ( Objects.isNull( fontUrl ) )
+        {
+            throw new FontLoadingException( "Could not find the " + fontResource
+                                            + " file on the class path." );
+        }
+
+        try
+        {
+            // Create from file, not stream
+            // https://stackoverflow.com/questions/38783010/huge-amount-of-jf-tmp-files-in-var-cache-tomcat7-temp
+            File fontFile = new File( fontUrl.toURI() );
+            Font font = Font.createFont( Font.TRUETYPE_FONT, fontFile ).deriveFont( 10.0f );
+
+            // Register font with graphics env
+            GraphicsEnvironment graphics = GraphicsEnvironment.getLocalGraphicsEnvironment();
+            graphics.registerFont( font );
+
+            //Set all ChartEngine fonts to be the liberation font with size 10.
+            engine.getChartParameters().getPlotTitle().setFont( font );
+            engine.getChartParameters().getLegend().getLegendTitle().setFont( font );
+            engine.getChartParameters().getLegend().getLegendEntryFont().setFont( font );
+            engine.getChartParameters().getDomainAxis().getLabel().setFont( font ); //One shared domain axis.
+            for ( SubPlotParameters subPlot : engine.getChartParameters().getSubPlotParameters() ) //Range axes by subplot.
+            {
+                subPlot.getLeftAxis().getLabel().setFont( font ); //Font is used for axis label and tick marks.
+                subPlot.getRightAxis().getLabel().setFont( font ); //Font is used for axis label and ticks marks.
+            }
+            for ( SubtitleParameters parms : engine.getChartParameters().getSubtitleList().getSubtitleList() )
+            {
+                parms.setFont( font );
+            }
+            for ( ThresholdParameters parms : engine.getChartParameters()
+                                                    .getThresholdList()
+                                                    .getThresholdParametersList() )
+            {
+                parms.getLabel().setFont( font );
+            }
+        }
+        catch ( URISyntaxException e )
+        {
+            throw new IOException( "While attempting to read a font.", e );
+        }
+    }
+
 
     /**
      * Creates a small bag of chart parameters from input strings in XML format.
@@ -1236,11 +1262,10 @@ public abstract class ChartEngineFactory
          * Create an instance.
          * @param templateName The name of the template system resource or file. It will be loaded here.
          * @param seriesCount The number of series. If greater than 100, no legend is visible.
-         * @throws WRESVisXMLReadingException if the parameters could not be created from the strings
+         * @throws ChartBuildingException if the parameters could not be created from the strings
          */
 
         private ChartParameters( String templateName, int seriesCount )
-                throws WRESVisXMLReadingException
         {
             // Load the template parameters.  This will first attempt to load them as a system resource on the class 
             // path and then as a file from the file system.  If neither works, it throws an exception.
@@ -1265,11 +1290,11 @@ public abstract class ChartEngineFactory
             }
             catch ( GenericXMLReadingHandlerException e )
             {
-                throw new WRESVisXMLReadingException( "Unable to load default chart drawing parameters from resource "
-                                                      + "or file with name '"
-                                                      + templateName
-                                                      + "': ",
-                                                      e );
+                throw new ChartBuildingException( "Unable to load default chart drawing parameters from resource "
+                                                  + "or file with name '"
+                                                  + templateName
+                                                  + "': ",
+                                                  e );
             }
             finally
             {

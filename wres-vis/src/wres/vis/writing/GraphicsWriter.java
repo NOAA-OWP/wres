@@ -1,13 +1,8 @@
 package wres.vis.writing;
 
-import java.awt.Font;
-import java.awt.FontFormatException;
-import java.awt.GraphicsEnvironment;
 import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.temporal.ChronoUnit;
@@ -27,12 +22,6 @@ import org.jfree.graphics2d.svg.SVGUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ohd.hseb.charter.ChartEngine;
-import ohd.hseb.charter.ChartEngineException;
-import ohd.hseb.charter.datasource.XYChartDataSourceException;
-import ohd.hseb.charter.parameters.SubPlotParameters;
-import ohd.hseb.charter.parameters.SubtitleParameters;
-import ohd.hseb.charter.parameters.ThresholdParameters;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Outputs.GraphicFormat;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
@@ -42,7 +31,7 @@ import wres.statistics.generated.Outputs.SvgFormat;
 /**
  * Helps to write a {@link ChartEngine} to a graphic in various formats.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 abstract class GraphicsWriter
@@ -101,30 +90,25 @@ abstract class GraphicsWriter
      * Writes an output chart to a prescribed set of graphics formats.
      *
      * @param path the path to write, without the image format extension
-     * @param engine the chart engine
+     * @param chart the chart
      * @param dest the destination configuration
      * @return the path actually written
      * @throws GraphicsWriteException if the chart could not be written
      */
 
     static Set<Path> writeGraphic( Path path,
-                                   ChartEngine engine,
+                                   JFreeChart chart,
                                    Outputs outputs )
     {
         Objects.requireNonNull( path );
-        Objects.requireNonNull( engine );
+        Objects.requireNonNull( chart );
         Objects.requireNonNull( outputs );
 
         Set<Path> returnMe = new TreeSet<>();
 
         try
         {
-            // Adjust the chart engine
-            GraphicsWriter.prepareChartEngineForWriting( engine );
 
-            // Create the chart
-            JFreeChart chart = engine.buildChart();
-            
             // Default is png
             if ( outputs.hasPng() )
             {
@@ -172,8 +156,7 @@ abstract class GraphicsWriter
 
             return Collections.unmodifiableSet( returnMe );
         }
-        catch ( IOException | ChartEngineException | XYChartDataSourceException | FontFormatException
-                | CouldNotLoadRequiredFontException e )
+        catch ( IOException e )
         {
             // Clean up, to allow recovery. See #83816
             GraphicsWriter.deletePaths( returnMe );
@@ -232,69 +215,6 @@ abstract class GraphicsWriter
                 LOGGER.error( "Failed to delete a path created before an exception was encountered: {}.",
                               nextPath );
             }
-        }
-    }
-
-    /**
-     * Overrides the appearance of the chart to support comparisons between SVG and image outputs across platforms.  
-     * 
-     * @param engine The charting engine to modify.  This is modified in place.
-     * @throws CouldNotLoadRequiredFontException If the liberation font, captured in LiberationSans-Regular.ttf, 
-     *            which should be on the classpath when this is executed, cannot be found.
-     * @throws IOException The font file cannot be opened and used to create a font for whatever reason.
-     * @throws FontFormatException The format of the font information cannot be understood.
-     */
-    private static void prepareChartEngineForWriting( ChartEngine engine )
-            throws IOException, FontFormatException
-    {
-        //#81628 change.  Create the chart and force it to use a Liberation Sans font.  Below is a test run.
-        //It will need to be enhanced later to modify *all* fonts in the JFreeChart.
-        // Create the chart
-        String fontResource = "LiberationSans-Regular.ttf";
-        URL fontUrl = GraphicsWriter.class.getClassLoader().getResource( fontResource );
-
-        // Load the font and force it into the chart.
-        if ( Objects.isNull( fontUrl ) )
-        {
-            throw new CouldNotLoadRequiredFontException( "Could not find the " + fontResource
-                                                         + " file on the class path." );
-        }
-
-        try
-        {
-            // Create from file, not stream
-            // https://stackoverflow.com/questions/38783010/huge-amount-of-jf-tmp-files-in-var-cache-tomcat7-temp
-            File fontFile = new File( fontUrl.toURI() );
-            Font font = Font.createFont( Font.TRUETYPE_FONT, fontFile ).deriveFont( 10.0f );
-
-            // Register font with graphics env
-            GraphicsEnvironment graphics = GraphicsEnvironment.getLocalGraphicsEnvironment();
-            graphics.registerFont( font );
-
-            //Set all ChartEngine fonts to be the liberation font with size 10.
-            engine.getChartParameters().getPlotTitle().setFont( font );
-            engine.getChartParameters().getLegend().getLegendTitle().setFont( font );
-            engine.getChartParameters().getLegend().getLegendEntryFont().setFont( font );
-            engine.getChartParameters().getDomainAxis().getLabel().setFont( font ); //One shared domain axis.
-            for ( SubPlotParameters subPlot : engine.getChartParameters().getSubPlotParameters() ) //Range axes by subplot.
-            {
-                subPlot.getLeftAxis().getLabel().setFont( font ); //Font is used for axis label and tick marks.
-                subPlot.getRightAxis().getLabel().setFont( font ); //Font is used for axis label and ticks marks.
-            }
-            for ( SubtitleParameters parms : engine.getChartParameters().getSubtitleList().getSubtitleList() )
-            {
-                parms.setFont( font );
-            }
-            for ( ThresholdParameters parms : engine.getChartParameters()
-                                                    .getThresholdList()
-                                                    .getThresholdParametersList() )
-            {
-                parms.getLabel().setFont( font );
-            }
-        }
-        catch ( URISyntaxException e )
-        {
-            throw new IOException( "While attempting to read a font.", e );
         }
     }
 

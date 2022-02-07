@@ -15,11 +15,10 @@ import java.util.SortedSet;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
+import org.jfree.chart.JFreeChart;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ohd.hseb.charter.ChartEngine;
-import ohd.hseb.charter.ChartEngineException;
 import wres.config.ProjectConfigException;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.DataFactory;
@@ -29,16 +28,17 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.statistics.generated.Outputs;
+import wres.vis.ChartBuildingException;
 import wres.vis.ChartEngineFactory;
 
 /**
  * Helps write charts comprising {@link DoubleScoreStatisticOuter} to graphics formats.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class DoubleScoreGraphicsWriter extends GraphicsWriter
-        implements Function<List<DoubleScoreStatisticOuter>,Set<Path>>
+        implements Function<List<DoubleScoreStatisticOuter>, Set<Path>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( DoubleScoreGraphicsWriter.class );
 
@@ -73,7 +73,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
         Objects.requireNonNull( output, "Specify non-null input data when writing duration score outputs." );
 
         Set<Path> paths = new HashSet<>();
-        
+
         // Iterate through each metric 
         SortedSet<MetricConstants> metrics = Slicer.discover( output, DoubleScoreStatisticOuter::getMetricName );
         for ( MetricConstants next : metrics )
@@ -102,7 +102,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                 }
             }
         }
-        
+
         return Collections.unmodifiableSet( paths );
     }
 
@@ -137,7 +137,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
             {
                 // One helper per set of graphics parameters.
                 GraphicsHelper helper = GraphicsHelper.of( nextOutputs );
-                
+
                 // As many outputs as secondary thresholds if secondary thresholds are defined
                 // and the output type is OutputTypeSelection.THRESHOLD_LEAD.
                 List<List<DoubleScoreStatisticOuter>> allOutputs = new ArrayList<>();
@@ -161,7 +161,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
 
                 for ( List<DoubleScoreStatisticOuter> nextOutput : allOutputs )
                 {
-                    ConcurrentMap<MetricConstants, ChartEngine> engines =
+                    ConcurrentMap<MetricConstants, JFreeChart> engines =
                             ChartEngineFactory.buildScoreOutputChartEngine( nextOutput,
                                                                             helper.getGraphicShape(),
                                                                             helper.getDurationUnits() );
@@ -187,7 +187,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                 }
             }
         }
-        catch ( ChartEngineException | IOException e )
+        catch ( ChartBuildingException | IOException e )
         {
             throw new GraphicsWriteException( "Error while generating double score charts: ", e );
         }
@@ -206,11 +206,12 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
      * @param outputsDescription a description of the outputs required
      * @return the paths written
      * @throws IOException if the graphic could not be created or written
+     * @throws ChartBuildingException if the chart could not be created
      */
 
     private static Set<Path> writeNextGroupOfDestinations( Path outputDirectory,
                                                            PoolMetadata metadata,
-                                                           ConcurrentMap<MetricConstants, ChartEngine> engines,
+                                                           ConcurrentMap<MetricConstants, JFreeChart> engines,
                                                            MetricConstants metricName,
                                                            String append,
                                                            Outputs outputsDescription )
@@ -219,7 +220,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
         Set<Path> pathsWrittenTo = new HashSet<>();
 
         // Build the outputs
-        for ( final Entry<MetricConstants, ChartEngine> nextEntry : engines.entrySet() )
+        for ( final Entry<MetricConstants, JFreeChart> nextEntry : engines.entrySet() )
         {
 
             // Qualify with the component name unless there is one component and it is main
@@ -231,14 +232,16 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
 
             // Build the output file name
             Path outputImage = DataFactory.getPathFromPoolMetadata( outputDirectory,
-                                                                      metadata,
-                                                                      append,
-                                                                      metricName,
-                                                                      componentName );
+                                                                    metadata,
+                                                                    append,
+                                                                    metricName,
+                                                                    componentName );
+
+            JFreeChart chart = nextEntry.getValue();
 
             // Write formats
             Set<Path> finishedPaths = GraphicsWriter.writeGraphic( outputImage,
-                                                                   nextEntry.getValue(),
+                                                                   chart,
                                                                    outputsDescription );
 
             pathsWrittenTo.addAll( finishedPaths );
