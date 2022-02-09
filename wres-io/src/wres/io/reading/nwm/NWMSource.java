@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,11 +18,14 @@ import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.WRESCallable;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Features;
+import wres.io.data.caching.MeasurementUnits;
+import wres.io.data.caching.TimeScales;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.reading.BasicSource;
 import wres.io.reading.DataSource;
 import wres.io.reading.IngestResult;
+import wres.io.reading.PreIngestException;
 import wres.io.utilities.Database;
 import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
@@ -38,6 +42,10 @@ public class NWMSource extends BasicSource
 
     private final SystemSettings systemSettings;
     private final Database database;
+
+    private final Features featuresCache;
+    private final TimeScales timeScalesCache;
+    private final MeasurementUnits measurementUnitsCache;
     private final DataSources dataSourcesCache;
     private boolean alreadyFound;
 
@@ -52,6 +60,9 @@ public class NWMSource extends BasicSource
 	public NWMSource( SystemSettings systemSettings,
                       Database database,
                       DataSources dataSourcesCache,
+                      Features featuresCache,
+                      TimeScales timeScalesCache,
+                      MeasurementUnits measurementUnitsCache,
                       ProjectConfig projectConfig,
                       DataSource dataSource )
     {
@@ -59,6 +70,9 @@ public class NWMSource extends BasicSource
         this.systemSettings = systemSettings;
         this.database = database;
         this.dataSourcesCache = dataSourcesCache;
+        this.featuresCache = featuresCache;
+        this.timeScalesCache = timeScalesCache;
+        this.measurementUnitsCache = measurementUnitsCache;
 	}
 
 	private SystemSettings getSystemSettings()
@@ -75,8 +89,23 @@ public class NWMSource extends BasicSource
     {
         return this.dataSourcesCache;
     }
-    
-	@Override
+
+    private Features getFeaturesCache()
+    {
+        return this.featuresCache;
+    }
+
+    private TimeScales getTimeScalesCache()
+    {
+        return this.timeScalesCache;
+    }
+
+    private MeasurementUnits getMeasurementUnitsCache()
+    {
+        return this.measurementUnitsCache;
+    }
+
+    @Override
 	public List<IngestResult> save() throws IOException
 	{
 	    int tryCount = 0;
@@ -124,7 +153,9 @@ public class NWMSource extends BasicSource
 
 			if(NetCDF.isGridded( var ))
             {
-                hash = NetCDF.getGriddedUniqueIdentifier( source, this.getFilename() );
+                hash = NetCDF.getGriddedUniqueIdentifier( source,
+                                                          this.getFilename(),
+                                                          var.getShortName() );
 
                 try
                 {
@@ -154,6 +185,9 @@ public class NWMSource extends BasicSource
 
                 saver = new GriddedNWMValueSaver( this.getSystemSettings(),
                                                   this.getDatabase(),
+                                                  this.getFeaturesCache(),
+                                                  this.getTimeScalesCache(),
+                                                  this.getMeasurementUnitsCache(),
                                                   this.getProjectConfig(),
                                                   this.getDataSource(),
                                                   hash );
@@ -170,13 +204,17 @@ public class NWMSource extends BasicSource
         }
         else
         {
-            throw new IOException( "The NetCDF file at '" +
-                                   this.getFilename()
-                                   + "' did not contain the "
-                                   + "requested variable, "
-                                   + this.getSpecifiedVariableName()
-                                   + "." );
+            List<String> variableNames = source.getVariables()
+                                               .stream()
+                                               .map( Variable::getShortName )
+                                               .collect( Collectors.toList());
+            throw new PreIngestException( "The NetCDF file at '" +
+                                          this.getFilename()
+                                          + "' did not contain the "
+                                          + "requested variable, "
+                                          + this.getSpecifiedVariableName()
+                                          + ". Available variables: "
+                                          + variableNames );
         }
 	}
-
 }

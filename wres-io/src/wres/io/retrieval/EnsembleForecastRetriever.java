@@ -29,13 +29,6 @@ import wres.io.utilities.ScriptBuilder;
 
 class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
 {
-
-    /**
-     * Script string re-used several times. 
-     */
-
-    private static final String FROM_WRES_TIME_SERIES_TS = "FROM wres.TimeSeries TS";
-
     /**
      * Error message when attempting to retrieve by identifier. See #68334.
      */
@@ -210,6 +203,16 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         // Add basic constraints at zero tabs
         this.addProjectFeatureVariableAndMemberConstraints( dataScripter, 0 );
 
+        dataScripter.addTab().addLine( "GROUP BY S.source_id," );
+        dataScripter.addTab( 2 ).addLine( "S.measurementunit_id," );
+        dataScripter.addTab( 2 ).addLine( "TimeScale.duration_ms," );
+        dataScripter.addTab( 2 ).addLine( "TimeScale.function_name" );
+        dataScripter.addLine( ") AS metadata " );
+        dataScripter.addLine( "INNER JOIN wres.TimeSeries TS" );
+        dataScripter.addTab().addLine( "ON TS.source_id = metadata.series_id" );
+        dataScripter.addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
+        dataScripter.addTab().addLine( "ON TSV.timeseries_id = TS.timeseries_id" );
+
         // Add time window constraint at zero tabs
         this.addTimeWindowClause( dataScripter, 0 );
 
@@ -217,13 +220,14 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         this.addSeasonClause( dataScripter, 1 );
 
         // Add GROUP BY clause
-        dataScripter.addLine( "GROUP BY TS.feature_id,"
-                              + "reference_time, "
-                              + "series_id, "
+        dataScripter.addLine( "GROUP BY metadata.series_id,"
+                              + "metadata.reference_time, "
+                              + "metadata.feature_id, "
                               + "TSV.lead, "
-                              + "TS.scale_period, "
-                              + "TS.scale_function, "
-                              + "TS.measurementunit_id;" );
+                              + "metadata.scale_period, "
+                              + "metadata.scale_function, "
+                              + "metadata.measurementunit_id,"
+                              + "metadata.occurrences" );
 
         // Log the script
         super.logScript( dataScripter );
@@ -375,22 +379,36 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         ScriptBuilder scripter = new ScriptBuilder();
 
         scripter.addLine( "SELECT " );
-        scripter.addTab().addLine( "TS.source_id AS series_id," );
-        scripter.addTab().addLine( "TS.initialization_date AS reference_time," );
-        scripter.addTab().addLine( "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead AS valid_time," );
+        scripter.addTab().addLine( "metadata.series_id AS series_id," );
+        scripter.addTab().addLine( "metadata.reference_time + INTERVAL '1' MINUTE * TSV.lead AS valid_time," );
+        scripter.addTab().addLine( "metadata.reference_time," );
         scripter.addTab().addLine( "ARRAY_AGG(TSV.series_value ORDER BY TS.ensemble_id) AS ensemble_members," );
         scripter.addTab().addLine( "ARRAY_AGG(TS.ensemble_id ORDER BY TS.ensemble_id) AS ensemble_ids," );
-        scripter.addTab().addLine( "TS.scale_period," );
-        scripter.addTab().addLine( "TS.scale_function," );
-        scripter.addTab().addLine( "TS.measurementunit_id," );
-        scripter.addTab().addLine( "TS.feature_id," );
-        // To discover duplicates
-        scripter.addTab().addLine( "COUNT(TS.ensemble_id) / COUNT(DISTINCT TS.ensemble_id) AS occurrences" );
-        scripter.addLine( FROM_WRES_TIME_SERIES_TS );
-        scripter.addTab().addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
-        scripter.addTab( 2 ).addLine( "ON TSV.timeseries_id = TS.timeseries_id" );
+        scripter.addTab().addLine( "metadata.measurementunit_id," );
+        scripter.addTab().addLine( "metadata.scale_period," );
+        scripter.addTab().addLine( "metadata.scale_function," );
+        scripter.addTab().addLine( "metadata.feature_id," );
+        // See #56214-272. Add the count to allow re-duplication of duplicate series
+        scripter.addTab().addLine( "metadata.occurrences" );
+        scripter.addLine( "FROM" );
+        scripter.addLine( "(" );
+        scripter.addTab().addLine( "SELECT " );
+        scripter.addTab( 2 ).addLine( "S.source_id AS series_id," );
+        scripter.addTab( 2 ).addLine( "MAX( reference_time ) AS reference_time," );
+        scripter.addTab( 2 ).addLine( "S.feature_id," );
+        scripter.addTab( 2 ).addLine( "S.measurementunit_id," );
+        scripter.addTab( 2 ).addLine( "TimeScale.duration_ms AS scale_period," );
+        scripter.addTab( 2 ).addLine( "TimeScale.function_name AS scale_function," );
+
+        scripter.addTab( 2 ).addLine( "COUNT(*) AS occurrences " );
+        scripter.addTab().addLine( "FROM wres.Source S" );
         scripter.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
-        scripter.addTab( 2 ).addLine( "ON PS.source_id = TS.source_id" );
+        scripter.addTab( 2 ).addLine( "ON PS.source_id = S.source_id" );
+        scripter.addTab().addLine( "INNER JOIN wres.TimeSeriesReferenceTime TSRT" );
+        scripter.addTab( 2 ).addLine( "ON TSRT.source_id = S.source_id" );
+        // TODO: use the timescale_id and TimeScales cache instead
+        scripter.addTab().addLine( "LEFT JOIN wres.TimeScale TimeScale" );
+        scripter.addTab( 2 ).addLine( "ON TimeScale.timescale_id = S.timescale_id" );
 
         return scripter.toString();
     }
@@ -402,7 +420,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
 
     private EnsembleForecastRetriever( Builder builder )
     {
-        super( builder, "TS.initialization_date", "TSV.lead" );
+        super( builder, "metadata.reference_time", "TSV.lead" );
         this.ensembleIdsToInclude = builder.ensembleIdsToInclude;
         this.ensembleIdsToExclude = builder.ensembleIdsToExclude;
         this.ensemblesCache = builder.ensemblesCache;

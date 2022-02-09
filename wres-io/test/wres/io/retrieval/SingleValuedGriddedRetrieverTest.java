@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import static wres.datamodel.time.ReferenceTimeType.T0;
 import static wres.io.retrieval.RetrieverTestConstants.*;
 
 import java.net.URI;
@@ -13,6 +14,7 @@ import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
@@ -58,6 +60,7 @@ public class SingleValuedGriddedRetrieverTest
     private Executor mockExecutor;
     private TestDatabase testDatabase;
     private MeasurementUnits measurementUnitsCache;
+    private Features featuresCache;
     private HikariDataSource dataSource;
     private Connection rawConnection;
 
@@ -86,7 +89,7 @@ public class SingleValuedGriddedRetrieverTest
      * The measurement units for testing.
      */
 
-    private static final String UNITS = "CFS";
+    private static final String UNITS = "m3/s";
 
     @BeforeClass
     public static void oneTimeSetup()
@@ -120,6 +123,7 @@ public class SingleValuedGriddedRetrieverTest
 
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
         this.measurementUnitsCache = new MeasurementUnits( this.wresDatabase );
+        this.featuresCache = new Features( this.wresDatabase );
 
         // Create the tables
         this.addTheDatabaseAndTables();
@@ -203,6 +207,9 @@ public class SingleValuedGriddedRetrieverTest
                 this.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
 
         this.testDatabase.createMeasurementUnitTable( liquibaseDatabase );
+        this.testDatabase.createTimeScaleTable( liquibaseDatabase );
+        this.testDatabase.createFeatureTable( liquibaseDatabase );
+        this.testDatabase.createTimeSeriesReferenceTimeTable( liquibaseDatabase );
         this.testDatabase.createSourceTable( liquibaseDatabase );
         this.testDatabase.createProjectTable( liquibaseDatabase );
         this.testDatabase.createProjectSourceTable( liquibaseDatabase );
@@ -227,7 +234,8 @@ public class SingleValuedGriddedRetrieverTest
 
     private void addFiveGriddedSourcesToTheDatabase() throws SQLException
     {
-
+        long measurementUnitId = this.measurementUnitsCache.getOrCreateMeasurementUnitId( UNITS );
+        long featureId = this.featuresCache.getOrCreateFeatureId( FEATURE );
         // Add a project 
         Project project =
                 new Project( this.mockSystemSettings,
@@ -251,36 +259,56 @@ public class SingleValuedGriddedRetrieverTest
                                      + ",{0},''"
                                      + SingleValuedGriddedRetrieverTest.LRB.value()
                                      + "'')";
+
+
         for ( int i = 0; i < 5; i++ )
         {
             int nextLeadMinutes = ( i + 1 ) * 60;
             Instant nextTime = sequenceOrigin.plus( Duration.ofHours( 3 ).multipliedBy( ( i + 1 ) ) );
 
-            SourceDetails.SourceKey sourceKey =
-                    SourceDetails.createKey( URI.create( "/this/is/just/a/test/source_" + ( i + 1 ) + ".nc" ),
-                                             nextTime.toString(),
-                                             nextLeadMinutes,
-                                             "abc12" + ( i + 3 ) );
-
-            SourceDetails sourceDetails = new SourceDetails( sourceKey );
+            SourceDetails sourceDetails = new SourceDetails( "abc12" + ( i + 3 ) );
+            sourceDetails.setSourcePath( URI.create( "/this/is/just/a/test/source_" + ( i + 1 ) + ".nc" ) );
+            sourceDetails.setLead( nextLeadMinutes );
             sourceDetails.setIsPointData( false );
+            sourceDetails.setVariableName( VARIABLE_NAME );
+            sourceDetails.setMeasurementUnitId( measurementUnitId );
+            sourceDetails.setFeatureId( featureId );
             sourceDetails.save( this.wresDatabase );
 
             assertTrue( sourceDetails.performedInsert() );
 
             Long sourceId = sourceDetails.getId();
-
             assertNotNull( sourceId );
+
+            // Insert the reference datetime
+            String[] row = new String[3];
+            row[0] = Long.toString( sourceId );
+
+            // Reference time (instant)
+            row[1] = nextTime.toString();
+
+                // Reference time type
+            row[2] = T0.toString();
+            ArrayList<String[]> rows = new ArrayList<>( 1 );
+            rows.add( row );
+
+            List<String> columns = List.of( "source_id",
+                                            "reference_time",
+                                            "reference_time_type" );
+            boolean[] quotedColumns = { false, true, true };
+            this.wresDatabase.copy( "wres.TimeSeriesReferenceTime",
+                                    columns,
+                                    rows,
+                                    quotedColumns );
 
             // Add a project source
             String insert = MessageFormat.format( projectSourceInsert, sourceId );
 
             DataScripter script = new DataScripter( this.wresDatabase, insert );
-            int rows = script.execute();
+            int rowCount = script.execute();
 
-            assertEquals( 1, rows );
+            assertEquals( 1, rowCount );
         }
-
     }
 
 }

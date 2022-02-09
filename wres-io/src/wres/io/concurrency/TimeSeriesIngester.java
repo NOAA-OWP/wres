@@ -9,6 +9,7 @@ import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -27,17 +28,19 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MissingValues;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.Variables;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
+import wres.io.data.caching.TimeScales;
 import wres.io.reading.DataSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
@@ -86,7 +89,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
     private final SystemSettings systemSettings;
     private final Database database;
     private final Features featuresCache;
-    private final Variables variablesCache;
+    private final TimeScales timeScalesCache;
     private final Ensembles ensemblesCache;
     private final MeasurementUnits measurementUnitsCache;
     private final ProjectConfig projectConfig;
@@ -98,7 +101,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
     public static TimeSeriesIngester of( SystemSettings systemSettings,
                                          Database database,
                                          Features featuresCache,
-                                         Variables variablesCache,
+                                         TimeScales timeScalesCache,
                                          Ensembles ensemblesCache,
                                          MeasurementUnits measurementUnitsCache,
                                          ProjectConfig projectConfig,
@@ -118,13 +121,13 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                                           .getUnit() );
         Objects.requireNonNull( ensemblesCache );
         Objects.requireNonNull( featuresCache );
-        Objects.requireNonNull( variablesCache );
+        Objects.requireNonNull( timeScalesCache );
         Objects.requireNonNull( measurementUnitsCache );
 
         return new TimeSeriesIngester( systemSettings,
                                        database,
                                        featuresCache,
-                                       variablesCache,
+                                       timeScalesCache,
                                        ensemblesCache,
                                        measurementUnitsCache,
                                        projectConfig,
@@ -136,7 +139,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
     private TimeSeriesIngester( SystemSettings systemSettings,
                                 Database database,
                                 Features featuresCache,
-                                Variables variablesCache,
+                                TimeScales timeScalesCache,
                                 Ensembles ensemblesCache,
                                 MeasurementUnits measurementUnitsCache,
                                 ProjectConfig projectConfig,
@@ -147,7 +150,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( database );
         Objects.requireNonNull( featuresCache );
-        Objects.requireNonNull( variablesCache );
+        Objects.requireNonNull( timeScalesCache );
         Objects.requireNonNull( measurementUnitsCache );
         Objects.requireNonNull( ensemblesCache );
         Objects.requireNonNull( projectConfig );
@@ -159,7 +162,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         this.systemSettings = systemSettings;
         this.database = database;
         this.featuresCache = featuresCache;
-        this.variablesCache = variablesCache;
+        this.timeScalesCache = timeScalesCache;
         this.ensemblesCache = ensemblesCache;
         this.measurementUnitsCache = measurementUnitsCache;
         this.projectConfig = projectConfig;
@@ -175,25 +178,42 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         List<IngestResult> results;
         URI location = this.getLocation();
 
-        Instant now = Instant.now();
         byte[] rawHash = this.identifyTimeSeries( this.getTimeSeries(), "" );
         String hash = Hex.encodeHexString( rawHash, false );
 
-        SourceDetails.SourceKey sourceKey =
-                new SourceDetails.SourceKey( location,
-                                             now.toString(),
-                                             null,
-                                             hash );
-
         boolean foundAlready;
         boolean completed;
-        SourceDetails source;
         SourceCompletedDetails completedDetails;
         Database database = this.getDatabase();
+        SourceDetails source = this.createSourceDetails( hash );
+
+        // Lead column is only for raster data as of 2022-01
+        source.setLead( null );
+        source.setIsPointData( true );
+        source.setSourcePath( location );
+        TimeSeriesMetadata metadata = this.getTimeSeries()
+                                          .getMetadata();
+        String measurementUnit = metadata.getUnit();
+        FeatureKey feature = metadata.getFeature();
+        TimeScaleOuter timeScale = metadata.getTimeScale();
+
+        String variableName = metadata.getVariableName();
+        source.setVariableName( variableName );
 
         try
         {
-            source = this.createSourceDetails( sourceKey );
+            long measurementUnitId = this.getMeasurementUnitId( measurementUnit );
+            long featureId = this.getFeatureId( feature );
+            Long timeScaleId = null;
+
+            if ( timeScale != null )
+            {
+                timeScaleId = this.getTimeScaleId( timeScale );
+            }
+
+            source.setMeasurementUnitId( measurementUnitId );
+            source.setFeatureId( featureId );
+            source.setTimeScaleId( timeScaleId );
             source.save( database );
             foundAlready = !source.performedInsert();
         }
@@ -315,6 +335,9 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         Event<?> event = events.iterator()
                                .next();
 
+        TimeSeriesMetadata metadata = timeSeries.getMetadata();
+        this.insertReferenceTimeRows( database, sourceId, metadata.getReferenceTimes() );
+
         if ( event.getValue() instanceof Ensemble )
         {
             LOGGER.debug( "Found a TimeSeries<Ensemble>" );
@@ -356,6 +379,54 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
             throw new UnsupportedOperationException( "Unable to ingest value "
                                                      + event.getValue() );
         }
+    }
+
+    private void insertReferenceTimeRows( Database database,
+                                          long sourceId,
+                                          Map<ReferenceTimeType,Instant> referenceTimes )
+    {
+        int rowCount = referenceTimes.size();
+
+        if ( rowCount == 0 )
+        {
+            throw new PreIngestException( "At least one reference datetime is required until we refactor TSV to permit zero." );
+
+            // TODO: refactor wres.TimeSeriesValue to use valid datetimes, then:
+            //return;
+        }
+
+        if ( rowCount != 1 )
+        {
+            throw new PreIngestException( "Exactly one reference datetime is required until we allow callers to declare which one to use at evaluation time." );
+            // TODO: add post-ingest pre-retrieval validation and/or
+            //     optional declaration to disambiguate, then remove this block.
+        }
+
+        List<String[]> rows = new ArrayList<>( rowCount );
+
+        for ( Map.Entry<ReferenceTimeType,Instant> referenceTime : referenceTimes.entrySet() )
+        {
+            String[] row = new String[3];
+            row[0] = Long.toString( sourceId );
+
+            // Reference time (instant)
+            row[1] = referenceTime.getValue()
+                                  .toString();
+
+            // Reference time type
+            row[2] = referenceTime.getKey()
+                                  .toString();
+            rows.add( row );
+        }
+
+        List<String> columns = List.of( "source_id",
+                                        "reference_time",
+                                        "reference_time_type" );
+        boolean[] quotedColumns = { false, true, true };
+        database.copy( "wres.TimeSeriesReferenceTime",
+                       columns,
+                       rows,
+                       quotedColumns );
     }
 
     /**
@@ -425,7 +496,6 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                                             long timeSeriesId,
                                             Instant referenceDatetime,
                                             Event<Double> valueAndValidDateTime )
-            throws IngestException
     {
 
         Instant validDatetime = valueAndValidDateTime.getTime();
@@ -451,33 +521,22 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                                       Ensembles ensemblesCache,
                                       TimeSeries<Double> timeSeries,
                                       long sourceId )
-            throws IngestException
     {
         wres.io.data.details.TimeSeries databaseTimeSeries;
-        String measurementUnit = timeSeries.getMetadata()
-                                           .getUnit();
-        String variableName = timeSeries.getMetadata()
-                                        .getVariableName();
-        FeatureKey featureKey = timeSeries.getMetadata()
-                                          .getFeature();
+
         try
         {
             databaseTimeSeries = this.getDbTimeSeries( database,
                                                        ensemblesCache,
-                                                       timeSeries,
-                                                       measurementUnit,
-                                                       sourceId,
-                                                       variableName,
-                                                       featureKey );
+                                                       sourceId );
             // The following indirectly calls save:
             return databaseTimeSeries.getTimeSeriesID();
         }
         catch ( SQLException se )
         {
-            throw new IngestException( "Failed to get TimeSeries info for "
+            throw new IngestException( "Failed to get trace info for "
                                        + "timeSeries=" + timeSeries
-                                       + " source=" + sourceId
-                                       + " measurementUnit=" + measurementUnit,
+                                       + " source=" + sourceId,
                                        se );
         }
     }
@@ -486,34 +545,23 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                                                       TimeSeries<Ensemble> timeSeries,
                                                       long ensembleId,
                                                       long sourceId )
-            throws IngestException
     {
         wres.io.data.details.TimeSeries databaseTimeSeries;
-        String measurementUnit = timeSeries.getMetadata()
-                                           .getUnit();
-        String variableName = timeSeries.getMetadata()
-                                        .getVariableName();
-        FeatureKey feature = timeSeries.getMetadata()
-                                       .getFeature();
 
         try
         {
             databaseTimeSeries = this.getDbTimeSeriesForEnsembleTrace( database,
-                                                                       timeSeries,
                                                                        ensembleId,
-                                                                       measurementUnit,
-                                                                       sourceId,
-                                                                       variableName,
-                                                                       feature );
+                                                                       sourceId );
             // The following indirectly calls save:
             return databaseTimeSeries.getTimeSeriesID();
         }
         catch ( SQLException se )
         {
-            throw new IngestException( "Failed to get TimeSeries info for "
+            throw new IngestException( "Failed to get trace info for "
                                        + "timeSeries=" + timeSeries
                                        + " source=" + sourceId
-                                       + " measurementUnit=" + measurementUnit,
+                                       + " ensembleId=" + ensembleId,
                                        se );
         }
     }
@@ -521,47 +569,23 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
 
     private wres.io.data.details.TimeSeries getDbTimeSeriesForEnsembleTrace(
             Database database,
-            TimeSeries<Ensemble> ensembleTimeSeries,
             long ensembleId,
-            String measurementUnit,
-            long sourceId,
-            String variableName,
-            FeatureKey feature )
+            long sourceId )
             throws SQLException
     {
-        Instant referenceDatetime = this.getReferenceDatetime( ensembleTimeSeries );
-        wres.io.data.details.TimeSeries databaseTimeSeries =
-                new wres.io.data.details.TimeSeries( database,
-                                                     ensembleId,
-                                                     this.getMeasurementUnitId( measurementUnit ),
-                                                     referenceDatetime,
-                                                     sourceId,
-                                                     variableName,
-                                                     this.getFeatureId( feature ) );
-        databaseTimeSeries.setTimeScale( ensembleTimeSeries.getTimeScale() );
-        return databaseTimeSeries;
+        return new wres.io.data.details.TimeSeries( database,
+                                            ensembleId,
+                                            sourceId );
     }
 
     private wres.io.data.details.TimeSeries getDbTimeSeries( Database database,
                                                              Ensembles ensemblesCache,
-                                                             TimeSeries<Double> timeSeries,
-                                                             String measurementUnit,
-                                                             long sourceId,
-                                                             String variableName,
-                                                             FeatureKey feature )
+                                                             long sourceId )
             throws SQLException
     {
-        Instant referenceDatetime = this.getReferenceDatetime( timeSeries );
-        wres.io.data.details.TimeSeries databaseTimeSeries =
-                new wres.io.data.details.TimeSeries( database,
-                                                     ensemblesCache.getDefaultEnsembleID(),
-                                                     this.getMeasurementUnitId( measurementUnit ),
-                                                     referenceDatetime,
-                                                     sourceId,
-                                                     variableName,
-                                                     this.getFeatureId( feature ) );
-        databaseTimeSeries.setTimeScale( timeSeries.getTimeScale() );
-        return databaseTimeSeries;
+        return new wres.io.data.details.TimeSeries( database,
+                                            ensemblesCache.getDefaultEnsembleID(),
+                                            sourceId );
     }
 
     private Instant getReferenceDatetime( TimeSeries<?> timeSeries )
@@ -598,6 +622,12 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
     {
         Features featuresCache = this.getFeaturesCache();
         return featuresCache.getOrCreateFeatureId( featureKey );
+    }
+
+    private long getTimeScaleId( TimeScaleOuter timeScale ) throws SQLException
+    {
+        TimeScales timeScalesCache = this.getTimeScalesCache();
+        return timeScalesCache.getOrCreateTimeScaleId( timeScale );
     }
 
     private byte[] identifyTimeSeries( TimeSeries<?> timeSeries,
@@ -638,7 +668,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
      * @return a SourceDetails
      */
 
-    SourceDetails createSourceDetails( SourceDetails.SourceKey sourceKey )
+    SourceDetails createSourceDetails( String sourceKey )
     {
         return new SourceDetails( sourceKey );
     }
@@ -691,9 +721,9 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         return this.featuresCache;
     }
 
-    private Variables getVariablesCache()
+    private TimeScales getTimeScalesCache()
     {
-        return this.variablesCache;
+        return this.timeScalesCache;
     }
 
     private MeasurementUnits getMeasurementUnitsCache()

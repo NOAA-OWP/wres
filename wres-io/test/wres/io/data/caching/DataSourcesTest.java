@@ -3,7 +3,6 @@ package wres.io.data.caching;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -76,21 +75,30 @@ public class DataSourcesTest
     private DataSources initializeDataSources()
     {
         LOGGER.debug( "initializeDataSources started" );
-        DataProvider data = DataBuilder.with( "output_time", "path", "hash", "is_point_data", "source_id" )
-                                       .addRow( "2018-08-08T00:00:00Z",
-                                                "/somewhere/somewhere/1.ext",
+        DataProvider data = DataBuilder.with( "path", "hash", "is_point_data", "source_id", "variable_name", "feature_id", "measurementunit_id", "timescale_id" )
+                                       .addRow( "/somewhere/somewhere/1.ext",
                                                 "1234",
                                                 false,
+                                                1,
+                                                "variable1",
+                                                1,
+                                                1,
                                                 1 )
-                                       .addRow( "2018-08-08T01:00:00Z",
-                                                "/somewhere/somewhere/2.ext",
+                                       .addRow( "/somewhere/somewhere/2.ext",
                                                 "12345",
                                                 false,
+                                                2,
+                                                "variable2",
+                                                2,
+                                                2,
                                                 2 )
-                                       .addRow( "2018-08-08T02:00:00Z",
-                                                "/somewhere/somewhere/3.ext",
+                                       .addRow( "/somewhere/somewhere/3.ext",
                                                 "123456",
                                                 false,
+                                                3,
+                                                "variable3",
+                                                3,
+                                                3,
                                                 3 )
                                        .build();
         DataSources dataSources = new DataSources( this.wresDatabase );
@@ -101,25 +109,27 @@ public class DataSourcesTest
 
     @Test
     public void getTwiceFromDataSources()
-            throws SQLException, URISyntaxException, LiquibaseException
+            throws SQLException, LiquibaseException
     {
         LOGGER.debug( "getTwiceFromDataSources began" );
 
         // Add the source table
         this.testDatabase.createSourceTable( this.liquibaseDatabase );
 
-        final URI path = new URI( "/this/is/just/a/test" );
-        final String time = "2017-06-16 11:13:00";
-
         DataSources dataSourcesCache = new DataSources( this.wresDatabase );
-        Long result = dataSourcesCache.getSourceID( path, time, null, "deadbeef" );
+        SourceDetails sourceDetailsOne = new SourceDetails( "deadbeef" );
+        sourceDetailsOne.setVariableName( "V" );
+        sourceDetailsOne.setMeasurementUnitId( 1L );
+        sourceDetailsOne.setFeatureId( 1L );
+        sourceDetailsOne.save( this.wresDatabase );
+        Long result = dataSourcesCache.getSourceID( "deadbeef" );
 
         assertTrue("The id should be an integer greater than zero.",
                    result > 0);
 
-        Long result2 = dataSourcesCache.getSourceID(path, time, null, "deadbeef");
+        Long result2 = dataSourcesCache.getSourceID( "deadbeef");
 
-        assertEquals("Getting an id with the same path and time should yield the same result.",
+        assertEquals("Getting an id with the same hash should yield the same result.",
                      result2, result);
 
         int countOfRows;
@@ -152,15 +162,18 @@ public class DataSourcesTest
 
         // Create one cache that inserts data to set us up for 2nd cache init.
         DataSources sc = new DataSources( this.wresDatabase );
+        SourceDetails sourceDetailsOne = new SourceDetails( "deadbeef" );
+        sourceDetailsOne.setVariableName( "V" );
+        sourceDetailsOne.setMeasurementUnitId( 1L );
+        sourceDetailsOne.setFeatureId( 1L );
+        sourceDetailsOne.save( this.wresDatabase );
 
-        final URI path = new URI( "/this/is/just/a/test" );
-        final String time = "2017-06-20 16:55:00";
-        Long firstId = sc.getID(path, time, null, "deadbeef");
+        Long firstId = sc.getID( "deadbeef" );
 
         // Initialize a second cache, it should find the same data already present
         DataSources scTwo = new DataSources( this.wresDatabase );
 
-        Long secondId = scTwo.getID(path, time, null, "deadbeef");
+        Long secondId = scTwo.getID( "deadbeef" );
 
         assertEquals("Second cache should find id in database from first cache",
                     firstId, secondId);
@@ -188,21 +201,11 @@ public class DataSourcesTest
         Assert.assertFalse(firstDetails.performedInsert());
         Assert.assertEquals( firstDetails.getHash(), "1234" );
 
-        SourceDetails.SourceKey firstKey = firstDetails.getKey();
-        Assert.assertEquals( new URI( "/somewhere/somewhere/1.ext" ), firstKey.getSourcePath() );
-        Assert.assertNull( firstKey.getLead() );
-        Assert.assertEquals( firstKey.getSourceTime(), "2018-08-08T00:00:00Z");
-        Assert.assertEquals( firstKey.getHash(), firstDetails.getHash() );
-
         SourceDetails secondDetails = null;
 
         try
         {
-            secondDetails = dataSourcesCache.get(
-                    new URI( "/somewhere/somewhere/1.ext" ),
-                    "2018-08-08T00:00:00Z",
-                    null,
-                    "1234" );
+            secondDetails = dataSourcesCache.get( "1234" );
         }
         catch(SQLException e)
         {
@@ -217,14 +220,7 @@ public class DataSourcesTest
         Assert.assertEquals( firstDetails.getHash(), secondDetails.getHash() );
         Assert.assertEquals( firstDetails.getIsPointData(), secondDetails.getIsPointData() );
 
-        SourceDetails.SourceKey secondKey = secondDetails.getKey();
-
-        Assert.assertEquals( firstKey.getHash(), secondKey.getHash() );
-        Assert.assertEquals( firstKey.getSourceTime(), secondKey.getSourceTime() );
-        Assert.assertEquals( firstKey.getSourcePath(), secondKey.getSourcePath() );
-        Assert.assertEquals(firstKey.getLead(), secondKey.getLead());
-
-        Assert.assertEquals( firstKey, secondKey );
+        String secondKey = secondDetails.getKey();
 
         Assert.assertEquals(firstDetails, secondDetails);
 
@@ -237,15 +233,8 @@ public class DataSourcesTest
         Assert.assertFalse(thirdDetails.performedInsert());
         Assert.assertEquals( thirdDetails.getHash(), "123456" );
 
-        SourceDetails.SourceKey thirdKey = thirdDetails.getKey();
-        Assert.assertEquals( new URI ("/somewhere/somewhere/3.ext" ), thirdKey.getSourcePath() );
-        Assert.assertNull( thirdKey.getLead() );
-        Assert.assertEquals( thirdKey.getSourceTime(), "2018-08-08T02:00:00Z");
-        Assert.assertEquals( thirdKey.getHash(), thirdDetails.getHash() );
+        String thirdKey = thirdDetails.getKey();
 
-        Assert.assertNotEquals( secondKey.getSourcePath(), thirdKey.getSourcePath());
-        Assert.assertNotEquals( secondKey.getSourceTime(), thirdKey.getSourceTime());
-        Assert.assertNotEquals( secondKey.getHash(), thirdKey.getHash());
 
         Assert.assertNotEquals( secondKey, thirdKey );
 

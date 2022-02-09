@@ -29,6 +29,7 @@ import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
+import wres.io.data.caching.TimeScales;
 import wres.io.data.caching.Variables;
 import wres.io.project.Projects;
 import wres.io.reading.PreIngestException;
@@ -373,7 +374,7 @@ public final class Operations {
         List<IngestResult> projectSources = new ArrayList<>();
         DataSources dataSourcesCache = new DataSources( database );
         Features featuresCache = new Features( database, projectConfig.getPair().getGridSelection() );
-        Variables variablesCache = new Variables( database );
+        TimeScales timeScalesCache = new TimeScales( database );
         Ensembles ensemblesCache = new Ensembles( database );
         MeasurementUnits measurementUnitsCache = new MeasurementUnits( database );
 
@@ -382,7 +383,7 @@ public final class Operations {
                                                 database,
                                                 dataSourcesCache,
                                                 featuresCache,
-                                                variablesCache,
+                                                timeScalesCache,
                                                 ensemblesCache,
                                                 measurementUnitsCache,
                                                 projectConfig,

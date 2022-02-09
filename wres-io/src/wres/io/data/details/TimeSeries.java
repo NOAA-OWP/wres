@@ -1,16 +1,8 @@
 package wres.io.data.details;
 
 import java.sql.SQLException;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.Objects;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 
@@ -20,8 +12,6 @@ import wres.io.utilities.Database;
  */
 public class TimeSeries
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeries.class );
-
     private final Database database;
 
     /**
@@ -31,72 +21,25 @@ public class TimeSeries
 	private final long ensembleID;
 
     /**
-     * The unit of measurement that values for the time series were taken in
-     */
-	private final long measurementUnitID;
-
-    /**
      * The ID of the time series in the database
      */
     private Long timeSeriesID = null;
 
-    /**
-     * The time scale associated with the data
-     */
-
-    private TimeScaleOuter timeScale = null;
 
     /**
      * The ID of the initial source of the data for the time series
      */
     private final long sourceID;
 
-    /**
-     * The db ID of the feature associated with the time series.
-     */
-    private final long featureID;
-
-    /**
-     * The variable name associated with the time series. For USGS data, this is
-     * a Physical Element code. For NWM, it's the variable.
-     */
-    private final String variableName;
-
-    private final Instant initializationDate;
 
     public TimeSeries( Database database,
                        long ensembleID,
-                       long measurementUnitID,
-                       Instant initializationDate,
-                       long sourceID,
-                       String variableName,
-                       long featureID )
+                       long sourceID )
     {
         Objects.requireNonNull( database );
-        Objects.requireNonNull( initializationDate );
-        Objects.requireNonNull( variableName );
         this.database = database;
         this.ensembleID = ensembleID;
-        this.measurementUnitID = measurementUnitID;
-        this.initializationDate = initializationDate;
         this.sourceID = sourceID;
-        this.variableName = variableName;
-        this.featureID = featureID;
-    }
-
-    public Instant getInitializationDate()
-    {
-        return this.initializationDate;
-    }
-
-    public TimeScaleOuter getTimeScale()
-    {
-        return this.timeScale;
-    }
-
-    public void setTimeScale(final TimeScaleOuter timeScale)
-    {
-        this.timeScale = timeScale;
     }
 
     public long getEnsembleId()
@@ -127,37 +70,13 @@ public class TimeSeries
 	{
         DataScripter script = new DataScripter( this.database );
 
-        // Scale information, missing by default
-        Integer scalePeriod = null;
-        TimeScaleFunction scaleFunction = TimeScaleFunction.UNKNOWN;
-        
-        if( Objects.nonNull( this.getTimeScale() ) )
-        {
-            scalePeriod = (int) this.getTimeScale().getPeriod().toMinutes();
-            scaleFunction = this.getTimeScale().getFunction();
-        }
-
         script.addTab().addLine("INSERT INTO wres.TimeSeries (");
         script.addTab(  2  ).addLine("ensemble_id,");
-        script.addTab(  2  ).addLine("measurementunit_id,");
-        script.addTab(  2  ).addLine("initialization_date,");
-        script.addTab(  2  ).addLine("scale_period,");
-        script.addTab(  2  ).addLine("scale_function,");
-        script.addTab(  2  ).addLine("source_id,");
-        script.addTab(  2  ).addLine( "variable_name," );
-        script.addTab(  2  ).addLine( "feature_id" );
+        script.addTab(  2  ).addLine( "source_id" );
         script.addTab().addLine(")");
-        script.addTab().addLine( "VALUES ( ?, ?, ?, ?, ?, ?, ?, ? );" );
+        script.addTab().addLine( "VALUES ( ?, ? );" );
         script.addArgument( this.ensembleID );
-        script.addArgument( this.measurementUnitID );
-        OffsetDateTime offsetDateTime = OffsetDateTime.ofInstant( this.initializationDate,
-                                                                  ZoneOffset.UTC );
-        script.addArgument( offsetDateTime );
-        script.addArgument( scalePeriod );
-        script.addArgument( scaleFunction.name() );
         script.addArgument( this.sourceID );
-        script.addArgument( this.variableName );
-        script.addArgument( this.featureID );
 
         int rowsModified = script.execute();
         long insertedId = script.getInsertedIds()
@@ -175,8 +94,6 @@ public class TimeSeries
                                              + script );
         }
 
-        LOGGER.debug( "Given Instant {} translated to OffsetDateTime {} for wres.TimeSeries id {}",
-                      this.initializationDate, offsetDateTime, insertedId );
         this.timeSeriesID = insertedId;
     }
 

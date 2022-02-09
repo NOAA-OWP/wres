@@ -31,26 +31,14 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
      */
 
     private static final String ORDER_BY_OCCURRENCES_TS_INITIALIZATION_DATE_VALID_TIME_SERIES_ID =
-            "ORDER BY occurrences, TS.initialization_date, valid_time, series_id;";
+            "ORDER BY metadata.series_id;";
 
     /**
      * <code>GROUP BY</code> clause, which is repeated several times.
      */
 
     private static final String GROUP_BY_FEATURE_ID_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE =
-            "GROUP BY TS.feature_id, series_id, TSV.lead, TSV.series_value";
-
-    /**
-     * Script string re-used several times. 
-     */
-
-    private static final String FROM_WRES_TIME_SERIES_TS = "FROM wres.TimeSeries TS";
-
-    /**
-     * Measurement string re-used several times.
-     */
-
-    private static final String MEASUREMENT = "measurement";
+            "GROUP BY metadata.feature_id, metadata.series_id, valid_time";
 
     /**
      * Template script for the {@link #get(long)}.
@@ -152,7 +140,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
 
             while ( provider.next() )
             {
-                b.add( provider.getLong( "timeseries_id" ) );
+                b.add( provider.getLong( "series_id" ) );
             }
 
             return b.build();
@@ -191,8 +179,18 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         this.addSeasonClause( dataScripter, 1 );
 
         // Add the time-series identifiers
-        dataScripter.addTab( 1 ).addLine( "AND TS.timeseries_id = ANY(?)" );
+        dataScripter.addTab( 1 ).addLine( "AND S.source_id = ANY( ? )" );
         dataScripter.addArgument( identifiers.boxed().toArray() );
+
+        dataScripter.addTab().addLine( "GROUP BY S.source_id," );
+        dataScripter.addTab( 2 ).addLine( "S.measurementunit_id," );
+        dataScripter.addTab( 2 ).addLine( "TimeScale.duration_ms," );
+        dataScripter.addTab( 2 ).addLine( "TimeScale.function_name" );
+        dataScripter.addLine( ") AS metadata " );
+        dataScripter.addLine( "INNER JOIN wres.TimeSeries TS" );
+        dataScripter.addTab().addLine( "ON TS.source_id = metadata.series_id" );
+        dataScripter.addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
+        dataScripter.addTab().addLine( "ON TSV.timeseries_id = TS.timeseries_id" );
 
         // Add GROUP BY clause
         dataScripter.addLine( GROUP_BY_FEATURE_ID_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE ); // #56214-272
@@ -223,16 +221,23 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         DataScripter dataScripter = new DataScripter( database, GET_ALL_TIME_SERIES_SCRIPT );
 
         // Add basic constraints at zero tabs
-        this.addProjectFeatureVariableAndMemberConstraints( dataScripter, 0 );
+        this.addProjectFeatureVariableAndMemberConstraints( dataScripter, 1 );
+
+        dataScripter.addTab().addLine( "GROUP BY S.source_id," );
+        dataScripter.addTab( 2 ).addLine( "S.measurementunit_id," );
+        dataScripter.addTab( 2 ).addLine( "TimeScale.duration_ms," );
+        dataScripter.addTab( 2 ).addLine( "TimeScale.function_name" );
+        dataScripter.addLine( ") AS metadata " );
+        dataScripter.addLine( "INNER JOIN wres.TimeSeries TS" );
+        dataScripter.addTab().addLine( "ON TS.source_id = metadata.series_id" );
+        dataScripter.addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
+        dataScripter.addTab().addLine( "ON TSV.timeseries_id = TS.timeseries_id" );
 
         // Add time window constraint at zero tabs
         this.addTimeWindowClause( dataScripter, 0 );
 
         // Add season constraint at one tab
         this.addSeasonClause( dataScripter, 1 );
-
-        // Add GROUP BY clause
-        dataScripter.addLine( GROUP_BY_FEATURE_ID_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE ); // #56214-272
 
         // Add ORDER BY clause
         dataScripter.addLine( ORDER_BY_OCCURRENCES_TS_INITIALIZATION_DATE_VALID_TIME_SERIES_ID );
@@ -260,7 +265,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
     {
         return provider -> {
             // Raw value
-            double unmapped = provider.getDouble( MEASUREMENT );
+            double unmapped = provider.getDouble( "trace_value" );
 
             if ( !Double.isFinite( unmapped ) )
             {
@@ -290,14 +295,35 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         ScriptBuilder scripter = new ScriptBuilder();
 
         scripter.addLine( "SELECT " );
-        scripter.addTab().addLine( "TS.initialization_date AS reference_time," );
-        scripter.addTab().addLine( "TS.initialization_date + INTERVAL ''1 MINUTE'' * TSV.lead AS valid_time," );
-        scripter.addTab().addLine( "TSV.series_value AS measurement," );
-        scripter.addTab().addLine( "TS.measurementunit_id" );
-        scripter.addTab().addLine( FROM_WRES_TIME_SERIES_TS );
-        scripter.addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
-        scripter.addTab( 2 ).addLine( "ON TS.timeseries_id = TSV.timeseries_id" );
-        scripter.addTab().addLine( "WHERE TS.timeseries_id = ?" );
+        scripter.addTab().addLine( "metadata.series_id AS series_id," );
+        scripter.addTab().addLine( "metadata.reference_time + INTERVAL '1' MINUTE * TSV.lead AS valid_time," );
+        scripter.addTab().addLine( "metadata.reference_time," );
+        scripter.addTab().addLine( "TSV.series_value AS trace_value," );
+        scripter.addTab().addLine( "metadata.measurementunit_id," );
+        scripter.addTab().addLine( "metadata.scale_period," );
+        scripter.addTab().addLine( "metadata.scale_function," );
+        scripter.addTab().addLine( "metadata.feature_id," );
+        // See #56214-272. Add the count to allow re-duplication of duplicate series
+        scripter.addTab().addLine( "metadata.occurrences" );
+        scripter.addLine( "FROM" );
+        scripter.addLine( "(" );
+        scripter.addTab().addLine( "SELECT " );
+        scripter.addTab( 2 ).addLine( "S.source_id AS series_id," );
+        scripter.addTab( 2 ).addLine( "MAX( reference_time ) AS reference_time," );
+        scripter.addTab( 2 ).addLine( "S.feature_id," );
+        scripter.addTab( 2 ).addLine( "S.measurementunit_id," );
+        scripter.addTab( 2 ).addLine( "TimeScale.duration_ms AS scale_period," );
+        scripter.addTab( 2 ).addLine( "TimeScale.function_name AS scale_function," );
+
+        scripter.addTab( 2 ).addLine( "COUNT(*) AS occurrences " );
+        scripter.addTab().addLine( "FROM wres.Source S" );
+        scripter.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
+        scripter.addTab( 2 ).addLine( "ON PS.source_id = S.source_id" );
+        scripter.addTab().addLine( "INNER JOIN wres.TimeSeriesReferenceTime TSRT" );
+        scripter.addTab( 2 ).addLine( "ON TSRT.source_id = S.source_id" );
+        // TODO: use the timescale_id and TimeScales cache instead
+        scripter.addTab().addLine( "LEFT JOIN wres.TimeScale TimeScale" );
+        scripter.addTab( 2 ).addLine( "ON TimeScale.timescale_id = S.timescale_id" );
 
         return scripter.toString();
     }
@@ -313,21 +339,35 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         ScriptBuilder scripter = new ScriptBuilder();
 
         scripter.addLine( "SELECT " );
-        scripter.addTab().addLine( "TS.timeseries_id AS series_id," );
-        scripter.addTab().addLine( "TS.initialization_date AS reference_time," );
-        scripter.addTab().addLine( "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead AS valid_time," );
-        scripter.addTab().addLine( "TSV.series_value AS measurement," );
-        scripter.addTab().addLine( "TS.measurementunit_id," );
-        scripter.addTab().addLine( "TS.scale_period," );
-        scripter.addTab().addLine( "TS.scale_function," );
-        scripter.addTab().addLine( "TS.feature_id," );
+        scripter.addTab().addLine( "metadata.series_id AS series_id," );
+        scripter.addTab().addLine( "metadata.reference_time + INTERVAL '1' MINUTE * TSV.lead AS valid_time," );
+        scripter.addTab().addLine( "metadata.reference_time," );
+        scripter.addTab().addLine( "TSV.series_value AS trace_value," );
+        scripter.addTab().addLine( "metadata.measurementunit_id," );
+        scripter.addTab().addLine( "metadata.scale_period," );
+        scripter.addTab().addLine( "metadata.scale_function," );
+        scripter.addTab().addLine( "metadata.feature_id," );
         // See #56214-272. Add the count to allow re-duplication of duplicate series
-        scripter.addTab().addLine( "COUNT(*) AS occurrences" );
-        scripter.addLine( FROM_WRES_TIME_SERIES_TS );
-        scripter.addTab().addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
-        scripter.addTab( 2 ).addLine( "ON TSV.timeseries_id = TS.timeseries_id" );
+        scripter.addTab().addLine( "metadata.occurrences" );
+        scripter.addLine( "FROM" );
+        scripter.addLine( "(" );
+        scripter.addTab().addLine( "SELECT " );
+        scripter.addTab( 2 ).addLine( "S.source_id AS series_id," );
+        scripter.addTab( 2 ).addLine( "MAX( reference_time ) AS reference_time," );
+        scripter.addTab( 2 ).addLine( "S.feature_id," );
+        scripter.addTab( 2 ).addLine( "S.measurementunit_id," );
+        scripter.addTab( 2 ).addLine( "TimeScale.duration_ms AS scale_period," );
+        scripter.addTab( 2 ).addLine( "TimeScale.function_name AS scale_function," );
+
+        scripter.addTab( 2 ).addLine( "COUNT(*) AS occurrences " );
+        scripter.addTab().addLine( "FROM wres.Source S" );
         scripter.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
-        scripter.addTab( 2 ).addLine( "ON PS.source_id = TS.source_id" );
+        scripter.addTab( 2 ).addLine( "ON PS.source_id = S.source_id" );
+        scripter.addTab().addLine( "INNER JOIN wres.TimeSeriesReferenceTime TSRT" );
+        scripter.addTab( 2 ).addLine( "ON TSRT.source_id = S.source_id" );
+        // TODO: use the timescale_id and TimeScales cache instead
+        scripter.addTab().addLine( "LEFT JOIN wres.TimeScale TimeScale" );
+        scripter.addTab( 2 ).addLine( "ON TimeScale.timescale_id = S.timescale_id" );
 
         return scripter.toString();
     }
@@ -342,10 +382,10 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
     {
         ScriptBuilder scripter = new ScriptBuilder();
 
-        scripter.addLine( "SELECT TS.timeseries_id" );
-        scripter.addLine( FROM_WRES_TIME_SERIES_TS );
+        scripter.addLine( "SELECT S.source_id AS series_id" );
+        scripter.addLine( "FROM wres.Source S" );
         scripter.addLine( "INNER JOIN wres.ProjectSource PS" );
-        scripter.addTab().addLine( "ON TS.source_id = PS.source_id" );
+        scripter.addTab().addLine( "ON S.source_id = PS.source_id" );
 
         return scripter.toString();
     }
@@ -358,7 +398,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
 
     private SingleValuedForecastRetriever( Builder builder )
     {
-        super( builder, "TS.initialization_date", "TSV.lead" );
+        super( builder, "metadata.reference_time", "TSV.lead" );
     }
 
 

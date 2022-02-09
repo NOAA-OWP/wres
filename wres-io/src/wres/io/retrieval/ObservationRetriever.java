@@ -105,15 +105,23 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
 
         Database database = super.getDatabase();
         DataScripter dataScripter = new DataScripter( database, timeSeriesTableScript );
-        
+
+        this.addProjectFeatureVariableAndMemberConstraints( dataScripter, 1 );
+
+        dataScripter.addTab().addLine( "GROUP BY S.source_id," );
+        dataScripter.addTab( 2 ).addLine( "S.measurementunit_id," );
+        dataScripter.addTab( 2 ).addLine( "TimeScale.duration_ms," );
+        dataScripter.addTab( 2 ).addLine( "TimeScale.function_name" );
+        dataScripter.addLine( ") AS metadata " );
+        dataScripter.addLine( "INNER JOIN wres.TimeSeries TS" );
+        dataScripter.addTab().addLine( "ON TS.source_id = metadata.series_id" );
+        dataScripter.addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
+        dataScripter.addTab().addLine( "ON TSV.timeseries_id = TS.timeseries_id" );
         this.addTimeWindowClause( dataScripter, 0 );
         this.addSeasonClause( dataScripter, 1 );
-        this.addProjectFeatureVariableAndMemberConstraints( dataScripter, 0 );
-
-        dataScripter.addLine( "GROUP BY TS.feature_id, TS.timeseries_id, TSV.lead, TSV.series_value" );
 
         // Add ORDER BY clause
-        dataScripter.addLine( "ORDER BY series_id, valid_time;" );
+        dataScripter.addLine( "ORDER BY metadata.series_id, valid_time;" );
 
         // Log the script
         super.logScript( dataScripter );
@@ -138,7 +146,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
     {
         return provider -> {
             // Raw value
-            double unmapped = provider.getDouble( "observation" );
+            double unmapped = provider.getDouble( "trace_value" );
 
             if ( !Double.isFinite( unmapped ) )
             {
@@ -164,25 +172,42 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
      * @return the start of a script for the time-series
      */
 
-    private static String getStartOfScriptForGetAllTimeSeries()
+    private String getStartOfScriptForGetAllTimeSeries()
     {
         ScriptBuilder scripter = new ScriptBuilder();
 
         scripter.addLine( "SELECT " );
-        scripter.addTab().addLine( "TS.timeseries_id AS series_id," );
-        scripter.addTab().addLine( "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead AS valid_time," );
-        scripter.addTab().addLine( "TSV.series_value AS observation," );
-        scripter.addTab().addLine( "TS.measurementunit_id," );
-        scripter.addTab().addLine( "TS.scale_period," );
-        scripter.addTab().addLine( "TS.scale_function," );
-        scripter.addTab().addLine( "TS.feature_id," );
+        scripter.addTab().addLine( "metadata.series_id AS series_id," );
+        scripter.addTab().addLine( "metadata.reference_time + INTERVAL '1' MINUTE * TSV.lead AS valid_time," );
+
+        // Some code will be confused if a reference_time shows up in "obs" data
+        //scripter.addTab().addLine( "metadata.reference_time," );
+        scripter.addTab().addLine( "TSV.series_value AS trace_value," );
+        scripter.addTab().addLine( "metadata.measurementunit_id," );
+        scripter.addTab().addLine( "metadata.scale_period," );
+        scripter.addTab().addLine( "metadata.scale_function," );
+        scripter.addTab().addLine( "metadata.feature_id," );
         // See #56214-272. Add the count to allow re-duplication of duplicate series
-        scripter.addTab().addLine( "COUNT(*) AS occurrences" );
-        scripter.addLine( "FROM wres.TimeSeries TS" );
-        scripter.addTab().addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
-        scripter.addTab( 2 ).addLine( "ON TSV.timeseries_id = TS.timeseries_id" );
+        scripter.addTab().addLine( "metadata.occurrences" );
+        scripter.addLine( "FROM" );
+        scripter.addLine( "(" );
+        scripter.addTab().addLine( "SELECT " );
+        scripter.addTab( 2 ).addLine( "S.source_id AS series_id," );
+        scripter.addTab( 2 ).addLine( "MAX( reference_time ) AS reference_time," );
+        scripter.addTab( 2 ).addLine( "S.feature_id," );
+        scripter.addTab( 2 ).addLine( "S.measurementunit_id," );
+        scripter.addTab( 2 ).addLine( "TimeScale.duration_ms AS scale_period," );
+        scripter.addTab( 2 ).addLine( "TimeScale.function_name AS scale_function," );
+
+        scripter.addTab( 2 ).addLine( "COUNT(*) AS occurrences " );
+        scripter.addTab().addLine( "FROM wres.Source S" );
         scripter.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
-        scripter.addTab( 2 ).addLine( "ON PS.source_id = TS.source_id" );
+        scripter.addTab( 2 ).addLine( "ON PS.source_id = S.source_id" );
+        scripter.addTab().addLine( "INNER JOIN wres.TimeSeriesReferenceTime TSRT" );
+        scripter.addTab( 2 ).addLine( "ON TSRT.source_id = S.source_id" );
+        // TODO: use the timescale_id and TimeScales cache instead
+        scripter.addTab().addLine( "LEFT JOIN wres.TimeScale TimeScale" );
+        scripter.addTab( 2 ).addLine( "ON TimeScale.timescale_id = S.timescale_id" );
 
         return scripter.toString();
     }
@@ -196,7 +221,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
 
     private ObservationRetriever( Builder builder )
     {
-        super( builder, "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead", null );
+        super( builder, "metadata.reference_time + INTERVAL '1' MINUTE * TSV.lead", null );
     }
 
 

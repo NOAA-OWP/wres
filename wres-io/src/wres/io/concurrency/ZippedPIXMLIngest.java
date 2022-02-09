@@ -14,7 +14,7 @@ import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.Variables;
+import wres.io.data.caching.TimeScales;
 import wres.io.reading.DataSource;
 import wres.io.reading.IngestResult;
 import wres.io.reading.fews.PIXMLReader;
@@ -33,7 +33,7 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
     private final Database database;
     private final DataSources dataSourcesCache;
     private final Features featuresCache;
-    private final Variables variablesCache;
+    private final TimeScales timeScalesCache;
     private final Ensembles ensemblesCache;
     private final MeasurementUnits measurementUnitsCache;
     private final ProjectConfig projectConfig;
@@ -45,7 +45,7 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
                                Database database,
                                DataSources dataSourcesCache,
                                Features featuresCache,
-                               Variables variablesCache,
+                               TimeScales timeScalesCache,
                                Ensembles ensemblesCache,
                                MeasurementUnits measurementUnitsCache,
                                ProjectConfig projectConfig,
@@ -57,7 +57,7 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
         this.database = database;
         this.dataSourcesCache = dataSourcesCache;
         this.featuresCache = featuresCache;
-        this.variablesCache = variablesCache;
+        this.timeScalesCache = timeScalesCache;
         this.ensemblesCache = ensemblesCache;
         this.measurementUnitsCache = measurementUnitsCache;
         this.projectConfig = projectConfig;
@@ -86,9 +86,9 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
         return this.featuresCache;
     }
 
-    private Variables getVariablesCache()
+    private TimeScales getTimeScalesCache()
     {
-        return this.variablesCache;
+        return this.timeScalesCache;
     }
 
     private Ensembles getEnsemblesCache()
@@ -109,7 +109,7 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
             PIXMLReader reader = new PIXMLReader( this.getSystemSettings(),
                                                   this.getDatabase(),
                                                   this.getFeaturesCache(),
-                                                  this.getVariablesCache(),
+                                                  this.getTimeScalesCache(),
                                                   this.getEnsemblesCache(),
                                                   this.getMeasurementUnitsCache(),
                                                   this.projectConfig,

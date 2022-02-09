@@ -287,6 +287,8 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
         scripter.addLine( "FROM wres.Source S" );
         scripter.addLine( "INNER JOIN wres.ProjectSource PS" );
         scripter.addTab( 1 ).addLine( "ON PS.source_id = S.source_id" );
+        scripter.addLine( "LEFT JOIN wres.TimeSeriesReferenceTime TSRT" );
+        scripter.addTab( 1 ).addLine( "ON TSRT.source_id = S.source_id" );
         scripter.addLine( "WHERE PS.project_id = ?" );
         scripter.addTab( 1 ).addLine( "AND PS.member = ?" );
         scripter.addTab( 1 ).addLine( "AND S.is_point_data = FALSE" );
@@ -302,7 +304,7 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
 
     private SingleValuedGriddedRetriever( Builder builder )
     {
-        super( builder, "S.output_time", "S.lead" );
+        super( builder, "TSRT.reference_time", "S.lead" );
 
         this.isForecast = builder.isForecast;
 

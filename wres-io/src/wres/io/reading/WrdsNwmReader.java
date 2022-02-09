@@ -50,7 +50,7 @@ import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.Variables;
+import wres.io.data.caching.TimeScales;
 import wres.io.reading.wrds.ReadValueManager;
 import wres.io.reading.wrds.TimeScaleFromParameterCodes;
 import wres.io.reading.wrds.nwm.NwmDataPoint;
@@ -91,7 +91,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
     private final SystemSettings systemSettings;
     private final Database database;
     private final Features featuresCache;
-    private final Variables variablesCache;
+    private final TimeScales timeScalesCache;
     private final Ensembles ensemblesCache;
     private final MeasurementUnits measurementUnitsCache;
     private final ProjectConfig projectConfig;
@@ -105,7 +105,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
     public WrdsNwmReader( SystemSettings systemSettings,
                           Database database,
                           Features featuresCache,
-                          Variables variablesCache,
+                          TimeScales timeScalesCache,
                           Ensembles ensemblesCache,
                           MeasurementUnits measurementUnitsCache,
                           ProjectConfig projectConfig,
@@ -115,7 +115,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( database );
         Objects.requireNonNull( featuresCache );
-        Objects.requireNonNull( variablesCache );
+        Objects.requireNonNull( timeScalesCache );
         Objects.requireNonNull( ensemblesCache );
         Objects.requireNonNull( measurementUnitsCache );
         Objects.requireNonNull( projectConfig );
@@ -125,7 +125,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         this.systemSettings = systemSettings;
         this.database = database;
         this.featuresCache = featuresCache;
-        this.variablesCache = variablesCache;
+        this.timeScalesCache = timeScalesCache;
         this.ensemblesCache = ensemblesCache;
         this.measurementUnitsCache = measurementUnitsCache;
         this.projectConfig = projectConfig;
@@ -223,9 +223,9 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         return this.database;
     }
 
-    private Variables getVariablesCache()
+    private TimeScales getTimeScalesCache()
     {
-        return this.variablesCache;
+        return this.timeScalesCache;
     }
 
     private Features getFeaturesCache()
@@ -382,7 +382,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                 this.createTimeSeriesIngester( this.getSystemSettings(),
                                                                this.getDatabase(),
                                                                this.getFeaturesCache(),
-                                                               this.getVariablesCache(),
+                                                               this.getTimeScalesCache(),
                                                                this.getEnsemblesCache(),
                                                                this.getMeasurementUnitsCache(),
                                                                this.getProjectConfig(),
@@ -624,7 +624,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
     TimeSeriesIngester createTimeSeriesIngester( SystemSettings systemSettings,
                                                  Database database,
                                                  Features featuresCache,
-                                                 Variables variablesCache,
+                                                 TimeScales timeScalesCache,
                                                  Ensembles ensemblesCache,
                                                  MeasurementUnits measurementUnitsCache,
                                                  ProjectConfig projectConfig,
@@ -635,7 +635,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         return TimeSeriesIngester.of( systemSettings,
                                        database,
                                        featuresCache,
-                                       variablesCache,
+                                       timeScalesCache,
                                        ensemblesCache,
                                        measurementUnitsCache,
                                        projectConfig,

@@ -631,11 +631,11 @@ class RescalingHelper
     {
         boolean isOneZero = Duration.ZERO.equals( inputPeriod ) || Duration.ZERO.equals( desiredPeriod );
 
-        // Check at a resolution of seconds
+        // Check at a resolution of milliseconds
         // BigDecimal could be used, but is comparatively expensive and 
-        // such precision is unnecessary when the standard time resolution is PT1M      
-        long inPeriod = inputPeriod.getSeconds();
-        long desPeriod = desiredPeriod.getSeconds();
+        // such precision is unnecessary when the standard time resolution is ms
+        long inPeriod = inputPeriod.toMillis();
+        long desPeriod = desiredPeriod.toMillis();
         long remainder = desPeriod % inPeriod;
 
         if ( isOneZero || remainder > 0 )

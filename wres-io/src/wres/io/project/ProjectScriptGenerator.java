@@ -94,12 +94,12 @@ final class ProjectScriptGenerator
         script.addLine( "AND EXISTS" );
         script.addLine( "(" );
         script.addTab().addLine( "SELECT 1" );
-        script.addTab().addLine( "FROM wres.TimeSeries TS" );
+        script.addTab().addLine( "FROM wres.Source S" );
         script.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
-        script.addTab().addLine( "ON PS.source_id = TS.source_id" );
+        script.addTab().addLine( "ON PS.source_id = S.source_id" );
         script.addTab().addLine( "WHERE PS.project_id = ", projectId );
         script.addTab( 2 ).addLine( "AND PS.member = 'left'" );
-        script.addTab( 2 ).addLine( "AND TS.feature_id = L.feature_id" );
+        script.addTab( 2 ).addLine( "AND S.feature_id = L.feature_id" );
         // Do NOT additionally inspect wres.TimeSeriesValue. See #70130.
         script.addLine( ")" );
 
@@ -111,12 +111,12 @@ final class ProjectScriptGenerator
         script.addLine( "AND EXISTS" );
         script.addLine( "(" );
         script.addTab().addLine( "SELECT 1" );
-        script.addTab().addLine( "FROM wres.TimeSeries TS" );
+        script.addTab().addLine( "FROM wres.Source S" );
         script.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
-        script.addTab().addLine( "ON PS.source_id = TS.source_id" );
+        script.addTab().addLine( "ON PS.source_id = S.source_id" );
         script.addTab().addLine( "WHERE PS.project_id = ", projectId );
         script.addTab( 2 ).addLine( "AND PS.member = 'right'" );
-        script.addTab( 2 ).addLine( "AND TS.feature_id = R.feature_id" );
+        script.addTab( 2 ).addLine( "AND S.feature_id = R.feature_id" );
 
         script.addLine(")");
 
@@ -143,12 +143,12 @@ final class ProjectScriptGenerator
             script.addLine( "AND EXISTS" );
             script.addLine( "(" );
             script.addTab().addLine( "SELECT 1" );
-            script.addTab().addLine( "FROM wres.TimeSeries TS" );
+            script.addTab().addLine( "FROM wres.Source S" );
             script.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
-            script.addTab().addLine( "ON PS.source_id = TS.source_id" );
+            script.addTab().addLine( "ON PS.source_id = S.source_id" );
             script.addTab().addLine( "WHERE PS.project_id = ", projectId );
             script.addTab( 2 ).addLine( "AND PS.member = 'baseline'" );
-            script.addTab( 2 ).addLine( "AND TS.feature_id = B.feature_id" );
+            script.addTab( 2 ).addLine( "AND S.feature_id = B.feature_id" );
             script.addLine( ")" );
         }
 
@@ -177,20 +177,20 @@ final class ProjectScriptGenerator
         /* For a given project, select the most common measurement unit (by source)" );
            for the right-ish sources. All time-series have units. */
         script.addLine( "SELECT MU.unit_name," );
-        script.addTab().addLine( "T.measurementunit_id," );
+        script.addTab().addLine( "S.measurementunit_id," );
         script.addTab().addLine( "PS.member" );
-        script.addLine( "FROM wres.TimeSeries T" );
+        script.addLine( "FROM wres.Source S" );
         script.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
-        script.addTab( 2 ).addLine( "ON PS.source_id = T.source_id" );
+        script.addTab( 2 ).addLine( "ON PS.source_id = S.source_id" );
         script.addTab().addLine( "INNER JOIN wres.MeasurementUnit MU" );
-        script.addTab( 2 ).addLine( "ON MU.measurementunit_id = T.measurementunit_id" );
+        script.addTab( 2 ).addLine( "ON MU.measurementunit_id = S.measurementunit_id" );
         script.addLine( "WHERE PS.project_id = ?" );
         script.addArgument( projectId );
         script.addTab().addLine( "AND PS.member='right'" );
-        script.addLine( "GROUP BY T.measurementunit_id," );
+        script.addLine( "GROUP BY S.measurementunit_id," );
         script.addTab().addLine( "PS.member," );
         script.addTab().addLine( "MU.unit_name" );
-        script.addLine( "ORDER BY COUNT( T.measurementunit_id ) DESC" );
+        script.addLine( "ORDER BY COUNT( S.measurementunit_id ) DESC" );
         script.setMaxRows( 1 );
 
         return script;
@@ -215,10 +215,10 @@ final class ProjectScriptGenerator
         
         DataScripter script = new DataScripter( database );
         
-        script.addLine( "SELECT DISTINCT TS.variable_name" );
-        script.addLine( "FROM wres.TimeSeries TS" );
+        script.addLine( "SELECT DISTINCT S.variable_name" );
+        script.addLine( "FROM wres.Source S" );
         script.addLine( "INNER JOIN wres.ProjectSource PS ON" );
-        script.addTab().addLine( "PS.source_id = TS.source_id" );
+        script.addTab().addLine( "PS.source_id = S.source_id" );
         script.addLine( "WHERE PS.project_id = ?" );
         script.addArgument( projectId );
         script.addTab().addLine( "AND PS.member = ?" );
@@ -260,8 +260,10 @@ final class ProjectScriptGenerator
         script.addTab().addLine( "FROM wres.Ensemble E" );
         script.addTab().addLine( "INNER JOIN wres.TimeSeries TS" );
         script.addTab( 2 ).addLine( "ON TS.ensemble_id = E.ensemble_id" );
+        script.addTab().addLine( "INNER JOIN wres.Source S" );
+        script.addTab( 2 ).addLine( "ON S.source_id = TS.source_id" );
         script.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
-        script.addTab( 2 ).addLine( "ON PS.source_id = TS.source_id" );
+        script.addTab( 2 ).addLine( "ON PS.source_id = S.source_id" );
         script.addTab().addLine( "WHERE PS.project_id = ?" );
         script.addArgument( projectId );
         script.addTab( 2 ).addLine( "AND E.ensemble_name ", condition, " ?" );

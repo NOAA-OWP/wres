@@ -13,7 +13,7 @@ import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.Variables;
+import wres.io.data.caching.TimeScales;
 import wres.io.reading.BasicSource;
 import wres.io.reading.DataSource;
 import wres.io.reading.IngestException;
@@ -43,7 +43,7 @@ public class WRDSSource extends BasicSource
     private final Database database;
     private final DataSources dataSourcesCache;
     private final Features featuresCache;
-    private final Variables variablesCache;
+    private final TimeScales timeScalesCache;
     private final Ensembles ensemblesCache;
     private final MeasurementUnits measurementUnitsCache;
     private final DatabaseLockManager lockManager;
@@ -52,7 +52,7 @@ public class WRDSSource extends BasicSource
                        Database database,
                        DataSources dataSourcesCache,
                        Features featuresCache,
-                       Variables variablesCache,
+                       TimeScales timeScalesCache,
                        Ensembles ensemblesCache,
                        MeasurementUnits measurementUnitsCache,
                        ProjectConfig projectConfig,
@@ -64,7 +64,7 @@ public class WRDSSource extends BasicSource
         this.database = database;
         this.dataSourcesCache = dataSourcesCache;
         this.featuresCache = featuresCache;
-        this.variablesCache = variablesCache;
+        this.timeScalesCache = timeScalesCache;
         this.ensemblesCache = ensemblesCache;
         this.measurementUnitsCache = measurementUnitsCache;
         this.lockManager = lockManager;
@@ -90,9 +90,9 @@ public class WRDSSource extends BasicSource
         return this.featuresCache;
     }
 
-    private Variables getVariablesCache()
+    private TimeScales getTimeScalesCache()
     {
-        return this.variablesCache;
+        return this.timeScalesCache;
     }
 
     private Ensembles getEnsemblesCache()
@@ -122,7 +122,7 @@ public class WRDSSource extends BasicSource
             WrdsNwmReader reader = new WrdsNwmReader( this.getSystemSettings(),
                                                       this.getDatabase(),
                                                       this.getFeaturesCache(),
-                                                      this.getVariablesCache(),
+                                                      this.getTimeScalesCache(),
                                                       this.getEnsemblesCache(),
                                                       this.getMeasurementUnitsCache(),
                                                       this.getProjectConfig(),
@@ -160,7 +160,7 @@ public class WRDSSource extends BasicSource
                                      this.getDatabase(),
                                      this.getDataSourcesCache(),
                                      this.getFeaturesCache(),
-                                     this.getVariablesCache(),
+                                     this.getTimeScalesCache(),
                                      this.getEnsemblesCache(),
                                      this.getMeasurementUnitsCache(),
                                      projectConfig,

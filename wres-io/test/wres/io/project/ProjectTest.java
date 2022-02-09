@@ -4,13 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
@@ -47,6 +45,7 @@ import wres.io.data.details.EnsembleDetails;
 import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.MeasurementDetails;
 import wres.io.data.details.SourceDetails;
+import wres.io.data.details.TimeScaleDetails;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.TestDatabase;
 import wres.statistics.generated.GeometryTuple;
@@ -65,8 +64,7 @@ class ProjectTest
     private static final FeatureKey ANOTHER_FEATURE = FeatureKey.of(
                                                                      MessageFactory.getGeometry( "G" ) );
     private static final String PROJECT_HASH = "881hfEaffja267";
-    private static final String UNITS = "CFS";
-    private static final String T2023_04_01T00_00_00Z = "2023-04-01T00:00:00Z";
+    private static final String UNITS = "[ft_i]3/s";
     private static final String VARIABLE_NAME = "V";
 
     @Mock
@@ -185,13 +183,13 @@ class ProjectTest
                 this.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
 
         this.testDatabase.createMeasurementUnitTable( liquibaseDatabase );
+        this.testDatabase.createTimeScaleTable( liquibaseDatabase );
         this.testDatabase.createSourceTable( liquibaseDatabase );
+        this.testDatabase.createTimeSeriesTable( liquibaseDatabase );
         this.testDatabase.createProjectTable( liquibaseDatabase );
         this.testDatabase.createProjectSourceTable( liquibaseDatabase );
         this.testDatabase.createFeatureTable( liquibaseDatabase );
         this.testDatabase.createEnsembleTable( liquibaseDatabase );
-        this.testDatabase.createTimeSeriesTable( liquibaseDatabase );
-        this.testDatabase.createTimeSeriesValueTable( liquibaseDatabase );
     }
 
     /**
@@ -211,23 +209,72 @@ class ProjectTest
 
     private Project getProject( ProjectConfig projectConfig ) throws SQLException
     {
-        // Add a source
-        SourceDetails.SourceKey sourceKey = SourceDetails.createKey( URI.create( "/this/is/just/a/test" ),
-                                                                     "2017-06-16 11:13:00",
-                                                                     null,
-                                                                     "abc123" );
+        // Add two features
+        FeatureDetails feature = new FeatureDetails( FEATURE );
+        feature.save( this.wresDatabase );
+        assertNotNull( feature.getId() );
 
-        SourceDetails sourceDetails = new SourceDetails( sourceKey );
+        FeatureDetails anotherFeature = new FeatureDetails( ANOTHER_FEATURE );
+        anotherFeature.save( this.wresDatabase );
+        assertNotNull( anotherFeature.getId() );
 
+        // Get the measurement units for CFS
+        MeasurementDetails measurement = new MeasurementDetails();
+        measurement.setUnit( UNITS );
+        measurement.save( this.wresDatabase );
+        Long measurementUnitId = measurement.getId();
+        assertNotNull( measurementUnitId );
+
+        TimeScaleOuter timeScale = TimeScaleOuter.of( Duration.ofMillis( 1 ),
+                                                      TimeScaleFunction.UNKNOWN );
+        TimeScaleDetails timeScaleDetails = new TimeScaleDetails( timeScale );
+        timeScaleDetails.save( this.wresDatabase );
+        Long timeScaleId = timeScaleDetails.getId();
+        assertNotNull( timeScaleId );
+
+        // Add two "forecasts" with different feature ids
+        SourceDetails sourceDetails = new SourceDetails( "abc" );
+        sourceDetails.setFeatureId( feature.getId() );
+        sourceDetails.setTimeScaleId( timeScaleId );
+        sourceDetails.setMeasurementUnitId( measurementUnitId );
+        sourceDetails.setVariableName( VARIABLE_NAME );
         sourceDetails.save( this.wresDatabase );
-
         assertTrue( sourceDetails.performedInsert() );
-
         Long sourceId = sourceDetails.getId();
-
         assertNotNull( sourceId );
 
-        // Add a project 
+
+        SourceDetails sourceDetailsTwo = new SourceDetails( "def" );
+        sourceDetailsTwo.setFeatureId( anotherFeature.getId() );
+        sourceDetailsTwo.setTimeScaleId( timeScaleId );
+        sourceDetailsTwo.setMeasurementUnitId( measurementUnitId );
+        sourceDetailsTwo.setVariableName( VARIABLE_NAME );
+        sourceDetailsTwo.save( this.wresDatabase );
+        assertTrue( sourceDetailsTwo.performedInsert() );
+        Long sourceTwoId = sourceDetailsTwo.getId();
+        assertNotNull( sourceTwoId );
+
+        EnsembleDetails ensemble = new EnsembleDetails();
+        ensemble.setEnsembleName( "ENS123" );
+        ensemble.save( this.wresDatabase );
+        Long ensembleId = ensemble.getId();
+
+
+        wres.io.data.details.TimeSeries firstTraceRow =
+                new wres.io.data.details.TimeSeries( this.wresDatabase,
+                                                     ensembleId,
+                                                     sourceId );
+        // Do the save
+        firstTraceRow.getTimeSeriesID();
+
+        wres.io.data.details.TimeSeries secondTraceRow =
+                new wres.io.data.details.TimeSeries( this.wresDatabase,
+                                                     ensembleId,
+                                                     sourceTwoId );
+        // Do the save
+        secondTraceRow.getTimeSeriesID();
+
+        // Add a project
         Project project =
                 new Project( this.mockSystemSettings,
                              this.wresDatabase,
@@ -241,90 +288,52 @@ class ProjectTest
 
         assertEquals( PROJECT_HASH, project.getHash() );
 
-        // Add the same project source to each side
-        // There is no wres abstraction to help with this
-        String rightSourceInsert =
+        // Add the same project source to each side, this should be done in one
+        // transaction rather than four, technically. See Projects methods.
+        String sourceInsert =
                 "INSERT INTO wres.ProjectSource (project_id, source_id, member) VALUES ({0},{1},''{2}'')";
 
-        rightSourceInsert = MessageFormat.format( rightSourceInsert,
-                                                  project.getId(),
-                                                  sourceId,
-                                                  LeftOrRightOrBaseline.RIGHT.value() );
+        String rightSourceInsert = MessageFormat.format( sourceInsert,
+                                                         project.getId(),
+                                                         sourceId,
+                                                         LeftOrRightOrBaseline.RIGHT.value() );
 
         DataScripter script = new DataScripter( this.wresDatabase,
                                                 rightSourceInsert );
-        int rows = script.execute();
+        int rowCount = script.execute();
 
-        assertEquals( 1, rows );
+        assertEquals( 1, rowCount );
 
-        String leftSourceInsert =
-                "INSERT INTO wres.ProjectSource (project_id, source_id, member) VALUES ({0},{1},''{2}'')";
-
-        leftSourceInsert = MessageFormat.format( leftSourceInsert,
-                                                 project.getId(),
-                                                 sourceId,
-                                                 LeftOrRightOrBaseline.LEFT.value() );
+        String leftSourceInsert = MessageFormat.format( sourceInsert,
+                                                        project.getId(),
+                                                        sourceId,
+                                                        LeftOrRightOrBaseline.LEFT.value() );
 
         DataScripter leftScript = new DataScripter( this.wresDatabase,
                                                     leftSourceInsert );
         int rowsLeft = leftScript.execute();
-
         assertEquals( 1, rowsLeft );
 
-        // Add two features
-        FeatureDetails feature = new FeatureDetails( FEATURE );
-        feature.save( this.wresDatabase );
-        assertNotNull( feature.getId() );
+        String rightSourceInsertTwo = MessageFormat.format( sourceInsert,
+                                                            project.getId(),
+                                                            sourceTwoId,
+                                                            LeftOrRightOrBaseline.RIGHT.value() );
 
-        FeatureDetails anotherFeature = new FeatureDetails( ANOTHER_FEATURE );
-        anotherFeature.save( this.wresDatabase );
-        assertNotNull( anotherFeature.getId() );
+        DataScripter rightScriptTwo = new DataScripter( this.wresDatabase,
+                                                        rightSourceInsertTwo );
+        int rowCountTwo = rightScriptTwo.execute();
 
-        // Get the measurement units for CFS
-        MeasurementDetails measurement = new MeasurementDetails();
+        assertEquals( 1, rowCountTwo );
 
-        measurement.setUnit( UNITS );
-        measurement.save( this.wresDatabase );
-        Long measurementUnitId = measurement.getId();
+        String leftSourceInsertTwo = MessageFormat.format( sourceInsert,
+                                                           project.getId(),
+                                                           sourceTwoId,
+                                                           LeftOrRightOrBaseline.LEFT.value() );
 
-        assertNotNull( measurementUnitId );
-
-        EnsembleDetails ensemble = new EnsembleDetails();
-        ensemble.setEnsembleName( "ENS123" );
-        ensemble.save( this.wresDatabase );
-        Long ensembleId = ensemble.getId();
-
-        assertNotNull( ensembleId );
-
-        // Add two forecasts
-        // Two reference times, PT17H apart
-        Instant firstReference = Instant.parse( T2023_04_01T00_00_00Z );
-
-        TimeScaleOuter timeScale = TimeScaleOuter.of( Duration.ofMinutes( 1 ), TimeScaleFunction.UNKNOWN );
-
-        wres.io.data.details.TimeSeries firstTraceRow =
-                new wres.io.data.details.TimeSeries( this.wresDatabase,
-                                                     ensembleId,
-                                                     measurementUnitId,
-                                                     firstReference,
-                                                     sourceId,
-                                                     VARIABLE_NAME,
-                                                     feature.getId() );
-        firstTraceRow.setTimeScale( timeScale );
-        // Do the save
-        firstTraceRow.getTimeSeriesID();
-
-        wres.io.data.details.TimeSeries secondTraceRow =
-                new wres.io.data.details.TimeSeries( this.wresDatabase,
-                                                     ensembleId,
-                                                     measurementUnitId,
-                                                     firstReference,
-                                                     sourceId,
-                                                     VARIABLE_NAME,
-                                                     anotherFeature.getId() );
-        secondTraceRow.setTimeScale( timeScale );
-        // Do the save
-        secondTraceRow.getTimeSeriesID();
+        DataScripter leftScriptTwo = new DataScripter( this.wresDatabase,
+                                                       leftSourceInsertTwo );
+        int rowsLeftTwo = leftScriptTwo.execute();
+        assertEquals( 1, rowsLeftTwo );
 
         return project;
     }

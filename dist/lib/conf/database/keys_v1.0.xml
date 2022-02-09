@@ -52,16 +52,13 @@
         <comment>Linked wres.TimeSeriesValue to wres.TimeSeries</comment>
     </changeSet>
 
-    <changeSet id="Add TimeSeriesValue Index - Time Series" author="Christopher Tubbs">
+    <changeSet id="Drop TimeSeriesValue Index - Time Series" author="Jesse Bickel">
         <preConditions onFail="MARK_RAN">
-            <not>
-                <indexExists schemaName="wres" tableName="TimeSeriesValue"
-                             columnNames="timeseries_id" indexName="timeseriesvalue_timeseries_idx" />
-            </not>
+            <indexExists schemaName="wres" tableName="TimeSeriesValue"
+                         indexName="timeseriesvalue_timeseries_idx" />
         </preConditions>
-        <createIndex schemaName="wres" tableName="TimeSeriesValue" indexName="timeseriesvalue_timeseries_idx">
-            <column name="timeseries_id"/>
-        </createIndex>
-        <comment>Added an index on wres.TimeSeriesValue.timeseries_id</comment>
+        <dropIndex schemaName="wres" tableName="TimeSeriesValue"
+                   indexName="timeseriesvalue_timeseries_idx" />
+        <comment>Removed an index on wres.TimeSeriesValue.timeseries_id</comment>
     </changeSet>
 </databaseChangeLog>

@@ -10,7 +10,7 @@ import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.Variables;
+import wres.io.data.caching.TimeScales;
 import wres.io.reading.commaseparated.CSVSource;
 import wres.io.reading.datacard.DatacardSource;
 import wres.io.reading.fews.FEWSSource;
@@ -33,7 +33,7 @@ public class ReaderFactory {
                                          Database database,
                                          DataSources dataSourcesCache,
                                          Features featuresCache,
-                                         Variables variablesCache,
+                                         TimeScales timeScalesCache,
                                          Ensembles ensemblesCache,
                                          MeasurementUnits measurementUnitsCache,
                                          ProjectConfig projectConfig,
@@ -51,7 +51,7 @@ public class ReaderFactory {
                 source = new DatacardSource( systemSettings,
                                              database,
                                              featuresCache,
-                                             variablesCache,
+                                             timeScalesCache,
                                              ensemblesCache,
                                              measurementUnitsCache,
                                              projectConfig,
@@ -63,7 +63,7 @@ public class ReaderFactory {
                                            database,
                                            dataSourcesCache,
                                            featuresCache,
-                                           variablesCache,
+                                           timeScalesCache,
                                            ensemblesCache,
                                            measurementUnitsCache,
                                            projectConfig,
@@ -74,6 +74,9 @@ public class ReaderFactory {
                 source = new NWMSource( systemSettings,
                                         database,
                                         dataSourcesCache,
+                                        featuresCache,
+                                        timeScalesCache,
+                                        measurementUnitsCache,
                                         projectConfig,
                                         dataSource );
 				break;
@@ -82,7 +85,7 @@ public class ReaderFactory {
                                          database,
                                          dataSourcesCache,
                                          featuresCache,
-                                         variablesCache,
+                                         timeScalesCache,
                                          ensemblesCache,
                                          measurementUnitsCache,
                                          projectConfig,
@@ -95,7 +98,7 @@ public class ReaderFactory {
                                          database,
                                          dataSourcesCache,
                                          featuresCache,
-                                         variablesCache,
+                                         timeScalesCache,
                                          ensemblesCache,
                                          measurementUnitsCache,
                                          projectConfig,
@@ -106,7 +109,7 @@ public class ReaderFactory {
                 source = new CSVSource( systemSettings,
                                         database,
                                         featuresCache,
-                                        variablesCache,
+                                        timeScalesCache,
                                         ensemblesCache,
                                         measurementUnitsCache,
                                         projectConfig,
@@ -117,7 +120,7 @@ public class ReaderFactory {
                 source = new WaterMLBasicSource( systemSettings,
                                                  database,
                                                  featuresCache,
-                                                 variablesCache,
+                                                 timeScalesCache,
                                                  ensemblesCache,
                                                  measurementUnitsCache,
                                                  projectConfig,

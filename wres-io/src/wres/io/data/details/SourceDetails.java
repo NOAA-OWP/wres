@@ -2,21 +2,19 @@ package wres.io.data.details;
 
 import java.net.URI;
 import java.sql.SQLException;
-import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.io.data.details.SourceDetails.SourceKey;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 
 /**
- * Details about a source of observation or forecast data
+ * Details about a time series or raster source of observation or forecast data
  * @author Christopher Tubbs
  */
-public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
+public class SourceDetails extends CachedDetail<SourceDetails, String>
 {
 	/**
 	 * Prevents asynchronous saving of the same source information
@@ -25,42 +23,35 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
     private static final Logger LOGGER = LoggerFactory.getLogger( SourceDetails.class );
 
 	private URI sourcePath = null;
-	private String outputTime = null;
 	private Integer lead = null;
-	private Long sourceID = null;
+    private Long sourceId = null;
 	private String hash = null;
-	private SourceKey key = null;
 	private boolean isPointData = true;
+    private Long featureId = null;
+    private Long timeScaleId = null;
+    private Long measurementUnitId = null;
+    private String variableName = null;
+
 	private boolean performedInsert;
 
-	/**
-	 * Constructor
-	 */
 	public SourceDetails() {
-		this.setSourcePath(null);
-		this.setOutputTime(null);
-		this.setHash( null );
 	}
 
-	/**
-	 * Constructor
-	 * @param key A TwoTuple containing, first, the path to the source file and, second, the time
-	 * that the source file was generated
-	 */
-	public SourceDetails(SourceKey key) {
-		this.setSourcePath(key.getSourcePath());
-		this.setOutputTime(key.getSourceTime());
-		this.setLead(key.getLead());
-		this.setHash( key.getHash() );
+    public SourceDetails( String hash )
+    {
+        this.setHash( hash );
 	}
 
 	public SourceDetails(final DataProvider data)
     {
-        this.setSourcePath(  data.getURI("path") );
-        this.setOutputTime( data.getString( "output_time" ) );
+        this.setSourcePath( data.getURI("path" ) );
         this.setLead( data.getInt( "lead" ));
         this.setHash( data.getString("hash") );
         this.setIsPointData( data.getBoolean( "is_point_data" ) );
+        this.setFeatureId( data.getLong( "feature_id" ) );
+        this.setTimeScaleId( data.getLong( "timescale_id" ) );
+        this.setMeasurementUnitId( data.getLong( "measurementunit_id" ) );
+        this.setVariableName( data.getString( "variable_name" ) );
         this.setID( data.getLong( this.getIDName() ) );
     }
 
@@ -71,15 +62,11 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 	public void setSourcePath( URI path ) {
 		this.sourcePath = path;
 	}
-	
-	/**
-	 * Sets the time that the file was generated
-	 * @param outputTime the time that the file was generated
-	 */
-	public void setOutputTime(String outputTime) {
-		this.outputTime = outputTime;
-	}
 
+    public Integer getLead()
+    {
+        return this.lead;
+    }
 
 	public void setLead(Integer lead)
 	{
@@ -111,10 +98,50 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
         return this.sourcePath;
     }
 
+    public Long getFeatureId()
+    {
+        return featureId;
+    }
+
+    public void setFeatureId( Long featureId )
+    {
+        this.featureId = featureId;
+    }
+
+    public Long getTimeScaleId()
+    {
+        return timeScaleId;
+    }
+
+    public void setTimeScaleId( Long timeScaleId )
+    {
+        this.timeScaleId = timeScaleId;
+    }
+
+    public Long getMeasurementUnitId()
+    {
+        return measurementUnitId;
+    }
+
+    public void setMeasurementUnitId( Long measurementUnitId )
+    {
+        this.measurementUnitId = measurementUnitId;
+    }
+
+    public String getVariableName()
+    {
+        return variableName;
+    }
+
+    public void setVariableName( String variableName )
+    {
+        this.variableName = variableName;
+    }
+
 	@Override
 	public int compareTo(SourceDetails other)
 	{
-		Long id = this.sourceID;
+        Long id = this.sourceId;
 
 		if (id == null) {
 			id = -1l;
@@ -124,20 +151,19 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 	}
 
 	@Override
-	public SourceKey getKey() {
-	    if (this.key == null)
+    public String getKey()
+    {
+        if ( this.getHash() == null )
         {
-            this.key = new SourceKey( this.sourcePath,
-                                      this.outputTime,
-                                      this.lead,
-                                      this.hash );
+            throw new IllegalStateException( "There was no key, it was null." );
         }
-        return this.key;
+
+        return this.hash;
 	}
 
 	@Override
 	public Long getId() {
-		return this.sourceID;
+        return this.sourceId;
 	}
 
 	@Override
@@ -147,7 +173,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 
 	@Override
 	public void setID( long id ) {
-		this.sourceID = id;
+        this.sourceId = id;
 	}
 
 	@Override
@@ -162,14 +188,26 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 
         script.setHighPriority( true );
 
-        script.addLine( "INSERT INTO wres.Source ( path, output_time, lead, hash, is_point_data )" );
-        script.addTab().addLine( "SELECT ?, (?)::timestamp without time zone, ?, ?, ?" );
+        script.addLine( "INSERT INTO wres.Source ( path, lead, hash, is_point_data, feature_id, timescale_id, measurementunit_id, variable_name )" );
+        script.addTab().addLine( "SELECT ?, ?, ?, ?, ?, ?, ?, ?" );
 
-        script.addArgument( this.sourcePath.toString() );
-        script.addArgument( this.outputTime );
+        if ( this.getSourcePath() != null )
+        {
+            script.addArgument( this.getSourcePath()
+                                    .toString() );
+        }
+        else
+        {
+            script.addArgument( null );
+        }
+
         script.addArgument( this.lead );
-        script.addArgument( this.hash );
-        script.addArgument( this.isPointData );
+        script.addArgument( this.getHash() );
+        script.addArgument( this.getIsPointData() );
+        script.addArgument( this.getFeatureId() );
+        script.addArgument( this.getTimeScaleId() );
+        script.addArgument( this.getMeasurementUnitId() );
+        script.addArgument( this.getVariableName() );
 
         script.addTab().addLine( "WHERE NOT EXISTS" );
         script.addTab().addLine( "(" );
@@ -177,7 +215,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
         script.addTab( 2 ).addLine( "FROM wres.Source" );
         script.addTab( 2 ).addLine( "WHERE hash = ?" );
 
-        script.addArgument( this.hash );
+        script.addArgument( this.getHash() );
 
         script.addTab().addLine( ");" );
 
@@ -198,7 +236,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 
         if ( this.performedInsert )
         {
-            this.sourceID = script.getInsertedIds()
+            this.sourceId = script.getInsertedIds()
                                   .get( 0 );
         }
         else
@@ -214,12 +252,12 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 
             try ( DataProvider data = scriptWithId.getData() )
             {
-                this.sourceID = data.getLong( this.getIDName() );
+                this.sourceId = data.getLong( this.getIDName() );
             }
         }
 
-        LOGGER.trace( "Did I create Source ID {}? {}",
-                      this.sourceID,
+        LOGGER.trace( "Did I create Source Id {}? {}",
+                      this.sourceId,
                       this.performedInsert );
     }
 
@@ -241,67 +279,4 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
     {
         return this.performedInsert;
     }
-
-	public static SourceKey createKey( URI sourcePath, String sourceTime, Integer lead, String hash )
-	{
-	    return new SourceKey( sourcePath, sourceTime, lead, hash);
-	}
-
-	public static class SourceKey implements Comparable<SourceKey>
-	{
-	    public SourceKey( URI sourcePath, String sourceTime, Integer lead, String hash )
-	    {
-	        this.sourcePath = sourcePath;
-	        this.sourceTime = sourceTime;
-	        this.lead = lead;
-	        this.hash = hash;
-	    }
-	    
-        @Override
-        public int compareTo(SourceKey other)
-        {
-			return this.hash.compareTo( other.hash );
-        }
-        
-        public URI getSourcePath()
-        {
-            return this.sourcePath;
-        }
-        
-        public String getSourceTime()
-        {
-            return this.sourceTime;
-        }
-
-        public Integer getLead()
-        {
-            return this.lead;
-        }
-
-        public String getHash()
-		{
-			return this.hash;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-	        return obj instanceof SourceKey && obj.hashCode() == this.hashCode();
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(this.getHash());
-		}
-
-		private final URI sourcePath;
-	    private final String sourceTime;
-	    private final Integer lead;
-	    private final String hash;
-
-		@Override
-		public String toString()
-		{
-			return String.format( "Path: %s, lead: %d", this.getSourcePath(), this.getLead()  );
-		}
-	}
 }

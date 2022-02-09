@@ -1,36 +1,45 @@
-    <changeSet id="wres.TimeSeriesValue_NAMEHERE - Add lead index."
+    <changeSet id="wres.TimeSeriesValue_NAMEHERE - Drop lead index."
                author="generate_partitions_changesets.sh"
                dbms="PostgreSQL">
         <preConditions onFail="MARK_RAN">
-          <tableExists tableName="TimeSeriesValue_NAMEHERE"
-                       schemaName="wres" />
-              <not>
-                  <indexExists tableName="TimeSeriesValue_NAMEHERE"
-                               schemaName="wres"
-                               indexName="TimeSeriesValue_NAMEHERE_lead_idx" />
-              </not>
+            <tableExists tableName="TimeSeriesValue_NAMEHERE"
+                         schemaName="wres" />
+            <indexExists tableName="TimeSeriesValue_NAMEHERE"
+                         schemaName="wres"
+                         indexName="TimeSeriesValue_NAMEHERE_lead_idx" />
         </preConditions>
-        <createIndex tableName="TimeSeriesValue_NAMEHERE"
-                     schemaName="wres"
-                     indexName="TimeSeriesValue_NAMEHERE_lead_idx">
-            <column name="lead" />
-        </createIndex>
+        <dropIndex tableName="TimeSeriesValue_NAMEHERE"
+                   schemaName="wres"
+                   indexName="TimeSeriesValue_NAMEHERE_lead_idx" />
     </changeSet>
-    <changeSet id="wres.TimeSeriesValue_NAMEHERE - Add timeseries_id index."
+    <changeSet id="wres.TimeSeriesValue_NAMEHERE - Drop timeseries_id index."
                author="generate_partitions_changesets.sh"
                dbms="PostgreSQL">
         <preConditions onFail="MARK_RAN">
-          <tableExists tableName="TimeSeriesValue_NAMEHERE"
-                       schemaName="wres" />
-              <not>
-                  <indexExists tableName="TimeSeriesValue_NAMEHERE"
-                               schemaName="wres"
-                               indexName="TimeSeriesValue_NAMEHERE_TimeSeries_idx" />
-              </not>
+            <tableExists tableName="TimeSeriesValue_NAMEHERE"
+                         schemaName="wres" />
+            <indexExists tableName="TimeSeriesValue_NAMEHERE"
+                         schemaName="wres"
+                         indexName="TimeSeriesValue_NAMEHERE_TimeSeries_idx" />
         </preConditions>
-        <createIndex tableName="TimeSeriesValue_NAMEHERE"
-                     schemaName="wres"
-                     indexName="TimeSeriesValue_NAMEHERE_TimeSeries_idx">
-            <column name="timeseries_id" />
-        </createIndex>
+        <dropIndex tableName="TimeSeriesValue_NAMEHERE"
+                   schemaName="wres"
+                   indexName="TimeSeriesValue_NAMEHERE_TimeSeries_idx" />
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_NAMEHERE - Add timeseries_id,lead unique index."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_NAMEHERE"
+                         schemaName="wres" />
+            <not>
+                <indexExists tableName="TimeSeriesValue_NAMEHERE"
+                             schemaName="wres"
+                             indexName="TimeSeriesValue_NAMEHERE_timeseries_lead_key" />
+            </not>
+        </preConditions>
+        <addUniqueConstraint tableName="TimeSeriesValue_NAMEHERE"
+                             schemaName="wres"
+                             columnNames="timeseries_id,lead"
+                             constraintName="TimeSeriesValue_NAMEHERE_timeseries_lead_key" />
     </changeSet>

@@ -23,4 +23,19 @@
                     remarks="Textual description of the original location of the data." />
         </createTable>
     </changeSet>
+    <changeSet id="wres.TimeSeriesValue - Add timeseries_id,lead unique index."
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue" schemaName="wres" />
+            <not>
+                <indexExists tableName="TimeSeriesValue"
+                             schemaName="wres"
+                             indexName="TimeSeriesValue_timeseries_lead_key" />
+            </not>
+        </preConditions>
+        <addUniqueConstraint tableName="TimeSeriesValue"
+                             schemaName="wres"
+                             columnNames="timeseries_id,lead"
+                             constraintName="TimeSeriesValue_timeseries_lead_key" />
+    </changeSet>
 </databaseChangeLog>

@@ -79,7 +79,7 @@
                                  onDelete="CASCADE" />
     </changeSet>
 
-    <changeSet id="wres.ProjectSource v2 - Add project_id/member index"
+    <changeSet id="wres.ProjectSource v2 - Add project_id/member index (again)"
                author="Jesse Bickel">
         <preConditions onFail="MARK_RAN">
             <tableExists tableName="ProjectSource" schemaName="wres" />
@@ -96,19 +96,4 @@
         </createIndex>
     </changeSet>
 
-    <changeSet id="wres.ProjectSource v2 - Add source_id index"
-               author="Jesse Bickel">
-        <preConditions onFail="MARK_RAN">
-            <tableExists tableName="ProjectSource" schemaName="wres" />
-            <not>
-                <indexExists indexName="projectsource_source_index"
-                             columnNames="source_id"
-                             tableName="ProjectSource" schemaName="wres" />
-            </not>
-        </preConditions>
-        <createIndex  indexName="projectsource_source_index"
-                      tableName="ProjectSource" schemaName="wres">
-            <column name="source_id" />
-        </createIndex>
-    </changeSet>
 </databaseChangeLog>
