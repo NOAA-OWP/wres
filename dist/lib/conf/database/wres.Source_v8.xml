@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.7.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="Remove obsolete output_time column from wres.Source v7 table"
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="Source" schemaName="wres" />
+            <columnExists tableName="Source" schemaName="wres"
+                          columnName="output_time" />
+        </preConditions>
+        <comment>
+            Remove unused output_time_column from wres.Source.
+        </comment>
+        <dropColumn tableName="Source" schemaName="wres"
+                    columnName="output_time" />
+    </changeSet>
+    <changeSet id="Delete from wres.Source (and related tables) before adding columns."
+               author="Jesse Bickel">
+        <!-- Look for the wres.TimeSeries tables having old columns -->
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeries"
+                         schemaName="wres" />
+            <tableExists tableName="Source"
+                         schemaName="wres" />
+            <tableExists tableName="Project"
+                         schemaName="wres" />
+            <columnExists columnName="variable_name"
+                          tableName="TimeSeries"
+                          schemaName="wres" />
+            <columnExists columnName="feature_id"
+                          tableName="TimeSeries"
+                          schemaName="wres" />
+            <columnExists columnName="measurementunit_id"
+                          tableName="TimeSeries"
+                          schemaName="wres" />
+        </preConditions>
+        <delete tableName="TimeSeries" schemaName="wres" />
+        <delete tableName="Source" schemaName="wres" />
+        <delete tableName="Project" schemaName="wres" />
+    </changeSet>
+    <changeSet id="wres.Source v8 - Move vector TimeSeries metadata here."
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="Source" schemaName="wres" />
+            <columnExists tableName="Source" schemaName="wres"
+                          columnName="source_id" />
+            <not>
+                <columnExists tableName="Source" schemaName="wres"
+                              columnName="feature_id" />
+                <columnExists tableName="Source" schemaName="wres"
+                              columnName="timescale_id" />
+                <columnExists tableName="Source" schemaName="wres"
+                              columnName="measurementunit_id" />
+                <columnExists tableName="Source" schemaName="wres"
+                              columnName="variable_name" />
+            </not>
+        </preConditions>
+        <addColumn tableName="Source" schemaName="wres">
+            <column name="feature_id" type="integer"
+                    remarks="The ID of the geographic feature associated with this time series.">
+                <constraints nullable="false" />
+            </column>
+            <column name="timescale_id" type="integer"
+                    remarks="The ID of the timescale associated with this time series." />
+            <column name="measurementunit_id" type="smallint"
+                    remarks="The ID of the unit of measurement of this time series.">
+                <constraints nullable="false" />
+            </column>
+            <column name="variable_name" type="varchar"
+                    remarks="The name of the variable represented in this timeseries according to the original dataset.">
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <!-- Only a handful of dbs support deferrable and initially deferred. -->
+    <changeSet id="Add feature_id foreign key constraint to wres.Source (deferred)."
+               author="Jesse Bickel"
+               dbms="oracle,postgresql,sqlite">
+        <preConditions onFail="MARK_RAN">
+            <columnExists columnName="feature_id"
+                          tableName="Source"
+                          schemaName="wres" />
+            <columnExists columnName="feature_id"
+                          tableName="Feature"
+                          schemaName="wres" />
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="source_feature_fk" />
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint constraintName="source_feature_fk"
+                                 baseColumnNames="feature_id"
+                                 baseTableName="Source"
+                                 baseTableSchemaName="wres"
+                                 referencedColumnNames="feature_id"
+                                 referencedTableName="Feature"
+                                 referencedTableSchemaName="wres"
+                                 onDelete="CASCADE"
+                                 deferrable="true"
+                                 initiallyDeferred="true" />
+    </changeSet>
+    <!-- Most dbs do not support deferrable and initially deferred, such as H2.
+         Sybase does not support onDelete="CASCADE", skip fk in odd case where
+         someone actually installs using sybase. -->
+    <changeSet id="Add feature_id foreign key constraint to wres.Source (non-deferred)."
+               author="Jesse Bickel"
+               dbms="!oracle,!postgresql,!sqlite,!sybase">
+        <preConditions onFail="MARK_RAN">
+            <columnExists columnName="feature_id"
+                          tableName="Source"
+                          schemaName="wres" />
+            <columnExists columnName="feature_id"
+                          tableName="Feature"
+                          schemaName="wres" />
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="source_feature_fk" />
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint constraintName="source_feature_fk"
+                                 baseColumnNames="feature_id"
+                                 baseTableName="Source"
+                                 baseTableSchemaName="wres"
+                                 referencedColumnNames="feature_id"
+                                 referencedTableName="Feature"
+                                 referencedTableSchemaName="wres"
+                                 onDelete="CASCADE" />
+    </changeSet>
+    <changeSet id="Add measurementunit_id foreign key constraint to wres.Source (deferred)."
+               author="Jesse Bickel"
+               dbms="oracle,postgresql,sqlite">
+        <preConditions onFail="MARK_RAN">
+            <columnExists columnName="measurementunit_id"
+                          tableName="MeasurementUnit"
+                          schemaName="wres" />
+            <columnExists columnName="measurementunit_id"
+                          tableName="Source"
+                          schemaName="wres" />
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="source_measurementunit_fk"
+                                            schemaName="wres" />
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint baseColumnNames="measurementunit_id"
+                                 baseTableName="Source"
+                                 baseTableSchemaName="wres"
+                                 constraintName="source_measurementunit_fk"
+                                 referencedColumnNames="measurementunit_id"
+                                 referencedTableName="MeasurementUnit"
+                                 referencedTableSchemaName="wres"
+                                 deferrable="true"
+                                 initiallyDeferred="true"
+                                 onDelete="CASCADE" />
+    </changeSet>
+    <changeSet id="Add measurementunit_id foreign key constraint to wres.Source (non-deferred)."
+               author="Jesse Bickel"
+               dbms="!oracle,!postgresql,!sqlite,!sybase">
+        <preConditions onFail="MARK_RAN">
+            <columnExists columnName="measurementunit_id"
+                          tableName="MeasurementUnit"
+                          schemaName="wres" />
+            <columnExists columnName="measurementunit_id"
+                          tableName="Source"
+                          schemaName="wres" />
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="source_measurementunit_fk"
+                                            schemaName="wres" />
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint baseColumnNames="measurementunit_id"
+                                 baseTableName="Source"
+                                 baseTableSchemaName="wres"
+                                 constraintName="source_measurementunit_fk"
+                                 referencedColumnNames="measurementunit_id"
+                                 referencedTableName="MeasurementUnit"
+                                 referencedTableSchemaName="wres"
+                                 onDelete="CASCADE" />
+    </changeSet>
+    <changeSet id="Add timescale_id foreign key constraint to wres.Source (deferred)."
+               author="Jesse Bickel"
+               dbms="oracle,postgresql,sqlite">
+        <preConditions onFail="MARK_RAN">
+            <columnExists columnName="timescale_id"
+                          tableName="TimeScale"
+                          schemaName="wres" />
+            <columnExists columnName="timescale_id"
+                          tableName="Source"
+                          schemaName="wres" />
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="source_timescale_fk"
+                                            schemaName="wres" />
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint baseColumnNames="timescale_id"
+                                 baseTableName="Source"
+                                 baseTableSchemaName="wres"
+                                 constraintName="source_timescale_fk"
+                                 referencedColumnNames="timescale_id"
+                                 referencedTableName="TimeScale"
+                                 referencedTableSchemaName="wres"
+                                 deferrable="true"
+                                 initiallyDeferred="true"
+                                 onDelete="CASCADE" />
+    </changeSet>
+    <changeSet id="Add timescale_id foreign key constraint to wres.Source (non-deferred)."
+               author="Jesse Bickel"
+               dbms="!oracle,!postgresql,!sqlite,!sybase">
+        <preConditions onFail="MARK_RAN">
+            <columnExists columnName="timescale_id"
+                          tableName="TimeScale"
+                          schemaName="wres" />
+            <columnExists columnName="timescale_id"
+                          tableName="Source"
+                          schemaName="wres" />
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="source_timescale_fk"
+                                            schemaName="wres" />
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint baseColumnNames="timescale_id"
+                                 baseTableName="Source"
+                                 baseTableSchemaName="wres"
+                                 constraintName="source_timescale_fk"
+                                 referencedColumnNames="timescale_id"
+                                 referencedTableName="TimeScale"
+                                 referencedTableSchemaName="wres"
+                                 onDelete="CASCADE" />
+    </changeSet>
+</databaseChangeLog>

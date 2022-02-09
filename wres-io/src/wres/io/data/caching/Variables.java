@@ -40,10 +40,10 @@ public class Variables
         Database database = this.getDatabase();
         DataScripter script = new DataScripter( database );
 
-        script.addLine( "SELECT DISTINCT( TS.variable_name )" );
-        script.addLine( "FROM wres.TimeSeries TS" );
+        script.addLine( "SELECT DISTINCT( S.variable_name )" );
+        script.addLine( "FROM wres.Source S" );
         script.addLine( "INNER JOIN wres.ProjectSource PS ON" );
-        script.addTab().addLine( "TS.source_id = PS.source_id" );
+        script.addTab().addLine( "S.source_id = PS.source_id" );
         script.addLine( "WHERE PS.project_id = ?" );
         script.addArgument( projectID );
         script.addTab().addLine( "AND PS.member = ?" );
@@ -73,14 +73,14 @@ public class Variables
         Database database = this.getDatabase();
         DataScripter script = new DataScripter( database );
         script.addLine( "SELECT 1" );
-        script.addLine( "FROM wres.TimeSeries TS" );
+        script.addLine( "FROM wres.Source S" );
         script.addLine( "INNER JOIN wres.ProjectSource PS ON" );
-        script.addTab().addLine( "PS.source_id = TS.source_id" );
+        script.addTab().addLine( "PS.source_id = S.source_id" );
         script.addLine( "WHERE PS.project_id = ?" );
         script.addArgument( projectID );
         script.addTab().addLine( "AND PS.member = ?" );
         script.addArgument( projectMember );
-        script.addTab().addLine( "AND TS.variable_name = ?" );
+        script.addTab().addLine( "AND S.variable_name = ?" );
         script.addArgument( variableName );
         script.setMaxRows( 1 );
 

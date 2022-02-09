@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.7.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="Create wres.TimeScale v1 table"
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeScale" schemaName="wres" />
+            </not>
+        </preConditions>
+        <createTable tableName="TimeScale" schemaName="wres"
+                     remarks="Each row represents a time scale.">
+            <column name="timescale_id" type="integer" autoIncrement="true"
+                    remarks="The synthetic key of the time scale represented by this row.">
+                <constraints primaryKey="true" />
+            </column>
+            <column name="duration_ms" type="bigint"
+                    remarks="The duration or period of the temporal scale in milliseconds. Instantaneous is defined by the application code.">
+                <constraints nullable="false" />
+            </column>
+            <column name="function_name" type="varchar"
+                    defaultValue="UNKNOWN"
+                    remarks="The function that was applied over the period, e.g. minimum, maximum, mean.">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="Add unique constraint to wres.TimeScale"
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeScale" schemaName="wres" />
+            <columnExists tableName="TimeScale" schemaName="wres"
+                          columnName="duration_ms" />
+            <columnExists tableName="TimeScale" schemaName="wres"
+                          columnName="function_name" />
+            <not>
+                <indexExists indexName="timescale_duration_function_unique_index"
+                             columnNames="duration_ms,function_name"
+                             tableName="TimeScale" schemaName="wres" />
+            </not>
+        </preConditions>
+        <addUniqueConstraint constraintName="timescale_duration_function_unique_index"
+                             columnNames="duration_ms,function_name"
+                             tableName="TimeScale" schemaName="wres" />
+    </changeSet>
+</databaseChangeLog>

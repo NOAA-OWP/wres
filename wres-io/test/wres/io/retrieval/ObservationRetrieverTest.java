@@ -1,18 +1,17 @@
 package wres.io.retrieval;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
+import static wres.datamodel.time.ReferenceTimeType.T0;
 import static wres.io.retrieval.RetrieverTestConstants.*;
 
-import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.MessageFormat;
-import java.time.Duration;
+import java.sql.Statement;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -33,28 +32,32 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import wres.config.generated.DatasourceType;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
-import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.io.concurrency.TimeSeriesIngester;
+import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.details.EnsembleDetails;
-import wres.io.data.details.FeatureDetails;
-import wres.io.data.details.MeasurementDetails;
-import wres.io.data.details.SourceDetails;
+import wres.io.data.caching.TimeScales;
 import wres.io.project.Project;
-import wres.io.utilities.DataScripter;
+import wres.io.project.Projects;
+import wres.io.reading.DataSource;
+import wres.io.reading.IngestResult;
 import wres.io.utilities.TestDatabase;
 import wres.statistics.generated.TimeWindow;
+import wres.system.DatabaseLockManager;
+import wres.system.DatabaseLockManagerNoop;
 import wres.system.SystemSettings;
 
 /**
@@ -64,12 +67,9 @@ import wres.system.SystemSettings;
 
 public class ObservationRetrieverTest
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( ObservationRetrieverTest.class );
     private static final String SECOND_TIME = "2023-04-01T09:00:00Z";
     private static final String FIRST_TIME = "2023-04-01T03:00:00Z";
-
-    private static final FeatureKey FEATURE = FeatureKey.of(
-                                                             MessageFactory.getGeometry( "FEAT" ) );
-    private static final String VARIABLE_NAME = "VAR";
 
     @Mock
     private SystemSettings mockSystemSettings;
@@ -78,6 +78,9 @@ public class ObservationRetrieverTest
     private Executor mockExecutor;
     private Features featuresCache;
     private MeasurementUnits measurementUnitsCache;
+    private TimeScales timeScalesCache;
+    private Ensembles ensemblesCache;
+    private DatabaseLockManager lockManager;
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
     private Connection rawConnection;
@@ -89,11 +92,6 @@ public class ObservationRetrieverTest
 
     private static final LeftOrRightOrBaseline LRB = LeftOrRightOrBaseline.LEFT;
 
-    /**
-     * The measurement units for testing.
-     */
-
-    private static final String UNITS = "CFS";
 
     /**
      * Unit mapper.
@@ -137,6 +135,9 @@ public class ObservationRetrieverTest
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
         this.featuresCache = new Features( this.wresDatabase );
         this.measurementUnitsCache = new MeasurementUnits( this.wresDatabase );
+        this.timeScalesCache = new TimeScales( this.wresDatabase );
+        this.ensemblesCache = new Ensembles( this.wresDatabase );
+        this.lockManager = new DatabaseLockManagerNoop();
 
         // Create the connection and schema
         this.createTheConnectionAndSchema();
@@ -147,7 +148,7 @@ public class ObservationRetrieverTest
         // Add some data for testing
         this.addAnObservedTimeSeriesWithTenEventsToTheDatabase();
 
-        this.unitMapper = UnitMapper.of( this.measurementUnitsCache, UNITS );
+        this.unitMapper = UnitMapper.of( this.measurementUnitsCache, UNIT );
     }
 
     @Test
@@ -180,7 +181,7 @@ public class ObservationRetrieverTest
                                        TimeScaleOuter.of(),
                                        VARIABLE_NAME,
                                        FEATURE,
-                                       "CFS" );
+                                       UNIT );
         TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
         TimeSeries<Double> expectedSeries =
                 builder.setMetadata( expectedMetadata )
@@ -239,7 +240,7 @@ public class ObservationRetrieverTest
                                        TimeScaleOuter.of(),
                                        VARIABLE_NAME,
                                        FEATURE,
-                                       "CFS" );
+                                       UNIT );
         TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
         TimeSeries<Double> expectedSeries =
                 builder.setMetadata( expectedMetadata )
@@ -352,14 +353,7 @@ public class ObservationRetrieverTest
         Database liquibaseDatabase =
                 this.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
 
-        this.testDatabase.createSourceTable( liquibaseDatabase );
-        this.testDatabase.createProjectTable( liquibaseDatabase );
-        this.testDatabase.createProjectSourceTable( liquibaseDatabase );
-        this.testDatabase.createFeatureTable( liquibaseDatabase );
-        this.testDatabase.createEnsembleTable( liquibaseDatabase );
-        this.testDatabase.createMeasurementUnitTable( liquibaseDatabase );
-        this.testDatabase.createTimeSeriesTable( liquibaseDatabase );
-        this.testDatabase.createTimeSeriesValueTable( liquibaseDatabase );
+        this.testDatabase.createAllTables( liquibaseDatabase );
     }
 
     /**
@@ -381,133 +375,67 @@ public class ObservationRetrieverTest
 
     private void addAnObservedTimeSeriesWithTenEventsToTheDatabase() throws SQLException
     {
-        // Add a source
-        SourceDetails.SourceKey sourceKey = SourceDetails.createKey( URI.create( "/this/is/just/a/test" ),
-                                                                     "2017-06-16 11:13:00",
-                                                                     null,
-                                                                     "abc123" );
+        DataSource leftData = RetrieverTestData.generateDataSource( DatasourceType.OBSERVATIONS );
+        DataSource rightData = RetrieverTestData.generateDataSource( DatasourceType.SINGLE_VALUED_FORECASTS );
+        LOGGER.info( "leftData: {}", leftData );
+        LOGGER.info( "rightData: {}" , rightData );
+        ProjectConfig.Inputs fakeInputs = new ProjectConfig.Inputs( leftData.getContext(), rightData.getContext(), null );
+        ProjectConfig fakeConfig = new ProjectConfig( fakeInputs, null, null, null, null, null );
+        TimeSeries<Double> timeSeriesOne = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
+        TimeSeriesIngester ingesterOne = TimeSeriesIngester.of( this.mockSystemSettings,
+                                                                this.wresDatabase,
+                                                                this.featuresCache,
+                                                                this.timeScalesCache,
+                                                                this.ensemblesCache,
+                                                                this.measurementUnitsCache,
+                                                                fakeConfig,
+                                                                leftData,
+                                                                this.lockManager,
+                                                                timeSeriesOne );
+        IngestResult ingestResultOne = ingesterOne.call()
+                                                  .get( 0 );
+        TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleOne( T0 );
 
-        SourceDetails sourceDetails = new SourceDetails( sourceKey );
+        TimeSeriesIngester ingesterTwo = TimeSeriesIngester.of( this.mockSystemSettings,
+                                                                this.wresDatabase,
+                                                                this.featuresCache,
+                                                                this.timeScalesCache,
+                                                                this.ensemblesCache,
+                                                                this.measurementUnitsCache,
+                                                                fakeConfig,
+                                                                rightData,
+                                                                this.lockManager,
+                                                                timeSeriesTwo );
+        IngestResult ingestResultTwo = ingesterTwo.call()
+                                                  .get( 0 );
 
-        sourceDetails.save( this.wresDatabase );
+        List<IngestResult> results = List.of( ingestResultOne,
+                                              ingestResultTwo );
 
-        assertTrue( sourceDetails.performedInsert() );
-
-        Long sourceId = sourceDetails.getId();
-
-        assertNotNull( sourceId );
-
-        // Add a project 
-        Project project =
-                new Project( this.mockSystemSettings,
-                             this.wresDatabase,
-                             this.featuresCache,
-                             this.mockExecutor,
-                             new ProjectConfig( null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                "test_project" ),
-                             PROJECT_HASH );
-        project.save();
-
-        assertTrue( project.performedInsert() );
-
-        assertEquals( PROJECT_HASH, project.getHash() );
-
-        // Add a project source
-        // There is no wres abstraction to help with this
-        String projectSourceInsert =
-                "INSERT INTO wres.ProjectSource (project_id, source_id, member) VALUES ({0},{1},''{2}'')";
-
-        //Format 
-        projectSourceInsert = MessageFormat.format( projectSourceInsert,
-                                                    project.getId(),
-                                                    sourceId,
-                                                    LRB.value() );
-
-        DataScripter script = new DataScripter( this.wresDatabase,
-                                                projectSourceInsert );
-        int rows = script.execute();
-
-        assertEquals( 1, rows );
-
-        // Add a feature
-        FeatureDetails feature = new FeatureDetails( FEATURE );
-        feature.save( this.wresDatabase );
-
-        assertNotNull( feature.getId() );
-
-        // Get the measurement units for CFS
-        MeasurementDetails measurement = new MeasurementDetails();
-
-        measurement.setUnit( UNITS );
-        measurement.save( this.wresDatabase );
-        Long measurementUnitId = measurement.getId();
-
-        assertNotNull( measurementUnitId );
-
-        EnsembleDetails ensemble = new EnsembleDetails();
-        ensemble.setEnsembleName( "ENS123" );
-        ensemble.save( this.wresDatabase );
-        Long ensembleId = ensemble.getId();
-
-        assertNotNull( ensembleId );
-
-        Instant latestObsDatetime = Instant.parse( "2023-04-01T10:00:00Z" );
-        TimeScaleOuter timeScale = TimeScaleOuter.of( Duration.ofMinutes( 1 ), TimeScaleFunction.UNKNOWN );
-
-        wres.io.data.details.TimeSeries firstTraceRow =
-                new wres.io.data.details.TimeSeries( this.wresDatabase,
-                                                     1,
-                                                     measurementUnitId,
-                                                     latestObsDatetime,
-                                                     sourceId,
-                                                     VARIABLE_NAME,
-                                                     feature.getId() );
-        firstTraceRow.setTimeScale( timeScale );
-        long firstTraceRowId = firstTraceRow.getTimeSeriesID();
-
-
-        // Add some observations
-
-        Instant seriesStart = Instant.parse( "2023-04-01T00:00:00Z" );
-        Duration seriesIncrement = Duration.ofHours( 1 );
-        double valueStart = 23.0;
-        double valueIncrement = 7.0;
-
-        // Insert template
-        // As above, this does not work as a prepared statement via DataScripter
-        String observationInsert =
-                "INSERT INTO wres.TimeSeriesValue (timeseries_id, lead, series_value) VALUES ({0},{1},{2})";
-
-        // Insert 10 observed events into the db
-        Instant observationTime = seriesStart;
-        double observedValue = valueStart;
-        for ( int i = 0; i < 10; i++ )
+        // Print the contents of the source table.
+        try ( Statement statement = this.rawConnection.createStatement() )
         {
-            // Increment the valid datetime and value
-            observationTime = observationTime.plus( seriesIncrement );
-            observedValue = observedValue + valueIncrement;
+            ResultSet sourceData = statement.executeQuery( "select source_id, hash, measurementunit_id, path from wres.source" );
 
-            // Insert
-            String insert = MessageFormat.format( observationInsert,
-                                                  firstTraceRowId,
-                                                  Duration.between( latestObsDatetime,
-                                                                    observationTime )
-                                                          .toMinutes(),
-                                                  observedValue );
-
-            DataScripter observedScript = new DataScripter( this.wresDatabase,
-                                                            insert );
-
-            int row = observedScript.execute();
-
-            // One row added
-            assertEquals( 1, row );
+            while ( sourceData.next() )
+            {
+                LOGGER.info( "source_id={} hash={} measurementunit_id={} path={}",
+                             sourceData.getLong( "source_id" ),
+                             sourceData.getString( "hash"),
+                             sourceData.getShort( "measurementunit_id" ),
+                             sourceData.getString( "path" ) );
+            }
         }
 
+        LOGGER.info( "ingestResultOne: {}", ingestResultOne );
+        LOGGER.info( "ingestResultTwo: {}", ingestResultTwo );
+        Project project = Projects.getProjectFromIngest( this.mockSystemSettings,
+                                                         this.wresDatabase,
+                                                         this.featuresCache,
+                                                         this.mockExecutor,
+                                                         fakeConfig,
+                                                         results );
+        assertTrue( project.performedInsert() );
     }
 
 }

@@ -36,6 +36,7 @@ import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
+import wres.io.data.caching.TimeScales;
 import wres.io.data.caching.Variables;
 import wres.io.reading.DataSource;
 import wres.io.reading.IngestResult;
@@ -3313,7 +3314,7 @@ public class WRDSSourceTest
     @Mock private Database mockDatabase;
     @Mock private DataSources mockDataSourcesCache;
     @Mock private Features mockFeaturesCache;
-    @Mock private Variables mockVariablesCache;
+    @Mock private TimeScales mockTimeScalesCache;
     @Mock private Ensembles mockEnsemblesCache;
     @Mock private MeasurementUnits mockMeasurementUnitsCache;
     @Mock private DatabaseLockManager fakeLockManager;
@@ -3417,7 +3418,7 @@ public class WRDSSourceTest
                                 this.mockDatabase,
                                 this.mockDataSourcesCache,
                                 this.mockFeaturesCache,
-                                this.mockVariablesCache,
+                                this.mockTimeScalesCache,
                                 this.mockEnsemblesCache,
                                 this.mockMeasurementUnitsCache,
                                 projectConfig,
@@ -3429,7 +3430,7 @@ public class WRDSSourceTest
                                       this.mockDatabase,
                                       this.mockDataSourcesCache,
                                       this.mockFeaturesCache,
-                                      this.mockVariablesCache,
+                                      this.mockTimeScalesCache,
                                       this.mockEnsemblesCache,
                                       this.mockMeasurementUnitsCache,
                                       projectConfig,
@@ -3556,7 +3557,7 @@ public class WRDSSourceTest
                                 this.mockDatabase,
                                 this.mockDataSourcesCache,
                                 this.mockFeaturesCache,
-                                this.mockVariablesCache,
+                                this.mockTimeScalesCache,
                                 this.mockEnsemblesCache,
                                 this.mockMeasurementUnitsCache,
                                 projectConfig,
@@ -3568,7 +3569,7 @@ public class WRDSSourceTest
                                       this.mockDatabase,
                                       this.mockDataSourcesCache,
                                       this.mockFeaturesCache,
-                                      this.mockVariablesCache,
+                                      this.mockTimeScalesCache,
                                       this.mockEnsemblesCache,
                                       this.mockMeasurementUnitsCache,
                                       projectConfig,
@@ -3683,7 +3684,7 @@ public class WRDSSourceTest
                                 this.mockDatabase,
                                 this.mockDataSourcesCache,
                                 this.mockFeaturesCache,
-                                this.mockVariablesCache,
+                                this.mockTimeScalesCache,
                                 this.mockEnsemblesCache,
                                 this.mockMeasurementUnitsCache,
                                 projectConfig,
@@ -3694,7 +3695,7 @@ public class WRDSSourceTest
                                       this.mockDatabase,
                                       this.mockDataSourcesCache,
                                       this.mockFeaturesCache,
-                                      this.mockVariablesCache,
+                                      this.mockTimeScalesCache,
                                       this.mockEnsemblesCache,
                                       this.mockMeasurementUnitsCache,
                                       projectConfig,
@@ -3801,7 +3802,7 @@ public class WRDSSourceTest
                                       this.mockDatabase,
                                       this.mockDataSourcesCache,
                                       this.mockFeaturesCache,
-                                      this.mockVariablesCache,
+                                      this.mockTimeScalesCache,
                                       this.mockEnsemblesCache,
                                       this.mockMeasurementUnitsCache,
                                       projectConfig,
@@ -3816,7 +3817,7 @@ public class WRDSSourceTest
                                 this.mockDatabase,
                                 this.mockDataSourcesCache,
                                 this.mockFeaturesCache,
-                                this.mockVariablesCache,
+                                this.mockTimeScalesCache,
                                 this.mockEnsemblesCache,
                                 this.mockMeasurementUnitsCache,
                                 projectConfig,

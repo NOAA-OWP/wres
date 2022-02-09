@@ -8,7 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.data.details.SourceDetails;
-import wres.io.data.details.SourceDetails.SourceKey;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
@@ -18,7 +17,7 @@ import wres.util.Collections;
  * Caches information about the source of forecast and observation data
  * @author Christopher Tubbs
  */
-public class DataSources extends Cache<SourceDetails, SourceKey>
+public class DataSources extends Cache<SourceDetails, String>
 {
     private static final int MAX_DETAILS = 10000;
     private static final Logger LOGGER = LoggerFactory.getLogger(DataSources.class);
@@ -64,11 +63,14 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         while ( data.next() )
         {
             detail = new SourceDetails();
-            detail.setOutputTime( data.getString( "output_time" ) );
             detail.setSourcePath( URI.create( data.getString( "path" ) ) );
             detail.setHash( data.getString( "hash" ) );
             detail.setIsPointData( data.getBoolean( "is_point_data" ) );
             detail.setID( data.getLong( "source_id" ) );
+            detail.setVariableName( data.getString( "variable_name" ) );
+            detail.setMeasurementUnitId( data.getLong( "measurementunit_id" ) );
+            detail.setTimeScaleId( data.getLong( "timescale_id" ) );
+            detail.setFeatureId( data.getLong( "feature_id" ) );
 
             this.getKeyIndex().put( detail.getKey(), detail.getId() );
             this.getDetails().put( detail.getId(), detail );
@@ -78,23 +80,17 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 	
 	/**
 	 * Gets the ID of source metadata from the global cache based on a file path and the date of its output
-	 * @param path The path to the file on the file system
-	 * @param outputTime The time in which the information was generated
-	 * @param lead the lead time
 	 * @param hash the hash code for the source file
 	 * @return The ID of the source in the database
-	 * @throws SQLException Thrown when interaction with the database failed
 	 */
-	public Long getSourceID( URI path, String outputTime, Integer lead, String hash )
-            throws SQLException
+	public Long getSourceID( String hash ) throws SQLException
     {
-		return this.getID(path, outputTime, lead, hash);
+		return this.getID( hash);
 	}
 
-	public SourceDetails get( URI path, String outputTime, Integer lead, String hash )
-            throws SQLException
+	public SourceDetails get( String hash ) throws SQLException
     {
-        long id = this.getID( path, outputTime, lead, hash );
+        long id = this.getID( hash );
         return this.get( id );
     }
 
@@ -115,7 +111,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         Database database = this.getDatabase();
         DataScripter script = new DataScripter( database );
         script.setHighPriority( true );
-        script.addLine( "SELECT source_id, path, output_time::text as output_time, lead, hash, is_point_data" );
+        script.addLine( "SELECT source_id, path, lead, hash, is_point_data, feature_id, timescale_id, measurementunit_id, variable_name" );
         script.addLine( "FROM wres.Source" );
         script.addLine( "WHERE source_id = ?" );
         script.addArgument( id );
@@ -130,10 +126,13 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
                 notFoundInCache = new SourceDetails();
                 notFoundInCache.setHash( data.getString( "hash" ) );
                 notFoundInCache.setLead( data.getInt( "lead" ) );
-                notFoundInCache.setOutputTime( data.getString( "output_time" ) );
                 notFoundInCache.setSourcePath( URI.create( data.getString( "path" ) ) );
                 notFoundInCache.setID( data.getLong( "source_id" ) );
                 notFoundInCache.setIsPointData( data.getBoolean( "is_point_data" ) );
+                notFoundInCache.setMeasurementUnitId( data.getLong( "measurementunit_id" ) );
+                notFoundInCache.setTimeScaleId( data.getLong( "timescale_id" ) );
+                notFoundInCache.setFeatureId( data.getLong( "feature_id" ) );
+                notFoundInCache.setVariableName( data.getString( "variable_name" ) );
 
                 this.addElement( notFoundInCache );
             }
@@ -149,7 +148,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         return notFoundInCache;
     }
 
-    public boolean isCached( SourceDetails.SourceKey key )
+    public boolean isCached( String key )
     {
         return this.hasID( key );
     }
@@ -161,16 +160,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 
     public String getHash( long sourceId )
     {
-        String hash = null;
-
-        SourceKey key = Collections.getKeyByValue( this.getKeyIndex(), sourceId );
-
-        if (key != null)
-        {
-            hash = key.getHash();
-        }
-
-        return hash;
+        return Collections.getKeyByValue( this.getKeyIndex(), sourceId );
     }
 
     public SourceDetails getExistingSource(final String hash) throws SQLException
@@ -179,12 +169,10 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 
         SourceDetails sourceDetails = null;
 
-        SourceKey key = new SourceKey( null, null, null, hash );
-
-        if (this.hasID( key ))
+        if (this.hasID( hash ))
         {
             sourceDetails = this.get(
-                    this.getID( key )
+                    this.getID( hash )
             );
         }
 
@@ -194,7 +182,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
             DataScripter script = new DataScripter( database );
             script.setHighPriority( true );
 
-            script.addLine("SELECT source_id, path, output_time::text as output_time, lead, hash, is_point_data");
+            script.addLine( "SELECT source_id, path, lead, hash, is_point_data, feature_id, timescale_id, measurementunit_id, variable_name" );
             script.addLine("FROM wres.Source");
             script.addLine("WHERE hash = ?");
             script.addArgument( hash );
@@ -207,10 +195,13 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
                     sourceDetails = new SourceDetails();
                     sourceDetails.setHash( hash );
                     sourceDetails.setLead( data.getInt( "lead" ) );
-                    sourceDetails.setOutputTime( data.getString( "output_time" ) );
                     sourceDetails.setSourcePath( URI.create( data.getString( "path" ) ) );
                     sourceDetails.setID( data.getLong( "source_id" ) );
                     sourceDetails.setIsPointData( data.getBoolean( "is_point_data" ) );
+                    sourceDetails.setMeasurementUnitId( data.getLong( "measurementunit_id" ) );
+                    sourceDetails.setTimeScaleId( data.getLong( "timescale_id" ) );
+                    sourceDetails.setFeatureId( data.getLong( "feature_id" ) );
+                    sourceDetails.setVariableName( data.getString( "variable_name" ) );
 
                     this.addElement( sourceDetails );
                 }
@@ -227,18 +218,16 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 
         Long id = null;
 
-        SourceKey key = new SourceKey( null, null, null, hash );
-
-        if (this.hasID( key ))
+        if ( this.hasID( hash ) )
         {
-            id = this.getID( key );
+            id = this.getID( hash );
         }
 
         if (id == null)
         {
             Database database = this.getDatabase();
             DataScripter script = new DataScripter( database );
-            script.addLine("SELECT source_id, path, output_time::text as output_time, lead, hash, is_point_data");
+            script.addLine( "SELECT source_id, path, lead, hash, is_point_data, feature_id, timescale_id, measurementunit_id, variable_name" );
             script.addLine("FROM wres.Source");
             script.addLine( "WHERE hash = ?" );
             script.addArgument( hash );
@@ -268,21 +257,13 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
     }
 	
 	/**
-	 * Gets the ID of source metadata from the instanced cache based on a file path and the date of its output
-	 * @param path The path to the file on the file system
-	 * @param outputTime The time in which the information was generation
-	 * @param lead the lead time
-	 * @param hash the hash code for the source file
+	 * Gets the ID of source metadata from the instanced cache based on identity
+	 * @param key the hash code for the source file
 	 * @return The ID of the source in the database
 	 * @throws SQLException Thrown when interaction with the database failed
 	 */
-	Long getID( URI path, String outputTime, Integer lead, String hash ) throws SQLException
-    {
-		return this.getID(SourceDetails.createKey(path, outputTime, lead, hash));
-	}
-	
 	@Override
-    public Long getID(SourceKey key) throws SQLException
+    public Long getID( String key ) throws SQLException
     {
 	    if (!this.hasID(key))
 	    {

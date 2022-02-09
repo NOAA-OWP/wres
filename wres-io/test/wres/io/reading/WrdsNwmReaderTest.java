@@ -46,7 +46,7 @@ import wres.io.concurrency.TimeSeriesIngester;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.Variables;
+import wres.io.data.caching.TimeScales;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
@@ -123,7 +123,7 @@ public class WrdsNwmReaderTest
     private SystemSettings systemSettings;
     @Mock private Database mockDatabase;
     @Mock private Features mockFeaturesCache;
-    @Mock private Variables mockVariablesCache;
+    @Mock private TimeScales mockTimeScalesCache;
     @Mock private Ensembles mockEnsemblesCache;
     @Mock private MeasurementUnits mockMeasurementUnitsCache;
     @Mock private DatabaseLockManager fakeLockManager;
@@ -226,7 +226,7 @@ public class WrdsNwmReaderTest
         WrdsNwmReader reader = Mockito.spy( new WrdsNwmReader( this.systemSettings,
                                                                this.mockDatabase,
                                                                this.mockFeaturesCache,
-                                                               this.mockVariablesCache,
+                                                               this.mockTimeScalesCache,
                                                                this.mockEnsemblesCache,
                                                                this.mockMeasurementUnitsCache,
                                                                projectConfig,
@@ -238,7 +238,7 @@ public class WrdsNwmReaderTest
                .createTimeSeriesIngester( any( SystemSettings.class ),
                                           any( Database.class ),
                                           any( Features.class ),
-                                          any( Variables.class ),
+                                          any( TimeScales.class ),
                                           any( Ensembles.class ),
                                           any( MeasurementUnits.class ),
                                           any( ProjectConfig.class ),
@@ -261,7 +261,7 @@ public class WrdsNwmReaderTest
                .createTimeSeriesIngester( any( SystemSettings.class ),
                                           any( Database.class ),
                                           any( Features.class ),
-                                          any( Variables.class ),
+                                          any( TimeScales.class ),
                                           any( Ensembles.class ),
                                           any( MeasurementUnits.class ),
                                           any( ProjectConfig.class ),
@@ -406,7 +406,7 @@ public class WrdsNwmReaderTest
         WrdsNwmReader reader = Mockito.spy( new WrdsNwmReader( this.systemSettings,
                                                                this.mockDatabase,
                                                                this.mockFeaturesCache,
-                                                               this.mockVariablesCache,
+                                                               this.mockTimeScalesCache,
                                                                this.mockEnsemblesCache,
                                                                this.mockMeasurementUnitsCache,
                                                                projectConfig,
@@ -418,7 +418,7 @@ public class WrdsNwmReaderTest
                .createTimeSeriesIngester( any( SystemSettings.class ),
                                           any( Database.class ),
                                           any( Features.class ),
-                                          any( Variables.class ),
+                                          any( TimeScales.class ),
                                           any( Ensembles.class ),
                                           any( MeasurementUnits.class ),
                                           any( ProjectConfig.class ),
@@ -441,7 +441,7 @@ public class WrdsNwmReaderTest
                .createTimeSeriesIngester( any( SystemSettings.class ),
                                           any( Database.class ),
                                           any( Features.class ),
-                                          any( Variables.class ),
+                                          any( TimeScales.class ),
                                           any( Ensembles.class ),
                                           any( MeasurementUnits.class ),
                                           any( ProjectConfig.class ),

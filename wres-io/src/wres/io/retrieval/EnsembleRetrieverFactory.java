@@ -169,7 +169,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     @Override
     public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( Set<FeatureKey> features )
     {
-        return this.getBaselineRetriever( features );
+        return this.getBaselineRetriever( features, null );
     }
 
     @Override

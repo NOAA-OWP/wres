@@ -104,6 +104,11 @@ public class IncompleteIngest
         timeSeriesValueScript.addArgument( sourceId );
         timeSeriesValueScript.addLine( ")" );
 
+        DataScripter referenceTimeScript = new DataScripter( database );
+        referenceTimeScript.addLine( "DELETE FROM wres.TimeSeriesReferenceTime" );
+        referenceTimeScript.addLine( "WHERE source_id = ?" );
+        referenceTimeScript.addArgument( sourceId );
+
         DataScripter timeSeriesScript = new DataScripter( database );
         timeSeriesScript.addLine( "DELETE FROM wres.TimeSeries" );
         timeSeriesScript.addLine( "WHERE timeseries_id IN" );
@@ -123,10 +128,12 @@ public class IncompleteIngest
         {
             lockManager.lockSource( sourceId );
             int timeSeriesValuesRemoved = timeSeriesValueScript.execute();
+            int referenceTimesRemoved = referenceTimeScript.execute();
             int timeSeriesRemoved = timeSeriesScript.execute();
             int sourcesRemoved = sourceScript.execute();
-            LOGGER.debug( "Removed {} fc, {} ts, {} s.",
+            LOGGER.debug( "Removed {} tsv, {} tsrt, {} ts, {} s.",
                           timeSeriesValuesRemoved,
+                          referenceTimesRemoved,
                           timeSeriesRemoved,
                           sourcesRemoved );
 
@@ -311,6 +318,20 @@ public class IncompleteIngest
             removalQueue.add( timeSeriesRemoval );
 
             LOGGER.debug( "Added Task to remove orphaned time series...");
+
+            DataScripter removeReferenceTimes = new DataScripter( database );
+
+            removeReferenceTimes.addLine( "DELETE FROM wres.TimeSeriesReferenceTime TSRT" );
+            removeReferenceTimes.addLine( "WHERE NOT EXISTS (" );
+            removeReferenceTimes.addTab().addLine( "SELECT 1" );
+            removeReferenceTimes.addTab().addLine( "FROM wres.Source S" );
+            removeReferenceTimes.addTab().addLine( "WHERE TSRT.source_id = S.source_id" );
+            removeReferenceTimes.add( ");" );
+
+            Future referenceTimesRemoval = removeReferenceTimes.issue();
+            removalQueue.add( referenceTimesRemoval );
+
+            LOGGER.debug( "Added Task to remove orphaned reference times..." );
 
             DataScripter removeSources = new DataScripter( database );
 

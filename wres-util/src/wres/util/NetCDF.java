@@ -11,11 +11,9 @@ import ucar.nc2.Variable;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -410,10 +408,10 @@ public final class NetCDF {
     {
         String uniqueIdentifier;
 
-        // With gridded data, we just care about the file itself; variable info will be dealt with later
+        // While including variable name is less efficient, it is more congruent
         if (NetCDF.isGridded( filepath.toURL().getFile() ))
         {
-            uniqueIdentifier = NetCDF.getGriddedUniqueIdentifier( filepath );
+            uniqueIdentifier = NetCDF.getGriddedUniqueIdentifier( filepath, variableName );
         }
         else
         {
@@ -425,15 +423,17 @@ public final class NetCDF {
         return uniqueIdentifier;
     }
 
-    public static String getGriddedUniqueIdentifier( final URI filepath ) throws IOException
+    public static String getGriddedUniqueIdentifier( final URI filepath, String variableName ) throws IOException
     {
         try (NetcdfFile file = NetcdfFile.open( filepath.toURL().getFile() ))
         {
-            return NetCDF.getGriddedUniqueIdentifier( file, filepath );
+            return NetCDF.getGriddedUniqueIdentifier( file, filepath, variableName );
         }
     }
 
-    public static String getGriddedUniqueIdentifier( final NetcdfFile file, final URI target ) throws IOException
+    public static String getGriddedUniqueIdentifier( final NetcdfFile file,
+                                                     final URI target,
+                                                     final String variableName ) throws IOException
     {
         String uniqueIdentifier;
         StringJoiner identityJoiner = new StringJoiner( "::" );
@@ -443,6 +443,8 @@ public final class NetCDF {
         identityJoiner.add( target.toURL().toString() );
 
         NetCDF.addNetcdfIdentifiers( file, identityJoiner );
+
+        identityJoiner.add( variableName );
 
         uniqueIdentifier = identityJoiner.toString();
         uniqueIdentifier = Strings.getMD5Checksum( uniqueIdentifier.getBytes() );

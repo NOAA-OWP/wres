@@ -10,7 +10,7 @@ then
 fi
 
 partition_file=../dist/lib/conf/database/wres.TimeSeriesValue_generated_partitions_v1.xml
-index_file=../dist/lib/conf/database/wres.TimeSeriesValue_generated_partitions_v2.xml
+index_file=../dist/lib/conf/database/wres.TimeSeriesValue_generated_partitions_v3.xml
 cat liquibase_partition_header.xml > $partition_file
 cat liquibase_partition_index_header.xml > $index_file
 

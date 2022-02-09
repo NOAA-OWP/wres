@@ -139,6 +139,20 @@ public class TestDatabase
 
 
     /**
+     * Create all the tables using the same changelog file used in production.
+     * @param liquibaseDatabase The database to use.
+     * @throws LiquibaseException When something goes wrong.
+     */
+    public void createAllTables( Database liquibaseDatabase )
+            throws LiquibaseException
+    {
+        Liquibase liquibase = new Liquibase( "database/db.changelog-master.xml",
+                                             new ClassLoaderResourceAccessor(),
+                                             liquibaseDatabase );
+        liquibase.update( new Contexts() );
+    }
+
+    /**
      * Create the WRES project table using given liquibase database.
      * Expected to be called within a test requiring the project table. If you
      * call createProjectTable at the beginning of a test, you must call
@@ -192,7 +206,10 @@ public class TestDatabase
                                              new ClassLoaderResourceAccessor(),
                                              liquibaseDatabase );
         liquibase.update( new Contexts() );
-
+        Liquibase liquibase2 = new Liquibase( "database/wres.Source_v8.xml",
+                                             new ClassLoaderResourceAccessor(),
+                                             liquibaseDatabase );
+        liquibase2.update( new Contexts() );
     }
 
 
@@ -210,8 +227,30 @@ public class TestDatabase
             statement.execute( "DROP TABLE wres.Source" );
         }
     }
-    
-    
+
+
+    public void createSourceCompletedTable( Database liquibaseDatabase )
+            throws LiquibaseException
+    {
+        Contexts contexts = new Contexts();
+        Liquibase liquibase = new Liquibase( "database/wres.SourceCompleted_v4.xml",
+                                             new ClassLoaderResourceAccessor(),
+                                             liquibaseDatabase );
+        liquibase.update( contexts );
+        Liquibase liquibase2 = new Liquibase( "database/wres.SourceCompleted_v5.xml",
+                                              new ClassLoaderResourceAccessor(),
+                                              liquibaseDatabase );
+        liquibase2.update( contexts );
+    }
+
+    public void dropSourceCompletedTable( Connection connection ) throws SQLException
+    {
+        try ( Statement statement = connection.createStatement() )
+        {
+            statement.execute( "DROP TABLE wres.SourceCompleted" );
+        }
+    }
+
     /**
      * Create the WRES source table using given liquibase database.
      * Expected to be called within a test requiring the projectsource table. 
@@ -229,6 +268,10 @@ public class TestDatabase
                                              new ClassLoaderResourceAccessor(),
                                              liquibaseDatabase );
         liquibase.update( new Contexts() );
+        Liquibase liquibase2 = new Liquibase( "database/wres.ProjectSource_v7.xml",
+                                             new ClassLoaderResourceAccessor(),
+                                             liquibaseDatabase );
+        liquibase2.update( new Contexts() );
 
     }
 
@@ -376,10 +419,31 @@ public class TestDatabase
     public void createTimeSeriesTable( Database liquibaseDatabase )
             throws LiquibaseException
     {
+        Contexts contexts = new Contexts();
         Liquibase liquibase = new Liquibase( "database/wres.TimeSeries_v4.xml",
                                              new ClassLoaderResourceAccessor(),
                                              liquibaseDatabase );
-        liquibase.update( new Contexts() );
+        liquibase.update( contexts );
+        Liquibase liquibase2 = new Liquibase( "database/wres.TimeSeries_v5.xml",
+                                             new ClassLoaderResourceAccessor(),
+                                             liquibaseDatabase );
+        liquibase2.update( contexts );
+        Liquibase liquibase3 = new Liquibase( "database/wres.TimeSeries_v6.xml",
+                                              new ClassLoaderResourceAccessor(),
+                                              liquibaseDatabase );
+        liquibase3.update( contexts );
+        Liquibase liquibase4 = new Liquibase( "database/wres.TimeSeries_v7.xml",
+                                              new ClassLoaderResourceAccessor(),
+                                              liquibaseDatabase );
+        liquibase4.update( contexts );
+        Liquibase liquibase5 = new Liquibase( "database/wres.TimeSeries_v8.xml",
+                                              new ClassLoaderResourceAccessor(),
+                                              liquibaseDatabase );
+        liquibase5.update( contexts );
+        Liquibase liquibase6 = new Liquibase( "database/wres.TimeSeries_v9.xml",
+                                              new ClassLoaderResourceAccessor(),
+                                              liquibaseDatabase );
+        liquibase6.update( contexts );
     }
 
 
@@ -436,9 +500,41 @@ public class TestDatabase
         {
             statement.execute( "DROP TABLE wres.TimeSeriesValue" );
         }
-    } 
-    
-    
+    }
+
+    public void createTimeScaleTable( Database liquibaseDatabase )
+            throws LiquibaseException
+    {
+        Liquibase liquibase = new Liquibase( "database/wres.TimeScale_v1.xml",
+                                             new ClassLoaderResourceAccessor(),
+                                             liquibaseDatabase );
+        liquibase.update( new Contexts() );
+    }
+
+    public void dropTimeScaleTable( Connection connection ) throws SQLException
+    {
+        try ( Statement statement = connection.createStatement() )
+        {
+            statement.execute( "DROP TABLE wres.TimeScale" );
+        }
+    }
+    public void createTimeSeriesReferenceTimeTable( Database liquibaseDatabase )
+            throws LiquibaseException
+    {
+        Liquibase liquibase = new Liquibase( "database/wres.TimeSeriesReferenceTime_v1.xml",
+                                             new ClassLoaderResourceAccessor(),
+                                             liquibaseDatabase );
+        liquibase.update( new Contexts() );
+    }
+
+    public void dropTimeSeriesReferenceTimeTable( Connection connection ) throws SQLException
+    {
+        try ( Statement statement = connection.createStatement() )
+        {
+            statement.execute( "DROP TABLE wres.TimeSeriesReferenceTime" );
+        }
+    }
+
     /**
      * Create a liquibase database instance to be used to create tables.
      *
@@ -487,4 +583,5 @@ public class TestDatabase
             statement.execute( "SHUTDOWN" );
         }
     }
+
 }

@@ -1,6 +1,5 @@
 package wres.io.data.details;
 
-import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -70,11 +69,10 @@ public class DetailsTest
         // Add the source table
         this.testDatabase.createSourceTable( this.liquibaseDatabase );
 
-        SourceDetails.SourceKey sourceKey = SourceDetails.createKey( URI.create( "/this/is/just/a/test" ),
-                                                                     "2017-06-16 11:13:00",
-                                                                     null,
-                                                                     "abc123" );
-        SourceDetails sourceDetails = new SourceDetails( sourceKey );
+        SourceDetails sourceDetails = new SourceDetails( "abc123" );
+        sourceDetails.setVariableName( "V" );
+        sourceDetails.setMeasurementUnitId( 1L );
+        sourceDetails.setFeatureId( 1L );
         sourceDetails.save( this.wresDatabase );
         assertTrue( "Expected source details to have performed insert.",
                     sourceDetails.performedInsert() );

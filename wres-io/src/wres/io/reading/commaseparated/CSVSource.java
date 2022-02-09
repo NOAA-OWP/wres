@@ -50,7 +50,7 @@ import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.Variables;
+import wres.io.data.caching.TimeScales;
 import wres.io.reading.BasicSource;
 import wres.io.reading.DataSource;
 import wres.io.reading.IngestException;
@@ -84,7 +84,7 @@ public class CSVSource extends BasicSource
     private final SystemSettings systemSettings;
     private final Database database;
     private final Features featuresCache;
-    private final Variables variablesCache;
+    private final TimeScales timeScalesCache;
     private final Ensembles ensemblesCache;
     private final MeasurementUnits measurementUnitsCache;
     private final DatabaseLockManager lockManager;
@@ -101,7 +101,7 @@ public class CSVSource extends BasicSource
      * @param systemSettings The system settings to use.
      * @param database The database to use.
      * @param featuresCache The features cache to use.
-     * @param variablesCache The variables cache to use.
+     * @param timeScalesCache The time scales cache to use.
      * @param ensemblesCache The ensembles cache to use.
      * @param measurementUnitsCache The measurement units cache to use.
      * @param projectConfig the ProjectConfig causing ingest
@@ -111,7 +111,7 @@ public class CSVSource extends BasicSource
     public CSVSource( SystemSettings systemSettings,
                       Database database,
                       Features featuresCache,
-                      Variables variablesCache,
+                      TimeScales timeScalesCache,
                       Ensembles ensemblesCache,
                       MeasurementUnits measurementUnitsCache,
                       ProjectConfig projectConfig,
@@ -122,7 +122,7 @@ public class CSVSource extends BasicSource
         this.systemSettings = systemSettings;
         this.database = database;
         this.featuresCache = featuresCache;
-        this.variablesCache = variablesCache;
+        this.timeScalesCache = timeScalesCache;
         this.ensemblesCache = ensemblesCache;
         this.measurementUnitsCache = measurementUnitsCache;
         this.lockManager = lockManager;
@@ -161,9 +161,9 @@ public class CSVSource extends BasicSource
         return this.featuresCache;
     }
 
-    private Variables getVariablesCache()
+    private TimeScales getTimeScalesCache()
     {
-        return this.variablesCache;
+        return this.timeScalesCache;
     }
 
     private Ensembles getEnsemblesCache()
@@ -809,7 +809,7 @@ public class CSVSource extends BasicSource
                 this.createTimeSeriesIngester( this.getSystemSettings(),
                                                this.getDatabase(),
                                                this.getFeaturesCache(),
-                                               this.getVariablesCache(),
+                                               this.getTimeScalesCache(),
                                                this.getEnsemblesCache(),
                                                this.getMeasurementUnitsCache(),
                                                this.getProjectConfig(),
@@ -911,7 +911,7 @@ public class CSVSource extends BasicSource
     TimeSeriesIngester createTimeSeriesIngester( SystemSettings systemSettings,
                                                  Database database,
                                                  Features featuresCache,
-                                                 Variables variablesCache,
+                                                 TimeScales timeScalesCache,
                                                  Ensembles ensemblesCache,
                                                  MeasurementUnits measurementUnitsCache,
                                                  ProjectConfig projectConfig,
@@ -922,7 +922,7 @@ public class CSVSource extends BasicSource
         return TimeSeriesIngester.of( systemSettings,
                                       database,
                                       featuresCache,
-                                      variablesCache,
+                                      timeScalesCache,
                                       ensemblesCache,
                                       measurementUnitsCache,
                                       projectConfig,

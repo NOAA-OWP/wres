@@ -46,7 +46,7 @@ import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.Variables;
+import wres.io.data.caching.TimeScales;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.ProgressMonitor;
@@ -69,7 +69,7 @@ public class ZippedSource extends BasicSource {
     private final Database database;
     private final DataSources dataSourcesCache;
     private final Features featuresCache;
-    private final Variables variablesCache;
+    private final TimeScales timeScalesCache;
     private final Ensembles ensemblesCache;
     private final MeasurementUnits measurementUnitsCache;
     private final ThreadPoolExecutor readerService;
@@ -150,7 +150,7 @@ public class ZippedSource extends BasicSource {
                   Database database,
                   DataSources dataSourcesCache,
                   Features featuresCache,
-                  Variables variablesCache,
+                  TimeScales timeScalesCache,
                   Ensembles ensemblesCache,
                   MeasurementUnits measurementUnitsCache,
                   ProjectConfig projectConfig,
@@ -163,7 +163,7 @@ public class ZippedSource extends BasicSource {
         this.database = database;
         this.dataSourcesCache = dataSourcesCache;
         this.featuresCache = featuresCache;
-        this.variablesCache = variablesCache;
+        this.timeScalesCache = timeScalesCache;
         this.ensemblesCache = ensemblesCache;
         this.measurementUnitsCache = measurementUnitsCache;
         this.lockManager = lockManager;
@@ -191,9 +191,9 @@ public class ZippedSource extends BasicSource {
         return this.featuresCache;
     }
 
-    private Variables getVariablesCache()
+    private TimeScales getTimeScalesCache()
     {
-        return this.variablesCache;
+        return this.timeScalesCache;
     }
 
     private Ensembles getEnsemblesCache()
@@ -250,7 +250,7 @@ public class ZippedSource extends BasicSource {
                                    .withDatabase( this.getDatabase() )
                                    .withDataSourcesCache( this.getDataSourcesCache() )
                                    .withFeaturesCache( this.getFeaturesCache() )
-                                   .withVariablesCache( this.getVariablesCache() )
+                                   .withTimeScalesCache( this.getTimeScalesCache() )
                                    .withEnsemblesCache( this.getEnsemblesCache() )
                                    .withMeasurementUnitsCache( this.getMeasurementUnitsCache() )
                                    .withProject( this.getProjectConfig() )
@@ -435,7 +435,7 @@ public class ZippedSource extends BasicSource {
                                             this.getDatabase(),
                                             this.getDataSourcesCache(),
                                             this.getFeaturesCache(),
-                                            this.getVariablesCache(),
+                                            this.getTimeScalesCache(),
                                             this.getEnsemblesCache(),
                                             this.getMeasurementUnitsCache(),
                                             this.getProjectConfig(),
@@ -463,7 +463,7 @@ public class ZippedSource extends BasicSource {
                                .withDatabase( this.getDatabase() )
                                .withDataSourcesCache( this.getDataSourcesCache() )
                                .withFeaturesCache( this.getFeaturesCache() )
-                               .withVariablesCache( this.getVariablesCache() )
+                               .withTimeScalesCache( this.getTimeScalesCache() )
                                .withEnsemblesCache( this.getEnsemblesCache() )
                                .withMeasurementUnitsCache( this.getMeasurementUnitsCache() )
                                .withProject( this.getProjectConfig() )

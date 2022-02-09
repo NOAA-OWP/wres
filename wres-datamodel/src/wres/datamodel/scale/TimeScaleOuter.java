@@ -113,7 +113,7 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
 
     public static TimeScaleOuter of()
     {
-        return TimeScaleOuter.of( Duration.ofMinutes( 1 ) );
+        return TimeScaleOuter.of( Duration.ofMillis( 1 ) );
     }
 
     /**
@@ -292,7 +292,7 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
      * <code>false</code>.
      * 
      * A time scale is considered "instantaneous" if the period associated with the time scale is less than or 
-     * equal to sixty seconds. 
+     * equal to sixty seconds.
      * 
      * @return true if the period is less than or equal to 60 seconds, otherwise false.
      */
@@ -304,8 +304,8 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
 
 
     /**
-     * <p>Computes the Least Common Multiple or Least Common Scale (LCS) of the inputs at a time resolution of seconds. 
-     * The LCS is the integer number of seconds that is a common multiple of all of the inputs.
+     * <p>Computes the Least Common Multiple or Least Common Scale (LCS) of the inputs at a time resolution of milliseconds.
+     * The LCS is the integer number of milliseconds that is a common multiple of all of the inputs.
      * 
      * <p>When the input contains an instantaneous time scale (see {@link TimeScaleOuter#isInstantaneous()}), then this
      * method either returns the other time scale present or throws an exception if more than one additional time 
@@ -375,8 +375,8 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
     }
 
     /**
-     * <p>Computes the Least Common Multiple of the inputs at a time resolution of seconds. 
-     * The LCM is the integer number of seconds that is a common multiple of all of the inputs.
+     * <p>Computes the Least Common Multiple of the inputs at a time resolution of milliseconds.
+     * The LCM is the integer number of milliseconds that is a common multiple of all of the inputs.
      * 
      * TODO: consider moving this to a more general time-utility class, as it is independent
      * of time scale.
@@ -416,22 +416,22 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
 
         // Compute the LCS from two or more time scales
         Iterator<Duration> it = durations.iterator();
-        long lcs = it.next().getSeconds();
+        long lcs = it.next().toMillis();
         while ( it.hasNext() )
         {
             try
             {
-                lcs = ArithmeticUtils.lcm( lcs, it.next().getSeconds() );
+                lcs = ArithmeticUtils.lcm( lcs, it.next().toMillis() );
             }
             // Decorate
-            catch ( MathArithmeticException e )
+            catch ( ArithmeticException e )
             {
                 throw new RescalingException( "While attempting to compute the Least Common Duration from the input:",
                                               e );
             }
         }
 
-        return Duration.ofSeconds( lcs );
+        return Duration.ofMillis( lcs );
     }
 
     /**

@@ -55,7 +55,7 @@ import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.Variables;
+import wres.io.data.caching.TimeScales;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
@@ -96,7 +96,7 @@ class WebSource implements Callable<List<IngestResult>>
     private final Database database;
     private final DataSources dataSourcesCache;
     private final Features featuresCache;
-    private final Variables variablesCache;
+    private final TimeScales timeScalesCache;
     private final Ensembles ensemblesCache;
     private final MeasurementUnits measurementUnitsCache;
     private final ProjectConfig projectConfig;
@@ -113,7 +113,7 @@ class WebSource implements Callable<List<IngestResult>>
                          Database database,
                          DataSources dataSourcesCache,
                          Features featuresCache,
-                         Variables variablesCache,
+                         TimeScales timeScalesCache,
                          Ensembles ensemblesCache,
                          MeasurementUnits measurementUnitsCache,
                          ProjectConfig projectConfig,
@@ -124,7 +124,7 @@ class WebSource implements Callable<List<IngestResult>>
                               database,
                               dataSourcesCache,
                               featuresCache,
-                              variablesCache,
+                              timeScalesCache,
                               ensemblesCache,
                               measurementUnitsCache,
                               projectConfig,
@@ -137,7 +137,7 @@ class WebSource implements Callable<List<IngestResult>>
                Database database,
                DataSources dataSourcesCache,
                Features featuresCache,
-               Variables variablesCache,
+               TimeScales timeScalesCache,
                Ensembles ensemblesCache,
                MeasurementUnits measurementUnitsCache,
                ProjectConfig projectConfig,
@@ -149,7 +149,7 @@ class WebSource implements Callable<List<IngestResult>>
         this.database = database;
         this.dataSourcesCache = dataSourcesCache;
         this.featuresCache = featuresCache;
-        this.variablesCache = variablesCache;
+        this.timeScalesCache = timeScalesCache;
         this.ensemblesCache = ensemblesCache;
         this.measurementUnitsCache = measurementUnitsCache;
         this.projectConfig = projectConfig;
@@ -231,9 +231,9 @@ class WebSource implements Callable<List<IngestResult>>
         return this.featuresCache;
     }
 
-    private Variables getVariablesCache()
+    private TimeScales getTimeScalesCache()
     {
-        return this.variablesCache;
+        return this.timeScalesCache;
     }
 
     private Ensembles getEnsemblesCache()
@@ -355,7 +355,7 @@ class WebSource implements Callable<List<IngestResult>>
                                            .withDatabase( this.getDatabase() )
                                            .withDataSourcesCache( this.getDataSourcesCache() )
                                            .withFeaturesCache( this.getFeaturesCache() )
-                                           .withVariablesCache( this.getVariablesCache() )
+                                           .withTimeScalesCache( this.getTimeScalesCache() )
                                            .withEnsemblesCache( this.getEnsemblesCache() )
                                            .withMeasurementUnitsCache( this.getMeasurementUnitsCache() )
                                            .withDataSource( dSource )
@@ -450,7 +450,7 @@ class WebSource implements Callable<List<IngestResult>>
                                        .withDatabase( this.getDatabase() )
                                        .withDataSourcesCache( this.getDataSourcesCache() )
                                        .withFeaturesCache( this.getFeaturesCache() )
-                                       .withVariablesCache( this.getVariablesCache() )
+                                       .withTimeScalesCache( this.getTimeScalesCache() )
                                        .withEnsemblesCache( this.getEnsemblesCache() )
                                        .withMeasurementUnitsCache( this.getMeasurementUnitsCache() )
                                        .withDataSource( dSource )

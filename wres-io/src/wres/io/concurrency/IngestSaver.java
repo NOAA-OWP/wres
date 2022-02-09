@@ -12,7 +12,7 @@ import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.Variables;
+import wres.io.data.caching.TimeScales;
 import wres.io.reading.BasicSource;
 import wres.io.reading.DataSource;
 import wres.io.reading.IngestResult;
@@ -48,7 +48,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
         private final Database database;
         private final DataSources dataSourcesCache;
         private final Features featuresCache;
-        private final Variables variablesCache;
+        private final TimeScales timeScalesCache;
         private final Ensembles ensemblesCache;
         private final MeasurementUnits measurementUnitsCache;
         private final ProjectConfig projectConfig;
@@ -64,7 +64,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
             this.database = null;
             this.dataSourcesCache = null;
             this.featuresCache = null;
-            this.variablesCache = null;
+            this.timeScalesCache = null;
             this.ensemblesCache = null;
             this.measurementUnitsCache = null;
             this.dataSource = null;
@@ -82,7 +82,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     this.database,
                     this.dataSourcesCache,
                     this.featuresCache,
-                    this.variablesCache,
+                    this.timeScalesCache,
                     this.ensemblesCache,
                     this.measurementUnitsCache,
                     this.projectConfig,
@@ -101,7 +101,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     database,
                     this.dataSourcesCache,
                     this.featuresCache,
-                    this.variablesCache,
+                    this.timeScalesCache,
                     this.ensemblesCache,
                     this.measurementUnitsCache,
                     this.projectConfig,
@@ -120,7 +120,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     this.database,
                     dataSourcesCache,
                     this.featuresCache,
-                    this.variablesCache,
+                    this.timeScalesCache,
                     this.ensemblesCache,
                     this.measurementUnitsCache,
                     this.projectConfig,
@@ -139,7 +139,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     this.database,
                     this.dataSourcesCache,
                     featuresCache,
-                    this.variablesCache,
+                    this.timeScalesCache,
                     this.ensemblesCache,
                     this.measurementUnitsCache,
                     this.projectConfig,
@@ -151,14 +151,14 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
             );
         }
 
-        public IngestBuilder withVariablesCache( Variables variablesCache )
+        public IngestBuilder withTimeScalesCache( TimeScales timeScalesCache )
         {
             return new IngestBuilder(
                     this.systemSettings,
                     this.database,
                     this.dataSourcesCache,
                     this.featuresCache,
-                    variablesCache,
+                    timeScalesCache,
                     this.ensemblesCache,
                     this.measurementUnitsCache,
                     this.projectConfig,
@@ -177,7 +177,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     this.database,
                     this.dataSourcesCache,
                     this.featuresCache,
-                    this.variablesCache,
+                    this.timeScalesCache,
                     ensemblesCache,
                     this.measurementUnitsCache,
                     this.projectConfig,
@@ -196,7 +196,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     this.database,
                     this.dataSourcesCache,
                     this.featuresCache,
-                    this.variablesCache,
+                    this.timeScalesCache,
                     this.ensemblesCache,
                     measurementUnitsCache,
                     this.projectConfig,
@@ -216,7 +216,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     this.database,
                     this.dataSourcesCache,
                     this.featuresCache,
-                    this.variablesCache,
+                    this.timeScalesCache,
                     this.ensemblesCache,
                     this.measurementUnitsCache,
                     projectConfig,
@@ -235,7 +235,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     this.database,
                     this.dataSourcesCache,
                     this.featuresCache,
-                    this.variablesCache,
+                    this.timeScalesCache,
                     this.ensemblesCache,
                     this.measurementUnitsCache,
                     this.projectConfig,
@@ -254,7 +254,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     this.database,
                     this.dataSourcesCache,
                     this.featuresCache,
-                    this.variablesCache,
+                    this.timeScalesCache,
                     this.ensemblesCache,
                     this.measurementUnitsCache,
                     this.projectConfig,
@@ -273,7 +273,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     this.database,
                     this.dataSourcesCache,
                     this.featuresCache,
-                    this.variablesCache,
+                    this.timeScalesCache,
                     this.ensemblesCache,
                     this.measurementUnitsCache,
                     this.projectConfig,
@@ -292,7 +292,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     this.database,
                     this.dataSourcesCache,
                     this.featuresCache,
-                    this.variablesCache,
+                    this.timeScalesCache,
                     this.ensemblesCache,
                     this.measurementUnitsCache,
                     this.projectConfig,
@@ -311,7 +311,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     this.database,
                     this.dataSourcesCache,
                     this.featuresCache,
-                    this.variablesCache,
+                    this.timeScalesCache,
                     this.ensemblesCache,
                     this.measurementUnitsCache,
                     this.projectConfig,
@@ -327,7 +327,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                                Database database,
                                DataSources dataSourcesCache,
                                Features featuresCache,
-                               Variables variablesCache,
+                               TimeScales timeScalesCache,
                                Ensembles ensemblesCache,
                                MeasurementUnits measurementUnitsCache,
                                ProjectConfig projectConfig,
@@ -341,7 +341,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
             this.database = database;
             this.dataSourcesCache = dataSourcesCache;
             this.featuresCache = featuresCache;
-            this.variablesCache = variablesCache;
+            this.timeScalesCache = timeScalesCache;
             this.ensemblesCache = ensemblesCache;
             this.measurementUnitsCache = measurementUnitsCache;
             this.projectConfig = projectConfig;
@@ -358,7 +358,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
             Objects.requireNonNull( this.database );
             Objects.requireNonNull( this.dataSourcesCache );
             Objects.requireNonNull( this.featuresCache );
-            Objects.requireNonNull( this.variablesCache );
+            Objects.requireNonNull( this.timeScalesCache );
             Objects.requireNonNull( this.ensemblesCache );
             Objects.requireNonNull( this.measurementUnitsCache );
 
@@ -419,7 +419,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     this.database,
                     this.dataSourcesCache,
                     this.featuresCache,
-                    this.variablesCache,
+                    this.timeScalesCache,
                     this.ensemblesCache,
                     this.measurementUnitsCache,
                     this.projectConfig,
@@ -443,7 +443,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
     private final Database database;
     private final DataSources dataSourcesCache;
     private final Features featuresCache;
-    private final Variables variablesCache;
+    private final TimeScales timeScalesCache;
     private final Ensembles ensemblesCache;
     private final MeasurementUnits measurementUnitsCache;
     private final ProjectConfig projectConfig;
@@ -456,7 +456,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                          Database database,
                          DataSources dataSourcesCache,
                          Features featuresCache,
-                         Variables variablesCache,
+                         TimeScales timeScalesCache,
                          Ensembles ensemblesCache,
                          MeasurementUnits measurementUnitsCache,
                          ProjectConfig projectConfig,
@@ -469,7 +469,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
         this.database = database;
         this.dataSourcesCache = dataSourcesCache;
         this.featuresCache = featuresCache;
-        this.variablesCache = variablesCache;
+        this.timeScalesCache = timeScalesCache;
         this.ensemblesCache = ensemblesCache;
         this.measurementUnitsCache = measurementUnitsCache;
         this.projectConfig = projectConfig;
@@ -487,7 +487,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                                                       this.database,
                                                       this.dataSourcesCache,
                                                       this.featuresCache,
-                                                      this.variablesCache,
+                                                      this.timeScalesCache,
                                                       this.ensemblesCache,
                                                       this.measurementUnitsCache,
                                                       this.projectConfig,

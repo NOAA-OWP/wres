@@ -26,7 +26,7 @@ import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.Variables;
+import wres.io.data.caching.TimeScales;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
@@ -47,7 +47,7 @@ public class WebSourceTest
     @Mock private Database mockDatabase;
     @Mock private DataSources mockDataSourcesCache;
     @Mock private Features mockFeaturesCache;
-    @Mock private Variables variablesCache;
+    @Mock private TimeScales timeScalesCache;
     @Mock private Ensembles ensemblesCache;
     @Mock private MeasurementUnits measurementUnitsCache;
     private ProjectConfig fakeProjectConfig;
@@ -92,7 +92,7 @@ public class WebSourceTest
                                             mockDatabase,
                                             mockDataSourcesCache,
                                             mockFeaturesCache,
-                                            variablesCache,
+                                            timeScalesCache,
                                             ensemblesCache,
                                             measurementUnitsCache,
                                             fakeProjectConfig,
@@ -146,7 +146,7 @@ public class WebSourceTest
                                             mockDatabase,
                                             mockDataSourcesCache,
                                             mockFeaturesCache,
-                                            variablesCache,
+                                            timeScalesCache,
                                             ensemblesCache,
                                             measurementUnitsCache,
                                             fakeProjectConfig,
@@ -199,7 +199,7 @@ public class WebSourceTest
                                             mockDatabase,
                                             mockDataSourcesCache,
                                             mockFeaturesCache,
-                                            variablesCache,
+                                            timeScalesCache,
                                             ensemblesCache,
                                             measurementUnitsCache,
                                             fakeProjectConfig,

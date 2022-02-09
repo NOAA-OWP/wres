@@ -301,7 +301,18 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
                 // Add the time-scale info
                 String functionString = provider.getString( "scale_function" );
-                Duration period = provider.getDuration( "scale_period" );
+                long periodInMs = provider.getLong( "scale_period" );
+                Duration period = null;
+
+                // In getLong() above, the underlying getLong is primitive, not
+                // boxed, so a null value in the db will be 0 rather than null.
+                // Because the function name must be present (non-null) for a
+                // scale row to be present, test the function name nullity
+                // before creating a scale duration/period.
+                if ( functionString != null )
+                {
+                    period = Duration.ofMillis( periodInMs );
+                }
 
                 TimeScaleOuter latestScale = this.checkAndGetLatestScale( lastScale,
                                                                           period,
@@ -471,7 +482,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         {
             this.addWhereOrAndClause( script,
                                       tabsIn,
-                                      "TS.variable_name = ?",
+                                      "S.variable_name = ?",
                                       this.getVariableName() );
         }
 
@@ -480,13 +491,13 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         {
             Long[] featureIds = this.getFeatureIds();
             Object parameter = featureIds;
-            String clause = "TS.feature_id = ANY(?)";
+            String clause = "S.feature_id = ANY(?)";
             
             // Simplify script if there is only one
             if(featureIds.length==1 )
             {
                 parameter = featureIds[0];
-                clause = "TS.feature_id = ?";
+                clause = "S.feature_id = ?";
             }
             
             this.addWhereOrAndClause( script,

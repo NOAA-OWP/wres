@@ -78,7 +78,7 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
 
     private AnalysisRetriever( Builder builder )
     {
-        super( builder, "TS.initialization_date", "TSV.lead" );
+        super( builder, "metadata.reference_time", "TSV.lead" );
         this.earliestAnalysisDuration = builder.earliestAnalysisDuration;
         this.latestAnalysisDuration = builder.latestAnalysisDuration;
         this.duplicatePolicy = builder.duplicatePolicy;

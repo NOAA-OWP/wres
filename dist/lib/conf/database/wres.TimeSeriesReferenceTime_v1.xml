@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.7.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="Create wres.TimeSeriesReferenceTime v1 table"
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesReferenceTime" schemaName="wres" />
+            </not>
+        </preConditions>
+        <createTable tableName="TimeSeriesReferenceTime" schemaName="wres"
+                     remarks="Each row represents a basis (or reference) datetime for a given timeseries.">
+            <column name="source_id" type="bigint"
+                    remarks="The ID of the time series having the basis (or reference) datetime.">
+                <constraints nullable="false" />
+            </column>
+            <column name="reference_time" type="timestamp with time zone"
+                    remarks="A basis (or reference) datetime for the associated time series.">
+                <constraints nullable="false" />
+            </column>
+            <column name="reference_time_type" type="varchar"
+                    remarks="The type of basis datetime, e.g. 'T0' or 'LATEST_OBSERVATION', see wres.datamodel.time.ReferenceTimeType.java">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="Add unique constraint to wres.TimeSeriesReferenceTime"
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesReferenceTime" schemaName="wres" />
+            <columnExists tableName="TimeSeriesReferenceTime" schemaName="wres"
+                          columnName="source_id" />
+            <columnExists tableName="TimeSeriesReferenceTime" schemaName="wres"
+                          columnName="reference_time_type" />
+            <not>
+                <indexExists indexName="timeseriesreferencetime_source_reference_time_type_unique_index"
+                             columnNames="source_id,reference_time_type"
+                             tableName="TimeSeriesReferenceTime" schemaName="wres" />
+            </not>
+        </preConditions>
+        <addUniqueConstraint constraintName="timeseriesreferencetime_source_reference_time_type_unique_index"
+                             columnNames="source_id,reference_time_type"
+                             tableName="TimeSeriesReferenceTime" schemaName="wres" />
+    </changeSet>
+    <changeSet id="Add source_id foreign key constraint to wres.TimeSeriesReferenceTime (deferred)."
+               author="Jesse Bickel"
+               dbms="oracle,postgresql,sqlite">
+        <preConditions onFail="MARK_RAN">
+            <columnExists columnName="source_id"
+                          tableName="Source"
+                          schemaName="wres" />
+            <columnExists columnName="source_id"
+                          tableName="TimeSeriesReferenceTime"
+                          schemaName="wres" />
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="timeseriesreferencetime_source_fk"
+                                            schemaName="wres" />
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint baseColumnNames="source_id"
+                                 baseTableName="TimeSeriesReferenceTime"
+                                 baseTableSchemaName="wres"
+                                 constraintName="timeseriesreferencetime_source_fk"
+                                 referencedColumnNames="source_id"
+                                 referencedTableName="Source"
+                                 referencedTableSchemaName="wres"
+                                 deferrable="true"
+                                 initiallyDeferred="true"
+                                 onDelete="CASCADE" />
+    </changeSet>
+    <changeSet id="Add source_id foreign key constraint to wres.TimeSeriesReferenceTime (non-deferred)."
+               author="Jesse Bickel"
+               dbms="!oracle,!postgresql,!sqlite,!sybase">
+        <preConditions onFail="MARK_RAN">
+            <columnExists columnName="source_id"
+                          tableName="Source"
+                          schemaName="wres" />
+            <columnExists columnName="source_id"
+                          tableName="TimeSeriesReferenceTime"
+                          schemaName="wres" />
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="timeseriesreferencetime_source_fk"
+                                            schemaName="wres" />
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint baseColumnNames="source_id"
+                                 baseTableName="TimeSeriesReferenceTime"
+                                 baseTableSchemaName="wres"
+                                 constraintName="timeseriesreferencetime_source_fk"
+                                 referencedColumnNames="source_id"
+                                 referencedTableName="Source"
+                                 referencedTableSchemaName="wres"
+                                 onDelete="CASCADE" />
+    </changeSet>
+</databaseChangeLog>

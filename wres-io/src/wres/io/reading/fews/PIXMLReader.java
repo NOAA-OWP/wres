@@ -53,7 +53,7 @@ import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.Variables;
+import wres.io.data.caching.TimeScales;
 import wres.io.reading.DataSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
@@ -90,7 +90,7 @@ public final class PIXMLReader extends XMLReader
     private final SystemSettings systemSettings;
     private final Database database;
     private final Features featuresCache;
-    private final Variables variablesCache;
+    private final TimeScales timeScalesCache;
     private final Ensembles ensemblesCache;
     private final MeasurementUnits measurementUnitsCache;
     private final ProjectConfig projectConfig;
@@ -112,7 +112,7 @@ public final class PIXMLReader extends XMLReader
     PIXMLReader( SystemSettings systemSettings,
                  Database database,
                  Features featuresCache,
-                 Variables variablesCache,
+                 TimeScales timeScalesCache,
                  Ensembles ensemblesCache,
                  MeasurementUnits measurementUnitsCache,
                  ProjectConfig projectConfig,
@@ -124,7 +124,7 @@ public final class PIXMLReader extends XMLReader
 		this.systemSettings = systemSettings;
         this.database = database;
         this.featuresCache = featuresCache;
-        this.variablesCache = variablesCache;
+        this.timeScalesCache = timeScalesCache;
         this.ensemblesCache = ensemblesCache;
         this.measurementUnitsCache = measurementUnitsCache;
         this.projectConfig = projectConfig;
@@ -136,7 +136,7 @@ public final class PIXMLReader extends XMLReader
     public PIXMLReader( SystemSettings systemSettings,
                         Database database,
                         Features featuresCache,
-                        Variables variablesCache,
+                        TimeScales timeScalesCache,
                         Ensembles ensemblesCache,
                         MeasurementUnits measurementUnitsCache,
                         ProjectConfig projectConfig,
@@ -149,7 +149,7 @@ public final class PIXMLReader extends XMLReader
 		this.systemSettings = systemSettings;
         this.database = database;
         this.featuresCache = featuresCache;
-        this.variablesCache = variablesCache;
+        this.timeScalesCache = timeScalesCache;
         this.ensemblesCache = ensemblesCache;
         this.measurementUnitsCache = measurementUnitsCache;
         this.projectConfig = projectConfig;
@@ -173,9 +173,9 @@ public final class PIXMLReader extends XMLReader
         return this.featuresCache;
     }
 
-    private Variables getVariablesCache()
+    private TimeScales getTimeScalesCache()
     {
-        return this.variablesCache;
+        return this.timeScalesCache;
     }
 
     private Ensembles getEnsemblesCache()
@@ -529,7 +529,7 @@ public final class PIXMLReader extends XMLReader
                     // See #59438
 				    if (XMLHelper.getXMLText( reader ).equalsIgnoreCase( "instantaneous" ))
                     {
-                        scalePeriod = Duration.ofMinutes( 1 );
+                        scalePeriod = Duration.ofMillis( 1 );
                     }
                 }
                 else if ( localName.equalsIgnoreCase( "timeStep" ))
@@ -1063,7 +1063,7 @@ public final class PIXMLReader extends XMLReader
                 this.createTimeSeriesIngester( this.getSystemSettings(),
                                                this.getDatabase(),
                                                this.getFeaturesCache(),
-                                               this.getVariablesCache(),
+                                               this.getTimeScalesCache(),
                                                this.getEnsemblesCache(),
                                                this.getMeasurementUnitsCache(),
                                                this.getProjectConfig(),
@@ -1138,7 +1138,7 @@ public final class PIXMLReader extends XMLReader
     TimeSeriesIngester createTimeSeriesIngester( SystemSettings systemSettings,
                                                  Database database,
                                                  Features featuresCache,
-                                                 Variables variablesCache,
+                                                 TimeScales timeScalesCache,
                                                  Ensembles ensemblesCache,
                                                  MeasurementUnits measurementUnitsCache,
                                                  ProjectConfig projectConfig,
@@ -1149,7 +1149,7 @@ public final class PIXMLReader extends XMLReader
         return TimeSeriesIngester.of( systemSettings,
                                       database,
                                       featuresCache,
-                                      variablesCache,
+                                      timeScalesCache,
                                       ensemblesCache,
                                       measurementUnitsCache,
                                       projectConfig,

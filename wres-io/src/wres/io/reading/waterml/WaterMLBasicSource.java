@@ -31,7 +31,7 @@ import wres.io.concurrency.TimeSeriesIngester;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.Variables;
+import wres.io.data.caching.TimeScales;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.reading.BasicSource;
@@ -60,7 +60,7 @@ public class WaterMLBasicSource extends BasicSource
     private final SystemSettings systemSettings;
     private final Database database;
     private final Features featuresCache;
-    private final Variables variablesCache;
+    private final TimeScales timeScalesCache;
     private final Ensembles ensemblesCache;
     private final MeasurementUnits measurementUnitsCache;
     private final DatabaseLockManager lockManager;
@@ -68,7 +68,7 @@ public class WaterMLBasicSource extends BasicSource
     public WaterMLBasicSource( SystemSettings systemSettings,
                                Database database,
                                Features featuresCache,
-                               Variables variablesCache,
+                               TimeScales timeScalesCache,
                                Ensembles ensemblesCache,
                                MeasurementUnits measurementUnitsCache,
                                ProjectConfig projectConfig,
@@ -79,14 +79,14 @@ public class WaterMLBasicSource extends BasicSource
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( database );
         Objects.requireNonNull( featuresCache );
-        Objects.requireNonNull( variablesCache );
+        Objects.requireNonNull( timeScalesCache );
         Objects.requireNonNull( ensemblesCache );
         Objects.requireNonNull( measurementUnitsCache );
         Objects.requireNonNull( lockManager );
         this.systemSettings = systemSettings;
         this.database = database;
         this.featuresCache = featuresCache;
-        this.variablesCache = variablesCache;
+        this.timeScalesCache = timeScalesCache;
         this.ensemblesCache = ensemblesCache;
         this.measurementUnitsCache = measurementUnitsCache;
         this.lockManager = lockManager;
@@ -107,9 +107,9 @@ public class WaterMLBasicSource extends BasicSource
         return this.featuresCache;
     }
 
-    private Variables getVariablesCache()
+    private TimeScales getTimeScalesCache()
     {
-        return this.variablesCache;
+        return this.timeScalesCache;
     }
 
     private Ensembles getEnsemblesCache()
@@ -133,55 +133,6 @@ public class WaterMLBasicSource extends BasicSource
         return this.ingest();
     }
 
-    private SourceDetails saveLackOfData(URI location, int httpStatus) throws IOException {
-        LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}",
-                httpStatus,
-                location );
-
-        try
-        {
-            // Cannot trust the DataSources.get() method to accurately
-            // report performedInsert(). Use other means here.
-            SourceDetails.SourceKey sourceKey =
-                    new SourceDetails.SourceKey( location,
-                            Instant.now().toString(),
-                            null,
-                            MD5SUM_OF_EMPTY_STRING.toUpperCase() );
-
-            SourceDetails details = this.createSourceDetails( sourceKey );
-            Database database = this.getDatabase();
-            details.save( database );
-            boolean foundAlready = !details.performedInsert();
-
-            LOGGER.debug( "Found {}? {}", details, foundAlready );
-
-            if ( !foundAlready )
-            {
-                this.lockManager.lockSource( details.getId() );
-                SourceCompletedDetails completedDetails =
-                        createSourceCompletedDetails( database, details );
-                completedDetails.markCompleted();
-                // A special case here, where we don't use
-                // source completer because we know there are no data
-                // rows to be inserted, therefore there will be no
-                // coordination with the use of synchronizers/latches.
-                // Therefore, plain lock and unlock here.
-                this.lockManager.unlockSource( details.getId() );
-
-                LOGGER.debug( "Empty source id {} marked complete.",
-                        details.getId() );
-            }
-
-            return details;
-        }
-        catch ( SQLException e )
-        {
-            throw new IngestException( "Source metadata for '"
-                    + location +
-                    "' could not be stored in or retrieved from the database.",
-                    e );
-        }
-    }
 
     private Pair<Response, SourceDetails> deserializeInput(URI location) throws IOException {
         try {
@@ -195,7 +146,10 @@ public class WaterMLBasicSource extends BasicSource
                     int httpStatus = response.getStatusCode();
 
                     if (httpStatus == 404) {
-                        return Pair.of(null, this.saveLackOfData(location, httpStatus));
+                        LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}",
+                                     httpStatus,
+                                     location );
+                        return Pair.of(null, null );
                     } else if (!(httpStatus >= 200 && httpStatus < 300)) {
                         throw new PreIngestException("Failed to get data from '"
                                 + location +
@@ -238,13 +192,7 @@ public class WaterMLBasicSource extends BasicSource
         Pair<Response, SourceDetails> responsePair = this.deserializeInput(location);
 
         if (responsePair.getLeft() == null) {
-            return IngestResult.singleItemListFrom(
-                    this.projectConfig,
-                    this.dataSource,
-                    responsePair.getRight().getId(),
-                    !responsePair.getRight().performedInsert(),
-                    false
-            );
+            return Collections.emptyList();
         }
 
         Response response = responsePair.getLeft();
@@ -261,7 +209,7 @@ public class WaterMLBasicSource extends BasicSource
                 TimeSeriesIngester ingester = TimeSeriesIngester.of( this.getSystemSettings(),
                                                                      this.getDatabase(),
                                                                      this.getFeaturesCache(),
-                                                                     this.getVariablesCache(),
+                                                                     this.getTimeScalesCache(),
                                                                      this.getEnsemblesCache(),
                                                                      this.getMeasurementUnitsCache(),
                                                                      this.getProjectConfig(),
@@ -313,7 +261,7 @@ public class WaterMLBasicSource extends BasicSource
      * @return a SourceDetails
      */
 
-    SourceDetails createSourceDetails( SourceDetails.SourceKey sourceKey )
+    SourceDetails createSourceDetails( String sourceKey )
     {
         return new SourceDetails( sourceKey );
     }

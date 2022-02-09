@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.7.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="Remove columns from wres.TimeSeries table (now elsewhere)"
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeries" schemaName="wres" />
+            <columnExists tableName="TimeSeries" schemaName="wres"
+                          columnName="measurementunit_id" />
+            <columnExists tableName="TimeSeries" schemaName="wres"
+                          columnName="initialization_date" />
+            <columnExists tableName="TimeSeries" schemaName="wres"
+                          columnName="scale_period" />
+            <columnExists tableName="TimeSeries" schemaName="wres"
+                          columnName="scale_function" />
+            <columnExists tableName="TimeSeries" schemaName="wres"
+                          columnName="variable_name" />
+            <columnExists tableName="TimeSeries" schemaName="wres"
+                          columnName="feature_id" />
+        </preConditions>
+        <comment>
+            Remove columns to be represented elsewhere in the schema.
+        </comment>
+        <dropColumn tableName="TimeSeries" schemaName="wres"
+                    columnName="measurementunit_id" />
+        <dropColumn tableName="TimeSeries" schemaName="wres"
+                    columnName="initialization_date" />
+        <dropColumn tableName="TimeSeries" schemaName="wres"
+                    columnName="scale_period" />
+        <dropColumn tableName="TimeSeries" schemaName="wres"
+                    columnName="scale_function" />
+        <dropColumn tableName="TimeSeries" schemaName="wres"
+                    columnName="variable_name" />
+        <dropColumn tableName="TimeSeries" schemaName="wres"
+                    columnName="feature_id" />
+    </changeSet>
+    <changeSet id="Drop separate source_id index on wres.TimeSeries v2."
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <indexExists tableName="TimeSeries"
+                         indexName="timeseries_source_index"
+                         schemaName="wres" />
+        </preConditions>
+        <comment>The unique constraint in the next changeSet will suffice.</comment>
+        <dropIndex tableName="TimeSeries"
+                   schemaName="wres"
+                   indexName="timeseries_source_index" />
+    </changeSet>
+    <changeSet id="Add unique constraint to wres.TimeSeries"
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeries" schemaName="wres" />
+            <columnExists tableName="TimeSeries" schemaName="wres"
+                          columnName="source_id" />
+            <columnExists tableName="TimeSeries" schemaName="wres"
+                          columnName="ensemble_id" />
+            <not>
+                <indexExists indexName="timeseries_source_ensemble_unique_index"
+                             columnNames="source_id,ensemble_id"
+                             tableName="TimeSeries" schemaName="wres" />
+            </not>
+        </preConditions>
+        <addUniqueConstraint constraintName="timeseries_source_ensemble_unique_index"
+                             columnNames="source_id,ensemble_id"
+                             tableName="TimeSeries" schemaName="wres" />
+    </changeSet>
+
+
+    <changeSet id="Add ensemble_id foreign key constraint to wres.TimeSeries (deferred)."
+               author="Jesse Bickel"
+               dbms="oracle,postgresql,sqlite">
+        <preConditions onFail="MARK_RAN">
+            <columnExists columnName="ensemble_id"
+                          tableName="Ensemble"
+                          schemaName="wres" />
+            <columnExists columnName="ensemble_id"
+                          tableName="TimeSeries"
+                          schemaName="wres" />
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="timeseries_ensemble_fk"
+                                            schemaName="wres" />
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint baseColumnNames="ensemble_id"
+                                 baseTableName="TimeSeries"
+                                 baseTableSchemaName="wres"
+                                 constraintName="timeseries_ensemble_fk"
+                                 referencedColumnNames="ensemble_id"
+                                 referencedTableName="Ensemble"
+                                 referencedTableSchemaName="wres"
+                                 deferrable="true"
+                                 initiallyDeferred="true"
+                                 onDelete="CASCADE" />
+    </changeSet>
+    <changeSet id="Add ensemble_id foreign key constraint to wres.TimeSeries (non-deferred)."
+               author="Jesse Bickel"
+               dbms="!oracle,!postgresql,!sqlite,!sybase">
+        <preConditions onFail="MARK_RAN">
+            <columnExists columnName="ensemble_id"
+                          tableName="Ensemble"
+                          schemaName="wres" />
+            <columnExists columnName="ensemble_id"
+                          tableName="TimeSeries"
+                          schemaName="wres" />
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="timeseries_ensemble_fk"
+                                            schemaName="wres" />
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint baseColumnNames="ensemble_id"
+                                 baseTableName="TimeSeries"
+                                 baseTableSchemaName="wres"
+                                 constraintName="timeseries_ensemble_fk"
+                                 referencedColumnNames="ensemble_id"
+                                 referencedTableName="Ensemble"
+                                 referencedTableSchemaName="wres"
+                                 onDelete="CASCADE" />
+    </changeSet>
+</databaseChangeLog>

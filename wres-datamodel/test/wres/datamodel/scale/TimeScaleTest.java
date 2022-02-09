@@ -12,7 +12,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.apache.commons.math3.exception.MathArithmeticException;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -70,7 +69,7 @@ public final class TimeScaleTest
     @Test
     public void testConstructionProducesExpectedTimeScale()
     {
-        assertEquals( TimeScaleOuter.of(), TimeScaleOuter.of( Duration.ofMinutes( 1 ), TimeScaleFunction.UNKNOWN ) );
+        assertEquals( TimeScaleOuter.of(), TimeScaleOuter.of( Duration.ofMillis( 1 ), TimeScaleFunction.UNKNOWN ) );
     }
 
     /**
@@ -368,7 +367,7 @@ public final class TimeScaleTest
 
         assertEquals( "While attempting to compute the Least Common Duration from the input:", actual.getMessage() );
 
-        assertTrue( actual.getCause() instanceof MathArithmeticException );
+        assertTrue( actual.getCause() instanceof ArithmeticException );
     }
 
     /**
