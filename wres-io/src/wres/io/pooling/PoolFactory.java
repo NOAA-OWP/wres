@@ -21,8 +21,6 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,23 +129,17 @@ public class PoolFactory
         Objects.requireNonNull( retrieverFactory, CANNOT_CREATE_POOLS_WITHOUT_A_RETRIEVER_FACTORY );
         Objects.requireNonNull( poolParameters, CANNOT_CREATE_POOLS_WITHOUT_POOL_PARAMETERS );
 
-        // Create one collection of pools for each feature group in the requests
-        Map<FeatureGroup, List<PoolRequest>> groups =
-                poolRequests.stream()
-                            .collect( Collectors.groupingBy( e -> e.getMetadata().getFeatureGroup() ) );
-
         // Optimize, if possible, by conducting feature-batched retrieval
-        Map<DecomposableFeatureGroup, List<PoolRequest>> optimizedGroups =
-                PoolFactory.getFeatureBatchedSingletons( groups, poolParameters );
+        Map<FeatureGroup, OptimizedPoolRequests> optimizedGroups =
+                PoolFactory.getFeatureBatchedSingletons( poolRequests, poolParameters );
 
         List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Double>>>>> suppliers = new ArrayList<>();
 
-        for ( Map.Entry<DecomposableFeatureGroup, List<PoolRequest>> nextEntry : optimizedGroups.entrySet() )
+        for ( Map.Entry<FeatureGroup, OptimizedPoolRequests> nextEntry : optimizedGroups.entrySet() )
         {
-            DecomposableFeatureGroup nextGroup = nextEntry.getKey();
-            FeatureGroup featureGroup = nextGroup.getComposedGroup();
-
-            List<PoolRequest> nextPoolRequests = nextEntry.getValue();
+            FeatureGroup featureGroup = nextEntry.getKey();
+            OptimizedPoolRequests optimized = nextEntry.getValue();
+            List<PoolRequest> nextPoolRequests = optimized.getOptimizedRequests();
 
             LOGGER.debug( "Building pool suppliers for feature group {}, which contains {} pool requests.",
                           featureGroup,
@@ -167,8 +159,9 @@ public class PoolFactory
             List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Double>>>>> nextSuppliers =
                     PoolFactory.getSingleValuedPoolsInner( project, nextPoolRequests, cachingFactory );
 
-            // Optimized? In that case, decompose the feature-batched pools into feature-specific pools
-            if ( nextGroup.isComposed() )
+            // Optimized? In that case, decompose the feature-batched pool suppliers into feature-specific pool 
+            // suppliers
+            if ( optimized.isOptimized() )
             {
                 List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Double>>>>> decomposed =
                         PoolFactory.decompose( nextSuppliers );
@@ -180,7 +173,7 @@ public class PoolFactory
             }
         }
 
-        return PoolFactory.unpack( poolRequests, suppliers );
+        return PoolFactory.unpack( optimizedGroups, suppliers );
     }
 
     /**
@@ -213,23 +206,18 @@ public class PoolFactory
         Objects.requireNonNull( retrieverFactory, CANNOT_CREATE_POOLS_WITHOUT_A_RETRIEVER_FACTORY );
         Objects.requireNonNull( poolParameters, CANNOT_CREATE_POOLS_WITHOUT_POOL_PARAMETERS );
 
-        // Create one collection of pools for each feature group in the requests
-        Map<FeatureGroup, List<PoolRequest>> groups =
-                poolRequests.stream()
-                            .collect( Collectors.groupingBy( e -> e.getMetadata().getFeatureGroup() ) );
-
         // Optimize, if possible, by conducting feature-batched retrieval. Each list of pool requests is associated
         // with the same feature group, which may be a composition of features to decompose
-        Map<DecomposableFeatureGroup, List<PoolRequest>> optimizedGroups =
-                PoolFactory.getFeatureBatchedSingletons( groups, poolParameters );
+        Map<FeatureGroup, OptimizedPoolRequests> optimizedGroups =
+                PoolFactory.getFeatureBatchedSingletons( poolRequests, poolParameters );
 
         List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Ensemble>>>>> suppliers = new ArrayList<>();
 
-        for ( Map.Entry<DecomposableFeatureGroup, List<PoolRequest>> nextEntry : optimizedGroups.entrySet() )
+        for ( Map.Entry<FeatureGroup, OptimizedPoolRequests> nextEntry : optimizedGroups.entrySet() )
         {
-            DecomposableFeatureGroup nextGroup = nextEntry.getKey();
-            FeatureGroup featureGroup = nextGroup.getComposedGroup();
-            List<PoolRequest> nextPoolRequests = nextEntry.getValue();
+            FeatureGroup featureGroup = nextEntry.getKey();
+            OptimizedPoolRequests optimized = nextEntry.getValue();
+            List<PoolRequest> nextPoolRequests = optimized.getOptimizedRequests();
 
             LOGGER.debug( "Building pool suppliers for feature group {}, which contains {} pool requests.",
                           featureGroup,
@@ -250,7 +238,7 @@ public class PoolFactory
                     PoolFactory.getEnsemblePoolsInner( project, nextPoolRequests, cachingFactory );
 
             // Optimized? In that case, decompose the feature-batched pools into feature-specific pools
-            if ( nextGroup.isComposed() )
+            if ( optimized.isOptimized() )
             {
                 List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Ensemble>>>>> decomposed =
                         PoolFactory.decompose( nextSuppliers );
@@ -262,7 +250,7 @@ public class PoolFactory
             }
         }
 
-        return PoolFactory.unpack( poolRequests, suppliers );
+        return PoolFactory.unpack( optimizedGroups, suppliers );
     }
 
     /**
@@ -512,7 +500,9 @@ public class PoolFactory
         {
             PoolRequest poolRequest = poolRequests.get( i );
             Supplier<T> rawSupplier = rawSuppliers.get( i );
-            SupplierWithPoolRequest<T> composedSupplier = SupplierWithPoolRequest.of( rawSupplier, poolRequest );
+            SupplierWithPoolRequest<T> composedSupplier = SupplierWithPoolRequest.of( rawSupplier,
+                                                                                      poolRequest,
+                                                                                      poolRequest );
             composedSuppliers.add( composedSupplier );
         }
 
@@ -526,76 +516,35 @@ public class PoolFactory
      * identifiers, which are otherwise destroyed by feature-batching.
      * 
      * @param <T> the type of data supplied
-     * @param originalRequests the original pool requests before any feature-batching was applied
+     * @param optimizedGroups the optimized pool requests
      * @param suppliers the suppliers
      * @return a map of requests to suppliers
      */
 
-    private static <T> List<Pair<PoolRequest, Supplier<T>>> unpack( List<PoolRequest> originalRequests,
-                                                                    List<SupplierWithPoolRequest<T>> suppliers )
+    private static <T> List<Pair<PoolRequest, Supplier<T>>>
+            unpack( Map<FeatureGroup, OptimizedPoolRequests> optimizedGroups,
+                    List<SupplierWithPoolRequest<T>> suppliers )
     {
-        // Establish a map between the single tuple in the singleton feature groups and their pool requests 
-
-        // The original requests, organized by feature tuple and time window in order to allow easy correlation with the
-        // new requests
-        Map<FeatureTuple, Map<TimeWindowOuter, PoolRequest>> singletons = new HashMap<>();
-        for ( PoolRequest nextRequest : originalRequests )
-        {
-            PoolMetadata mainMetadata = nextRequest.getMetadata();
-            FeatureGroup group = mainMetadata.getFeatureGroup();
-            if ( group.isSingleton() )
-            {
-                FeatureTuple nextTuple = group.getFeatures()
-                                              .iterator()
-                                              .next();
-
-                TimeWindowOuter timeWindow = mainMetadata.getTimeWindow();
-
-                if ( singletons.containsKey( nextTuple ) )
-                {
-                    singletons.get( nextTuple )
-                              .put( timeWindow, nextRequest );
-                }
-                else
-                {
-                    Map<TimeWindowOuter, PoolRequest> innerMap = new HashMap<>();
-                    innerMap.put( timeWindow, nextRequest );
-                    singletons.put( nextTuple, innerMap );
-                }
-            }
-        }
-
         List<Pair<PoolRequest, Supplier<T>>> returnMe = new ArrayList<>();
 
         // Iterate through the suppliers
         for ( SupplierWithPoolRequest<T> nextSupplier : suppliers )
         {
-            // The interpreted pool request, after any feature batching. The only difference between this 
-            // pool request and the original pool request is the poolId, which should be preserved in the response
             PoolRequest poolRequest = nextSupplier.getPoolRequest();
+            PoolRequest optimizedPoolRequest = nextSupplier.getOptimizedPoolRequest();
 
+            FeatureGroup nextOptimizedGroup = optimizedPoolRequest.getMetadata()
+                                                                  .getFeatureGroup();
             FeatureGroup nextGroup = poolRequest.getMetadata()
                                                 .getFeatureGroup();
 
-            Pair<PoolRequest, Supplier<T>> nextPair = null;
-            if ( nextGroup.isSingleton() )
-            {
-                FeatureTuple singleton = nextGroup.getFeatures()
-                                                  .iterator()
-                                                  .next();
-                TimeWindowOuter timeWindow = poolRequest.getMetadata()
-                                                        .getTimeWindow();
+            TimeWindowOuter timeWindow = poolRequest.getMetadata()
+                                                    .getTimeWindow();
 
-                Map<TimeWindowOuter, PoolRequest> requestsByTime = singletons.get( singleton );
+            OptimizedPoolRequests optimized = optimizedGroups.get( nextOptimizedGroup );
+            PoolRequest original = optimized.getOriginalPoolRequest( nextGroup, timeWindow );
 
-                // The original pool request, to be preserved
-                PoolRequest originalPoolRequest = requestsByTime.get( timeWindow );
-                nextPair = Pair.of( originalPoolRequest, nextSupplier );
-            }
-            else
-            {
-                nextPair = Pair.of( poolRequest, nextSupplier );
-            }
+            Pair<PoolRequest, Supplier<T>> nextPair = Pair.of( original, nextSupplier );
 
             returnMe.add( nextPair );
         }
@@ -957,45 +906,55 @@ public class PoolFactory
     /**
      * Optimizes the input requests for feature-batched retrieval when the number of singleton feature groups is larger
      * than a minimum size.
-     * @param requests the requests to optimize
+     * @param poolRequests the pool requests to optimize
      * @param poolParameters the pool parameters
      * @return the optimized requests with a flag indicating whether optimization was performed
      */
 
-    private static Map<DecomposableFeatureGroup, List<PoolRequest>>
-            getFeatureBatchedSingletons( Map<FeatureGroup, List<PoolRequest>> requests,
+    private static Map<FeatureGroup, OptimizedPoolRequests>
+            getFeatureBatchedSingletons( List<PoolRequest> poolRequests,
                                          PoolParameters poolParameters )
     {
-        Map<DecomposableFeatureGroup, List<PoolRequest>> returnMe = new HashMap<>();
+        Map<FeatureGroup, OptimizedPoolRequests> returnMe = new HashMap<>();
 
+        // Create one collection of pool requests for each feature group
+        Map<FeatureGroup, List<PoolRequest>> groups =
+                poolRequests.stream()
+                            .collect( Collectors.groupingBy( e -> e.getMetadata().getFeatureGroup() ) );
+
+        // Create some collections that will be populated/cleared for each feature batch in turn
         Set<FeatureGroup> nextGroups = new HashSet<>();
-        List<PoolRequest> nextPoolRequests = new ArrayList<>();
+        List<PoolRequest> nextOptimizedRequests = new ArrayList<>(); // The next batch of optimized requests
+        List<PoolRequest> nextOriginalRequests = new ArrayList<>(); // The next batch of original requests
 
         // Are the pool requests suitable for feature batching?
-        boolean shouldBatch = PoolFactory.isFeatureBatchingAllowed( requests, poolParameters );
+        boolean shouldBatch = PoolFactory.isFeatureBatchingAllowed( groups, poolParameters );
 
         // Group size for retrieval: either the batched retrieval size or the total number of features, if less
-        int groupSize = requests.size() < poolParameters.getFeatureBatchSize() ? requests.size()
-                                                                               : poolParameters.getFeatureBatchSize();
+        int groupSize = groups.size() < poolParameters.getFeatureBatchSize() ? groups.size()
+                                                                             : poolParameters.getFeatureBatchSize();
 
-        int poolRequestCount = 0;
+        int newPoolRequestCount = 0;
+        int originalPoolRequestCount = 0;
 
         // Loop the pool requests and gather them into groups for feature-batched retrieval, if the conditions are met
-        for ( Map.Entry<FeatureGroup, List<PoolRequest>> nextEntry : requests.entrySet() )
+        for ( Map.Entry<FeatureGroup, List<PoolRequest>> nextEntry : groups.entrySet() )
         {
             FeatureGroup nextGroup = nextEntry.getKey();
             List<PoolRequest> nextPools = nextEntry.getValue();
+            originalPoolRequestCount += nextPools.size();
 
             // More features than the minimum, batching is allowed and this is a singleton group, so batch it
             if ( shouldBatch && nextGroup.isSingleton() )
             {
                 // Start a new batch
-                if ( nextPoolRequests.isEmpty() )
+                if ( nextOptimizedRequests.isEmpty() )
                 {
-                    nextPoolRequests.addAll( nextPools );
+                    nextOptimizedRequests.addAll( nextPools );
                 }
 
                 nextGroups.add( nextGroup );
+                nextOriginalRequests.addAll( nextPools );
 
                 // Either reached the batch size or there are fewer features in total than the batch size, so complete
                 // the batch
@@ -1006,16 +965,20 @@ public class PoolFactory
                                   groupSize,
                                   nextGroups );
 
-                    DecomposableFeatureGroup group = new DecomposableFeatureGroup( nextGroups, true );
-                    FeatureGroup nextComposedGroup = group.getComposedGroup();
+                    FeatureGroup nextComposedGroup = PoolFactory.getComposedFeatureGroup( nextGroups );
                     List<PoolRequest> nextAdjustedPools = PoolFactory.setFeatureGroup( nextComposedGroup,
-                                                                                       nextPoolRequests );
-                    returnMe.put( group, nextAdjustedPools );
-                    poolRequestCount += nextAdjustedPools.size();
+                                                                                       nextOptimizedRequests );
+
+                    OptimizedPoolRequests optimized = new OptimizedPoolRequests( nextAdjustedPools,
+                                                                                 nextOriginalRequests );
+
+                    returnMe.put( nextComposedGroup, optimized );
+                    newPoolRequestCount += nextAdjustedPools.size();
 
                     // Clear the group
                     nextGroups.clear();
-                    nextPoolRequests.clear();
+                    nextOptimizedRequests.clear();
+                    nextOriginalRequests.clear();
                 }
             }
             // Proceed without feature-batching
@@ -1023,21 +986,22 @@ public class PoolFactory
             {
                 LOGGER.debug( "Not performing feature batched retrieval for feature group {}.", nextGroup );
 
-                Set<FeatureGroup> featureGroup = Set.of( nextGroup );
-                DecomposableFeatureGroup group = new DecomposableFeatureGroup( featureGroup, false );
-                returnMe.put( group, nextPools );
-                poolRequestCount += nextPools.size();
+                OptimizedPoolRequests optimized = new OptimizedPoolRequests( nextPools, nextPools );
+                returnMe.put( nextGroup, optimized );
+                newPoolRequestCount += nextPools.size();
             }
         }
 
         // Is there a left over feature batch with fewer than PoolFactory.FEATURE_BATCHED_RETRIEVAL_SIZE features?
         if ( !nextGroups.isEmpty() )
         {
-            DecomposableFeatureGroup group = new DecomposableFeatureGroup( nextGroups, true );
-            FeatureGroup nextComposedGroup = group.getComposedGroup();
-            List<PoolRequest> nextAdjustedPools = PoolFactory.setFeatureGroup( nextComposedGroup, nextPoolRequests );
-            returnMe.put( group, nextAdjustedPools );
-            poolRequestCount += nextAdjustedPools.size();
+            FeatureGroup nextComposedGroup = PoolFactory.getComposedFeatureGroup( nextGroups );
+            List<PoolRequest> nextAdjustedPools = PoolFactory.setFeatureGroup( nextComposedGroup,
+                                                                               nextOptimizedRequests );
+            OptimizedPoolRequests optimized = new OptimizedPoolRequests( nextAdjustedPools,
+                                                                         nextOriginalRequests );
+            returnMe.put( nextComposedGroup, optimized );
+            newPoolRequestCount += nextAdjustedPools.size();
 
             LOGGER.debug( "Created a batch of {} singleton feature groups for efficient retrieval. The "
                           + "singleton groups to be treated as a batch are: {}.",
@@ -1047,7 +1011,9 @@ public class PoolFactory
 
         if ( shouldBatch && LOGGER.isDebugEnabled() )
         {
-            LOGGER.debug( "Created {} optimized pool requests.", poolRequestCount );
+            LOGGER.debug( "Created {} optimized pool requests from {} original pool requests.",
+                          newPoolRequestCount,
+                          originalPoolRequestCount );
         }
 
         return Collections.unmodifiableMap( returnMe );
@@ -1254,7 +1220,8 @@ public class PoolFactory
 
                 SupplierWithPoolRequest<Pool<TimeSeries<Pair<L, R>>>> supplier =
                         SupplierWithPoolRequest.of( nextInnerSupplier,
-                                                    nextDecomposedRequest );
+                                                    nextDecomposedRequest,
+                                                    nextRequest );
 
                 flattened.add( supplier );
             }
@@ -1345,6 +1312,31 @@ public class PoolFactory
     }
 
     /**
+     * Create a composed feature group from the collection of singleton groups.
+     * @param singletons the singleton groups
+     * @throws NullPointerException if the set of singletons is null
+     */
+    private static FeatureGroup getComposedFeatureGroup( Set<FeatureGroup> singletons )
+    {
+        Objects.requireNonNull( singletons );
+
+        if ( singletons.size() == 1 )
+        {
+            return singletons.iterator()
+                             .next();
+        }
+        else
+        {
+            Set<FeatureTuple> features = singletons.stream()
+                                                   .flatMap( next -> next.getFeatures()
+                                                                         .stream() )
+                                                   .collect( Collectors.toSet() );
+            GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, features );
+            return FeatureGroup.of( geoGroup );
+        }
+    }
+
+    /**
      * Implementation of a {@link RetrieverFactory} that delegates all calls to a factory supplied on construction, 
      * but wraps calls to the climatological data in a {@link CachingRetriever} before returning it.
      *  
@@ -1407,117 +1399,136 @@ public class PoolFactory
     }
 
     /**
-     * A feature group that should be decomposed if feature-batched retrieval is being conducted. Use 
-     * {@link DecomposableFeatureGroup#isComposed()} to determine whether the group is a feature-batched composition 
-     * to be decomposed.
+     * A possibly optimized collection of pool requests. There are up to N optimized pool requests and M corresponding 
+     * original requests. The original pool requests are optimized if M > N. There is one original request for each
+     * geographic feature group and time window and an interface is provided to acquire the original request that 
+     * corresponds to a prescribed feature group and time window. Where M > N, the supply that corresponds to each
+     * optimized request will ultimately need to be decomposed into the separate supplies that correspond to the 
+     * original pool requests.
      */
 
-    private static class DecomposableFeatureGroup implements Comparable<DecomposableFeatureGroup>
+    private static class OptimizedPoolRequests
     {
-        /** Is true if the feature groups should be decomposed because feature-batched retrieval was performed. */
-        private final boolean isComposed;
+        /** The optimized pool request. */
+        private final List<PoolRequest> optimizedRequests;
 
-        /** The composed group. */
-        private final FeatureGroup composed;
+        /** The original pool requests. */
+        private final List<PoolRequest> originalRequests;
 
-        @Override
-        public boolean equals( Object o )
+        /**
+         * @return the optimized pool request
+         */
+
+        private List<PoolRequest> getOptimizedRequests()
         {
-            if ( ! ( o instanceof DecomposableFeatureGroup ) )
-            {
-                return false;
-            }
-
-            if ( o == this )
-            {
-                return true;
-            }
-
-            DecomposableFeatureGroup in = (DecomposableFeatureGroup) o;
-
-            // No need to check composed group as that is derived from the singleton state
-            return Objects.equals( this.isComposed, in.isComposed )
-                   && Objects.equals( this.composed, in.composed );
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hash( this.composed, this.isComposed );
-        }
-
-        @Override
-        public int compareTo( DecomposableFeatureGroup o )
-        {
-            Objects.requireNonNull( o );
-
-            int compare = Boolean.compare( this.isComposed, o.isComposed );
-            if ( compare != 0 )
-            {
-                return compare;
-            }
-
-            compare = this.composed.compareTo( o.composed );
-
-            if ( compare != 0 )
-            {
-                return compare;
-            }
-
-            return 0;
-        }
-
-        @Override
-        public String toString()
-        {
-            return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
-                                                                                .append( "isComposed", this.isComposed )
-                                                                                .toString();
+            return this.optimizedRequests;
         }
 
         /**
-         * @return whether the feature groups were batched for retrieval and should be decomposed
+         * @return true if the pool request is an optimized request 
          */
 
-        private boolean isComposed()
+        private boolean isOptimized()
         {
-            return this.isComposed;
+            return this.originalRequests.size() > this.optimizedRequests.size();
         }
 
         /**
-         * @return the composed feature group, containing all the singleton features.
+         * @param feature the feature group
+         * @param timeWindow the time window
+         * @return the original request that corresponds to the prescribed feature
+         * @throws NullPointerException if either input is null
+         * @throws IllegalArgumentException if precisely one request was not found
          */
 
-        private FeatureGroup getComposedGroup()
+        private PoolRequest getOriginalPoolRequest( FeatureGroup feature, TimeWindowOuter timeWindow )
         {
-            return this.composed;
+            Objects.requireNonNull( feature );
+            Objects.requireNonNull( timeWindow );
+            List<PoolRequest> requests = this.originalRequests.stream()
+                                                              .filter( next -> feature.equals( next.getMetadata()
+                                                                                                   .getFeatureGroup() )
+                                                                               && timeWindow.equals( next.getMetadata()
+                                                                                                         .getTimeWindow() ) )
+                                                              .collect( Collectors.toList() );
+
+            if ( requests.size() != 1 )
+            {
+                Set<FeatureGroup> availableGroups = this.originalRequests.stream()
+                                                                         .map( next -> next.getMetadata()
+                                                                                           .getFeatureGroup() )
+                                                                         .collect( Collectors.toSet() );
+
+                throw new IllegalArgumentException( "Failed to identify the original pool request that corresponds to "
+                                                    + "the prescribed feature group, "
+                                                    + feature
+                                                    + ". Discovered "
+                                                    + requests.size()
+                                                    + " pool requests associated with that feature group. The "
+                                                    + "available feature groups are: "
+                                                    + availableGroups
+                                                    + "." );
+            }
+
+            return requests.get( 0 );
         }
 
         /**
-         * Create an instance.
-         * @param singletons the singleton groups
-         * @param isComposed is true if the features are composed for feature-batched retrieval
-         * @throws NullPointerException if the set of singletons is null
+         * @param optimizedRequests the optimized requests, required and not empty
+         * @param originalRequests, the original requests, required and not empty
+         * @throws NullPointerException if any input is null
+         * @throws IllegalArgumentException if either set of requests is empty or the features in the original 
+         *            requests don't match the features in the optimized requests
          */
-        private DecomposableFeatureGroup( Set<FeatureGroup> singletons, boolean isComposed )
-        {
-            Objects.requireNonNull( singletons );
-            this.isComposed = isComposed;
 
-            if ( singletons.size() == 1 )
+        private OptimizedPoolRequests( List<PoolRequest> optimizedRequests, List<PoolRequest> originalRequests )
+        {
+            Objects.requireNonNull( optimizedRequests );
+            Objects.requireNonNull( originalRequests );
+
+            if ( optimizedRequests.isEmpty() )
             {
-                this.composed = singletons.iterator()
-                                          .next();
+                throw new IllegalArgumentException( "Cannot create an empty collection of optimized pool requests." );
             }
-            else
+
+            if ( originalRequests.isEmpty() )
             {
-                Set<FeatureTuple> features = singletons.stream()
-                                                       .flatMap( next -> next.getFeatures()
-                                                                             .stream() )
-                                                       .collect( Collectors.toSet() );
-                GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, features );
-                this.composed = FeatureGroup.of( geoGroup );
+                throw new IllegalArgumentException( "Cannot create a collection of optimized pool requests with an "
+                                                    + "empty list of original requests from which the optimized "
+                                                    + "requests were derived." );
             }
+
+            Set<FeatureTuple> optimizedFeatures =
+                    optimizedRequests.stream()
+                                     .flatMap( next -> next.getMetadata().getFeatureTuples().stream() )
+                                     .collect( Collectors.toSet() );
+
+            Set<FeatureTuple> originalFeatures =
+                    originalRequests.stream()
+                                    .flatMap( next -> next.getMetadata().getFeatureTuples().stream() )
+                                    .collect( Collectors.toSet() );
+
+            if ( !optimizedFeatures.equals( originalFeatures ) )
+            {
+                throw new IllegalArgumentException( "The features in the optimized list of pool requests do not match "
+                                                    + "the features in the original list of pool requests. The "
+                                                    + "optimized list contains features: "
+                                                    + optimizedFeatures
+                                                    + ", whereas the original list contains features: "
+                                                    + originalFeatures
+                                                    + "." );
+            }
+
+            // Create immutable copies
+            this.optimizedRequests = List.copyOf( optimizedRequests );
+            this.originalRequests = List.copyOf( originalRequests );
+
+            LOGGER.debug( "Created a collection of {} optimized pool requests across {} features from {} original "
+                          + "requests across {} features.",
+                          optimizedRequests.size(),
+                          optimizedFeatures.size(),
+                          originalRequests.size(),
+                          originalFeatures.size() );
         }
     }
 
@@ -1534,6 +1545,9 @@ public class PoolFactory
         /** The pool request. */
         private final PoolRequest poolRequest;
 
+        /** The optimized pool request, else the {@link #poolRequest} where no optimization was conducted. */
+        private final PoolRequest optimizedPoolRequest;
+
         @Override
         public T get()
         {
@@ -1544,11 +1558,14 @@ public class PoolFactory
          * Create an instance.
          * @param delegated the delegated supplier
          * @param poolRequest the pool request
+         * @param optimizedPoolRequest either the same as the poolRequest or a composed/optimized pool request
          */
 
-        private static final <T> SupplierWithPoolRequest<T> of( Supplier<T> delegated, PoolRequest poolRequest )
+        private static final <T> SupplierWithPoolRequest<T> of( Supplier<T> delegated,
+                                                                PoolRequest poolRequest,
+                                                                PoolRequest optimizedPoolRequest )
         {
-            return new SupplierWithPoolRequest<>( delegated, poolRequest );
+            return new SupplierWithPoolRequest<>( delegated, poolRequest, optimizedPoolRequest );
         }
 
         /**
@@ -1561,15 +1578,28 @@ public class PoolFactory
         }
 
         /**
+         * @return the optimized pool request
+         */
+
+        private PoolRequest getOptimizedPoolRequest()
+        {
+            return this.optimizedPoolRequest;
+        }
+
+        /**
          * @param delegated the delegated supplier
          * @param poolRequest the pool request
          */
-        private SupplierWithPoolRequest( Supplier<T> delegated, PoolRequest poolRequest )
+        private SupplierWithPoolRequest( Supplier<T> delegated,
+                                         PoolRequest poolRequest,
+                                         PoolRequest optimizedPoolRequest )
         {
             Objects.requireNonNull( delegated );
             Objects.requireNonNull( poolRequest );
+            Objects.requireNonNull( optimizedPoolRequest );
             this.delegated = delegated;
             this.poolRequest = poolRequest;
+            this.optimizedPoolRequest = optimizedPoolRequest;
         }
     }
 
