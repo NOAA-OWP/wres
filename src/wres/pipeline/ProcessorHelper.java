@@ -83,7 +83,7 @@ import wres.system.SystemSettings;
 class ProcessorHelper
 {
     /** Re-used error message. */
-    private static final String FORCIBLY_STOPPING_EVALUATION_UPON_ENCOUNTERING_AN_INTERNAL_ERROR = 
+    private static final String FORCIBLY_STOPPING_EVALUATION_UPON_ENCOUNTERING_AN_INTERNAL_ERROR =
             "Forcibly stopping evaluation {} upon encountering an internal error.";
 
     /** Logger. */
@@ -325,13 +325,13 @@ class ProcessorHelper
                 String message = "Failed to close evaluation " + evaluationId + ".";
                 LOGGER.warn( message, e );
             }
-            
+
             // Add the paths written by external subscribers
             if ( Objects.nonNull( evaluation ) )
             {
                 resources.addAll( evaluation.getPathsWrittenBySubscribers() );
             }
-            
+
             LOGGER.info( "Wrote the following output: {}", resources );
         }
     }
@@ -1100,6 +1100,7 @@ class ProcessorHelper
         for ( Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> next : poolSuppliers )
         {
             PoolRequest poolRequest = next.getKey();
+
             Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>> poolSupplier = next.getValue();
 
             PoolProcessor<Double, Ensemble> poolProcessor =

@@ -15,21 +15,18 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.jcip.annotations.Immutable;
 import wres.datamodel.scale.TimeScaleOuter;
 
 /**
- * <p>A time-series contains a time-ordered set of {@link Event}, together with zero or more reference datetimes and 
- * associated {@link ReferenceTimeType}.
+ * <p>A time-series contains a time-ordered set of {@link Event}, together with {@link TimeSeriesMetadata}.
  * 
- * <p><b>Implementation Notes:</b>
- * 
- * <p>This class is immutable and thread-safe.
- * 
- * @param <T> the type of time-series data
+ * @param <T> the type of time-series event value
  * @author James Brown
  * @author Jesse Bickel
  */
 
+@Immutable
 public class TimeSeries<T>
 {
 
@@ -52,7 +49,7 @@ public class TimeSeries<T>
     private final SortedSet<Event<T>> events;
 
     /**
-     * Returns an empty {@link TimeSeries} with a <code>null</code> {@link TimeScaleOuter}.
+     * Returns an empty {@link TimeSeries} with prescribed metadata.
      *
      * @param <T> the event type
      * @param metadata The metadata for the empty timeseries.

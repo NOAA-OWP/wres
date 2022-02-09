@@ -432,7 +432,7 @@ public class Evaluation implements Closeable
         Objects.requireNonNull( statistics );
 
         this.validateRequestToPublish();
-        this.validateGroupId( groupId );
+        this.validateGroupId( groupId, Evaluation.STATISTICS_QUEUE );
 
         // Acquire a publication lock when producer flow control is engaged
         if ( Objects.nonNull( groupId ) )
@@ -657,7 +657,7 @@ public class Evaluation implements Closeable
         }
 
         LOGGER.debug( "Closing evaluation {}.", this.getEvaluationId() );
-        
+
         // Close the publishers gracefully
         this.closeGracefully( this.evaluationPublisher );
         this.closeGracefully( this.evaluationStatusPublisher );
@@ -1248,7 +1248,7 @@ public class Evaluation implements Closeable
         // Group identifier required in some cases
         if ( message.getCompletionStatus() == CompletionStatus.GROUP_PUBLICATION_COMPLETE )
         {
-            this.validateGroupId( groupId );
+            this.validateGroupId( groupId, Evaluation.EVALUATION_STATUS_QUEUE );
 
             // Can happen in a no data scenario
             if ( message.getMessageCount() == 0 && LOGGER.isWarnEnabled() )
@@ -1290,10 +1290,11 @@ public class Evaluation implements Closeable
      * Looks for the presence of a group identifier and throws an exception when the group has already been completed.
      * 
      * @param groupId a group identifier
+     * @param queue the queue name to use in any error message
      * @throws IllegalArgumentException if there are group subscriptions and the group has already been marked complete
      */
 
-    private void validateGroupId( String groupId )
+    private void validateGroupId( String groupId, String queue )
     {
         if ( Objects.nonNull( groupId ) )
         {
@@ -1301,7 +1302,9 @@ public class Evaluation implements Closeable
 
             if ( Objects.nonNull( count ) && count.get() < 0 )
             {
-                throw new IllegalArgumentException( "While attempting to publish a grouped message to evaluation "
+                throw new IllegalArgumentException( "While attempting to publish a grouped message to the "
+                                                    + queue
+                                                    + " queue of evaluation "
                                                     + this.getEvaluationId()
                                                     + ", discovered that group "
                                                     + groupId
