@@ -33,7 +33,6 @@ import org.slf4j.LoggerFactory;
 import ohd.hseb.charter.ChartConstants;
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
-import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.DefaultXYChartDataSource;
 import ohd.hseb.charter.datasource.XYChartDataSource;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
@@ -48,7 +47,6 @@ import ohd.hseb.hefs.utils.arguments.ArgumentsProcessor;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
 import ohd.hseb.hefs.utils.xml.XMLTools;
 import wres.config.generated.OutputTypeSelection;
-import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.Slicer;
 import wres.datamodel.metrics.MetricConstants;
@@ -65,6 +63,7 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
+import wres.vis.data.DataFactory;
 
 
 /**
@@ -369,24 +368,24 @@ public abstract class ChartEngineFactory
         ArgumentProcessor arguments =
                 constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits, false );
 
-        dataSources.add( XYChartDataSourceFactory.ofVerificationDiagram( 0,
-                                                                         inputSlice,
-                                                                         MetricDimension.FORECAST_PROBABILITY,
-                                                                         MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
-                                                                         MetricDimension.FORECAST_PROBABILITY.toString(),
-                                                                         MetricDimension.OBSERVED_RELATIVE_FREQUENCY.toString(),
-                                                                         0,
-                                                                         null,
-                                                                         durationUnits ) );
-        dataSources.add( XYChartDataSourceFactory.ofVerificationDiagram( 1,
-                                                                         inputSlice,
-                                                                         MetricDimension.FORECAST_PROBABILITY,
-                                                                         MetricDimension.SAMPLE_SIZE,
-                                                                         MetricDimension.FORECAST_PROBABILITY.toString(),
-                                                                         MetricDimension.SAMPLE_SIZE.toString(),
-                                                                         1,
-                                                                         null,
-                                                                         durationUnits ) );
+        dataSources.add( DataFactory.ofVerificationDiagram( 0,
+                                                            inputSlice,
+                                                            MetricDimension.FORECAST_PROBABILITY,
+                                                            MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
+                                                            MetricDimension.FORECAST_PROBABILITY.toString(),
+                                                            MetricDimension.OBSERVED_RELATIVE_FREQUENCY.toString(),
+                                                            0,
+                                                            null,
+                                                            durationUnits ) );
+        dataSources.add( DataFactory.ofVerificationDiagram( 1,
+                                                            inputSlice,
+                                                            MetricDimension.FORECAST_PROBABILITY,
+                                                            MetricDimension.SAMPLE_SIZE,
+                                                            MetricDimension.FORECAST_PROBABILITY.toString(),
+                                                            MetricDimension.SAMPLE_SIZE.toString(),
+                                                            1,
+                                                            null,
+                                                            durationUnits ) );
         //Diagonal data source added so that it shows up in the legend.
         dataSources.add( constructConnectedPointsDataSource( 2,
                                                              0,
@@ -431,15 +430,15 @@ public abstract class ChartEngineFactory
         ArgumentProcessor arguments =
                 constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits, false );
 
-        dataSources.add( XYChartDataSourceFactory.ofVerificationDiagram( 0,
-                                                                         inputSlice,
-                                                                         MetricDimension.PROBABILITY_OF_FALSE_DETECTION,
-                                                                         MetricDimension.PROBABILITY_OF_DETECTION,
-                                                                         MetricDimension.PROBABILITY_OF_FALSE_DETECTION.toString(),
-                                                                         MetricDimension.PROBABILITY_OF_DETECTION.toString(),
-                                                                         0,
-                                                                         null,
-                                                                         durationUnits ) );
+        dataSources.add( DataFactory.ofVerificationDiagram( 0,
+                                                            inputSlice,
+                                                            MetricDimension.PROBABILITY_OF_FALSE_DETECTION,
+                                                            MetricDimension.PROBABILITY_OF_DETECTION,
+                                                            MetricDimension.PROBABILITY_OF_FALSE_DETECTION.toString(),
+                                                            MetricDimension.PROBABILITY_OF_DETECTION.toString(),
+                                                            0,
+                                                            null,
+                                                            durationUnits ) );
         dataSources.add( constructConnectedPointsDataSource( 1,
                                                              0,
                                                              new Point2D.Double( 0.0, 0.0 ),
@@ -483,16 +482,16 @@ public abstract class ChartEngineFactory
         ArgumentProcessor arguments =
                 constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits, false );
 
-        DefaultXYChartDataSource dataSource = XYChartDataSourceFactory.ofVerificationDiagram( 0,
-                                                                                              inputSlice,
-                                                                                              MetricDimension.OBSERVED_QUANTILES,
-                                                                                              MetricDimension.PREDICTED_QUANTILES,
-                                                                                              MetricConstants.MetricDimension.OBSERVED_QUANTILES.toString()
-                                                                                                                                   + " @variableName@@inputUnitsLabelSuffix@",
-                                                                                              MetricConstants.MetricDimension.PREDICTED_QUANTILES.toString() + " @variableName@@inputUnitsLabelSuffix@",
-                                                                                              0,
-                                                                                              null,
-                                                                                              durationUnits );
+        DefaultXYChartDataSource dataSource = DataFactory.ofVerificationDiagram( 0,
+                                                                                 inputSlice,
+                                                                                 MetricDimension.OBSERVED_QUANTILES,
+                                                                                 MetricDimension.PREDICTED_QUANTILES,
+                                                                                 MetricConstants.MetricDimension.OBSERVED_QUANTILES.toString()
+                                                                                                                      + " @variableName@@inputUnitsLabelSuffix@",
+                                                                                 MetricConstants.MetricDimension.PREDICTED_QUANTILES.toString() + " @variableName@@inputUnitsLabelSuffix@",
+                                                                                 0,
+                                                                                 null,
+                                                                                 durationUnits );
 
         //Diagonal data source added, but it won't show up in the legend since it uses features of WRESChartEngine.
         //Also squaring the axes.
@@ -537,16 +536,16 @@ public abstract class ChartEngineFactory
         ArgumentProcessor arguments =
                 constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits, true );
 
-        XYChartDataSource dataSource = XYChartDataSourceFactory.ofVerificationDiagram( 0,
-                                                                                       inputSlice,
-                                                                                       MetricDimension.OBSERVED_QUANTILES,
-                                                                                       MetricDimension.PREDICTED_QUANTILES,
-                                                                                       MetricConstants.MetricDimension.OBSERVED_QUANTILES.toString()
-                                                                                                                            + " @variableName@@inputUnitsLabelSuffix@",
-                                                                                       MetricConstants.MetricDimension.PREDICTED_QUANTILES.toString() + " @variableName@@inputUnitsLabelSuffix@",
-                                                                                       0,
-                                                                                       null,
-                                                                                       durationUnits );
+        XYChartDataSource dataSource = DataFactory.ofVerificationDiagram( 0,
+                                                                          inputSlice,
+                                                                          MetricDimension.OBSERVED_QUANTILES,
+                                                                          MetricDimension.PREDICTED_QUANTILES,
+                                                                          MetricConstants.MetricDimension.OBSERVED_QUANTILES.toString()
+                                                                                                               + " @variableName@@inputUnitsLabelSuffix@",
+                                                                          MetricConstants.MetricDimension.PREDICTED_QUANTILES.toString() + " @variableName@@inputUnitsLabelSuffix@",
+                                                                          0,
+                                                                          null,
+                                                                          durationUnits );
 
         //Diagonal data source added, but it won't show up in the legend since it uses features of WRESChartEngine.
         //Also squaring the axes.
@@ -591,20 +590,20 @@ public abstract class ChartEngineFactory
         ArgumentProcessor arguments =
                 constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits, false );
 
-        Supplier<XYDataset> dataSupplier = () -> new RankHistogramXYDataset( inputSlice,
-                                                                             MetricDimension.RANK_ORDER,
-                                                                             MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
-                                                                             durationUnits );
+        Supplier<XYDataset> dataSupplier = () -> DataFactory.ofRankHistogram( inputSlice,
+                                                                              MetricDimension.RANK_ORDER,
+                                                                              MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
+                                                                              durationUnits );
 
-        dataSources.add( XYChartDataSourceFactory.ofVerificationDiagram( 0,
-                                                                         inputSlice,
-                                                                         MetricDimension.RANK_ORDER,
-                                                                         MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
-                                                                         "Bin Separating Ranked Ensemble Members",
-                                                                         MetricDimension.OBSERVED_RELATIVE_FREQUENCY.toString(),
-                                                                         0,
-                                                                         dataSupplier,
-                                                                         durationUnits ) );
+        dataSources.add( DataFactory.ofVerificationDiagram( 0,
+                                                            inputSlice,
+                                                            MetricDimension.RANK_ORDER,
+                                                            MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
+                                                            "Bin Separating Ranked Ensemble Members",
+                                                            MetricDimension.OBSERVED_RELATIVE_FREQUENCY.toString(),
+                                                            0,
+                                                            dataSupplier,
+                                                            durationUnits ) );
 
         // Create the chart parameters
         ChartParameters parameters = new ChartParameters( templateName, inputSlice.size() );
@@ -739,7 +738,7 @@ public abstract class ChartEngineFactory
         arguments = new ArgumentProcessor( input.get( 0 ), durationUnits );
 
         //Add the data source
-        dataSources.add( XYChartDataSourceFactory.ofBoxPlotOutput( 0, input, null, durationUnits ) );
+        dataSources.add( DataFactory.ofBoxPlotOutput( 0, input, null, durationUnits ) );
 
         // Create the chart parameters
         ChartParameters parameters = new ChartParameters( templateName, 1 );
@@ -912,22 +911,22 @@ public abstract class ChartEngineFactory
         //Lead-threshold is the default.
         if ( usedPlotType == ChartType.LEAD_THRESHOLD )
         {
-            source = XYChartDataSourceFactory.ofDoubleScoreOutputByLeadAndThreshold( 0, input, durationUnits );
+            source = DataFactory.ofDoubleScoreOutputByLeadAndThreshold( 0, input, durationUnits );
             arguments.addLeadThresholdArguments( input, null, false );
         }
         //This is for plots with the threshold on the domain axis and lead time in the legend.
         else if ( usedPlotType == ChartType.THRESHOLD_LEAD )
         {
-            source = XYChartDataSourceFactory.ofDoubleScoreOutputByThresholdAndLead( 0, input, durationUnits );
+            source = DataFactory.ofDoubleScoreOutputByThresholdAndLead( 0, input, durationUnits );
             arguments.addThresholdLeadArguments( input, null, false );
         }
         //This is for plots that operate with sequences of time windows (e.g. rolling windows)
         else if ( usedPlotType == ChartType.POOLING_WINDOW )
         {
-            source = XYChartDataSourceFactory.ofDoubleScoreOutputByPoolingWindow( 0,
-                                                                                  input,
-                                                                                  durationUnits,
-                                                                                  graphicShape );
+            source = DataFactory.ofDoubleScoreOutputByPoolingWindow( 0,
+                                                                     input,
+                                                                     durationUnits,
+                                                                     graphicShape );
 
             arguments.addPoolingWindowArguments( input, graphicShape );
         }
@@ -994,7 +993,7 @@ public abstract class ChartEngineFactory
         arguments.addBaselineArguments( metadata, metricName );
 
         //Build the source.
-        XYChartDataSource source = XYChartDataSourceFactory.ofPairedOutputInstantDuration( 0, input );
+        XYChartDataSource source = DataFactory.ofPairedOutputInstantDuration( 0, input );
 
         // Create the chart parameters
         ChartParameters parameters = new ChartParameters( templateName,
@@ -1047,7 +1046,7 @@ public abstract class ChartEngineFactory
 
         //Setup the assumed source and arguments.
         CategoricalXYChartDataSource source =
-                XYChartDataSourceFactory.ofDurationScoreCategoricalOutput( 0, input );
+                DataFactory.ofDurationScoreCategoricalOutput( 0, input );
 
         // Create the chart parameters
         ChartParameters parameters = new ChartParameters( templateName,
@@ -1059,37 +1058,6 @@ public abstract class ChartEngineFactory
                                    parameters,
                                    null,
                                    null );
-    }
-
-    /**
-     * @param input The pairs to plot.
-     * @param durationUnits the duration units
-     * @return A {@link ChartEngine} that can be used to build the {@link JFreeChart} and output the image. This can be
-     *         passed to {@link ChartTools#generateOutputImageFile(java.io.File, JFreeChart, int, int)} in order to
-     *         construct the image file.
-     * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
-     */
-    public static ChartEngine buildSingleValuedPairsChartEngine( final Pool<Pair<Double, Double>> input,
-                                                                 final ChronoUnit durationUnits )
-            throws ChartEngineException
-    {
-
-        String templateName = "singleValuedPairsTemplate.xml";
-
-        //Build the source.
-        final DefaultXYChartDataSource source = XYChartDataSourceFactory.ofSingleValuedPairs( 0, input );
-
-        //Setup the arguments.
-        final ArgumentProcessor arguments =
-                new ArgumentProcessor( input.getMetadata(),
-                                       input.getMetadata().getMeasurementUnit().toString(),
-                                       durationUnits );
-
-        //Build the ChartEngine instance.
-        return ChartTools.buildChartEngine( List.of( source ),
-                                            arguments,
-                                            templateName,
-                                            null );
     }
 
     /**

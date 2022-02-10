@@ -1,5 +1,6 @@
-package wres.vis;
+package wres.vis.data;
 
+import java.awt.Color;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
@@ -16,24 +17,26 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.jfree.chart.plot.DefaultDrawingSupplier;
 import org.jfree.data.time.FixedMillisecond;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 import org.jfree.data.xy.XYDataset;
 
 import ohd.hseb.charter.ChartConstants;
+import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.DefaultXYChartDataSource;
 import ohd.hseb.charter.datasource.XYChartDataSource;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import ohd.hseb.charter.datasource.instances.CategoricalXYChartDataSource;
 import ohd.hseb.charter.parameters.DataSourceDrawingParameters;
 import ohd.hseb.charter.parameters.SeriesDrawingParameters;
+import ohd.hseb.hefs.utils.gui.tools.ColorTools;
 import wres.datamodel.Slicer;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.MetricDimension;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
-import wres.datamodel.pools.Pool;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
@@ -43,21 +46,24 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
+import wres.vis.GraphicsUtils;
 
 /**
- * Used to produce {@link XYChartDataSource} instances for use in constructing charts.  
- * @author Hank.Herr
+ * Used to produce {@link XYChartDataSource} instances for use in constructing charts.
+ * 
+ * TODO: remove the dependence on GraphGen and remove the plot-ish code from this factory, which should supply datasets
+ * only.
+ *   
+ * @author Hank Herr
+ * @author James Brown
  *
  */
-class XYChartDataSourceFactory
+public class DataFactory
 {
 
-    /**
-     * Graphics utilities.
-     */
-    
-    private static final GraphicsUtils GRAPHICS_UTILS = new GraphicsUtils();
-    
+    /** Colors. */
+    private static Color[] colors = GraphicsUtils.getColors();
+
     private static final String METRIC_SHORT_NAME_METRIC_COMPONENT_NAME_SUFFIX_OUTPUT_UNITS_LABEL_SUFFIX =
             "@metricShortName@@metricComponentNameSuffix@@outputUnitsLabelSuffix@";
     /**
@@ -75,10 +81,10 @@ class XYChartDataSourceFactory
      * @return A data source to be used to draw the plot.
      * @throws IllegalArgumentException if the input is empty
      */
-    static DefaultXYChartDataSource ofBoxPlotOutput( int orderIndex,
-                                                     List<BoxplotStatisticOuter> input,
-                                                     Integer subPlotIndex,
-                                                     ChronoUnit durationUnits )
+    public static DefaultXYChartDataSource ofBoxPlotOutput( int orderIndex,
+                                                            List<BoxplotStatisticOuter> input,
+                                                            Integer subPlotIndex,
+                                                            ChronoUnit durationUnits )
     {
         Objects.requireNonNull( input );
 
@@ -98,9 +104,9 @@ class XYChartDataSourceFactory
         {
             seriesCount = input.get( 0 ).getData().getMetric().getQuantilesCount();
         }
-        
+
         final int seriesCountFinal = seriesCount;
-        
+
         // Should be one dataset only if it is not per-pool
         if ( !pooledInput && input.size() > 1 )
         {
@@ -113,7 +119,7 @@ class XYChartDataSourceFactory
             public XYChartDataSource returnNewInstanceWithCopyOfInitialParameters() throws XYChartDataSourceException
             {
                 DefaultXYChartDataSource newSource =
-                        XYChartDataSourceFactory.ofBoxPlotOutput( orderIndex, input, subPlotIndex, durationUnits );
+                        DataFactory.ofBoxPlotOutput( orderIndex, input, subPlotIndex, durationUnits );
                 this.copyTheseParametersIntoDataSource( newSource );
                 return newSource;
             }
@@ -123,23 +129,23 @@ class XYChartDataSourceFactory
             {
                 return seriesCountFinal;
             }
-            
+
             @Override
             protected XYDataset buildXYDataset( DataSourceDrawingParameters arg0 ) throws XYChartDataSourceException
             {
                 // Add a boxplot for output that contains one box per pool. See #62374
                 if ( pooledInput )
                 {
-                    return new BoxPlotDiagramByLeadXYDataset( input, durationUnits );
+                    return BoxPlotByLead.of( input, durationUnits );
                 }
 
-                return new BoxPlotDiagramXYDataset( input );
+                return BoxPlot.of( input );
             }
         };
 
-        XYChartDataSourceFactory.buildInitialParameters( source,
-                                                         orderIndex,
-                                                         seriesCount );
+        DataFactory.buildInitialParameters( source,
+                                            orderIndex,
+                                            seriesCount );
 
         if ( pooledInput )
         {
@@ -182,61 +188,18 @@ class XYChartDataSourceFactory
     }
 
     /**
-     * Factory method for single-valued pairs.
-     * @param orderIndex Order index of the data source; lower index sources are drawn on top of higher index sources.
-     * @param input The data to plot.
-     * @return A data source to be used to draw the plot.
-     */
-    static DefaultXYChartDataSource ofSingleValuedPairs( int orderIndex,
-                                                         final Pool<Pair<Double, Double>> input )
-    {
-        DefaultXYChartDataSource source = new DefaultXYChartDataSource()
-        {
-            @Override
-            public XYChartDataSource returnNewInstanceWithCopyOfInitialParameters() throws XYChartDataSourceException
-            {
-                DefaultXYChartDataSource newSource = ofSingleValuedPairs( orderIndex, input );
-                this.copyTheseParametersIntoDataSource( newSource );
-                return newSource;
-            }
-            
-            @Override
-            public int getNumberOfSeries()
-            {
-                return 1;
-            }
-
-            @Override
-            protected XYDataset buildXYDataset( DataSourceDrawingParameters arg0 ) throws XYChartDataSourceException
-            {
-                return new SingleValuedPairsXYDataset( input );
-            }
-        };
-
-        buildInitialParameters( source,
-                                orderIndex,
-                                1 );
-        source.getDefaultFullySpecifiedDataSourceDrawingParameters()
-              .setDefaultDomainAxisTitle( "@domainAxisLabelPrefix@@inputUnitsLabelSuffix@" );
-        source.getDefaultFullySpecifiedDataSourceDrawingParameters()
-              .setDefaultRangeAxisTitle( "@rangeAxisLabelPrefix@@inputUnitsLabelSuffix@" );
-
-        return source;
-    }
-
-    /**
      * Factory method for paired (instant, duration) output.
      * @param orderIndex Order index of the data source; lower index sources are drawn on top of higher index sources.
      * @param input The data to plot.
      * @return A data source to be used to draw the plot.
      */
-    static DefaultXYChartDataSource
+    public static DefaultXYChartDataSource
             ofPairedOutputInstantDuration( int orderIndex,
                                            final List<DurationDiagramStatisticOuter> input )
     {
         int seriesCount = Slicer.discover( input, next -> next.getMetadata().getThresholds() )
-                .size();
-        
+                                .size();
+
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
             @Override
@@ -246,7 +209,7 @@ class XYChartDataSourceFactory
                 this.copyTheseParametersIntoDataSource( newSource );
                 return newSource;
             }
-            
+
             @Override
             public int getNumberOfSeries()
             {
@@ -323,23 +286,22 @@ class XYChartDataSourceFactory
      * @param domainTitle Title for the domain.
      * @param rangeTitle Title for the range.
      * @param subPlotIndex The subplot index to use.  If null or negative, zero is assumed.
-     * @param buildDataSetSupplier Supplies the {@link XYDataset} to be used in the data source.  
-     *            If null, then a simple {@link DiagramStatisticXYDataset} is used.
+     * @param buildDataSetSupplier Supplies the {@link XYDataset} to be used in the data source.
      * @param durationUnits the duration units
      * @return A data source that can be used to draw the diagram.
      */
-    static DefaultXYChartDataSource ofVerificationDiagram( final int orderIndex,
-                                                           final List<DiagramStatisticOuter> diagrams,
-                                                           final MetricDimension xConstant,
-                                                           final MetricDimension yConstant,
-                                                           final String domainTitle,
-                                                           final String rangeTitle,
-                                                           final Integer subPlotIndex,
-                                                           final Supplier<XYDataset> buildDataSetSupplier,
-                                                           final ChronoUnit durationUnits )
+    public static DefaultXYChartDataSource ofVerificationDiagram( final int orderIndex,
+                                                                  final List<DiagramStatisticOuter> diagrams,
+                                                                  final MetricDimension xConstant,
+                                                                  final MetricDimension yConstant,
+                                                                  final String domainTitle,
+                                                                  final String rangeTitle,
+                                                                  final Integer subPlotIndex,
+                                                                  final Supplier<XYDataset> buildDataSetSupplier,
+                                                                  final ChronoUnit durationUnits )
     {
         int seriesCount = diagrams.size();
-        
+
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
             @Override
@@ -357,7 +319,7 @@ class XYChartDataSourceFactory
                 this.copyTheseParametersIntoDataSource( newSource );
                 return newSource;
             }
-            
+
             @Override
             public int getNumberOfSeries()
             {
@@ -371,10 +333,10 @@ class XYChartDataSourceFactory
                 {
                     return buildDataSetSupplier.get();
                 }
-                return new DiagramStatisticXYDataset( diagrams,
-                                                      xConstant,
-                                                      yConstant,
-                                                      durationUnits );
+                return Diagram.of( diagrams,
+                                   xConstant,
+                                   yConstant,
+                                   durationUnits );
             }
         };
 
@@ -391,6 +353,21 @@ class XYChartDataSourceFactory
     }
 
     /**
+     * @param statistics the rank histogram statistics
+     * @param xDimension the x-axis dimension
+     * @param yDimension the y-axis dimension
+     * @param durationUnits the lead duration units
+     * @return a rank histogram dataset
+     */
+    public static RankHistogram ofRankHistogram( List<DiagramStatisticOuter> statistics,
+                                                 MetricDimension xDimension,
+                                                 MetricDimension yDimension,
+                                                 ChronoUnit durationUnits )
+    {
+        return RankHistogram.of( statistics, xDimension, yDimension, durationUnits );
+    }
+
+    /**
      * Factory method for scalar output plotted by pooling window.
      * @param orderIndex Order index of the data source; lower index sources are drawn on top of higher index sources.
      * @param input The data to plot.
@@ -399,10 +376,10 @@ class XYChartDataSourceFactory
      * @return A data source to be used to draw the plot.
      * @throws NullPointerException if the input or durationUnits are null
      */
-    static DefaultXYChartDataSource ofDoubleScoreOutputByPoolingWindow( int orderIndex,
-                                                                        List<DoubleScoreComponentOuter> input,
-                                                                        ChronoUnit durationUnits,
-                                                                        GraphicShape graphicShape )
+    public static DefaultXYChartDataSource ofDoubleScoreOutputByPoolingWindow( int orderIndex,
+                                                                               List<DoubleScoreComponentOuter> input,
+                                                                               ChronoUnit durationUnits,
+                                                                               GraphicShape graphicShape )
     {
         Objects.requireNonNull( input, "Specify non-null input." );
 
@@ -443,9 +420,9 @@ class XYChartDataSourceFactory
         // Find the thresholds
         SortedSet<OneOrTwoThresholds> thresholds =
                 Slicer.discover( input, next -> next.getMetadata().getThresholds() );
-        
+
         int seriesCount = durations.size() * thresholds.size() * validTimesCount;
-        
+
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
             @Override
@@ -456,7 +433,7 @@ class XYChartDataSourceFactory
                 this.copyTheseParametersIntoDataSource( newSource );
                 return newSource;
             }
-            
+
             @Override
             public int getNumberOfSeries()
             {
@@ -481,17 +458,17 @@ class XYChartDataSourceFactory
                 // Filter by valid times if each series should contain issued date pools, otherwise allow all valid
                 // times
                 SortedSet<Pair<Instant, Instant>> validTimes = new TreeSet<>();
-                
+
                 // Series by issued time 
-                if( graphicShape == GraphicShape.ISSUED_DATE_POOLS )
+                if ( graphicShape == GraphicShape.ISSUED_DATE_POOLS )
                 {
                     SortedSet<Pair<Instant, Instant>> uniqueValidTimes = Slicer.discover( input,
-                                                                                    next -> Pair.of( next.getMetadata()
-                                                                                                         .getTimeWindow()
-                                                                                                         .getEarliestValidTime(),
-                                                                                                     next.getMetadata()
-                                                                                                         .getTimeWindow()
-                                                                                                         .getLatestValidTime() ) );
+                                                                                          next -> Pair.of( next.getMetadata()
+                                                                                                               .getTimeWindow()
+                                                                                                               .getEarliestValidTime(),
+                                                                                                           next.getMetadata()
+                                                                                                               .getTimeWindow()
+                                                                                                               .getLatestValidTime() ) );
                     validTimes.addAll( uniqueValidTimes );
                 }
                 // Series by valid time
@@ -499,7 +476,7 @@ class XYChartDataSourceFactory
                 {
                     validTimes.add( Pair.of( Instant.MIN, Instant.MAX ) );
                 }
-                
+
                 // Iterate the durations
                 for ( Pair<Duration, Duration> nextDuration : durations )
                 {
@@ -518,7 +495,7 @@ class XYChartDataSourceFactory
                                                                                               .equals( nextDuration.getRight() ) );
 
                         // Slice the data by valid time if the series should contain issued times
-                        if( graphicShape == GraphicShape.ISSUED_DATE_POOLS )
+                        if ( graphicShape == GraphicShape.ISSUED_DATE_POOLS )
                         {
                             slice = Slicer.filter( slice,
                                                    next -> next.getMetadata()
@@ -532,12 +509,12 @@ class XYChartDataSourceFactory
                         }
 
                         // Add the next set of series
-                        XYChartDataSourceFactory.addSeriesForPoolingWindow( returnMe,
-                                                                            slice,
-                                                                            nextDuration,
-                                                                            nextValidTime,
-                                                                            graphicShape,
-                                                                            durationUnits );
+                        DataFactory.addSeriesForPoolingWindow( returnMe,
+                                                               slice,
+                                                               nextDuration,
+                                                               nextValidTime,
+                                                               graphicShape,
+                                                               durationUnits );
                     }
 
                 }
@@ -556,7 +533,7 @@ class XYChartDataSourceFactory
 
         return source;
     }
-    
+
     /**
      * Factory method for scalar output plotted against threshold with lead time in the legend.
      * @param orderIndex Order index of the data source; lower index sources are drawn on top of higher index sources.
@@ -564,18 +541,18 @@ class XYChartDataSourceFactory
      * @param durationUnits the duration units
      * @return A data source to be used to draw the plot.
      */
-    static DefaultXYChartDataSource
+    public static DefaultXYChartDataSource
             ofDoubleScoreOutputByThresholdAndLead( final int orderIndex,
                                                    final List<DoubleScoreComponentOuter> input,
                                                    final ChronoUnit durationUnits )
     {
-        
+
 
         SortedSet<TimeWindowOuter> timeWindows =
                 Slicer.discover( input, next -> next.getMetadata().getTimeWindow() );
-        
+
         int seriesCount = timeWindows.size();
-        
+
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
 
@@ -587,7 +564,7 @@ class XYChartDataSourceFactory
                 this.copyTheseParametersIntoDataSource( newSource );
                 return newSource;
             }
-            
+
             @Override
             public int getNumberOfSeries()
             {
@@ -597,7 +574,7 @@ class XYChartDataSourceFactory
             @Override
             protected XYDataset buildXYDataset( DataSourceDrawingParameters arg0 ) throws XYChartDataSourceException
             {
-                return new ScoreOutputByThresholdAndLeadXYDataset( input, durationUnits );
+                return ScoreByThresholdAndLead.of( input, durationUnits );
             }
         };
 
@@ -614,25 +591,25 @@ class XYChartDataSourceFactory
     /**     
      * Factory method for scalar output plotted against lead time with threshold in the legend.
      * @param orderIndex Order index of the data source; lower index sources are drawn on top of higher index sources.
-     * @param input The data to plot.
+     * @param statistics The data to plot.
      * @param durationUnits the duration units
      * @return A data source to be used to draw the plot.
      * @throws NullPointerException if the input or durationUnits are null
      */
-    static DefaultXYChartDataSource
+    public static DefaultXYChartDataSource
             ofDoubleScoreOutputByLeadAndThreshold( final int orderIndex,
-                                                   final List<DoubleScoreComponentOuter> input,
+                                                   final List<DoubleScoreComponentOuter> statistics,
                                                    final ChronoUnit durationUnits )
     {
-        Objects.requireNonNull( input, "Specify non-null input." );
+        Objects.requireNonNull( statistics, "Specify non-null input." );
 
         Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
 
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( input, next -> next.getMetadata().getThresholds() );
-        
+                Slicer.discover( statistics, next -> next.getMetadata().getThresholds() );
+
         int seriesCount = thresholds.size();
-                
+
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
 
@@ -640,7 +617,7 @@ class XYChartDataSourceFactory
             public XYChartDataSource returnNewInstanceWithCopyOfInitialParameters() throws XYChartDataSourceException
             {
                 DefaultXYChartDataSource newSource =
-                        ofDoubleScoreOutputByLeadAndThreshold( orderIndex, input, durationUnits );
+                        ofDoubleScoreOutputByLeadAndThreshold( orderIndex, statistics, durationUnits );
                 this.copyTheseParametersIntoDataSource( newSource );
                 return newSource;
             }
@@ -648,9 +625,9 @@ class XYChartDataSourceFactory
             @Override
             protected XYDataset buildXYDataset( DataSourceDrawingParameters arg0 ) throws XYChartDataSourceException
             {
-                return new ScoreOutputByLeadAndThresholdXYDataset( input, durationUnits );
+                return ScoreByLeadAndThreshold.of( statistics, durationUnits );
             }
-            
+
             @Override
             public int getNumberOfSeries()
             {
@@ -674,7 +651,7 @@ class XYChartDataSourceFactory
      * @param input The input required for this of method.
      * @return An instance of {@link CategoricalXYChartDataSource}.
      */
-    static CategoricalXYChartDataSource
+    public static CategoricalXYChartDataSource
             ofDurationScoreCategoricalOutput( int orderIndex,
                                               List<DurationScoreStatisticOuter> input )
     {
@@ -728,7 +705,7 @@ class XYChartDataSourceFactory
         }
 
         int seriesCount = yAxisValuesBySeries.size();
-        
+
         //Creates the source.
         CategoricalXYChartDataSource source;
         try
@@ -746,7 +723,7 @@ class XYChartDataSourceFactory
                     this.copyTheseParametersIntoDataSource( newSource );
                     return newSource;
                 }
-                
+
                 @Override
                 public int getNumberOfSeries()
                 {
@@ -816,11 +793,11 @@ class XYChartDataSourceFactory
      * @param GraphicShape the graphic shape
      * @param durationUnits the duration units
      */
-    
+
     private static void addSeriesForPoolingWindow( TimeSeriesCollection collection,
                                                    List<DoubleScoreComponentOuter> slice,
-                                                   Pair<Duration,Duration> leadDurations,
-                                                   Pair<Instant,Instant> validTimes,
+                                                   Pair<Duration, Duration> leadDurations,
+                                                   Pair<Instant, Instant> validTimes,
                                                    GraphicShape graphicShape,
                                                    ChronoUnit durationUnits )
     {
@@ -838,12 +815,12 @@ class XYChartDataSourceFactory
                                                .equals( nextThreshold ) );
 
             // Create the time series with a label
-            String seriesName = XYChartDataSourceFactory.getNameForPoolingWindowSeries( leadDurations.getLeft(),
-                                                                                        leadDurations.getRight(),
-                                                                                        validTimes.getLeft(),
-                                                                                        validTimes.getRight(),
-                                                                                        nextThreshold,
-                                                                                        durationUnits );
+            String seriesName = DataFactory.getNameForPoolingWindowSeries( leadDurations.getLeft(),
+                                                                           leadDurations.getRight(),
+                                                                           validTimes.getLeft(),
+                                                                           validTimes.getRight(),
+                                                                           nextThreshold,
+                                                                           durationUnits );
             TimeSeries next = new TimeSeries( seriesName,
                                               FixedMillisecond.class );
 
@@ -852,9 +829,9 @@ class XYChartDataSourceFactory
             for ( DoubleScoreComponentOuter nextDouble : finalSlice )
             {
                 Instant midpoint =
-                        XYChartDataSourceFactory.getMidpointBetweenTimes( nextDouble.getMetadata()
-                                                                                    .getTimeWindow(),
-                                                                          graphicShape == GraphicShape.ISSUED_DATE_POOLS );
+                        DataFactory.getMidpointBetweenTimes( nextDouble.getMetadata()
+                                                                       .getTimeWindow(),
+                                                             graphicShape == GraphicShape.ISSUED_DATE_POOLS );
 
                 FixedMillisecond time = new FixedMillisecond( midpoint.toEpochMilli() );
                 Double value = nextDouble.getData().getValue();
@@ -863,8 +840,8 @@ class XYChartDataSourceFactory
 
             collection.addSeries( next );
         }
-    }    
-    
+    }
+
     /**
      * Returns a series name from the inputs.
      * 
@@ -984,15 +961,51 @@ class XYChartDataSourceFactory
         }
 
         //Apply looping color and shape scheme.
-        XYChartDataSourceFactory.GRAPHICS_UTILS.applyDefaultJFreeChartColorSequence( source.getDefaultFullySpecifiedDataSourceDrawingParameters() );
-        GraphicsUtils.applyDefaultJFreeChartShapeSequence( source.getDefaultFullySpecifiedDataSourceDrawingParameters() );
+        DataFactory.applyDefaultJFreeChartColorSequence( source.getDefaultFullySpecifiedDataSourceDrawingParameters() );
+        DataFactory.applyDefaultJFreeChartShapeSequence( source.getDefaultFullySpecifiedDataSourceDrawingParameters() );
+    }
+
+    /**
+     * Uses, as a starting point, {@link DefaultDrawingSupplier#DEFAULT_PAINT_SEQUENCE}.  If that array of colors is no smaller than
+     * than the number of series, then it just applies each color to the corresponding series in the provided parameters.
+     * Otherwise, it calls {@link ColorTools#buildColorPalette(int, Color...)} to build a list BASED on that list in order to 
+     * acquire a sufficient number of colors.  That algorithm is basically an averaging approach.
+     * 
+     * @param parameters The parameters to which the rotating colors scheme will be applied.
+     * @param colors the colors.
+     */
+    private static void applyDefaultJFreeChartColorSequence( DataSourceDrawingParameters parameters )
+    {
+        //Now we are ready to apply the palette.  Note that, if there are not enough colors in the JFreeChart
+        //palette after stripping out the yellows, then the ColorTools method will be used with blue,
+        //green, and red.
+        final int seriesCount = parameters.getSeriesParametersCount();
+
+        Color[] innerColors = DataFactory.colors;
+
+        if ( innerColors.length < seriesCount )
+        {
+            innerColors = ColorTools.buildColorPalette( seriesCount, Color.BLUE, Color.GREEN, Color.RED );
+        }
+
+        ChartTools.applyRotatingColorSchemeToSeries( innerColors, parameters );
+    }
+
+    /**
+     * @param parameters The parameters to which the rotating shape scheme will be applied.
+     */
+    private static void applyDefaultJFreeChartShapeSequence( final DataSourceDrawingParameters parameters )
+    {
+        //Build a list of colors from the JFreeChart defaults and strip out the yellow shades. 
+        //Those shades do not show up well on white
+        ChartTools.applyRotatingShapeSchemeToSeries( ChartConstants.SHAPE_NAMES, parameters );
     }
 
     /**
      * Prevent construction.
      */
 
-    private XYChartDataSourceFactory()
+    private DataFactory()
     {
     }
 
