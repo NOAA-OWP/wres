@@ -1,4 +1,4 @@
-package wres.vis;
+package wres.vis.data;
 
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -17,12 +17,12 @@ import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Pool;
 
 /**
- * Tests the {@link XYChartDataSourceFactory}.
+ * Tests the {@link DataFactory}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
-public class XYChartDataSourceFactoryTest
+public class DataFactoryTest
 {
 
     /**
@@ -49,7 +49,7 @@ public class XYChartDataSourceFactoryTest
                                                                                 .build(),
                                                                 this.meta );
 
-        XYChartDataSourceFactory.ofBoxPlotOutput( 0, List.of( input ), null, ChronoUnit.SECONDS );
+        DataFactory.ofBoxPlotOutput( 0, List.of( input ), null, ChronoUnit.SECONDS );
     }
 
 }
