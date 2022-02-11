@@ -51,9 +51,9 @@ class Diagram extends AbstractXYDataset
      */
 
     static Diagram of( List<DiagramStatisticOuter> statistics,
-                              MetricDimension xDimension,
-                              MetricDimension yDimension,
-                              ChronoUnit durationUnits )
+                       MetricDimension xDimension,
+                       MetricDimension yDimension,
+                       ChronoUnit durationUnits )
     {
         return new Diagram( statistics, xDimension, yDimension, durationUnits );
     }
@@ -182,7 +182,8 @@ class Diagram extends AbstractXYDataset
                                   .getName();
 
         // One time window and one or more thresholds: label by threshold
-        if ( timeWindowCount == 1 )
+        if ( timeWindowCount == 1 && diagram.getMetadata()
+                                            .hasThresholds() )
         {
             // If there is a qualifier, then there is a single threshold and up to N named components, else up to M
             // thresholds and one named component
@@ -196,7 +197,8 @@ class Diagram extends AbstractXYDataset
                           .toStringWithoutUnits();
         }
         // One threshold and one or more time windows: label by time window
-        else if ( thresholdCount == 1 )
+        else if ( thresholdCount == 1 && diagram.getMetadata()
+                                                .hasTimeWindow() )
         {
             return Long.toString( GraphicsUtils.durationToLongUnits( diagram.getMetadata()
                                                                             .getTimeWindow()

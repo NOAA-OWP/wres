@@ -749,15 +749,19 @@ project(':wres-vis')
         // For ohdcommonchps.jar:
         runtimeOnly group: 'org.slf4j', name: 'log4j-over-slf4j', version: '2.0.0-alpha6'
 
-        
+        // JUnit 5 API and runtime
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+
+        // Backwards compatibility for JUnit 4 tests
         testImplementation 'junit:junit:4.13.2'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.8.2'
 
         // Mocking help
         testImplementation 'org.mockito:mockito-core:4.3.0'
 
         testRuntimeOnly files('dist/lib/conf')
     }
-
 
     // Check if the dependency modules version is later. If so, update this
     // module to that later version.
@@ -786,6 +790,11 @@ project(':wres-vis')
                 version = version + '-dev'
             }
         }
+    }
+
+    // Facilitate unit tests with JUnit
+    test {
+        useJUnitPlatform()
     }
 }
 
