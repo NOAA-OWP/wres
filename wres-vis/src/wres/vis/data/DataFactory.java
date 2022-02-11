@@ -24,14 +24,12 @@ import org.jfree.data.time.TimeSeriesCollection;
 import org.jfree.data.xy.XYDataset;
 
 import ohd.hseb.charter.ChartConstants;
-import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.DefaultXYChartDataSource;
 import ohd.hseb.charter.datasource.XYChartDataSource;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import ohd.hseb.charter.datasource.instances.CategoricalXYChartDataSource;
 import ohd.hseb.charter.parameters.DataSourceDrawingParameters;
 import ohd.hseb.charter.parameters.SeriesDrawingParameters;
-import ohd.hseb.hefs.utils.gui.tools.ColorTools;
 import wres.datamodel.Slicer;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.MetricConstants;
@@ -49,7 +47,7 @@ import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
 import wres.vis.GraphicsUtils;
 
 /**
- * Used to produce {@link XYChartDataSource} instances for use in constructing charts.
+ * Used to create datasets for constructing charts.
  * 
  * TODO: remove the dependence on GraphGen and remove the plot-ish code from this factory, which should supply datasets
  * only.
@@ -985,10 +983,10 @@ public class DataFactory
 
         if ( innerColors.length < seriesCount )
         {
-            innerColors = ColorTools.buildColorPalette( seriesCount, Color.BLUE, Color.GREEN, Color.RED );
+            innerColors = GraphicsUtils.getColorPalette( seriesCount, Color.BLUE, Color.GREEN, Color.RED );
         }
 
-        ChartTools.applyRotatingColorSchemeToSeries( innerColors, parameters );
+        DataFactory.applyRotatingColorSchemeToSeries( innerColors, parameters );
     }
 
     /**
@@ -998,7 +996,42 @@ public class DataFactory
     {
         //Build a list of colors from the JFreeChart defaults and strip out the yellow shades. 
         //Those shades do not show up well on white
-        ChartTools.applyRotatingShapeSchemeToSeries( ChartConstants.SHAPE_NAMES, parameters );
+        DataFactory.applyRotatingShapeSchemeToSeries( GraphicsUtils.SHAPE_NAMES, parameters );
+    }
+
+    /**
+     * Take the given shape names and apply them to the series in the provided {@link DataSourceDrawingParameters} so
+     * that it follows a rotation.
+     * 
+     * @param shapes the shapes
+     * @param params the drawing parameters
+     */
+    private static void applyRotatingShapeSchemeToSeries( final String[] shapes,
+                                                          final DataSourceDrawingParameters params )
+    {
+        for ( int seriesIndex = 0; seriesIndex < params.getSeriesParametersCount(); seriesIndex++ )
+        {
+            params.getSeriesDrawingParametersForSeriesIndex( seriesIndex )
+                  .setShapeName( shapes[seriesIndex % shapes.length] );
+        }
+    }
+
+    /**
+     * Take the given colors and applies them to the series in the provided {@link DataSourceDrawingParameters} so that
+     * it follows a rotation.
+     * @param colors the colors
+     * @param params the drawing parameters
+     */
+    private static void applyRotatingColorSchemeToSeries( final Color[] colors,
+                                                          final DataSourceDrawingParameters params )
+    {
+        for ( int seriesIndex = 0; seriesIndex < params.getSeriesParametersCount(); seriesIndex++ )
+        {
+            params.getSeriesDrawingParametersForSeriesIndex( seriesIndex )
+                  .setLineColor( colors[seriesIndex % colors.length] );
+            params.getSeriesDrawingParametersForSeriesIndex( seriesIndex )
+                  .setFillColor( params.getSeriesDrawingParametersForSeriesIndex( seriesIndex ).getLineColor() );
+        }
     }
 
     /**

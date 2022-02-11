@@ -8,6 +8,7 @@ import org.jfree.data.xy.AbstractIntervalXYDataset;
 import org.jfree.data.xy.XYDataset;
 
 import wres.datamodel.statistics.BoxplotStatisticOuter;
+import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotStatistic.Box;
 
 /**
@@ -28,6 +29,9 @@ class BoxPlot extends AbstractIntervalXYDataset
 
     /** The raw boxes. */
     private final List<Box> boxes;
+
+    /** The metric description. */
+    private final BoxplotMetric metric;
 
     /**
      * @param statistics the statistics
@@ -94,8 +98,7 @@ class BoxPlot extends AbstractIntervalXYDataset
     @Override
     public Comparable<String> getSeriesKey( int series )
     {
-        return "Probability " + this.boxes.get( 0 )
-                                          .getQuantiles( series );
+        return "Probability " + this.metric.getQuantiles( series );
     }
 
     /**
@@ -128,6 +131,10 @@ class BoxPlot extends AbstractIntervalXYDataset
 
         this.seriesCount = innerBoxes.get( 0 )
                                      .getQuantilesCount();
+
+        this.metric = statistics.get( 0 )
+                                .getData()
+                                .getMetric();
     }
 
 }
