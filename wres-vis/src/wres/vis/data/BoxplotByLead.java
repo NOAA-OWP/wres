@@ -8,20 +8,20 @@ import org.jfree.data.xy.AbstractIntervalXYDataset;
 import org.jfree.data.xy.XYDataset;
 
 import wres.datamodel.statistics.BoxplotStatisticOuter;
-import wres.vis.GraphicsUtils;
+import wres.vis.charts.GraphicsUtils;
 
 /**
  * Creates an {@link XYDataset} for building a box plot.
  * 
  * @author James Brown
  */
-class BoxPlotByLead extends AbstractIntervalXYDataset
+class BoxplotByLead extends AbstractIntervalXYDataset
 {
     /** serial version identifier. */
     private static final long serialVersionUID = -1990283965174892955L;
 
     /** The underlying dataset. */
-    private final BoxPlot data;
+    private final Boxplot data;
 
     /** The lead duration associated with each box. */
     private final long[] leadDurations;
@@ -34,9 +34,9 @@ class BoxPlotByLead extends AbstractIntervalXYDataset
      * @throws IllegalArgumentException if there are no statistics
      */
 
-    static BoxPlotByLead of( List<BoxplotStatisticOuter> statistics, ChronoUnit durationUnits )
+    static BoxplotByLead of( List<BoxplotStatisticOuter> statistics, ChronoUnit durationUnits )
     {
-        return new BoxPlotByLead( statistics, durationUnits );
+        return new BoxplotByLead( statistics, durationUnits );
     }
 
     @Override
@@ -100,11 +100,11 @@ class BoxPlotByLead extends AbstractIntervalXYDataset
      * @throws NullPointerException if the statistics are null
      * @throws IllegalArgumentException if the statistics is empty
      */
-    private BoxPlotByLead( final List<BoxplotStatisticOuter> statistics, ChronoUnit durationUnits )
+    private BoxplotByLead( List<BoxplotStatisticOuter> statistics, ChronoUnit durationUnits )
     {
         Objects.requireNonNull( durationUnits );
 
-        this.data = BoxPlot.of( statistics );
+        this.data = Boxplot.of( statistics );
         this.leadDurations = statistics.stream()
                                        .map( next -> next.getMetadata().getTimeWindow().getLatestLeadDuration() )
                                        .mapToLong( next -> GraphicsUtils.durationToLongUnits( next, durationUnits ) )

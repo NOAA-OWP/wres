@@ -1,13 +1,13 @@
 package wres.datamodel.statistics;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
@@ -20,6 +20,7 @@ import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentType;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Pool;
@@ -29,7 +30,7 @@ import wres.statistics.generated.Pool;
  * 
  * @author James Brown
  */
-public final class DiagramStatisticOuterTest
+class DiagramStatisticOuterTest
 {
 
     private PoolMetadata metadata;
@@ -37,9 +38,17 @@ public final class DiagramStatisticOuterTest
     private FeatureGroup featureGroup;
 
     private FeatureGroup anotherFeatureGroup;
+    
+    private DiagramMetricComponent podComponent;
+    
+    private DiagramMetricComponent pofdComponent;
+    
+    private DiagramMetric metric;
+    
+    private DiagramStatisticOuter testInstance;
 
-    @Before
-    public void runBeforeEachTest()
+    @BeforeEach
+    void runBeforeEachTest()
     {
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "B" )
@@ -67,6 +76,41 @@ public final class DiagramStatisticOuterTest
                                             1 );
 
         this.metadata = PoolMetadata.of( evaluation, pool );
+        
+        this.podComponent =
+                DiagramMetricComponent.newBuilder()
+                                      .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
+                                      .setType( DiagramComponentType.PRIMARY_RANGE_AXIS )
+                                      .build();
+
+        this.pofdComponent =
+                DiagramMetricComponent.newBuilder()
+                                      .setName( DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
+                                      .setType( DiagramComponentType.PRIMARY_DOMAIN_AXIS )
+                                      .build();
+
+        this.metric = DiagramMetric.newBuilder()
+                                            .setName( MetricName.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM )
+                                            .build();
+        DiagramStatisticComponent podOne =
+                DiagramStatisticComponent.newBuilder()
+                                         .setMetric( this.podComponent )
+                                         .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4 ) )
+                                         .build();
+
+        DiagramStatisticComponent pofdOne =
+                DiagramStatisticComponent.newBuilder()
+                                         .setMetric( this.pofdComponent )
+                                         .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4 ) )
+                                         .build();
+
+        DiagramStatistic rocOne = DiagramStatistic.newBuilder()
+                                                  .addStatistics( podOne )
+                                                  .addStatistics( pofdOne )
+                                                  .setMetric( this.metric )
+                                                  .build();
+
+        this.testInstance = DiagramStatisticOuter.of( rocOne, this.metadata );
     }
 
     /**
@@ -74,7 +118,7 @@ public final class DiagramStatisticOuterTest
      */
 
     @Test
-    public void testEquals()
+    void testEquals()
     {
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "B" )
@@ -100,75 +144,43 @@ public final class DiagramStatisticOuterTest
 
         PoolMetadata m3 = PoolMetadata.of( evaluation, poolTwo );
 
-        DiagramMetricComponent podComponent =
-                DiagramMetricComponent.newBuilder()
-                                      .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
-                                      .build();
-
-        DiagramMetricComponent pofdComponent =
-                DiagramMetricComponent.newBuilder()
-                                      .setName( DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
-                                      .build();
-
-        DiagramMetric metric = DiagramMetric.newBuilder()
-                                            .setName( MetricName.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM )
-                                            .build();
-
-        DiagramStatisticComponent podOne =
-                DiagramStatisticComponent.newBuilder()
-                                         .setMetric( podComponent )
-                                         .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4 ) )
-                                         .build();
-
-        DiagramStatisticComponent pofdOne =
-                DiagramStatisticComponent.newBuilder()
-                                         .setMetric( pofdComponent )
-                                         .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4 ) )
-                                         .build();
-
-        DiagramStatistic rocOne = DiagramStatistic.newBuilder()
-                                                  .addStatistics( podOne )
-                                                  .addStatistics( pofdOne )
-                                                  .setMetric( metric )
-                                                  .build();
-
         DiagramStatisticComponent podTwo =
                 DiagramStatisticComponent.newBuilder()
-                                         .setMetric( podComponent )
+                                         .setMetric( this.podComponent )
                                          .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4 ) )
                                          .build();
 
         DiagramStatisticComponent pofdTwo =
                 DiagramStatisticComponent.newBuilder()
-                                         .setMetric( pofdComponent )
+                                         .setMetric( this.pofdComponent )
                                          .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4 ) )
                                          .build();
 
         DiagramStatistic rocTwo = DiagramStatistic.newBuilder()
                                                   .addStatistics( podTwo )
                                                   .addStatistics( pofdTwo )
-                                                  .setMetric( metric )
+                                                  .setMetric( this.metric )
                                                   .build();
 
         DiagramStatisticComponent podThree =
                 DiagramStatisticComponent.newBuilder()
-                                         .setMetric( podComponent )
+                                         .setMetric( this.podComponent )
                                          .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4, 0.5 ) )
                                          .build();
 
         DiagramStatisticComponent pofdThree =
                 DiagramStatisticComponent.newBuilder()
-                                         .setMetric( pofdComponent )
+                                         .setMetric( this.pofdComponent )
                                          .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4, 0.5 ) )
                                          .build();
 
         DiagramStatistic rocThree = DiagramStatistic.newBuilder()
                                                     .addStatistics( podThree )
                                                     .addStatistics( pofdThree )
-                                                    .setMetric( metric )
+                                                    .setMetric( this.metric )
                                                     .build();
 
-        DiagramStatisticOuter s = DiagramStatisticOuter.of( rocOne, this.metadata );
+        DiagramStatisticOuter s = this.testInstance;
         DiagramStatisticOuter t = DiagramStatisticOuter.of( rocTwo, this.metadata );
 
         assertEquals( s, t );
@@ -176,7 +188,7 @@ public final class DiagramStatisticOuterTest
         assertNotEquals( Double.valueOf( 1.0 ), s );
         assertNotEquals( s, DiagramStatisticOuter.of( rocThree, this.metadata ) );
         assertNotEquals( s, DiagramStatisticOuter.of( rocThree, m2 ) );
-        DiagramStatisticOuter q = DiagramStatisticOuter.of( rocOne, m2 );
+        DiagramStatisticOuter q = DiagramStatisticOuter.of( s.getData(), m2 );
         DiagramStatisticOuter r = DiagramStatisticOuter.of( rocTwo, m3 );
         assertEquals( q, q );
         assertNotEquals( s, r );
@@ -189,7 +201,7 @@ public final class DiagramStatisticOuterTest
      */
 
     @Test
-    public void testGetMetadata()
+    void testGetMetadata()
     {
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "B" )
@@ -206,40 +218,8 @@ public final class DiagramStatisticOuterTest
 
         PoolMetadata m2 = PoolMetadata.of( evaluation, pool );
 
-        DiagramMetricComponent podComponent =
-                DiagramMetricComponent.newBuilder()
-                                      .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
-                                      .build();
-
-        DiagramMetricComponent pofdComponent =
-                DiagramMetricComponent.newBuilder()
-                                      .setName( DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
-                                      .build();
-
-        DiagramMetric metric = DiagramMetric.newBuilder()
-                                            .setName( MetricName.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM )
-                                            .build();
-
-        DiagramStatisticComponent podOne =
-                DiagramStatisticComponent.newBuilder()
-                                         .setMetric( podComponent )
-                                         .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4 ) )
-                                         .build();
-
-        DiagramStatisticComponent pofdOne =
-                DiagramStatisticComponent.newBuilder()
-                                         .setMetric( pofdComponent )
-                                         .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4 ) )
-                                         .build();
-
-        DiagramStatistic rocOne = DiagramStatistic.newBuilder()
-                                                  .addStatistics( podOne )
-                                                  .addStatistics( pofdOne )
-                                                  .setMetric( metric )
-                                                  .build();
-
-        DiagramStatisticOuter q = DiagramStatisticOuter.of( rocOne, this.metadata );
-        DiagramStatisticOuter r = DiagramStatisticOuter.of( rocOne, m2 );
+        DiagramStatisticOuter q = this.testInstance;
+        DiagramStatisticOuter r = DiagramStatisticOuter.of( q.getData(), m2 );
 
         assertNotEquals( q.getMetadata(), r.getMetadata() );
     }
@@ -249,113 +229,72 @@ public final class DiagramStatisticOuterTest
      */
 
     @Test
-    public void testHashCode()
+    void testHashCode()
     {
-        DiagramMetricComponent podComponent =
-                DiagramMetricComponent.newBuilder()
-                                      .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
-                                      .build();
-
-        DiagramMetricComponent pofdComponent =
-                DiagramMetricComponent.newBuilder()
-                                      .setName( DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
-                                      .build();
-
-        DiagramMetric metric = DiagramMetric.newBuilder()
-                                            .setName( MetricName.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM )
-                                            .build();
-
-        DiagramStatisticComponent podOne =
-                DiagramStatisticComponent.newBuilder()
-                                         .setMetric( podComponent )
-                                         .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4 ) )
-                                         .build();
-
-        DiagramStatisticComponent pofdOne =
-                DiagramStatisticComponent.newBuilder()
-                                         .setMetric( pofdComponent )
-                                         .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4 ) )
-                                         .build();
-
-        DiagramStatistic rocOne = DiagramStatistic.newBuilder()
-                                                  .addStatistics( podOne )
-                                                  .addStatistics( pofdOne )
-                                                  .setMetric( metric )
-                                                  .build();
-
         DiagramStatisticComponent podTwo =
                 DiagramStatisticComponent.newBuilder()
-                                         .setMetric( podComponent )
+                                         .setMetric( this.podComponent )
                                          .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4 ) )
                                          .build();
 
         DiagramStatisticComponent pofdTwo =
                 DiagramStatisticComponent.newBuilder()
-                                         .setMetric( pofdComponent )
+                                         .setMetric( this.pofdComponent )
                                          .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4 ) )
                                          .build();
 
         DiagramStatistic rocTwo = DiagramStatistic.newBuilder()
                                                   .addStatistics( podTwo )
                                                   .addStatistics( pofdTwo )
-                                                  .setMetric( metric )
+                                                  .setMetric( this.metric )
                                                   .build();
 
-        DiagramStatisticOuter q = DiagramStatisticOuter.of( rocOne, this.metadata );
+        DiagramStatisticOuter q = this.testInstance;
         DiagramStatisticOuter r = DiagramStatisticOuter.of( rocTwo, this.metadata );
 
         assertEquals( q.hashCode(), r.hashCode() );
     }
 
     @Test
-    public void testGetData()
+    void testGetData()
     {
-        DiagramMetricComponent podComponent =
-                DiagramMetricComponent.newBuilder()
-                                      .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
-                                      .build();
-
-        DiagramMetricComponent pofdComponent =
-                DiagramMetricComponent.newBuilder()
-                                      .setName( DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
-                                      .build();
-
-        DiagramMetric metric = DiagramMetric.newBuilder()
-                                            .setName( MetricName.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM )
-                                            .build();
-
         DiagramStatisticComponent podOne =
                 DiagramStatisticComponent.newBuilder()
-                                         .setMetric( podComponent )
+                                         .setMetric( this.podComponent )
                                          .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4 ) )
                                          .build();
 
         DiagramStatisticComponent pofdOne =
                 DiagramStatisticComponent.newBuilder()
-                                         .setMetric( pofdComponent )
+                                         .setMetric( this.pofdComponent )
                                          .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4 ) )
                                          .build();
 
         DiagramStatistic rocOne = DiagramStatistic.newBuilder()
                                                   .addStatistics( podOne )
                                                   .addStatistics( pofdOne )
-                                                  .setMetric( metric )
+                                                  .setMetric( this.metric )
                                                   .build();
 
-        DiagramStatisticOuter outer = DiagramStatisticOuter.of( rocOne, this.metadata );
-
-        assertEquals( rocOne, outer.getData() );
+        assertEquals( rocOne, this.testInstance.getData() );
     }
 
+    @Test
+    void testGetMetricComponentByType()
+    {
+        DiagramMetricComponent expected = this.podComponent;
+        DiagramMetricComponent actual = this.testInstance.getComponent( DiagramComponentType.PRIMARY_RANGE_AXIS );
+        assertEquals( expected, actual );
+    }
 
     @Test
-    public void testExceptionOnNullData()
+    void testExceptionOnNullData()
     {
         assertThrows( StatisticException.class, () -> DiagramStatisticOuter.of( null, this.metadata ) );
     }
 
     @Test
-    public void testExceptionOnNullMetadata()
+    void testExceptionOnNullMetadata()
     {
         DiagramStatistic statistic = DiagramStatistic.getDefaultInstance();
 

@@ -17,14 +17,14 @@ import wres.statistics.generated.BoxplotMetric.QuantileValueType;
 import wres.statistics.generated.BoxplotStatistic.Box;
 
 /**
- * Tests the {@link BoxPlot}.
+ * Tests the {@link Boxplot}.
  * @author James Brown
  */
 
-class BoxPlotTest
+class BoxplotTest
 {
     /** An instance to test. */
-    private BoxPlot boxPlot;
+    private Boxplot boxPlot;
 
     @BeforeEach
     void runBeforeEachTest()
@@ -52,7 +52,7 @@ class BoxPlotTest
         BoxplotStatisticOuter outerBoxes = BoxplotStatisticOuter.of( twoBoxes, PoolMetadata.of() );
 
         List<BoxplotStatisticOuter> boxes = List.of( outerBoxes );
-        this.boxPlot = BoxPlot.of( boxes );
+        this.boxPlot = Boxplot.of( boxes );
     }
 
     @Test
@@ -106,6 +106,6 @@ class BoxPlotTest
     @Test
     void testGetSeriesKey()
     {
-        assertEquals( "Probability 0.75", this.boxPlot.getSeriesKey( 3 ) );
+        assertEquals( "Series_3", this.boxPlot.getSeriesKey( 3 ) );
     }
 }

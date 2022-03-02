@@ -1,7 +1,7 @@
-package wres.vis;
+package wres.vis.charts;
 
 /**
- * Exception that indicates a graph could not be constructed
+ * Exception that indicates a chart could not be constructed
  */
 
 public class ChartBuildingException extends RuntimeException

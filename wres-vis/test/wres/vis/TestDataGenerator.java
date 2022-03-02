@@ -1,6 +1,5 @@
 package wres.vis;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -13,15 +12,16 @@ import org.apache.commons.lang3.tuple.Pair;
 import com.google.protobuf.Timestamp;
 
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.Slicer;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
-import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
+import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -40,9 +40,18 @@ import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.TimeWindow;
+import wres.statistics.generated.BoxplotMetric.LinkedValueType;
+import wres.statistics.generated.BoxplotMetric.QuantileValueType;
+import wres.statistics.generated.BoxplotStatistic.Box;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentType;
+import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
@@ -50,8 +59,11 @@ import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDurati
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
 
+/**
+ * Generates test datasets for graphics writing.
+ */
 
-public abstract class Chart2DTestDataGenerator
+public class TestDataGenerator
 {
     private static final Geometry NWS_FEATURE = MessageFactory.getGeometry( "DRRC2" );
     private static final Geometry USGS_FEATURE = MessageFactory.getGeometry( "09165000",
@@ -60,288 +72,219 @@ public abstract class Chart2DTestDataGenerator
                                                                              "POINT ( -108.0603517 37.63888428 )" );
     private static final Geometry NWM_FEATURE = MessageFactory.getGeometry( "18384141" );
     private static final FeatureGroup FEATURE_GROUP =
-            FeatureGroup.of( MessageFactory.getGeometryGroup( null,
+            FeatureGroup.of( MessageFactory.getGeometryGroup( "DRRC2-09165000-18384141",
                                                               MessageFactory.getGeometryTuple( USGS_FEATURE,
                                                                                                NWS_FEATURE,
                                                                                                NWM_FEATURE ) ) );
 
+    private static final String CMS = "CMS";
+
+    private static final Evaluation EVALUATION = Evaluation.newBuilder()
+                                                           .setRightDataName( "HEFS" )
+                                                           .setBaselineDataName( "ESP" )
+                                                           .setRightVariableName( "SQIN" )
+                                                           .setMeasurementUnit( "CMS" )
+                                                           .build();
+
+    private static final OneOrTwoThresholds THRESHOLD_ONE =
+            OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 4.9 ),
+                                                      Operator.GREATER,
+                                                      ThresholdDataType.LEFT,
+                                                      MeasurementUnit.of( CMS ) ) );
+
+    private static final OneOrTwoThresholds THRESHOLD_TWO =
+            OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 7.8 ),
+                                                      Operator.GREATER,
+                                                      ThresholdDataType.LEFT,
+                                                      MeasurementUnit.of( CMS ) ) );
+
+    private static final OneOrTwoThresholds ALL_DATA_THRESHOLD = OneOrTwoThresholds.of( ThresholdOuter.ALL_DATA );
+
+    private static final Instant FIRST_INSTANT = Instant.parse( "2521-12-15T12:00:00Z" );
+
+    private static final Instant SECOND_INSTANT = Instant.parse( "2521-12-15T18:00:00Z" );
+
     /**
-     * Returns a {@link List} of {@link DoubleScoreStatisticOuter} comprising the CRPSS for a
-     * subset of thresholds and forecast lead times. Reads the input data from
-     * {@link #getScalarMetricOutputMapByLeadThreshold()} and slices.
-     *
-     * @return an output map of verification scores
+     * @return a list of scores for two issued pools
      */
 
-    public static List<DoubleScoreStatisticOuter> getMetricOutputMapByLeadThresholdOne()
-            throws IOException
+    public static List<DoubleScoreComponentOuter> getScoresForTwoIssuedDatePools()
     {
-        List<DoubleScoreStatisticOuter> full = Chart2DTestDataGenerator.getScalarMetricOutputMapByLeadThreshold();
-        List<DoubleScoreStatisticOuter> statistics = new ArrayList<>();
+        List<DoubleScoreComponentOuter> statistics = new ArrayList<>();
+        TimeWindow innerWindowOne = MessageFactory.getTimeWindow( FIRST_INSTANT,
+                                                                  FIRST_INSTANT,
+                                                                  Duration.ofHours( 1 ),
+                                                                  Duration.ofHours( 1 ) );
+        TimeWindowOuter outerWindowOne = TimeWindowOuter.of( innerWindowOne );
 
-        double[][] allow =
-                new double[][] { { Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY }, { 0.5, 2707.5 },
-                                 { 0.95, 13685.0 }, { 0.99, 26648.0 } };
-        for ( final double[] next : allow )
-        {
-            OneOrTwoThresholds filter =
-                    OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( next[1] ),
-                                                                               OneOrTwoDoubles.of( next[0] ),
-                                                                               Operator.GREATER,
-                                                                               ThresholdDataType.LEFT ) );
-            Slicer.filter( full, data -> filter.equals( data.getMetadata().getThresholds() ) )
-                  .forEach( statistics::add );
-        }
+
+        wres.statistics.generated.Pool innerPoolOne = MessageFactory.getPool( FEATURE_GROUP,
+                                                                              outerWindowOne,
+                                                                              null,
+                                                                              THRESHOLD_ONE,
+                                                                              false );
+
+        PoolMetadata poolOne = PoolMetadata.of( EVALUATION, innerPoolOne );
+
+        DoubleScoreStatisticComponent componentOne = DoubleScoreStatisticComponent.newBuilder()
+                                                                                  .setValue( 0.1 )
+                                                                                  .build();
+
+        DoubleScoreComponentOuter componentOneOuter = DoubleScoreComponentOuter.of( componentOne, poolOne );
+
+        statistics.add( componentOneOuter );
+
+        TimeWindow innerWindowTwo = MessageFactory.getTimeWindow( SECOND_INSTANT,
+                                                                  SECOND_INSTANT,
+                                                                  Duration.ofHours( 1 ),
+                                                                  Duration.ofHours( 1 ) );
+        TimeWindowOuter outerWindowTwo = TimeWindowOuter.of( innerWindowTwo );
+
+
+        wres.statistics.generated.Pool innerPoolTwo = MessageFactory.getPool( FEATURE_GROUP,
+                                                                              outerWindowTwo,
+                                                                              null,
+                                                                              THRESHOLD_ONE,
+                                                                              false );
+
+        PoolMetadata poolTwo = PoolMetadata.of( EVALUATION, innerPoolTwo );
+
+        DoubleScoreStatisticComponent componentTwo = DoubleScoreStatisticComponent.newBuilder()
+                                                                                  .setValue( 0.2 )
+                                                                                  .build();
+
+        DoubleScoreComponentOuter componentOuterTwo = DoubleScoreComponentOuter.of( componentTwo, poolTwo );
+
+        statistics.add( componentOuterTwo );
 
         return Collections.unmodifiableList( statistics );
     }
 
     /**
-     * Returns a {@link List} of {@link DoubleScoreStatisticOuter} comprising the CRPSS for a
-     * subset of thresholds and forecast lead times. Reads the input data from {@link #getScalarMetricOutputMapByLeadThreshold()}
-     * and slices.
-     *
-     * @return an output map of verification scores
+     * @return a list of scores for two valid pools
      */
-    public static List<DoubleScoreStatisticOuter> getMetricOutputMapByLeadThresholdTwo()
-            throws IOException
+
+    public static List<DoubleScoreComponentOuter> getScoresForTwoValidDatePools()
     {
-        List<DoubleScoreStatisticOuter> full = Chart2DTestDataGenerator.getScalarMetricOutputMapByLeadThreshold();
-        List<DoubleScoreStatisticOuter> statistics = new ArrayList<>();
+        // Create issued pools and modify to valid pools
+        List<DoubleScoreComponentOuter> issuedPools = TestDataGenerator.getScoresForTwoIssuedDatePools();
+        List<DoubleScoreComponentOuter> statistics = new ArrayList<>();
 
-        final int[] allow = new int[] { 42, 258, 474, 690 };
-        for ( final int next : allow )
-        {
-            TimeWindow inner = MessageFactory.getTimeWindow( Instant.MIN,
-                                                             Instant.MAX,
-                                                             Duration.ofHours( next ) );
-            TimeWindowOuter filter = TimeWindowOuter.of( inner );
+        long minSeconds = Instant.MIN.getEpochSecond();
+        long maxSeconds = Instant.MAX.getEpochSecond();
 
-            Slicer.filter( full, data -> filter.equals( data.getMetadata().getTimeWindow() ) )
-                  .forEach( statistics::add );
-        }
+        DoubleScoreComponentOuter first = issuedPools.get( 0 );
+        PoolMetadata metaOne = first.getMetadata();
+        long firstSeconds = FIRST_INSTANT.getEpochSecond();
+        TimeWindow windowOne = metaOne.getTimeWindow()
+                                      .getTimeWindow()
+                                      .toBuilder()
+                                      .setEarliestReferenceTime( Timestamp.newBuilder()
+                                                                          .setSeconds( minSeconds ) )
+                                      .setLatestReferenceTime( Timestamp.newBuilder()
+                                                                        .setSeconds( maxSeconds ) )
+                                      .setEarliestValidTime( Timestamp.newBuilder()
+                                                                      .setSeconds( firstSeconds ) )
+                                      .setLatestValidTime( Timestamp.newBuilder()
+                                                                    .setSeconds( firstSeconds ) )
+                                      .build();
+        TimeWindowOuter windowOneOuter = TimeWindowOuter.of( windowOne );
+        PoolMetadata adjustedOne = PoolMetadata.of( metaOne, windowOneOuter );
+        DoubleScoreComponentOuter firstAdjusted = DoubleScoreComponentOuter.of( first.getData(), adjustedOne );
+        statistics.add( firstAdjusted );
+
+        DoubleScoreComponentOuter second = issuedPools.get( 1 );
+        PoolMetadata metaTwo = first.getMetadata();
+        long secondSeconds = SECOND_INSTANT.getEpochSecond();
+        TimeWindow windowTwo = metaTwo.getTimeWindow()
+                                      .getTimeWindow()
+                                      .toBuilder()
+                                      .setEarliestReferenceTime( Timestamp.newBuilder()
+                                                                          .setSeconds( minSeconds ) )
+                                      .setLatestReferenceTime( Timestamp.newBuilder()
+                                                                        .setSeconds( maxSeconds ) )
+                                      .setEarliestValidTime( Timestamp.newBuilder()
+                                                                      .setSeconds( secondSeconds ) )
+                                      .setLatestValidTime( Timestamp.newBuilder()
+                                                                    .setSeconds( secondSeconds ) )
+                                      .build();
+        TimeWindowOuter windowTwoOuter = TimeWindowOuter.of( windowTwo );
+        PoolMetadata adjustedTwo = PoolMetadata.of( metaOne, windowTwoOuter );
+        DoubleScoreComponentOuter secondAdjusted = DoubleScoreComponentOuter.of( second.getData(), adjustedTwo );
+        statistics.add( secondAdjusted );
 
         return Collections.unmodifiableList( statistics );
     }
 
     /**
-     * Returns a {@link List} of {@link DoubleScoreStatisticOuter}. TODO: add some proper data if we ever make
-     * assertions about images. See #58348.
+     * Returns a {@link List} of {@link DoubleScoreStatisticOuter} comprising the bias fraction
+     * for various pooling windows at one threshold (all data). Corresponds to the use case in Redmine ticket #46461.
      *
      * @return an output map of verification scores
      */
-    static List<DoubleScoreStatisticOuter> getScalarMetricOutputMapByLeadThreshold()
-            throws IOException
+    public static List<DoubleScoreStatisticOuter> getScoresForIssuedTimePools()
     {
         List<DoubleScoreStatisticOuter> rawData = new ArrayList<>();
 
-        // See #58348. There are no useful assertions about this dataset at present. If we develop some, then replace
-        // this dataset with something meaningful that does not rely on files being read by the EVS
-        DoubleScoreStatistic one = DoubleScoreStatistic.newBuilder()
-                                                       .setMetric( DoubleScoreMetric.newBuilder()
-                                                                                    .setName( MetricName.MEAN_ERROR ) )
-                                                       .build();
-        DoubleScoreStatisticOuter value =
-                DoubleScoreStatisticOuter.of( one, PoolMetadata.of() );
+        Pool pool = MessageFactory.getPool( FEATURE_GROUP,
+                                            null,
+                                            null,
+                                            ALL_DATA_THRESHOLD,
+                                            false );
 
-        //Append result
-        rawData.add( value );
+        PoolMetadata source = PoolMetadata.of( EVALUATION, pool );
 
-        return Collections.unmodifiableList( rawData );
-    }
+        double[] scores = new double[] {
+                                         -0.39228763627058233,
+                                         -0.38540392640098137,
+                                         -0.37290595138891640,
+                                         -0.29294118442636000,
+                                         -0.21904815321579500,
+                                         -0.15832253472025700,
+                                         -0.29244152171401800,
+                                         -0.28854939865963400,
+                                         -0.32666816357502900,
+                                         -0.29652842873636000,
+                                         -0.28174289655134900,
+                                         -0.26014386674719100,
+                                         -0.20220839431888500,
+                                         -0.26801048204027200,
+                                         -0.28350781433349200,
+                                         -0.27907401971041900,
+                                         -0.25723312071583900,
+                                         -0.28349542374488600,
+                                         -0.27544986528110100,
+                                         -0.25307837568226800,
+                                         -0.24993043930250200,
+                                         -0.27070337571167200,
+                                         -0.25422214821455900,
+                                         -0.28105802405674500
+        };
+        // Build the map
+        for ( int i = 0; i < scores.length; i++ )
+        {
+            String nextDate = "2017-08-08T" + String.format( "%02d", i ) + ":00:00Z";
 
-    /**
-     * Returns a {@link List} of {@link DoubleScoreStatisticOuter}. TODO: add some proper data if we ever make
-     * assertions about images. See #58348.
-     *
-     * @return an output map of verification scores
-     */
-    static List<DoubleScoreStatisticOuter> getScoreMetricOutputMapByLeadThreshold()
-            throws IOException
-    {
-        List<DoubleScoreStatisticOuter> rawData = new ArrayList<>();
+            TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( nextDate ),
+                                                             Instant.parse( nextDate ),
+                                                             Duration.ofHours( 0 ),
+                                                             Duration.ofHours( 18 ) );
 
-        // See #58348. There are no useful assertions about this dataset at present. If we develop some, then replace
-        // this dataset with something meaningful that does not rely on files being read by the EVS
-        DoubleScoreStatistic one = DoubleScoreStatistic.newBuilder()
-                                                       .setMetric( DoubleScoreMetric.newBuilder()
-                                                                                    .setName( MetricName.MEAN_ERROR ) )
-                                                       .build();
-        DoubleScoreStatisticOuter value =
-                DoubleScoreStatisticOuter.of( one, PoolMetadata.of() );
+            TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
-        //Append result
-        rawData.add( value );
+            DoubleScoreStatistic one =
+                    DoubleScoreStatistic.newBuilder()
+                                        .setMetric( DoubleScoreMetric.newBuilder()
+                                                                     .setName( MetricName.BIAS_FRACTION ) )
+                                        .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                     .setValue( scores[i] )
+                                                                                     .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                           .setName( ComponentName.MAIN ) ) )
+                                        .build();
 
-        return Collections.unmodifiableList( rawData );
-    }
+            rawData.add( DoubleScoreStatisticOuter.of( one, PoolMetadata.of( source, timeWindow ) ) );
+        }
 
-    /**
-     * Returns a {@link List} of {@link DiagramStatisticOuter}. TODO: add some proper data if we ever make assertions
-     * about images. See #58348.
-     *
-     * @return an output map of reliability diagrams
-     */
-    static List<DiagramStatisticOuter> getReliabilityDiagramByLeadThreshold()
-            throws IOException
-    {
-        List<DiagramStatisticOuter> rawData = new ArrayList<>();
-
-        // See #58348. There are no useful assertions about this dataset at present. If we develop some, then replace
-        // this dataset with something meaningful that does not rely on files being read by the EVS
-        DiagramStatistic statistic =
-                DiagramStatistic.newBuilder()
-                                .setMetric( DiagramMetric.newBuilder().setName( MetricName.RELIABILITY_DIAGRAM ) )
-                                .build();
-        DiagramStatisticOuter value =
-                DiagramStatisticOuter.of( statistic, PoolMetadata.of() );
-
-        //Append result
-        rawData.add( value );
-
-        //Return the results
-        return Collections.unmodifiableList( rawData );
-    }
-
-    /**
-     * Returns a {@link List} of {@link DiagramStatisticOuter}. TODO: add some proper data if we ever make assertions
-     * about images. See #58348.
-     *
-     * @return an output map of ROC diagrams
-     */
-
-    static List<DiagramStatisticOuter> getROCDiagramByLeadThreshold()
-            throws IOException
-    {
-        List<DiagramStatisticOuter> rawData = new ArrayList<>();
-
-        // See #58348. There are no useful assertions about this dataset at present. If we develop some, then replace
-        // this dataset with something meaningful that does not rely on files being read by the EVS
-        DiagramStatistic rocDiagram = DiagramStatistic.newBuilder()
-                                                      .setMetric( DiagramMetric.newBuilder()
-                                                                               .setName( MetricName.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM ) )
-                                                      .build();
-        DiagramStatisticOuter value =
-                DiagramStatisticOuter.of( rocDiagram, PoolMetadata.of() );
-
-        //Append result
-        rawData.add( value );
-
-        //Return the results
-        return Collections.unmodifiableList( rawData );
-    }
-
-    /**
-     * Returns a {@link List} of {@link DiagramStatisticOuter}. TODO: add some proper data if we ever make assertions
-     * about images. See #58348.
-     *
-     * @return an output map of rank histograms
-     */
-
-    static List<DiagramStatisticOuter> getRankHistogramByLeadThreshold()
-            throws IOException
-    {
-        List<DiagramStatisticOuter> rawData = new ArrayList<>();
-
-        // See #58348. There are no useful assertions about this dataset at present. If we develop some, then replace
-        // this dataset with something meaningful that does not rely on files being read by the EVS
-        DiagramStatistic histogram = DiagramStatistic.newBuilder()
-                                                     .setMetric( DiagramMetric.newBuilder()
-                                                                              .setName( MetricName.RANK_HISTOGRAM ) )
-                                                     .build();
-        DiagramStatisticOuter value =
-                DiagramStatisticOuter.of( histogram, PoolMetadata.of() );
-
-        //Append result
-        rawData.add( value );
-
-        //Return the results
-        return Collections.unmodifiableList( rawData );
-    }
-
-    /**
-     * Returns a {@link List} of {@link DiagramStatisticOuter}. TODO: add some proper data if we ever make assertions
-     * about images. See #58348.
-     *
-     * @return an output map of QQ diagrams
-     */
-
-    static List<DiagramStatisticOuter> getQQDiagramByLeadThreshold()
-            throws IOException
-    {
-        List<DiagramStatisticOuter> rawData = new ArrayList<>();
-
-        // See #58348. There are no useful assertions about this dataset at present. If we develop some, then replace
-        // this dataset with something meaningful that does not rely on files being read by the EVS
-        DiagramStatistic qqDiagram = DiagramStatistic.newBuilder()
-                                                     .setMetric( DiagramMetric.newBuilder()
-                                                                              .setName( MetricName.QUANTILE_QUANTILE_DIAGRAM ) )
-                                                     .build();
-        DiagramStatisticOuter value =
-                DiagramStatisticOuter.of( qqDiagram, PoolMetadata.of() );
-
-        //Append result
-        rawData.add( value );
-
-        //Return the results
-        return Collections.unmodifiableList( rawData );
-    }
-
-    /**
-     * Returns a {@link List} of {@link BoxplotStatisticOuter}. TODO: add some proper data if we ever make assertions
-     * about images. See #58348.
-     *
-     * @return an output map of verification scores
-     */
-
-    static List<BoxplotStatisticOuter> getBoxPlotErrorsByObservedAndLeadThreshold()
-            throws IOException
-    {
-        List<BoxplotStatisticOuter> rawData = new ArrayList<>();
-
-        // See #58348. There are no useful assertions about this dataset at present. If we develop some, then replace
-        // this dataset with something meaningful that does not rely on files being read by the EVS
-        BoxplotStatistic boxplot = BoxplotStatistic.newBuilder()
-                                                   .setMetric( BoxplotMetric.newBuilder()
-                                                                            .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE ) )
-                                                   .build();
-        PoolMetadata meta = PoolMetadata.of();
-
-        BoxplotStatisticOuter out = BoxplotStatisticOuter.of( boxplot, meta );
-
-        //Append result
-        rawData.add( out );
-
-        //Return the results
-        return Collections.unmodifiableList( rawData );
-    }
-
-    /**
-     * Returns a {@link List} of {@link BoxplotStatisticOuter}. TODO: add some proper data if we ever make assertions
-     * about images. See #58348.
-     *
-     * @return an output map of verification scores
-     */
-
-    static List<BoxplotStatisticOuter> getBoxPlotErrorsByForecastAndLeadThreshold()
-            throws IOException
-    {
-        List<BoxplotStatisticOuter> rawData = new ArrayList<>();
-
-        // See #58348. There are no useful assertions about this dataset at present. If we develop some, then replace
-        // this dataset with something meaningful that does not rely on files being read by the EVS
-        BoxplotStatistic boxplot = BoxplotStatistic.newBuilder()
-                                                   .setMetric( BoxplotMetric.newBuilder()
-                                                                            .setName( MetricName.BOX_PLOT_OF_ERRORS ) )
-                                                   .build();
-        PoolMetadata metadata = PoolMetadata.of();
-
-        BoxplotStatisticOuter out = BoxplotStatisticOuter.of( boxplot, metadata );
-
-        //Append result
-        rawData.add( out );
-
-        //Return the results
         return Collections.unmodifiableList( rawData );
     }
 
@@ -351,32 +294,17 @@ public abstract class Chart2DTestDataGenerator
      *
      * @return an output map of verification scores
      */
-    static List<DoubleScoreStatisticOuter> getScoreOutputForPoolingWindowsFirst()
+    public static List<DoubleScoreStatisticOuter> getScoresForIssuedTimeAndLeadDurationPools()
     {
-        final List<DoubleScoreStatisticOuter> rawData = new ArrayList<>();
-
-        // Threshold
-        final OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                           OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                           Operator.GREATER,
-                                                                           ThresholdDataType.LEFT ) );
-
-        //Source metadata
-        Evaluation evaluation = Evaluation.newBuilder()
-                                          .setRightVariableName( "STREAMFLOW" )
-                                          .setRightDataName( "HEFS" )
-                                          .setBaselineDataName( "ESP" )
-                                          .setMeasurementUnit( "CMS" )
-                                          .build();
+        List<DoubleScoreStatisticOuter> rawData = new ArrayList<>();
 
         Pool pool = MessageFactory.getPool( FEATURE_GROUP,
                                             null,
                                             null,
-                                            threshold,
+                                            ALL_DATA_THRESHOLD,
                                             false );
 
-        PoolMetadata source = PoolMetadata.of( evaluation, pool );
+        PoolMetadata source = PoolMetadata.of( EVALUATION, pool );
 
         // Rolling window parameters
         Instant start = Instant.parse( "2015-12-01T00:00:00Z" );
@@ -476,93 +404,115 @@ public abstract class Chart2DTestDataGenerator
     }
 
     /**
-     * Returns a {@link List} of {@link DoubleScoreStatisticOuter} comprising the bias fraction
-     * for various pooling windows at one threshold (all data). Corresponds to the use case in Redmine ticket #46461.
-     *
-     * @return an output map of verification scores
+     * @return a diagram dataset for each of two thresholds and three lead durations
      */
-    static List<DoubleScoreStatisticOuter> getScoreOutputForPoolingWindowsSecond()
+
+    public static List<DiagramStatisticOuter> getDiagramStatisticsForTwoThresholdsAndThreeLeadDurations()
     {
-        final List<DoubleScoreStatisticOuter> rawData = new ArrayList<>();
+        List<DiagramStatisticOuter> statistics = new ArrayList<>();
 
-        OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
+        DiagramMetricComponent rankOrder =
+                DiagramMetricComponent.newBuilder()
+                                      .setName( DiagramComponentName.RANK_ORDER )
+                                      .setType( DiagramComponentType.PRIMARY_DOMAIN_AXIS )
+                                      .setMinimum( 0 ) // Strictly 1, but the zeroth position should be visible
+                                      .setMaximum( Double.POSITIVE_INFINITY )
+                                      .setUnits( "COUNT" )
+                                      .build();
 
-        //Source metadata
-        Evaluation evaluation = Evaluation.newBuilder()
-                                          .setRightVariableName( "STREAMFLOW" )
-                                          .setRightDataName( "NWM" )
-                                          .setMeasurementUnit( "CMS" )
-                                          .build();
+        DiagramMetricComponent observedFrequency = DiagramMetricComponent.newBuilder()
+                                                                         .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                                                         .setType( DiagramComponentType.PRIMARY_RANGE_AXIS )
+                                                                         .setMinimum( 0 )
+                                                                         .setMaximum( 1 )
+                                                                         .setUnits( "PROBABILITY" )
+                                                                         .build();
 
-        Pool pool = MessageFactory.getPool( FEATURE_GROUP,
-                                            null,
-                                            null,
-                                            threshold,
-                                            false );
+        DiagramMetric metric = DiagramMetric.newBuilder()
+                                            .setName( MetricName.RANK_HISTOGRAM )
+                                            .build();
 
-        PoolMetadata source = PoolMetadata.of( evaluation, pool );
+        List<Double> ranks = List.of( 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 );
+        List<Double> frequencies =
+                List.of( 0.0995, 0.1041, 0.0976, 0.1041, 0.0993, 0.1044, 0.1014, 0.0952, 0.0972, 0.0972 );
 
-        double[] scores = new double[] {
-                                         -0.39228763627058233,
-                                         -0.38540392640098137,
-                                         -0.37290595138891640,
-                                         -0.29294118442636000,
-                                         -0.21904815321579500,
-                                         -0.15832253472025700,
-                                         -0.29244152171401800,
-                                         -0.28854939865963400,
-                                         -0.32666816357502900,
-                                         -0.29652842873636000,
-                                         -0.28174289655134900,
-                                         -0.26014386674719100,
-                                         -0.20220839431888500,
-                                         -0.26801048204027200,
-                                         -0.28350781433349200,
-                                         -0.27907401971041900,
-                                         -0.25723312071583900,
-                                         -0.28349542374488600,
-                                         -0.27544986528110100,
-                                         -0.25307837568226800,
-                                         -0.24993043930250200,
-                                         -0.27070337571167200,
-                                         -0.25422214821455900,
-                                         -0.28105802405674500
-        };
-        // Build the map
-        for ( int i = 0; i < scores.length; i++ )
-        {
-            String nextDate = "2017-08-08T" + String.format( "%02d", i ) + ":00:00Z";
+        DiagramStatisticComponent ro = DiagramStatisticComponent.newBuilder()
+                                                                .setMetric( rankOrder )
+                                                                .addAllValues( ranks )
+                                                                .build();
 
-            TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( nextDate ),
-                                                             Instant.parse( nextDate ),
-                                                             Duration.ofHours( 0 ),
-                                                             Duration.ofHours( 18 ) );
+        DiagramStatisticComponent obs = DiagramStatisticComponent.newBuilder()
+                                                                 .setMetric( observedFrequency )
+                                                                 .addAllValues( frequencies )
+                                                                 .build();
 
-            TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
+        DiagramStatistic diagram = DiagramStatistic.newBuilder()
+                                                   .addStatistics( ro )
+                                                   .addStatistics( obs )
+                                                   .setMetric( metric )
+                                                   .build();
 
-            DoubleScoreStatistic one =
-                    DoubleScoreStatistic.newBuilder()
-                                        .setMetric( DoubleScoreMetric.newBuilder()
-                                                                     .setName( MetricName.BIAS_FRACTION ) )
-                                        .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                     .setValue( scores[i] )
-                                                                                     .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                           .setName( ComponentName.MAIN ) ) )
-                                        .build();
+        // Create several pools and use the same diagram for each
+        TimeWindow innerWindowOne = MessageFactory.getTimeWindow( Duration.ofHours( 1 ),
+                                                                  Duration.ofHours( 1 ) );
+        TimeWindowOuter outerWindowOne = TimeWindowOuter.of( innerWindowOne );
 
-            rawData.add( DoubleScoreStatisticOuter.of( one, PoolMetadata.of( source, timeWindow ) ) );
-        }
 
-        return Collections.unmodifiableList( rawData );
+        wres.statistics.generated.Pool innerPoolOne = MessageFactory.getPool( FEATURE_GROUP,
+                                                                              outerWindowOne,
+                                                                              null,
+                                                                              THRESHOLD_ONE,
+                                                                              false );
+
+        PoolMetadata poolOne = PoolMetadata.of( EVALUATION, innerPoolOne );
+        DiagramStatisticOuter first = DiagramStatisticOuter.of( diagram, poolOne );
+        statistics.add( first );
+
+        PoolMetadata poolTwo = PoolMetadata.of( poolOne, THRESHOLD_TWO );
+        DiagramStatisticOuter second = DiagramStatisticOuter.of( diagram, poolTwo );
+        statistics.add( second );
+
+        com.google.protobuf.Duration secondDuration = MessageFactory.parse( Duration.ofHours( 2 ) );
+        TimeWindow innerWindowTwo =
+                innerWindowOne.toBuilder()
+                              .setEarliestLeadDuration( secondDuration )
+                              .setLatestLeadDuration( secondDuration )
+                              .build();
+
+        TimeWindowOuter outerWindowTwo = TimeWindowOuter.of( innerWindowTwo );
+
+        PoolMetadata poolThree = PoolMetadata.of( poolOne, outerWindowTwo );
+        DiagramStatisticOuter third = DiagramStatisticOuter.of( diagram, poolThree );
+        statistics.add( third );
+
+        PoolMetadata poolFour = PoolMetadata.of( poolTwo, outerWindowTwo );
+        DiagramStatisticOuter fourth = DiagramStatisticOuter.of( diagram, poolFour );
+        statistics.add( fourth );
+
+        com.google.protobuf.Duration thirdDuration = MessageFactory.parse( Duration.ofHours( 3 ) );
+        TimeWindow innerWindowThree =
+                innerWindowOne.toBuilder()
+                              .setEarliestLeadDuration( thirdDuration )
+                              .setLatestLeadDuration( thirdDuration )
+                              .build();
+
+        TimeWindowOuter outerWindowThree = TimeWindowOuter.of( innerWindowThree );
+
+        PoolMetadata poolFive = PoolMetadata.of( poolOne, outerWindowThree );
+        DiagramStatisticOuter fifth = DiagramStatisticOuter.of( diagram, poolFive );
+        statistics.add( fifth );
+
+        PoolMetadata poolSix = PoolMetadata.of( poolTwo, outerWindowThree );
+        DiagramStatisticOuter sixth = DiagramStatisticOuter.of( diagram, poolSix );
+        statistics.add( sixth );
+
+        return Collections.unmodifiableList( statistics );
     }
 
     /**
-     * Returns a {@link DurationDiagramStatisticOuter} that comprises a {@link Duration} that represents a time-to-peak error against an
-     * {@link Instant} that represents the origin (basis time) of the time-series from which the timing error
-     * originates. Contains results for forecasts issued at 12Z each day from 1985-01-01T12:00:00Z to
+     * Returns a {@link DurationDiagramStatisticOuter} that comprises a {@link Duration} that represents a time-to-peak 
+     * error against an {@link Instant} that represents the origin (basis time) of the time-series from which the timing 
+     * error originates. Contains results for forecasts issued at 12Z each day from 1985-01-01T12:00:00Z to
      * 1985-01-10T12:00:00Z and with a forecast horizon of 336h.
      *
      * @return a paired output of timing errors by basis time
@@ -756,27 +706,16 @@ public abstract class Chart2DTestDataGenerator
                                                          Duration.ofHours( 336 ) );
         TimeWindowOuter window = TimeWindowOuter.of( inner );
 
-        OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
-
-        Evaluation evaluation = Evaluation.newBuilder()
-                                          .setRightVariableName( "Streamflow" )
-                                          .setRightDataName( "HEFS" )
-                                          .setMeasurementUnit( "CMS" )
-                                          .build();
-
         Pool pool = MessageFactory.getPool( FEATURE_GROUP,
                                             window,
                                             null,
-                                            threshold,
+                                            ALL_DATA_THRESHOLD,
                                             false );
 
-        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
+        PoolMetadata meta = PoolMetadata.of( EVALUATION, pool );
 
         DurationScoreMetric metric = DurationScoreMetric.newBuilder()
-                                                        .setName( MetricName.TIME_TO_PEAK_ERROR )
+                                                        .setName( MetricName.TIME_TO_PEAK_ERROR_STATISTIC )
                                                         .build();
 
         DurationScoreStatistic score =
@@ -822,6 +761,151 @@ public abstract class Chart2DTestDataGenerator
                                       .build();
 
         return Arrays.asList( DurationScoreStatisticOuter.of( score, meta ) );
+    }
+
+
+    /**
+     * Returns a {@link List} containing {@link BoxplotStatisticOuter} for several pairs.
+     * 
+     * @return a box plot per pair
+     */
+
+    public static List<BoxplotStatisticOuter> getBoxPlotPerPairForOnePool()
+    {
+        // location id
+        Geometry geometry = MessageFactory.getGeometry( "JUNP1" );
+
+        // Create fake outputs
+        TimeWindow innerOne = MessageFactory.getTimeWindow( Duration.ofHours( 24 ),
+                                                            Duration.ofHours( 24 ) );
+        TimeWindowOuter timeOne = TimeWindowOuter.of( innerOne );
+
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, null );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( "JUNP1_JUNP1", geoTuple );
+        FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
+
+        Pool pool = MessageFactory.getPool( featureGroup,
+                                            timeOne,
+                                            null,
+                                            ALL_DATA_THRESHOLD,
+                                            false );
+
+        PoolMetadata fakeMetadata = PoolMetadata.of( EVALUATION, pool );
+
+        BoxplotMetric metric = BoxplotMetric.newBuilder()
+                                            .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE )
+                                            .setLinkedValueType( LinkedValueType.OBSERVED_VALUE )
+                                            .setQuantileValueType( QuantileValueType.FORECAST_ERROR )
+                                            .addAllQuantiles( List.of( 0.0, 0.25, 0.5, 0.75, 1.0 ) )
+                                            .setMinimum( Double.NEGATIVE_INFINITY )
+                                            .setMaximum( Double.POSITIVE_INFINITY )
+                                            .build();
+
+        Box first = Box.newBuilder()
+                       .addAllQuantiles( List.of( 2.0, 3.0, 4.0, 5.0, 6.0 ) )
+                       .setLinkedValue( 1.0 )
+                       .build();
+
+        Box second = Box.newBuilder()
+                        .addAllQuantiles( List.of( 7.0, 9.0, 11.0, 13.0, 15.0 ) )
+                        .setLinkedValue( 3.0 )
+                        .build();
+
+        Box third = Box.newBuilder()
+                       .addAllQuantiles( List.of( 21.0, 24.0, 27.0, 30.0, 33.0 ) )
+                       .setLinkedValue( 5.0 )
+                       .build();
+
+        BoxplotStatistic boxOne = BoxplotStatistic.newBuilder()
+                                                  .setMetric( metric )
+                                                  .addStatistics( first )
+                                                  .addStatistics( second )
+                                                  .addStatistics( third )
+                                                  .build();
+
+        return List.of( BoxplotStatisticOuter.of( boxOne, fakeMetadata ) );
+    }
+
+    /**
+     * Returns a {@link List} containing {@link BoxplotStatisticOuter} for two pools of data.
+     * 
+     * @return a box plot per pool for two pools
+     */
+
+    public static List<BoxplotStatisticOuter> getBoxPlotPerPoolForTwoPools()
+    {
+        // location id
+        Geometry geometry = MessageFactory.getGeometry( "JUNP1" );
+
+        // Create fake outputs
+        TimeWindow innerOne = MessageFactory.getTimeWindow( Duration.ofHours( 24 ),
+                                                            Duration.ofHours( 24 ) );
+        TimeWindowOuter timeOne = TimeWindowOuter.of( innerOne );
+
+        OneOrTwoThresholds threshold =
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT ) );
+
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, null );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( "JUNP1_JUNP1", geoTuple );
+
+        FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
+
+        Pool pool = MessageFactory.getPool( featureGroup,
+                                            timeOne,
+                                            null,
+                                            threshold,
+                                            false );
+
+        PoolMetadata fakeMetadataOne = PoolMetadata.of( EVALUATION, pool );
+
+        BoxplotMetric metric = BoxplotMetric.newBuilder()
+                                            .setName( MetricName.BOX_PLOT_OF_ERRORS )
+                                            .setLinkedValueType( LinkedValueType.NONE )
+                                            .setQuantileValueType( QuantileValueType.FORECAST_ERROR )
+                                            .addAllQuantiles( List.of( 0.0, 0.25, 0.5, 0.75, 1.0 ) )
+                                            .setMinimum( Double.NEGATIVE_INFINITY )
+                                            .setMaximum( Double.POSITIVE_INFINITY )
+                                            .build();
+
+        Box box = Box.newBuilder()
+                     .addAllQuantiles( List.of( 1.0, 3.0, 5.0, 7.0, 9.0 ) )
+                     .build();
+
+        BoxplotStatistic boxOne = BoxplotStatistic.newBuilder()
+                                                  .setMetric( metric )
+                                                  .addStatistics( box )
+                                                  .build();
+
+        BoxplotStatisticOuter fakeOutputsOne = BoxplotStatisticOuter.of( boxOne, fakeMetadataOne );
+
+        TimeWindow innerTwo = MessageFactory.getTimeWindow( Instant.MIN,
+                                                            Instant.MAX,
+                                                            Duration.ofHours( 48 ),
+                                                            Duration.ofHours( 48 ) );
+        TimeWindowOuter timeTwo = TimeWindowOuter.of( innerTwo );
+
+        Pool poolTwo = MessageFactory.getPool( featureGroup,
+                                               timeTwo,
+                                               null,
+                                               threshold,
+                                               false );
+
+        PoolMetadata fakeMetadataTwo = PoolMetadata.of( EVALUATION, poolTwo );
+
+        Box anotherBox = Box.newBuilder()
+                            .addAllQuantiles( List.of( 11.0, 33.0, 55.0, 77.0, 99.0 ) )
+                            .build();
+
+        BoxplotStatistic boxTwo = BoxplotStatistic.newBuilder()
+                                                  .setMetric( metric )
+                                                  .addStatistics( anotherBox )
+                                                  .build();
+
+        BoxplotStatisticOuter fakeOutputsTwo = BoxplotStatisticOuter.of( boxTwo, fakeMetadataTwo );
+
+        return List.of( fakeOutputsOne, fakeOutputsTwo );
     }
 
 }

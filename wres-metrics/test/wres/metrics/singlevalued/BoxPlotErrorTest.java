@@ -14,6 +14,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
 
+import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.MetricConstants;
@@ -41,6 +42,8 @@ import wres.statistics.generated.BoxplotStatistic.Box;
 public final class BoxPlotErrorTest
 {
 
+    private static final String CMS = "CMS";
+    
     /**
      * Default instance of a {@link BoxPlotError}.
      */
@@ -68,7 +71,7 @@ public final class BoxPlotErrorTest
                                             .addAllQuantiles( List.of( 0.0, 0.25, 0.5, 0.75, 1.0 ) )
                                             .setMinimum( Double.NEGATIVE_INFINITY )
                                             .setMaximum( Double.POSITIVE_INFINITY )
-                                            .setUnits( "DIMENSIONLESS" )
+                                            .setUnits( MeasurementUnit.DIMENSIONLESS )
                                             .build();
 
         Box box = Box.newBuilder()
@@ -130,7 +133,7 @@ public final class BoxPlotErrorTest
                                             .addAllQuantiles( List.of( 0.0, 0.25, 0.5, 0.75, 1.0 ) )
                                             .setMinimum( Double.NEGATIVE_INFINITY )
                                             .setMaximum( Double.POSITIVE_INFINITY )
-                                            .setUnits( "CMS" )
+                                            .setUnits( CMS )
                                             .build();
 
         expectedRaw.add( BoxplotStatistic.newBuilder()

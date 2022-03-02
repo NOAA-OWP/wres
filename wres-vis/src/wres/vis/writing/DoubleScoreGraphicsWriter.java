@@ -12,7 +12,6 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
 import org.jfree.chart.JFreeChart;
@@ -28,8 +27,8 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.statistics.generated.Outputs;
-import wres.vis.ChartBuildingException;
-import wres.vis.ChartEngineFactory;
+import wres.vis.charts.ChartBuildingException;
+import wres.vis.charts.ChartFactory;
 
 /**
  * Helps write charts comprising {@link DoubleScoreStatisticOuter} to graphics formats.
@@ -123,6 +122,8 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
     {
         Set<Path> pathsWrittenTo = new HashSet<>();
 
+        ChartFactory chartFactory = GraphicsWriter.getChartFactory();
+
         // Build charts
         try
         {
@@ -161,11 +162,9 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
 
                 for ( List<DoubleScoreStatisticOuter> nextOutput : allOutputs )
                 {
-                    ConcurrentMap<MetricConstants, JFreeChart> engines =
-                            ChartEngineFactory.buildScoreOutputChartEngine( nextOutput,
-                                                                            helper.getGraphicShape(),
-                                                                            helper.getDurationUnits() );
-
+                    Map<MetricConstants, JFreeChart> engines = chartFactory.getScoreCharts( nextOutput,
+                                                                                            helper.getGraphicShape(),
+                                                                                            helper.getDurationUnits() );
                     String append = null;
 
                     // Secondary threshold? If yes, only one, as this was sliced above
@@ -211,7 +210,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
 
     private static Set<Path> writeNextGroupOfDestinations( Path outputDirectory,
                                                            PoolMetadata metadata,
-                                                           ConcurrentMap<MetricConstants, JFreeChart> engines,
+                                                           Map<MetricConstants, JFreeChart> engines,
                                                            MetricConstants metricName,
                                                            String append,
                                                            Outputs outputsDescription )

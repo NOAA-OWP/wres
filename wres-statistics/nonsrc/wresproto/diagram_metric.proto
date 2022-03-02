@@ -18,7 +18,8 @@ message DiagramMetric
     which includes a sharpness plot, then the metric name is the reliability 
     diagram and the metric has three DiagramMetricComponent, one for the 
     forecast probability, one for the observed relative frequency and one for 
-    the sample size or sharpness.*/
+    the sample size or sharpness, where the observed relative frequency and
+    the sample size are both measured against forecast probability.*/
 
     repeated DiagramMetricComponent components = 2;
     // Zero or more diagram components. In general, the description of the 
@@ -26,13 +27,16 @@ message DiagramMetric
     // statistic component, but there is the option to provide a complete, 
     // standalone, description of a metric here, independent of any statistics.
     
+    bool has_diagonal = 3;
+    // Is true if the diagram contains a diaogonal line, false otherwise.
+
     message DiagramMetricComponent
     {
         // A component of a diagram metric.
     
         enum DiagramComponentName 
         {
-            // Type of component
+            // Name of component
             UNKNOWN = 0;
             PROBABILITY_OF_FALSE_DETECTION = 1;
             PROBABILITY_OF_DETECTION = 2;
@@ -56,5 +60,17 @@ message DiagramMetric
         
         double maximum = 4;
         // Maximum value of the component.
+
+        enum DiagramComponentType 
+        {
+            // Type of component
+            PRIMARY_DOMAIN_AXIS = 0;
+            PRIMARY_RANGE_AXIS = 1;
+            SECONDARY_DOMAIN_AXIS = 2;
+            SECONDARY_RANGE_AXIS = 3;
+        }
+
+        DiagramComponentType type = 5;
+        // The type of diagram component
     }
 }

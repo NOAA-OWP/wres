@@ -14,10 +14,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.Slicer;
+import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.MetricDimension;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
-import wres.vis.GraphicsUtils;
+import wres.vis.charts.GraphicsUtils;
 
 /**
  * Creates an {@link XYDataset} for plotting a verification diagram.
@@ -42,20 +43,41 @@ class Diagram extends AbstractXYDataset
     private final List<Pair<String, Pair<DiagramStatisticComponent, DiagramStatisticComponent>>> statistics;
 
     /**
+     * Returns a dataset with one series per threshold for a single lead duration
      * @param statistics the statistics
      * @param xDimension the dimension that corresponds to the x axis in the plot
      * @param yDimension the dimension that corresponds to the y axis in the plot
      * @param durationUnits the lead duration units
      * @return an instance
      * @throws NullPointerException if either input is null
+     * @throws IllegalArgumentException if the dataset contains more than one lead duration
      */
 
-    static Diagram of( List<DiagramStatisticOuter> statistics,
-                       MetricDimension xDimension,
-                       MetricDimension yDimension,
-                       ChronoUnit durationUnits )
+    static Diagram ofLeadThreshold( List<DiagramStatisticOuter> statistics,
+                                    MetricDimension xDimension,
+                                    MetricDimension yDimension,
+                                    ChronoUnit durationUnits )
     {
-        return new Diagram( statistics, xDimension, yDimension, durationUnits );
+        return new Diagram( statistics, xDimension, yDimension, durationUnits, true );
+    }
+
+    /**
+     * Returns a dataset with one series per lead duration for a single threshold
+     * @param statistics the statistics
+     * @param xDimension the dimension that corresponds to the x axis in the plot
+     * @param yDimension the dimension that corresponds to the y axis in the plot
+     * @param durationUnits the lead duration units
+     * @return an instance
+     * @throws NullPointerException if either input is null
+     * @throws IllegalArgumentException if the dataset contains more than one threshold
+     */
+
+    static Diagram ofThresholdLead( List<DiagramStatisticOuter> statistics,
+                                    MetricDimension xDimension,
+                                    MetricDimension yDimension,
+                                    ChronoUnit durationUnits )
+    {
+        return new Diagram( statistics, xDimension, yDimension, durationUnits, false );
     }
 
     @Override
@@ -104,6 +126,7 @@ class Diagram extends AbstractXYDataset
      * @param xDimension the dimension that corresponds to the x axis in the plot
      * @param yDimension the dimension that corresponds to the y axis in the plot 
      * @param durationUnits the lead duration units
+     * @param leadThreshold is true for one threshold, false for one lead duration
      * @throws NullPointerException if any input is null
      * @throws IllegalArgumentException if the data has an unexpected shape
      */
@@ -111,7 +134,8 @@ class Diagram extends AbstractXYDataset
     private Diagram( List<DiagramStatisticOuter> statistics,
                      MetricDimension xDimension,
                      MetricDimension yDimension,
-                     ChronoUnit durationUnits )
+                     ChronoUnit durationUnits,
+                     boolean leadThreshold )
     {
         Objects.requireNonNull( statistics );
         Objects.requireNonNull( xDimension );
@@ -128,9 +152,28 @@ class Diagram extends AbstractXYDataset
         List<Pair<String, Pair<DiagramStatisticComponent, DiagramStatisticComponent>>> innerStatistics =
                 new ArrayList<>();
 
+        if ( statistics.isEmpty() )
+        {
+            throw new IllegalArgumentException( "Cannot create a diagram chart with no statistics." );
+        }
+
+        MetricConstants metricName = statistics.get( 0 )
+                                               .getMetricName();
+
+        if ( ( leadThreshold && timeWindowCount > 1 ) || ( !leadThreshold && thresholdCount > 1 ) )
+        {
+            throw new IllegalArgumentException( "Unexpected data configuration for the " + metricName
+                                                + ". Expected a single time window and one or more thresholds or a "
+                                                + "single threshold and one or more time windows, but found "
+                                                + timeWindowCount
+                                                + " time windows and "
+                                                + thresholdCount
+                                                + " thresholds." );
+        }
+
         for ( DiagramStatisticOuter nextSeries : statistics )
         {
-            String seriesName = Diagram.getSeriesName( nextSeries, timeWindowCount, thresholdCount, durationUnits );
+            String seriesName = Diagram.getSeriesName( nextSeries, durationUnits, leadThreshold );
             String nameQualifier = nextSeries.getComponentNameQualifiers()
                                              .first();
 
@@ -164,59 +207,49 @@ class Diagram extends AbstractXYDataset
 
     /**
      * @param diagram the diagram series whose name is required
-     * @param timeWindowCount the number of time windows across all series
-     * @param thresholdCount the number of thresholds across all series
      * @param durationUnits the duration units
+     * @param leadThreshold is true for one lead duration, false for one threshold
      * @return the series name
      * @throws IllegalArgumentException if the counts are not supported
      */
 
     private static String getSeriesName( DiagramStatisticOuter diagram,
-                                         int timeWindowCount,
-                                         int thresholdCount,
-                                         ChronoUnit durationUnits )
+                                         ChronoUnit durationUnits,
+                                         boolean leadThreshold )
     {
-        // Qualifier for dimensions that are repeated, such as quantile curves in an ensemble QQ diagram
-        String qualifier = diagram.getData()
-                                  .getStatistics( 0 )
-                                  .getName();
+        String label = "";
 
-        // One time window and one or more thresholds: label by threshold
-        if ( timeWindowCount == 1 && diagram.getMetadata()
-                                            .hasThresholds() )
+        // One lead duration and one or more thresholds: label by threshold
+        if ( leadThreshold )
         {
-            // If there is a qualifier, then there is a single threshold and up to N named components, else up to M
-            // thresholds and one named component
+            // Qualifier for dimensions that are repeated, such as quantile curves in an ensemble QQ diagram
+            String qualifier = diagram.getData()
+                                      .getStatistics( 0 )
+                                      .getName();
+
+            // If there is a qualifier, then there is a single threshold and up to N named components, so only use the 
+            // qualifier
             if ( !qualifier.isBlank() )
             {
-                return qualifier;
+                label = qualifier;
             }
-
-            return diagram.getMetadata()
-                          .getThresholds()
-                          .toStringWithoutUnits();
+            else
+            {
+                label = diagram.getMetadata()
+                               .getThresholds()
+                               .toStringWithoutUnits();
+            }
         }
-        // One threshold and one or more time windows: label by time window
-        else if ( thresholdCount == 1 && diagram.getMetadata()
-                                                .hasTimeWindow() )
-        {
-            return Long.toString( GraphicsUtils.durationToLongUnits( diagram.getMetadata()
-                                                                            .getTimeWindow()
-                                                                            .getLatestLeadDuration(),
-                                                                     durationUnits ) )
-                   + ", "
-                   + qualifier;
-        }
+        // One threshold and one or more lead durations: label by lead duration
         else
         {
-            throw new IllegalArgumentException( "Unexpected data configuration for the diagram. Expected a single time "
-                                                + "window and one or more thresholds or a single threshold and one or "
-                                                + "more time windows, but found "
-                                                + timeWindowCount
-                                                + " time windows and "
-                                                + thresholdCount
-                                                + " thresholds." );
+            label = Long.toString( GraphicsUtils.durationToLongUnits( diagram.getMetadata()
+                                                                             .getTimeWindow()
+                                                                             .getLatestLeadDuration(),
+                                                                      durationUnits ) );
         }
+
+        return label;
     }
 
 }

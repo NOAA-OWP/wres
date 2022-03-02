@@ -438,7 +438,7 @@ public class PoolSlicer
 
     /**
      * Returns the union of the supplied metadata. All components of the input must be equal in terms of 
-     * {@link #equalsWithoutTimeWindowOrThresholdsOrFeatures(PoolMetadata, PoolMetadata)}.
+     * {@link #equalsWithoutTimeWindowOrThresholdsOrFeaturesOrPoolId(PoolMetadata, PoolMetadata)}.
      * 
      * @param input the input metadata
      * @return the union of the input
@@ -473,7 +473,7 @@ public class PoolSlicer
         {
             Objects.requireNonNull( next, nullString );
 
-            if ( !PoolSlicer.equalsWithoutTimeWindowOrThresholdsOrFeatures( next, test ) )
+            if ( !PoolSlicer.equalsWithoutTimeWindowOrThresholdsOrFeaturesOrPoolId( next, test ) )
             {
                 throw new PoolMetadataException( "Only the time window and thresholds and features can differ when "
                                                  + "finding the union of metadata. The metadata for comparison was: "
@@ -569,15 +569,17 @@ public class PoolSlicer
     }
 
     /**
-     * Returns <code>true</code> if the two metadatas are equal after ignoring the time windows, thresholds and 
-     * features. In addition, the time scale will be ignored (lenient) if one of the time scales is null/unknown.
+     * Returns <code>true</code> if the two metadatas are equal after ignoring the time windows, thresholds,  
+     * features and pool identifiers. In addition, the time scale will be ignored (lenient) if one of the time scales is 
+     * null/unknown.
      * 
      * @param first the first metadata to test for conditional equality with the second
      * @param second the second metadata to test for conditional equality with the first
      * @return true if the metadatas are conditionally equal
      */
 
-    private static boolean equalsWithoutTimeWindowOrThresholdsOrFeatures( PoolMetadata first, PoolMetadata second )
+    private static boolean equalsWithoutTimeWindowOrThresholdsOrFeaturesOrPoolId( PoolMetadata first,
+                                                                                  PoolMetadata second )
     {
         if ( Objects.isNull( first ) != Objects.isNull( second ) )
         {
@@ -595,6 +597,7 @@ public class PoolSlicer
         // Adjust the pools to remove the time window and thresholds and feature-ish information
         wres.statistics.generated.Pool.Builder adjustedPoolFirst = first.getPool()
                                                                         .toBuilder()
+                                                                        .clearPoolId()
                                                                         .clearTimeWindow()
                                                                         .clearEventThreshold()
                                                                         .clearDecisionThreshold()
@@ -604,6 +607,7 @@ public class PoolSlicer
 
         wres.statistics.generated.Pool.Builder adjustedPoolSecond = second.getPool()
                                                                           .toBuilder()
+                                                                          .clearPoolId()
                                                                           .clearTimeWindow()
                                                                           .clearEventThreshold()
                                                                           .clearDecisionThreshold()

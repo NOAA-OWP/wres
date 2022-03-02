@@ -15,13 +15,15 @@ import net.jcip.annotations.Immutable;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.MetricDimension;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentType;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
 /**
  * A wrapping for a {@link DiagramStatistic}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 @Immutable
 public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
@@ -43,6 +45,12 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
      */
 
     private final SortedSet<String> componentNameQualifiers;
+
+    /**
+     * Local set of metric components by type from the canonical {@link #diagram}.
+     */
+
+    private final Map<DiagramComponentType, Pair<DiagramMetricComponent, MetricDimension>> componentsByType;
 
     /**
      * The metadata associated with the statistic.
@@ -92,6 +100,48 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
     public SortedSet<MetricDimension> getComponentNames()
     {
         return this.componentNames; // Immutable on construction.
+    }
+
+    /**
+     * Returns the diagram metric component name for the prescribed type of component.
+     * 
+     * @param type the component type
+     * @return the prescribed component name or null if no such component exists
+     * @throws NullPointerException if the input is null
+     */
+
+    public MetricDimension getComponentName( DiagramComponentType type )
+    {
+        Objects.requireNonNull( type );
+        MetricDimension name = null;
+        if ( this.componentsByType.containsKey( type ) )
+        {
+            Pair<DiagramMetricComponent, MetricDimension> pair = this.componentsByType.get( type );
+            name = pair.getRight();
+        }
+
+        return name;
+    }
+
+    /**
+     * Returns the diagram metric component for the prescribed type of component.
+     * 
+     * @param type the component type
+     * @return the prescribed component or null if no such component exists
+     * @throws NullPointerException if the input is null
+     */
+
+    public DiagramMetricComponent getComponent( DiagramComponentType type )
+    {
+        Objects.requireNonNull( type );
+        DiagramMetricComponent component = null;
+        if ( this.componentsByType.containsKey( type ) )
+        {
+            Pair<DiagramMetricComponent, MetricDimension> pair = this.componentsByType.get( type );
+            component = pair.getLeft();
+        }
+
+        return component;
     }
 
     /**
@@ -208,21 +258,31 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
         SortedSet<MetricDimension> cNames = new TreeSet<>();
         SortedSet<String> cQual = new TreeSet<>();
         Map<Pair<MetricDimension, String>, Integer> cInd = new HashMap<>();
+        Map<DiagramComponentType, Pair<DiagramMetricComponent, MetricDimension>> byType = new HashMap<>();
 
         int index = 0;
         for ( DiagramStatisticComponent next : this.getData().getStatisticsList() )
         {
-            MetricDimension nextName = MetricDimension.valueOf( next.getMetric().getName().name() );
-            cNames.add( nextName );
+            String nameString = next.getMetric()
+                                    .getName()
+                                    .name();
+
+            MetricDimension name = MetricDimension.valueOf( nameString );
+            DiagramMetricComponent component = next.getMetric();
+            DiagramComponentType type = component.getType();
+            Pair<DiagramMetricComponent, MetricDimension> pair = Pair.of( component, name );
+            byType.put( type, pair );
+            cNames.add( name );
             String nextQualifier = next.getName();
             cQual.add( nextQualifier );
-            cInd.put( Pair.of( nextName, nextQualifier ), index );
+            cInd.put( Pair.of( name, nextQualifier ), index );
             index++;
         }
 
         this.componentNames = Collections.unmodifiableSortedSet( cNames );
         this.componentNameQualifiers = Collections.unmodifiableSortedSet( cQual );
         this.metricName = MetricConstants.valueOf( diagram.getMetric().getName().name() );
+        this.componentsByType = byType; // Not exposed to mutation
         this.componentIndexes = cInd; // Not exposed to mutation
     }
 

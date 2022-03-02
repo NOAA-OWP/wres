@@ -23,6 +23,7 @@ import com.google.protobuf.Timestamp;
 
 import wres.config.ProjectConfigPlus;
 import wres.config.ProjectConfigs;
+import wres.config.generated.DataSourceBaselineConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.DoubleBoundsType;
@@ -32,6 +33,7 @@ import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
+import wres.config.generated.SourceTransformationType;
 import wres.datamodel.DataFactory;
 import wres.datamodel.Ensemble;
 import wres.datamodel.metrics.MetricConstants;
@@ -95,6 +97,9 @@ public class MessageFactory
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( MessageFactory.class );
+
+    /** Persistence baseline string. */
+    private static final String PERSISTENCE = "PERSISTENCE";
 
     /**
      * Creates a collection of {@link wres.statistics.generated.Statistics} by pool from a
@@ -390,8 +395,8 @@ public class MessageFactory
         }
 
         return builder.build();
-    }  
-    
+    }
+
     /**
      * Creates a geometry group from the input.
      * 
@@ -414,7 +419,7 @@ public class MessageFactory
         }
 
         return builder.build();
-    }   
+    }
 
     /**
      * Creates a geometry group from the input.
@@ -482,7 +487,7 @@ public class MessageFactory
     public static GeometryGroup getGeometryGroup( FeatureTuple singleton )
     {
         return MessageFactory.getGeometryGroup( null, Collections.singleton( singleton ) );
-    }   
+    }
 
     /**
      * Creates a geometry from the input.
@@ -1716,16 +1721,31 @@ public class MessageFactory
             // Add a default baseline
             builder.setDefaultBaseline( DefaultData.OBSERVED_CLIMATOLOGY );
 
-            // Set the baseline name as the default where no baseline is defined and skill metrics are requested
-            if ( metrics.stream().anyMatch( MetricConstants::isSkillMetric )
-                 && Objects.isNull( projectConfig.getInputs().getBaseline() ) )
-            {
-                builder.setBaselineDataName( DefaultData.OBSERVED_CLIMATOLOGY.toString()
-                                                                             .replace( "_", " " ) );
-            }
-
             LOGGER.debug( "Populated the default baseline with {}.",
                           DefaultData.OBSERVED_CLIMATOLOGY );
+
+            // Set the baseline name as a default where no baseline is defined and skill metrics are requested
+            if ( metrics.stream().anyMatch( MetricConstants::isSkillMetric ) )
+            {
+                DataSourceBaselineConfig baseline = projectConfig.getInputs().getBaseline();
+
+                if ( Objects.isNull( baseline ) )
+                {
+                    builder.setBaselineDataName( DefaultData.OBSERVED_CLIMATOLOGY.toString()
+                                                                                 .replace( "_", " " ) );
+
+                    LOGGER.debug( "Set the baseline to {}.",
+                                  DefaultData.OBSERVED_CLIMATOLOGY );
+                }
+                else if ( Objects.nonNull( baseline.getPersistence() )
+                          || baseline.getTransformation() == SourceTransformationType.PERSISTENCE )
+                {
+                    builder.setBaselineDataName( MessageFactory.PERSISTENCE );
+
+                    LOGGER.debug( "Set the baseline to {}.", MessageFactory.PERSISTENCE );
+                }
+            }
+
         }
     }
 

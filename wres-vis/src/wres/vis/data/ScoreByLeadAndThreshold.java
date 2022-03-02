@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.vis.GraphicsUtils;
+import wres.vis.charts.GraphicsUtils;
 
 /**
  * Creates an XY dataset for plotting a verification score component by lead duration (X axis) and score value (Y axis) 

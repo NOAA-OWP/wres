@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.vis.GraphicsUtils;
+import wres.vis.charts.GraphicsUtils;
 
 /**
  * Creates an XY dataset for plotting a verification score component by threshold (X axis) and score value (Y axis) with 
@@ -126,7 +126,7 @@ class ScoreByThresholdAndLead extends AbstractXYDataset
 
         this.durationUnits = durationUnits;
 
-        // Arrange the series by threshold and then set them
+        // Arrange the series by threshold and then set them, ignoring the all data threshold
         List<Pair<String, List<DoubleScoreComponentOuter>>> innerStatistics = new ArrayList<>();
         SortedSet<TimeWindowOuter> timeWindows =
                 Slicer.discover( statistics, next -> next.getMetadata().getTimeWindow() );
@@ -135,7 +135,11 @@ class ScoreByThresholdAndLead extends AbstractXYDataset
             List<DoubleScoreComponentOuter> sliced = Slicer.filter( statistics,
                                                                     next -> next.getMetadata()
                                                                                 .getTimeWindow()
-                                                                                .equals( key ) );
+                                                                                .equals( key )
+                                                                            && !next.getMetadata()
+                                                                                    .getThresholds()
+                                                                                    .first()
+                                                                                    .isAllDataThreshold() );
 
 
             long leadDuration = GraphicsUtils.durationToLongUnits( key.getLatestLeadDuration(),

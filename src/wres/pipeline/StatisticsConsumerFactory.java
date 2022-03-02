@@ -35,7 +35,7 @@ import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.Consumer.Format;
-import wres.vis.writing.BoxPlotGraphicsWriter;
+import wres.vis.writing.BoxplotGraphicsWriter;
 import wres.vis.writing.DiagramGraphicsWriter;
 import wres.vis.writing.DoubleScoreGraphicsWriter;
 import wres.vis.writing.DurationDiagramGraphicsWriter;
@@ -147,7 +147,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
         {
             // Specific formats are filtered at runtime via the router using the Outputs declaration
             builder.addBoxplotConsumerPerPair( DestinationType.GRAPHIC,
-                                               BoxPlotGraphicsWriter.of( outputs, path ) );
+                                               BoxplotGraphicsWriter.of( outputs, path ) );
         }
 
         Function<Collection<Statistics>, Set<Path>> router = builder.setEvaluationDescription( evaluation )
@@ -221,7 +221,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
         if ( this.hasGraphics( formats ) )
         {
             builder.addBoxplotConsumerPerPool( DestinationType.GRAPHIC,
-                                               BoxPlotGraphicsWriter.of( outputs, path ) )
+                                               BoxplotGraphicsWriter.of( outputs, path ) )
                    .addDoubleScoreConsumer( DestinationType.GRAPHIC,
                                             DoubleScoreGraphicsWriter.of( outputs, path ) )
                    .addDurationScoreConsumer( DestinationType.GRAPHIC,

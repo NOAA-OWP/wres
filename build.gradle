@@ -733,9 +733,7 @@ project(':wres-vis')
 
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha6'
 
-        implementation group: 'jfree', name: 'jcommon', version: '1.0.16'
-        implementation files('../libs/external/jfreechart-1.0.9.jar')
-        implementation files('../libs/external/ohdcommonchps.jar')
+        implementation group: 'org.jfree', name: 'jfreechart', version: '1.5.3'
 
         // SVG graphics from JFreeChart instances
         implementation group: 'org.jfree', name: 'jfreesvg', version: '3.4.2'
@@ -761,12 +759,15 @@ project(':wres-vis')
         testImplementation 'org.mockito:mockito-core:4.3.0'
 
         testRuntimeOnly files('dist/lib/conf')
+
+        // In-memory implementation of a java.nio.file abstract file system api
+        // to test writing of files without actually writing files on the host machine
+        testImplementation group: 'com.google.jimfs', name: 'jimfs', version: '1.2'
     }
 
     // Check if the dependency modules version is later. If so, update this
     // module to that later version.
     def gitCommitOfDependencies = grgit.log(paths: ['wres-datamodel',
-                                                    'wres-util',
                                                     'wres-eventsbroker',
                                                     'wres-events'], maxCommits:1).find()
 

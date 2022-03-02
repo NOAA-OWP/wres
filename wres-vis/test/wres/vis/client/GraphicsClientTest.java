@@ -41,7 +41,7 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.Co
 /**
  * Tests the {@link GraphicsClient}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class GraphicsClientTest
@@ -108,7 +108,7 @@ public class GraphicsClientTest
 
         // Open an evaluation, closing on completion
         Path basePath = null;
-        
+
         GraphicsClient graphics = GraphicsClient.of( GraphicsClientTest.connections );
 
         // Start the graphics client
@@ -185,20 +185,20 @@ public class GraphicsClientTest
                                                          earliestValid,
                                                          latestValid,
                                                          earliestLead,
-                                                         latestLead  );
-                                                        
+                                                         latestLead );
+
         TimeWindowOuter timeWindow =
                 TimeWindowOuter.of( inner );
 
         GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, geometry );
-        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( "DRRC2_DRRC2_DRRC2", geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( featureGroup,
-                                          timeWindow,
-                                          timeScale,
-                                          threshold,
-                                          false );
+                                            timeWindow,
+                                            timeScale,
+                                            threshold,
+                                            false );
 
         DoubleScoreStatistic one =
                 DoubleScoreStatistic.newBuilder()

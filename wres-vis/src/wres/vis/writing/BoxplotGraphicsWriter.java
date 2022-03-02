@@ -7,13 +7,11 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.Function;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.jfree.chart.JFreeChart;
 
 import wres.config.ProjectConfigException;
@@ -24,11 +22,10 @@ import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
-import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Outputs;
-import wres.vis.ChartBuildingException;
-import wres.vis.ChartEngineFactory;
+import wres.vis.charts.ChartBuildingException;
+import wres.vis.charts.ChartFactory;
 
 /**
  * Helps write charts comprising {@link BoxplotStatisticOuter} to graphics formats.
@@ -36,7 +33,7 @@ import wres.vis.ChartEngineFactory;
  * @author James Brown
  */
 
-public class BoxPlotGraphicsWriter extends GraphicsWriter
+public class BoxplotGraphicsWriter extends GraphicsWriter
         implements Function<List<BoxplotStatisticOuter>, Set<Path>>
 {
     private static final String SPECIFY_NON_NULL_INPUT_DATA_WHEN_WRITING_DIAGRAM_OUTPUTS =
@@ -52,10 +49,10 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static BoxPlotGraphicsWriter of( Outputs outputsDescription,
+    public static BoxplotGraphicsWriter of( Outputs outputsDescription,
                                             Path outputDirectory )
     {
-        return new BoxPlotGraphicsWriter( outputsDescription, outputDirectory );
+        return new BoxplotGraphicsWriter( outputsDescription, outputDirectory );
     }
 
     /**
@@ -115,7 +112,7 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
             for ( List<BoxplotStatisticOuter> nextGroup : groups.values() )
             {
                 Set<Path> innerPathsWrittenTo =
-                        BoxPlotGraphicsWriter.writeOneBoxPlotChartPerMetricAndPool( super.getOutputDirectory(),
+                        BoxplotGraphicsWriter.writeOneBoxPlotChartPerMetricAndPool( super.getOutputDirectory(),
                                                                                     super.getOutputsDescription(),
                                                                                     nextGroup );
                 paths.addAll( innerPathsWrittenTo );
@@ -159,7 +156,7 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
             for ( List<BoxplotStatisticOuter> nextGroup : groups.values() )
             {
                 Set<Path> innerPathsWrittenTo =
-                        BoxPlotGraphicsWriter.writeOneBoxPlotChartPerMetric( super.getOutputDirectory(),
+                        BoxplotGraphicsWriter.writeOneBoxPlotChartPerMetric( super.getOutputDirectory(),
                                                                              super.getOutputsDescription(),
                                                                              nextGroup );
                 paths.addAll( innerPathsWrittenTo );
@@ -176,22 +173,24 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
      *
      * @param outputDirectory the directory into which to write
      * @param outputsDescription a description of the outputs required
-     * @param output the metric results, which contains all results for one metric across several pools
+     * @param statistics the metric results, which contains all results for one metric across several pools
      * @throws GraphicsWriteException when an error occurs during writing
      * @return the paths actually written to
      */
 
     private static Set<Path> writeOneBoxPlotChartPerMetricAndPool( Path outputDirectory,
                                                                    Outputs outputsDescription,
-                                                                   List<BoxplotStatisticOuter> output )
+                                                                   List<BoxplotStatisticOuter> statistics )
     {
         Set<Path> pathsWrittenTo = new HashSet<>();
+
+        ChartFactory chartFactory = GraphicsWriter.getChartFactory();
 
         // Build charts
         try
         {
-            MetricConstants metricName = output.get( 0 ).getMetricName();
-            PoolMetadata metadata = output.get( 0 ).getMetadata();
+            MetricConstants metricName = statistics.get( 0 ).getMetricName();
+            PoolMetadata metadata = statistics.get( 0 ).getMetadata();
 
             // Collection of graphics parameters, one for each set of charts to write across N formats.
             Collection<Outputs> outputsMap =
@@ -202,17 +201,15 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
                 // One helper per set of graphics parameters.
                 GraphicsHelper helper = GraphicsHelper.of( nextOutput );
 
-                Map<Pair<TimeWindowOuter, OneOrTwoThresholds>, JFreeChart> engines =
-                        ChartEngineFactory.buildBoxPlotChartEnginePerPool( output,
-                                                                           helper.getGraphicShape(),
-                                                                           helper.getDurationUnits() );
+                Map<TimeWindowOuter, JFreeChart> charts = chartFactory.getBoxplotChartPerPool( statistics,
+                                                                                               helper.getDurationUnits() );
 
                 // Build the outputs
-                for ( final Entry<Pair<TimeWindowOuter, OneOrTwoThresholds>, JFreeChart> nextEntry : engines.entrySet() )
+                for ( Map.Entry<TimeWindowOuter, JFreeChart> nextEntry : charts.entrySet() )
                 {
                     Path outputImage = DataFactory.getPathFromPoolMetadata( outputDirectory,
                                                                             metadata,
-                                                                            nextEntry.getKey().getLeft(),
+                                                                            nextEntry.getKey(),
                                                                             helper.getDurationUnits(),
                                                                             metricName,
                                                                             null );
@@ -253,6 +250,8 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
     {
         Set<Path> pathsWrittenTo = new HashSet<>();
 
+        ChartFactory factory = GraphicsWriter.getChartFactory();
+
         // Build chart
         try
         {
@@ -269,10 +268,8 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
                 GraphicsHelper helper = GraphicsHelper.of( nextOutput );
 
                 // Build the chart engine
-                JFreeChart chart =
-                        ChartEngineFactory.buildBoxPlotChartEngine( output,
-                                                                    helper.getGraphicShape(),
-                                                                    helper.getDurationUnits() );
+                JFreeChart chart = factory.getBoxplotChart( output,
+                                                            helper.getDurationUnits() );
 
                 Path outputImage = DataFactory.getPathFromPoolMetadata( outputDirectory,
                                                                         metadata,
@@ -304,7 +301,7 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
      * @throws NullPointerException if either input is null
      */
 
-    private BoxPlotGraphicsWriter( Outputs outputsDescription,
+    private BoxplotGraphicsWriter( Outputs outputsDescription,
                                    Path outputDirectory )
     {
         super( outputsDescription, outputDirectory );

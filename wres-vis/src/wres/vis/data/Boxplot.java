@@ -6,9 +6,10 @@ import java.util.stream.Collectors;
 
 import org.jfree.data.xy.AbstractIntervalXYDataset;
 import org.jfree.data.xy.XYDataset;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.datamodel.statistics.BoxplotStatisticOuter;
-import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotStatistic.Box;
 
 /**
@@ -16,10 +17,13 @@ import wres.statistics.generated.BoxplotStatistic.Box;
  * 
  * @author James Brown
  */
-class BoxPlot extends AbstractIntervalXYDataset
+class Boxplot extends AbstractIntervalXYDataset
 {
     /** serial version identifier. */
     private static final long serialVersionUID = 4254109136599641286L;
+
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( Boxplot.class );
 
     /** The number of boxes. */
     private final int itemCount;
@@ -30,9 +34,6 @@ class BoxPlot extends AbstractIntervalXYDataset
     /** The raw boxes. */
     private final List<Box> boxes;
 
-    /** The metric description. */
-    private final BoxplotMetric metric;
-
     /**
      * @param statistics the statistics
      * @return an instance
@@ -40,9 +41,9 @@ class BoxPlot extends AbstractIntervalXYDataset
      * @throws IllegalArgumentException if there are no statistics
      */
 
-    static BoxPlot of( List<BoxplotStatisticOuter> statistics )
+    static Boxplot of( List<BoxplotStatisticOuter> statistics )
     {
-        return new BoxPlot( statistics );
+        return new Boxplot( statistics );
     }
 
     @Override
@@ -98,7 +99,7 @@ class BoxPlot extends AbstractIntervalXYDataset
     @Override
     public Comparable<String> getSeriesKey( int series )
     {
-        return "Probability " + this.metric.getQuantiles( series );
+        return "Series_" + series;
     }
 
     /**
@@ -107,7 +108,7 @@ class BoxPlot extends AbstractIntervalXYDataset
      * @throws NullPointerException if the statistics are null
      * @throws IllegalArgumentException if the statistics is empty
      */
-    private BoxPlot( final List<BoxplotStatisticOuter> statistics )
+    private Boxplot( List<BoxplotStatisticOuter> statistics )
     {
         Objects.requireNonNull( statistics );
 
@@ -116,25 +117,26 @@ class BoxPlot extends AbstractIntervalXYDataset
                                .flatMap( List::stream )
                                .collect( Collectors.toList() );
 
-        if ( this.boxes.isEmpty() )
-        {
-            throw new IllegalArgumentException( "Cannot create a box plot dataset with no boxes." );
-        }
-
         this.itemCount = statistics.stream()
                                    .mapToInt( next -> next.getData().getStatisticsCount() )
                                    .sum();
 
-        List<Box> innerBoxes = statistics.get( 0 )
-                                         .getData()
-                                         .getStatisticsList();
+        // Empty?
+        if ( this.boxes.isEmpty() )
+        {
+            this.seriesCount = 0;
 
-        this.seriesCount = innerBoxes.get( 0 )
-                                     .getQuantilesCount();
+            LOGGER.debug( "Found an empty box plot dataset while constructing a box plot." );
+        }
+        else
+        {
+            List<Box> innerBoxes = statistics.get( 0 )
+                                             .getData()
+                                             .getStatisticsList();
 
-        this.metric = statistics.get( 0 )
-                                .getData()
-                                .getMetric();
+            this.seriesCount = innerBoxes.get( 0 )
+                                         .getQuantilesCount();
+        }
     }
 
 }

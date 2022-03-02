@@ -22,6 +22,7 @@ import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentType;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
 /**
@@ -40,6 +41,7 @@ public class EnsembleQuantileQuantileDiagram extends Diagram<Pool<Pair<Double, E
 
     public static final DiagramMetricComponent OBSERVED_QUANTILES = DiagramMetricComponent.newBuilder()
                                                                                           .setName( DiagramComponentName.OBSERVED_QUANTILES )
+                                                                                          .setType( DiagramComponentType.PRIMARY_DOMAIN_AXIS )
                                                                                           .setMinimum( Double.NEGATIVE_INFINITY )
                                                                                           .setMaximum( Double.POSITIVE_INFINITY )
                                                                                           .build();
@@ -50,6 +52,7 @@ public class EnsembleQuantileQuantileDiagram extends Diagram<Pool<Pair<Double, E
 
     public static final DiagramMetricComponent PREDICTED_QUANTILES = DiagramMetricComponent.newBuilder()
                                                                                            .setName( DiagramComponentName.PREDICTED_QUANTILES )
+                                                                                           .setType( DiagramComponentType.PRIMARY_RANGE_AXIS )
                                                                                            .setMinimum( Double.NEGATIVE_INFINITY )
                                                                                            .setMaximum( Double.POSITIVE_INFINITY )
                                                                                            .build();
@@ -60,6 +63,7 @@ public class EnsembleQuantileQuantileDiagram extends Diagram<Pool<Pair<Double, E
 
     public static final DiagramMetric BASIC_METRIC = DiagramMetric.newBuilder()
                                                                   .setName( MetricName.ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM )
+                                                                  .setHasDiagonal( true )
                                                                   .build();
 
     /**
@@ -70,6 +74,7 @@ public class EnsembleQuantileQuantileDiagram extends Diagram<Pool<Pair<Double, E
                                                             .addComponents( EnsembleQuantileQuantileDiagram.OBSERVED_QUANTILES )
                                                             .addComponents( EnsembleQuantileQuantileDiagram.PREDICTED_QUANTILES )
                                                             .setName( MetricName.ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM )
+                                                            .setHasDiagonal( true )
                                                             .build();
 
     /**
