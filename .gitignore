@@ -54,9 +54,6 @@ wres_evaluation_*
 # Local zulu openjdk 11 installation
 zulu11*
 
-# Old directories
-wres-vis/testoutput/chart2DTest/*
-
 
 # sundry
 /*.xml
