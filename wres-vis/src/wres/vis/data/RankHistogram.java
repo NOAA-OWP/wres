@@ -28,22 +28,43 @@ class RankHistogram extends AbstractIntervalXYDataset
     private final Diagram diagram;
 
     /**
+     * Returns a dataset with one series per threshold for a single lead duration
      * @param statistics the statistics
      * @param xDimension the dimension that corresponds to the x axis in the plot
      * @param yDimension the dimension that corresponds to the y axis in the plot
      * @param durationUnits the lead duration units
      * @return an instance
      * @throws NullPointerException if either input is null
+     * @throws IllegalArgumentException if the dataset contains more than one lead duration
      */
 
-    static RankHistogram of( List<DiagramStatisticOuter> statistics,
-                                    MetricDimension xDimension,
-                                    MetricDimension yDimension,
-                                    ChronoUnit durationUnits )
+    static RankHistogram ofLeadThreshold( List<DiagramStatisticOuter> statistics,
+                                          MetricDimension xDimension,
+                                          MetricDimension yDimension,
+                                          ChronoUnit durationUnits )
     {
-        return new RankHistogram( statistics, xDimension, yDimension, durationUnits );
+        return new RankHistogram( statistics, xDimension, yDimension, durationUnits, true );
     }
-    
+
+    /**
+     * Returns a dataset with one series per lead duration for a single threshold
+     * @param statistics the statistics
+     * @param xDimension the dimension that corresponds to the x axis in the plot
+     * @param yDimension the dimension that corresponds to the y axis in the plot
+     * @param durationUnits the lead duration units
+     * @return an instance
+     * @throws NullPointerException if either input is null
+     * @throws IllegalArgumentException if the dataset contains more than one threshold
+     */
+
+    static RankHistogram ofThresholdLead( List<DiagramStatisticOuter> statistics,
+                                          MetricDimension xDimension,
+                                          MetricDimension yDimension,
+                                          ChronoUnit durationUnits )
+    {
+        return new RankHistogram( statistics, xDimension, yDimension, durationUnits, false );
+    }
+
     @Override
     public Number getEndX( int arg0, int arg1 )
     {
@@ -112,11 +133,23 @@ class RankHistogram extends AbstractIntervalXYDataset
     private RankHistogram( List<DiagramStatisticOuter> statistics,
                            MetricDimension xDimension,
                            MetricDimension yDimension,
-                           ChronoUnit durationUnits )
+                           ChronoUnit durationUnits,
+                           boolean leadThreshold )
     {
-        this.diagram = Diagram.of( statistics, xDimension, yDimension, durationUnits );
-
-        LOGGER.debug( "Created a RankHistogram dataset with {} series.", statistics.size() );
+        if ( leadThreshold )
+        {
+            this.diagram = Diagram.ofLeadThreshold( statistics, xDimension, yDimension, durationUnits );
+            LOGGER.debug( "Created a RankHistogram dataset with {} series organized by lead duration and then "
+                          + "threshold.",
+                          statistics.size() );
+        }
+        else
+        {
+            this.diagram = Diagram.ofThresholdLead( statistics, xDimension, yDimension, durationUnits );
+            LOGGER.debug( "Created a RankHistogram dataset with {} series organized by threshold and then "
+                          + "lead duration.",
+                          statistics.size() );
+        }
     }
 
 }

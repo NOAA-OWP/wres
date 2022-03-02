@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.Ensemble;
-import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.Slicer;
@@ -68,7 +67,6 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
                                                                                     .setMaximum( 1 )
                                                                                     .setOptimum( 0 )
                                                                                     .setName( ComponentName.MAIN )
-                                                                                    .setUnits( MeasurementUnit.DIMENSIONLESS )
                                                                                     .build();
 
     /**
@@ -111,21 +109,21 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Ensemble>> s )
+    public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Ensemble>> pool )
     {
-        if ( Objects.isNull( s ) )
+        if ( Objects.isNull( pool ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
         LOGGER.trace( "Found {} pairs in the input to the {} for '{}'.",
-                      s.get().size(),
+                      pool.get().size(),
                       this.getName(),
-                      s.getMetadata() );
+                      pool.getMetadata() );
 
         //Slice the data into groups with an equal number of ensemble members
         Map<Integer, List<Pair<Double, Ensemble>>> grouped =
-                Slicer.filterByRightSize( s.get() );
+                Slicer.filterByRightSize( pool.get() );
 
         //CRPS, currently without decomposition
         //TODO: implement the decomposition
@@ -143,14 +141,19 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
             LOGGER.trace( "Found a non-finite value of {} for the {} at '{}'.",
                           crps[0],
                           this.getName(),
-                          s.getMetadata() );
+                          pool.getMetadata() );
         }
 
         //Compute the average (implicitly weighted by the number of pairs in each group)
-        crps[0] = FunctionFactory.finiteOrMissing().applyAsDouble( crps[0] / s.get().size() );
+        crps[0] = FunctionFactory.finiteOrMissing().applyAsDouble( crps[0] / pool.get().size() );
+
+        String units = pool.getMetadata()
+                           .getMeasurementUnit()
+                           .toString();
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setMetric( ContinuousRankedProbabilityScore.MAIN )
+                                                                               .setMetric( ContinuousRankedProbabilityScore.MAIN.toBuilder()
+                                                                                                                                .setUnits( units ) )
                                                                                .setValue( crps[0] )
                                                                                .build();
         DoubleScoreStatistic score =
@@ -159,7 +162,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, s.getMetadata() );
+        return DoubleScoreStatisticOuter.of( score, pool.getMetadata() );
     }
 
     @Override

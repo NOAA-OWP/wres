@@ -22,8 +22,8 @@ import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.statistics.generated.Outputs;
-import wres.vis.ChartBuildingException;
-import wres.vis.ChartEngineFactory;
+import wres.vis.charts.ChartBuildingException;
+import wres.vis.charts.ChartFactory;
 
 /**
  * Helps write charts comprising {@link DurationDiagramStatisticOuter} to graphics formats.
@@ -99,22 +99,24 @@ public class DurationDiagramGraphicsWriter extends GraphicsWriter
      *
      * @param outputDirectory the directory into which to write
      * @param outputsDescription a description of the outputs required
-     * @param output the metric results
+     * @param statistics the metric results
      * @throws GraphicsWriteException when an error occurs during writing
      * @return the paths actually written to
      */
 
     private static Set<Path> writePairedOutputByInstantDurationCharts( Path outputDirectory,
                                                                        Outputs outputsDescription,
-                                                                       List<DurationDiagramStatisticOuter> output )
+                                                                       List<DurationDiagramStatisticOuter> statistics )
     {
         Set<Path> pathsWrittenTo = new HashSet<>();
+
+        ChartFactory chartFactory = GraphicsWriter.getChartFactory();
 
         // Build charts
         try
         {
-            MetricConstants metricName = output.get( 0 ).getMetricName();
-            PoolMetadata metadata = output.get( 0 ).getMetadata();
+            MetricConstants metricName = statistics.get( 0 ).getMetricName();
+            PoolMetadata metadata = statistics.get( 0 ).getMetadata();
 
             // Collection of graphics parameters, one for each set of charts to write across N formats.
             Collection<Outputs> outputsMap =
@@ -125,10 +127,8 @@ public class DurationDiagramGraphicsWriter extends GraphicsWriter
                 // One helper per set of graphics parameters.
                 GraphicsHelper helper = GraphicsHelper.of( nextOutput );
 
-                JFreeChart chart =
-                        ChartEngineFactory.buildDurationDiagramChartEngine( output,
-                                                                            helper.getGraphicShape(),
-                                                                            helper.getDurationUnits() );
+                JFreeChart chart = chartFactory.getDurationDiagramChart( statistics,
+                                                                    helper.getDurationUnits() );
 
                 // Build the output file name
                 Path outputImage = DataFactory.getPathFromPoolMetadata( outputDirectory,

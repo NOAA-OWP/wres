@@ -26,6 +26,7 @@ import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentType;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
 /**
@@ -51,7 +52,8 @@ public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, Diagram
     public static final DiagramMetricComponent RANK_ORDER =
             DiagramMetricComponent.newBuilder()
                                   .setName( DiagramComponentName.RANK_ORDER )
-                                  .setMinimum( 1 )
+                                  .setType( DiagramComponentType.PRIMARY_DOMAIN_AXIS )
+                                  .setMinimum( 0 ) // Strictly 1, but the zeroth position should be visible
                                   .setMaximum( Double.POSITIVE_INFINITY )
                                   .setUnits( "COUNT" )
                                   .build();
@@ -62,6 +64,7 @@ public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, Diagram
 
     public static final DiagramMetricComponent OBSERVED_RELATIVE_FREQUENCY = DiagramMetricComponent.newBuilder()
                                                                                                    .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                                                                                   .setType( DiagramComponentType.PRIMARY_RANGE_AXIS )
                                                                                                    .setMinimum( 0 )
                                                                                                    .setMaximum( 1 )
                                                                                                    .setUnits( "PROBABILITY" )
@@ -140,7 +143,7 @@ public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, Diagram
                                                          .addStatistics( obs )
                                                          .setMetric( RankHistogram.BASIC_METRIC )
                                                          .build();
-            
+
             return DiagramStatisticOuter.of( histogram, s.getMetadata() );
         }
 

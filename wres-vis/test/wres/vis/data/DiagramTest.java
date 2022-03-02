@@ -96,10 +96,10 @@ class DiagramTest
 
         DiagramStatisticOuter outerDiagram = DiagramStatisticOuter.of( diagram, meta );
 
-        this.diagram = Diagram.of( List.of( outerDiagram ),
-                                   MetricDimension.PREDICTED_QUANTILES,
-                                   MetricDimension.OBSERVED_QUANTILES,
-                                   ChronoUnit.SECONDS );
+        this.diagram = Diagram.ofLeadThreshold( List.of( outerDiagram ),
+                                                MetricDimension.PREDICTED_QUANTILES,
+                                                MetricDimension.OBSERVED_QUANTILES,
+                                                ChronoUnit.SECONDS );
     }
 
     @Test

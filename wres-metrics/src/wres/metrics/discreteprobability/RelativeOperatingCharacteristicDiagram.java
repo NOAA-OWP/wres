@@ -27,6 +27,7 @@ import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentType;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
 /**
@@ -47,6 +48,7 @@ public class RelativeOperatingCharacteristicDiagram
 
     public static final DiagramMetricComponent PROBABILITY_OF_DETECTION = DiagramMetricComponent.newBuilder()
                                                                                                 .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
+                                                                                                .setType( DiagramComponentType.PRIMARY_RANGE_AXIS )
                                                                                                 .setMinimum( 0 )
                                                                                                 .setMaximum( 1 )
                                                                                                 .setUnits( "PROBABILITY" )
@@ -58,6 +60,7 @@ public class RelativeOperatingCharacteristicDiagram
 
     public static final DiagramMetricComponent PROBABILITY_OF_FALSE_DETECTION = DiagramMetricComponent.newBuilder()
                                                                                                       .setName( DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
+                                                                                                      .setType( DiagramComponentType.PRIMARY_DOMAIN_AXIS )
                                                                                                       .setMinimum( 0 )
                                                                                                       .setMaximum( 1 )
                                                                                                       .setUnits( "PROBABILITY" )
@@ -69,6 +72,7 @@ public class RelativeOperatingCharacteristicDiagram
 
     public static final DiagramMetric BASIC_METRIC = DiagramMetric.newBuilder()
                                                                   .setName( MetricName.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM )
+                                                                  .setHasDiagonal( true )
                                                                   .build();
 
     /**
@@ -79,6 +83,7 @@ public class RelativeOperatingCharacteristicDiagram
                                                             .addComponents( RelativeOperatingCharacteristicDiagram.PROBABILITY_OF_DETECTION )
                                                             .addComponents( RelativeOperatingCharacteristicDiagram.PROBABILITY_OF_FALSE_DETECTION )
                                                             .setName( MetricName.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM )
+                                                            .setHasDiagonal( true )
                                                             .build();
 
     /**

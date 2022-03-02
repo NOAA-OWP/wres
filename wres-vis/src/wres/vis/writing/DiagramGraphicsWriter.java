@@ -25,8 +25,8 @@ import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Outputs;
-import wres.vis.ChartBuildingException;
-import wres.vis.ChartEngineFactory;
+import wres.vis.charts.ChartBuildingException;
+import wres.vis.charts.ChartFactory;
 
 /**
  * Helps write charts comprising {@link DiagramStatisticOuter} to graphics formats.
@@ -35,7 +35,7 @@ import wres.vis.ChartEngineFactory;
  */
 
 public class DiagramGraphicsWriter extends GraphicsWriter
-        implements Function<List<DiagramStatisticOuter>,Set<Path>>
+        implements Function<List<DiagramStatisticOuter>, Set<Path>>
 {
 
     /**
@@ -69,7 +69,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
         Set<Path> paths = new HashSet<>();
-        
+
         // Iterate through each metric 
         SortedSet<MetricConstants> metrics = Slicer.discover( output, DiagramStatisticOuter::getMetricName );
         for ( MetricConstants next : metrics )
@@ -91,7 +91,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                 paths.addAll( innerPathsWrittenTo );
             }
         }
-        
+
         return Collections.unmodifiableSet( paths );
     }
 
@@ -101,22 +101,24 @@ public class DiagramGraphicsWriter extends GraphicsWriter
      *
      * @param outputDirectory the directory into which to write
      * @param outputsDescription a description of the outputs required
-     * @param output the metric results
+     * @param statistics the metric results
      * @return the paths written
      * @throws GraphicsWriteException when an error occurs during writing
      */
 
     private static Set<Path> writeDiagrams( Path outputDirectory,
                                             Outputs outputsDescription,
-                                            List<DiagramStatisticOuter> output )
+                                            List<DiagramStatisticOuter> statistics )
     {
         Set<Path> pathsWrittenTo = new HashSet<>();
+
+        ChartFactory chartFactory = GraphicsWriter.getChartFactory();
 
         // Build charts
         try
         {
-            MetricConstants metricName = output.get( 0 ).getMetricName();
-            PoolMetadata metadata = output.get( 0 ).getMetadata();
+            MetricConstants metricName = statistics.get( 0 ).getMetricName();
+            PoolMetadata metadata = statistics.get( 0 ).getMetadata();
 
             // Collection of graphics parameters, one for each set of charts to write across N formats.
             Collection<Outputs> outputsMap =
@@ -126,11 +128,10 @@ public class DiagramGraphicsWriter extends GraphicsWriter
             {
                 // One helper per set of graphics parameters.
                 GraphicsHelper helper = GraphicsHelper.of( nextOutput );
-                
-                Map<Object, JFreeChart> engines =
-                        ChartEngineFactory.buildDiagramChartEngine( output,
-                                                                    helper.getGraphicShape(),
-                                                                    helper.getDurationUnits() );
+
+                Map<Object, JFreeChart> engines = chartFactory.getDiagramCharts( statistics,
+                                                                                 helper.getGraphicShape(),
+                                                                                 helper.getDurationUnits() );
 
                 // Build the outputs
                 for ( Entry<Object, JFreeChart> nextEntry : engines.entrySet() )
@@ -141,28 +142,28 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                     if ( append instanceof TimeWindowOuter )
                     {
                         outputImage = DataFactory.getPathFromPoolMetadata( outputDirectory,
-                                                                             metadata,
-                                                                             (TimeWindowOuter) append,
-                                                                             helper.getDurationUnits(),
-                                                                             metricName,
-                                                                             null );
+                                                                           metadata,
+                                                                           (TimeWindowOuter) append,
+                                                                           helper.getDurationUnits(),
+                                                                           metricName,
+                                                                           null );
                     }
                     else if ( append instanceof OneOrTwoThresholds )
                     {
                         outputImage = DataFactory.getPathFromPoolMetadata( outputDirectory,
-                                                                             metadata,
-                                                                             (OneOrTwoThresholds) append,
-                                                                             metricName,
-                                                                             null );
+                                                                           metadata,
+                                                                           (OneOrTwoThresholds) append,
+                                                                           metricName,
+                                                                           null );
                     }
                     else
                     {
                         throw new UnsupportedOperationException( "Unexpected situation where WRES could not create "
-                                + "outputImage path" );
+                                                                 + "outputImage path" );
                     }
 
                     JFreeChart chart = nextEntry.getValue();
-                    
+
                     // Write formats
                     Set<Path> finishedPaths = GraphicsWriter.writeGraphic( outputImage,
                                                                            chart,

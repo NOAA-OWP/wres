@@ -15,7 +15,7 @@ import java.util.TreeSet;
 
 import javax.imageio.ImageIO;
 
-import org.jfree.chart.ChartUtilities;
+import org.jfree.chart.ChartUtils;
 import org.jfree.chart.JFreeChart;
 import org.jfree.graphics2d.svg.SVGGraphics2D;
 import org.jfree.graphics2d.svg.SVGUtils;
@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Outputs.GraphicFormat;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
+import wres.vis.charts.ChartFactory;
 import wres.statistics.generated.Outputs.PngFormat;
 import wres.statistics.generated.Outputs.SvgFormat;
 
@@ -38,15 +39,17 @@ abstract class GraphicsWriter
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( GraphicsWriter.class );
-    
+
+    private static final ChartFactory CHART_FACTORY = ChartFactory.of();
+
     // Do not use a file cache for image outputs
     static
     {
         LOGGER.debug( "Setting javax.imageio.ImageIO.setUseCache( boolean useCache ) to: {}.", false );
-        
+
         ImageIO.setUseCache( false );
     }
-    
+
     /**
      * Default chart height in pixels.
      */
@@ -84,6 +87,17 @@ abstract class GraphicsWriter
     Path getOutputDirectory()
     {
         return this.outputDirectory;
+    }
+
+    /**
+     * Returns a {@link ChartFactory} for creating charts from statistics.
+     * 
+     * @return a chart factory.
+     */
+
+    static ChartFactory getChartFactory()
+    {
+        return GraphicsWriter.CHART_FACTORY;
     }
 
     /**
@@ -125,7 +139,7 @@ abstract class GraphicsWriter
                     File outputImageFile = resolvedPath.toFile();
 
                     // #58735-18
-                    ChartUtilities.saveChartAsPNG( outputImageFile, chart, width, height );
+                    ChartUtils.saveChartAsPNG( outputImageFile, chart, width, height );
                 }
             }
             if ( outputs.hasSvg() )
@@ -177,7 +191,7 @@ abstract class GraphicsWriter
         File file = path.toFile();
 
         boolean fileExists = file.exists();
-        
+
         // #81735-173 and #86077
         if ( fileExists && LOGGER.isWarnEnabled() )
         {
@@ -186,7 +200,7 @@ abstract class GraphicsWriter
                          + "may indicate an error in format writing. The file has been retained and not modified.",
                          file );
         }
-        
+
         return !fileExists;
     }
 
@@ -437,13 +451,13 @@ abstract class GraphicsWriter
         Objects.requireNonNull( outputDirectory, "Specify non-null output directory." );
 
         // Validate
-        File directory = outputDirectory.toFile();
-        if ( !directory.isDirectory() || !directory.exists() || !directory.canWrite() )
+        if ( !Files.isDirectory( outputDirectory ) || !Files.exists( outputDirectory )
+             || !Files.isWritable( outputDirectory ) )
         {
             throw new IllegalArgumentException( "Cannot create a graphics writer because the path '" + outputDirectory
-                                                + "' is not a writable directory." );
+                                                + "' is not an existing, writable directory." );
         }
-        
+
         this.outputs = outputs;
         this.outputDirectory = outputDirectory;
     }

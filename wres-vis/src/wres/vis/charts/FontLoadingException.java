@@ -1,4 +1,4 @@
-package wres.vis;
+package wres.vis.charts;
 
 /**
  * Exception that indicates a required font could not be loaded.

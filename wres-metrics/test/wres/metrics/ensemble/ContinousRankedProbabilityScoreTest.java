@@ -17,11 +17,13 @@ import org.junit.Test;
 import wres.datamodel.Ensemble;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.MetricGroup;
+import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.metrics.MetricParameterException;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
@@ -69,14 +71,19 @@ public final class ContinousRankedProbabilityScoreTest
         //Check the results       
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
 
-        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setMetric( ContinuousRankedProbabilityScore.MAIN )
-                                                                               .setValue( 7.63 )
-                                                                               .build();
+        // Units for the pairs are undeclared, which means MeasurementUnit.DIMENSIONLESS
+        DoubleScoreMetricComponent expectedMetricComponent = ContinuousRankedProbabilityScore.MAIN.toBuilder()
+                                                                                                  .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                                                                                  .build();
+
+        DoubleScoreStatisticComponent expectedStatisticComponent = DoubleScoreStatisticComponent.newBuilder()
+                                                                                                .setMetric( expectedMetricComponent )
+                                                                                                .setValue( 7.63 )
+                                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
                                                          .setMetric( ContinuousRankedProbabilityScore.BASIC_METRIC )
-                                                         .addStatistics( component )
+                                                         .addStatistics( expectedStatisticComponent )
                                                          .build();
 
         DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
@@ -106,15 +113,20 @@ public final class ContinousRankedProbabilityScoreTest
         //Check the results       
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
 
-        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setMetric( ContinuousRankedProbabilityScore.MAIN )
-                                                                               .setValue( 8.734401927437641 )
-                                                                               .build();
+        // Units for the pairs are undeclared, which means MeasurementUnit.DIMENSIONLESS
+        DoubleScoreMetricComponent expectedMetricComponent = ContinuousRankedProbabilityScore.MAIN.toBuilder()
+                                                                                                  .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                                                                                  .build();
+
+        DoubleScoreStatisticComponent expectedStatisticComponent = DoubleScoreStatisticComponent.newBuilder()
+                                                                                                .setMetric( expectedMetricComponent )
+                                                                                                .setValue( 8.734401927437641 )
+                                                                                                .build();
 
         DoubleScoreStatistic expected = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( ContinuousRankedProbabilityScore.BASIC_METRIC )
-                                                         .addStatistics( component )
-                                                         .build();
+                                                            .setMetric( ContinuousRankedProbabilityScore.BASIC_METRIC )
+                                                            .addStatistics( expectedStatisticComponent )
+                                                            .build();
 
         assertEquals( expected, actual.getData() );
 
@@ -136,15 +148,19 @@ public final class ContinousRankedProbabilityScoreTest
         //Check the results       
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
 
-        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setMetric( ContinuousRankedProbabilityScore.MAIN )
-                                                                               .setValue( 13.36 )
-                                                                               .build();
+        // Units for the pairs are undeclared, which means MeasurementUnit.DIMENSIONLESS
+        DoubleScoreMetricComponent expectedMetricComponent = ContinuousRankedProbabilityScore.MAIN.toBuilder()
+                                                                                                  .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                                                                                  .build();
+        DoubleScoreStatisticComponent expectedStatisticComponent = DoubleScoreStatisticComponent.newBuilder()
+                                                                                                .setMetric( expectedMetricComponent )
+                                                                                                .setValue( 13.36 )
+                                                                                                .build();
 
         DoubleScoreStatistic expected = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( ContinuousRankedProbabilityScore.BASIC_METRIC )
-                                                         .addStatistics( component )
-                                                         .build();
+                                                            .setMetric( ContinuousRankedProbabilityScore.BASIC_METRIC )
+                                                            .addStatistics( expectedStatisticComponent )
+                                                            .build();
 
         assertEquals( expected, actual.getData() );
     }
@@ -167,15 +183,20 @@ public final class ContinousRankedProbabilityScoreTest
         //Check the results       
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
 
-        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setMetric( ContinuousRankedProbabilityScore.MAIN )
-                                                                               .setValue( 4.56 )
-                                                                               .build();
+        // Units for the pairs are undeclared, which means MeasurementUnit.DIMENSIONLESS
+        DoubleScoreMetricComponent expectedMetricComponent = ContinuousRankedProbabilityScore.MAIN.toBuilder()
+                                                                                                  .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                                                                                  .build();
+
+        DoubleScoreStatisticComponent expectedStatisticComponent = DoubleScoreStatisticComponent.newBuilder()
+                                                                                                .setMetric( expectedMetricComponent )
+                                                                                                .setValue( 4.56 )
+                                                                                                .build();
 
         DoubleScoreStatistic expected = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( ContinuousRankedProbabilityScore.BASIC_METRIC )
-                                                         .addStatistics( component )
-                                                         .build();
+                                                            .setMetric( ContinuousRankedProbabilityScore.BASIC_METRIC )
+                                                            .addStatistics( expectedStatisticComponent )
+                                                            .build();
 
         assertEquals( expected, actual.getData() );
     }
@@ -269,7 +290,7 @@ public final class ContinousRankedProbabilityScoreTest
     public void testExceptionOnNullInput()
     {
         PoolException actual = assertThrows( PoolException.class,
-                                                   () -> this.crps.apply( (Pool<Pair<Double, Ensemble>>) null ) );
+                                             () -> this.crps.apply( (Pool<Pair<Double, Ensemble>>) null ) );
 
         assertEquals( "Specify non-null input to the '" + this.crps.getName() + "'.", actual.getMessage() );
     }
@@ -284,7 +305,7 @@ public final class ContinousRankedProbabilityScoreTest
     public void testApplyExceptionOnUnrecognizedDecompositionIdentifier()
     {
         MetricParameterException actual = assertThrows( MetricParameterException.class,
-                                                   () -> ContinuousRankedProbabilityScore.of( MetricGroup.LBR ) );
+                                                        () -> ContinuousRankedProbabilityScore.of( MetricGroup.LBR ) );
 
         assertEquals( "Unsupported decomposition identifier 'LBR'.", actual.getMessage() );
     }

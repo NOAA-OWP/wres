@@ -519,10 +519,10 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     {
         if ( hasUnits() )
         {
-            return toString().replaceAll( " " + this.getUnits().toString(), "" );
+            return this.toString().replaceAll( " " + this.getUnits().toString(), "" );
         }
 
-        return toString();
+        return this.toString();
     }
 
     @Override

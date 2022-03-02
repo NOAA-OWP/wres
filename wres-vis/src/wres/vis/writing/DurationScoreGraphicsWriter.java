@@ -22,8 +22,8 @@ import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.statistics.generated.Outputs;
-import wres.vis.ChartBuildingException;
-import wres.vis.ChartEngineFactory;
+import wres.vis.charts.ChartBuildingException;
+import wres.vis.charts.ChartFactory;
 
 /**
  * Helps write charts comprising {@link DurationScoreStatisticOuter} to graphics formats.
@@ -99,22 +99,24 @@ public class DurationScoreGraphicsWriter extends GraphicsWriter
      *
      * @param outputDirectory the directory into which to write
      * @param outputsDescription a description of the required outputs
-     * @param output the metric output
+     * @param statistics the metric output
      * @throws GraphicsWriteException when an error occurs during writing
      * @return the paths actually written to
      */
 
     private static Set<Path> writeScoreCharts( Path outputDirectory,
                                                Outputs outputsDescription,
-                                               List<DurationScoreStatisticOuter> output )
+                                               List<DurationScoreStatisticOuter> statistics )
     {
         Set<Path> pathsWrittenTo = new HashSet<>();
+
+        ChartFactory chartFactory = GraphicsWriter.getChartFactory();
 
         // Build charts
         try
         {
-            MetricConstants metricName = output.get( 0 ).getMetricName();
-            PoolMetadata metadata = output.get( 0 ).getMetadata();
+            MetricConstants metricName = statistics.get( 0 ).getMetricName();
+            PoolMetadata metadata = statistics.get( 0 ).getMetadata();
 
             // Collection of graphics parameters, one for each set of charts to write across N formats.
             Collection<Outputs> outputsMap =
@@ -125,10 +127,8 @@ public class DurationScoreGraphicsWriter extends GraphicsWriter
                 // One helper per set of graphics parameters.
                 GraphicsHelper helper = GraphicsHelper.of( nextOutput );
 
-                JFreeChart chart =
-                        ChartEngineFactory.buildCategoricalDurationScoreChartEngine( output,
-                                                                                     helper.getGraphicShape(),
-                                                                                     helper.getDurationUnits() );
+                JFreeChart chart = chartFactory.getDurationScoreChart( statistics,
+                                                                       helper.getDurationUnits() );
 
                 // Build the output file name
                 Path outputImage = DataFactory.getPathFromPoolMetadata( outputDirectory,

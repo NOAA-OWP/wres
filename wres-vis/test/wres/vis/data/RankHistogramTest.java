@@ -102,10 +102,10 @@ class RankHistogramTest
 
         DiagramStatisticOuter outerDiagram = DiagramStatisticOuter.of( diagram, meta );
 
-        this.diagram = Diagram.of( List.of( outerDiagram ),
-                                   MetricDimension.RANK_ORDER,
-                                   MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
-                                   ChronoUnit.SECONDS );
+        this.diagram = Diagram.ofLeadThreshold( List.of( outerDiagram ),
+                                                MetricDimension.RANK_ORDER,
+                                                MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
+                                                ChronoUnit.SECONDS );
     }
 
     @Test
