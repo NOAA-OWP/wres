@@ -818,16 +818,19 @@ public class ChartFactory
                                                                                  durationUnits );
         }
 
-        Font font = this.getChartFont();
-        Font titleFont = this.getChartTitleFont();
-
         ValueAxis domainAxis = new NumberAxis( MetricDimension.FORECAST_PROBABILITY.toString() );
-        domainAxis.setLabelFont( font );
-
         ValueAxis primaryRangeAxis = new NumberAxis( MetricDimension.OBSERVED_RELATIVE_FREQUENCY.toString() );
         ValueAxis secondaryRangeAxis = new NumberAxis( MetricDimension.SAMPLE_SIZE.toString() );
+
+        // Set the axis font
+        Font font = this.getChartFont();
+
+        domainAxis.setLabelFont( font );
+        domainAxis.setTickLabelFont( font );
         primaryRangeAxis.setLabelFont( font );
         secondaryRangeAxis.setLabelFont( font );
+        primaryRangeAxis.setTickLabelFont( font );
+        secondaryRangeAxis.setTickLabelFont( font );
 
         XYPlot reliabilityPlot = new XYPlot( reliability, domainAxis, primaryRangeAxis, null );
         this.setXYPlotAxes( reliabilityPlot, 0, 1, 0, 1, true );
@@ -849,6 +852,7 @@ public class ChartFactory
         combinedPlot.add( sampleSizePlot, 2 );
         combinedPlot.setOrientation( PlotOrientation.VERTICAL );
 
+        Font titleFont = this.getChartTitleFont();
         JFreeChart chart = new JFreeChart( title, titleFont, combinedPlot, true );
 
         chart.getLegend()
