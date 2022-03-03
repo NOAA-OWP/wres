@@ -60,7 +60,7 @@ plugins
     id "de.undercouch.download" version "4.1.2"
 
     // To discover library versions with updates available
-    id 'com.github.ben-manes.versions' version '0.40.0'
+    id 'com.github.ben-manes.versions' version '0.42.0'
 
     // Run python scripts
     // TODO: cannot install miniconda in current build environment
@@ -71,7 +71,7 @@ plugins
     id 'org.kordamp.gradle.markdown' version '2.2.0'
 
     // To generate API documentation from JAX-RS annotations and javadocs
-    id "io.swagger.core.v3.swagger-gradle-plugin" version "2.1.12"
+    id "io.swagger.core.v3.swagger-gradle-plugin" version "2.1.13"
 }
 
 repositories
@@ -229,7 +229,7 @@ project(':wres-util')
 
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha6'
 
-        implementation( 'com.google.guava:guava:31.0.1-jre' )
+        implementation( 'com.google.guava:guava:31.1-jre' )
         {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
@@ -252,7 +252,7 @@ project(':wres-util')
         implementation 'org.apache.httpcomponents:httpcore:4.4.15'
         implementation 'org.apache.httpcomponents:httpmime:4.5.13'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha12' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha14' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -264,7 +264,7 @@ project(':wres-util')
         testImplementation 'junit:junit:4.13.2'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:4.3.0'
+        testImplementation 'org.mockito:mockito-core:4.3.1'
     }
 }
 
@@ -275,7 +275,7 @@ project(':wres-system')
         implementation project(':wres-util')
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha6'
 
-        implementation( 'com.google.guava:guava:31.0.1-jre' )
+        implementation( 'com.google.guava:guava:31.1-jre' )
         {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
@@ -284,13 +284,13 @@ project(':wres-system')
         implementation 'org.apache.commons:commons-lang3:3.12.0'
 
         // to use native postgres copy, need this on compile, otherwise runtime
-        implementation( 'org.postgresql:postgresql:42.3.1' )
+        implementation( 'org.postgresql:postgresql:42.3.3' )
         {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
 
-        implementation 'org.liquibase:liquibase-core:4.7.1'
+        implementation 'org.liquibase:liquibase-core:4.8.0'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
         runtimeOnly 'com.mattbertolini:liquibase-slf4j:4.0.0'
@@ -306,12 +306,12 @@ project(':wres-system')
         implementation 'org.slf4j:jul-to-slf4j:2.0.0-alpha6'
 
         //JB @ 02/16/17
-        testImplementation group: 'com.google.guava', name: 'guava-testlib', version: '31.0.1-jre'
+        testImplementation group: 'com.google.guava', name: 'guava-testlib', version: '31.1-jre'
 
         testImplementation 'junit:junit:4.13.2'
 
         // Use mockserver to test certificate utilities
-        testImplementation 'org.mock-server:mockserver-netty:5.11.2'
+        testImplementation 'org.mock-server:mockserver-netty:5.12.0'
     }
 
     test
@@ -341,7 +341,7 @@ project(':wres-datamodel')
         // The following five libraries together provide units of measure.
         api 'javax.measure:unit-api:2.1.3'
         implementation 'si.uom:si-units:2.1'
-        implementation 'tech.units:indriya:2.1.2'
+        implementation 'tech.units:indriya:2.1.3'
         implementation 'systems.uom:systems-ucum:2.1'
         implementation 'systems.uom:systems-quantity:2.1'
 
@@ -349,7 +349,7 @@ project(':wres-datamodel')
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:4.3.0'
+        testImplementation 'org.mockito:mockito-core:4.3.1'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
@@ -401,7 +401,7 @@ project(':wres-io')
         implementation 'org.apache.commons:commons-compress:1.21'
 
         // to use native postgres copy, need this on compile, otherwise runtime
-        implementation( 'org.postgresql:postgresql:42.3.1' )
+        implementation( 'org.postgresql:postgresql:42.3.3' )
         {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
@@ -423,7 +423,7 @@ project(':wres-io')
         implementation 'com.squareup.okhttp3:okhttp:4.10.0-RC1'
 
         // Update vulnerable kotlin-stdlib that okhttp/okio uses
-        implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.6.10'
+        implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.6.20-RC'
 
         // To accurately detect mime types of files.
         implementation 'org.apache.tika:tika-core:1.27'
@@ -448,15 +448,15 @@ project(':wres-io')
         runtimeOnly 'org.slf4j:jcl-over-slf4j:2.0.0-alpha6'
 
         //JB @ 02/16/17
-        testImplementation 'com.google.guava:guava-testlib:31.0.1-jre'
+        testImplementation 'com.google.guava:guava-testlib:31.1-jre'
 
-        testImplementation 'org.liquibase:liquibase-core:4.7.1'
+        testImplementation 'org.liquibase:liquibase-core:4.8.0'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-inline:4.3.0'
+        testImplementation 'org.mockito:mockito-inline:4.3.1'
 
         // Use mockserver as a mock server for mock API responses
-        testImplementation 'org.mock-server:mockserver-netty:5.11.2'
+        testImplementation 'org.mock-server:mockserver-netty:5.12.0'
 
         // Use H2 for truly embedded SQL db
         testImplementation 'com.h2database:h2:2.1.210'
@@ -522,7 +522,7 @@ project(':wres-metrics')
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha6'
 
         testImplementation 'junit:junit:4.13.2'
-        testImplementation 'org.mockito:mockito-core:4.3.0'
+        testImplementation 'org.mockito:mockito-core:4.3.1'
     }
 }
 
@@ -651,7 +651,7 @@ project(':wres-statistics')
         // https://issues.sonatype.org/browse/MVNCENTRAL-348
         testImplementation group: 'javax.jms', name: 'javax.jms-api', version: '2.0.1'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha12' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha14' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -725,7 +725,7 @@ project(':wres-vis')
 
         implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
         implementation group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '2.0.0'
-        implementation( 'com.google.guava:guava:31.0.1-jre' )
+        implementation( 'com.google.guava:guava:31.1-jre' )
         {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
@@ -738,7 +738,7 @@ project(':wres-vis')
         // SVG graphics from JFreeChart instances
         implementation group: 'org.jfree', name: 'jfreesvg', version: '3.4.2'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha12' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha14' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -756,7 +756,7 @@ project(':wres-vis')
         testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.8.2'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:4.3.0'
+        testImplementation 'org.mockito:mockito-core:4.3.1'
 
         testRuntimeOnly files('dist/lib/conf')
 
@@ -841,7 +841,7 @@ project(':wres-config')
 
         // jaxb-xjc transitively includes bind-api and jaxb-core
         jaxb 'org.glassfish.jaxb:jaxb-xjc:2.3.5'
-        jaxb 'com.github.sabomichal:immutable-xjc-plugin:1.6.2'
+        jaxb 'com.github.sabomichal:immutable-xjc-plugin:1.7.0'
     }
 
     def generatedIntermediateDir = "${project.buildDir}/generated"
@@ -931,7 +931,7 @@ project(':wres-grid')
             exclude group: 'org.jdom', module: 'jdom2'
         }
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha12' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha14' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -1006,9 +1006,9 @@ project(':wres-worker')
     {
         implementation project( ':wres-messages' )
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha6'
-        implementation 'com.rabbitmq:amqp-client:5.14.1'
+        implementation 'com.rabbitmq:amqp-client:5.14.2'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha12' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha14' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -1090,7 +1090,7 @@ project(':wres-tasker')
 
         implementation project( ':wres-messages' )
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha6'
-        implementation 'com.rabbitmq:amqp-client:5.14.1'
+        implementation 'com.rabbitmq:amqp-client:5.14.2'
         implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.0.0'
         implementation 'jakarta.annotation:jakarta.annotation-api:2.1.0-B1'
 
@@ -1098,23 +1098,23 @@ project(':wres-tasker')
         implementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
 
         // Server library to run a web server:
-        implementation 'org.eclipse.jetty:jetty-server:11.0.7'
+        implementation 'org.eclipse.jetty:jetty-server:11.0.8'
 
         // Support HTTP/2
-        implementation 'org.eclipse.jetty.http2:http2-server:11.0.7'
+        implementation 'org.eclipse.jetty.http2:http2-server:11.0.8'
 
         // Support ALPN
-        implementation 'org.eclipse.jetty:jetty-alpn-java-server:11.0.7'
+        implementation 'org.eclipse.jetty:jetty-alpn-java-server:11.0.8'
 
         // Servlet container library to run a web application with:
-        implementation 'org.eclipse.jetty:jetty-webapp:11.0.7'
+        implementation 'org.eclipse.jetty:jetty-webapp:11.0.8'
 
         // Needed at compile-time to reference ServletContainer.class and
         // DefaultServlet.class
-        implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.0.3'
+        implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.0.4'
 
         // To handle multipart post
-        implementation 'org.glassfish.jersey.media:jersey-media-multipart:3.0.3'
+        implementation 'org.glassfish.jersey.media:jersey-media-multipart:3.0.4'
 
         // To temporarily cache/store-in-RAM job metadata when redis unavailable
         implementation( 'com.github.ben-manes.caffeine:caffeine:3.0.5' )
@@ -1146,17 +1146,17 @@ project(':wres-tasker')
         // To send/receive messages
         implementation 'com.google.protobuf:protobuf-java:3.19.3'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha12' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha14' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
 
-        runtimeOnly 'org.glassfish.jersey.core:jersey-server:3.0.3'
+        runtimeOnly 'org.glassfish.jersey.core:jersey-server:3.0.4'
 
         // Needed to prevent "java.lang.IllegalStateException: InjectionManagerFactory not found."
         // Thanks, https://luohuahuang.org/2017/11/13/jersey-illegalstateexception-injectionmanagerfactory/
-        runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:3.0.3'
+        runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:3.0.4'
 
         testImplementation 'junit:junit:4.13.2'
 
@@ -1171,7 +1171,7 @@ project(':wres-tasker')
         testImplementation 'org.apache.qpid:qpid-broker-plugins-memory-store:8.0.6'
 
         // To generate swagger's openapi.json at build time.
-        docGen 'io.swagger.core.v3:swagger-jaxrs2-jakarta:2.1.12'
+        docGen 'io.swagger.core.v3:swagger-jaxrs2-jakarta:2.1.13'
     }
 
     apply plugin: 'application'
@@ -1351,7 +1351,7 @@ project(':wres-eventsbroker')
         // QPID JMS client for AMQP 0.X (not 1.0). JMS 1.1 support only
         implementation group: 'org.apache.qpid', name: 'qpid-client', version: '6.4.0'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha12' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha14' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -1383,7 +1383,7 @@ project(':wres-events')
         // https://issues.sonatype.org/browse/MVNCENTRAL-348
         implementation group: 'javax.jms', name: 'javax.jms-api', version: '2.0.1'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha12' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha14' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -1394,9 +1394,9 @@ project(':wres-events')
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:4.3.0'
+        testImplementation 'org.mockito:mockito-core:4.3.1'
         // Mocking final classes
-        testImplementation 'org.mockito:mockito-inline:4.3.0'
+        testImplementation 'org.mockito:mockito-inline:4.3.1'
     }
 
     // Facilitate unit tests with JUnit
@@ -1633,7 +1633,7 @@ dependencies
     implementation 'org.eclipse.jetty:jetty-webapp:9.4.44.v20210927'
     implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:2.35'
     // Update the jetty-continuation that above jersey dep depends on
-    implementation 'org.eclipse.jetty:jetty-continuation:9.4.44.v20210927'
+    implementation 'org.eclipse.jetty:jetty-continuation:9.4.45.v20220203'
 
     implementation( 'com.github.ben-manes.caffeine:caffeine:3.0.5' )
     {
@@ -1641,7 +1641,7 @@ dependencies
         exclude group: 'org.checkerframework', module: 'checker-qual'
     }
 
-    implementation( 'com.google.guava:guava:31.0.1-jre' )
+    implementation( 'com.google.guava:guava:31.1-jre' )
     {
         // Not used at runtime, bloat
         exclude group: 'org.checkerframework', module: 'checker-qual'
@@ -1661,7 +1661,7 @@ dependencies
     runtimeOnly 'org.glassfish.jersey.containers:jersey-container-jetty-http:2.35'
     runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:2.35'
 
-    runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha12' )
+    runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha14' )
     {
         // Not used at runtime, bloat
         exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -1675,7 +1675,7 @@ dependencies
     testCompileOnly 'junit:junit:4.13.2'
     testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.8.2'
 
-    testImplementation 'org.mockito:mockito-core:4.3.0'
+    testImplementation 'org.mockito:mockito-core:4.3.1'
 
     testImplementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 }
