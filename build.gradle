@@ -89,6 +89,7 @@ subprojects
     apply plugin: 'java-library'
     apply plugin: 'jacoco'
     apply plugin: 'org.owasp.dependencycheck'
+    apply plugin: 'com.github.ben-manes.versions'
 
     sourceCompatibility = '11'
     targetCompatibility = '11'
@@ -381,12 +382,12 @@ project(':wres-io')
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
         // JSON deserialization uses jackson directly. Specify recent version.
-        implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.1'
-        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.13.1'
-        implementation 'com.fasterxml.jackson.core:jackson-core:2.13.1'
+        implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.2'
+        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.13.2'
+        implementation 'com.fasterxml.jackson.core:jackson-core:2.13.2'
 
         // For Java 8 java.time support
-        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.13.1'
+        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.13.2'
 
         implementation( 'edu.ucar:cdm-core:5.4.2' )
         {
@@ -1327,6 +1328,13 @@ project(':wres-eventsbroker')
             exclude group: 'org.apache.bcel', module: 'bcel'
         }
 
+        // Upgrade the jackson dependencies that qpid uses. Remove when qpid has
+        // up-to-date dependencies.
+        implementation 'com.fasterxml.jackson:jackson-bom:2.13.2'
+        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.13.2'
+        implementation 'com.fasterxml.jackson.core:jackson-core:2.13.2'
+        implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.2'
+
         // QPID broker support for AMQP 0.8 and 0.9.1 (not 1.0)
         implementation 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:8.0.6'
 
@@ -1601,6 +1609,7 @@ if (!gitIsClean)
 apply plugin: 'nebula-aggregate-javadocs'
 
 apply plugin: 'org.owasp.dependencycheck'
+apply plugin: 'com.github.ben-manes.versions'
 
 dependencies
 {
