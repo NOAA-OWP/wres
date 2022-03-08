@@ -216,7 +216,7 @@ echo "Built wres/wres-tasker:$tasker_version -- $tasker_image_id"
 # Build and tag the broker image
 echo "Building broker image..."
 pushd wres-broker
-broker_image_id=$( docker build --build-arg version=$broker_version --quiet --tag wres/wres-broker:$broker_version . )
+broker_image_id=$( docker build --pull --build-arg version=$broker_version --quiet --tag wres/wres-broker:$broker_version . )
 popd
 
 echo "Built wres/wres-broker:$broker_version -- $broker_image_id"
@@ -224,7 +224,7 @@ echo "Built wres/wres-broker:$broker_version -- $broker_image_id"
 # Build and tag the redis image
 echo "Building redis image..."
 pushd wres-redis
-redis_image_id=$( docker build --build-arg version=$redis_version --quiet --tag wres/wres-redis:$redis_version . )
+redis_image_id=$( docker build --pull --build-arg version=$redis_version --quiet --tag wres/wres-redis:$redis_version . )
 popd
 
 echo "Built wres/wres-redis:$redis_version -- $redis_image_id"
