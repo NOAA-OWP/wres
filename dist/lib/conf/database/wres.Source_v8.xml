@@ -16,8 +16,9 @@
         <dropColumn tableName="Source" schemaName="wres"
                     columnName="output_time" />
     </changeSet>
-    <changeSet id="Delete from wres.Source (and related tables) before adding columns."
-               author="Jesse Bickel">
+    <changeSet id="Delete from wres.Source (and related tables) before adding columns, non-pg db."
+               author="Jesse Bickel"
+	       dbms="!postgresql">
         <!-- Look for the wres.TimeSeries tables having old columns -->
         <preConditions onFail="MARK_RAN">
             <tableExists tableName="TimeSeries"
@@ -39,6 +40,33 @@
         <delete tableName="TimeSeries" schemaName="wres" />
         <delete tableName="Source" schemaName="wres" />
         <delete tableName="Project" schemaName="wres" />
+    </changeSet>
+    <changeSet id="Delete from wres.Source (and related tables) before adding columns, pg db."
+               author="Jesse Bickel"
+	       dbms="postgresql">
+        <!-- Look for the wres.TimeSeries tables having old columns -->
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeries"
+                         schemaName="wres" />
+            <tableExists tableName="Source"
+                         schemaName="wres" />
+            <tableExists tableName="Project"
+                         schemaName="wres" />
+            <columnExists columnName="variable_name"
+                          tableName="TimeSeries"
+                          schemaName="wres" />
+            <columnExists columnName="feature_id"
+                          tableName="TimeSeries"
+                          schemaName="wres" />
+            <columnExists columnName="measurementunit_id"
+                          tableName="TimeSeries"
+                          schemaName="wres" />
+        </preConditions>
+	<sql>
+	  truncate table wres.TimeSeries cascade;
+	  truncate table wres.Source cascade;
+	  truncate table wres.Project cascade;
+	</sql>
     </changeSet>
     <changeSet id="wres.Source v8 - Move vector TimeSeries metadata here."
                author="Jesse Bickel">
