@@ -1,6 +1,7 @@
 package wres.vis.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.List;
 
@@ -30,7 +31,7 @@ class BoxplotTest
     void runBeforeEachTest()
     {
         Box box = Box.newBuilder()
-                     .addAllQuantiles( List.of( 0.0, 10.0, 30.0, 75.0, 100.0 ) )
+                     .addAllQuantiles( List.of( 0.0, 10.0, 30.0, 75.0, Double.POSITIVE_INFINITY ) )
                      .setLinkedValue( 40.0 )
                      .build();
 
@@ -77,6 +78,12 @@ class BoxplotTest
     void testGetY()
     {
         assertEquals( 30.0, this.boxPlot.getY( 2, 0 ) );
+    }
+    
+    @Test
+    void testGetYProducesNullWhenInfinite()
+    {
+        assertNull( this.boxPlot.getY( 4, 0 ) );
     }
 
     @Test

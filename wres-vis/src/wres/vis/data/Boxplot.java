@@ -62,8 +62,16 @@ class Boxplot extends AbstractIntervalXYDataset
     @Override
     public Number getY( int series, final int item )
     {
-        return this.boxes.get( item )
-                         .getQuantiles( series );
+        double y = this.boxes.get( item )
+                             .getQuantiles( series );
+
+        if ( Double.isFinite( y ) )
+        {
+            return y;
+        }
+        
+        // JFreeChart cannot handle infinite values
+        return null;
     }
 
     @Override
