@@ -299,6 +299,7 @@ public class ChartDataFactory
 
     /**
      * Returns a dataset for a verification diagram organized by lead duration (one) and then threshold (up to many).
+     * @param statistics the statistics
      * @param xDimension the metric dimension for the X axis
      * @param yDimension the metric dimension for the Y axis
      * @param durationUnits the duration units
@@ -328,6 +329,7 @@ public class ChartDataFactory
 
     /**
      * Returns a dataset for a verification diagram organized by threshold (one) and then lead duration (up to many).
+     * @param statistics the statistics
      * @param xDimension the metric dimension for the X axis
      * @param yDimension the metric dimension for the Y axis
      * @param durationUnits the duration units
