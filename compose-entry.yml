@@ -82,7 +82,7 @@ services:
         healthcheck:
             start_period: 5m
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20220310-6ef84e9"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20220311-372958f"
         restart: always
         depends_on:
             broker:
@@ -153,7 +153,7 @@ services:
         depends_on:
             eventsbroker:
                 condition: service_started
-        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20220310-6ef84e9"
+        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20220311-372958f"
         restart: always
         volumes:
          # To write graphics outputs
