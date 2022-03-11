@@ -64,9 +64,7 @@
     <outputs>
         <destination type="pairs" decimalFormat="0.000000" />
         <destination type="numeric" decimalFormat="0.000000" />
-         <destination type="netcdf">
-            <netcdf gridded="true" />
-        </destination>
+        <destination type="netcdf2" />
     </outputs>
 </project>
 
