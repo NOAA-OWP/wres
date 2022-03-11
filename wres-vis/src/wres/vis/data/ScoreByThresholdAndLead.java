@@ -66,7 +66,7 @@ class ScoreByThresholdAndLead extends AbstractXYDataset
     @Override
     public Number getX( int series, int item )
     {
-        //Cannot allow all data (infinite) threshold. Use lower bound if this is a "BETWEEN" threshold
+        // Cannot allow all data (infinite) threshold. Use lower bound if this is a "BETWEEN" threshold
         final double test = this.statistics.get( series )
                                            .getRight()
                                            .get( item )
@@ -77,7 +77,7 @@ class ScoreByThresholdAndLead extends AbstractXYDataset
                                            .first();
         if ( Double.isInfinite( test ) )
         {
-            return Double.MIN_VALUE; //JFreeChart missing protocol is to return finite double for X and null for Y
+            return Double.MIN_VALUE; // JFreeChart missing protocol is to return finite double for X and null for Y
         }
 
         return test;
@@ -86,7 +86,7 @@ class ScoreByThresholdAndLead extends AbstractXYDataset
     @Override
     public Number getY( int series, int item )
     {
-        //Cannot allow all data (infinite) threshold
+        // Cannot allow all data (infinite) threshold
         Double test = (Double) this.getX( series, item );
         if ( test.equals( Double.MIN_VALUE ) )
         {

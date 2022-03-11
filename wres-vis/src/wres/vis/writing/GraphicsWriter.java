@@ -119,16 +119,16 @@ abstract class GraphicsWriter
         Objects.requireNonNull( outputs );
 
         Set<Path> returnMe = new TreeSet<>();
-
+        Path resolvedPath = null;
+        
         try
         {
-
             // Default is png
             if ( outputs.hasPng() )
             {
                 int height = GraphicsWriter.getGraphicHeight( outputs.getPng().getOptions().getHeight() );
                 int width = GraphicsWriter.getGraphicWidth( outputs.getPng().getOptions().getWidth() );
-                Path resolvedPath = path.resolveSibling( path.getFileName() + ".png" );
+                resolvedPath = path.resolveSibling( path.getFileName() + ".png" );
 
                 // Write if the path has not already been written
                 if ( GraphicsWriter.validatePath( resolvedPath ) )
@@ -146,7 +146,7 @@ abstract class GraphicsWriter
             {
                 int height = GraphicsWriter.getGraphicHeight( outputs.getPng().getOptions().getHeight() );
                 int width = GraphicsWriter.getGraphicWidth( outputs.getPng().getOptions().getWidth() );
-                Path resolvedPath = path.resolveSibling( path.getFileName() + ".svg" );
+                resolvedPath = path.resolveSibling( path.getFileName() + ".svg" );
 
                 // Write if the path has not already been written
                 if ( GraphicsWriter.validatePath( resolvedPath ) )
@@ -170,12 +170,12 @@ abstract class GraphicsWriter
 
             return Collections.unmodifiableSet( returnMe );
         }
-        catch ( IOException e )
+        catch ( IOException | IllegalArgumentException e )
         {
             // Clean up, to allow recovery. See #83816
             GraphicsWriter.deletePaths( returnMe );
 
-            throw new GraphicsWriteException( "Error while writing chart:", e );
+            throw new GraphicsWriteException( "Error while writing chart to '" + resolvedPath + "'.", e );
         }
     }
 
