@@ -24,7 +24,7 @@ import wres.vis.writing.DurationScoreGraphicsWriter;
 
 /**
  * Implementation of a {@link ConsumerFactory} for graphics writing.
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 class GraphicsConsumerFactory implements ConsumerFactory

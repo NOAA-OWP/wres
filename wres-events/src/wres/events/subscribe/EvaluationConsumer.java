@@ -131,7 +131,7 @@ class EvaluationConsumer
      * An elementary group consumer for message groups that provides the template for the {@link #groupConsumers}. 
      */
 
-    private Function<Collection<Statistics>, Set<Path>> groupConsumer;
+    private Function<Collection<Statistics>, Set<Path>> consumerForGroupedMessages;
 
     /**
      * The time at which progress was last recorded. Used to timeout an evaluation on lack of progress (a well-behaving
@@ -670,7 +670,7 @@ class EvaluationConsumer
 
         // Add no-op consumers
         this.consumer = statistics -> Set.of();
-        this.groupConsumer = statistics -> Set.of();
+        this.consumerForGroupedMessages = statistics -> Set.of();
 
         this.markEvaluationFailedOnConsumption( timeOut );
     }
@@ -1008,7 +1008,9 @@ class EvaluationConsumer
             throw new EvaluationEventException( "While attempting to notify an evaluation as timed out.", e );
         }
 
-        OneGroupConsumer<Statistics> newGroupConsumer = OneGroupConsumer.of( this.groupConsumer::apply, groupId );
+        // Create the group consumer from the underlying consumer that should be called once per group
+        OneGroupConsumer<Statistics> newGroupConsumer =
+                OneGroupConsumer.of( this.consumerForGroupedMessages::apply, groupId );
         OneGroupConsumer<Statistics> existingGroupConsumer = this.groupConsumers.putIfAbsent( groupId,
                                                                                               newGroupConsumer );
 
@@ -1044,7 +1046,7 @@ class EvaluationConsumer
                 Path path = ConsumerFactory.getPathToWrite( this.getEvaluationId(), this.getClientId(), jobId );
 
                 this.consumer = consumerFactory.getConsumer( evaluationDescription, path );
-                this.groupConsumer = consumerFactory.getGroupedConsumer( evaluationDescription, path );
+                this.consumerForGroupedMessages = consumerFactory.getGroupedConsumer( evaluationDescription, path );
 
                 LOGGER.debug( "Finished creating consumers for evaluation {}, which are attached to subscriber {}.",
                               this.getEvaluationId(),
@@ -1080,8 +1082,11 @@ class EvaluationConsumer
         {
             OneGroupConsumer<Statistics> groupCon = this.getGroupConsumer( groupId );
 
+            // Get the statistics for grouped consumption
+            Statistics groupedStatistics = this.getStatisticsForGroupedConsumption( statistics, groupId, messageId );
+
             // May trigger group completion and consumption
-            this.execute( () -> groupCon.accept( messageId, statistics ) );
+            this.execute( () -> groupCon.accept( messageId, groupedStatistics ) );
 
             this.closeGroupIfComplete( groupCon );
         }
@@ -1093,11 +1098,49 @@ class EvaluationConsumer
         if ( LOGGER.isDebugEnabled() )
         {
             LOGGER.debug( "Consumer {} received and consumed a statistics message with identifier {} "
-                          + "for evaluation {}.",
+                          + "and group identifier {} for evaluation {}.",
                           this.getClientId(),
                           messageId,
+                          groupId,
                           this.getEvaluationId() );
         }
+    }
+
+    /**
+     * Provides the subset of statistics that are consumed by grouped consumers. The main reason to restrict this list
+     * is to avoid caching unnecessary statistics. The {@link ConsumerFactory} can already decide how to route 
+     * statistics messages to underlying consumers (e.g., to not route some statistics). However, unless these 
+     * statistics are filtered on arrival in the messaging client (i.e., here), they are cached and the cached 
+     * statistics are not then used by any underlying consumer. This ends up with unnecessary heap use for the box plot 
+     * statistics by pair because they are currently not consumed in a grouped context under any circumstances. If this 
+     * changes, then the grouped statistics should become part of the API of the {@link ConsumerFactory} by declaring a
+     * nested interface for a grouped consumer whose statistics types are visible and can then be filtered by this 
+     * method before they are forwarded to the grouped consumer. In the mean time, forward all statistics that are not 
+     * box plots per pair.
+     * 
+     * @param statistics the statistics of which some may not be for grouped consumption
+     * @param groupId a message group identifier to help with logging
+     * @param messageId the message identifier to help with logging
+     * @return the statistics that are eligible for grouped consumption, in principle
+     */
+
+    private Statistics getStatisticsForGroupedConsumption( Statistics statistics, String groupId, String messageId )
+    {
+        Objects.requireNonNull( statistics );
+
+        if ( LOGGER.isDebugEnabled() && statistics.getOneBoxPerPairCount() > 0 )
+        {
+            LOGGER.debug( "While routing statistics with message identifier {} to group {}, removed {} box plot per "
+                          + "pair statistics because they are not eligible for grouped consumption.",
+                          messageId,
+                          groupId,
+                          statistics.getOneBoxPerPairCount() );
+        }
+
+        // Clear the box plots per pair
+        return statistics.toBuilder()
+                         .clearOneBoxPerPair()
+                         .build();
     }
 
     /**

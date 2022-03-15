@@ -13,6 +13,8 @@ import java.util.SortedSet;
 import java.util.function.Function;
 
 import org.jfree.chart.JFreeChart;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.LeftOrRightOrBaseline;
@@ -36,6 +38,9 @@ import wres.vis.charts.ChartFactory;
 public class BoxplotGraphicsWriter extends GraphicsWriter
         implements Function<List<BoxplotStatisticOuter>, Set<Path>>
 {
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( BoxplotGraphicsWriter.class );
+
     private static final String SPECIFY_NON_NULL_INPUT_DATA_WHEN_WRITING_DIAGRAM_OUTPUTS =
             "Specify non-null input data when writing box plot outputs.";
 
@@ -203,6 +208,10 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
 
                 Map<TimeWindowOuter, JFreeChart> charts = chartFactory.getBoxplotChartPerPool( statistics,
                                                                                                helper.getDurationUnits() );
+
+                LOGGER.debug( "Created {} box plot charts, one for each of these time windows: {}.",
+                              charts.size(),
+                              charts.keySet() );
 
                 // Build the outputs
                 for ( Map.Entry<TimeWindowOuter, JFreeChart> nextEntry : charts.entrySet() )

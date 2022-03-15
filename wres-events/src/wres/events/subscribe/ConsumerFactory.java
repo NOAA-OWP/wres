@@ -47,7 +47,7 @@ import wres.statistics.generated.Statistics;
  * 
  * <p><code>return statistics {@literal ->} Set.of();</code>
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public interface ConsumerFactory extends Closeable
@@ -76,7 +76,7 @@ public interface ConsumerFactory extends Closeable
      */
 
     Function<Collection<Statistics>, Set<Path>> getGroupedConsumer( Evaluation evaluation, Path path );
-
+    
     /**
      * Returns a basic description of the consumers that are created by this factory, including the formats they offer.
      * 

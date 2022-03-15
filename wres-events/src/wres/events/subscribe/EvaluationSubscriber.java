@@ -717,7 +717,7 @@ public class EvaluationSubscriber implements Closeable
 
                     // Acknowledge first, then attempt to register complete
                     message.acknowledge();
-                    
+
                     // Register complete if complete
                     this.registerEvaluationCompleteIfConsumptionComplete( consumer, correlationId );
                 }
@@ -857,9 +857,9 @@ public class EvaluationSubscriber implements Closeable
             // Unbook the subscriber if subscriber booking is in force
             this.getSubscriberOfferer()
                 .unbook( evaluationId );
-            
+
             // Publish success
-            if( consumer.getCompletionStatus() != CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE )
+            if ( consumer.getCompletionStatus() != CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE )
             {
                 consumer.markEvaluationSucceeded();
             }
@@ -914,7 +914,7 @@ public class EvaluationSubscriber implements Closeable
 
                     // Acknowledge first, then attempt to register complete
                     message.acknowledge();
-                    
+
                     // Register complete if complete
                     this.registerEvaluationCompleteIfConsumptionComplete( consumer, correlationId );
                 }
@@ -922,7 +922,7 @@ public class EvaluationSubscriber implements Closeable
                 {
                     message.acknowledge();
                 }
-                
+
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_FOR_EVALUATION,
                               this.getClientId(),
                               QueueType.EVALUATION_QUEUE,
@@ -1683,19 +1683,22 @@ public class EvaluationSubscriber implements Closeable
                                                                      this.evaluationStatusTopic,
                                                                      this.getEvaluationStatusSubscriberName() );
 
-            this.evaluationStatusConsumer.setMessageListener( this.getStatusListener() );
+            MessageListener statusListener = this.getStatusListener();
+            this.evaluationStatusConsumer.setMessageListener( statusListener );
 
             this.evaluationConsumer = this.getMessageConsumer( this.evaluationDescriptionSession,
                                                                this.evaluationTopic,
                                                                this.getEvaluationSubscriberName() );
 
-            this.evaluationConsumer.setMessageListener( this.getEvaluationListener() );
+            MessageListener evaluationListener = this.getEvaluationListener();
+            this.evaluationConsumer.setMessageListener( evaluationListener );
 
             this.statisticsConsumer = this.getMessageConsumer( this.statisticsSession,
                                                                this.statisticsTopic,
                                                                this.getStatisticsSubscriberName() );
 
-            this.statisticsConsumer.setMessageListener( this.getStatisticsListener() );
+            MessageListener statisticsListener = this.getStatisticsListener();
+            this.statisticsConsumer.setMessageListener( statisticsListener );
 
             // A finite cache of evaluations that persist after they are closed, in order to mop-up any late arriving 
             // messages (for evaluations that succeeded, these are non-essential evaluation status messages only)

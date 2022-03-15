@@ -110,9 +110,6 @@ public class ChartFactory
     /** Chart font for the main chart title. */
     private final Font chartFontTitle;
 
-    /** Box plot renderer. */
-    private final BoxplotRenderer boxPlotRenderer;
-
     /**
      * Expands upon the {@link OutputTypeSelection} for extended use in this context.
      */
@@ -389,7 +386,8 @@ public class ChartFactory
                                     domain.getMaximum(),
                                     range.getMinimum(),
                                     range.getMaximum(),
-                                    hasDiagonal ); // Plots with a diagonal are always square, plots without, probably not
+                                    hasDiagonal, // Plots with a diagonal are always square, plots without, probably not
+                                    !hasDiagonal ); // Plots with a diagonal should not show a zero range marker
 
                 // Set the renderer
                 this.setChartTheme( chart );
@@ -483,7 +481,7 @@ public class ChartFactory
             this.setLegendTitle( chart, legendTitle, false );
         }
 
-        this.setXYPlotAxes( chart.getXYPlot(), 0, 0, 0, 0, false ); // Autofit axes
+        this.setXYPlotAxes( chart.getXYPlot(), 0, 0, 0, 0, false, true ); // Autofit axes
 
         return chart;
     }
@@ -552,13 +550,13 @@ public class ChartFactory
         this.setChartTheme( chart );
         this.setDomainAxisForLeadDurations( plot );
         this.setChartPadding( chart );
-        this.setXYPlotAxes( plot, 0, 0, 0, 0, false ); // Autofit axes
+        this.setXYPlotAxes( plot, 0, 0, 0, 0, false, true ); // Autofit axes
 
         return chart;
     }
 
     /**
-     * Creates a box plot chart for each pools.
+     * Creates a box plot chart for each pool.
      * 
      * @param statistics the metric output to plot
      * @param durationUnits the duration units
@@ -769,7 +767,7 @@ public class ChartFactory
             this.setLegendTitle( chart, legendTitle, false );
         }
 
-        this.setXYPlotAxes( chart.getXYPlot(), 0, 0, 0, 0, false ); // Autofit axes
+        this.setXYPlotAxes( chart.getXYPlot(), 0, 0, 0, 0, false, true ); // Autofit axes
 
         return chart;
     }
@@ -833,12 +831,12 @@ public class ChartFactory
         secondaryRangeAxis.setTickLabelFont( font );
 
         XYPlot reliabilityPlot = new XYPlot( reliability, domainAxis, primaryRangeAxis, null );
-        this.setXYPlotAxes( reliabilityPlot, 0, 1, 0, 1, true );
+        this.setXYPlotAxes( reliabilityPlot, 0, 1, 0, 1, true, false );
         this.addDiagonalLine( reliabilityPlot );
         this.setSeriesColorAndShape( reliabilityPlot );
 
         XYPlot sampleSizePlot = new XYPlot( sampleSize, domainAxis, secondaryRangeAxis, null );
-        this.setXYPlotAxes( sampleSizePlot, 0, 1, 0, 0, false );
+        this.setXYPlotAxes( sampleSizePlot, 0, 1, 0, 0, false, false );
 
         // The reliability plot controls the legend, so remove legend items from the sample size plot
         LegendItemCollection noLegendItems = new LegendItemCollection();
@@ -900,6 +898,7 @@ public class ChartFactory
      * @param minimumRange the minimum range axis value
      * @param maximumRange the maximum range axis value
      * @param isSquare is true if the plot should be square, regardless of the prescribed minimum and maximum values
+     * @param hasZeroRangeMarker is true if the plot should have a zero range marker, false for none
      */
 
     private void setXYPlotAxes( XYPlot plot,
@@ -907,9 +906,10 @@ public class ChartFactory
                                 double maximumDomain,
                                 double minimumRange,
                                 double maximumRange,
-                                boolean isSquare )
+                                boolean isSquare,
+                                boolean hasZeroRangeMarker )
     {
-        plot.setRangeZeroBaselineVisible( true );
+        plot.setRangeZeroBaselineVisible( hasZeroRangeMarker );
 
         ValueAxis domainAxis = plot.getDomainAxis();
         domainAxis.setAxisLineVisible( false );
@@ -1837,9 +1837,21 @@ public class ChartFactory
         return this.seriesColors;
     }
 
+    /**
+     * @return a renderer
+     */
+
     private BoxplotRenderer getBoxPlotRenderer()
     {
-        return this.boxPlotRenderer;
+        // Do not cache (e.g., render static) this renderer because it retains references to the datasets it renders
+        // This seems like a bug in the JFreeChart rendering design
+        BoxplotRenderer boxplotRenderer = new BoxplotRenderer();
+        Stroke stroke = new BasicStroke( 0.5f );
+        boxplotRenderer.setDefaultStroke( stroke );
+        boxplotRenderer.setDefaultFillPaint( Color.GREEN );
+        boxplotRenderer.setDefaultPaint( Color.RED );
+
+        return boxplotRenderer;
     }
 
     /**
@@ -1849,13 +1861,6 @@ public class ChartFactory
     private ChartFactory()
     {
         this.seriesColors = GraphicsUtils.getColors();
-
-        this.boxPlotRenderer = new BoxplotRenderer();
-
-        Stroke stroke = new BasicStroke( 0.5f );
-        this.boxPlotRenderer.setDefaultStroke( stroke );
-        this.boxPlotRenderer.setDefaultFillPaint( Color.GREEN );
-        this.boxPlotRenderer.setDefaultPaint( Color.RED );
 
         // #81628
         String fontResource = "LiberationSans-Regular.ttf";

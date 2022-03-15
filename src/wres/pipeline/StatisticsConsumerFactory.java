@@ -43,7 +43,7 @@ import wres.vis.writing.DurationScoreGraphicsWriter;
 
 /**
  * Implementation of a {@link ConsumerFactory} for statistics writing.
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 class StatisticsConsumerFactory implements ConsumerFactory
@@ -91,6 +91,13 @@ class StatisticsConsumerFactory implements ConsumerFactory
 
         StatisticsToFormatsRouter.Builder builder = new StatisticsToFormatsRouter.Builder();
 
+        String durationUnitsString = this.projectConfig.getOutputs()
+                                                       .getDurationFormat()
+                                                       .value()
+                                                       .toUpperCase();
+
+        ChronoUnit durationUnits = ChronoUnit.valueOf( durationUnitsString );
+
         // Netcdf and protobuf are incremental formats, plus box plots per pair where graphics are required
 
         // Netcdf: unlike other formats this writer is injected because it has an oddball choreography whereby blob
@@ -108,13 +115,6 @@ class StatisticsConsumerFactory implements ConsumerFactory
         // CSV2
         if ( formats.contains( Format.CSV2 ) )
         {
-            String durationUnitsString = this.projectConfig.getOutputs()
-                                                           .getDurationFormat()
-                                                           .value()
-                                                           .toUpperCase();
-
-            ChronoUnit durationUnits = ChronoUnit.valueOf( durationUnitsString );
-
             Path fullPath = path.resolve( CsvStatisticsWriter.DEFAULT_FILE_NAME );
 
             DoubleFunction<String> formatter = this.getDecimalFormatter( this.projectConfig,
@@ -148,6 +148,15 @@ class StatisticsConsumerFactory implements ConsumerFactory
             // Specific formats are filtered at runtime via the router using the Outputs declaration
             builder.addBoxplotConsumerPerPair( DestinationType.GRAPHIC,
                                                BoxplotGraphicsWriter.of( outputs, path ) );
+        }
+
+        // Old-style CSV
+        if ( formats.contains( Format.CSV ) )
+        {
+            builder.addBoxplotConsumerPerPair( DestinationType.CSV,
+                                               CommaSeparatedBoxPlotWriter.of( this.projectConfig,
+                                                                               durationUnits,
+                                                                               path ) );
         }
 
         Function<Collection<Statistics>, Set<Path>> router = builder.setEvaluationDescription( evaluation )
@@ -191,10 +200,6 @@ class StatisticsConsumerFactory implements ConsumerFactory
                                         CommaSeparatedDiagramWriter.of( this.projectConfig,
                                                                         durationUnits,
                                                                         path ) )
-                   .addBoxplotConsumerPerPair( DestinationType.CSV,
-                                               CommaSeparatedBoxPlotWriter.of( this.projectConfig,
-                                                                               durationUnits,
-                                                                               path ) )
                    .addBoxplotConsumerPerPool( DestinationType.CSV,
                                                CommaSeparatedBoxPlotWriter.of( this.projectConfig,
                                                                                durationUnits,
