@@ -37,61 +37,35 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 class OneGroupConsumer<T> implements BiConsumer<String, T>, Supplier<Set<Path>>
 {
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( OneGroupConsumer.class );
 
-    /**
-     * Error message.
-     */
-
+    /** Error message. */
     private static final String ATTEMPTED_TO_REUSE_A_ONE_USE_CONSUMER_WHICH_IS_NOT_ALLOWED =
             "Attempted to reuse a one-use consumer, which is not allowed.";
 
-    /**
-     * Inner consumer to consume the messages from the cache.
-     */
-
+    /** Inner consumer to consume the messages from the cache. */
     private final Function<Collection<T>, Set<Path>> innerConsumer;
 
-    /**
-     * Group identifier.
-     */
-
+    /** Group identifier. */
     private final String groupId;
 
-    /**
-     * Cache of statistics by statistics message identifier.
-     */
+    /** Cache of messages by message identifier. */
     private final Map<String, T> cache;
 
-    /**
-     * Is <code>true</code> if this consumer has been used once.
-     */
-
+    /** Is <code>true</code> if this consumer has been used once.*/
     private final AtomicBoolean isComplete;
 
-    /**
-     * Expected number of messages in the group.
-     */
-
+    /** Expected number of messages in the group. */
     private final AtomicInteger expectedMessageCount;
 
-    /**
-     * Actual number of messages received.
-     */
-
+    /** Actual number of messages received. */
     private final AtomicInteger actualMessageCount;
 
-    /**
-     * A set of paths written by the consumer.
-     */
-
+    /** A set of paths written by the consumer. */
     private final Set<Path> pathsWritten;
 
-    /**
-     * Mutex lock that protects completion of a group.
-     */
-
+    /** Mutex lock that protects completion of a group. */
     private final ReentrantLock groupCompletionLock = new ReentrantLock();
 
     /**
@@ -155,6 +129,14 @@ class OneGroupConsumer<T> implements BiConsumer<String, T>, Supplier<Set<Path>>
 
         // Try to accept the group.
         this.acceptGroup();
+
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "After accepting a grouped message with identifier {}, there are {} messages in the group "
+                          + "cache.",
+                          messageId,
+                          this.cache.size() );
+        }
     }
 
     @Override
@@ -200,7 +182,7 @@ class OneGroupConsumer<T> implements BiConsumer<String, T>, Supplier<Set<Path>>
                                                 + expectedMessageCount
                                                 + "." );
         }
-        
+
         if ( expectedMessageCount == 0 && LOGGER.isWarnEnabled() )
         {
             LOGGER.warn( "While setting the expected message count of group {} in group consumer {}, discovered a "
@@ -329,7 +311,7 @@ class OneGroupConsumer<T> implements BiConsumer<String, T>, Supplier<Set<Path>>
         this.isComplete = new AtomicBoolean();
         // Initialize at non-zero to flag when a valid expectation is received, which includes zero
         this.expectedMessageCount = new AtomicInteger( -1 );
-        this.actualMessageCount = new AtomicInteger( 0 );  // Initialize at zero
+        this.actualMessageCount = new AtomicInteger( 0 ); // Initialize at zero
         this.groupId = groupId;
         this.pathsWritten = new TreeSet<>();
     }

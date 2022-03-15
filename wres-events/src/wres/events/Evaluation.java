@@ -80,7 +80,6 @@ import wres.statistics.generated.Statistics;
 @ThreadSafe
 public class Evaluation implements Closeable
 {
-
     /**
      * Default name for the queue on the amq.topic that accepts evaluation messages.
      */
@@ -390,7 +389,7 @@ public class Evaluation implements Closeable
      * Publish an {@link wres.statistics.generated.EvaluationStatus} message for the current evaluation.
      * 
      * @param status the status message
-     * @param groupId an optional group identifier to identify grouped status messages (required if group subscribers)
+     * @param groupId an optional group identifier to identify grouped messages
      * @throws NullPointerException if the message is null
      * @throws IllegalStateException if the publication of messages to this evaluation has been notified complete
      * @throws IllegalArgumentException if the group has already been marked complete
@@ -421,7 +420,7 @@ public class Evaluation implements Closeable
      * Publish an {@link wres.statistics.generated.Statistics} message for the current evaluation.
      * 
      * @param statistics the statistics message
-     * @param groupId an optional group identifier to identify grouped status messages (required if group subscribers)
+     * @param groupId an optional group identifier to identify grouped messages
      * @throws NullPointerException if the message is null
      * @throws IllegalStateException if the publication of messages to this evaluation has been notified complete
      * @throws IllegalArgumentException if the group has already been marked complete
