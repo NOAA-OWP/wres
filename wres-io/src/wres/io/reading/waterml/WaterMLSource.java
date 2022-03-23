@@ -183,10 +183,16 @@ class WaterMLSource implements Callable<List<TimeSeries<Double>>>
 
         int countOfTracesFound = series.getValues().length;
 
-        if ( countOfTracesFound > 1 && LOGGER.isWarnEnabled() )
+        if ( countOfTracesFound > 1 )
         {
-            LOGGER.warn( "Skipping site {} because multiple timeseries for variable {} from USGS NWIS URI {}",
-                         usgsSiteCode, variableName, this.dataSource.getUri() );
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( "Skipping site {} because multiple timeseries for variable {} from USGS NWIS URI {}",
+                             usgsSiteCode,
+                             variableName,
+                             this.dataSource.getUri() );
+            }
+
             return Collections.emptyList();
         }
 
