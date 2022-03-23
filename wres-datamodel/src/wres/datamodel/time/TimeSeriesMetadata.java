@@ -33,7 +33,7 @@ public class TimeSeriesMetadata
      * up to three unit names, one for each of L/R/B.
      */
 
-    private static final Cache<String,String> STRING_CACHE =
+    private static final Cache<String, String> STRING_CACHE =
             Caffeine.newBuilder()
                     .maximumSize( 6 )
                     .build();
@@ -42,7 +42,7 @@ public class TimeSeriesMetadata
      * Use one hundred arbitrarily. There are usually more than a handful.
      */
 
-    private static final Cache<FeatureKey,FeatureKey> FEATURE_KEY_CACHE =
+    private static final Cache<FeatureKey, FeatureKey> FEATURE_KEY_CACHE =
             Caffeine.newBuilder()
                     .maximumSize( 100 )
                     .build();
@@ -145,41 +145,45 @@ public class TimeSeriesMetadata
             return false;
         }
 
-        TimeSeriesMetadata metadata = ( TimeSeriesMetadata ) o;
-        return Objects.equals( timeScale, metadata.timeScale ) &&
-               referenceTimes.equals( metadata.referenceTimes ) &&
-               variableName.equals( metadata.variableName ) &&
-               feature.equals( metadata.feature ) &&
-               unit.equals( metadata.unit );
+        TimeSeriesMetadata metadata = (TimeSeriesMetadata) o;
+        return Objects.equals( this.timeScale, metadata.timeScale ) &&
+               this.referenceTimes.equals( metadata.referenceTimes )
+               &&
+               this.variableName.equals( metadata.variableName )
+               &&
+               this.feature.equals( metadata.feature )
+               &&
+               this.unit.equals( metadata.unit );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( timeScale,
-                             referenceTimes,
-                             variableName,
-                             feature,
-                             unit );
+        return Objects.hash( this.timeScale,
+                             this.referenceTimes,
+                             this.variableName,
+                             this.feature,
+                             this.unit );
     }
 
     @Override
     public String toString()
     {
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
-                                                                            .append( "timeScale", timeScale )
-                                                                            .append( "referenceTimes", referenceTimes )
-                                                                            .append( "variableName", variableName )
-                                                                            .append( "feature", feature )
-                                                                            .append( "unit", unit )
+                                                                            .append( "timeScale", this.timeScale )
+                                                                            .append( "referenceTimes",
+                                                                                     this.referenceTimes )
+                                                                            .append( "variableName", this.variableName )
+                                                                            .append( "feature", this.feature )
+                                                                            .append( "unit", this.unit )
                                                                             .toString();
     }
-    
+
     /**
      * Metadata builder.
      */
-    
-    public static class Builder 
+
+    public static class Builder
     {
         /**
          * The {@link TimeScaleOuter} associated with the events in the time-series.
@@ -213,105 +217,105 @@ public class TimeSeriesMetadata
          */
 
         private String unit;
-        
+
         /**
          * Sets the time-scale.
          * 
          * @param timeScale the time-scale
          * @return the builder
          */
-        
+
         public Builder setTimeScale( TimeScaleOuter timeScale )
         {
             this.timeScale = timeScale;
-            
+
             return this;
         }
-        
+
         /**
          * Sets the time-scale.
          * 
          * @param referenceTimes the reference times (zero or more)
          * @return the builder
          */
-        
-        public Builder setReferenceTimes( Map<ReferenceTimeType,Instant> referenceTimes )
+
+        public Builder setReferenceTimes( Map<ReferenceTimeType, Instant> referenceTimes )
         {
             this.referenceTimes = referenceTimes;
-            
+
             return this;
         }
-        
+
         /**
          * Sets the variable name.
          *
          * @param variableName the variable name
          * @return the builder
          */
-        
+
         public Builder setVariableName( String variableName )
         {
             this.variableName = variableName;
-            
+
             return this;
         }
-        
+
         /**
          * Sets the feature.
          *
          * @param feature the feature
          * @return the builder
          */
-        
+
         public Builder setFeature( FeatureKey feature )
         {
             this.feature = feature;
-            
+
             return this;
         }
-        
+
         /**
          * Sets the measurement unit.
          * 
          * @param unit the measurement unit
          * @return the builder
          */
-        
+
         public Builder setUnit( String unit )
         {
             this.unit = unit;
-            
+
             return this;
         }
-        
+
         /**
          * Builds an instance of the metadata.
          * 
          * @return the metadata
          */
-        
+
         public TimeSeriesMetadata build()
         {
             return new TimeSeriesMetadata( this );
         }
-        
+
         /**
          * Default constructor.
          */
-        
+
         public Builder()
-        {            
+        {
         }
-        
+
         /**
          * Creates a builder initialized with a prototype.
          * 
          * @param prototype the prototype metadata
          */
-        
+
         public Builder( TimeSeriesMetadata prototype )
         {
-            if( Objects.nonNull( prototype ) )
+            if ( Objects.nonNull( prototype ) )
             {
                 this.setFeature( prototype.getFeature() );
                 this.setVariableName( prototype.getVariableName() );
@@ -319,10 +323,10 @@ public class TimeSeriesMetadata
                 this.setTimeScale( prototype.getTimeScale() );
                 this.setUnit( prototype.getUnit() );
             }
-        }        
-        
+        }
+
     }
-    
+
     /**
      * Hidden constructor.
      * 
@@ -333,9 +337,9 @@ public class TimeSeriesMetadata
     private TimeSeriesMetadata( Builder builder )
     {
         // Set then validate
-        Map<ReferenceTimeType,Instant> localTimes = builder.referenceTimes;
-        
-        if( Objects.nonNull( localTimes ) )
+        Map<ReferenceTimeType, Instant> localTimes = builder.referenceTimes;
+
+        if ( Objects.nonNull( localTimes ) )
         {
             localTimes = Collections.unmodifiableMap( localTimes );
         }
@@ -346,11 +350,11 @@ public class TimeSeriesMetadata
         String localVariableName = builder.variableName;
         FeatureKey localFeature = builder.feature;
         String localUnits = builder.unit;
-        
+
         Objects.requireNonNull( localVariableName, "A timeseries requires a variable name." );
         Objects.requireNonNull( localFeature, "A timeseries requires a feature." );
         Objects.requireNonNull( localUnits, "A timeseries requires measurement units." );
-        
+
         String cachedVariableName = STRING_CACHE.getIfPresent( localVariableName );
 
         if ( Objects.nonNull( cachedVariableName ) )
@@ -386,7 +390,7 @@ public class TimeSeriesMetadata
             this.unit = localUnits;
             STRING_CACHE.put( this.unit, this.unit );
         }
-        
+
         Objects.requireNonNull( this.getReferenceTimes() );
         // Often the timescale is not available: in that case valid to use null.
         Objects.requireNonNull( this.getVariableName() );
