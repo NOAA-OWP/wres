@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -664,7 +665,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     {
 
         Pool.Builder<TimeSeries<Pair<L, R>>> builder = new Pool.Builder<>();
-        
+
         // Get the mapped series
         Map<FeatureKey, List<TimeSeries<L>>> mappedLeft = this.getMappedSeries( leftData );
         Map<FeatureKey, List<TimeSeries<R>>> mappedRight = this.getMappedSeries( rightData );
@@ -1882,8 +1883,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         if ( Objects.nonNull( timeSeries ) )
         {
             // Separate into time-series that have reference times and those that do not. Those with reference times
-            // are not consolidated
-            List<TimeSeries<T>> withoutReferenceTimes = new ArrayList<>();
+            // are not consolidated. Those without should be index by their common metadata.
+            Map<TimeSeriesMetadata, List<TimeSeries<T>>> withoutReferenceTimes = new HashMap<>();
             for ( TimeSeries<T> next : timeSeries )
             {
                 Set<ReferenceTimeType> referenceTimes = next.getReferenceTimes()
@@ -1904,18 +1905,36 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
                     TimeSeries<T> series = TimeSeries.of( meta, next.getEvents() );
 
-                    withoutReferenceTimes.add( series );
+                    if ( withoutReferenceTimes.containsKey( meta ) )
+                    {
+                        List<TimeSeries<T>> seriesList = withoutReferenceTimes.get( meta );
+                        seriesList.add( series );
+                    }
+                    else
+                    {
+                        List<TimeSeries<T>> newList = new ArrayList<>();
+                        newList.add( series );
+                        withoutReferenceTimes.put( meta, newList );
+                    }
                 }
             }
 
+            LOGGER.debug( "Discovered {} collections of observation-like time-series to consolidate, one for each of "
+                          + "these metadatas: {}.",
+                          withoutReferenceTimes.size(),
+                          withoutReferenceTimes.keySet() );
+
             // Consolidate the time-series without reference times
-            List<TimeSeries<T>> withoutReferenceTimesUnmodifiable =
-                    Collections.unmodifiableList( withoutReferenceTimes );
+            for ( List<TimeSeries<T>> nextList : withoutReferenceTimes.values() )
+            {
+                List<TimeSeries<T>> withoutReferenceTimesUnmodifiable =
+                        Collections.unmodifiableList( nextList );
 
-            Collection<TimeSeries<T>> consolidated =
-                    TimeSeriesSlicer.consolidateTimeSeriesWithZeroReferenceTimes( withoutReferenceTimesUnmodifiable );
+                Collection<TimeSeries<T>> consolidated =
+                        TimeSeriesSlicer.consolidateTimeSeriesWithZeroReferenceTimes( withoutReferenceTimesUnmodifiable );
 
-            returnMe.addAll( consolidated );
+                returnMe.addAll( consolidated );
+            }
         }
 
         return Collections.unmodifiableList( returnMe );
@@ -2043,7 +2062,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         {
             return Collections.emptyMap();
         }
-        
+
         return timeSeries.stream()
                          .collect( Collectors.groupingBy( next -> next.getMetadata().getFeature(),
                                                           Collectors.mapping( Function.identity(),
