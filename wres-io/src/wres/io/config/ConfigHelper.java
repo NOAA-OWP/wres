@@ -637,7 +637,7 @@ public class ConfigHelper
                                                          + FeatureDimension.USGS_SITE_CODE );
                     }
                 }
-                else if ( sourceInterface.contains( "ahps" ) )
+                else if ( sourceInterface.contains( "ahps" ) || sourceInterface.equalsIgnoreCase( InterfaceShortHand.WRDS_OBS.name() ) )
                 {
                     if ( foundDimension == null || foundDimension == FeatureDimension.NWS_LID )
                     {

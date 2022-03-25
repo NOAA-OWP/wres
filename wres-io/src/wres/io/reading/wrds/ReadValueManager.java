@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.DatasourceType;
 import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -193,7 +194,7 @@ public class ReadValueManager
 
         if ( LOGGER.isTraceEnabled() )
         {
-            LOGGER.trace( "Forecast as bytes: {} and as UTF-8: {}",
+            LOGGER.trace( "Time series as bytes: {} and as UTF-8: {}",
                           rawForecast,
                           new String( rawForecast,
                                       StandardCharsets.UTF_8 ) );
@@ -217,12 +218,12 @@ public class ReadValueManager
             // the output the list of missing values to debug. 
             if (response.getHeader().getMissing_values() != null)
             {
-                LOGGER.debug ( "The forecast specified the following missing values: " + 
+                LOGGER.debug ( "The time series specified the following missing values: " + 
                                Arrays.toString(response.getHeader().getMissing_values()) );
             }
             else 
             {
-                LOGGER.debug ( "The forecast specified no missing values." );
+                LOGGER.debug ( "The time series specified no missing values." );
             }
 
             List<IngestResult> results = new ArrayList<>( response.forecasts.length );
@@ -277,14 +278,14 @@ public class ReadValueManager
         }
         else
         {
-            LOGGER.warn( "The forecast '{}' from '{}' did not have data to save.",
+            LOGGER.warn( "The time series '{}' from '{}' did not have data to save.",
                          forecast, location );
             return null;
         }
 
         if ( dataPointsList.size() < 2 )
         {
-            LOGGER.warn( "Fewer than two values present in the first forecast '{}' from '{}'.",
+            LOGGER.warn( "Fewer than two values present in the first time series '{}' from '{}'.",
                          forecast, location );
             return null;
         }
@@ -308,17 +309,42 @@ public class ReadValueManager
             datetimes.put( ReferenceTimeType.ISSUED_TIME, issuedDateTime );
         }
 
+        //If datetimes is empty, then, if the data are observations, use the latest time
+        //associated with an observation as a "dummy" reference time.  Otherwise, the 
+        //the data is either a forecast or simulation, and a reference this is required.
+        //Since its not found, skip the time series with an appropriate message.
         if ( datetimes.isEmpty() )
         {
-            LOGGER.warn( "Forecast at {} had neither a basis datetime nor an issued datetime. Skipping it.",
-                         location );
-            return null;
+            if (this.dataSource.getContext().getType() == DatasourceType.OBSERVATIONS)
+            {
+                Instant latestTime = null;
+                for ( DataPoint dataPoint : dataPointsList )
+                {
+                    Instant dataPointTime = dataPoint.getTime().toInstant();
+                    if ( (latestTime == null) || dataPointTime.isAfter( latestTime ) )
+                    {
+                        latestTime = dataPointTime;
+                    }
+                }
+                datetimes.put(ReferenceTimeType.LATEST_OBSERVATION, latestTime);
+            }
+            else
+            {
+                LOGGER.warn( "Forecast at {} had neither a basis datetime nor an issued datetime. Skipping it.",
+                             location );
+                return null;
+            }
         }
 
         // Get the time scale information, if available
         TimeScaleOuter timeScale = TimeScaleFromParameterCodes.getTimeScale( forecast.getParameterCodes(), location );
-        String measurementUnit = forecast.getUnits()
-                                         .getUnitName();
+        String measurementUnit = forecast.getMembers()[0].getUnits();
+        if ( !Objects.nonNull( measurementUnit  ) )
+        {
+            //TODO Should check for existence.  
+            measurementUnit = forecast.getUnits()
+                                      .getUnitName();
+        }
         String variableName = forecast.getParameterCodes()
                                       .getPhysicalElement();
         String featureName = forecast.getLocation()
@@ -409,9 +435,9 @@ public class ReadValueManager
         // Check the size of the datetimes set vs the size of the list
         if ( dataPointsList.size() != dateTimes.size() )
         {
-            String message = "Invalid timeseries data encountered. Multiple data"
+            String message = "Invalid time series data encountered. Multiple data"
                              + " found for each of the following datetimes in "
-                             + "a forecast from " + this.getLocation()
+                             + "a time series from " + this.getLocation()
                              + " : " + multipleValues;
             throw new PreIngestException( message );
         }

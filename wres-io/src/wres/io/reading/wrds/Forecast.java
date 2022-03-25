@@ -3,6 +3,7 @@ package wres.io.reading.wrds;
 import java.time.OffsetDateTime;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonAlias;
 
 import wres.util.Strings;
 
@@ -125,6 +126,8 @@ public class Forecast
     OffsetDateTime issuedTime;
     ForecastUnits units;
     ParameterCodes parameterCodes;
+
+    @JsonAlias({"timeseries"})
     Member[] members;
 
 

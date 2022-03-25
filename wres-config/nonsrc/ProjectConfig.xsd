@@ -118,6 +118,7 @@
         </xs:annotation>
         <xs:restriction base="xs:string">
             <xs:enumeration value="wrds_ahps" />
+            <xs:enumeration value="wrds_obs" />
             <xs:enumeration value="wrds_nwm" />
             <xs:enumeration value="usgs_nwis" />
             <xs:enumeration value="nwm_short_range_channel_rt_conus" />

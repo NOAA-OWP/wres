@@ -320,6 +320,7 @@ public class SourceLoader
             LOGGER.debug( "The data at '{}' will be re-composed because an interface short-hand was specified.",
                           source );
             if ( interfaceShortHand.equals( InterfaceShortHand.WRDS_AHPS )
+                 || interfaceShortHand.equals( InterfaceShortHand.WRDS_OBS )
                  || interfaceShortHand.equals( InterfaceShortHand.USGS_NWIS )
                  || interfaceShortHand.equals( InterfaceShortHand.WRDS_NWM ) )
             {
