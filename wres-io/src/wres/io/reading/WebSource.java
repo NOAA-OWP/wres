@@ -305,7 +305,7 @@ class WebSource implements Callable<List<IngestResult>>
         {
             disposition = DataSource.DataDisposition.JSON_WATERML;
         }
-        else if ( this.isWrdsAhpsSource( this.getDataSource() ) )
+        else if ( this.isWrdsAhpsSource( this.getDataSource() ) || this.isWrdsObsSource( this.getDataSource() ) )
         {
             disposition = DataSource.DataDisposition.JSON_WRDS_AHPS;
         }
@@ -550,6 +550,17 @@ class WebSource implements Callable<List<IngestResult>>
                    .contains( "nwm" );
     }
 
+    private boolean isWrdsObsSource( DataSource source)
+    {
+        InterfaceShortHand  interfaceShortHand = source.getSource()
+                                                       .getInterface();
+        if ( Objects.nonNull( interfaceShortHand ) )
+        {
+            return interfaceShortHand.equals( InterfaceShortHand.WRDS_OBS );
+        }
+        return false;
+    }
+
     private boolean isWrdsAhpsSource( DataSource source )
     {
         URI uri = source.getUri();
@@ -694,6 +705,12 @@ class WebSource implements Callable<List<IngestResult>>
                                                      OffsetDateTime nowDate )
     {
         if ( this.isUsgsSource( dataSource ) )
+        {
+            return this.createYearRanges( declaration,
+                                          dataSource,
+                                          nowDate );
+        }
+        else if ( this.isWrdsObsSource( dataSource ) )
         {
             return this.createYearRanges( declaration,
                                           dataSource,
@@ -1015,7 +1032,17 @@ class WebSource implements Callable<List<IngestResult>>
                                            range,
                                            featureName,
                                            dataSource.getContext()
-                                                     .getUrlParameter() );
+                                                     .getUrlParameter(),
+                                           false );
+        }
+        else if ( this.isWrdsObsSource( dataSource ) )
+        {
+            return this.createWrdsAhpsUri( baseUri,
+                                           range,
+                                           featureName,
+                                           dataSource.getContext()
+                                                     .getUrlParameter(),
+                                           true );
         }
         else if ( this.isUsgsSource( dataSource ) )
         {
@@ -1121,15 +1148,17 @@ class WebSource implements Callable<List<IngestResult>>
      *
      * <p>Expecting a wrds URI like this:
      * http://redacted/api/v1/forecasts/streamflow/ahps</p>
-     * @param issuedRange the range of issued dates (from left to right)
+     * @param range the range of dates (from left to right)
      * @param nwsLocationId The feature for which to get data.
+     * @param observed True for observations, false for AHPS forecasts.
      * @return a URI suitable to get the data from WRDS API
      */
 
     private URI createWrdsAhpsUri( URI baseUri,
-                                   Pair<Instant,Instant> issuedRange,
+                                   Pair<Instant,Instant> range,
                                    String nwsLocationId,
-                                   List<UrlParameter> additionalParameters )
+                                   List<UrlParameter> additionalParameters,
+                                   boolean observed )
     {
 
         String basePath = baseUri.getPath();
@@ -1147,8 +1176,9 @@ class WebSource implements Callable<List<IngestResult>>
             basePath = basePath + "nws_lid/";
         }
 
-        Map<String, String> wrdsParameters = createWrdsAhpsUrlParameters( issuedRange,
-                                                                          additionalParameters );
+        Map<String, String> wrdsParameters = createWrdsAhpsUrlParameters( range,
+                                                                          additionalParameters,
+                                                                          observed );
         String pathWithLocation = basePath 
                                   + nwsLocationId;
         URIBuilder uriBuilder = new URIBuilder( this.getBaseUri() );
@@ -1314,7 +1344,8 @@ class WebSource implements Callable<List<IngestResult>>
      */
 
     private Map<String,String> createWrdsAhpsUrlParameters( Pair<Instant,Instant> issuedRange,
-                                                            List<UrlParameter> additionalParameters )
+                                                            List<UrlParameter> additionalParameters, 
+                                                            boolean observed)
     {
         Map<String,String> urlParameters = new HashMap<>( 2 );
 
@@ -1324,9 +1355,15 @@ class WebSource implements Callable<List<IngestResult>>
             urlParameters.put( parameter.getName(), parameter.getValue() );
         }
 
-        urlParameters.put( "issuedTime", "[" + issuedRange.getLeft().toString()
-                                         + "," + issuedRange.getRight().toString()
-                                         + "]" );
+        String timeTag = "issuedTime";
+        if ( observed )
+        {
+            timeTag = "validTime";
+        }
+
+        urlParameters.put( timeTag, "[" + issuedRange.getLeft().toString()
+                                    + "," + issuedRange.getRight().toString()
+                                    + "]" );
 
 
         return Collections.unmodifiableMap( urlParameters );

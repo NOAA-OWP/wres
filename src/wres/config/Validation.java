@@ -118,6 +118,12 @@ public class Validation
                                                                                 + "<issuedDates earliest=\"2018-12-28T15:42:00Z\" "
                                                                                 + "latest=\"2019-01-01T00:00:00Z\" />) when using a web API as a "
                                                                                 + "source for forecasts (see source near line {} and column {}";
+    private static final String API_SOURCE_MISSING_DATES_ERROR_MESSAGE =
+            "One must specify dates with both earliest and latest (e.g. "
+                                                                        + "<dates earliest=\"2018-12-28T15:42:00Z\" "
+                                                                        + "latest=\"2019-01-01T00:00:00Z\" />) when using a web API as a "
+                                                                        + "source for observations (see source near line {} and column {}";
+
 
     private Validation()
     {
@@ -3181,57 +3187,89 @@ public class Validation
                                                        .getInputs()
                                                        .getLeft() ) )
         {
-            if ( LOGGER.isWarnEnabled() )
+            DateCondition dates = projectConfigPlus.getProjectConfig()
+                                                     .getPair()
+                                                     .getDates();
+            if ( dates == null )
             {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE +
-                             " WRDS observations are not supported. Please use WRDS on 'right' or 'baseline'",
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE + " "
+                             + API_SOURCE_MISSING_DATES_ERROR_MESSAGE,
                              projectConfigPlus,
-                             source.sourceLocation().getLineNumber(),
-                             source.sourceLocation().getColumnNumber() );
+                             projectConfigPlus.getProjectConfig()
+                                              .getPair()
+                                              .sourceLocation()
+                                              .getLineNumber(),
+                             projectConfigPlus.getProjectConfig()
+                                              .getPair()
+                                              .sourceLocation()
+                                              .getColumnNumber(),
+                             source.sourceLocation()
+                                   .getLineNumber(),
+                             source.sourceLocation()
+                                   .getColumnNumber() );
+                wrdsSourceValid = false;
+            }
+            else if ( dates.getEarliest() == null
+                      || dates.getLatest() == null )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE + " "
+                             + API_SOURCE_MISSING_DATES_ERROR_MESSAGE,
+                             projectConfigPlus,
+                             dates.sourceLocation()
+                                        .getLineNumber(),
+                             dates.sourceLocation()
+                                        .getColumnNumber(),
+                             source.sourceLocation()
+                                   .getLineNumber(),
+                             source.sourceLocation()
+                                   .getColumnNumber() );
+                wrdsSourceValid = false;
             }
 
-            wrdsSourceValid = false;
         }
+        else
+        {
 
-        DateCondition issuedDates = projectConfigPlus.getProjectConfig()
+            DateCondition issuedDates = projectConfigPlus.getProjectConfig()
                                                      .getPair()
                                                      .getIssuedDates();
-        if ( issuedDates == null )
-        {
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE + " "
-                         + API_SOURCE_MISSING_ISSUED_DATES_ERROR_MESSAGE,
-                         projectConfigPlus,
-                         projectConfigPlus.getProjectConfig()
-                                          .getPair()
-                                          .sourceLocation()
-                                          .getLineNumber(),
-                         projectConfigPlus.getProjectConfig()
-                                          .getPair()
-                                          .sourceLocation()
-                                          .getColumnNumber(),
-                         source.sourceLocation()
-                               .getLineNumber(),
-                         source.sourceLocation()
-                               .getColumnNumber() );
-            wrdsSourceValid = false;
+            if ( issuedDates == null )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE + " "
+                             + API_SOURCE_MISSING_ISSUED_DATES_ERROR_MESSAGE,
+                             projectConfigPlus,
+                             projectConfigPlus.getProjectConfig()
+                                              .getPair()
+                                              .sourceLocation()
+                                              .getLineNumber(),
+                             projectConfigPlus.getProjectConfig()
+                                              .getPair()
+                                              .sourceLocation()
+                                              .getColumnNumber(),
+                             source.sourceLocation()
+                                   .getLineNumber(),
+                             source.sourceLocation()
+                                   .getColumnNumber() );
+                wrdsSourceValid = false;
+            }
+            else if ( issuedDates.getEarliest() == null
+                      || issuedDates.getLatest() == null )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE + " "
+                             + API_SOURCE_MISSING_ISSUED_DATES_ERROR_MESSAGE,
+                             projectConfigPlus,
+                             issuedDates.sourceLocation()
+                                        .getLineNumber(),
+                             issuedDates.sourceLocation()
+                                        .getColumnNumber(),
+                             source.sourceLocation()
+                                   .getLineNumber(),
+                             source.sourceLocation()
+                                   .getColumnNumber() );
+                wrdsSourceValid = false;
+            }
+        
         }
-        else if ( issuedDates.getEarliest() == null
-                  || issuedDates.getLatest() == null )
-        {
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE + " "
-                         + API_SOURCE_MISSING_ISSUED_DATES_ERROR_MESSAGE,
-                         projectConfigPlus,
-                         issuedDates.sourceLocation()
-                                    .getLineNumber(),
-                         issuedDates.sourceLocation()
-                                    .getColumnNumber(),
-                         source.sourceLocation()
-                               .getLineNumber(),
-                         source.sourceLocation()
-                               .getColumnNumber() );
-            wrdsSourceValid = false;
-        }
-
 
         return wrdsSourceValid;
     }

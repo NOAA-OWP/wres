@@ -3,6 +3,7 @@ package wres.io.reading.wrds;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonAlias;
 
 @XmlRootElement
 @JsonIgnoreProperties( ignoreUnknown = true )
@@ -51,5 +52,7 @@ public class ForecastResponse
     short status_code;
     String messsage;
     Header header;
+    
+    @JsonAlias({"timeseriesDataset"})
     Forecast[] forecasts;
 }
