@@ -255,4 +255,22 @@
                                  referencedTableSchemaName="wres"
                                  onDelete="CASCADE" />
     </changeSet>
+    <changeSet id="Add feature_id index to wres.Source."
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <columnExists columnName="feature_id"
+                          tableName="Source"
+                          schemaName="wres" />
+            <not>
+                <indexExists indexName="source_feature_index"
+                             tableName="Source"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <createIndex tableName="Source"
+                     schemaName="wres"
+                     indexName="source_feature_index">
+            <column name="feature_id" />
+        </createIndex>
+    </changeSet>
 </databaseChangeLog>
