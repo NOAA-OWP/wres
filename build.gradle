@@ -382,6 +382,7 @@ project(':wres-io')
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
         // JSON deserialization uses jackson directly. Specify recent version.
+        implementation 'com.fasterxml.jackson:jackson-bom:2.13.2.20220324'
         implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.2.1'
         implementation 'com.fasterxml.jackson.core:jackson-annotations:2.13.2'
         implementation 'com.fasterxml.jackson.core:jackson-core:2.13.2'
