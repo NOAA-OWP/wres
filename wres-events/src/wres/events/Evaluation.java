@@ -74,7 +74,7 @@ import wres.statistics.generated.Statistics;
  * identifier and connection details for brokered (i.e., non request-response) communication. Alternatively, the broker
  * could broadcast its existence to listening consumers.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 @ThreadSafe
@@ -665,6 +665,9 @@ public class Evaluation implements Closeable
 
         // Close the tracker
         this.statusTracker.close();
+        
+        // Cancel otherwise the current instance will persist in cluster-server mode: #103066
+        this.timer.cancel();
 
         if ( LOGGER.isInfoEnabled() )
         {
@@ -1560,7 +1563,6 @@ public class Evaluation implements Closeable
             {
                 if ( evaluation.isAlive() )
                 {
-
                     evaluation.notifyAlive();
                 }
             }
