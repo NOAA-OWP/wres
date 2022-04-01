@@ -1,5 +1,5 @@
 # From a base image, make updates
-FROM registry.access.redhat.com/ubi8/ubi:8.5-236.1647448331
+FROM registry.access.redhat.com/ubi8/ubi:8.5-236.1648460182
 
 RUN dnf install -y \
     java-11-openjdk-headless-11.0.14.1.1-2.el8_5 \
