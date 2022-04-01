@@ -1,6 +1,7 @@
 package wres.vis.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -48,6 +49,11 @@ class ScoreByLeadAndThresholdTest
                                                                               .setValue( 2.7 )
                                                                               .build();
 
+        DoubleScoreStatisticComponent scoreThree = DoubleScoreStatisticComponent.newBuilder()
+                                                                                .setMetric( metric )
+                                                                                .setValue( Double.POSITIVE_INFINITY )
+                                                                                .build();
+
         // Set metadata with minimum content
         TimeWindow timeWindow = TimeWindow.newBuilder()
                                           .setEarliestLeadDuration( Duration.newBuilder().setSeconds( 0 ) )
@@ -62,21 +68,28 @@ class ScoreByLeadAndThresholdTest
                                              .setLatestLeadDuration( Duration.newBuilder().setSeconds( 55 ) )
                                              .build();
 
+        TimeWindow timeWindowThree = timeWindow.toBuilder()
+                                               .setLatestLeadDuration( Duration.newBuilder().setSeconds( 77 ) )
+                                               .build();
+
         OneOrTwoThresholds thresholds = OneOrTwoThresholds.of( ThresholdOuter.ALL_DATA );
         PoolMetadata metaOne = PoolMetadata.of( PoolMetadata.of(), TimeWindowOuter.of( timeWindow ), thresholds );
         PoolMetadata metaTwo = PoolMetadata.of( PoolMetadata.of(), TimeWindowOuter.of( timeWindowTwo ), thresholds );
+        PoolMetadata metaThree =
+                PoolMetadata.of( PoolMetadata.of(), TimeWindowOuter.of( timeWindowThree ), thresholds );
 
         DoubleScoreComponentOuter outerScoreOne = DoubleScoreComponentOuter.of( scoreOne, metaOne );
         DoubleScoreComponentOuter outerScoreTwo = DoubleScoreComponentOuter.of( scoreTwo, metaTwo );
+        DoubleScoreComponentOuter outerScoreThree = DoubleScoreComponentOuter.of( scoreThree, metaThree );
 
-        this.score = ScoreByLeadAndThreshold.of( List.of( outerScoreOne, outerScoreTwo ),
+        this.score = ScoreByLeadAndThreshold.of( List.of( outerScoreOne, outerScoreTwo, outerScoreThree ),
                                                  ChronoUnit.SECONDS );
     }
 
     @Test
     void testGetItemCount()
     {
-        assertEquals( 2, this.score.getItemCount( 0 ) );
+        assertEquals( 3, this.score.getItemCount( 0 ) );
     }
 
     @Test
@@ -95,6 +108,12 @@ class ScoreByLeadAndThresholdTest
     void testGetY()
     {
         assertEquals( 2.3, this.score.getY( 0, 0 ) );
+    }
+
+    @Test
+    void testGetYProducesNullWhenInfinite()
+    {
+        assertNull( this.score.getY( 0, 2 ) );
     }
 
     @Test
