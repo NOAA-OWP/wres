@@ -78,11 +78,18 @@ class ScoreByLeadAndThreshold extends AbstractXYDataset
     @Override
     public Number getY( int series, int item )
     {
-        return this.statistics.get( series )
-                              .getRight()
-                              .get( item )
-                              .getData()
-                              .getValue();
+        double test = this.statistics.get( series )
+                                     .getRight()
+                                     .get( item )
+                                     .getData()
+                                     .getValue();
+
+        if ( Double.isInfinite( test ) )
+        {
+            return null; // JFreeChart missing protocol, #103129
+        }
+
+        return test;
     }
 
     @Override
