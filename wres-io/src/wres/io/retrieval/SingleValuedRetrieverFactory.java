@@ -178,7 +178,6 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
      * @param dataSourceConfig the data source configuration
      * @param features the features
      * @param timeWindow the time window
-     * @param featureName the feature name
      * @return the supplier
      */
 

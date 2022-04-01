@@ -33,6 +33,7 @@ import wres.pipeline.Evaluator;
 import wres.pipeline.InternalWresException;
 import wres.pipeline.UserInputException;
 import wres.system.DatabaseLockManager;
+import wres.system.DatabasePartitions;
 import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 
@@ -120,6 +121,7 @@ final class MainFunctions
 		functions.put("createnetcdftemplate", MainFunctions::createNetCDFTemplate);
 		functions.put("validate", MainFunctions::validate);
 		functions.put("validategrid", MainFunctions::validateNetcdfGrid);
+        functions.put( "rotatepartitions", MainFunctions::rotatePartitions );
 
 		return functions;
 	}
@@ -427,6 +429,60 @@ final class MainFunctions
             LOGGER.error( message );
             UserInputException e = new UserInputException( message );
             return ExecutionResult.failure( e );
+        }
+    }
+
+    private static ExecutionResult rotatePartitions( final SharedResources sharedResources )
+    {
+        String[] args = sharedResources.getArguments();
+        if ( args.length < 3 || args.length > 4 )
+        {
+            throw new IllegalArgumentException( "Three int arguments to "
+                                                + "rotatepartitions are "
+                                                + "required: total requested "
+                                                + "partitions, empty partitions"
+                                                + ", and count of ids per new"
+                                                + " partition. One optional "
+                                                + "boolean argument when true "
+                                                + "performs the rotate (default"
+                                                + ") or when false will only "
+                                                + "print the plan (dry run)." );
+        }
+
+        int totalPartitionsRequested = Integer.parseInt( args[0] );
+        int emptyPartitionsRequested = Integer.parseInt( args[1] );
+
+        // The ids per partition should be under 2 billion anyway, use an int.
+        int idCount = Integer.parseInt( args[2] );
+
+        // By default, run the plan.
+        boolean applyChanges = true;
+        if ( args.length == 4 )
+        {
+            applyChanges = Boolean.parseBoolean( args[3] );
+        }
+
+        DatabaseLockManager lockManager = DatabaseLockManager.from( sharedResources.getSystemSettings() );
+
+        try
+        {
+            lockManager.lockExclusive( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
+            DatabasePartitions partitions = new DatabasePartitions( sharedResources.getSystemSettings() );
+            partitions.rotateTstvPartitions( totalPartitionsRequested,
+                                             emptyPartitionsRequested,
+                                             idCount,
+                                             applyChanges );
+            lockManager.unlockExclusive( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
+            return ExecutionResult.success();
+        }
+        catch ( SQLException | RuntimeException e )
+        {
+            LOGGER.error( "rotatepartitions failed.", e );
+            return ExecutionResult.failure( e );
+        }
+        finally
+        {
+            lockManager.shutdown();
         }
     }
 
