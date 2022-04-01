@@ -153,7 +153,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
     }
 
     /**
-     * Returns all of the <code>wres.TimeSeries.timeseries_id</code> associated with this instance. 
+     * Returns all of the <code>wres.TimeSeries.timeseries_id</code> associated with this instance.
      * 
      * TODO: implement this method when there is a composition identifier for an ensemble. See #68334.
      * 
@@ -208,10 +208,10 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         dataScripter.addTab( 2 ).addLine( "TimeScale.duration_ms," );
         dataScripter.addTab( 2 ).addLine( "TimeScale.function_name" );
         dataScripter.addLine( ") AS metadata " );
-        dataScripter.addLine( "INNER JOIN wres.TimeSeries TS" );
-        dataScripter.addTab().addLine( "ON TS.source_id = metadata.series_id" );
-        dataScripter.addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
-        dataScripter.addTab().addLine( "ON TSV.timeseries_id = TS.timeseries_id" );
+        dataScripter.addLine( "INNER JOIN wres.TimeSeriesTrace TST" );
+        dataScripter.addTab().addLine( "ON TST.source_id = metadata.series_id" );
+        dataScripter.addLine( "INNER JOIN wres.TimeSeriesTraceValue TSTV" );
+        dataScripter.addTab().addLine( "ON TSTV.timeseriestrace_id = TST.timeseriestrace_id" );
 
         // Add time window constraint at zero tabs
         this.addTimeWindowClause( dataScripter, 0 );
@@ -223,7 +223,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         dataScripter.addLine( "GROUP BY metadata.series_id,"
                               + "metadata.reference_time, "
                               + "metadata.feature_id, "
-                              + "TSV.lead, "
+                              + "TSTV.valid_datetime, "
                               + "metadata.scale_period, "
                               + "metadata.scale_function, "
                               + "metadata.measurementunit_id,"
@@ -380,10 +380,10 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
 
         scripter.addLine( "SELECT " );
         scripter.addTab().addLine( "metadata.series_id AS series_id," );
-        scripter.addTab().addLine( "metadata.reference_time + INTERVAL '1' MINUTE * TSV.lead AS valid_time," );
+        scripter.addTab().addLine( "TSTV.valid_datetime AS valid_time," );
         scripter.addTab().addLine( "metadata.reference_time," );
-        scripter.addTab().addLine( "ARRAY_AGG(TSV.series_value ORDER BY TS.ensemble_id) AS ensemble_members," );
-        scripter.addTab().addLine( "ARRAY_AGG(TS.ensemble_id ORDER BY TS.ensemble_id) AS ensemble_ids," );
+        scripter.addTab().addLine( "ARRAY_AGG(TSTV.series_value ORDER BY TST.ensemble_id) AS ensemble_members," );
+        scripter.addTab().addLine( "ARRAY_AGG(TST.ensemble_id ORDER BY TST.ensemble_id) AS ensemble_ids," );
         scripter.addTab().addLine( "metadata.measurementunit_id," );
         scripter.addTab().addLine( "metadata.scale_period," );
         scripter.addTab().addLine( "metadata.scale_function," );
@@ -420,7 +420,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
 
     private EnsembleForecastRetriever( Builder builder )
     {
-        super( builder, "metadata.reference_time", "TSV.lead" );
+        super( builder );
         this.ensembleIdsToInclude = builder.ensembleIdsToInclude;
         this.ensembleIdsToExclude = builder.ensembleIdsToExclude;
         this.ensemblesCache = builder.ensemblesCache;

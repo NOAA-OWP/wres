@@ -113,10 +113,10 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
         dataScripter.addTab( 2 ).addLine( "TimeScale.duration_ms," );
         dataScripter.addTab( 2 ).addLine( "TimeScale.function_name" );
         dataScripter.addLine( ") AS metadata " );
-        dataScripter.addLine( "INNER JOIN wres.TimeSeries TS" );
-        dataScripter.addTab().addLine( "ON TS.source_id = metadata.series_id" );
-        dataScripter.addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
-        dataScripter.addTab().addLine( "ON TSV.timeseries_id = TS.timeseries_id" );
+        dataScripter.addLine( "INNER JOIN wres.TimeSeriesTrace TST" );
+        dataScripter.addTab().addLine( "ON TST.source_id = metadata.series_id" );
+        dataScripter.addLine( "INNER JOIN wres.TimeSeriesTraceValue TSTV" );
+        dataScripter.addTab().addLine( "ON TSTV.timeseriestrace_id = TST.timeseriestrace_id" );
         this.addTimeWindowClause( dataScripter, 0 );
         this.addSeasonClause( dataScripter, 1 );
 
@@ -178,11 +178,11 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
 
         scripter.addLine( "SELECT " );
         scripter.addTab().addLine( "metadata.series_id AS series_id," );
-        scripter.addTab().addLine( "metadata.reference_time + INTERVAL '1' MINUTE * TSV.lead AS valid_time," );
+        scripter.addTab().addLine( "TSTV.valid_datetime AS valid_time," );
 
         // Some code will be confused if a reference_time shows up in "obs" data
         //scripter.addTab().addLine( "metadata.reference_time," );
-        scripter.addTab().addLine( "TSV.series_value AS trace_value," );
+        scripter.addTab().addLine( "TSTV.series_value AS trace_value," );
         scripter.addTab().addLine( "metadata.measurementunit_id," );
         scripter.addTab().addLine( "metadata.scale_period," );
         scripter.addTab().addLine( "metadata.scale_function," );
@@ -221,7 +221,33 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
 
     private ObservationRetriever( Builder builder )
     {
-        super( builder, "metadata.reference_time + INTERVAL '1' MINUTE * TSV.lead", null );
+        super( builder );
+    }
+
+    /**
+     * Returns the reference time (aka basis datetime) column name or expression.
+     *
+     * ObservationRetriever is a special snowflake that does not consider these.
+     * @return null.
+     */
+
+    @Override
+    protected String getReferenceTimeColumn()
+    {
+        return null;
+    }
+
+    /**
+     * Returns the lead duration column name or expression.
+     *
+     * ObservationRetriever is a special snowflake that does not consider leads.
+     * @return null.
+     */
+
+    @Override
+    protected String getLeadDurationColumn()
+    {
+        return null;
     }
 
 

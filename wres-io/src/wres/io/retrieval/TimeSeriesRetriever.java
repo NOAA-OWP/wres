@@ -47,6 +47,11 @@ import wres.io.utilities.Database;
 
 abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesRetriever.class );
+
+    private static final String REFERENCE_TIME_COLUMN = "metadata.reference_time";
+    private static final String LEAD_DURATION_COLUMN = "TSTV.valid_datetime - metadata.reference_time";
+    private static final String VALID_DATETIME_COLUMN = "TSTV.valid_datetime";
 
     /**
      * String used repeatedly to denote a reference_time.
@@ -60,24 +65,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     private static final String WHILE_BUILDING_THE_RETRIEVER = "While building the retriever for project_id '{}' "
                                                                + "and data type {}, ";
-
-    /**
-     * Script string used several times.
-     */
-
-    private static final String INTERVAL_1_MINUTE = " + INTERVAL '1' MINUTE * ";
-
-    /**
-     * Operator used several times in scripts.
-     */
-
-    private static final String LESS_EQUAL = " <= ?";
-
-    /**
-     * Logger.
-     */
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesRetriever.class );
 
     /**
      * Log message for the retriever script.
@@ -158,19 +145,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      */
 
     private final MonthDay seasonEnd;
-
-    /**
-     * The time column name, including the table alias (e.g., O.observation_time). This may be a reference time or a
-     * valid time, depending on context. See {@link #timeColumnIsAReferenceTime()}.
-     */
-
-    private String timeColumn;
-
-    /**
-     * The lead duration column name, including the table alias (e.g., TSV.lead).
-     */
-
-    private final String leadDurationColumn;
 
     /**
      * Reference time type. If there are multiple instances per time-series in future, then the shape of retrieval will 
@@ -367,17 +341,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 this.addReferenceTimeBoundsToScript( script, filter, tabsIn );
             }
 
-            // Is the time column a reference time?
-            // This is different from forecast vs. observation, because some nominally "observed"
-            // datasets, such as analyses, may have reference times and lead durations
-            if ( this.timeColumnIsAReferenceTime() )
-            {
-                this.addValidTimeBoundsToScriptUsingReferenceTimeAndLeadDuration( script, filter, tabsIn );
-            }
-            else
-            {
-                this.addValidTimeBoundsToScript( script, filter, tabsIn );
-            }
+            this.addValidTimeBoundsToScript( script, filter, tabsIn );
+
         }
     }
 
@@ -400,7 +365,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         // Does the filter exist?
         if ( this.hasSeason() )
         {
-            String columnName = this.getTimeColumnName();
+            String columnName = this.getReferenceTimeColumn();
 
             String monthOfYearTemplate = "EXTRACT( MONTH FROM " + columnName + " )";
             String dayOfMonthTemplate = "EXTRACT( DAY FROM " + columnName + " )";
@@ -465,7 +430,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Where available adds the clauses to the input script associated with {@link #getProjectId()}, the 
-     * {@link #getVariableName()}, {@link #getFeatureId()} and {@link #getLeftOrRightOrBaseline()}. 
+     * {@link #getVariableName()}, {@link #getFeatureIds()} and {@link #getLeftOrRightOrBaseline()}.
      *
      * @param script the script to augment
      * @param tabsIn the number of tabs in for the outermost clause
@@ -722,18 +687,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
-     * Returns <code>true</code> if the time column represents a reference time, <code>false</code> if it represents a 
-     * valid time.
-     * 
-     * @return true if the time column is a reference time, false for a valid time
-     */
-
-    private boolean timeColumnIsAReferenceTime()
-    {
-        return Objects.nonNull( this.leadDurationColumn );
-    }
-
-    /**
      * Checks that the time-scale information is consistent with the last time scale. If not, throws an exception. If
      * so, returns the valid time scale, which is obtained from the input period and function, possibly augmented by
      * any declared time scale information attached to this instance on construction. In using an existing time scale 
@@ -898,7 +851,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         // Lower bound
         if ( !filter.getEarliestLeadDuration().equals( TimeWindowOuter.DURATION_MIN ) )
         {
-            lowerLead = filter.getEarliestLeadDuration().toMinutes();
+            lowerLead = filter.getEarliestLeadDuration().toSeconds();
 
             // Adjust by the desired time scale if the desired time scale is not instantaneous
             if ( Objects.nonNull( this.desiredTimeScale ) && !this.desiredTimeScale.isInstantaneous() )
@@ -914,13 +867,13 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                               lowered,
                               this.desiredTimeScale );
 
-                lowerLead = lowered.toMinutes();
+                lowerLead = lowered.toSeconds();
             }
         }
         // Upper bound
         if ( !filter.getLatestLeadDuration().equals( TimeWindowOuter.DURATION_MAX ) )
         {
-            upperLead = filter.getLatestLeadDuration().toMinutes();
+            upperLead = filter.getLatestLeadDuration().toSeconds();
         }
 
         this.addLeadBoundsClauseToScript( script, lowerLead, upperLead, tabsIn );
@@ -928,10 +881,10 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Adds the lead time constraints to a script.
-     * 
+     *
      * @param script the script
-     * @param lowerLead the lower lead time
-     * @param upperLead the upper lead time
+     * @param lowerLead the lower lead time in seconds
+     * @param upperLead the upper lead time in seconds
      * @param tabsIn the number of tabs in
      */
 
@@ -941,96 +894,24 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         if ( Objects.nonNull( lowerLead ) && Objects.nonNull( upperLead )
              && Long.compare( lowerLead, upperLead ) == 0 )
         {
-            this.addWhereOrAndClause( script, tabsIn, this.getLeadDurationColumnName() + " = ?", upperLead );
+            this.addWhereOrAndClause( script, tabsIn, this.getLeadDurationColumn() + " = INTERVAL '1' SECOND * CAST( ? AS BIGINT )", upperLead );
         }
         else
         {
             if ( Objects.nonNull( lowerLead ) )
             {
-                this.addWhereOrAndClause( script, tabsIn, this.getLeadDurationColumnName() + " > ?", lowerLead );
+                this.addWhereOrAndClause( script, tabsIn, this.getLeadDurationColumn() + " > INTERVAL '1' SECOND * CAST( ? AS BIGINT )", lowerLead );
             }
             if ( Objects.nonNull( upperLead ) )
             {
                 this.addWhereOrAndClause( script,
                                           tabsIn,
-                                          this.getLeadDurationColumnName() + LESS_EQUAL,
+                                          this.getLeadDurationColumn() + " <= INTERVAL '1' SECOND * CAST( ? AS BIGINT )",
                                           upperLead );
             }
         }
     }
 
-    /**
-     * Adds the valid time bounds (if any) to the script by inspecting a reference time column and a lead duration 
-     * column. The interval is right-closed.
-     * 
-     * @param script the script to augment
-     * @param filter the time window filter
-     * @param tabsIn the number of tabs in for the outermost clause
-     * @throws NullPointerException if any input is null
-     */
-
-    private void addValidTimeBoundsToScriptUsingReferenceTimeAndLeadDuration( DataScripter script,
-                                                                              TimeWindowOuter filter,
-                                                                              int tabsIn )
-    {
-        Objects.requireNonNull( script );
-
-        Objects.requireNonNull( filter );
-
-        // Lower and upper bounds are equal
-        if ( filter.getEarliestValidTime().equals( filter.getLatestValidTime() ) )
-        {
-            OffsetDateTime validTime = OffsetDateTime.ofInstant( filter.getEarliestValidTime(),
-                                                                 ZoneId.of( "UTC" ) );
-
-            String clause = this.getTimeColumnName()
-                            + INTERVAL_1_MINUTE
-                            + this.getLeadDurationColumnName()
-                            + " = ?";
-
-            this.addWhereOrAndClause( script,
-                                      tabsIn,
-                                      clause,
-                                      validTime );
-        }
-        // Lower bound
-        else
-        {
-
-            if ( !filter.getEarliestValidTime().equals( Instant.MIN ) )
-            {
-                OffsetDateTime lowerValidTime = OffsetDateTime.ofInstant( filter.getEarliestValidTime(),
-                                                                          ZoneId.of( "UTC" ) );
-
-                String clause = this.getTimeColumnName()
-                                + INTERVAL_1_MINUTE
-                                + this.getLeadDurationColumnName()
-                                + " > ?";
-
-                this.addWhereOrAndClause( script,
-                                          tabsIn,
-                                          clause,
-                                          lowerValidTime );
-            }
-
-            // Upper bound
-            if ( !filter.getLatestValidTime().equals( Instant.MAX ) )
-            {
-                OffsetDateTime upperValidTime = OffsetDateTime.ofInstant( filter.getLatestValidTime(),
-                                                                          ZoneId.of( "UTC" ) );
-
-                String clause = this.getTimeColumnName()
-                                + INTERVAL_1_MINUTE
-                                + this.getLeadDurationColumnName()
-                                + LESS_EQUAL;
-
-                this.addWhereOrAndClause( script,
-                                          tabsIn,
-                                          clause,
-                                          upperValidTime );
-            }
-        }
-    }
 
     /**
      * Adds the valid time bounds (if any) to the script. The interval is right-closed.
@@ -1055,7 +936,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         {
             this.addWhereOrAndClause( script,
                                       tabsIn,
-                                      this.getTimeColumnName() + " > ?",
+                                      this.getValidDatetimeColumn() + " > ?",
                                       OffsetDateTime.ofInstant( lowerValidTime, ZoneId.of( "UTC" ) ) );
         }
 
@@ -1063,7 +944,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         {
             this.addWhereOrAndClause( script,
                                       tabsIn,
-                                      this.getTimeColumnName() + LESS_EQUAL,
+                                      this.getValidDatetimeColumn() + " <= ?",
                                       OffsetDateTime.ofInstant( upperValidTime, ZoneId.of( "UTC" ) ) );
         }
 
@@ -1180,7 +1061,10 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             OffsetDateTime referenceTime = OffsetDateTime.ofInstant( filter.getEarliestReferenceTime(),
                                                                      ZoneId.of( "UTC" ) );
 
-            this.addWhereOrAndClause( script, tabsIn, this.getTimeColumnName() + " = ?", referenceTime );
+            this.addWhereOrAndClause( script,
+                                      tabsIn,
+                                      this.getReferenceTimeColumn() + " = ?",
+                                      referenceTime );
         }
         else
         {
@@ -1192,7 +1076,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
                 this.addWhereOrAndClause( script,
                                           tabsIn,
-                                          this.getTimeColumnName() + " > ?",
+                                          this.getReferenceTimeColumn() + " > ?",
                                           lowerReferenceTime );
             }
 
@@ -1204,32 +1088,43 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
                 this.addWhereOrAndClause( script,
                                           tabsIn,
-                                          this.getTimeColumnName() + LESS_EQUAL,
+                                          this.getReferenceTimeColumn() + " <= ?",
                                           upperReferenceTime );
             }
         }
     }
 
     /**
-     * Returns the time column name.
+     * Returns the reference time (aka basis datetime) column name or expression.
      * 
-     * @return the time column name
+     * @return the reference time (aka basis datetime) column name or expression.
      */
 
-    private String getTimeColumnName()
+    protected String getReferenceTimeColumn()
     {
-        return this.timeColumn;
+        return TimeSeriesRetriever.REFERENCE_TIME_COLUMN;
     }
 
     /**
-     * Returns the lead duration column name.
-     * 
-     * @return the lead duration column name
+     * Returns the valid (aka natural) datetime column name or expression.
+     *
+     * @return the valid (aka natural) datetime column name or expression.
      */
 
-    private String getLeadDurationColumnName()
+    protected String getValidDatetimeColumn()
     {
-        return this.leadDurationColumn;
+        return TimeSeriesRetriever.VALID_DATETIME_COLUMN;
+    }
+
+    /**
+     * Returns the lead duration column name or expression.
+     * 
+     * @return the lead duration column name or expression.
+     */
+
+    protected String getLeadDurationColumn()
+    {
+        return TimeSeriesRetriever.LEAD_DURATION_COLUMN;
     }
 
     /**
@@ -1486,12 +1381,10 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * Construct.
      * 
      * @param builder the builder
-     * @param timeColumn the name of the time column, which is an implementation detail
-     * @param leadDurationColumn the name of the lead duration column, which is an implementation detail
      * @throws NullPointerException if any required input is null
      */
 
-    TimeSeriesRetriever( TimeSeriesRetrieverBuilder<T> builder, String timeColumn, String leadDurationColumn )
+    TimeSeriesRetriever( TimeSeriesRetrieverBuilder<T> builder )
     {
         Objects.requireNonNull( builder );
 
@@ -1508,13 +1401,10 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         this.seasonStart = builder.seasonStart;
         this.seasonEnd = builder.seasonEnd;
         this.referenceTimeType = builder.referenceTimeType;
-        this.timeColumn = timeColumn;
-        this.leadDurationColumn = leadDurationColumn;
 
         // Validate
         String validationStart = "Cannot build a time-series retriever without a ";
         Objects.requireNonNull( this.database, "database instance." );
-        Objects.requireNonNull( this.getTimeColumnName(), validationStart + "time column name." );
         Objects.requireNonNull( this.variableName, validationStart + "variable name." );
 
         Objects.requireNonNull( this.getMeasurementUnitMapper(), validationStart + "measurement unit mapper." );
@@ -1572,16 +1462,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                               this.timeWindow,
                               this.desiredTimeScale );
             }
-
-            if ( Objects.isNull( this.leadDurationColumn ) )
-            {
-                LOGGER.debug( start,
-                              this.projectId,
-                              this.lrb,
-                              "the supplied lead duration column was null." );
-            }
         }
-
     }
 
     /**

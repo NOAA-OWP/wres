@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="wres.TimeSeriesValueTrace - Create TimeSeriesValueTrace table for most dbs."
+               author="Jesse Bickel"
+               dbms="!postgresql">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValueTrace" schemaName="wres" />
+            </not>
+        </preConditions>
+        <createTable tableName="TimeSeriesTraceValue" schemaName="wres"
+                     remarks="Each row represents a value in a single timeseries trace.">
+            <column name="timeseriestrace_id" type="bigint">
+                <constraints nullable="false" />
+            </column>
+            <column name="valid_datetime" type="timestamp with time zone"
+                    remarks="The datetime for the value a.k.a. the valid time a.k.a. the time of the event.">
+                <constraints nullable="false" />
+            </column>
+            <column name="series_value" type="double"
+                    remarks="The value in this trace at this valid datetime." />
+        </createTable>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValueTrace - Create TimeSeriesValueTrace table for postgres."
+               author="Jesse Bickel"
+               dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValueTrace" schemaName="wres" />
+            </not>
+        </preConditions>
+        <comment>
+            Partitioned version of wres.TimeSeriesTraceValue for postgres.
+        </comment>
+        <sql>
+            create table wres.TimeSeriesTraceValue
+            (
+                timeseriestrace_id bigint not null,
+                valid_datetime timestamp with time zone not null,
+                series_value double precision
+            ) partition by range ( timeseriestrace_id );
+            comment on table wres.TimeSeriesTraceValue is 'Each row represents a value in a single timeseries trace.';
+            comment on column wres.TimeSeriesTraceValue.valid_datetime is 'The datetime for the value a.k.a. the valid time a.k.a. the time of the event.';
+            comment on column wres.TimeSeriesTraceValue.series_value is 'The value in this trace at this valid datetime.';
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesTraceValue - Add timeseriestrace_id,valid_datetime unique index."
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesTraceValue" schemaName="wres" />
+            <not>
+                <indexExists tableName="TimeSeriesTraceValue"
+                             schemaName="wres"
+                             indexName="timeseriestracevalue_timeseriestrace_valid_datetime_key" />
+            </not>
+        </preConditions>
+        <addUniqueConstraint tableName="TimeSeriesTraceValue"
+                             schemaName="wres"
+                             columnNames="timeseriestrace_id,valid_datetime"
+                             constraintName="timeseriestracevalue_timeseriestrace_valid_datetime_key" />
+    </changeSet>
+</databaseChangeLog>
