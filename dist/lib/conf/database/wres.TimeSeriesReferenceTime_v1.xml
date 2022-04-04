@@ -44,7 +44,7 @@
                              columnNames="source_id,reference_time_type"
                              tableName="TimeSeriesReferenceTime" schemaName="wres" />
     </changeSet>
-    <changeSet id="Add source_id foreign key constraint to wres.TimeSeriesReferenceTime (deferred)."
+    <changeSet id="Add source_id foreign key constraint to wres.TimeSeriesReferenceTime (deferred) v2."
                author="Jesse Bickel"
                dbms="oracle,postgresql,sqlite">
         <preConditions onFail="MARK_RAN">
@@ -56,6 +56,7 @@
                           schemaName="wres" />
             <not>
                 <foreignKeyConstraintExists foreignKeyName="timeseriesreferencetime_source_fk"
+                                            foreignKeyTableName="TimeSeriesReferenceTime"
                                             schemaName="wres" />
             </not>
         </preConditions>
@@ -70,7 +71,7 @@
                                  initiallyDeferred="true"
                                  onDelete="CASCADE" />
     </changeSet>
-    <changeSet id="Add source_id foreign key constraint to wres.TimeSeriesReferenceTime (non-deferred)."
+    <changeSet id="Add source_id foreign key constraint to wres.TimeSeriesReferenceTime (non-deferred) v2."
                author="Jesse Bickel"
                dbms="!oracle,!postgresql,!sqlite,!sybase">
         <preConditions onFail="MARK_RAN">
@@ -82,6 +83,7 @@
                           schemaName="wres" />
             <not>
                 <foreignKeyConstraintExists foreignKeyName="timeseriesreferencetime_source_fk"
+                                            foreignKeyTableName="TimeSeriesReferenceTime"
                                             schemaName="wres" />
             </not>
         </preConditions>

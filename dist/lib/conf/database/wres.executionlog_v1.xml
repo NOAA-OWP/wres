@@ -176,7 +176,7 @@
         </addColumn>
     </changeSet>
 
-    <changeSet id="ExecutionLog - Extract project_name from prior postgres data"
+    <changeSet id="ExecutionLog - Extract project_name from prior postgres data v2"
                author="Jesse Bickel"
                dbms="postgresql">
         <preConditions>
@@ -187,7 +187,7 @@
                           schemaName="wres" />
         </preConditions>
         <sql>
-            UPDATE wres.ExecutionLog SET project_name = substring( executionlog.project, '(?&lt;=&lt;project (label=".+" )?name=")[^"]+'::text );
+            UPDATE wres.ExecutionLog SET project_name = substring( executionlog.project, '(?&lt;=&lt;project (label=".+" )?name=")[^"]+'::text ) WHERE project_name IS NULL AND project IS NOT NULL;
         </sql>
     </changeSet>
 
