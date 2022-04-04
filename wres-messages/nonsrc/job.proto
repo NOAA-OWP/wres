@@ -14,6 +14,7 @@ message job
         REFRESHDATABASE = 3;
         CLEANDATABASE = 4;
         VALIDATE = 5;
+        ROTATEPARTITIONS = 6;
     }
 
     Verb verb = 5;
