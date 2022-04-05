@@ -437,7 +437,8 @@ final class MainFunctions
         String[] args = sharedResources.getArguments();
         if ( args.length < 3 || args.length > 4 )
         {
-            throw new IllegalArgumentException( "Three int arguments to "
+            return ExecutionResult.failure(
+                    new IllegalArgumentException( "Three int arguments to "
                                                 + "rotatepartitions are "
                                                 + "required: total requested "
                                                 + "partitions, empty partitions"
@@ -446,7 +447,8 @@ final class MainFunctions
                                                 + "boolean argument when true "
                                                 + "performs the rotate (default"
                                                 + ") or when false will only "
-                                                + "print the plan (dry run)." );
+                                                + "print the plan (dry run)." )
+            );
         }
 
         int totalPartitionsRequested = Integer.parseInt( args[0] );
