@@ -54,7 +54,7 @@ plugins
     id 'com.github.ksoichiro.console.reporter' version '0.6.3'
 
     // To discover library versions with known vulnerabilities
-    id 'org.owasp.dependencycheck' version '7.0.3'
+    id 'org.owasp.dependencycheck' version '7.0.4.1'
     
     // Task to assist in downloading artifacts
     id "de.undercouch.download" version "5.0.4"
@@ -71,7 +71,7 @@ plugins
     id 'org.kordamp.gradle.markdown' version '2.2.0'
 
     // To generate API documentation from JAX-RS annotations and javadocs
-    id "io.swagger.core.v3.swagger-gradle-plugin" version "2.1.13"
+    id "io.swagger.core.v3.swagger-gradle-plugin" version "2.2.0"
 }
 
 repositories
@@ -312,7 +312,7 @@ project(':wres-system')
         testImplementation 'junit:junit:4.13.2'
 
         // Use mockserver to test certificate utilities
-        testImplementation 'org.mock-server:mockserver-netty:5.13.0'
+        testImplementation 'org.mock-server:mockserver-netty:5.13.2'
     }
 
     test
@@ -458,7 +458,7 @@ project(':wres-io')
         testImplementation 'org.mockito:mockito-inline:4.4.0'
 
         // Use mockserver as a mock server for mock API responses
-        testImplementation 'org.mock-server:mockserver-netty:5.13.0'
+        testImplementation 'org.mock-server:mockserver-netty:5.13.2'
 
         // Use H2 for truly embedded SQL db
         testImplementation 'com.h2database:h2:2.1.210'
@@ -1100,16 +1100,16 @@ project(':wres-tasker')
         implementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
 
         // Server library to run a web server:
-        implementation 'org.eclipse.jetty:jetty-server:11.0.8'
+        implementation 'org.eclipse.jetty:jetty-server:11.0.9'
 
         // Support HTTP/2
-        implementation 'org.eclipse.jetty.http2:http2-server:11.0.8'
+        implementation 'org.eclipse.jetty.http2:http2-server:11.0.9'
 
         // Support ALPN
-        implementation 'org.eclipse.jetty:jetty-alpn-java-server:11.0.8'
+        implementation 'org.eclipse.jetty:jetty-alpn-java-server:11.0.9'
 
         // Servlet container library to run a web application with:
-        implementation 'org.eclipse.jetty:jetty-webapp:11.0.8'
+        implementation 'org.eclipse.jetty:jetty-webapp:11.0.9'
 
         // Needed at compile-time to reference ServletContainer.class and
         // DefaultServlet.class
@@ -1170,7 +1170,7 @@ project(':wres-tasker')
         testImplementation 'org.apache.qpid:qpid-broker-plugins-memory-store:8.0.6'
 
         // To generate swagger's openapi.json at build time.
-        docGen 'io.swagger.core.v3:swagger-jaxrs2-jakarta:2.1.13'
+        docGen 'io.swagger.core.v3:swagger-jaxrs2-jakarta:2.2.0'
     }
 
     apply plugin: 'application'
@@ -1640,8 +1640,8 @@ dependencies
     // For Java 9+ compatibility:
     implementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
 
-    implementation 'org.eclipse.jetty:jetty-server:11.0.8'
-    implementation 'org.eclipse.jetty:jetty-webapp:11.0.8'
+    implementation 'org.eclipse.jetty:jetty-server:11.0.9'
+    implementation 'org.eclipse.jetty:jetty-webapp:11.0.9'
     implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.0.4'
 
     implementation( 'com.github.ben-manes.caffeine:caffeine:3.0.6' )
