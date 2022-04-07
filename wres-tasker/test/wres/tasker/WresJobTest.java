@@ -21,6 +21,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.Date;
 import java.util.StringJoiner;
 import jakarta.ws.rs.core.Response;
@@ -233,7 +234,8 @@ public class WresJobTest
     {
         System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
         WresJob wresJob = new WresJob();
-        Response response = wresJob.postWresJob( "fake", "hank", "boogaflickle", false );
+        Response response = wresJob.postWresJob( "fake", "hank", "boogaflickle", false,
+                                                 Collections.emptyList() );
         assertEquals( "Expected a 400 bad request.", 400, response.getStatus() );
     }
 
@@ -242,7 +244,7 @@ public class WresJobTest
     {
         System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
         WresJob wresJob = new WresJob();
-        Response response = wresJob.postWresJob( "too short a declaration", null, null, false );
+        Response response = wresJob.postWresJob( "too short a declaration", null, null, false, Collections.emptyList() );
         assertEquals( "Expected a 400 bad request.", 400, response.getStatus() );
     }
 
@@ -251,7 +253,7 @@ public class WresJobTest
     {
         System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
         WresJob wresJob = new WresJob();
-        Response response = wresJob.postWresJob( FAKE_DECLARATION, null, null, false );
+        Response response = wresJob.postWresJob( FAKE_DECLARATION, null, null, false, Collections.emptyList() );
         assertEquals( "Expected a 500 Internal Server Error.", 500, response.getStatus() );
     }
 
@@ -262,7 +264,7 @@ public class WresJobTest
         EmbeddedBroker embeddedBroker = new EmbeddedBroker();
         embeddedBroker.start();
         WresJob wresJob = new WresJob();
-        Response response = wresJob.postWresJob( FAKE_DECLARATION, null, null, false );
+        Response response = wresJob.postWresJob( FAKE_DECLARATION, null, null, false, Collections.emptyList() );
         assertEquals( "Expected a 201 Created.", 201, response.getStatus() );
         WresJob.shutdownNow();
         embeddedBroker.shutdown();

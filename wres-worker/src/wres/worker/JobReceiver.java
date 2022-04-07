@@ -174,13 +174,14 @@ class JobReceiver extends DefaultConsumer
                                 .getPath();
         Verb command = jobMessage.getVerb();
         String projectConfig = jobMessage.getProjectConfig();
+        List<String> additionalArguments = jobMessage.getAdditionalArgumentsList();
 
         result.add( executable );
         result.add( command.name()
                            .toLowerCase() );
 
         // Make sure we have a project config for ingest or execute
-        if ( projectConfig == null )
+        if ( projectConfig == null || projectConfig.isBlank() )
         {
             if ( command.equals( Verb.INGEST ) || command.equals( Verb.EXECUTE ) )
             {
@@ -188,6 +189,8 @@ class JobReceiver extends DefaultConsumer
                              command );
                 return null;
             }
+
+            LOGGER.debug( "Not adding null or blank projectConfig." );
         }
         else if ( projectConfig.length() * 4 >= MAX_COMMAND_ARG_LENGTH )
         {
@@ -222,7 +225,16 @@ class JobReceiver extends DefaultConsumer
         }
         else
         {
+            LOGGER.debug( "Adding projectConfig to args of child process." );
             result.add( projectConfig );
+        }
+
+        // When additional args exist, e.g. for rotatepartitions, add them.
+        if ( additionalArguments != null && !additionalArguments.isEmpty() )
+        {
+            LOGGER.debug( "Adding additionalArguments to child process: {}",
+                          additionalArguments );
+            result.addAll( additionalArguments );
         }
 
         ProcessBuilder processBuilder = new ProcessBuilder( result );

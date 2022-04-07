@@ -18,4 +18,6 @@ message job
     }
 
     Verb verb = 5;
+
+    repeated string additional_arguments = 6;
 }

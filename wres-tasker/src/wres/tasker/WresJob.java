@@ -3,6 +3,8 @@ package wres.tasker;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -68,7 +70,6 @@ public class WresJob
     private static final RedissonClient REDISSON_CLIENT;
     private static String REDIS_HOST = null;
     private static int REDIS_PORT = DEFAULT_REDIS_PORT;
-
 
     /**
      * The count of evaluations combined with the maximum length below (which
@@ -217,6 +218,7 @@ public class WresJob
      * @param wresUser Do not use. Deprecated field.
      * @param verb The verb to run on the declaration, default is execute.
      * @param postInput If the caller wishes to post input, true, default false.
+     * @param additionalArguments Additional arguments when no projectConfig given.
      * @return HTTP 201 on success, 4XX on client error, 5XX on server error.
      */
 
@@ -234,8 +236,12 @@ public class WresJob
                                  String verb,
                                  @FormParam( "postInput" )
                                  @DefaultValue( "false" )
-                                 boolean postInput )
+                                 boolean postInput,
+                                 @FormParam( "additionalArguments" )
+                                 List<String> additionalArguments )
     {
+        LOGGER.debug( "additionalArguments: {}", additionalArguments );
+
         // Default to execute per tradition and majority case.
         Verb actualVerb = null;
 
@@ -355,9 +361,15 @@ public class WresJob
         {
             // Skip the declaration entirely, it's not needed and was not
             // validated.
-            jobMessage = Job.job.newBuilder()
-                                .setVerb( actualVerb )
-                                .build();
+            Job.job.Builder builder = Job.job.newBuilder()
+                                             .setVerb( actualVerb );
+
+            for ( String arg : additionalArguments )
+            {
+                builder.addAdditionalArguments( arg );
+            }
+
+            jobMessage = builder.build();
         }
 
         // If the caller wishes to post input data: parameter postInput=true
