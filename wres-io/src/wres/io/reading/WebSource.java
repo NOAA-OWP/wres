@@ -92,7 +92,7 @@ class WebSource implements Callable<List<IngestResult>>
             + "latest=\"2019-08-15T18:00:00Z\" />) "
             + "when using a web API as a source for observations.";
 
-    private static final String DEFAULT_WRDS_PROJ = "WRES";
+    private static final String DEFAULT_WRDS_PROJ = "UNKNOWN_PROJECT_USING_WRES";
 
 
     private final SystemSettings systemSettings;
