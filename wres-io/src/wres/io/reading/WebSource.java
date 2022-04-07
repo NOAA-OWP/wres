@@ -92,6 +92,9 @@ class WebSource implements Callable<List<IngestResult>>
             + "latest=\"2019-08-15T18:00:00Z\" />) "
             + "when using a web API as a source for observations.";
 
+    private static final String DEFAULT_WRDS_PROJ = "WRES";
+
+
     private final SystemSettings systemSettings;
     private final Database database;
     private final DataSources dataSourcesCache;
@@ -1349,6 +1352,10 @@ class WebSource implements Callable<List<IngestResult>>
     {
         Map<String,String> urlParameters = new HashMap<>( 2 );
 
+        //Set the proj field, allowing for a user to override it with a URL 
+        //parameter, which is handled next.
+        urlParameters.put( "proj", DEFAULT_WRDS_PROJ );
+
         // Caller-supplied additional parameters are lower precedence, put first
         for ( UrlParameter parameter : additionalParameters )
         {
@@ -1364,7 +1371,6 @@ class WebSource implements Callable<List<IngestResult>>
         urlParameters.put( timeTag, "[" + issuedRange.getLeft().toString()
                                     + "," + issuedRange.getRight().toString()
                                     + "]" );
-
 
         return Collections.unmodifiableMap( urlParameters );
     }
@@ -1393,7 +1399,12 @@ class WebSource implements Callable<List<IngestResult>>
             urlParameters.put( "forecast_type", "deterministic" );
         }
 
+        //Set the default WRDS proj, but allow a user to override it
+        //through URL parameter processed below.
+        urlParameters.put( "proj", DEFAULT_WRDS_PROJ );
+
         // Caller-supplied additional parameters are lower precedence, put first
+        // This will override the parameter added above.
         for ( UrlParameter parameter : additionalParameters )
         {
             urlParameters.put( parameter.getName(), parameter.getValue() );
