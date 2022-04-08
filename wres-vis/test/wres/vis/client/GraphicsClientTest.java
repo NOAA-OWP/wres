@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.Set;
 
 import org.junit.AfterClass;
@@ -242,7 +243,10 @@ public class GraphicsClientTest
     @AfterClass
     public static void runAfterAllTests() throws IOException
     {
-        GraphicsClientTest.connections.close();
+        if ( Objects.nonNull( GraphicsClientTest.connections ) )
+        {
+            GraphicsClientTest.connections.close();
+        }
     }
 
 }

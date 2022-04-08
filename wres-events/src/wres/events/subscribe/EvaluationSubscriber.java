@@ -79,7 +79,7 @@ import wres.statistics.generated.Evaluation;
  * <p>When an evaluation succeeds, the {@link EvaluationConsumer} reports on its success to all listening clients with 
  * a {@link CompletionStatus#CONSUMPTION_COMPLETE_REPORTED_SUCCESS}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 @ThreadSafe
@@ -386,7 +386,7 @@ public class EvaluationSubscriber implements Closeable
                                    + "subscriber "
                                    + this.getClientId()
                                    + ".";
-
+        
         try
         {
             this.consumerConnection.close();
@@ -1443,7 +1443,7 @@ public class EvaluationSubscriber implements Closeable
 
     /**
      * Notifies all clients that depend on this subscriber that it is still alive. The notification happens at a fixed
-     * time interval of {@link EvaluationSubscriber#NOTIFY_ALIVE_MILLISECONDS}.. Also closes a subscriber that is found 
+     * time interval of {@link EvaluationSubscriber#NOTIFY_ALIVE_MILLISECONDS}. Also closes a subscriber that is found 
      * to have failed.
      */
 

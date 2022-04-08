@@ -56,8 +56,11 @@
     <!-- Qpid logs with level "warn" or "error" -->
     <logger name="org.apache.qpid" level="warn" />
 
-    <!-- Qpid AMQMessageDelegate off as the reported errors are not useful.-->
-    <logger name="org.apache.qpid.client.message.AMQMessageDelegate" level="off" />
+    <!-- ActiveMQ server logs with level "error" -->
+    <logger name="org.apache.activemq.artemis.core.server" level="error" />
+
+    <!-- ActiveMQ audit logs with level "error" -->
+    <logger name="org.apache.activemq.audit" level="error" />
 
     <!-- Allow -Dwres.logLevel to set logging level, otherwise info. -->
     <root level="${wres.logLevel:-info}">

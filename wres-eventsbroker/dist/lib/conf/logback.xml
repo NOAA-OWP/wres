@@ -7,11 +7,14 @@
         </encoder>
     </appender>
 
-    <!-- Qpid message logs with level "warn" or "error" -->
-    <logger name="qpid.message" level="warn" />
+    <!-- Qpid message logs with level "debug" -->
+    <logger name="qpid.message" level="debug" />
 
-    <!-- Qpid logs with level "warn" or "error" -->
-    <logger name="org.apache.qpid" level="warn" />
+    <!-- Qpid logs with level "debug" -->
+    <logger name="org.apache.qpid" level="debug" />
+
+    <!-- Artemis logs with level "debug" -->
+    <logger name="org.apache.activemq.artemis.core.server" level="debug" />
     
     <!-- Allow -Dwres.logLevel to set logging level, otherwise warn. -->
     <root level="${wres.logLevel:-info}">

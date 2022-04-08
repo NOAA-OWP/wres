@@ -1,58 +1,73 @@
-# Based on: https://hub.docker.com/r/chrisob/qpid-broker-j-docker/dockerfile
-
 #############
 # Build image
+#############
+
 FROM alpine AS builder
 
-ARG BROKER_J_VERSION=8.0.6
+ARG BROKER_VERSION=2.21.0
 
 WORKDIR /workspace
 
-# Download Broker-J tgz and checksum
-ADD https://archive.apache.org/dist/qpid/broker-j/${BROKER_J_VERSION}/binaries/apache-qpid-broker-j-${BROKER_J_VERSION}-bin.tar.gz \
-    apache-qpid-broker-j-${BROKER_J_VERSION}-bin.tar.gz
-ADD https://archive.apache.org/dist/qpid/broker-j/${BROKER_J_VERSION}/binaries/apache-qpid-broker-j-${BROKER_J_VERSION}-bin.tar.gz.sha512 \
-    apache-qpid-broker-j-${BROKER_J_VERSION}-bin.tar.gz.sha512
+# Download Artemis tgz and checksum
+ADD https://dlcdn.apache.org/activemq/activemq-artemis/${BROKER_VERSION}/apache-artemis-${BROKER_VERSION}-bin.tar.gz \
+    apache-artemis-${BROKER_VERSION}-bin.tar.gz
+ADD https://dlcdn.apache.org/activemq/activemq-artemis/${BROKER_VERSION}/apache-artemis-${BROKER_VERSION}-bin.tar.gz.sha512 \
+    apache-artemis-${BROKER_VERSION}-bin.tar.gz.sha512
 
 # Assert checksum
-RUN sha512sum -c apache-qpid-broker-j-${BROKER_J_VERSION}-bin.tar.gz.sha512
+RUN sha512sum -c apache-artemis-${BROKER_VERSION}-bin.tar.gz.sha512
 
-# Extract binaries to ./out/
+ARG BASE_TMPDIR="out/artemis"
+
+# Extract binaries to ${ARG BASE_TMPDIR}
 RUN apk add tar && \ 
-    mkdir out && \
-    tar xf apache-qpid-broker-j-${BROKER_J_VERSION}-bin.tar.gz -C out --strip-components=2 qpid-broker/${BROKER_J_VERSION}/
+    mkdir -p ${BASE_TMPDIR} && \
+    tar xf apache-artemis-${BROKER_VERSION}-bin.tar.gz -C ${BASE_TMPDIR} --strip-components=1 apache-artemis-${BROKER_VERSION}/
 
 #############
 # Final image
+#############
+
 FROM registry.access.redhat.com/ubi8/ubi:8.5-236.1648460182
 
 RUN dnf install -y \
     java-11-openjdk-headless-11.0.14.1.1-2.el8_5 \
     procps-ng-3.3.15-6.el8 \
     iproute-5.12.0-4.el8 \
+    libaio-0.3.112-1.el8 \
     && dnf clean all
 
-# Set env vars expected by qpid
-ENV QPID_HOME=/usr/local
-ENV QPID_WORK=/container_home
-ENV QPID_RUN_LOG=2
-ENV QPID_HTTP_PORT=15673
-ENV QPID_AMQP_PORT=5673
+# Set env vars expected by BROKER
+ENV BROKER_HOME=/usr/local
+ENV BROKER_INSTANCE=/usr/local/wres-eventsbroker
+ENV BROKER_CONFIG=/usr/local/wres-eventsbroker-config
+ENV BROKER_WORK=/container_home
+ENV BROKER_HTTP_PORT=15673
+ENV BROKER_AMQP_PORT=5673
+ENV ANONYMOUS_LOGIN=false
+
+# Broker creation arguments. 
+# The --relax-jolokia is a shorthand for the jolokia-access.xml to allow connections on all network interfaces (0.0.0.0)
+ENV BROKER_CREATE_ARGS --http-host 0.0.0.0 --http-port=${BROKER_HTTP_PORT} --relax-jolokia --silent
+
+ARG BROKER_USER=wres_eventsbroker
 
 # Create user and group
 RUN groupadd --system --gid 1370800073 wres && \
     useradd  --system --no-log-init \
-             --create-home --home-dir ${QPID_WORK} \
-             --uid 502 --gid 1370800073 wres_eventsbroker
+             --create-home --home-dir ${BROKER_WORK} \
+             --uid 502 --gid 1370800073 ${BROKER_USER}
+    
+WORKDIR ${BROKER_WORK}
 
-WORKDIR ${QPID_WORK}
+# Create directories with the correct permissions
+RUN mkdir -p {${BROKER_HOME},${BROKER_CONFIG},${BROKER_INSTANCE}} && \
+    chown ${BROKER_USER}: ${BROKER_INSTANCE}
 
-# Copy qpid binaries from build stage to QPID_HOME
-RUN mkdir -p ${QPID_HOME}
-COPY --from=builder /workspace/out ${QPID_HOME}
+COPY --from=builder /workspace/out ${BROKER_HOME}
 
-# Copy initial-config.json
-COPY nonsrc/initial-config.json ${QPID_HOME}/etc/
+# Copy configuration
+COPY nonsrc/ ${BROKER_CONFIG}
 
 # In order to set umask for file sharing, use a wrapper script
 COPY docker-entrypoint.sh /
@@ -61,7 +76,10 @@ RUN chmod +x /docker-entrypoint.sh
 VOLUME /container_home
 VOLUME /wres_secrets
 
-USER wres_eventsbroker
+USER ${BROKER_USER}
 ENTRYPOINT [ "/docker-entrypoint.sh" ]
 
-EXPOSE ${QPID_AMQP_PORT} ${QPID_HTTP_PORT}
+EXPOSE ${BROKER_AMQP_PORT} ${BROKER_HTTP_PORT}
+
+HEALTHCHECK CMD curl -f localhost:${BROKER_HTTP_PORT} || exit 1
+

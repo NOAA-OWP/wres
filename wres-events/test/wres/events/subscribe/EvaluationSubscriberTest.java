@@ -41,7 +41,7 @@ class EvaluationSubscriberTest
     @BeforeAll
     static void runBeforeAllTests()
     {
-        EvaluationSubscriberTest.connections = BrokerConnectionFactory.of();
+        EvaluationSubscriberTest.connections = BrokerConnectionFactory.of( true, 2 );
     }
 
     @Test

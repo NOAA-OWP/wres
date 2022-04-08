@@ -73,7 +73,7 @@ public final class MeanErrorTest
 
         assertEquals( expected, actual.getData() );
     }
-
+    
     @Test
     public void testApplyWithNoData()
     {

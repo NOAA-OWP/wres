@@ -27,6 +27,11 @@ import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.Outputs.NetcdfFormat;
 
+/**
+ * Tests the {@link EvaluationStatusTracker}.
+ * @author James Brown
+ */
+
 class EvaluationStatusTrackerTest
 {
     /**
@@ -38,7 +43,7 @@ class EvaluationStatusTrackerTest
     @BeforeAll
     static void runBeforeAllTests()
     {
-        EvaluationStatusTrackerTest.connections = BrokerConnectionFactory.of();
+        EvaluationStatusTrackerTest.connections = BrokerConnectionFactory.of( true, 2 );
     }
 
     @Test

@@ -1,19 +1,21 @@
 package wres.eventsbroker.embedded;
 
-import static org.junit.Assert.assertNotNull;
-
-import java.util.Map;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Tests the {@link EmbeddedBroker}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class EmbeddedBrokerTest
 {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( EmbeddedBrokerTest.class );
 
     @Test
     public void testConnectionSucceeds() throws Exception
@@ -24,11 +26,12 @@ public class EmbeddedBrokerTest
             embeddedBroker.start();
 
             // Dynamic port assigned
-            Map<String,Integer> ports = embeddedBroker.getBoundPorts();
+            int amqpPort = embeddedBroker.getMessagingPort();
+            assertTrue( amqpPort > 0 );
 
-            Integer port = ports.get( "wres-statistics-AMQP" );
-            
-            assertNotNull( port );
+            LOGGER.info( "The testConnectionSucceeds test created an embedded broker, which bound AMQP transport to "
+                         + "ephemeral port {}.",
+                         amqpPort );
         }
     }
 
