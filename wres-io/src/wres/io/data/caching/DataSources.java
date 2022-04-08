@@ -82,6 +82,7 @@ public class DataSources extends Cache<SourceDetails, String>
 	 * Gets the ID of source metadata from the global cache based on a file path and the date of its output
 	 * @param hash the hash code for the source file
 	 * @return The ID of the source in the database
+	 * @throws SQLException If the source ID could not be obtained from the database 
 	 */
 	public Long getSourceID( String hash ) throws SQLException
     {

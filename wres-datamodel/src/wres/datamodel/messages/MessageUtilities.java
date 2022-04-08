@@ -446,6 +446,8 @@ public class MessageUtilities
      * 
      * @param first the first group
      * @param second the second group
+     * @return a zero, negative or positive value as to whether the first is equal to, less than or greater than the 
+     *            second, respectively
      * @throws NullPointerException if either list is null
      */
 
