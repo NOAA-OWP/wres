@@ -72,12 +72,15 @@ public class ThresholdsByMetricAndFeature
     }
 
     /**
+     * @param featureGroup the feature group
      * @return an independent instance containing all features within the declared group
      * @throws NullPointerException if the featureGroup is null
      */
 
     public ThresholdsByMetricAndFeature getThresholdsByMetricAndFeature( FeatureGroup featureGroup )
     {
+        Objects.requireNonNull( featureGroup );
+        
         Set<FeatureTuple> features = featureGroup.getFeatures();
 
         Map<FeatureTuple, ThresholdsByMetric> innerThresholds =

@@ -54,8 +54,11 @@ public class NWMSource extends BasicSource
      * @param systemSettings The system settings to use.
      * @param database The database to use.
      * @param dataSourcesCache The data sources cache to use.
-     * @param projectConfig the ProjectConfig causing ingest
-	 * @param dataSource the data source information
+     * @param projectConfig The ProjectConfig causing ingest
+	 * @param dataSource The data source information
+	 * @param featuresCache The features cache
+	 * @param timeScalesCache The time scales cache
+	 * @param measurementUnitsCache The measurement unis cache
 	 */
 	public NWMSource( SystemSettings systemSettings,
                       Database database,
