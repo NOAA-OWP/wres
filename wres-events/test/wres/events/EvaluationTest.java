@@ -45,7 +45,7 @@ import wres.statistics.generated.Pairs;
 /**
  * Tests the {@link Evaluation}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 class EvaluationTest
@@ -92,7 +92,7 @@ class EvaluationTest
     @BeforeAll
     static void runBeforeAllTests()
     {
-        EvaluationTest.connections = BrokerConnectionFactory.of();
+        EvaluationTest.connections = BrokerConnectionFactory.of( true, 2 );
     }
 
     @BeforeEach

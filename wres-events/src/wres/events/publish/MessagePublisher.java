@@ -33,12 +33,20 @@ import wres.eventsbroker.BrokerConnectionFactory;
  * pool of sessions might be better (to allow better message throughput, as a session is the work thread). Overall, it 
  * may be better to abstract connections and sessions away from specific helpers.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class MessagePublisher implements Closeable
 {
+    /**
+     * String used repeatedly.
+     */
+
     private static final String TO_DESTINATION = " to destination ";
+
+    /**
+     * Logger.
+     */
 
     private static final Logger LOGGER = LoggerFactory.getLogger( MessagePublisher.class );
 
@@ -257,7 +265,10 @@ public class MessagePublisher implements Closeable
             {
                 // No need to close session etc.
                 this.connection.close();
-                LOGGER.debug( "Closed connection {} in publisher {}.", this.connection, this );
+                LOGGER.debug( "Closed connection {} and session {} in publisher {}.",
+                              this.connection,
+                              this.session,
+                              this );
             }
             catch ( JMSException e )
             {
@@ -519,7 +530,7 @@ public class MessagePublisher implements Closeable
         this.destination = destination;
 
         // Register a listener for exceptions
-        if( Objects.nonNull( listener ) )
+        if ( Objects.nonNull( listener ) )
         {
             this.connection.setExceptionListener( listener );
         }

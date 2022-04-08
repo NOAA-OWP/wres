@@ -13,6 +13,8 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import wres.eventsbroker.BrokerConnectionFactory;
+import wres.eventsbroker.embedded.CouldNotLoadBrokerConfigurationException;
+import wres.eventsbroker.embedded.CouldNotStartEmbeddedBrokerException;
 import wres.io.concurrency.Executor;
 import wres.io.utilities.Database;
 import wres.pipeline.InternalWresException;
@@ -136,9 +138,13 @@ public class Main {
                 LOGGER.error( message, result.getException() );
             }
         }
-        catch ( IOException e )
+        catch ( CouldNotLoadBrokerConfigurationException | CouldNotStartEmbeddedBrokerException  e )
         {
-            LOGGER.warn( "Failed to close broker connections." );
+            LOGGER.warn( "Failed to create the broker connections.", e );
+        }
+        catch ( IOException  e )
+        {
+            LOGGER.warn( "Failed to destroy the broker connections.", e );
         }
         finally
         {
@@ -149,7 +155,7 @@ public class Main {
             }
             else
             {
-                MainFunctions.forceShutdown( database, executor,6, TimeUnit.SECONDS );
+                MainFunctions.forceShutdown( database, executor, 6, TimeUnit.SECONDS );
             }
         }
 

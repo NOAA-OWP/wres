@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Tests the {@link BrokerConnectionFactory}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class BrokerConnectionFactoryTest

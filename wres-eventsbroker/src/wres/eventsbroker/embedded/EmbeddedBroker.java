@@ -2,61 +2,34 @@ package wres.eventsbroker.embedded;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.URL;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.net.ServerSocket;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
-import org.apache.qpid.server.SystemLauncher;
-import org.apache.qpid.server.SystemLauncherListener;
-import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.Port;
-import org.apache.qpid.server.model.SystemConfig;
+import org.apache.activemq.artemis.core.server.ActiveMQServer;
+import org.apache.activemq.artemis.core.server.ActiveMQServers;
+import org.apache.activemq.artemis.core.config.Configuration;
+import org.apache.activemq.artemis.core.config.impl.ConfigurationImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * An embedded broker for publishing and subscribing to evaluation messages.
- *
- * Based on https://cwiki.apache.org/confluence/display/qpid/How+to+embed+Qpid+Broker-J
- * which came from a link found at
- * https://mail-archives.apache.org/mod_mbox/qpid-users/201806.mbox/browser
- * Configuration of dead letter queues based on: 
- * <p><a href = "https://qpid.apache.org/releases/qpid-broker-j-8.0.0/book/Java-Broker-Runtime-Handling-Undeliverable-Messages.html">Undeliverable messages</a>
  */
 
 public class EmbeddedBroker implements Closeable
 {
+    /**
+     * Logger.
+     */
+
     private static final Logger LOGGER = LoggerFactory.getLogger( EmbeddedBroker.class );
 
     /**
-     * Default broker configuration on the classpath.
+     * The default protocol for which an acceptor and associated binding url should be registered.
      */
 
-    private static final String INITIAL_CONFIGURATION = "embedded-broker-config.json";
+    private static final String DEFAULT_PROTOCOL = "amqp";
 
-    /**
-     * Broker launcher.
-     */
-
-    private final SystemLauncher systemLauncher;
-
-    /**
-     * Port listener.
-     */
-
-    private final PortExtractingLauncherListener listener;
-
-    /**
-     * Launcher options.
-     */
-
-    private final Map<String, Object> launchOptions;
 
     /**
      * Is <code>true</code> if the broker is started, <code>false</code> otherwise.
@@ -65,7 +38,25 @@ public class EmbeddedBroker implements Closeable
     private final AtomicBoolean isStarted;
 
     /**
-     * Returns a broker instance with default launch options.
+     * The broker instance.
+     */
+
+    private final ActiveMQServer broker;
+
+    /**
+     * The binding url, including the host (localhost) and port.
+     */
+
+    private final String burl;
+
+    /**
+     * The port.
+     */
+
+    private final int port;
+
+    /**
+     * Returns a broker instance with default launch options
      * 
      * @return a broker instance with default options.
      */
@@ -76,53 +67,15 @@ public class EmbeddedBroker implements Closeable
     }
 
     /**
-     * Returns a broker instance with default launch options.
+     * Returns a broker instance with default launch options on a prescribed port.
      * 
-     * @param port an explicit port on which to start the broker
-     * @return a broker instance with default options.
+     * @param port an explicit port on which to bind the transport
+     * @return a broker instance with default options
      */
 
     public static EmbeddedBroker of( int port )
     {
-        URL initialConfig = EmbeddedBroker.class.getClassLoader()
-                                                .getResource( INITIAL_CONFIGURATION );
-        if ( Objects.isNull( initialConfig ) )
-        {
-            throw new CouldNotStartEmbeddedBrokerException( "Expected a resource named '"
-                                                            + INITIAL_CONFIGURATION
-                                                            + "' on the classpath." );
-        }
-
-        String initialConfigLocation = initialConfig.toExternalForm();
-        
-        LOGGER.debug( "The embedded broker initial configuration will be read from {}.", initialConfigLocation );
-
-        Map<String, Object> options = new HashMap<>();
-        options.put( ConfiguredObject.TYPE, "Memory" );
-        options.put( SystemConfig.INITIAL_CONFIGURATION_LOCATION,
-                     initialConfigLocation );
-        options.put( SystemConfig.STARTUP_LOGGED_TO_SYSTEM_OUT, true );
-
-        if ( port == 0 )
-        {
-            LOGGER.debug( "On creating an embedded broker, setting the value of the qpid.amqp_port to TCP "
-                          + "reserved port 0, which instructs the broker to choose a port dynamically (assuming that "
-                          + "the initial configuration at {} binds to amqp port '${qpid.amqp_port}').",
-                          initialConfigLocation );
-        }
-        else
-        {
-            LOGGER.debug( "On creating an embedded broker, setting the value of the qpid.amqp_port to {}, which will "
-                          + "be respected if the the initial configuration at {} binds to amqp port "
-                          + "'${qpid.amqp_port}'.",
-                          initialConfigLocation );
-        }
-
-        options.put( ConfiguredObject.CONTEXT, Collections.singletonMap( "qpid.amqp_port", port ) );
-
-        LOGGER.debug( "Created new embedded broker with options {}.", options );
-
-        return new EmbeddedBroker( options );
+        return new EmbeddedBroker( port );
     }
 
     /**
@@ -133,59 +86,42 @@ public class EmbeddedBroker implements Closeable
 
     public void start()
     {
-        if ( !isStarted.get() )
+        if ( !this.isStarted.get() )
         {
 
-            LOGGER.debug( "Starting embedded broker with launch options {}.", this.launchOptions );
+            LOGGER.debug( "Starting embedded broker." );
 
             try
             {
-                this.systemLauncher.startup( this.launchOptions );
+                this.broker.start();
             }
+            // Yuck
             catch ( Exception e )
             {
-                throw new CouldNotStartEmbeddedBrokerException( "Failed to start an embedded broker using the initial "
-                                                                + "configuration in '"
-                                                                + INITIAL_CONFIGURATION
-                                                                + "'.",
-                                                                e );
+                throw new CouldNotStartEmbeddedBrokerException( "Failed to start an embedded broker.", e );
             }
 
-            // Port available?
-            if ( this.getBoundPorts().values().contains( -1 ) )
+            if ( LOGGER.isInfoEnabled() )
             {
-                throw new CouldNotStartEmbeddedBrokerException( "Failed to start an embedded broker using the initial "
-                                                                + "configuration in '"
-                                                                + INITIAL_CONFIGURATION
-                                                                + "'. Could not discover a bound port." );
+                LOGGER.info( "Started an embedded broker with {} transport on port: {}. The full binding URL is: {}.",
+                             DEFAULT_PROTOCOL.toUpperCase(),
+                             this.getMessagingPort(),
+                             this.burl );
             }
-
-            LOGGER.info( "Started an embedded broker with the following bound ports {}.",
-                         this.getBoundPorts() );
-
-            LOGGER.debug( "Finished starting embedded broker with launch options {}.", this.launchOptions );
 
             this.isStarted.set( true );
         }
     }
 
     /**
-     * Returns a mapping of TCP ports bound by the embedded broker. Typical ports are for protocols AMQP and HTTP. This
-     * will only return a non-empty mapping after {@link #start()} has been called.
+     * Returns the port for messaging traffic
      * 
-     * @return the port mapping 
+     * @return the port 
      */
 
-    public Map<String, Integer> getBoundPorts()
+    public int getMessagingPort()
     {
-        Map<String, Integer> ports = this.listener.getPorts();
-
-        if ( Objects.isNull( ports ) )
-        {
-            return Collections.emptyMap();
-        }
-
-        return ports; // Immutable on construction
+        return this.port;
     }
 
     @Override
@@ -199,172 +135,98 @@ public class EmbeddedBroker implements Closeable
     }
 
     /**
-     * Returns the maximum number of retries or null if not configured.
-     * 
-     * @return the number of retries or null
+     * Kills the broker.
+     * @throws IOException if the broker could not be stopped
      */
 
-    public Integer getMaximumRetries()
+    private void shutdown() throws IOException
     {
-        Integer returnMe = null;
-
-        // Witness the horror of this nested configuration.
-        Object vhn = this.listener.getBrokerConfiguration().get( "virtualhostnodes" );
-        if ( Objects.nonNull( vhn ) && vhn instanceof List )
+        if ( this.isStarted.getAndSet( false ) )
         {
-            List<?> virtualHosts = (List<?>) vhn;
-            if ( !virtualHosts.isEmpty() && virtualHosts.get( 0 ) instanceof Map )
+            try
             {
-                Map<?, ?> firstHost = (Map<?, ?>) virtualHosts.get( 0 );
-                Object context = firstHost.get( "context" );
-
-                if ( Objects.nonNull( context ) && context instanceof Map )
-                {
-                    Map<?, ?> contextMap = (Map<?, ?>) context;
-
-                    Object deliveryAttempts = contextMap.get( "queue.maximumDeliveryAttempts" );
-
-                    try
-                    {
-                        returnMe = Integer.valueOf( deliveryAttempts + "" );
-
-                        LOGGER.debug( "Discovered configuration for the maximum number of retries, which is {}. ",
-                                      returnMe );
-                    }
-                    catch ( NumberFormatException e )
-                    {
-                        LOGGER.debug( "Unrecognized data type associated with queue.maximumDeliveryAttempts. "
-                                      + "Expected an integer, but got {}.",
-                                      deliveryAttempts );
-                    }
-                }
+                this.broker.stop();
+            }
+            // Yuck
+            catch ( Exception e )
+            {
+                throw new IOException( "Could not stop the embedded broker.", e );
             }
         }
-
-        return returnMe;
     }
 
     /**
-     * Kills the broker.
+     * @return an ephemeral open port
+     * @throws IOException if a port could not be found
      */
 
-    private void shutdown()
+    private static int getEphemeralPort() throws IOException
     {
-        this.systemLauncher.shutdown();
+        try ( ServerSocket socket = new ServerSocket( 0 ) )
+        {
+            return socket.getLocalPort();
+        }
     }
 
     /**
      * Hidden constructor.
      * 
-     * @param options the launch options
-     * @throws NullPointerException if the launch options are null.
-     * @throws CouldNotStartEmbeddedBrokerException if the broker configuration could not be found.
+     * @param amqpPort the port
+     * @throws CouldNotStartEmbeddedBrokerException if the broker could not be started for any reason
      */
 
-    private EmbeddedBroker( Map<String, Object> options )
+    private EmbeddedBroker( int amqpPort )
     {
-        Objects.requireNonNull( options );
+        Configuration configuration;
 
-        this.launchOptions = Collections.unmodifiableMap( options );
+        String localBurl = "";
 
-        this.listener = new PortExtractingLauncherListener();
-
-        this.systemLauncher = new SystemLauncher( this.listener );
-
-        this.isStarted = new AtomicBoolean();
-    }
-
-    /**
-     * Listener that extracts port information on broker startup, allowing for dynamic port assignment by the broker to
-     * be respected by the application.
-     * 
-     * @author james.brown@hydrosolved.com
-     */
-
-    private static class PortExtractingLauncherListener implements SystemLauncherListener
-    {
-        private SystemConfig<?> systemConfig;
-
-        private Map<String, Integer> ports;
-
-        private Map<String, Object> configuration;
-
-        @Override
-        public void beforeStartup()
+        try
         {
-            // Not needed
-        }
+            int finalPort = amqpPort;
 
-        @Override
-        public void errorOnStartup( final RuntimeException e )
-        {
-            // Not needed
-        }
-
-        @Override
-        public void afterStartup()
-        {
-            if ( Objects.isNull( this.systemConfig ) )
+            // Reserved TCP port 0? Find a free port.
+            // TODO: if possible ask the broker to bind an ephemeral port and then query for that port. This was 
+            // possible but difficult with Qpid, but seems harder with ActiveMQ. The (small) risk of letting the 
+            // application decide is that the port discovered here is already bound when the broker attempts to bind it.
+            if ( finalPort == 0 )
             {
-                throw new IllegalStateException( "Cannot extract the port bound by the embedded broker without "
-                                                 + "system configuration, which is missing." );
+                LOGGER.debug( "When instantiating an embedded broker, noticed that the requested TCP port is reserved "
+                              + "port 0. Attempting to discover an ephemeral port that is unbound..." );
+
+                finalPort = EmbeddedBroker.getEphemeralPort();
+
+                LOGGER.debug( "Discovered an unbound port of {}, which will be used to bind the TCP transport on the "
+                              + "embedded broker.",
+                              finalPort );
             }
 
-            Broker<?> broker = (Broker<?>) this.systemConfig.getContainer();
+            this.burl = "tcp://127.0.0.1?port="
+                        + finalPort;
+            localBurl = this.burl;
 
-            this.ports = broker.getChildren( Port.class )
-                               .stream()
-                               .collect( Collectors.toUnmodifiableMap( Port::getName,
-                                                                       Port::getBoundPort ) );
+            LOGGER.debug( "Created a binding URL for the embedded broker: {}.", this.burl );
 
-            this.configuration = Collections.unmodifiableMap( broker.extractConfig( false ) );
+            configuration = new ConfigurationImpl().setPersistenceEnabled( false )
+                                                   .setJournalDirectory( "target/data/journal" )
+                                                   .setSecurityEnabled( false )
+                                                   .addAcceptorConfiguration( DEFAULT_PROTOCOL, this.burl );
+
+            this.broker = ActiveMQServers.newActiveMQServer( configuration );
+            this.port = finalPort;
         }
-
-        @Override
-        public void onContainerResolve( final SystemConfig<?> systemConfig )
+        // Yuck
+        catch ( Exception e )
         {
-            LOGGER.debug( "Discovered the system configuration on resolving the embedded broker container. The system "
-                          + "configuration is {}.",
-                          systemConfig );
-
-            this.systemConfig = systemConfig;
+            throw new CouldNotStartEmbeddedBrokerException( "Could not configure the embedded broker at binding "
+                                                            + "url "
+                                                            + localBurl
+                                                            + ".",
+                                                            e );
         }
 
-        @Override
-        public void onContainerClose( final SystemConfig<?> systemConfig )
-        {
-            // Not needed
-        }
 
-        @Override
-        public void onShutdown( final int exitCode )
-        {
-            // Not needed
-        }
-
-        @Override
-        public void exceptionOnShutdown( final Exception e )
-        {
-            // Not needed
-        }
-
-        /**
-         * @return the ports.
-         */
-
-        private Map<String, Integer> getPorts()
-        {
-            return this.ports;
-        }
-
-        /**
-         * @return the broker configuration.
-         */
-
-        private Map<String, Object> getBrokerConfiguration()
-        {
-            return this.configuration;
-        }
+        this.isStarted = new AtomicBoolean();
     }
 
 }

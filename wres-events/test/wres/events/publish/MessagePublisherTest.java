@@ -34,7 +34,7 @@ import wres.eventsbroker.BrokerConnectionFactory;
 /**
  * Tests the {@link MessagePublisher}
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 class MessagePublisherTest
@@ -49,7 +49,7 @@ class MessagePublisherTest
     @BeforeAll
     static void runBeforeAllTests()
     {
-        MessagePublisherTest.connections = BrokerConnectionFactory.of();
+        MessagePublisherTest.connections = BrokerConnectionFactory.of( true, 2 );
     }
 
     @Test
