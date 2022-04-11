@@ -1095,7 +1095,7 @@ project(':wres-tasker')
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha7'
         implementation 'com.rabbitmq:amqp-client:5.14.2'
         implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.0.0'
-        implementation 'jakarta.annotation:jakarta.annotation-api:2.1.0-B1'
+        implementation 'jakarta.annotation:jakarta.annotation-api:2.1.0'
 
         // For Java 9+ compatibility:
         implementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
@@ -1622,7 +1622,7 @@ dependencies
     implementation 'org.slf4j:slf4j-api:2.0.0-alpha7'
 
     implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.0.0'
-    implementation 'jakarta.annotation:jakarta.annotation-api:2.1.0-B1'
+    implementation 'jakarta.annotation:jakarta.annotation-api:2.1.0'
 
     // For Java 9+ compatibility:
     implementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
