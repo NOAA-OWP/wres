@@ -759,11 +759,14 @@ class EvaluationConsumer
                 // Overall complete?
                 boolean incomplete = !this.isComplete();
 
+                // Paths written?
+                String pathsMessage = this.getPathsMessage();
+
                 // Marked failed?
                 if ( this.getCompletionStatus() == CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE )
                 {
                     this.notifyFailure( null );
-                    append = ", which completed unsuccessfully";
+                    append = ", which completed unsuccessfully. " + pathsMessage;
                 }
                 // Closed prematurely?
                 else if ( groupsIncomplete || incomplete )
@@ -780,14 +783,14 @@ class EvaluationConsumer
 
                     // Propagate to other clients
                     this.notifyFailure( e );
-                    append = ", which completed unsuccessfully";
+                    append = ", which completed unsuccessfully. " + pathsMessage;
 
                     // Rethrow
                     throw e;
                 }
                 else
                 {
-                    append = ", which completed successfully";
+                    append = ", which completed successfully. " + pathsMessage;
                 }
             }
             finally
@@ -809,6 +812,49 @@ class EvaluationConsumer
 
             // This instance is not responsible for closing the executor service.
         }
+    }
+
+    /**
+     * Returns a message about paths written.
+     * 
+     * @return a message about paths written.
+     */
+
+    private String getPathsMessage()
+    {
+        Set<Path> parentPaths = this.pathsWritten.stream()
+                                                 .map( Path::getParent )
+                                                 .collect( Collectors.toSet() );
+
+        int count = this.pathsWritten.size();
+        String message = "Wrote " + count;
+        
+        if( count == 1 )
+        {
+            message = message + " path";
+        }
+        else
+        {
+            message = message + " paths";
+        }
+
+        if ( count > 0 )
+        {
+            String paths = "";
+            if ( parentPaths.size() > 1 )
+            {
+                paths = parentPaths.toString();
+            }
+            else
+            {
+                paths = parentPaths.iterator()
+                                   .next()
+                                   .toString();
+            }
+            message = message + " to " + paths;
+        }
+
+        return message;
     }
 
     /**
