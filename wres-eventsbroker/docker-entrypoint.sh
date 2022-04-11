@@ -20,6 +20,12 @@ if ! [ -f ${CONFIG_PATH}/broker.xml ]; then
     ${BROKER_HOME}/artemis/bin/artemis create ${BROKER_CREATE_ARGS} ${BROKER_INSTANCE}
     # Copy the broker configuration
     cp -r ${BROKER_CONFIG}/. ${BROKER_CONFIG_PATH}
+    # Overwrite the logging configuration, which uses a non-default naming for the logging properties file
+    # The reason for the non-default name is to avoid conflicts when running the application outside of 
+    # docker and using an embedded broker, since the logging is redirected via slf4j using a 
+    # logging.properties redirect
+    cp ${BROKER_CONFIG_PATH}/artemis.logging.properties ${BROKER_CONFIG_PATH}/logging.properties
+    rm ${BROKER_CONFIG_PATH}/artemis.logging.properties
 else
     echo "Broker already created, ignoring creation."
 fi
