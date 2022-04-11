@@ -38,7 +38,6 @@ public class BrokerConnectionFactoryTest
         // Create and start the broker, clean up on completion
         try ( BrokerConnectionFactory factory = BrokerConnectionFactory.of(); )
         {
-
             Topic evaluationTopic = (Topic) factory.getDestination( "evaluation" );
             Topic evaluationStatusTopic = (Topic) factory.getDestination( "status" );
             Topic statisticsTopic = (Topic) factory.getDestination( "statistics" );
