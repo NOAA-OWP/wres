@@ -727,7 +727,7 @@ project(':wres-vis')
         implementation project(':wres-events')
 
         implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
-        implementation group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '2.0.0'
+        implementation group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '2.1.0'
         implementation( 'com.google.guava:guava:31.1-jre' )
         {
             // Not used at runtime, bloat
