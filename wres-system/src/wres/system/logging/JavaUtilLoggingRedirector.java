@@ -17,6 +17,12 @@ import org.slf4j.LoggerFactory;
  *  configuration"
  *
  * This class should not need to exist (but java.util.logging is what it is).
+ * 
+ * TODO: JBr: this class probably isn't necessary, providing the relevant system property is set, 
+ * -Djava.util.logging.config.file=logging.properties. More here, although the documentation is less clear for jdk11
+ * than jdk8:
+ * https://docs.oracle.com/javase/8/docs/api/java/util/logging/LogManager.html 
+ * https://docs.oracle.com/en/java/javase/11/docs/api/java.logging/java/util/logging/LogManager.html
  */
 public class JavaUtilLoggingRedirector
 {
