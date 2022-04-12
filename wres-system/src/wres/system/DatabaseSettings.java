@@ -424,6 +424,10 @@ final class DatabaseSettings
 
         try
         {
+            LOGGER.debug( "Attempting to load a driver for database type: {}. The driver name is {}.",
+                          getDatabaseType(),
+                          DRIVER_MAPPING.get( getDatabaseType() ) );
+            
             Class.forName(DRIVER_MAPPING.get(getDatabaseType()));
         }
         catch (ClassNotFoundException classError)
