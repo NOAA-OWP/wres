@@ -460,9 +460,6 @@ project(':wres-io')
         // Use mockserver as a mock server for mock API responses
         testImplementation 'org.mock-server:mockserver-netty:5.13.2'
 
-        // Use H2 for truly embedded SQL db
-        testImplementation 'com.h2database:h2:2.1.212'
-
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'

@@ -784,15 +784,7 @@ public class Query
         // In versions prior to 5.12, a timeout was set here, but now it is set
         // on the session/connection. See DatabaseSettings and issue #94484.
 
-        if ( this.maxRows > 0 )
-        {
-            statement.setMaxRows( this.maxRows );
-        }
-
-        if ( this.useCursor )
-        {
-            statement.setFetchSize( systemSettings.fetchSize() );
-        }
+        this.setMaxRowsAndFetchSize( statement );
 
         return statement;
     }
@@ -811,15 +803,7 @@ public class Query
         // In versions prior to 5.12, a timeout was set here, but now it is set
         // on the session/connection. See DatabaseSettings and issue #94484.
 
-        if ( this.maxRows > 0 )
-        {
-            statement.setMaxRows( this.maxRows );
-        }
-
-        if ( this.useCursor )
-        {
-            statement.setFetchSize( systemSettings.fetchSize() );
-        }
+        this.setMaxRowsAndFetchSize( statement );
 
         // If we have a basic array of parameters, we can just add them directly to the statement
         if (this.parameters != null)
@@ -841,6 +825,41 @@ public class Query
         return statement;
     }
 
+    /**
+     * Sets the maximum number of rows per result set and the fetch size, where required.
+     * @param statement the statement, not null
+     * @throws SQLException if the maximum rows or fetch size could not be set
+     * @throws NullPointerException if the statement is null
+     */
+    
+    private void setMaxRowsAndFetchSize( Statement statement ) throws SQLException
+    {
+        Objects.requireNonNull( statement );
+        
+        if ( this.maxRows > 0 )
+        {
+            statement.setMaxRows( this.maxRows );
+        }
+
+        if ( this.useCursor )
+        {
+            int fetchSize = this.systemSettings.fetchSize();
+            
+            // #103431
+            if ( fetchSize > this.maxRows )
+            {
+                LOGGER.debug( "Setting the maximum number of rows per result set to unlimited because the fetch size "
+                              + "of {} is greater than the maximum rows of {}, which is not allowed.",
+                              fetchSize,
+                              this.maxRows );
+                
+                statement.setMaxRows( 0 ); // 0 = no limit
+            }
+            
+            statement.setFetchSize( fetchSize );
+        }
+    }
+    
     /**
      * Adds the passed in collection of parameters to the given statement
      * @param statement The statement that needs the set of parameters
