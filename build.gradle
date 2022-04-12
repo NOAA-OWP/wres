@@ -816,12 +816,13 @@ project(':wres-config')
 
         api group: 'org.jvnet.jaxb2_commons', name: 'jaxb2-basics-runtime', version: '0.12.0'
 
-        // To know about @Location
-        api 'org.glassfish.jaxb:jaxb-core:2.3.0.1'
+        // To know about @Locatable
+        compileOnlyApi 'org.glassfish.jaxb:jaxb-core:2.3.0.1'
 
         runtimeOnly 'org.glassfish.jaxb:jaxb-runtime:2.3.6'
 
         runtimeOnly 'org.eclipse.persistence:org.eclipse.persistence.moxy:2.7.10'
+
 
         // Trying json-values based on vavr, potential replacement for xjc/jaxb.
         testImplementation 'com.github.imrafaelmerino:json-values:9.1.0'
