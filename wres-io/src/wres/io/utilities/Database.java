@@ -79,7 +79,8 @@ public class Database {
     private static final Set<DatabaseType> DBMS_WITH_LIMIT = Set.of( DatabaseType.POSTGRESQL,
                                                                      DatabaseType.H2,
                                                                      DatabaseType.MARIADB,
-                                                                     DatabaseType.MYSQL );
+                                                                     DatabaseType.MYSQL,
+                                                                     DatabaseType.SQLITE );
 
 	/**
 	 * The standard priority set of connections to the database
