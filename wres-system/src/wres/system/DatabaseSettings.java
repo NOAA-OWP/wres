@@ -8,7 +8,6 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
@@ -37,10 +36,6 @@ final class DatabaseSettings
     
 	private static final Logger LOGGER =
 			LoggerFactory.getLogger( DatabaseSettings.class );
-
-	// A mapping of database names to the name of the class for the 
-	private static final Map<DatabaseType, String> DRIVER_MAPPING =
-			createDriverMapping();
 
     /** From databaseType to the properties for its DataSource */
     private final Map<DatabaseType, Properties> dataSourceProperties;
@@ -76,23 +71,6 @@ final class DatabaseSettings
     // Get-connection timeout is in milliseconds. Default to default query timeout.
     private int connectionTimeoutMs = queryTimeout * 1000;
 
-	/**
-	 * Creates the mapping between the names of databases to the name of the classes that may connect to them
-	 * @return Map of database names to class names
-	 */
-	private static Map<DatabaseType, String> createDriverMapping()
-	{
-		Map<DatabaseType, String> mapping = new EnumMap<>( DatabaseType.class );
-
-        // https://github.com/brettwooldridge/HikariCP#popular-datasource-class-names
-        mapping.put( DatabaseType.MARIADB, "org.mariadb.jdbc.MariaDbDataSource" );
-        mapping.put( DatabaseType.MYSQL, "org.mariadb.jdbc.MariaDbDataSource" );
-        mapping.put( DatabaseType.POSTGRESQL, "org.postgresql.ds.PGSimpleDataSource" );
-        mapping.put( DatabaseType.H2, "org.h2.jdbcx.JdbcDataSource" );
-        mapping.put( DatabaseType.SQLITE, "org.sqlite.SQLiteDataSource" );
-		return Collections.unmodifiableMap( mapping );
-	}
-
     /**
      * Loads the database driver for the declared database type.
      * @throws SQLException if the driver could not be loaded
@@ -101,15 +79,7 @@ final class DatabaseSettings
     private void loadDriver() throws SQLException
     {
         DatabaseType type = this.getDatabaseType();
-
-        if ( !DRIVER_MAPPING.containsKey( type ) )
-        {
-            throw new SQLException( "Could not find a database driver for database type "
-                                    + databaseType
-                                    + "." );
-        }
-
-        String driverName = DRIVER_MAPPING.get( type );
+        String driverName = type.getDriverName();
 
         try
         {
@@ -504,7 +474,7 @@ final class DatabaseSettings
         Properties properties = this.getConnectionProperties();
         poolConfig.setDataSourceProperties( properties );
         DatabaseType type = this.getDatabaseType();
-        String className = DRIVER_MAPPING.get( type );
+        String className = type.getDriverName();
         poolConfig.setDataSourceClassName( className );
         int maxSize = this.maxPoolSize;
         poolConfig.setMaximumPoolSize( maxSize );
@@ -518,7 +488,7 @@ final class DatabaseSettings
         Properties properties = this.getConnectionProperties();
         poolConfig.setDataSourceProperties( properties );
         DatabaseType type = this.getDatabaseType();
-        String className = DRIVER_MAPPING.get( type );
+        String className = type.getDriverName();
         poolConfig.setDataSourceClassName( className );
         int maxSize = this.maxHighPriorityPoolSize;
         poolConfig.setMaximumPoolSize( maxSize );
