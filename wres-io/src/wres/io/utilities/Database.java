@@ -683,7 +683,7 @@ public class Database {
             optionalVacuum = "";
         }
 
-        if ( this.getType().hasAnalyzeStep() )
+        if ( this.getType().hasAnalyze() )
         {
             sql = optionalVacuum + "ANALYZE;";
             LOGGER.info( "Analyzing data for efficient execution..." );

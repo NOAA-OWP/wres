@@ -79,7 +79,7 @@ final class DatabaseSettings
     private void loadDriver() throws SQLException
     {
         DatabaseType type = this.getDatabaseType();
-        String driverName = type.getDriverName();
+        String driverName = type.getDataSourceClassName();
 
         try
         {
@@ -474,7 +474,7 @@ final class DatabaseSettings
         Properties properties = this.getConnectionProperties();
         poolConfig.setDataSourceProperties( properties );
         DatabaseType type = this.getDatabaseType();
-        String className = type.getDriverName();
+        String className = type.getDataSourceClassName();
         poolConfig.setDataSourceClassName( className );
         int maxSize = this.maxPoolSize;
         poolConfig.setMaximumPoolSize( maxSize );
@@ -488,7 +488,7 @@ final class DatabaseSettings
         Properties properties = this.getConnectionProperties();
         poolConfig.setDataSourceProperties( properties );
         DatabaseType type = this.getDatabaseType();
-        String className = type.getDriverName();
+        String className = type.getDataSourceClassName();
         poolConfig.setDataSourceClassName( className );
         int maxSize = this.maxHighPriorityPoolSize;
         poolConfig.setMaximumPoolSize( maxSize );
