@@ -57,31 +57,6 @@ public class Database {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Database.class);
 
-    /**
-     * Database types supporting "analyze".
-     */
-
-    private static final Set<DatabaseType> DBMS_WITH_ANALYZE = Set.of( DatabaseType.POSTGRESQL,
-                                                                       DatabaseType.H2 );
-
-    /**
-     * Database types having a "user" function.
-     */
-
-    private static final Set<DatabaseType> DBMS_WITH_USER_FUNCTION = Set.of( DatabaseType.H2,
-                                                                             DatabaseType.MARIADB,
-                                                                             DatabaseType.MYSQL );
-
-    /**
-     * Database types supporting "limit" clauses.
-     */
-
-    private static final Set<DatabaseType> DBMS_WITH_LIMIT = Set.of( DatabaseType.POSTGRESQL,
-                                                                     DatabaseType.H2,
-                                                                     DatabaseType.MARIADB,
-                                                                     DatabaseType.MYSQL,
-                                                                     DatabaseType.SQLITE );
-
 	/**
 	 * The standard priority set of connections to the database
 	 */
@@ -699,7 +674,7 @@ public class Database {
 
         final String optionalVacuum;
 
-        if ( vacuum && this.supportsVacuumAnalyze() )
+        if ( vacuum && this.getType().hasVacuumAnalyze() )
         {
             optionalVacuum = "VACUUM ";
         }
@@ -708,7 +683,7 @@ public class Database {
             optionalVacuum = "";
         }
 
-        if ( this.supportsAnalyze() )
+        if ( this.getType().hasAnalyzeStep() )
         {
             sql = optionalVacuum + "ANALYZE;";
             LOGGER.info( "Analyzing data for efficient execution..." );
@@ -983,7 +958,7 @@ public class Database {
 
         for ( String table : tables )
         {
-            if ( this.supportsTruncateCascade() )
+            if ( this.getType().hasTruncateCascade() )
             {
                 builder.add( "TRUNCATE TABLE " + table + " CASCADE;" );
             }
@@ -1133,7 +1108,7 @@ public class Database {
             {
                 script.addTab().addLine( "inet_client_addr()," );
             }
-            else if ( this.supportsUserFunction() )
+            else if ( this.getType().hasUserFunction() )
             {
                 script.addTab().addLine( "user()," );
             }
@@ -1169,37 +1144,13 @@ public class Database {
         }
     }
 
-    private DatabaseType getType()
+    /**
+     * @return the database type
+     */
+    public DatabaseType getType()
     {
         return this.getSystemSettings()
                    .getDatabaseType();
     }
 
-    private boolean supportsVacuumAnalyze()
-    {
-        return this.getType() == DatabaseType.POSTGRESQL;
-    }
-
-    private boolean supportsAnalyze()
-    {
-        DatabaseType type = this.getType();
-        return DBMS_WITH_ANALYZE.contains( type );
-    }
-
-    private boolean supportsUserFunction()
-    {
-        DatabaseType type = this.getType();
-        return DBMS_WITH_USER_FUNCTION.contains( type );
-    }
-
-    private boolean supportsTruncateCascade()
-    {
-        return this.getType() == DatabaseType.POSTGRESQL;
-    }
-
-    boolean supportsLimit()
-    {
-        DatabaseType type = this.getType();
-        return DBMS_WITH_LIMIT.contains( type );
-    }
 }
