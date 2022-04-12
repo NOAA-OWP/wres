@@ -1330,10 +1330,18 @@ project(':wres-eventsbroker')
         implementation group: 'javax.jms', name: 'javax.jms-api', version: '2.0.1'
 
         // Apache ActiveMQ Artemis server
-        implementation group: 'org.apache.activemq', name: 'artemis-server', version: '2.21.0'
+        implementation( 'org.apache.activemq:artemis-server:2.21.0' )
+        {
+            // Because we use slf4j, not jcl:
+            exclude group: 'commons-logging', module: 'commons-logging'
+        }
 
         // AMQP 1.0 protocol support for the ActiveMQ Artemis server
-        implementation group: 'org.apache.activemq', name: 'artemis-amqp-protocol', version: '2.21.0'
+        implementation( 'org.apache.activemq:artemis-amqp-protocol:2.21.0' )
+        {
+            // Because we use slf4j, not jcl:
+            exclude group: 'commons-logging', module: 'commons-logging'
+        }
 
         // JCIP annotations
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
@@ -1851,6 +1859,7 @@ configurations.implementation
     exclude group: 'com.google.code.findbugs', module: 'jsr305'
     exclude group: 'org.checkerframework', module: 'checker-qual'
     exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
+    exclude group: 'commons-logging', module: 'commons-logging'
 }
 
 // Truly prevent these annoying jars from showing up in dist zip
@@ -1859,6 +1868,7 @@ configurations.runtimeOnly
     exclude group: 'com.google.code.findbugs', module: 'jsr305'
     exclude group: 'org.checkerframework', module: 'checker-qual'
     exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
+    exclude group: 'commons-logging', module: 'commons-logging'
 }
 
 defaultTasks 'installDist', 'test', 'javadoc', 'jacocorootreport'
