@@ -50,6 +50,7 @@ import wres.io.data.details.TimeSeriesTrace;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.TestDatabase;
 import wres.statistics.generated.GeometryTuple;
+import wres.system.DatabaseType;
 import wres.system.SystemSettings;
 
 /**
@@ -106,7 +107,7 @@ class ProjectTest
         Mockito.when( this.mockSystemSettings.getHighPriorityConnectionPool() )
                .thenReturn( this.dataSource );
         Mockito.when( this.mockSystemSettings.getDatabaseType() )
-               .thenReturn( "h2" );
+               .thenReturn( DatabaseType.H2 );
         Mockito.when( this.mockSystemSettings.getMaximumPoolSize() )
                .thenReturn( 10 );
 

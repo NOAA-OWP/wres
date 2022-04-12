@@ -63,6 +63,7 @@ import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.TimeWindow;
 import wres.system.DatabaseLockManager;
 import wres.system.DatabaseLockManagerNoop;
+import wres.system.DatabaseType;
 import wres.system.SystemSettings;
 
 /**
@@ -115,7 +116,7 @@ public class EnsembleRetrieverFactoryTest
         Mockito.when( this.mockSystemSettings.getHighPriorityConnectionPool() )
                .thenReturn( this.dataSource );
         Mockito.when( this.mockSystemSettings.getDatabaseType() )
-               .thenReturn( "h2" );
+               .thenReturn( DatabaseType.H2 );
         Mockito.when( this.mockSystemSettings.getMaximumPoolSize() )
                .thenReturn( 10 );
 

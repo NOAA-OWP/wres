@@ -71,8 +71,7 @@ public class DatabasePartitions
 
     public DatabasePartitions( SystemSettings systemSettings )
     {
-        if ( !systemSettings.getDatabaseType()
-                            .equalsIgnoreCase( "postgresql" ) )
+        if ( systemSettings.getDatabaseType() != DatabaseType.POSTGRESQL )
         {
             throw new UnsupportedOperationException( "Only 'postgresql' database type is supported" );
         }

@@ -13,13 +13,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -43,6 +41,7 @@ import wres.io.concurrency.WRESCallable;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
+import wres.system.DatabaseType;
 import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 import wres.util.functional.ExceptionalConsumer;
@@ -62,26 +61,25 @@ public class Database {
      * Database types supporting "analyze".
      */
 
-    private static final Set<String> DBMS_WITH_ANALYZE = Set.of( "postgresql",
-                                                                 "h2" );
+    private static final Set<DatabaseType> DBMS_WITH_ANALYZE = Set.of( DatabaseType.POSTGRESQL,
+                                                                       DatabaseType.H2 );
 
     /**
      * Database types having a "user" function.
      */
 
-    private static final Set<String> DBMS_WITH_USER_FUNCTION = Set.of( "h2",
-                                                                       "mariadb",
-                                                                       "mysql" );
+    private static final Set<DatabaseType> DBMS_WITH_USER_FUNCTION = Set.of( DatabaseType.H2,
+                                                                             DatabaseType.MARIADB,
+                                                                             DatabaseType.MYSQL );
 
     /**
      * Database types supporting "limit" clauses.
      */
 
-    private static final Set<String> DBMS_WITH_LIMIT = Set.of( "postgresql",
-                                                               "h2",
-                                                               "mariadb",
-                                                               "sqlite",
-                                                               "mysql" );
+    private static final Set<DatabaseType> DBMS_WITH_LIMIT = Set.of( DatabaseType.POSTGRESQL,
+                                                                     DatabaseType.H2,
+                                                                     DatabaseType.MARIADB,
+                                                                     DatabaseType.MYSQL );
 
 	/**
 	 * The standard priority set of connections to the database
@@ -481,7 +479,7 @@ public class Database {
 
         if ( this.getSystemSettings()
                  .getDatabaseType()
-                 .equalsIgnoreCase( "postgresql" ) )
+                 == DatabaseType.POSTGRESQL )
         {
             this.pgCopy( tableName,
                          columnNames,
@@ -961,8 +959,7 @@ public class Database {
     public void clean() throws SQLException
     {
         StringJoiner builder;
-        if ( this.getType()
-                 .equals( "h2" ) )
+        if ( this.getType() == DatabaseType.H2 )
         {
              builder = new StringJoiner( NEWLINE,
                                          "SET REFERENTIAL_INTEGRITY FALSE;" + NEWLINE,
@@ -1131,8 +1128,7 @@ public class Database {
             script.addTab().addLine("?,");
             script.addTab().addLine("?,");
 
-            if ( this.getType()
-                     .equals( "postgresql" ) )
+            if ( this.getType() == DatabaseType.POSTGRESQL )
             {
                 script.addTab().addLine( "inet_client_addr()," );
             }
@@ -1172,40 +1168,37 @@ public class Database {
         }
     }
 
-    private String getType()
+    private DatabaseType getType()
     {
         return this.getSystemSettings()
-                   .getDatabaseType()
-                   .toLowerCase();
+                   .getDatabaseType();
     }
 
     private boolean supportsVacuumAnalyze()
     {
-        return this.getType()
-                   .equals( "postgresql" );
+        return this.getType() == DatabaseType.POSTGRESQL;
     }
 
     private boolean supportsAnalyze()
     {
-        String type = this.getType();
+        DatabaseType type = this.getType();
         return DBMS_WITH_ANALYZE.contains( type );
     }
 
     private boolean supportsUserFunction()
     {
-        String type = this.getType();
+        DatabaseType type = this.getType();
         return DBMS_WITH_USER_FUNCTION.contains( type );
     }
 
     private boolean supportsTruncateCascade()
     {
-        return this.getType()
-                   .equals( "postgresql" );
+        return this.getType() == DatabaseType.POSTGRESQL;
     }
 
     boolean supportsLimit()
     {
-        String type = this.getType();
+        DatabaseType type = this.getType();
         return DBMS_WITH_LIMIT.contains( type );
     }
 }

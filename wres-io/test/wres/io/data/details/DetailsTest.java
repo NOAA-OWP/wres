@@ -23,6 +23,7 @@ import wres.io.concurrency.Executor;
 import wres.io.data.caching.Features;
 import wres.io.project.Project;
 import wres.io.utilities.TestDatabase;
+import wres.system.DatabaseType;
 import wres.system.SystemSettings;
 
 public class DetailsTest
@@ -53,7 +54,7 @@ public class DetailsTest
         Mockito.when( mockSystemSettings.getHighPriorityConnectionPool() )
                .thenReturn( this.dataSource );
         Mockito.when( this.mockSystemSettings.getDatabaseType() )
-               .thenReturn( "h2" );
+               .thenReturn( DatabaseType.H2 );
         Mockito.when( this.mockSystemSettings.getMaximumPoolSize() )
                .thenReturn( 10 );
 

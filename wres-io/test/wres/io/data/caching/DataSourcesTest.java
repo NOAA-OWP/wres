@@ -28,6 +28,7 @@ import wres.io.data.details.SourceDetails;
 import wres.io.utilities.DataBuilder;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.TestDatabase;
+import wres.system.DatabaseType;
 import wres.system.SystemSettings;
 
 public class DataSourcesTest
@@ -64,7 +65,7 @@ public class DataSourcesTest
         Mockito.when( this.mockSystemSettings.getHighPriorityConnectionPool() )
                .thenReturn( this.dataSource );
         Mockito.when( this.mockSystemSettings.getDatabaseType() )
-               .thenReturn( "h2" );
+               .thenReturn( DatabaseType.H2 );
         Mockito.when( this.mockSystemSettings.getMaximumPoolSize() )
                .thenReturn( 10 );
 
