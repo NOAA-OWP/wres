@@ -1353,6 +1353,9 @@ project(':wres-eventsbroker')
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
 
+        // Because artemis uses apache commons logging, bridge to slf4j
+        runtimeOnly 'org.slf4j:jcl-over-slf4j:2.0.0-alpha7'
+
         // Qpid AMQP 1.0 JMS 2.0 client to test interaction with the embedded broker
         testImplementation group: 'org.apache.qpid', name: 'qpid-jms-client', version: '1.6.0'
 
