@@ -83,11 +83,13 @@ final class DatabaseSettings
 	private static Map<DatabaseType, String> createDriverMapping()
 	{
 		Map<DatabaseType, String> mapping = new EnumMap<>( DatabaseType.class );
+
+        // https://github.com/brettwooldridge/HikariCP#popular-datasource-class-names
         mapping.put( DatabaseType.MARIADB, "org.mariadb.jdbc.MariaDbDataSource" );
         mapping.put( DatabaseType.MYSQL, "org.mariadb.jdbc.MariaDbDataSource" );
         mapping.put( DatabaseType.POSTGRESQL, "org.postgresql.ds.PGSimpleDataSource" );
-        mapping.put( DatabaseType.H2, "org.h2.jdbcx.JdbcDataSource");
-        
+        mapping.put( DatabaseType.H2, "org.h2.jdbcx.JdbcDataSource" );
+        mapping.put( DatabaseType.SQLITE, "org.sqlite.SQLiteDataSource" );
 		return Collections.unmodifiableMap( mapping );
 	}
 
