@@ -5,8 +5,11 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
@@ -30,15 +33,17 @@ import wres.util.Strings;
  */
 final class DatabaseSettings
 {
+    private static final String USE_SSL = "useSSL";
+    
 	private static final Logger LOGGER =
 			LoggerFactory.getLogger( DatabaseSettings.class );
 
 	// A mapping of database names to the name of the class for the 
-	private static final Map<String, String> DRIVER_MAPPING =
+	private static final Map<DatabaseType, String> DRIVER_MAPPING =
 			createDriverMapping();
 
     /** From databaseType to the properties for its DataSource */
-    private final Map<String, Properties> dataSourceProperties;
+    private final Map<DatabaseType, Properties> dataSourceProperties;
 
     /**
      * When the jdbcUrl is specified, it takes precedence over the fields used
@@ -55,7 +60,7 @@ final class DatabaseSettings
 	private String password;
 	private int port = 5432;
 	private String databaseName = "wres";
-	private String databaseType = "postgresql";
+	private DatabaseType databaseType = DatabaseType.POSTGRESQL;
 	private String certificateFileToTrust;
 	private int maxPoolSize = 10;
 	private int maxHighPriorityPoolSize = 5;
@@ -75,22 +80,58 @@ final class DatabaseSettings
 	 * Creates the mapping between the names of databases to the name of the classes that may connect to them
 	 * @return Map of database names to class names
 	 */
-	private static Map<String, String> createDriverMapping()
+	private static Map<DatabaseType, String> createDriverMapping()
 	{
-		TreeMap<String, String> mapping = new TreeMap<>();
-        mapping.put( "mariadb", "org.mariadb.jdbc.MariaDbDataSource" );
-        mapping.put( "mysql", "org.mariadb.jdbc.MariaDbDataSource" );
-        mapping.put( "postgresql", "org.postgresql.ds.PGSimpleDataSource" );
-        mapping.put( "h2", "org.h2.jdbcx.JdbcDataSource");
-		return mapping;
+		Map<DatabaseType, String> mapping = new EnumMap<>( DatabaseType.class );
+        mapping.put( DatabaseType.MARIADB, "org.mariadb.jdbc.MariaDbDataSource" );
+        mapping.put( DatabaseType.MYSQL, "org.mariadb.jdbc.MariaDbDataSource" );
+        mapping.put( DatabaseType.POSTGRESQL, "org.postgresql.ds.PGSimpleDataSource" );
+        mapping.put( DatabaseType.H2, "org.h2.jdbcx.JdbcDataSource");
+        
+		return Collections.unmodifiableMap( mapping );
 	}
 
+    /**
+     * Loads the database driver for the declared database type.
+     * @throws SQLException if the driver could not be loaded
+     */
 
-    /** To be called after setting member variables based on wres config */
-    private Map<String, Properties> createDatasourceProperties()
+    private void loadDriver() throws SQLException
     {
-        Map<String, Properties> mapping = new TreeMap<>();
-        Map<String,String> commonProperties = new TreeMap<>();
+        DatabaseType type = this.getDatabaseType();
+
+        if ( !DRIVER_MAPPING.containsKey( type ) )
+        {
+            throw new SQLException( "Could not find a database driver for database type "
+                                    + databaseType
+                                    + "." );
+        }
+
+        String driverName = DRIVER_MAPPING.get( type );
+
+        try
+        {
+            LOGGER.debug( "Attempting to load a driver for database type: {}. The driver name is {}.",
+                          databaseType,
+                          driverName );
+
+            Class.forName( driverName );
+        }
+        catch ( ClassNotFoundException classError )
+        {
+            String message = "The specified database type of '" +
+                             this.getDatabaseType()
+                             +
+                             "' is not valid and a connection could not be created. Shutting down...";
+            throw new SQLException( message, classError );
+        }
+    }
+	
+    /** To be called after setting member variables based on wres config */
+    private Map<DatabaseType, Properties> createDatasourceProperties()
+    {
+        Map<DatabaseType, Properties> mapping = new EnumMap<>( DatabaseType.class );
+        Map<String, String> commonProperties = new TreeMap<>();
 
         if ( Objects.nonNull( this.getUsername() ) )
         {
@@ -108,8 +149,8 @@ final class DatabaseSettings
         Properties mysqlProperties = new Properties();
 
         postgresqlProperties.put( "ssl", Boolean.toString( this.shouldUseSSL() ) );
-        mariadbProperties.put( "useSSL", Boolean.toString( this.shouldUseSSL() ) );
-        mysqlProperties.put( "useSSL", Boolean.toString( this.shouldUseSSL() ) );
+        mariadbProperties.put( USE_SSL, Boolean.toString( this.shouldUseSSL() ) );
+        mysqlProperties.put( USE_SSL, Boolean.toString( this.shouldUseSSL() ) );
 
         if ( Objects.nonNull( this.getHost() ) )
         {
@@ -145,7 +186,7 @@ final class DatabaseSettings
         }
         else
         {
-            postgresqlProperties.put("sslfactory", "org.postgresql.ssl.NonValidatingFactory");
+            postgresqlProperties.put( "sslfactory", "org.postgresql.ssl.NonValidatingFactory" );
             mariadbProperties.put( "trustServerCertificate", "true" );
             mysqlProperties.put( "trustServerCertificate", "true" );
         }
@@ -159,7 +200,8 @@ final class DatabaseSettings
         {
             // Postgresql has opportunity for multiple settings in 'options'.
             String pgStatementTimeout = "-c statement_timeout="
-                                        + this.getQueryTimeout() + "s";
+                                        + this.getQueryTimeout()
+                                        + "s";
             String pgOptions = postgresqlProperties.getProperty( "options" );
             if ( pgOptions == null )
             {
@@ -181,13 +223,13 @@ final class DatabaseSettings
         }
 
         postgresqlProperties.putAll( commonProperties );
-        mapping.put("postgresql", postgresqlProperties );
+        mapping.put( DatabaseType.POSTGRESQL, postgresqlProperties );
 
         mariadbProperties.putAll( commonProperties );
-        mapping.put( "mariadb", mariadbProperties );
+        mapping.put( DatabaseType.MARIADB, mariadbProperties );
 
         mysqlProperties.putAll( commonProperties );
-        mapping.put( "mysql", mysqlProperties );
+        mapping.put( DatabaseType.MYSQL, mysqlProperties );
 
         h2Properties.putAll( commonProperties );
 
@@ -205,7 +247,7 @@ final class DatabaseSettings
             h2Properties.put( "url", h2JdbcUrl );
         }
 
-        mapping.put( "h2", h2Properties );
+        mapping.put( DatabaseType.H2, h2Properties );
         return mapping;
     }
 
@@ -273,13 +315,11 @@ final class DatabaseSettings
             if ( attemptToMigrateSetting != null
                  && !attemptToMigrateSetting.isBlank() )
             {
-                if ( attemptToMigrateSetting.toLowerCase()
-                                            .equals( "true" ) )
+                if ( attemptToMigrateSetting.equalsIgnoreCase( "true" ) )
                 {
                     migrate = true;
                 }
-                else if ( attemptToMigrateSetting.toLowerCase()
-                                                 .equals( "false" ) )
+                else if ( attemptToMigrateSetting.equalsIgnoreCase( "false" ) )
                 {
                     migrate = false;
                 }
@@ -295,15 +335,13 @@ final class DatabaseSettings
                 LOGGER.info( "Beginning database migration. This takes time." );
                 DatabaseLockManager lockManager;
 
-                if ( this.getDatabaseType()
-                         .equalsIgnoreCase( "postgresql" ) )
+                if ( this.getDatabaseType() == DatabaseType.POSTGRESQL )
                 {
                     ConnectionSupplier connectionSupplier =
                             new ConnectionSupplier( this.getDatabaseName() );
                     lockManager = new DatabaseLockManagerPostgres( connectionSupplier );
                 }
-                else if ( this.getDatabaseType()
-                              .equalsIgnoreCase( "h2" ) )
+                else if ( this.getDatabaseType() == DatabaseType.H2 )
                 {
                     lockManager = new DatabaseLockManagerNoop();
                 }
@@ -336,8 +374,7 @@ final class DatabaseSettings
 
 	private void cleanPriorRuns() throws SQLException
 	{
-        if ( this.getDatabaseType()
-                 .equalsIgnoreCase( "postgresql" ) )
+        if ( this.getDatabaseType() == DatabaseType.POSTGRESQL )
         {
             final String NEWLINE = System.lineSeparator();
 
@@ -354,24 +391,20 @@ final class DatabaseSettings
             script += "    AND datname = '" + this.getDatabaseName() + "'" + NEWLINE;
             script += "GROUP BY PT.pid;";
 
-            try
-            {
-                Class.forName( DRIVER_MAPPING.get( getDatabaseType() ) );
-            }
-            catch ( ClassNotFoundException e )
-            {
-                throw new SQLException( "The database driver could not be found.", e );
-            }
+            // Load the driver
+            this.loadDriver();
 
             try ( Connection connection = this.getRawConnection( null );
-                  Statement clean = connection.createStatement()
-            )
+                  Statement clean = connection.createStatement() )
             {
                 clean.execute( script );
-                if ( clean.getResultSet().isBeforeFirst() )
+                try ( ResultSet resultSet = clean.getResultSet() )
                 {
-                    LOGGER.debug( "Lock(s) from previous runs of this applications "
-                                  + "have been released." );
+                    if ( resultSet.isBeforeFirst() )
+                    {
+                        LOGGER.debug( "Lock(s) from previous runs of this applications "
+                                      + "have been released." );
+                    }
                 }
             }
         }
@@ -422,21 +455,8 @@ final class DatabaseSettings
                                    + "') is not accessible." );
 		}
 
-        try
-        {
-            LOGGER.debug( "Attempting to load a driver for database type: {}. The driver name is {}.",
-                          getDatabaseType(),
-                          DRIVER_MAPPING.get( getDatabaseType() ) );
-            
-            Class.forName(DRIVER_MAPPING.get(getDatabaseType()));
-        }
-        catch (ClassNotFoundException classError)
-        {
-            String message = "The specified database type of '" +
-                             this.getDatabaseType() +
-                             "' is not valid and a connection could not be created. Shutting down...";
-            throw new SQLException( message, classError);
-        }
+        // Load the driver
+        this.loadDriver();
 
         try ( Connection connection = this.getRawConnection( null );
               Statement test = connection.createStatement() )
@@ -469,15 +489,8 @@ final class DatabaseSettings
             connectionString = this.getConnectionString( this.databaseName);
         }
 
-		try
-		{
-			Class.forName(DRIVER_MAPPING.get(getDatabaseType()));
-		}
-		catch ( ClassNotFoundException e )
-		{
-			throw new SQLException( "The driver that will call the database "
-									+ "could not be found.", e );
-		}
+	    // Load the driver
+		this.loadDriver();
 
         return DriverManager.getConnection( connectionString,
                                             this.getConnectionProperties() );
@@ -488,7 +501,7 @@ final class DatabaseSettings
         HikariConfig poolConfig = new HikariConfig();
         Properties properties = this.getConnectionProperties();
         poolConfig.setDataSourceProperties( properties );
-        String type = this.getDatabaseType();
+        DatabaseType type = this.getDatabaseType();
         String className = DRIVER_MAPPING.get( type );
         poolConfig.setDataSourceClassName( className );
         int maxSize = this.maxPoolSize;
@@ -502,7 +515,7 @@ final class DatabaseSettings
         HikariConfig poolConfig = new HikariConfig();
         Properties properties = this.getConnectionProperties();
         poolConfig.setDataSourceProperties( properties );
-        String type = this.getDatabaseType();
+        DatabaseType type = this.getDatabaseType();
         String className = DRIVER_MAPPING.get( type );
         poolConfig.setDataSourceClassName( className );
         int maxSize = this.maxHighPriorityPoolSize;
@@ -636,7 +649,7 @@ final class DatabaseSettings
 	 * Sets the name of the type of database in use (such as 'mysql', 'postgresql', etc)
 	 * @param databaseType The name of the database to connect to
 	 */
-    private void setDatabaseType (String databaseType)
+    private void setDatabaseType ( DatabaseType databaseType )
 	{
 		this.databaseType = databaseType;
 	}
@@ -669,7 +682,7 @@ final class DatabaseSettings
         connectionString.append( "jdbc:" );
         connectionString.append( this.getDatabaseType() );
 
-        if ( this.databaseType.equalsIgnoreCase( "h2" )
+        if ( this.databaseType == DatabaseType.H2
              && this.useSSL )
         {
             connectionString.append(":ssl");
@@ -710,7 +723,9 @@ final class DatabaseSettings
                     switch ( tagName )
                     {
                         case "database_type":
-                            setDatabaseType( value );
+                            String typeString = value.toUpperCase();
+                            DatabaseType type = DatabaseType.valueOf( typeString );
+                            setDatabaseType( type );
                             break;
                         case "port":
                             setPort( Integer.parseInt( value ) );
@@ -811,10 +826,12 @@ final class DatabaseSettings
             }
             else
             {
-                String type = jdbcSubstring.substring( 0, secondColonIndex );
+                String type = jdbcSubstring.substring( 0, secondColonIndex )
+                                           .toUpperCase();
                 LOGGER.debug( "Extracted database type {} from jdbc url {}",
                               type, jdbc );
-                setDatabaseType( type );
+                DatabaseType typeEnum = DatabaseType.valueOf( type );
+                setDatabaseType( typeEnum );
             }
 
             if ( firstSlashIndex > 0
@@ -838,10 +855,10 @@ final class DatabaseSettings
 
                     try
                     {
-                        int port = Integer.parseInt( portRaw );
+                        int portNumber = Integer.parseInt( portRaw );
                         LOGGER.debug( "Extracted port {} from jdbcUrl {}",
-                                      port, jdbc );
-                        this.setPort( port );
+                                      portNumber, jdbc );
+                        this.setPort( portNumber );
                     }
                     catch ( NumberFormatException nfe )
                     {
@@ -895,7 +912,7 @@ final class DatabaseSettings
         }
     }
 
-	public String getDatabaseType()
+	public DatabaseType getDatabaseType()
 	{
 		return this.databaseType;
 	}
@@ -943,7 +960,7 @@ final class DatabaseSettings
                 .append( "maxIdleTime", maxIdleTime )
                 // Purposely do not print passphrases.
                 //.append( "dataSourceProperties", this.dataSourceProperties )
-                .append( "useSSL", useSSL )
+                .append( USE_SSL, useSSL )
                 .append( "validateSSL", validateSSL )
                 .append( "queryTimeout", queryTimeout )
                 .append( "connectionTimeoutMs", connectionTimeoutMs )
@@ -984,8 +1001,8 @@ final class DatabaseSettings
 
         if ( Objects.nonNull( portOverride ) )
         {
-            int port = Integer.parseInt( portOverride );
-            this.setPort( port );
+            int portNumber = Integer.parseInt( portOverride );
+            this.setPort( portNumber );
         }
 
         String jdbcUrlOverride = System.getProperty( "wres.databaseJdbcUrl" );
@@ -1050,8 +1067,7 @@ final class DatabaseSettings
         {
             this.setPassword( passwordOverride );
         }
-        else if ( this.getDatabaseType()
-                      .equalsIgnoreCase( "postgresql" )
+        else if ( this.getDatabaseType() == DatabaseType.POSTGRESQL
                   && PgPassReader.pgPassExistsAndReadable() )
         {
             String pgPass = null;

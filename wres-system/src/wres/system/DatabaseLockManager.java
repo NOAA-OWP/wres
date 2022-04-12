@@ -123,14 +123,12 @@ public interface DatabaseLockManager
 
     static DatabaseLockManager from( SystemSettings settings )
     {
-        if ( settings.getDatabaseType()
-                     .equalsIgnoreCase( "postgresql" ) )
+        if ( settings.getDatabaseType() == DatabaseType.POSTGRESQL )
         {
             Supplier<Connection> connectionSupplier = new DatabaseConnectionSupplier( settings );
             return new DatabaseLockManagerPostgres( connectionSupplier );
         }
-        else if ( settings.getDatabaseType()
-                          .equalsIgnoreCase( "h2" ) )
+        else if ( settings.getDatabaseType() == DatabaseType.H2 )
         {
             return new DatabaseLockManagerNoop();
         }

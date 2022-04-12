@@ -24,6 +24,7 @@ import static org.junit.Assert.assertThrows;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.details.MeasurementDetails;
 import wres.io.utilities.TestDatabase;
+import wres.system.DatabaseType;
 import wres.system.SystemSettings;
 
 /**
@@ -66,7 +67,7 @@ public class UnitMapperTest
         Mockito.when( this.mockSystemSettings.getHighPriorityConnectionPool() )
                .thenReturn( this.dataSource );
         Mockito.when( this.mockSystemSettings.getDatabaseType() )
-               .thenReturn( "h2" );
+               .thenReturn( DatabaseType.H2 );
         Mockito.when( this.mockSystemSettings.getMaximumPoolSize() )
                .thenReturn( 10 );
 
