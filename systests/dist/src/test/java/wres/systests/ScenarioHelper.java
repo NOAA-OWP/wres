@@ -117,44 +117,10 @@ public class ScenarioHelper
     }
     
 
-    /**
-     * Checks for output validity from WRES and fails if not.  This is used in conjunction
-     * with {@link #assertOutputsMatchBenchmarks(ScenarioInformation, Evaluator)}.
-     * @param@ completedEvaluation The {@link Evaluator} that executed the evaluation.
-     */
-    private static void assertWRESOutputValid( ScenarioInformation scenarioInfo,
-                                               Set<Path> initialOutputSet )
-    {
-        //Confirm all outputs were written to the same directory.
-        if ( !initialOutputSet.isEmpty() )
-        {
-            Iterator<Path> paths = initialOutputSet.iterator();
-            Path firstPath = paths.next();
-            while ( paths.hasNext() )
-            {
-                Path secondPath = paths.next();
-                if ( !firstPath.getParent().equals( secondPath.getParent() ) )
-                {
-                    fail( "Not all outputs of WRES Evaluator.evaluate were written to the same directory.  "
-                          + "That is not allowed in system testing." );
-                }
-            }
-            
-            LOGGER.info( "For scenario " + scenarioInfo.getName()
-                         + " all outputs were written to "
-                         + firstPath.getParent() );
-        }
-
-        //Anything else to validate about the output?
-    }
-
     protected static void assertOutputsMatchBenchmarks( ScenarioInformation scenarioInfo,
                                                         Set<Path> initialOutputSet )
     {
         LOGGER.info( "Asserting that outputs match benchmarks for {}...", scenarioInfo.getName() );
-        
-        //Assert the output as being valid and then get the output from the provided Evaluator if so.
-        assertWRESOutputValid( scenarioInfo, initialOutputSet );
 
         //Create the directory listing... Temporarily removed for due to sorting issues.
         //Path dirListingPath;
