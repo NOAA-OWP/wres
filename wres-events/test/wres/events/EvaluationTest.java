@@ -793,7 +793,10 @@ class EvaluationTest
     @AfterAll
     static void runAfterAllTests() throws IOException
     {
-        EvaluationTest.connections.close();
+        if( Objects.nonNull( EvaluationTest.connections ) )
+        {
+            EvaluationTest.connections.close();
+        }
     }
 
 }

@@ -817,7 +817,7 @@ project(':wres-config')
         api group: 'org.jvnet.jaxb2_commons', name: 'jaxb2-basics-runtime', version: '0.12.0'
 
         // To know about @Locatable
-        compileOnlyApi 'org.glassfish.jaxb:jaxb-core:2.3.0.1'
+        api 'org.glassfish.jaxb:jaxb-core:2.3.0.1'
 
         runtimeOnly 'org.glassfish.jaxb:jaxb-runtime:2.3.6'
 
