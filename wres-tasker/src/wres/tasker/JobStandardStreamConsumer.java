@@ -9,7 +9,7 @@ import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
-import jakarta.xml.bind.DatatypeConverter;
+import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +57,7 @@ class JobStandardStreamConsumer extends DefaultConsumer
         }
         catch ( InvalidProtocolBufferException ipbe )
         {
-            String hexVersion = DatatypeConverter.printHexBinary( message );
+            String hexVersion = new Base64( 80 ).encodeToString( message );
             throw new WresParseException( "Failed to parse message, hex: " + hexVersion, ipbe );
         }
 
