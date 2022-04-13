@@ -8,10 +8,12 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -374,6 +376,15 @@ class EvaluationStatusTrackerTest
             
             // Forcibly stop the evaluation
             evaluation.stop( null );
+        }
+    }
+    
+    @AfterAll
+    static void runAfterAllTests() throws IOException
+    {
+        if( Objects.nonNull( EvaluationStatusTrackerTest.connections ) )
+        {
+            EvaluationStatusTrackerTest.connections.close();
         }
     }
 
