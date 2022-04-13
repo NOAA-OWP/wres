@@ -817,7 +817,7 @@ project(':wres-config')
         api group: 'org.jvnet.jaxb2_commons', name: 'jaxb2-basics-runtime', version: '0.12.0'
 
         // To know about @Locatable
-        api 'org.glassfish.jaxb:jaxb-core:2.3.0.1'
+        compileOnlyApi 'org.glassfish.jaxb:jaxb-core:2.3.0.1'
 
         runtimeOnly 'org.glassfish.jaxb:jaxb-runtime:2.3.6'
 
@@ -1099,8 +1099,8 @@ project(':wres-tasker')
         implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.0.0'
         implementation 'jakarta.annotation:jakarta.annotation-api:2.1.0'
 
-        // For Java 9+ compatibility:
-        implementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
+        // Easy byte[] to hex conversion
+        implementation 'commons-codec:commons-codec:1.15'
 
         // Server library to run a web server:
         implementation 'org.eclipse.jetty:jetty-server:11.0.9'
