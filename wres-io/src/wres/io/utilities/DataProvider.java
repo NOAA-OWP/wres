@@ -565,17 +565,8 @@ public interface DataProvider extends AutoCloseable
 
         for ( int i = 0; i < charColumns.length; i++ )
         {
-            String columnName = columnNames.get( i );
-
-            // TODO: Find the type of the data more accurately
-            if ( columnName.equals( "valid_datetime" ) )
-            {
-                charColumns[i] = true;
-            }
-            else
-            {
-                charColumns[i] = false;
-            }
+            // TODO: Find the type of the data accurately instead of all false.
+            charColumns[i] = false;
         }
 
         while (this.next())

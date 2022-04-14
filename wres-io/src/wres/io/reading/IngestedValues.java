@@ -1,6 +1,5 @@
 package wres.io.reading;
 
-import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -36,10 +35,7 @@ public final class IngestedValues
     /** Guards VALUES_TO_SAVE and VALUES_SAVED_LATCHES and DataBuilders */
     private static final Object VALUES_TO_SAVE_LOCK = new Object();
 
-    private static final String[] TIMESERIES_COLUMN_NAMES =
-            { "timeseriestrace_id", "valid_datetime", "series_value" };
-
-    private static final String TABLE_NAME = "wres.TimeSeriesTraceValue";
+    private static final String[] TIMESERIES_COLUMN_NAMES = {"timeseries_id", "lead", "series_value"};
 
     /**
      * Stores a time series value so that it may be copied to the database,
@@ -48,19 +44,21 @@ public final class IngestedValues
      * @param systemSettings The system settings to use.
      * @param database The database to use.
      * @param timeSeriesID The ID of the time series that the value belongs to
-     * @param validDatetime The valid datetime for the value
+     * @param lead The lead time for the value
      * @param value The value itself
      * @return A synchronizer used to signal "waiting" left, "completed" right.
      * @throws IngestException when the proper partition could not be retrieved
      *                         or when the ingest fails.
      */
-    public static Pair<CountDownLatch,CountDownLatch> addTimeSeriesTraceValue( SystemSettings systemSettings,
-                                                                               Database database,
-                                                                               long timeSeriesID,
-                                                                               Instant validDatetime,
-                                                                               Double value )
+    public static Pair<CountDownLatch,CountDownLatch> addTimeSeriesValue( SystemSettings systemSettings,
+                                                                          Database database,
+                                                                          long timeSeriesID,
+                                                                          int lead,
+                                                                          Double value )
             throws IngestException
     {
+        String partitionName = database.getTimeSeriesValuePartition( lead );
+
         DataBuilder freshDataBuilder = DataBuilder.with( IngestedValues.TIMESERIES_COLUMN_NAMES );
 
         // The data builder to add to, whether existing or fresh.
@@ -94,7 +92,7 @@ public final class IngestedValues
         synchronized ( VALUES_TO_SAVE_LOCK )
         {
             // Add a list for the values if it isn't present
-            dataBuilderToUse = VALUES_TO_SAVE.putIfAbsent( TABLE_NAME,
+            dataBuilderToUse = VALUES_TO_SAVE.putIfAbsent( partitionName,
                                                            freshDataBuilder );
 
             // When putIfAbsent returns null, it means it successfully put.
@@ -104,10 +102,10 @@ public final class IngestedValues
             }
 
             // Add the values to the list for the partition
-            dataBuilderToUse.addRow( timeSeriesID, validDatetime, value );
+            dataBuilderToUse.addRow( timeSeriesID, lead, value );
 
             // Add latches for the values if not present
-            latchesToUse = VALUES_SAVED_LATCHES.putIfAbsent( TABLE_NAME,
+            latchesToUse = VALUES_SAVED_LATCHES.putIfAbsent( partitionName,
                                                              freshLatches );
 
             // When putIfAbsent returns null, it means it successfully put.
@@ -124,7 +122,7 @@ public final class IngestedValues
             if ( rowCount >= maximumCount )
             {
                 LOGGER.trace( "Row count for partition {} is {}, larger than system setting {}",
-                              TABLE_NAME, rowCount, maximumCount );
+                              partitionName, rowCount, maximumCount );
                 doSave = true;
             }
 
@@ -134,7 +132,7 @@ public final class IngestedValues
             if ( !latchesToUse.equals( freshLatches ) )
             {
                 LOGGER.trace( "An existing latches object {} was found for partition {}, looking for waiting tasks.",
-                              latchesToUse, TABLE_NAME );
+                              latchesToUse, partitionName );
                 try
                 {
                     // We could use getCount() <= 0, however, the documentation
@@ -143,7 +141,7 @@ public final class IngestedValues
                                      .await( 0, TimeUnit.MICROSECONDS ) )
                     {
                         LOGGER.debug( "At least one task signaled it is waiting for ingest on {}, will ingest {} rows to {}.",
-                                      latchesToUse, rowCount, TABLE_NAME );
+                                      latchesToUse, rowCount, partitionName );
                         doSave = true;
                     }
                 }
@@ -157,8 +155,8 @@ public final class IngestedValues
 
             if ( doSave )
             {
-                removedLatches = VALUES_SAVED_LATCHES.remove( TABLE_NAME );
-                removedDataBuilder = VALUES_TO_SAVE.remove( TABLE_NAME );
+                removedLatches = VALUES_SAVED_LATCHES.remove( partitionName );
+                removedDataBuilder = VALUES_TO_SAVE.remove( partitionName );
                 // It is understood that another Thread will put fresh values.
             }
         }
@@ -171,7 +169,7 @@ public final class IngestedValues
         if ( doSave )
         {
             LOGGER.debug( "Attempting to ingest values for {} to {}",
-                          removedLatches, TABLE_NAME );
+                          removedLatches, partitionName );
 
             try
             {
@@ -183,12 +181,12 @@ public final class IngestedValues
                 // leave Thread C to do other things. Even better might be to
                 // let Thread A do the ingest since it is the one waiting.
                 removedDataBuilder.build()
-                                  .copy( database, TABLE_NAME );
+                                  .copy( database, partitionName );
             }
             catch( IngestException ce )
             {
                 throw new IngestException( "Ingest of values to "
-                                           + TABLE_NAME + " failed.", ce );
+                                           + partitionName + " failed.", ce );
             }
 
             // Now that data has been copied, the associated latch should be
@@ -205,7 +203,7 @@ public final class IngestedValues
         else
         {
             LOGGER.trace( "Did not ingest values for partition {}, returning {}",
-                          TABLE_NAME, latchesToUse );
+                          partitionName, latchesToUse );
             // Because ingest did not happen for this partitionName, return the
             // latches associated with it.
             return latchesToUse;

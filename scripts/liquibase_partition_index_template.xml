@@ -26,3 +26,20 @@
                    schemaName="wres"
                    indexName="TimeSeriesValue_NAMEHERE_TimeSeries_idx" />
     </changeSet>
+    <changeSet id="wres.TimeSeriesValue_NAMEHERE - Add timeseries_id,lead unique index."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_NAMEHERE"
+                         schemaName="wres" />
+            <not>
+                <indexExists tableName="TimeSeriesValue_NAMEHERE"
+                             schemaName="wres"
+                             indexName="TimeSeriesValue_NAMEHERE_timeseries_lead_key" />
+            </not>
+        </preConditions>
+        <addUniqueConstraint tableName="TimeSeriesValue_NAMEHERE"
+                             schemaName="wres"
+                             columnNames="timeseries_id,lead"
+                             constraintName="TimeSeriesValue_NAMEHERE_timeseries_lead_key" />
+    </changeSet>

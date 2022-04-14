@@ -1,0 +1,2777 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="wres.TimeSeriesValue_lead_1 - Create TimeSeriesValue partition lead_1."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_1"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_1
+            (
+                CHECK ( lead &lt; 2400 AND lead &gt;= 1200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_2 - Create TimeSeriesValue partition lead_2."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_2"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_2
+            (
+                CHECK ( lead &lt; 3600 AND lead &gt;= 2400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_3 - Create TimeSeriesValue partition lead_3."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_3"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_3
+            (
+                CHECK ( lead &lt; 4800 AND lead &gt;= 3600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_4 - Create TimeSeriesValue partition lead_4."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_4"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_4
+            (
+                CHECK ( lead &lt; 6000 AND lead &gt;= 4800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_5 - Create TimeSeriesValue partition lead_5."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_5"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_5
+            (
+                CHECK ( lead &lt; 7200 AND lead &gt;= 6000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_6 - Create TimeSeriesValue partition lead_6."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_6"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_6
+            (
+                CHECK ( lead &lt; 8400 AND lead &gt;= 7200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_7 - Create TimeSeriesValue partition lead_7."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_7"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_7
+            (
+                CHECK ( lead &lt; 9600 AND lead &gt;= 8400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_8 - Create TimeSeriesValue partition lead_8."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_8"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_8
+            (
+                CHECK ( lead &lt; 10800 AND lead &gt;= 9600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_9 - Create TimeSeriesValue partition lead_9."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_9"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_9
+            (
+                CHECK ( lead &lt; 12000 AND lead &gt;= 10800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_10 - Create TimeSeriesValue partition lead_10."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_10"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_10
+            (
+                CHECK ( lead &lt; 13200 AND lead &gt;= 12000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_11 - Create TimeSeriesValue partition lead_11."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_11"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_11
+            (
+                CHECK ( lead &lt; 14400 AND lead &gt;= 13200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_12 - Create TimeSeriesValue partition lead_12."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_12"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_12
+            (
+                CHECK ( lead &lt; 15600 AND lead &gt;= 14400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_13 - Create TimeSeriesValue partition lead_13."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_13"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_13
+            (
+                CHECK ( lead &lt; 16800 AND lead &gt;= 15600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_14 - Create TimeSeriesValue partition lead_14."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_14"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_14
+            (
+                CHECK ( lead &lt; 18000 AND lead &gt;= 16800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_15 - Create TimeSeriesValue partition lead_15."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_15"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_15
+            (
+                CHECK ( lead &lt; 19200 AND lead &gt;= 18000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_16 - Create TimeSeriesValue partition lead_16."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_16"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_16
+            (
+                CHECK ( lead &lt; 20400 AND lead &gt;= 19200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_17 - Create TimeSeriesValue partition lead_17."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_17"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_17
+            (
+                CHECK ( lead &lt; 21600 AND lead &gt;= 20400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_18 - Create TimeSeriesValue partition lead_18."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_18"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_18
+            (
+                CHECK ( lead &lt; 22800 AND lead &gt;= 21600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_19 - Create TimeSeriesValue partition lead_19."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_19"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_19
+            (
+                CHECK ( lead &lt; 24000 AND lead &gt;= 22800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_20 - Create TimeSeriesValue partition lead_20."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_20"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_20
+            (
+                CHECK ( lead &lt; 25200 AND lead &gt;= 24000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_21 - Create TimeSeriesValue partition lead_21."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_21"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_21
+            (
+                CHECK ( lead &lt; 26400 AND lead &gt;= 25200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_22 - Create TimeSeriesValue partition lead_22."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_22"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_22
+            (
+                CHECK ( lead &lt; 27600 AND lead &gt;= 26400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_23 - Create TimeSeriesValue partition lead_23."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_23"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_23
+            (
+                CHECK ( lead &lt; 28800 AND lead &gt;= 27600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_24 - Create TimeSeriesValue partition lead_24."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_24"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_24
+            (
+                CHECK ( lead &lt; 30000 AND lead &gt;= 28800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_25 - Create TimeSeriesValue partition lead_25."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_25"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_25
+            (
+                CHECK ( lead &lt; 31200 AND lead &gt;= 30000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_26 - Create TimeSeriesValue partition lead_26."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_26"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_26
+            (
+                CHECK ( lead &lt; 32400 AND lead &gt;= 31200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_27 - Create TimeSeriesValue partition lead_27."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_27"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_27
+            (
+                CHECK ( lead &lt; 33600 AND lead &gt;= 32400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_28 - Create TimeSeriesValue partition lead_28."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_28"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_28
+            (
+                CHECK ( lead &lt; 34800 AND lead &gt;= 33600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_29 - Create TimeSeriesValue partition lead_29."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_29"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_29
+            (
+                CHECK ( lead &lt; 36000 AND lead &gt;= 34800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_30 - Create TimeSeriesValue partition lead_30."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_30"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_30
+            (
+                CHECK ( lead &lt; 37200 AND lead &gt;= 36000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_31 - Create TimeSeriesValue partition lead_31."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_31"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_31
+            (
+                CHECK ( lead &lt; 38400 AND lead &gt;= 37200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_32 - Create TimeSeriesValue partition lead_32."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_32"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_32
+            (
+                CHECK ( lead &lt; 39600 AND lead &gt;= 38400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_33 - Create TimeSeriesValue partition lead_33."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_33"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_33
+            (
+                CHECK ( lead &lt; 40800 AND lead &gt;= 39600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_34 - Create TimeSeriesValue partition lead_34."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_34"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_34
+            (
+                CHECK ( lead &lt; 42000 AND lead &gt;= 40800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_35 - Create TimeSeriesValue partition lead_35."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_35"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_35
+            (
+                CHECK ( lead &lt; 43200 AND lead &gt;= 42000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_36 - Create TimeSeriesValue partition lead_36."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_36"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_36
+            (
+                CHECK ( lead &lt; 44400 AND lead &gt;= 43200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_37 - Create TimeSeriesValue partition lead_37."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_37"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_37
+            (
+                CHECK ( lead &lt; 45600 AND lead &gt;= 44400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_38 - Create TimeSeriesValue partition lead_38."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_38"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_38
+            (
+                CHECK ( lead &lt; 46800 AND lead &gt;= 45600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_39 - Create TimeSeriesValue partition lead_39."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_39"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_39
+            (
+                CHECK ( lead &lt; 48000 AND lead &gt;= 46800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_40 - Create TimeSeriesValue partition lead_40."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_40"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_40
+            (
+                CHECK ( lead &lt; 49200 AND lead &gt;= 48000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_41 - Create TimeSeriesValue partition lead_41."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_41"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_41
+            (
+                CHECK ( lead &lt; 50400 AND lead &gt;= 49200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_42 - Create TimeSeriesValue partition lead_42."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_42"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_42
+            (
+                CHECK ( lead &lt; 51600 AND lead &gt;= 50400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_43 - Create TimeSeriesValue partition lead_43."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_43"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_43
+            (
+                CHECK ( lead &lt; 52800 AND lead &gt;= 51600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_44 - Create TimeSeriesValue partition lead_44."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_44"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_44
+            (
+                CHECK ( lead &lt; 54000 AND lead &gt;= 52800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_45 - Create TimeSeriesValue partition lead_45."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_45"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_45
+            (
+                CHECK ( lead &lt; 55200 AND lead &gt;= 54000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_46 - Create TimeSeriesValue partition lead_46."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_46"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_46
+            (
+                CHECK ( lead &lt; 56400 AND lead &gt;= 55200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_47 - Create TimeSeriesValue partition lead_47."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_47"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_47
+            (
+                CHECK ( lead &lt; 57600 AND lead &gt;= 56400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_48 - Create TimeSeriesValue partition lead_48."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_48"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_48
+            (
+                CHECK ( lead &lt; 58800 AND lead &gt;= 57600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_49 - Create TimeSeriesValue partition lead_49."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_49"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_49
+            (
+                CHECK ( lead &lt; 60000 AND lead &gt;= 58800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_50 - Create TimeSeriesValue partition lead_50."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_50"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_50
+            (
+                CHECK ( lead &lt; 61200 AND lead &gt;= 60000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_51 - Create TimeSeriesValue partition lead_51."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_51"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_51
+            (
+                CHECK ( lead &lt; 62400 AND lead &gt;= 61200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_52 - Create TimeSeriesValue partition lead_52."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_52"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_52
+            (
+                CHECK ( lead &lt; 63600 AND lead &gt;= 62400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_53 - Create TimeSeriesValue partition lead_53."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_53"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_53
+            (
+                CHECK ( lead &lt; 64800 AND lead &gt;= 63600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_54 - Create TimeSeriesValue partition lead_54."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_54"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_54
+            (
+                CHECK ( lead &lt; 66000 AND lead &gt;= 64800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_55 - Create TimeSeriesValue partition lead_55."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_55"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_55
+            (
+                CHECK ( lead &lt; 67200 AND lead &gt;= 66000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_56 - Create TimeSeriesValue partition lead_56."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_56"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_56
+            (
+                CHECK ( lead &lt; 68400 AND lead &gt;= 67200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_57 - Create TimeSeriesValue partition lead_57."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_57"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_57
+            (
+                CHECK ( lead &lt; 69600 AND lead &gt;= 68400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_58 - Create TimeSeriesValue partition lead_58."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_58"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_58
+            (
+                CHECK ( lead &lt; 70800 AND lead &gt;= 69600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_59 - Create TimeSeriesValue partition lead_59."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_59"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_59
+            (
+                CHECK ( lead &lt; 72000 AND lead &gt;= 70800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_60 - Create TimeSeriesValue partition lead_60."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_60"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_60
+            (
+                CHECK ( lead &lt; 73200 AND lead &gt;= 72000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_61 - Create TimeSeriesValue partition lead_61."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_61"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_61
+            (
+                CHECK ( lead &lt; 74400 AND lead &gt;= 73200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_62 - Create TimeSeriesValue partition lead_62."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_62"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_62
+            (
+                CHECK ( lead &lt; 75600 AND lead &gt;= 74400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_63 - Create TimeSeriesValue partition lead_63."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_63"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_63
+            (
+                CHECK ( lead &lt; 76800 AND lead &gt;= 75600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_64 - Create TimeSeriesValue partition lead_64."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_64"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_64
+            (
+                CHECK ( lead &lt; 78000 AND lead &gt;= 76800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_65 - Create TimeSeriesValue partition lead_65."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_65"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_65
+            (
+                CHECK ( lead &lt; 79200 AND lead &gt;= 78000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_66 - Create TimeSeriesValue partition lead_66."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_66"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_66
+            (
+                CHECK ( lead &lt; 80400 AND lead &gt;= 79200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_67 - Create TimeSeriesValue partition lead_67."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_67"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_67
+            (
+                CHECK ( lead &lt; 81600 AND lead &gt;= 80400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_68 - Create TimeSeriesValue partition lead_68."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_68"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_68
+            (
+                CHECK ( lead &lt; 82800 AND lead &gt;= 81600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_69 - Create TimeSeriesValue partition lead_69."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_69"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_69
+            (
+                CHECK ( lead &lt; 84000 AND lead &gt;= 82800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_70 - Create TimeSeriesValue partition lead_70."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_70"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_70
+            (
+                CHECK ( lead &lt; 85200 AND lead &gt;= 84000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_71 - Create TimeSeriesValue partition lead_71."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_71"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_71
+            (
+                CHECK ( lead &lt; 86400 AND lead &gt;= 85200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_72 - Create TimeSeriesValue partition lead_72."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_72"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_72
+            (
+                CHECK ( lead &lt; 87600 AND lead &gt;= 86400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_73 - Create TimeSeriesValue partition lead_73."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_73"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_73
+            (
+                CHECK ( lead &lt; 88800 AND lead &gt;= 87600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_74 - Create TimeSeriesValue partition lead_74."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_74"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_74
+            (
+                CHECK ( lead &lt; 90000 AND lead &gt;= 88800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_75 - Create TimeSeriesValue partition lead_75."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_75"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_75
+            (
+                CHECK ( lead &lt; 91200 AND lead &gt;= 90000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_76 - Create TimeSeriesValue partition lead_76."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_76"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_76
+            (
+                CHECK ( lead &lt; 92400 AND lead &gt;= 91200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_77 - Create TimeSeriesValue partition lead_77."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_77"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_77
+            (
+                CHECK ( lead &lt; 93600 AND lead &gt;= 92400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_78 - Create TimeSeriesValue partition lead_78."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_78"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_78
+            (
+                CHECK ( lead &lt; 94800 AND lead &gt;= 93600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_79 - Create TimeSeriesValue partition lead_79."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_79"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_79
+            (
+                CHECK ( lead &lt; 96000 AND lead &gt;= 94800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_80 - Create TimeSeriesValue partition lead_80."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_80"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_80
+            (
+                CHECK ( lead &lt; 97200 AND lead &gt;= 96000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_81 - Create TimeSeriesValue partition lead_81."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_81"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_81
+            (
+                CHECK ( lead &lt; 98400 AND lead &gt;= 97200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_82 - Create TimeSeriesValue partition lead_82."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_82"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_82
+            (
+                CHECK ( lead &lt; 99600 AND lead &gt;= 98400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_83 - Create TimeSeriesValue partition lead_83."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_83"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_83
+            (
+                CHECK ( lead &lt; 100800 AND lead &gt;= 99600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_84 - Create TimeSeriesValue partition lead_84."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_84"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_84
+            (
+                CHECK ( lead &lt; 102000 AND lead &gt;= 100800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_85 - Create TimeSeriesValue partition lead_85."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_85"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_85
+            (
+                CHECK ( lead &lt; 103200 AND lead &gt;= 102000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_86 - Create TimeSeriesValue partition lead_86."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_86"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_86
+            (
+                CHECK ( lead &lt; 104400 AND lead &gt;= 103200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_87 - Create TimeSeriesValue partition lead_87."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_87"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_87
+            (
+                CHECK ( lead &lt; 105600 AND lead &gt;= 104400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_88 - Create TimeSeriesValue partition lead_88."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_88"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_88
+            (
+                CHECK ( lead &lt; 106800 AND lead &gt;= 105600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_89 - Create TimeSeriesValue partition lead_89."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_89"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_89
+            (
+                CHECK ( lead &lt; 108000 AND lead &gt;= 106800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_90 - Create TimeSeriesValue partition lead_90."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_90"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_90
+            (
+                CHECK ( lead &lt; 109200 AND lead &gt;= 108000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_91 - Create TimeSeriesValue partition lead_91."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_91"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_91
+            (
+                CHECK ( lead &lt; 110400 AND lead &gt;= 109200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_92 - Create TimeSeriesValue partition lead_92."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_92"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_92
+            (
+                CHECK ( lead &lt; 111600 AND lead &gt;= 110400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_93 - Create TimeSeriesValue partition lead_93."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_93"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_93
+            (
+                CHECK ( lead &lt; 112800 AND lead &gt;= 111600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_94 - Create TimeSeriesValue partition lead_94."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_94"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_94
+            (
+                CHECK ( lead &lt; 114000 AND lead &gt;= 112800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_95 - Create TimeSeriesValue partition lead_95."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_95"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_95
+            (
+                CHECK ( lead &lt; 115200 AND lead &gt;= 114000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_96 - Create TimeSeriesValue partition lead_96."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_96"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_96
+            (
+                CHECK ( lead &lt; 116400 AND lead &gt;= 115200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_97 - Create TimeSeriesValue partition lead_97."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_97"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_97
+            (
+                CHECK ( lead &lt; 117600 AND lead &gt;= 116400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_98 - Create TimeSeriesValue partition lead_98."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_98"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_98
+            (
+                CHECK ( lead &lt; 118800 AND lead &gt;= 117600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_99 - Create TimeSeriesValue partition lead_99."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_99"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_99
+            (
+                CHECK ( lead &lt; 120000 AND lead &gt;= 118800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_100 - Create TimeSeriesValue partition lead_100."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_100"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_100
+            (
+                CHECK ( lead &lt; 121200 AND lead &gt;= 120000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_101 - Create TimeSeriesValue partition lead_101."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_101"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_101
+            (
+                CHECK ( lead &lt; 122400 AND lead &gt;= 121200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_102 - Create TimeSeriesValue partition lead_102."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_102"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_102
+            (
+                CHECK ( lead &lt; 123600 AND lead &gt;= 122400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_103 - Create TimeSeriesValue partition lead_103."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_103"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_103
+            (
+                CHECK ( lead &lt; 124800 AND lead &gt;= 123600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_104 - Create TimeSeriesValue partition lead_104."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_104"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_104
+            (
+                CHECK ( lead &lt; 126000 AND lead &gt;= 124800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_105 - Create TimeSeriesValue partition lead_105."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_105"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_105
+            (
+                CHECK ( lead &lt; 127200 AND lead &gt;= 126000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_106 - Create TimeSeriesValue partition lead_106."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_106"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_106
+            (
+                CHECK ( lead &lt; 128400 AND lead &gt;= 127200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_107 - Create TimeSeriesValue partition lead_107."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_107"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_107
+            (
+                CHECK ( lead &lt; 129600 AND lead &gt;= 128400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_108 - Create TimeSeriesValue partition lead_108."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_108"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_108
+            (
+                CHECK ( lead &lt; 130800 AND lead &gt;= 129600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_109 - Create TimeSeriesValue partition lead_109."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_109"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_109
+            (
+                CHECK ( lead &lt; 132000 AND lead &gt;= 130800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_110 - Create TimeSeriesValue partition lead_110."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_110"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_110
+            (
+                CHECK ( lead &lt; 133200 AND lead &gt;= 132000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_111 - Create TimeSeriesValue partition lead_111."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_111"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_111
+            (
+                CHECK ( lead &lt; 134400 AND lead &gt;= 133200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_112 - Create TimeSeriesValue partition lead_112."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_112"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_112
+            (
+                CHECK ( lead &lt; 135600 AND lead &gt;= 134400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_113 - Create TimeSeriesValue partition lead_113."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_113"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_113
+            (
+                CHECK ( lead &lt; 136800 AND lead &gt;= 135600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_114 - Create TimeSeriesValue partition lead_114."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_114"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_114
+            (
+                CHECK ( lead &lt; 138000 AND lead &gt;= 136800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_115 - Create TimeSeriesValue partition lead_115."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_115"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_115
+            (
+                CHECK ( lead &lt; 139200 AND lead &gt;= 138000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_116 - Create TimeSeriesValue partition lead_116."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_116"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_116
+            (
+                CHECK ( lead &lt; 140400 AND lead &gt;= 139200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_117 - Create TimeSeriesValue partition lead_117."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_117"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_117
+            (
+                CHECK ( lead &lt; 141600 AND lead &gt;= 140400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_118 - Create TimeSeriesValue partition lead_118."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_118"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_118
+            (
+                CHECK ( lead &lt; 142800 AND lead &gt;= 141600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_119 - Create TimeSeriesValue partition lead_119."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_119"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_119
+            (
+                CHECK ( lead &lt; 144000 AND lead &gt;= 142800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_120 - Create TimeSeriesValue partition lead_120."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_120"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_120
+            (
+                CHECK ( lead &lt; 145200 AND lead &gt;= 144000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_121 - Create TimeSeriesValue partition lead_121."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_121"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_121
+            (
+                CHECK ( lead &lt; 146400 AND lead &gt;= 145200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_122 - Create TimeSeriesValue partition lead_122."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_122"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_122
+            (
+                CHECK ( lead &lt; 147600 AND lead &gt;= 146400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_123 - Create TimeSeriesValue partition lead_123."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_123"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_123
+            (
+                CHECK ( lead &lt; 148800 AND lead &gt;= 147600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_124 - Create TimeSeriesValue partition lead_124."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_124"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_124
+            (
+                CHECK ( lead &lt; 150000 AND lead &gt;= 148800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_125 - Create TimeSeriesValue partition lead_125."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_125"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_125
+            (
+                CHECK ( lead &lt; 151200 AND lead &gt;= 150000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_126 - Create TimeSeriesValue partition lead_126."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_126"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_126
+            (
+                CHECK ( lead &lt; 152400 AND lead &gt;= 151200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_127 - Create TimeSeriesValue partition lead_127."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_127"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_127
+            (
+                CHECK ( lead &lt; 153600 AND lead &gt;= 152400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_128 - Create TimeSeriesValue partition lead_128."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_128"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_128
+            (
+                CHECK ( lead &lt; 154800 AND lead &gt;= 153600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_129 - Create TimeSeriesValue partition lead_129."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_129"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_129
+            (
+                CHECK ( lead &lt; 156000 AND lead &gt;= 154800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_130 - Create TimeSeriesValue partition lead_130."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_130"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_130
+            (
+                CHECK ( lead &lt; 157200 AND lead &gt;= 156000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_131 - Create TimeSeriesValue partition lead_131."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_131"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_131
+            (
+                CHECK ( lead &lt; 158400 AND lead &gt;= 157200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_132 - Create TimeSeriesValue partition lead_132."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_132"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_132
+            (
+                CHECK ( lead &lt; 159600 AND lead &gt;= 158400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_133 - Create TimeSeriesValue partition lead_133."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_133"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_133
+            (
+                CHECK ( lead &lt; 160800 AND lead &gt;= 159600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_134 - Create TimeSeriesValue partition lead_134."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_134"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_134
+            (
+                CHECK ( lead &lt; 162000 AND lead &gt;= 160800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_135 - Create TimeSeriesValue partition lead_135."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_135"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_135
+            (
+                CHECK ( lead &lt; 163200 AND lead &gt;= 162000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_136 - Create TimeSeriesValue partition lead_136."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_136"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_136
+            (
+                CHECK ( lead &lt; 164400 AND lead &gt;= 163200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_137 - Create TimeSeriesValue partition lead_137."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_137"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_137
+            (
+                CHECK ( lead &lt; 165600 AND lead &gt;= 164400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_138 - Create TimeSeriesValue partition lead_138."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_138"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_138
+            (
+                CHECK ( lead &lt; 166800 AND lead &gt;= 165600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_139 - Create TimeSeriesValue partition lead_139."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_139"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_139
+            (
+                CHECK ( lead &lt; 168000 AND lead &gt;= 166800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_140 - Create TimeSeriesValue partition lead_140."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_140"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_140
+            (
+                CHECK ( lead &lt; 169200 AND lead &gt;= 168000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_141 - Create TimeSeriesValue partition lead_141."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_141"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_141
+            (
+                CHECK ( lead &lt; 170400 AND lead &gt;= 169200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_142 - Create TimeSeriesValue partition lead_142."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_142"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_142
+            (
+                CHECK ( lead &lt; 171600 AND lead &gt;= 170400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_143 - Create TimeSeriesValue partition lead_143."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_143"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_143
+            (
+                CHECK ( lead &lt; 172800 AND lead &gt;= 171600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_144 - Create TimeSeriesValue partition lead_144."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_144"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_144
+            (
+                CHECK ( lead &lt; 174000 AND lead &gt;= 172800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_145 - Create TimeSeriesValue partition lead_145."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_145"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_145
+            (
+                CHECK ( lead &lt; 175200 AND lead &gt;= 174000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_146 - Create TimeSeriesValue partition lead_146."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_146"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_146
+            (
+                CHECK ( lead &lt; 176400 AND lead &gt;= 175200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_147 - Create TimeSeriesValue partition lead_147."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_147"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_147
+            (
+                CHECK ( lead &lt; 177600 AND lead &gt;= 176400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_148 - Create TimeSeriesValue partition lead_148."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_148"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_148
+            (
+                CHECK ( lead &lt; 178800 AND lead &gt;= 177600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_149 - Create TimeSeriesValue partition lead_149."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_149"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_149
+            (
+                CHECK ( lead &lt; 180000 AND lead &gt;= 178800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_150 - Create TimeSeriesValue partition lead_150."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_150"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_150
+            (
+                CHECK ( lead &lt; 181200 AND lead &gt;= 180000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_1 - Create TimeSeriesValue partition lead_Negative_1."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_Negative_1"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_Negative_1
+            (
+                CHECK ( lead &lt;= -1200 AND lead &gt; -2400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_2 - Create TimeSeriesValue partition lead_Negative_2."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_Negative_2"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_Negative_2
+            (
+                CHECK ( lead &lt;= -2400 AND lead &gt; -3600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_3 - Create TimeSeriesValue partition lead_Negative_3."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_Negative_3"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_Negative_3
+            (
+                CHECK ( lead &lt;= -3600 AND lead &gt; -4800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_4 - Create TimeSeriesValue partition lead_Negative_4."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_Negative_4"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_Negative_4
+            (
+                CHECK ( lead &lt;= -4800 AND lead &gt; -6000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_5 - Create TimeSeriesValue partition lead_Negative_5."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_Negative_5"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_Negative_5
+            (
+                CHECK ( lead &lt;= -6000 AND lead &gt; -7200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_6 - Create TimeSeriesValue partition lead_Negative_6."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_Negative_6"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_Negative_6
+            (
+                CHECK ( lead &lt;= -7200 AND lead &gt; -8400 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_7 - Create TimeSeriesValue partition lead_Negative_7."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_Negative_7"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_Negative_7
+            (
+                CHECK ( lead &lt;= -8400 AND lead &gt; -9600 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_8 - Create TimeSeriesValue partition lead_Negative_8."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_Negative_8"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_Negative_8
+            (
+                CHECK ( lead &lt;= -9600 AND lead &gt; -10800 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_9 - Create TimeSeriesValue partition lead_Negative_9."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_Negative_9"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_Negative_9
+            (
+                CHECK ( lead &lt;= -10800 AND lead &gt; -12000 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_10 - Create TimeSeriesValue partition lead_Negative_10."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_Negative_10"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_Negative_10
+            (
+                CHECK ( lead &lt;= -12000 AND lead &gt; -13200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_0 - Create TimeSeriesValue partition lead_0."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_0"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_0
+            (
+                CHECK ( lead &lt; 1200 AND lead &gt; -1200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Below_Negative_10 - Create TimeSeriesValue partition lead_Below_Negative_10."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_Below_Negative_10"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_Below_Negative_10
+            (
+                CHECK ( lead &lt;= -13200 AND lead &gt;= -2147483648 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Above_150 - Create TimeSeriesValue partition lead_Above_150."
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_Above_150"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_Above_150
+            (
+                CHECK ( lead &lt;= 2147483647 AND lead &gt;= 181200 )
+            )
+            INHERITS ( wres.TimeSeriesValue )
+        </sql>
+    </changeSet>
+</databaseChangeLog>

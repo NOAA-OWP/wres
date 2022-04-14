@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -40,7 +41,6 @@ import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.caching.TimeScales;
-import wres.io.data.details.TimeSeriesTrace;
 import wres.io.reading.DataSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
@@ -299,7 +299,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
             }
             else
             {
-                // Already started but not completed, include the TimeSeriesTrace.
+                // Already started but not completed, include the TimeSeries.
                 DataSource dataSourceWithTimeSeries =
                         DataSource.of( this.dataSource.getDisposition(),
                                        this.dataSource.getSource(),
@@ -345,7 +345,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                     TimeSeriesSlicer.decomposeWithLabels( (TimeSeries<Ensemble>) timeSeries )
                                     .entrySet() )
             {
-                LOGGER.trace( "TimeSeries trace: {}", trace );
+                LOGGER.debug( "TimeSeries trace: {}", trace );
                 String ensembleName = trace.getKey()
                                            .toString();
 
@@ -358,20 +358,21 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                         sourceId );
                 this.insertEnsembleTrace( systemSettings,
                                           database,
+                                          (TimeSeries<Ensemble>) timeSeries,
                                           timeSeriesId,
                                           trace.getValue() );
             }
         }
         else if ( event.getValue() instanceof Double )
         {
-            long timeSeriesId = this.insertTimeSeriesTraceRow( database,
-                                                               ensemblesCache,
-                                                               (TimeSeries<Double>) timeSeries,
-                                                               sourceId );
-            this.insertTimeSeriesTraceValuesRows( systemSettings,
-                                                  database,
-                                                  timeSeriesId,
-                                                  (TimeSeries<Double>) timeSeries );
+            long timeSeriesId = this.insertTimeSeriesRow( database,
+                                                          ensemblesCache,
+                                                          (TimeSeries<Double>) timeSeries,
+                                                          sourceId );
+            this.insertTimeSeriesValuesRows( systemSettings,
+                                             database,
+                                             timeSeriesId,
+                                             (TimeSeries<Double>) timeSeries );
         }
         else
         {
@@ -455,41 +456,50 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
 
     private void insertEnsembleTrace( SystemSettings systemSettings,
                                       Database database,
+                                      TimeSeries<Ensemble> originalTimeSeries,
                                       long timeSeriesIdForTrace,
                                       SortedSet<Event<Double>> ensembleTrace )
             throws IngestException
     {
+        Instant referenceDatetime = this.getReferenceDatetime( originalTimeSeries );
+
         for ( Event<Double> event : ensembleTrace )
         {
-            this.insertTimeSeriesTraceValuesRow( systemSettings,
-                                                 database,
-                                                 timeSeriesIdForTrace,
-                                                 event );
+            this.insertTimeSeriesValuesRow( systemSettings,
+                                            database,
+                                            timeSeriesIdForTrace,
+                                            referenceDatetime,
+                                            event );
         }
     }
 
-    private void insertTimeSeriesTraceValuesRows( SystemSettings systemSettings,
-                                                  Database database,
-                                                  long timeSeriesId,
-                                                  TimeSeries<Double> timeSeries )
+    private void insertTimeSeriesValuesRows( SystemSettings systemSettings,
+                                             Database database,
+                                             long timeSeriesId,
+                                             TimeSeries<Double> timeSeries )
             throws IngestException
     {
+        Instant referenceDatetime = this.getReferenceDatetime( timeSeries );
+
         for ( Event<Double> event : timeSeries.getEvents() )
         {
-            this.insertTimeSeriesTraceValuesRow( systemSettings,
-                                                 database,
-                                                 timeSeriesId,
-                                                 event );
+            this.insertTimeSeriesValuesRow( systemSettings,
+                                            database,
+                                            timeSeriesId,
+                                            referenceDatetime,
+                                            event );
         }
     }
 
-    private void insertTimeSeriesTraceValuesRow( SystemSettings systemSettings,
-                                                 Database database,
-                                                 long timeSeriesTraceId,
-                                                 Event<Double> valueAndValidDateTime )
+    private void insertTimeSeriesValuesRow( SystemSettings systemSettings,
+                                            Database database,
+                                            long timeSeriesId,
+                                            Instant referenceDatetime,
+                                            Event<Double> valueAndValidDateTime )
     {
 
         Instant validDatetime = valueAndValidDateTime.getTime();
+        Duration leadDuration = Duration.between( referenceDatetime, validDatetime );
         Double valueToAdd = valueAndValidDateTime.getValue();
 
         // When the Java-land value matches WRES Missing Value, use NULL in DB.
@@ -499,33 +509,33 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         }
 
         Pair<CountDownLatch, CountDownLatch> latchPair =
-                IngestedValues.addTimeSeriesTraceValue( systemSettings,
-                                                        database,
-                                                        timeSeriesTraceId,
-                                                        validDatetime,
-                                                        valueToAdd );
+                IngestedValues.addTimeSeriesValue( systemSettings,
+                                                   database,
+                                                   timeSeriesId,
+                                                   (int) leadDuration.toMinutes(),
+                                                   valueToAdd );
         this.latches.add( latchPair );
     }
 
-    private long insertTimeSeriesTraceRow( Database database,
-                                           Ensembles ensemblesCache,
-                                           TimeSeries<Double> timeSeries,
-                                           long sourceId )
+    private long insertTimeSeriesRow( Database database,
+                                      Ensembles ensemblesCache,
+                                      TimeSeries<Double> timeSeries,
+                                      long sourceId )
     {
-        TimeSeriesTrace databaseTimeSeriesTrace;
+        wres.io.data.details.TimeSeries databaseTimeSeries;
 
         try
         {
-            databaseTimeSeriesTrace = this.getDbTimeSeries( database,
-                                                            ensemblesCache,
-                                                            sourceId );
+            databaseTimeSeries = this.getDbTimeSeries( database,
+                                                       ensemblesCache,
+                                                       sourceId );
             // The following indirectly calls save:
-            return databaseTimeSeriesTrace.getTimeSeriesID();
+            return databaseTimeSeries.getTimeSeriesID();
         }
         catch ( SQLException se )
         {
             throw new IngestException( "Failed to get trace info for "
-                                       + "timeSeriesMetadata=" + timeSeries.getMetadata()
+                                       + "timeSeries=" + timeSeries
                                        + " source=" + sourceId,
                                        se );
         }
@@ -536,20 +546,20 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                                                       long ensembleId,
                                                       long sourceId )
     {
-        TimeSeriesTrace databaseTimeSeriesTrace;
+        wres.io.data.details.TimeSeries databaseTimeSeries;
 
         try
         {
-            databaseTimeSeriesTrace = this.getDbTimeSeriesForEnsembleTrace( database,
-                                                                            ensembleId,
-                                                                            sourceId );
+            databaseTimeSeries = this.getDbTimeSeriesForEnsembleTrace( database,
+                                                                       ensembleId,
+                                                                       sourceId );
             // The following indirectly calls save:
-            return databaseTimeSeriesTrace.getTimeSeriesID();
+            return databaseTimeSeries.getTimeSeriesID();
         }
         catch ( SQLException se )
         {
             throw new IngestException( "Failed to get trace info for "
-                                       + "timeSeriesMetadata=" + timeSeries.getMetadata()
+                                       + "timeSeries=" + timeSeries
                                        + " source=" + sourceId
                                        + " ensembleId=" + ensembleId,
                                        se );
@@ -557,25 +567,25 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
     }
 
 
-    private TimeSeriesTrace getDbTimeSeriesForEnsembleTrace(
+    private wres.io.data.details.TimeSeries getDbTimeSeriesForEnsembleTrace(
             Database database,
             long ensembleId,
             long sourceId )
             throws SQLException
     {
-        return new TimeSeriesTrace( database,
-                                    ensembleId,
-                                    sourceId );
+        return new wres.io.data.details.TimeSeries( database,
+                                            ensembleId,
+                                            sourceId );
     }
 
-    private TimeSeriesTrace getDbTimeSeries( Database database,
-                                             Ensembles ensemblesCache,
-                                             long sourceId )
+    private wres.io.data.details.TimeSeries getDbTimeSeries( Database database,
+                                                             Ensembles ensemblesCache,
+                                                             long sourceId )
             throws SQLException
     {
-        return new TimeSeriesTrace( database,
-                                    ensemblesCache.getDefaultEnsembleID(),
-                                    sourceId );
+        return new wres.io.data.details.TimeSeries( database,
+                                            ensemblesCache.getDefaultEnsembleID(),
+                                            sourceId );
     }
 
     private Instant getReferenceDatetime( TimeSeries<?> timeSeries )

@@ -416,14 +416,34 @@ public class TestDatabase
      * @throws LiquibaseException when liquibase migration fails
      */
 
-    public void createTimeSeriesTraceTable( Database liquibaseDatabase )
+    public void createTimeSeriesTable( Database liquibaseDatabase )
             throws LiquibaseException
     {
         Contexts contexts = new Contexts();
-        Liquibase liquibase = new Liquibase( "database/wres.TimeSeriesTrace_v1.xml",
+        Liquibase liquibase = new Liquibase( "database/wres.TimeSeries_v4.xml",
                                              new ClassLoaderResourceAccessor(),
                                              liquibaseDatabase );
         liquibase.update( contexts );
+        Liquibase liquibase2 = new Liquibase( "database/wres.TimeSeries_v5.xml",
+                                             new ClassLoaderResourceAccessor(),
+                                             liquibaseDatabase );
+        liquibase2.update( contexts );
+        Liquibase liquibase3 = new Liquibase( "database/wres.TimeSeries_v6.xml",
+                                              new ClassLoaderResourceAccessor(),
+                                              liquibaseDatabase );
+        liquibase3.update( contexts );
+        Liquibase liquibase4 = new Liquibase( "database/wres.TimeSeries_v7.xml",
+                                              new ClassLoaderResourceAccessor(),
+                                              liquibaseDatabase );
+        liquibase4.update( contexts );
+        Liquibase liquibase5 = new Liquibase( "database/wres.TimeSeries_v8.xml",
+                                              new ClassLoaderResourceAccessor(),
+                                              liquibaseDatabase );
+        liquibase5.update( contexts );
+        Liquibase liquibase6 = new Liquibase( "database/wres.TimeSeries_v9.xml",
+                                              new ClassLoaderResourceAccessor(),
+                                              liquibaseDatabase );
+        liquibase6.update( contexts );
     }
 
 
@@ -436,11 +456,11 @@ public class TestDatabase
      * @throws SQLException when drop fails
      */
 
-    public void dropTimeSeriesTraceTable( Connection connection ) throws SQLException
+    public void dropTimeSeriesTable( Connection connection ) throws SQLException
     {
         try ( Statement statement = connection.createStatement() )
         {
-            statement.execute( "DROP TABLE wres.TimeSeriesTrace" );
+            statement.execute( "DROP TABLE wres.TimeSeries" );
         }
     }     
     
@@ -455,10 +475,10 @@ public class TestDatabase
      * @throws LiquibaseException when liquibase migration fails
      */
 
-    public void createTimeSeriesTraceValueTable( Database liquibaseDatabase )
+    public void createTimeSeriesValueTable( Database liquibaseDatabase )
             throws LiquibaseException
     {
-        Liquibase liquibase = new Liquibase( "database/wres.TimeSeriesTraceValue_v1.xml",
+        Liquibase liquibase = new Liquibase( "database/wres.TimeSeriesValue_v2.xml",
                                              new ClassLoaderResourceAccessor(),
                                              liquibaseDatabase );
         liquibase.update( new Contexts() );
@@ -474,11 +494,11 @@ public class TestDatabase
      * @throws SQLException when drop fails
      */
 
-    public void dropTimeSeriesTraceValueTable( Connection connection ) throws SQLException
+    public void dropTimeSeriesValueTable( Connection connection ) throws SQLException
     {
         try ( Statement statement = connection.createStatement() )
         {
-            statement.execute( "DROP TABLE wres.TimeSeriesTraceValue" );
+            statement.execute( "DROP TABLE wres.TimeSeriesValue" );
         }
     }
 

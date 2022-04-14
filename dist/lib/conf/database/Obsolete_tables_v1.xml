@@ -14,10 +14,9 @@
             The wres.ForecastSource table has been removed.
         </comment>
     </changeSet>
-    <changeSet id="Remove wres.ForecastValue v2" author="Christopher Tubbs">
+    <changeSet id="Remove wres.ForecastValue" author="Christopher Tubbs">
         <preConditions onFail="MARK_RAN">
             <tableExists tableName="ForecastValue" schemaName="wres" />
-            <tableExists tableName="TimeSeriesValue" schemaName="wres" />
         </preConditions>
         <sql>
             INSERT INTO wres.TimeSeriesValue (timeseries_id, lead, series_value)
