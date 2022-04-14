@@ -800,8 +800,17 @@ class EvaluationConsumer
                 this.getMonitor().complete(); // Copies incremented state to final state
                 this.getMonitor().commit();
 
+                // Log the paths in debug mode before they are squashed
+                if ( LOGGER.isDebugEnabled() )
+                {
+                    LOGGER.debug( "Upon completing evaluation {}, consumer {} wrote the following paths: {}.",
+                                  this.getEvaluationId(),
+                                  this.getClientId(),
+                                  this.getPathsWritten() );
+                }
+
                 // Now the evaluation is really over, minimize the state as it may hang around for a while to mop-up 
-                // late arriving evaluation status messages
+                // late arriving evaluation status messages. This removes paths written etc.
                 this.squash();
 
                 LOGGER.info( "Consumer {} closed evaluation {}{}.",
