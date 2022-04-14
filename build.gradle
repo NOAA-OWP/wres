@@ -702,7 +702,8 @@ project(':wres-vis')
     mainClassName = 'wres.vis.client.GraphicsClient'
     applicationDefaultJvmArgs = ['-Xms640m','-Xmx640m',
                                  '-XX:+HeapDumpOnOutOfMemoryError',
-                                 '-Djava.util.logging.config.file=logging.properties']
+                                 '-Djava.util.logging.config.file=logging.properties',
+                                 '-Dorg.jboss.logging.provider=slf4j']
 
     // Make available logging configuration to the classpath
     distributions
@@ -1335,6 +1336,9 @@ project(':wres-eventsbroker')
         {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
+
+            // Because we use slf4j, not jboss-logmanager:
+            exclude group: 'org.jboss.logmanager', module: 'jboss-logmanager'
         }
 
         // AMQP 1.0 protocol support for the ActiveMQ Artemis server
@@ -1342,6 +1346,9 @@ project(':wres-eventsbroker')
         {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
+
+            // Because we use slf4j, not jboss-logmanager:
+            exclude group: 'org.jboss.logmanager', module: 'jboss-logmanager'
         }
 
         // JCIP annotations
@@ -1600,7 +1607,8 @@ applicationDefaultJvmArgs = ['-Xms2560m', '-Xmx2560m',
                              '-Djava.util.logging.config.class=wres.system.logging.JavaUtilLoggingRedirector',
                              '-Ducar.unidata.io.http.maxReadCacheSize=200000',
                              '-Ducar.unidata.io.http.httpBufferSize=200000',
-                             '-Djava.util.logging.config.file=logging.properties']
+                             '-Djava.util.logging.config.file=logging.properties',
+                             '-Dorg.jboss.logging.provider=slf4j']
 
 // Get the commit and date from the TOP for this project, it is outermost.
 // The top level commit will also reflect changes to this build.gradle script.
@@ -1864,6 +1872,7 @@ configurations.implementation
     exclude group: 'org.checkerframework', module: 'checker-qual'
     exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
     exclude group: 'commons-logging', module: 'commons-logging'
+    exclude group: 'org.jboss.logmanager', module: 'jboss-logmanager'
 }
 
 // Truly prevent these annoying jars from showing up in dist zip
@@ -1873,6 +1882,7 @@ configurations.runtimeOnly
     exclude group: 'org.checkerframework', module: 'checker-qual'
     exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
     exclude group: 'commons-logging', module: 'commons-logging'
+    exclude group: 'org.jboss.logmanager', module: 'jboss-logmanager'
 }
 
 defaultTasks 'installDist', 'test', 'javadoc', 'jacocorootreport'
