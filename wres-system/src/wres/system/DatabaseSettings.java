@@ -28,6 +28,14 @@ import wres.util.Strings;
 
 /**
  * Contains access to configured settings and objects for accessing the database
+ * 
+ * TODO: this class and {@link SystemSettings} need work. Connection verification should happen separately from the
+ * instantiation of settings. Connections should mostly be acquired from a common pool (HikariCP), which uses the 
+ * {@link DataSource} route, not the {@link DriverManager} route. The latter should not be used. When acquiring 
+ * connections for the {@link DatabaseLockManager}, these connections should not be from the same pool, but they should 
+ * be obtained by creating a {@link DataSource}, not by using the {@link DriverManager}. See #103431 for further 
+ * discussion. 
+ * 
  * @author Christopher Tubbs
  */
 final class DatabaseSettings
@@ -440,8 +448,8 @@ final class DatabaseSettings
             String message = "The database could not be reached for connection verification." + System.lineSeparator() + System.lineSeparator();
             message += sqlError.getMessage() + System.lineSeparator() + System.lineSeparator();
             message += "Please ensure that you have:" + System.lineSeparator();
-            message += "1) The correct URL to your database" + System.lineSeparator();
-            message += "2) The correct username for your database" + System.lineSeparator();
+            message += "1) The correct URL to your database: " + this.getConnectionString( null ) + System.lineSeparator();
+            message += "2) The correct username for your database: " + this.getUsername() + System.lineSeparator();
             message += "3) The correct password for your user in the database" + System.lineSeparator();
             message += "4) An active connection to a network that may reach the requested database server" + System.lineSeparator() + System.lineSeparator();
             message += "The application will now exit.";
@@ -458,7 +466,7 @@ final class DatabaseSettings
 	{
 	    if (!Strings.hasValue( connectionString ))
         {
-            connectionString = this.getConnectionString( this.databaseName);
+            connectionString = this.getConnectionString( this.databaseName );
         }
 
 	    // Load the driver
