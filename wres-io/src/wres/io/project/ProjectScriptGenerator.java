@@ -258,10 +258,10 @@ final class ProjectScriptGenerator
         script.addLine( "SELECT EXISTS (" );
         script.addTab().addLine( "SELECT 1" );
         script.addTab().addLine( "FROM wres.Ensemble E" );
-        script.addTab().addLine( "INNER JOIN wres.TimeSeriesTrace TST" );
-        script.addTab( 2 ).addLine( "ON TST.ensemble_id = E.ensemble_id" );
+        script.addTab().addLine( "INNER JOIN wres.TimeSeries TS" );
+        script.addTab( 2 ).addLine( "ON TS.ensemble_id = E.ensemble_id" );
         script.addTab().addLine( "INNER JOIN wres.Source S" );
-        script.addTab( 2 ).addLine( "ON S.source_id = TST.source_id" );
+        script.addTab( 2 ).addLine( "ON S.source_id = TS.source_id" );
         script.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
         script.addTab( 2 ).addLine( "ON PS.source_id = S.source_id" );
         script.addTab().addLine( "WHERE PS.project_id = ?" );

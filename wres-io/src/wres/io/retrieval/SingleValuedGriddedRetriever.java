@@ -40,10 +40,6 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
 
     private static final Logger LOGGER = LoggerFactory.getLogger( SingleValuedGriddedRetriever.class );
 
-    private static final String REFERENCE_TIME_COLUMN = "TSRT.reference_time";
-    private static final String LEAD_DURATION_COLUMN = "S.lead * INTERVAL '1' MINUTE";
-    private static final String VALID_DATETIME_COLUMN = "TSRT.reference_time + S.lead * INTERVAL '1' MINUTE";
-
     /**
      * Exception message used several times on construction.
      */
@@ -308,7 +304,7 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
 
     private SingleValuedGriddedRetriever( Builder builder )
     {
-        super( builder );
+        super( builder, "TSRT.reference_time", "S.lead" );
 
         this.isForecast = builder.isForecast;
 
@@ -347,48 +343,6 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
         this.addTimeWindowClause( dataScripter, 0 );
 
         return dataScripter;
-    }
-
-    /**
-     * Returns the reference time (aka basis datetime) column name or expression.
-     *
-     * SingleValuedGriddedRetriever is a special snowflake that uses different
-     * columns from vector datasets.
-     * @return the reference time (aka basis datetime) column name or expression.
-     */
-
-    @Override
-    protected String getReferenceTimeColumn()
-    {
-        return SingleValuedGriddedRetriever.REFERENCE_TIME_COLUMN;
-    }
-
-    /**
-     * Returns the valid (aka natural) datetime column name or expression.
-     *
-     * SingleValuedGriddedRetriever is a special snowflake that uses different
-     * columns from vector datasets.
-     * @return the valid (aka natural) datetime column name or expression.
-     */
-
-    @Override
-    protected String getValidDatetimeColumn()
-    {
-        return SingleValuedGriddedRetriever.VALID_DATETIME_COLUMN;
-    }
-
-    /**
-     * Returns the lead duration column name or expression.
-     *
-     * SingleValuedGriddedRetriever is a special snowflake that uses different
-     * columns from vector datasets.
-     * @return the lead duration column name or expression.
-     */
-
-    @Override
-    protected String getLeadDurationColumn()
-    {
-        return SingleValuedGriddedRetriever.LEAD_DURATION_COLUMN;
     }
 
 }

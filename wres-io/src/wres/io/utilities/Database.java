@@ -12,12 +12,15 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -89,6 +92,12 @@ public class Database {
 	 */
     private final LinkedBlockingQueue<Future<List<IngestResult>>> storedIngestTasks =
 			new LinkedBlockingQueue<>();
+
+    /**
+     * Mapping between the number of a forecast value partition and its name
+     */
+    private final Map<Integer, String> timeSeriesValuePartitionNames =
+            new ConcurrentHashMap<>( 163 );
 
     public Database( SystemSettings systemSettings )
     {
@@ -572,11 +581,9 @@ public class Database {
             CopyManager manager = pgConnection.getCopyAPI();
 
 			// Use the manager to stream the data through to the database
-            LOGGER.trace( "About to call pg copyIn with definition '{}'", copy_definition );
             copyIn = manager.copyIn( copy_definition );
             byte[] valueDelimiterBytes = delimiter.getBytes( StandardCharsets.UTF_8 );
             byte[] valueRowDelimiterBytes = "\n".getBytes( StandardCharsets.UTF_8 );
-            long byteCount = 0;
 
             for( String[] row : values )
             {
@@ -585,46 +592,28 @@ public class Database {
                     if ( Objects.nonNull( row[i] ) )
                     {
                         byte[] bytes = row[i].getBytes( StandardCharsets.UTF_8 );
-                        LOGGER.trace( "About to call pg writeToCopy with data '{}' with bytes '{}'",
-                                      row[i], bytes );
                         copyIn.writeToCopy( bytes, 0, bytes.length );
-                        byteCount += bytes.length;
+
                     }
                     else
                     {
-                        LOGGER.trace( "About to call pg writeToCopy with NULL byte '{}'",
-                                      NULL );
                         copyIn.writeToCopy( NULL, 0, NULL.length );
-                        byteCount += NULL.length;
                     }
 
                     if ( i < row.length - 1 )
                     {
-                        LOGGER.trace( "About to call pg writeToCopy with delimiter '{}' with bytes '{}'",
-                                      delimiter, valueDelimiterBytes );
                         copyIn.writeToCopy( valueDelimiterBytes,
                                             0,
                                             valueDelimiterBytes.length );
-                        byteCount += valueDelimiterBytes.length;
                     }
                 }
 
-                LOGGER.trace( "About to call pg writeToCopy with valueRowDelimiter bytes '{}'",
-                              valueRowDelimiterBytes );
                 copyIn.writeToCopy( valueRowDelimiterBytes,
                                     0,
                                     valueDelimiterBytes.length );
-                byteCount += valueDelimiterBytes.length;
             }
 
-            if ( LOGGER.isDebugEnabled() )
-            {
-                LOGGER.debug( "About to call pg endCopy having copied {} rows and {} bytes",
-                              values.size(), byteCount );
-            }
-
-            long rowCount = copyIn.endCopy();
-            LOGGER.debug( "Successfully copied {} rows", rowCount );
+            copyIn.endCopy();
         }
         catch ( SQLException e )
 		{
@@ -711,18 +700,85 @@ public class Database {
     }
 
 
+    /**
+     * Returns the name of the partition of where values for this timeseries
+     * should be saved based on lead time.
+     * Must be kept in sync with liquibase scripts.
+     * @param lead The lead time of this time series where values of interest
+     *             should be saved
+     * @return The name of the partition where values for the indicated lead time
+     * should be saved.
+     */
+
+    public String getTimeSeriesValuePartition( int lead )
+    {
+        // The number of unique lead durations contained within a partition
+        // within a postgres database for values linked to a time series.
+        final short timeSeriesValuePartitionSpan = 1200;
+        int partitionNumber = lead / timeSeriesValuePartitionSpan;
+
+        String name = timeSeriesValuePartitionNames.get( partitionNumber );
+
+        if ( name == null )
+        {
+            if ( this.getSystemSettings()
+                     .getDatabaseType() != DatabaseType.POSTGRESQL )
+            {
+                // WRES only supports partitions on postgresql. In other cases,
+                // simply use the plain wres.TimeSeriesValue table.
+                return "wres.TimeSeriesValue";
+            }
+
+            String partitionNumberWord;
+
+            // Sometimes the lead times are negative, but the dash is not a
+            // valid character in a name in sql, so we replace with a word.
+            if ( partitionNumber < -10 )
+            {
+                partitionNumberWord = "Below_Negative_10";
+            }
+            else if ( partitionNumber > 150 )
+            {
+                partitionNumberWord = "Above_150";
+            }
+            else if ( partitionNumber < 0 )
+            {
+                partitionNumberWord = "Negative_"
+                                      + Math.abs( partitionNumber );
+            }
+            else
+            {
+                partitionNumberWord = Integer.toString( partitionNumber );
+            }
+
+            name = "wres.TimeSeriesValue_Lead_" + partitionNumberWord;
+
+            this.timeSeriesValuePartitionNames.putIfAbsent( partitionNumber, name);
+        }
+
+        return name;
+    }
 
     /**
      * Get all partition table names.
      * Needs to be kept in sync with assumptions about liquibase scripts and
      * presence/absence of partition tables.
-     * @return The names of all partition tables. As of 6.1, always same.
+     * @return The names of all partition tables
      */
-
-    @Deprecated( since = "6.1", forRemoval = true )
     public Set<String> getPartitionTables()
     {
-        return Set.of( "wres.TimeSeriesTraceValue" );
+        Set<String> partitionTables = new HashSet<>( 163 );
+
+        // Assumes that there is a fixed quantity of partition tables already.
+        // Assumes that the step is 1200, step at half that to hit all tables
+        // at least once without worrying about the exact edges.
+        for ( int i = -15000; i < 183000; i += 600 )
+        {
+            String partitionName = this.getTimeSeriesValuePartition( i );
+            partitionTables.add( partitionName );
+        }
+
+        return Collections.unmodifiableSet( partitionTables );
     }
 
     /**
@@ -935,6 +991,8 @@ public class Database {
     public void clean() throws SQLException
     {
         StringJoiner builder;
+        Set<String> partitions = this.getPartitionTables();
+
         if ( this.getType() == DatabaseType.H2 )
         {
              builder = new StringJoiner( NEWLINE,
@@ -946,10 +1004,13 @@ public class Database {
             builder = new StringJoiner( NEWLINE );
         }
 
-        List<String> tables = List.of( "wres.TimeSeriesTraceValue",
-                                       "wres.Source",
-                                       "wres.TimeSeriesTrace",
-                                       "wres.TimeScale",
+		for (String partition : partitions)
+        {
+            builder.add( "TRUNCATE TABLE " + partition + ";" );
+        }
+
+        List<String> tables = List.of( "wres.Source",
+                                       "wres.TimeSeries",
                                        "wres.Ensemble",
                                        "wres.Project",
                                        "wres.ProjectSource",

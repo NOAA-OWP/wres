@@ -29,7 +29,7 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.TimeWindow;
 
 /**
- * Retrieves data from the wres.TimeSeriesTrace and wres.TimeSeriesValue tables but
+ * Retrieves data from the wres.TimeSeries and wres.TimeSeriesValue tables but
  * in the pattern expected for treating the nth timestep of each analysis as if
  * it were an event in a timeseries across analyses, sort of like observations.
  *
@@ -78,7 +78,7 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
 
     private AnalysisRetriever( Builder builder )
     {
-        super( builder );
+        super( builder, "metadata.reference_time", "TSV.lead" );
         this.earliestAnalysisDuration = builder.earliestAnalysisDuration;
         this.latestAnalysisDuration = builder.latestAnalysisDuration;
         this.duplicatePolicy = builder.duplicatePolicy;

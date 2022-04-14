@@ -46,7 +46,6 @@ import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.MeasurementDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.TimeScaleDetails;
-import wres.io.data.details.TimeSeriesTrace;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.TestDatabase;
 import wres.statistics.generated.GeometryTuple;
@@ -187,7 +186,7 @@ class ProjectTest
         this.testDatabase.createMeasurementUnitTable( liquibaseDatabase );
         this.testDatabase.createTimeScaleTable( liquibaseDatabase );
         this.testDatabase.createSourceTable( liquibaseDatabase );
-        this.testDatabase.createTimeSeriesTraceTable( liquibaseDatabase );
+        this.testDatabase.createTimeSeriesTable( liquibaseDatabase );
         this.testDatabase.createProjectTable( liquibaseDatabase );
         this.testDatabase.createProjectSourceTable( liquibaseDatabase );
         this.testDatabase.createFeatureTable( liquibaseDatabase );
@@ -262,17 +261,17 @@ class ProjectTest
         Long ensembleId = ensemble.getId();
 
 
-        TimeSeriesTrace firstTraceRow =
-                new TimeSeriesTrace( this.wresDatabase,
-                                     ensembleId,
-                                     sourceId );
+        wres.io.data.details.TimeSeries firstTraceRow =
+                new wres.io.data.details.TimeSeries( this.wresDatabase,
+                                                     ensembleId,
+                                                     sourceId );
         // Do the save
         firstTraceRow.getTimeSeriesID();
 
-        TimeSeriesTrace secondTraceRow =
-                new TimeSeriesTrace( this.wresDatabase,
-                                     ensembleId,
-                                     sourceTwoId );
+        wres.io.data.details.TimeSeries secondTraceRow =
+                new wres.io.data.details.TimeSeries( this.wresDatabase,
+                                                     ensembleId,
+                                                     sourceTwoId );
         // Do the save
         secondTraceRow.getTimeSeriesID();
 

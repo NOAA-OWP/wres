@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import wres.io.data.caching.DataSources;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
+import wres.io.data.details.TimeSeries;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
@@ -92,12 +93,13 @@ public class IncompleteIngest
 
         long sourceId = source.getId();
 
+        // Simple, but slow when the partitions are not by timeseries_id:
         DataScripter timeSeriesValueScript = new DataScripter( database );
-        timeSeriesValueScript.addLine( "DELETE FROM wres.TimeSeriesTraceValue" );
-        timeSeriesValueScript.addLine( "WHERE timeseriestrace_id IN" );
+        timeSeriesValueScript.addLine( "DELETE FROM wres.TimeSeriesValue" );
+        timeSeriesValueScript.addLine( "WHERE timeseries_id IN" );
         timeSeriesValueScript.addLine( "(" );
-        timeSeriesValueScript.addTab().addLine( "SELECT timeseriestrace_id" );
-        timeSeriesValueScript.addTab().addLine( "FROM wres.TimeSeriesTrace" );
+        timeSeriesValueScript.addTab().addLine( "SELECT timeseries_id" );
+        timeSeriesValueScript.addTab().addLine( "FROM wres.TimeSeries" );
         timeSeriesValueScript.addTab().addLine( "WHERE source_id = ?" );
         timeSeriesValueScript.addArgument( sourceId );
         timeSeriesValueScript.addLine( ")" );
@@ -108,11 +110,11 @@ public class IncompleteIngest
         referenceTimeScript.addArgument( sourceId );
 
         DataScripter timeSeriesScript = new DataScripter( database );
-        timeSeriesScript.addLine( "DELETE FROM wres.TimeSeriesTrace" );
-        timeSeriesScript.addLine( "WHERE timeseriestrace_id IN" );
+        timeSeriesScript.addLine( "DELETE FROM wres.TimeSeries" );
+        timeSeriesScript.addLine( "WHERE timeseries_id IN" );
         timeSeriesScript.addLine( "(" );
-        timeSeriesScript.addTab().addLine( "SELECT timeseriestrace_id" );
-        timeSeriesScript.addTab().addLine( "FROM wres.TimeSeriesTrace" );
+        timeSeriesScript.addTab().addLine( "SELECT timeseries_id" );
+        timeSeriesScript.addTab().addLine( "FROM wres.TimeSeries" );
         timeSeriesScript.addTab().addLine( "WHERE source_id = ?" );
         timeSeriesScript.addArgument( sourceId );
         timeSeriesScript.addLine( ")" );
@@ -269,27 +271,35 @@ public class IncompleteIngest
                                   + "will now be removed to ensure that all data operated "
                                   + "upon is valid.");
 
+            Set<String> partitionTables = database.getPartitionTables();
+
             // We aren't actually going to collect the results so raw types are fine.
             FutureQueue removalQueue = new FutureQueue(  );
 
-            DataScripter valueRemover = new DataScripter( database );
-            valueRemover.setHighPriority( false );
-            valueRemover.addLine( "DELETE FROM wres.TimeSeriesTraceValue P" );
-            valueRemover.addLine( "WHERE NOT EXISTS (" );
-            valueRemover.addTab().addLine( "SELECT 1" );
-            valueRemover.addTab().addLine( "FROM wres.TimeSeriesTrace TST" );
-            valueRemover.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
-            valueRemover.addTab(  2  ).addLine( "ON PS.source_id = TST.source_id" );
-            valueRemover.addTab().addLine( "WHERE TST.timeseriestrace_id = P.timeseriestrace_id" );
-            valueRemover.addLine( ");" );
+            for (String partition : partitionTables)
+            {
+                DataScripter valueRemover = new DataScripter( database );
+                valueRemover.setHighPriority( false );
+                valueRemover.addLine( "DELETE FROM ", partition, " P" );
+                valueRemover.addLine( "WHERE NOT EXISTS (");
+                valueRemover.addTab().addLine( "SELECT 1");
+                valueRemover.addTab().addLine( "FROM wres.TimeSeries TS");
+                valueRemover.addTab().addLine( "INNER JOIN wres.ProjectSource PS");
+                valueRemover.addTab(  2  ).addLine( "ON PS.source_id = TS.source_id");
+                valueRemover.addTab().addLine( "WHERE TS.timeseries_id = P.timeseries_id");
+                valueRemover.addLine( ");" );
 
-            LOGGER.debug( "Started task to remove orphaned values in wres.TimeSeriesTraceValue..." );
+                Future timeSeriesValueRemoval = valueRemover.issue();
+                removalQueue.add( timeSeriesValueRemoval );
+
+                LOGGER.debug( "Started task to remove orphaned values in {}...", partition);
+            }
 
             try
             {
-                valueRemover.execute();
+                removalQueue.loop();
             }
-            catch ( SQLException e )
+            catch ( ExecutionException e )
             {
                 throw new SQLException( "Orphaned observed and forecasted values could not be removed.", e );
             }
@@ -297,11 +307,11 @@ public class IncompleteIngest
 
             DataScripter removeTimeSeries = new DataScripter( database );
 
-            removeTimeSeries.addLine( "DELETE FROM wres.TimeSeriesTrace TST" );
+            removeTimeSeries.addLine( "DELETE FROM wres.TimeSeries TS" );
             removeTimeSeries.addLine( "WHERE NOT EXISTS (" );
             removeTimeSeries.addTab().addLine( "SELECT 1" );
             removeTimeSeries.addTab().addLine( "FROM wres.Source S" );
-            removeTimeSeries.addTab().addLine( "WHERE S.source_id = TST.source_id" );
+            removeTimeSeries.addTab().addLine( "WHERE S.source_id = TS.source_id" );
             removeTimeSeries.add( ");" );
 
             Future timeSeriesRemoval = removeTimeSeries.issue();
