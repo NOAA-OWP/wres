@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 
@@ -89,22 +90,29 @@ public class ScenarioHelper
      */
     protected static Set<Path> executeScenario( ScenarioInformation scenarioInfo )
     {
-        LOGGER.info( "Beginning test execution through JUnit for scenario: " + scenarioInfo.getName());
+        LOGGER.info( "Beginning test execution through JUnit for scenario: " + scenarioInfo.getName() );
         Path config = scenarioInfo.getScenarioDirectory().resolve( ScenarioHelper.USUAL_EVALUATION_FILE_NAME );
         String args[] = { config.toString() };
         Set<Path> paths = Collections.emptySet();
 
         // Create the broker connections for statistics messaging
-        Properties brokerProperties =
+        Properties connectionProperties =
                 BrokerUtilities.getBrokerConnectionProperties( BrokerConnectionFactory.DEFAULT_PROPERTIES );
 
-        try ( BrokerConnectionFactory brokerConnectionFactory = BrokerConnectionFactory.of( brokerProperties ) )
+        // Create an embedded broker for statistics messages, if needed
+        EmbeddedBroker broker = null;
+        if ( BrokerUtilities.isEmbeddedBrokerRequired( connectionProperties ) )
+        {
+            broker = EmbeddedBroker.of( connectionProperties, true ); // Allow dynamic binding
+        }
+
+        try ( BrokerConnectionFactory brokerConnectionFactory = BrokerConnectionFactory.of( connectionProperties ) )
         {
             Evaluator wresEvaluation = new Evaluator( SYSTEM_SETTINGS,
                                                       DATABASE,
                                                       EXECUTOR,
                                                       brokerConnectionFactory );
-            
+
             ExecutionResult result = wresEvaluation.evaluate( args );
 
             if ( result.failed() )
@@ -115,14 +123,28 @@ public class ScenarioHelper
 
             paths = result.getResources();
         }
-        catch( IOException e )
+        catch ( IOException e )
         {
             LOGGER.warn( "Failed to close a broker connection factory.", e );
+        }
+        finally
+        {
+            if ( Objects.nonNull( broker ) )
+            {
+                try
+                {
+                    broker.close();
+                }
+                catch ( IOException e )
+                {
+                    LOGGER.warn( "Failed to close an embedded broker.", e );
+                }
+            }
         }
 
         return paths;
     }
-    
+
 
     protected static void assertOutputsMatchBenchmarks( ScenarioInformation scenarioInfo,
                                                         Set<Path> initialOutputSet )
