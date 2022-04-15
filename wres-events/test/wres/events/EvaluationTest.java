@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,6 +30,8 @@ import wres.events.subscribe.ConsumerException;
 import wres.events.subscribe.ConsumerFactory;
 import wres.events.subscribe.EvaluationSubscriber;
 import wres.eventsbroker.BrokerConnectionFactory;
+import wres.eventsbroker.BrokerUtilities;
+import wres.eventsbroker.embedded.EmbeddedBroker;
 import wres.statistics.generated.Consumer;
 import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -50,7 +53,22 @@ import wres.statistics.generated.Pairs;
 
 class EvaluationTest
 {
+    /**
+     * Embedded broker.
+     */
 
+    private static EmbeddedBroker broker = null;
+
+    /**
+     * Broker connection factory.
+     */
+
+    private static BrokerConnectionFactory connections = null;    
+
+    /**
+     * Re-used string.
+     */
+    
     private static final String A_CLIENT = "aClient";
 
     /**
@@ -83,16 +101,16 @@ class EvaluationTest
 
     private Pairs somePairs;
 
-    /**
-     * Connection factory.
-     */
-
-    private static BrokerConnectionFactory connections = null;
-
     @BeforeAll
     static void runBeforeAllTests()
     {
-        EvaluationTest.connections = BrokerConnectionFactory.of( true, 2 );
+        // Create and start and embedded broker
+        Properties properties = BrokerUtilities.getBrokerConnectionProperties( "eventbroker.properties" );
+        EvaluationTest.broker = EmbeddedBroker.of( properties, true );
+        EvaluationTest.broker.start();
+
+        // Create a connection factory to supply broker connections
+        EvaluationTest.connections = BrokerConnectionFactory.of( properties, 2 );
     }
 
     @BeforeEach
@@ -793,9 +811,14 @@ class EvaluationTest
     @AfterAll
     static void runAfterAllTests() throws IOException
     {
-        if( Objects.nonNull( EvaluationTest.connections ) )
+        if ( Objects.nonNull( EvaluationTest.connections ) )
         {
             EvaluationTest.connections.close();
+        }
+
+        if ( Objects.nonNull( EvaluationTest.broker ) )
+        {
+            EvaluationTest.broker.close();
         }
     }
 

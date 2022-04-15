@@ -8,6 +8,8 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.jms.BytesMessage;
@@ -30,6 +32,8 @@ import org.mockito.stubbing.Answer;
 
 import wres.events.publish.MessagePublisher.MessageProperty;
 import wres.eventsbroker.BrokerConnectionFactory;
+import wres.eventsbroker.BrokerUtilities;
+import wres.eventsbroker.embedded.EmbeddedBroker;
 
 /**
  * Tests the {@link MessagePublisher}
@@ -39,9 +43,14 @@ import wres.eventsbroker.BrokerConnectionFactory;
 
 class MessagePublisherTest
 {
+    /**
+     * Embedded broker.
+     */
+
+    private static EmbeddedBroker broker = null;
 
     /**
-     * Connection factory.
+     * Broker connection factory.
      */
 
     private static BrokerConnectionFactory connections = null;
@@ -49,7 +58,13 @@ class MessagePublisherTest
     @BeforeAll
     static void runBeforeAllTests()
     {
-        MessagePublisherTest.connections = BrokerConnectionFactory.of( true, 2 );
+        // Create and start and embedded broker
+        Properties properties = BrokerUtilities.getBrokerConnectionProperties( "eventbroker.properties" );
+        MessagePublisherTest.broker = EmbeddedBroker.of( properties, true );
+        MessagePublisherTest.broker.start();
+        
+        // Create a connection factory to supply broker connections
+        MessagePublisherTest.connections = BrokerConnectionFactory.of( properties, 2 );
     }
 
     @Test
@@ -167,11 +182,19 @@ class MessagePublisherTest
 
         assertTrue( invokedAsExpected.get() );
     }
-    
+
     @AfterAll
-    public static void runAfterAllTests() throws IOException
+    static void runAfterAllTests() throws IOException
     {
-        MessagePublisherTest.connections.close();
+        if ( Objects.nonNull( MessagePublisherTest.connections ) )
+        {
+            MessagePublisherTest.connections.close();
+        }
+
+        if ( Objects.nonNull( MessagePublisherTest.broker ) )
+        {
+            MessagePublisherTest.broker.close();
+        }
     }
 
 }

@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -21,6 +22,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.eventsbroker.embedded.EmbeddedBroker;
+
 /**
  * Tests the {@link BrokerConnectionFactory}.
  * 
@@ -35,8 +38,11 @@ public class BrokerConnectionFactoryTest
     @Test
     public void testMessageRouting() throws IOException, NamingException, JMSException, InterruptedException
     {
+        Properties properties = BrokerUtilities.getBrokerConnectionProperties( "eventbroker.properties" );
+        
         // Create and start the broker, clean up on completion
-        try ( BrokerConnectionFactory factory = BrokerConnectionFactory.of(); )
+        try (  EmbeddedBroker broker = EmbeddedBroker.of( properties, true );
+               BrokerConnectionFactory factory = BrokerConnectionFactory.of( properties, 2 ); )
         {
             Topic evaluationTopic = (Topic) factory.getDestination( "evaluation" );
             Topic evaluationStatusTopic = (Topic) factory.getDestination( "status" );

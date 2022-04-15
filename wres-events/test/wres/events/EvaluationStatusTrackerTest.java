@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
@@ -21,6 +22,8 @@ import wres.events.subscribe.ConsumerFactory;
 import wres.events.subscribe.EvaluationSubscriber;
 import wres.events.subscribe.SubscriberApprover;
 import wres.eventsbroker.BrokerConnectionFactory;
+import wres.eventsbroker.BrokerUtilities;
+import wres.eventsbroker.embedded.EmbeddedBroker;
 import wres.statistics.generated.Consumer;
 import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.EvaluationStatus;
@@ -37,7 +40,13 @@ import wres.statistics.generated.Outputs.NetcdfFormat;
 class EvaluationStatusTrackerTest
 {
     /**
-     * Connection factory.
+     * Embedded broker.
+     */
+
+    private static EmbeddedBroker broker = null;
+
+    /**
+     * Broker connection factory.
      */
 
     private static BrokerConnectionFactory connections = null;
@@ -45,7 +54,13 @@ class EvaluationStatusTrackerTest
     @BeforeAll
     static void runBeforeAllTests()
     {
-        EvaluationStatusTrackerTest.connections = BrokerConnectionFactory.of( true, 2 );
+        // Create and start and embedded broker
+        Properties properties = BrokerUtilities.getBrokerConnectionProperties( "eventbroker.properties" );
+        EvaluationStatusTrackerTest.broker = EmbeddedBroker.of( properties, true );
+        EvaluationStatusTrackerTest.broker.start();
+
+        // Create a connection factory to supply broker connections
+        EvaluationStatusTrackerTest.connections = BrokerConnectionFactory.of( properties, 2 );
     }
 
     @Test
@@ -144,7 +159,7 @@ class EvaluationStatusTrackerTest
             expected.put( Format.PNG, "anotherConsumer" );
 
             assertEquals( expected, actual );
-            
+
             // Forcibly stop the evaluation
             evaluation.stop( null );
         }
@@ -255,7 +270,7 @@ class EvaluationStatusTrackerTest
             // Should be one of the three options, which are all equally good
             assertTrue( actualSubscriber.equals( "aConsumer" ) || actualSubscriber.equals( "anotherConsumer" )
                         || actualSubscriber.equals( "yetAnotherConsumer" ) );
-            
+
             // Forcibly stop the evaluation
             evaluation.stop( null );
         }
@@ -373,18 +388,23 @@ class EvaluationStatusTrackerTest
 
             // Should be one of the two options, which are both equally good
             assertTrue( actualSubscriber.equals( "aConsumer" ) || actualSubscriber.equals( "anotherConsumer" ) );
-            
+
             // Forcibly stop the evaluation
             evaluation.stop( null );
         }
     }
-    
+
     @AfterAll
     static void runAfterAllTests() throws IOException
     {
-        if( Objects.nonNull( EvaluationStatusTrackerTest.connections ) )
+        if ( Objects.nonNull( EvaluationStatusTrackerTest.connections ) )
         {
             EvaluationStatusTrackerTest.connections.close();
+        }
+
+        if ( Objects.nonNull( EvaluationStatusTrackerTest.broker ) )
+        {
+            EvaluationStatusTrackerTest.broker.close();
         }
     }
 

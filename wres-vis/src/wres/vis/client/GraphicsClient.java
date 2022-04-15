@@ -7,6 +7,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -31,6 +32,8 @@ import wres.events.subscribe.EvaluationSubscriber;
 import wres.events.subscribe.SubscriberStatus;
 import wres.events.subscribe.UnrecoverableSubscriberException;
 import wres.eventsbroker.BrokerConnectionFactory;
+import wres.eventsbroker.BrokerUtilities;
+import wres.eventsbroker.embedded.EmbeddedBroker;
 
 /**
  * A long-running graphics client that encapsulates one graphics subscriber, which consumes statistics and writes them 
@@ -137,8 +140,20 @@ class GraphicsClient
         // Create the server
         int exitCode = 0;
 
-        BrokerConnectionFactory broker = BrokerConnectionFactory.of( false ); // No dynamic binding, nominated port only
-        GraphicsClient graphics = GraphicsClient.of( broker );
+        // Create the broker connections for statistics messaging
+        Properties brokerConnectionProperties =
+                BrokerUtilities.getBrokerConnectionProperties( BrokerConnectionFactory.DEFAULT_PROPERTIES );
+
+        // Create an embedded broker for statistics messages, if needed
+        EmbeddedBroker broker = null;
+        if ( BrokerUtilities.isEmbeddedBrokerRequired( brokerConnectionProperties ) )
+        {
+            broker = EmbeddedBroker.of( brokerConnectionProperties, false ); // No dynamic binding, nominated port only
+        }
+        EmbeddedBroker brokerToClose = broker;
+
+        BrokerConnectionFactory brokerConnections = BrokerConnectionFactory.of( brokerConnectionProperties );
+        GraphicsClient graphics = GraphicsClient.of( brokerConnections );
 
         Instant started = Instant.now();
 
@@ -153,14 +168,29 @@ class GraphicsClient
 
                    try
                    {
-                       LOGGER.info( "Closing broker connections {}.", broker );
-                       broker.close();
+                       LOGGER.info( "Closing broker connections {}.", brokerConnections );
+                       brokerConnections.close();
                    }
                    catch ( IOException e )
                    {
                        LOGGER.error( "Failed to close the broker connections associated with graphics client {}.",
                                      graphics );
 
+                   }
+
+                   if ( Objects.nonNull( brokerToClose ) )
+                   {
+                       try
+                       {
+                           LOGGER.info( "Closing embedded broker {}.", brokerToClose );
+                           brokerConnections.close();
+                       }
+                       catch ( IOException e )
+                       {
+                           LOGGER.error( "Failed to close the embedded broker associated with graphics client {}.",
+                                         graphics );
+
+                       }
                    }
 
                    Instant ended = Instant.now();

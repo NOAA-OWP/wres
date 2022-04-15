@@ -2,9 +2,13 @@ package wres.eventsbroker.embedded;
 
 import static org.junit.Assert.assertTrue;
 
+import java.util.Properties;
+
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import wres.eventsbroker.BrokerUtilities;
 
 /**
  * Tests the {@link EmbeddedBroker}.
@@ -21,7 +25,8 @@ public class EmbeddedBrokerTest
     public void testConnectionSucceeds() throws Exception
     {
         // Create and start the broker, clean up on completion
-        try ( EmbeddedBroker embeddedBroker = EmbeddedBroker.of(); )
+        Properties properties = BrokerUtilities.getBrokerConnectionProperties( "eventbroker.properties" );
+        try ( EmbeddedBroker embeddedBroker = EmbeddedBroker.of( properties, true ); )
         {
             embeddedBroker.start();
 
