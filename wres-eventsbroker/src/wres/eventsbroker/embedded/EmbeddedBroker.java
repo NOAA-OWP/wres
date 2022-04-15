@@ -3,7 +3,11 @@ package wres.eventsbroker.embedded;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.Objects;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.activemq.artemis.core.server.ActiveMQServer;
 import org.apache.activemq.artemis.core.server.ActiveMQServers;
@@ -11,6 +15,8 @@ import org.apache.activemq.artemis.core.config.Configuration;
 import org.apache.activemq.artemis.core.config.impl.ConfigurationImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import wres.eventsbroker.BrokerUtilities;
 
 /**
  * An embedded broker for publishing and subscribing to evaluation messages.
@@ -29,7 +35,6 @@ public class EmbeddedBroker implements Closeable
      */
 
     private static final String DEFAULT_PROTOCOL = "amqp";
-
 
     /**
      * Is <code>true</code> if the broker is started, <code>false</code> otherwise.
@@ -56,26 +61,122 @@ public class EmbeddedBroker implements Closeable
     private final int port;
 
     /**
-     * Returns a broker instance with default launch options
+     * <p>Attempts to create an embedded broker in two stages:
      * 
-     * @return a broker instance with default options.
+     * <ol>
+     * <li>First, attempts to bind a broker on the configured port. If that fails, move the the second stage.</li>
+     * <li>Second, if dynamic binding is allowed, attempts to bind a broker to a broker-chosen (free) port, which may 
+     * be discovered from the embedded broker instance after startup.<li>
+     * </ol>
+     * 
+     * <p>If a free port is selected, the supplied properties are updated to reflect that port.
+     * 
+     * @param properties the connection properties, not null                                                                     
+     * @param dynamicBindingAllowed is true to bind any port, false to throw an exception if the requested port is bound
+     * @return an embedded broker instance
+     * @throws NullPointerException if the properties are null
+     * @throws IllegalArgumentException if the connection property cannot be found
      */
 
-    public static EmbeddedBroker of()
+    public static EmbeddedBroker of( Properties properties,
+                                     boolean dynamicBindingAllowed )
     {
-        return EmbeddedBroker.of( 0 );
-    }
+        Objects.requireNonNull( properties );
+        String connectionPropertyName = BrokerUtilities.getConnectionPropertyName( properties );
+        BrokerUtilities.testConnectionProperty( connectionPropertyName, properties );
 
-    /**
-     * Returns a broker instance with default launch options on a prescribed port.
-     * 
-     * @param port an explicit port on which to bind the transport
-     * @return a broker instance with default options
-     */
+        String bindingUrl = properties.getProperty( connectionPropertyName );
 
-    public static EmbeddedBroker of( int port )
-    {
-        return new EmbeddedBroker( port );
+        LOGGER.debug( "Attempting to extract the desired port from the binding URL {}.", bindingUrl );
+
+        // Discover the port to which a broker should be bound
+        String regex = ":(?<port>[0-9]+)";
+
+        Pattern p = Pattern.compile( regex );
+        Matcher m = p.matcher( bindingUrl );
+        int port = -1;
+
+        // Port pattern found?
+        if ( m.find() )
+        {
+            String portString = m.group().replace( ":", "" );
+
+            LOGGER.debug( "While attempting to create an embedded broker, discovered the following port string to "
+                          + "parse: {}.",
+                          portString );
+
+            try
+            {
+                port = Integer.parseInt( portString );
+
+                LOGGER.debug( "While attempting to create an embedded broker, discovered a port to bind of: {}.",
+                              port );
+            }
+            catch ( NumberFormatException e )
+            {
+                LOGGER.debug( "Failed to parse the port string into an integer port number.", e );
+            }
+        }
+
+        // No port pattern: either absent or could not be parsed from string
+        if ( port == -1 )
+        {
+            throw new CouldNotStartEmbeddedBrokerException( "Failed to identify a port number in the binding URL. "
+                                                            + "Check that the binding URL contains a port number. The "
+                                                            + "binding URL was: "
+                                                            + bindingUrl );
+        }
+
+        EmbeddedBroker returnMe = null;
+
+        try
+        {
+            returnMe = EmbeddedBroker.of( port );
+
+            // Attempt to bind, which may fail
+            returnMe.start();
+        }
+        catch ( CouldNotStartEmbeddedBrokerException e )
+        {
+            LOGGER.debug( "Unable to bind an embedded broker to the configured port of {}. Choosing another port, "
+                          + "which will be available from the broker instance after startup.",
+                          port );
+
+            // Close now
+            if ( Objects.nonNull( returnMe ) )
+            {
+                try
+                {
+                    returnMe.close();
+                }
+                catch ( IOException f )
+                {
+                    LOGGER.warn( "Unable to close an embedded broker instance.", f );
+                }
+            }
+
+            if ( !dynamicBindingAllowed )
+            {
+                throw new CouldNotStartEmbeddedBrokerException( "Could not bind an embedded amqp broker to port "
+                                                                + port
+                                                                + " on the loopback network interface. If this port is "
+                                                                + "already bound, change the configured port, "
+                                                                + "free the configured port, configure a dynamic port "
+                                                                + "using TCP reserved port 0 or request an "
+                                                                + "embedded broker with dynamic binding to override a "
+                                                                + "configured port that is already bound.",
+                                                                e );
+            }
+
+            returnMe = EmbeddedBroker.of( 0 );
+        }
+
+        // Update the properties with any automatically selected port
+        EmbeddedBroker.updateConnectionStringWithDynamicPortIfConfigured( connectionPropertyName,
+                                                                          properties,
+                                                                          returnMe.getMessagingPort() );
+
+        return returnMe;
     }
 
     /**
@@ -168,6 +269,55 @@ public class EmbeddedBroker implements Closeable
         }
     }
 
+    /**
+     * Returns a broker instance with default launch options on a prescribed port.
+     * 
+     * @param port an explicit port on which to bind the transport
+     * @return a broker instance with default options
+     */
+
+    private static EmbeddedBroker of( int port )
+    {
+        return new EmbeddedBroker( port );
+    }    
+    
+    /**
+     * If the connection string contains a different port than the port actually used, then update the port inline to 
+     * the properties map with the relevant AMQP port from the list of broker ports for which bindings were found. 
+     * 
+     * @param connectionPropertyName the connection property name
+     * @param properties the properties whose named value should be replaced
+     * @param amqpPort the discovered amqp port
+     * @throws NullPointerException if any nullable input is null
+     */
+
+    private static void updateConnectionStringWithDynamicPortIfConfigured( String connectionPropertyName,
+                                                                           Properties properties,
+                                                                           int amqpPort )
+    {
+        Objects.requireNonNull( connectionPropertyName );
+        Objects.requireNonNull( properties );
+
+        String propertyValue = properties.getProperty( connectionPropertyName );
+
+        String updated = propertyValue.replaceAll( "localhost:\\d+", "localhost:" + amqpPort )
+                                      .replaceAll( "127.0.0.1:\\d+", "127.0.0.1:" + amqpPort )
+                                      .replaceAll( "0.0.0.0:\\d+", "0.0.0.0:" + amqpPort );
+
+        properties.setProperty( connectionPropertyName, updated );
+
+        LOGGER.debug( "The embedded broker was configured with a binding of {} for AMQP traffic "
+                      + "but is actually bound to TCP port {}. Updated the configured TCP port to reflect "
+                      + "the bound port. The configured property is {}={}. The updated property is "
+                      + "{}={}.",
+                      propertyValue,
+                      amqpPort,
+                      connectionPropertyName,
+                      propertyValue,
+                      connectionPropertyName,
+                      updated );
+    }    
+    
     /**
      * Hidden constructor.
      * 

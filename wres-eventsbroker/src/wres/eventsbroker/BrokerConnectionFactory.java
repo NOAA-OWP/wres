@@ -2,16 +2,11 @@ package wres.eventsbroker;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.function.Supplier;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
@@ -25,52 +20,27 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.GuardedBy;
-import wres.eventsbroker.embedded.CouldNotLoadBrokerConfigurationException;
-import wres.eventsbroker.embedded.CouldNotStartEmbeddedBrokerException;
-import wres.eventsbroker.embedded.EmbeddedBroker;
 
 /**
- * <p>Manages connections to an AMQP broker. The basic configuration is contained in a jndi properties file on the 
- * classpath. If the configuration contains the loopback address (localhost, 127.0.0.1), then the factory creates an 
- * instance of an {@link EmbeddedBroker} unless a broker is already active on that address and port. If the configured 
- * port is free, then the embedded broker will attempt to bind to this port first. If the configured port is TCP 
- * reserved port zero or the configured port is not free, then the embedded broker will choose a port and report this 
- * via the broker instance.
- * 
- * <p>The configured address and port of the broker may be overridden at runtime with the system properties 
- * <code>wres.eventsBrokerPort</code> and <code>wres.eventsBrokerAddress</code>, respectively.
- * 
- * <p>Any embedded broker instance is managed by this class and must be closed when the application exits. For this 
- * reason, the class implements {@link Closeable} and it is recommended to instantiate using a try-with-resources. 
- * For example:
- * 
- * <pre>
- * {@code
- *     try( BrokerConnectionFactory factory = BrokerConnectionFactory.of() )
- *     {
- *         // Acquire connections
- *     }
- * }
- * </pre>
- * 
- * TODO: abstract the creation of an embedded broker away from this connection factory and move the connection factory
- * to wres-events, since it is a client-side utility and it should be engaged in the creation of connections only, not
- * brokers.
+ * <p>Manages connections to an AMQP broker. The basic configuration is contained in a JNDI properties file on the 
+ * classpath.
  * 
  * @author James Brown
  */
 
 public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
 {
-    private static final String IN_THE_MAP_OF_PROPERTIES = " in the map of properties.";
+    /**
+     * Default jndi properties file on the classpath.
+     */
 
+    public static final String DEFAULT_PROPERTIES = "eventbroker.properties";
 
-    private static final String COULD_NOT_FIND_THE_NAMED_CONNECTION_PROPERTY =
-            "Could not find the named connection property ";
+    /**
+     * Re-used string.
+     */
 
-    private static final String LOCALHOST_127_0_0_1_0 = "127.0.0.1:0";
-
-    private static final String LOCALHOST_0 = "localhost:0";
+    private static final String UNABLE_TO_CONNECT_TO_THE_BROKER_AT = "Unable to connect to the broker at ";
 
     /**
      * Logger.
@@ -91,23 +61,10 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
     private static final int DEFAULT_MAXIMUM_MESSAGE_RETRIES = 4;
 
     /**
-     * Default jndi properties file on the classpath.
-     */
-
-    private static final String DEFAULT_PROPERTIES = "eventbroker.properties";
-
-    /**
      * The maximum number of times a message can be resent on failure.
      */
 
     private final Integer maximumMessageRetries;
-
-    /**
-     * Instance of an embedded broker managed by this factory instance, created as needed. There should be one instance 
-     * of a {@link BrokerConnectionFactory} with an embedded broker instance per application instance.
-     */
-
-    private final EmbeddedBroker broker;
 
     /**
      * Context that maps JMS objects to names.
@@ -141,64 +98,37 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
     private boolean isClosed;
 
     /**
-     * <p>Returns an instance of a factory, which is created using {@link #DEFAULT_PROPERTIES}. If an embedded broker is
-     * required and the broker configuration requests a specific TCP port (not reserved TCP port 0), then the embedded
-     * broker is lenient when the configured port is already bound, instead choosing an available port.
+     * <p>Returns an instance of a factory, which is created with supplied properties and a default number of message 
+     * retries, {@link #DEFAULT_MAXIMUM_MESSAGE_RETRIES}.
      * 
-     * See also {@link #of(boolean)}
-     * 
+     * @param properties the broker connection properties, cannot be null
      * @return an instance
      * @throws CouldNotLoadBrokerConfigurationException if the broker configuration could not be found
-     * @throws CouldNotStartEmbeddedBrokerException if an embedded broker was requested and could not be started
-     */
-
-    public static BrokerConnectionFactory of()
-    {
-        return BrokerConnectionFactory.of( true );
-    }
-
-    /**
-     * <p>Returns an instance of a factory, which is created using {@link #DEFAULT_PROPERTIES}. If an embedded broker is
-     * required and the broker configuration requests a specific TCP port (not reserved TCP port 0), then the embedded
-     * broker throws an exception when the configured port is already bound, unless dynamic binding is explicitly 
-     * allowed.
-     * 
-     * See also {@link #of()}.
-     * 
-     * @param dynamicBindingAllowed is true to bind any port, false to throw an exception if the requested port is bound
-     * @return an instance
-     * @throws CouldNotLoadBrokerConfigurationException if the broker configuration could not be found
-     * @throws CouldNotStartEmbeddedBrokerException if an embedded broker was requested and could not be started
-     */
-
-    public static BrokerConnectionFactory of( boolean dynamicBindingAllowed )
-    {
-        return new BrokerConnectionFactory( BrokerConnectionFactory.DEFAULT_PROPERTIES,
-                                            BrokerConnectionFactory.DEFAULT_MAXIMUM_MESSAGE_RETRIES,
-                                            dynamicBindingAllowed );
-    }
-
-    /**
-     * <p>Returns an instance of a factory, which is created using {@link #DEFAULT_PROPERTIES}. If an embedded broker is
-     * required and the broker configuration requests a specific TCP port (not reserved TCP port 0), then the embedded
-     * broker throws an exception when the configured port is already bound, unless dynamic binding is explicitly 
-     * allowed.
-     * 
-     * See also {@link #of()}.
-     * 
-     * @param dynamicBindingAllowed is true to bind any port, false to throw an exception if the requested port is bound
-     * @param maximumMessageRetries the maximum number of message retries, must be greater than or equal to zero
-     * @return an instance
-     * @throws CouldNotLoadBrokerConfigurationException if the broker configuration could not be found
-     * @throws CouldNotStartEmbeddedBrokerException if an embedded broker was requested and could not be started
      * @throws IllegalArgumentException if the maximumMessageRetries is less than zero
      */
 
-    public static BrokerConnectionFactory of( boolean dynamicBindingAllowed, int maximumMessageRetries )
+    public static BrokerConnectionFactory of( Properties properties )
     {
-        return new BrokerConnectionFactory( BrokerConnectionFactory.DEFAULT_PROPERTIES,
-                                            maximumMessageRetries,
-                                            dynamicBindingAllowed );
+        return new BrokerConnectionFactory( properties,
+                                            BrokerConnectionFactory.DEFAULT_MAXIMUM_MESSAGE_RETRIES );
+    }
+
+    /**
+     * <p>Returns an instance of a factory, which is created with supplied properties and a maximum number of 
+     * message retries.
+     * 
+     * @param properties the broker connection properties, cannot be null
+     * @param maximumMessageRetries the maximum number of message retries, must be greater than or equal to zero
+     * @return an instance
+     * @throws CouldNotLoadBrokerConfigurationException if the broker configuration could not be found
+     * @throws IllegalArgumentException if the maximumMessageRetries is less than zero
+     */
+
+    public static BrokerConnectionFactory of( Properties properties,
+                                              int maximumMessageRetries )
+    {
+        return new BrokerConnectionFactory( properties,
+                                            maximumMessageRetries );
     }
 
     /**
@@ -262,7 +192,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
         // Close connections
         synchronized ( this.connectionPoolLock )
         {
-            for( Connection connectionToClose : this.connectionPool )
+            for ( Connection connectionToClose : this.connectionPool )
             {
                 try
                 {
@@ -278,30 +208,6 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
                 }
             }
         }
-
-        if ( this.hasEmbeddedBroker() )
-        {
-            try
-            {
-                this.broker.close();
-            }
-            catch ( IOException e )
-            {
-                throw new IOException( "While attempting to close an embedded broker.", e );
-            }
-        }
-    }
-
-    /**
-     * Returns <code>true</code> if this factory is managing an embedded broker instance whose resources must be closed
-     * on completion, otherwise <code>false</code>.
-     * 
-     * @return true if this factory is managing an embedded broker
-     */
-
-    public boolean hasEmbeddedBroker()
-    {
-        return Objects.nonNull( this.broker );
     }
 
     /**
@@ -345,384 +251,6 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
     }
 
     /**
-     * <p>Creates an instance of an embedded broker if required. Begins by looking for a system property 
-     * {@code wres.startBroker}. If {@code wres.startBroker=true}, then an embedded broker is created. If 
-     * {@code wres.startBroker=false}, then an embedded broker is not created. If the system property is missing, then 
-     * inspects the connection properties. If the connection properties declare a localhost, then first probes for an 
-     * active broker, and finally falls back on an embedded one. 
-     * 
-     * <p>An embedded broker is only created if either {@code wres.startBroker=true} or the connection properties 
-     * declare a localhost and there is no existing broker with those connection properties.
-     * 
-     * @param connectionProperty the connection property
-     * @param properties the broker configuration properties
-     * @param dynamicBindingAllowed is true to bind any port, false to throw an exception if the requested port is bound
-     * @return an embedded broker or null
-     * @throws NullPointerException if any input is null
-     * @throws IllegalArgumentException if the connection property cannot be found
-     * @throws NamingException if the connection factory could not be located
-     * @throws CouldNotStartEmbeddedBrokerException if an embedded broker was requested and could not be started.
-     */
-
-    private EmbeddedBroker createEmbeddedBrokerFromPropertiesIfRequired( String connectionPropertyName,
-                                                                         Properties properties,
-                                                                         boolean dynamicBindingAllowed )
-            throws NamingException
-    {
-        Objects.requireNonNull( connectionPropertyName );
-        Objects.requireNonNull( properties );
-
-        if ( !properties.containsKey( connectionPropertyName ) )
-        {
-            throw new IllegalArgumentException( COULD_NOT_FIND_THE_NAMED_CONNECTION_PROPERTY + connectionPropertyName
-                                                + IN_THE_MAP_OF_PROPERTIES );
-        }
-
-        String key = connectionPropertyName;
-        String url = properties.getProperty( key );
-
-        // Look for a system property that definitively says whether an embedded broker should be started
-        String startBroker = System.getProperty( "wres.startBroker" );
-        if ( "true".equalsIgnoreCase( startBroker ) )
-        {
-            LOGGER.info( "Discovered the WRES system property wres.startBroker=true. Starting an embedded broker "
-                         + "at the binding URL {}...",
-                         url );
-
-            return this.createEmbeddedBroker( properties, connectionPropertyName, dynamicBindingAllowed );
-        }
-        else if ( "false".equalsIgnoreCase( startBroker ) )
-        {
-            LOGGER.warn( "Probing for an active AMQP broker at the binding URL {}. Discovered the WRES system property "
-                         + "wres.startBroker=false, so the evaluation will fail if no active broker is discovered at "
-                         + "the binding URL (after exhausting any failover options).",
-                         url );
-
-            return null;
-        }
-
-        EmbeddedBroker returnMe = null;
-
-        // Loopback interface or all local interfaces? If so, an embedded broker may be required.
-        if ( url.contains( "localhost" ) || url.contains( "127.0.0.1" ) || url.contains( "0.0.0.0" ) )
-        {
-            LOGGER.debug( "Discovered the connection property {} with value {}, which "
-                          + "indicates that a broker should be listening on localhost.",
-                          key,
-                          url );
-
-            // Does the url contain the tcp reserved port 0, i.e. dynamic binding required?
-            if ( url.contains( LOCALHOST_0 ) || url.contains( LOCALHOST_127_0_0_1_0 ) )
-            {
-                LOGGER.info( "Discovered a binding URL of {}, which includes the reserved TCP port of 0. Starting an "
-                             + "embedded broker at this URL and allowing the broker to assign a port dynamically. The "
-                             + "assigned port will be identified after the embedded broker has launched successfully.",
-                             url );
-
-                returnMe = this.createEmbeddedBroker( properties, connectionPropertyName, dynamicBindingAllowed );
-            }
-            // Look for an active broker, fall back on an embedded one
-            else
-            {
-                // If retries are configured, then expect retries here, even if the connection ultimately fails
-                LOGGER.debug( "Probing to establish whether an active broker is accepting connections at {}. This "
-                              + "may fail!",
-                              url );
-
-                Context localContext = new InitialContext( properties );
-                ConnectionFactory factory = this.createConnectionFactory( localContext, connectionPropertyName );
-
-                try
-                {
-                    LOGGER.warn( "Probing for an active AMQP broker at the binding URL {}. This may take some time if "
-                                 + "no active broker exists and retries are configured. If no active broker is "
-                                 + "discovered, an embedded broker will be started.",
-                                 url );
-
-                    this.testConnection( url, factory, 0 );
-
-                    LOGGER.info( "Discovered an active AMQP broker at {}", url );
-                }
-                catch ( BrokerConnectionException e )
-                {
-                    LOGGER.info( "Could not connect to an active AMQP broker at {}. Starting an embedded broker "
-                                 + "instead.",
-                                 url );
-
-                    returnMe = this.createEmbeddedBroker( properties, connectionPropertyName, dynamicBindingAllowed );
-                }
-            }
-        }
-
-        return returnMe;
-    }
-
-    /**
-     * Returns the connection string from the map of properties.
-     * 
-     * @param properties the properties
-     * @return the connection string
-     * @throws CouldNotStartEmbeddedBrokerException if the property could not be found
-     */
-
-    private String findConnectionPropertyName( Properties properties )
-    {
-        String returnMe = null;
-
-        for ( Entry<Object, Object> nextEntry : properties.entrySet() )
-        {
-            Object key = nextEntry.getKey();
-
-            if ( Objects.nonNull( key ) && key.toString().contains( "connectionFactory" ) )
-            {
-                Object value = nextEntry.getValue();
-
-                if ( Objects.nonNull( value ) )
-                {
-                    returnMe = key.toString();
-                }
-                break;
-            }
-        }
-
-        if ( Objects.isNull( returnMe ) )
-        {
-            throw new CouldNotStartEmbeddedBrokerException( "Could not locate a connection string in the properties "
-                                                            + properties );
-        }
-
-        return returnMe;
-    }
-
-    /**
-     * Checks for a <code>wres.eventsBrokerPort</code> and/or <code>wres.eventsBrokerAddress</code> system property and 
-     * substitutes these entries into the binding url contained in the supplied properties.
-     * 
-     * @param connectionPropertyName the connection property name
-     * @param properties the properties to update
-     * @throws NullPointerException if any input is null
-     * @throws IllegalArgumentException if the connection property cannot be found
-     */
-
-    private void updateConnectionStringWithSystemPropertiesIfConfigured( String connectionPropertyName,
-                                                                         Properties properties )
-    {
-        Objects.requireNonNull( connectionPropertyName );
-        Objects.requireNonNull( properties );
-
-        if ( !properties.containsKey( connectionPropertyName ) )
-        {
-            throw new IllegalArgumentException( COULD_NOT_FIND_THE_NAMED_CONNECTION_PROPERTY + connectionPropertyName
-                                                + IN_THE_MAP_OF_PROPERTIES );
-        }
-
-        String oldConnectionProperty = properties.getProperty( connectionPropertyName );
-        String connectionProperty = oldConnectionProperty;
-
-        Properties systemProperties = System.getProperties();
-
-        boolean overriden = false;
-
-        if ( systemProperties.containsKey( "wres.eventsBrokerAddress" ) )
-        {
-            Object address = systemProperties.get( "wres.eventsBrokerAddress" );
-            connectionProperty = connectionProperty.replaceAll( "amqp://+[a-zA-Z0-9.]+",
-                                                                "amqp://" + address );
-            overriden = true;
-        }
-
-        if ( systemProperties.containsKey( "wres.eventsBrokerPort" ) )
-        {
-            Object port = systemProperties.get( "wres.eventsBrokerPort" );
-
-            String innerConnectionProperty = connectionProperty;
-
-            connectionProperty = connectionProperty.replaceAll( ":(?<port>[0-9]+)", ":" + port );
-
-            LOGGER.debug( "Updated the port in the binding URL. The old binding URL was: {}. The new binding URL is: "
-                          + "{}.",
-                          innerConnectionProperty,
-                          connectionProperty );
-
-            overriden = true;
-        }
-
-        // Update the properties
-        properties.setProperty( connectionPropertyName, connectionProperty );
-
-        if ( LOGGER.isDebugEnabled() && overriden )
-        {
-            LOGGER.debug( "Updated the binding URL (BURL) using system properties discovered at runtime. The old "
-                          + "BURL was {}. The new BURL is {}.",
-                          oldConnectionProperty,
-                          connectionProperty );
-        }
-    }
-
-    /**
-     * If the connection string contains a different port than the port actually used, then update the port inline to 
-     * the properties map with the relevant AMQP port from the list of broker ports for which bindings were found. 
-     * 
-     * @param connectionPropertyName the connection property name
-     * @param properties the properties whose named value should be replaced
-     * @param amqpPort the discovered amqp port
-     * @throws NullPointerException if any nullable input is null
-     * @throws IllegalArgumentException if the connection property cannot be found
-     */
-
-    private void updateConnectionStringWithDynamicPortIfConfigured( String connectionPropertyName,
-                                                                    Properties properties,
-                                                                    int amqpPort )
-    {
-        Objects.requireNonNull( connectionPropertyName );
-        Objects.requireNonNull( properties );
-
-        if ( !properties.containsKey( connectionPropertyName ) )
-        {
-            throw new IllegalArgumentException( COULD_NOT_FIND_THE_NAMED_CONNECTION_PROPERTY + connectionPropertyName
-                                                + IN_THE_MAP_OF_PROPERTIES );
-        }
-
-        String propertyValue = properties.getProperty( connectionPropertyName );
-
-
-        String updated = propertyValue.replaceAll( "localhost:\\d+", "localhost:" + amqpPort )
-                                      .replaceAll( "127.0.0.1:\\d+", "127.0.0.1:" + amqpPort )
-                                      .replaceAll( "0.0.0.0:\\d+", "0.0.0.0:" + amqpPort );
-
-        properties.setProperty( connectionPropertyName, updated );
-
-        LOGGER.debug( "The embedded broker was configured with a binding of {} for AMQP traffic "
-                      + "but is actually bound to TCP port {}. Updated the configured TCP port to reflect "
-                      + "the bound port. The configured property is {}={}. The updated property is "
-                      + "{}={}.",
-                      propertyValue,
-                      amqpPort,
-                      connectionPropertyName,
-                      propertyValue,
-                      connectionPropertyName,
-                      updated );
-    }
-
-    /**
-     * <p>Attempts to create an embedded broker in two stages:
-     * 
-     * <ol>
-     * <li>First, attempts to bind a broker on the configured port. If that fails, move the the second stage.</ol>
-     * <li>Second, if dynamic binding is allowed, attempts to bind a broker to a broker-chosen (free) port, which may 
-     * be discovered from the embedded broker instance after startup.<li>
-     * </ol>
-     * 
-     * @param properties the connection properties, not null
-     * @param connectionPropertyName the name of the connection property to obtain from the properties                                                                        
-     * @param dynamicBindingAllowed is true to bind any port, false to throw an exception if the requested port is bound
-     * @return an embedded broker instance
-     * @throws NullPointerException if the properties are null
-     */
-
-    private EmbeddedBroker createEmbeddedBroker( Properties properties,
-                                                 String connectionPropertyName,
-                                                 boolean dynamicBindingAllowed )
-    {
-        Objects.requireNonNull( properties );
-        Objects.requireNonNull( connectionPropertyName );
-
-        if ( !properties.containsKey( connectionPropertyName ) )
-        {
-            throw new IllegalArgumentException( COULD_NOT_FIND_THE_NAMED_CONNECTION_PROPERTY + connectionPropertyName
-                                                + IN_THE_MAP_OF_PROPERTIES );
-        }
-
-        String bindingUrl = properties.getProperty( connectionPropertyName );
-
-        LOGGER.debug( "Attempting to extract the desired port from the binding URL {}.", bindingUrl );
-
-        // Discover the port to which a broker should be bound
-        String regex = ":(?<port>[0-9]+)";
-
-        Pattern p = Pattern.compile( regex );
-        Matcher m = p.matcher( bindingUrl );
-        int port = -1;
-
-        // Port pattern found?
-        if ( m.find() )
-        {
-            String portString = m.group().replace( ":", "" );
-
-            LOGGER.debug( "While attempting to create an embedded broker, discovered the following port string to "
-                          + "parse: {}.",
-                          portString );
-
-            try
-            {
-                port = Integer.parseInt( portString );
-
-                LOGGER.debug( "While attempting to create an embedded broker, discovered a port to bind of: {}.",
-                              port );
-            }
-            catch ( NumberFormatException e )
-            {
-                LOGGER.debug( "Failed to parse the port string into an integer port number.", e );
-            }
-        }
-
-        // No port pattern: either absent or could not be parsed from string
-        if ( port == -1 )
-        {
-            throw new CouldNotStartEmbeddedBrokerException( "Failed to identify a port number in the binding URL. "
-                                                            + "Check that the binding URL contains a port number. The "
-                                                            + "binding URL was: "
-                                                            + bindingUrl );
-        }
-
-        EmbeddedBroker returnMe = null;
-
-        try
-        {
-            returnMe = EmbeddedBroker.of( port );
-
-            // Attempt to bind, which may fail
-            returnMe.start();
-        }
-        catch ( CouldNotStartEmbeddedBrokerException e )
-        {
-            LOGGER.debug( "Unable to bind an embedded broker to the configured port of {}. Choosing another port, "
-                          + "which will be available from the broker instance after startup.",
-                          port );
-
-            // Close now
-            if ( Objects.nonNull( returnMe ) )
-            {
-                try
-                {
-                    returnMe.close();
-                }
-                catch ( IOException f )
-                {
-                    LOGGER.warn( "Unable to close an embedded broker instance.", f );
-                }
-            }
-
-            if ( !dynamicBindingAllowed )
-            {
-                throw new CouldNotStartEmbeddedBrokerException( "Could not bind an embedded amqp broker to port "
-                                                                + port
-                                                                + " on the loopback network interface. If this port is "
-                                                                + "already bound, change the configured port, "
-                                                                + "free the configured port, configure a dynamic port "
-                                                                + "using TCP reserved port 0 or request an "
-                                                                + "embedded broker with dynamic binding to override a "
-                                                                + "configured port that is already bound.",
-                                                                e );
-            }
-
-            returnMe = EmbeddedBroker.of();
-        }
-
-        return returnMe;
-    }
-
-    /**
      * Tests the connection with exponential back-off, up to the prescribed number of retries. If the properties 
      * contains a binding url that configures its own retries, then these retries will nest. Thus, to delegate retries 
      * to the broker (based on the declared burl), request zero retries in this context. 
@@ -730,14 +258,22 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
      * @param connectionUrl the connection url string
      * @param conFactory the connection factory
      * @param retries the number of retries
-     * @throws BrokerConnectionException if the connection finally fails after all retries
+     * @throws BrokerConnectionException if the connection fails, possibly after retries
      * @throws NullPointerException if any input is null
      */
 
-    private void testConnection( String connectionUrl, ConnectionFactory conFactory, int retries )
+    static void testConnection( Properties properties, int retries )
     {
-        Objects.requireNonNull( connectionUrl );
-        Objects.requireNonNull( conFactory );
+        Objects.requireNonNull( properties );
+
+        String connectionPropertyName = BrokerUtilities.getConnectionPropertyName( properties );
+        BrokerUtilities.testConnectionProperty( connectionPropertyName, properties );
+        String connectionUrl = properties.getProperty( connectionPropertyName );
+
+        Context localContext = BrokerConnectionFactory.getContextFromProperties( connectionUrl, properties );
+        ConnectionFactory connFactory = BrokerConnectionFactory.getConnectionFactory( connectionUrl,
+                                                                                      localContext,
+                                                                                      connectionPropertyName );
 
         LOGGER.debug( "Testing the broker connection with exponential back-off up to the maximum retry count of {}.",
                       retries );
@@ -763,7 +299,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
                                  retries );
                 }
 
-                connection = conFactory.createConnection();
+                connection = connFactory.createConnection();
 
                 // Success
                 break;
@@ -772,7 +308,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
             {
                 if ( i == retries )
                 {
-                    throw new BrokerConnectionException( "Unable to connect to the broker at "
+                    throw new BrokerConnectionException( UNABLE_TO_CONNECT_TO_THE_BROKER_AT
                                                          + connectionUrl
                                                          + " after "
                                                          + retries
@@ -785,7 +321,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
             {
                 Thread.currentThread().interrupt();
 
-                throw new BrokerConnectionException( "Unable to connect to the broker at "
+                throw new BrokerConnectionException( UNABLE_TO_CONNECT_TO_THE_BROKER_AT
                                                      + connectionUrl
                                                      + ".",
                                                      e );
@@ -813,8 +349,33 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
     }
 
     /**
-     * Creates a connection factory.
+     * Returns the context from the properties.
+     * @param connectionUrl the connection string to help with exception messaging
+     * @param properties the properties
+     * @return the context
+     */
+
+    private static Context getContextFromProperties( String connectionUrl, Properties properties )
+    {
+        Objects.requireNonNull( properties );
+
+        try
+        {
+            return new InitialContext( properties );
+        }
+        catch ( NamingException e )
+        {
+            throw new BrokerConnectionException( UNABLE_TO_CONNECT_TO_THE_BROKER_AT
+                                                 + connectionUrl
+                                                 + ".",
+                                                 e );
+        }
+    }
+
+    /**
+     * Gets a connection factory from the supplied context.
      * 
+     * @param connectionUrl the connection string
      * @param context the context
      * @param connectionPropertyName the connection property name
      * @return a connection factory
@@ -822,8 +383,9 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
      * @throws NullPointerException if any input is null
      */
 
-    private ConnectionFactory createConnectionFactory( Context context, String connectionPropertyName )
-            throws NamingException
+    private static ConnectionFactory getConnectionFactory( String connectionUrl,
+                                                           Context context,
+                                                           String connectionPropertyName )
     {
         Objects.requireNonNull( context );
         Objects.requireNonNull( connectionPropertyName );
@@ -832,26 +394,34 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
 
         LOGGER.debug( "Looking up a connection factory with name {}.", factoryName );
 
-        return (ConnectionFactory) context.lookup( factoryName );
+        try
+        {
+            return (ConnectionFactory) context.lookup( factoryName );
+        }
+        catch ( NamingException e )
+        {
+            throw new BrokerConnectionException( UNABLE_TO_CONNECT_TO_THE_BROKER_AT
+                                                 + connectionUrl
+                                                 + ".",
+                                                 e );
+        }
     }
 
     /**
      * Constructs a new instances and creates an embedded broker as necessary.
      * 
-     * @param dynamicBindingAllowed is true to bind any port, false to throw an exception if the requested port is bound
-     * @param jndiProperties the name of a jndi properties file on the classpath
+     * @param properties the broker connection properties, cannot be null
+     * @param maximumMessageRetries the maximum number of message retries
      * @throws CouldNotLoadBrokerConfigurationException if the broker configuration could not be found
-     * @throws CouldNotStartEmbeddedBrokerException if an embedded broker was requested and could not be started
-     * @throws NullPointerException if the jndiProperties is null
+     * @throws NullPointerException if the properties is null
      * @throws CouldNotLoadBrokerConfigurationException if the properties could not be read
      * @throws BrokerConnectionException if the broker was not reachable
      * @throws IllegalArgumentException if the maximumMessageRetries is less than zero
      */
 
-    private BrokerConnectionFactory( String jndiProperties, int maximumMessageRetries, boolean dynamicBindingAllowed )
+    private BrokerConnectionFactory( Properties properties,
+                                     int maximumMessageRetries )
     {
-        Objects.requireNonNull( jndiProperties );
-
         if ( maximumMessageRetries < 0 )
         {
             throw new IllegalArgumentException( "The maximum number of message retries must be greater than zero: "
@@ -860,87 +430,30 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
         }
 
         this.maximumMessageRetries = maximumMessageRetries;
-
-        Properties properties = new Properties();
-
-        // Load the jndi.properties
-        URL config = BrokerConnectionFactory.class.getClassLoader().getResource( jndiProperties );
-
-        if ( Objects.isNull( config ) )
-        {
-            throw new CouldNotLoadBrokerConfigurationException( "Could not find the " + jndiProperties
-                                                                + " file on the class path." );
-        }
-
         this.connectionPool = new ArrayList<>();
         this.connectionPoolLock = new Object();
 
-        // An embedded broker instance to close if the construction fails after the embedded broker is created
-        EmbeddedBroker brokerToClose = null;
-
         // The connection property name
-        String connectionPropertyName = null;
-
-        try ( InputStream stream = config.openStream() )
-        {
-            properties.load( stream );
-
-            LOGGER.debug( "Upon reading {}, discovered the following broker connection properties: {}",
-                          jndiProperties,
-                          properties );
-
-            // Find the connection property
-            connectionPropertyName = this.findConnectionPropertyName( properties );
-
-            // Adjust the connection property for any system property overrides, such as broker url and port
-            this.updateConnectionStringWithSystemPropertiesIfConfigured( connectionPropertyName, properties );
-
-            this.broker = this.createEmbeddedBrokerFromPropertiesIfRequired( connectionPropertyName,
-                                                                             properties,
-                                                                             dynamicBindingAllowed );
-            brokerToClose = this.broker;
-        }
-        catch ( IOException | NamingException e )
-        {
-            throw new CouldNotLoadBrokerConfigurationException( "Unable to load the expected broker configuration from "
-                                                                + "properties file "
-                                                                + jndiProperties
-                                                                + " on the application "
-                                                                + "classpath.",
-                                                                e );
-        }
-
-        // Start the embedded broker if one exists
-        // This may adjust the properties if the broker is bound to a dynamic port
-        if ( Objects.nonNull( this.broker ) )
-        {
-            this.broker.start();
-
-            // If the port was configured dynamically by the broker, override it here
-            this.updateConnectionStringWithDynamicPortIfConfigured( connectionPropertyName,
-                                                                    properties,
-                                                                    this.broker.getMessagingPort() );
-        }
+        String connectionPropertyName = BrokerUtilities.getConnectionPropertyName( properties );
 
         // Set any variables that depend on the (possibly adjusted) properties
         try
         {
             LOGGER.debug( "Creating a connection factory with these properties: {}.", properties );
 
-            this.context = new InitialContext( properties );
-            this.connectionFactory =
-                    this.createConnectionFactory( this.context, connectionPropertyName );
-
             // Test
             String connectionString = properties.getProperty( connectionPropertyName );
+            this.context = new InitialContext( properties );
+            this.connectionFactory = BrokerConnectionFactory.getConnectionFactory( connectionString,
+                                                                                   this.context,
+                                                                                   connectionPropertyName );
 
             LOGGER.debug( "Testing the connection property {} with corresponding connection string {}.",
                           connectionPropertyName,
                           connectionString );
 
-            this.testConnection( connectionString,
-                                 this.connectionFactory,
-                                 BrokerConnectionFactory.MAXIMUM_CONNECTION_RETRIES );
+            BrokerConnectionFactory.testConnection( properties,
+                                                    BrokerConnectionFactory.MAXIMUM_CONNECTION_RETRIES );
 
             LOGGER.info( "Created a broker connection factory {} with name {} and binding URL {}.",
                          this,
@@ -949,23 +462,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
         }
         catch ( NamingException e )
         {
-            if ( Objects.nonNull( brokerToClose ) )
-            {
-                try
-                {
-                    brokerToClose.close();
-                }
-                catch ( IOException f )
-                {
-                    LOGGER.warn( "Encountered an error while attempting to close an embedded broker.", f );
-                }
-            }
-
-            throw new CouldNotLoadBrokerConfigurationException( "Unable to load the expected broker configuration from "
-                                                                + "properties file "
-                                                                + jndiProperties
-                                                                + " on the application "
-                                                                + "classpath.",
+            throw new CouldNotLoadBrokerConfigurationException( "Unable to load the expected broker configuration.",
                                                                 e );
         }
     }

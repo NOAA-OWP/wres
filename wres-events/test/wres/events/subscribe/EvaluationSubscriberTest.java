@@ -9,6 +9,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
@@ -23,6 +25,8 @@ import org.junit.jupiter.api.Test;
 import wres.events.publish.MessagePublisher;
 import wres.events.publish.MessagePublisher.MessageProperty;
 import wres.eventsbroker.BrokerConnectionFactory;
+import wres.eventsbroker.BrokerUtilities;
+import wres.eventsbroker.embedded.EmbeddedBroker;
 import wres.statistics.generated.Consumer;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.Statistics;
@@ -31,9 +35,14 @@ import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 
 class EvaluationSubscriberTest
 {
+    /**
+     * Embedded broker.
+     */
+
+    private static EmbeddedBroker broker = null;
 
     /**
-     * Connection factory.
+     * Broker connection factory.
      */
 
     private static BrokerConnectionFactory connections = null;
@@ -41,7 +50,13 @@ class EvaluationSubscriberTest
     @BeforeAll
     static void runBeforeAllTests()
     {
-        EvaluationSubscriberTest.connections = BrokerConnectionFactory.of( true, 2 );
+        // Create and start and embedded broker
+        Properties properties = BrokerUtilities.getBrokerConnectionProperties( "eventbroker.properties" );
+        EvaluationSubscriberTest.broker = EmbeddedBroker.of( properties, true );
+        EvaluationSubscriberTest.broker.start();
+
+        // Create a connection factory to supply broker connections
+        EvaluationSubscriberTest.connections = BrokerConnectionFactory.of( properties, 2 );
     }
 
     @Test
@@ -187,7 +202,7 @@ class EvaluationSubscriberTest
 
             // Publish an evaluation message
             evalPublisher.publish( evalBytes, Collections.unmodifiableMap( properties ) );
-            
+
             // Publish a statistics message
             statsPublisher.publish( statsBytes, Collections.unmodifiableMap( properties ) );
 
@@ -217,11 +232,18 @@ class EvaluationSubscriberTest
         assertEquals( 1, status.getEvaluationCompletedCount() );
     }
 
-
     @AfterAll
     static void runAfterAllTests() throws IOException
     {
-        EvaluationSubscriberTest.connections.close();
+        if ( Objects.nonNull( EvaluationSubscriberTest.connections ) )
+        {
+            EvaluationSubscriberTest.connections.close();
+        }
+
+        if ( Objects.nonNull( EvaluationSubscriberTest.broker ) )
+        {
+            EvaluationSubscriberTest.broker.close();
+        }
     }
 
 }

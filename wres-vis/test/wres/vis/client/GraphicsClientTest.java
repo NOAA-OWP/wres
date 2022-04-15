@@ -8,12 +8,13 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Set;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
@@ -24,6 +25,8 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.events.Evaluation;
 import wres.eventsbroker.BrokerConnectionFactory;
+import wres.eventsbroker.BrokerUtilities;
+import wres.eventsbroker.embedded.EmbeddedBroker;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
@@ -45,8 +48,24 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.Co
  * @author James Brown
  */
 
-public class GraphicsClientTest
+class GraphicsClientTest
 {
+    /**
+     * Embedded broker.
+     */
+
+    private static EmbeddedBroker broker = null;
+
+    /**
+     * Broker connection factory.
+     */
+
+    private static BrokerConnectionFactory connections = null;
+
+    /**
+     * A re-used string.
+     */
+
     private static final String CMS = "CMS";
 
     /**
@@ -62,25 +81,25 @@ public class GraphicsClientTest
     private Statistics oneStatistics;
 
     /**
-     * Connection factory.
-     */
-
-    private static BrokerConnectionFactory connections = null;
-
-    /**
      * Path to write.
      */
 
     private Path outputPath;
 
-    @BeforeClass
-    public static void runBeforeAllTests()
+    @BeforeAll
+    static void runBeforeAllTests()
     {
-        GraphicsClientTest.connections = BrokerConnectionFactory.of();
+        // Create and start and embedded broker
+        Properties properties = BrokerUtilities.getBrokerConnectionProperties( "eventbroker.properties" );
+        GraphicsClientTest.broker = EmbeddedBroker.of( properties, true );
+        GraphicsClientTest.broker.start();
+
+        // Create a connection factory to supply broker connections
+        GraphicsClientTest.connections = BrokerConnectionFactory.of( properties, 2 );
     }
 
-    @Before
-    public void runBeforeEachTest()
+    @BeforeEach
+    void runBeforeEachTest()
     {
         Outputs outputs = Outputs.newBuilder()
                                  .setPng( PngFormat.getDefaultInstance() )
@@ -100,7 +119,7 @@ public class GraphicsClientTest
     }
 
     @Test
-    public void publishAndConsumeOneEvaluationWithAnExternalGraphicsSubscriber()
+    void publishAndConsumeOneEvaluationWithAnExternalGraphicsSubscriber()
             throws IOException, InterruptedException
     {
         // Create the consumers upfront
@@ -240,12 +259,17 @@ public class GraphicsClientTest
                          .build();
     }
 
-    @AfterClass
-    public static void runAfterAllTests() throws IOException
+    @AfterAll
+    static void runAfterAllTests() throws IOException
     {
         if ( Objects.nonNull( GraphicsClientTest.connections ) )
         {
             GraphicsClientTest.connections.close();
+        }
+
+        if ( Objects.nonNull( GraphicsClientTest.broker ) )
+        {
+            GraphicsClientTest.broker.close();
         }
     }
 

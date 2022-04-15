@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -28,6 +29,8 @@ import org.slf4j.LoggerFactory;
 import wres.ExecutionResult;
 import wres.pipeline.Evaluator;
 import wres.eventsbroker.BrokerConnectionFactory;
+import wres.eventsbroker.BrokerUtilities;
+import wres.eventsbroker.embedded.EmbeddedBroker;
 import wres.io.concurrency.Executor;
 import wres.io.utilities.Database;
 import wres.system.SystemSettings;
@@ -91,7 +94,11 @@ public class ScenarioHelper
         String args[] = { config.toString() };
         Set<Path> paths = Collections.emptySet();
 
-        try ( BrokerConnectionFactory brokerConnectionFactory = BrokerConnectionFactory.of( false ) )
+        // Create the broker connections for statistics messaging
+        Properties brokerProperties =
+                BrokerUtilities.getBrokerConnectionProperties( BrokerConnectionFactory.DEFAULT_PROPERTIES );
+
+        try ( BrokerConnectionFactory brokerConnectionFactory = BrokerConnectionFactory.of( brokerProperties ) )
         {
             Evaluator wresEvaluation = new Evaluator( SYSTEM_SETTINGS,
                                                       DATABASE,

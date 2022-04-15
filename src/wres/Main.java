@@ -5,6 +5,7 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -13,8 +14,10 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import wres.eventsbroker.BrokerConnectionFactory;
-import wres.eventsbroker.embedded.CouldNotLoadBrokerConfigurationException;
+import wres.eventsbroker.BrokerUtilities;
+import wres.eventsbroker.CouldNotLoadBrokerConfigurationException;
 import wres.eventsbroker.embedded.CouldNotStartEmbeddedBrokerException;
+import wres.eventsbroker.embedded.EmbeddedBroker;
 import wres.io.concurrency.Executor;
 import wres.io.utilities.Database;
 import wres.pipeline.InternalWresException;
@@ -103,7 +106,18 @@ public class Main {
 
         ExecutionResult result = null;
 
-        try( BrokerConnectionFactory brokerConnectionFactory = BrokerConnectionFactory.of( false ) )
+        // Create the broker connections for statistics messaging
+        Properties brokerConnectionProperties =
+                BrokerUtilities.getBrokerConnectionProperties( BrokerConnectionFactory.DEFAULT_PROPERTIES );
+        
+        // Create an embedded broker for statistics messages, if needed
+        EmbeddedBroker broker = null;
+        if( BrokerUtilities.isEmbeddedBrokerRequired( brokerConnectionProperties ) )
+        {
+            broker = EmbeddedBroker.of( brokerConnectionProperties, false );
+        }
+
+        try( BrokerConnectionFactory brokerConnectionFactory = BrokerConnectionFactory.of( brokerConnectionProperties ) )
         {
             MainFunctions.SharedResources sharedResources =
                     new MainFunctions.SharedResources( systemSettings,
@@ -142,7 +156,7 @@ public class Main {
         {
             LOGGER.warn( "Failed to create the broker connections.", e );
         }
-        catch ( IOException  e )
+        catch ( IOException e )
         {
             LOGGER.warn( "Failed to destroy the broker connections.", e );
         }
@@ -157,11 +171,23 @@ public class Main {
             {
                 MainFunctions.forceShutdown( database, executor, 6, TimeUnit.SECONDS );
             }
+
+            if ( Objects.nonNull( broker ) )
+            {
+                try
+                {
+                    broker.close();
+                }
+                catch ( IOException e )
+                {
+                    LOGGER.warn( "Failed to destroy the embedded broker used for statistics messaging.", e );
+                }
+            }
         }
 
         Main.printLogFileInformation();
 
-        if ( result.failed() )
+        if ( Objects.nonNull( result ) && result.failed() )
         {
             if ( result.getException() instanceof UserInputException )
             {

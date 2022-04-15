@@ -1,9 +1,9 @@
-package wres.eventsbroker.embedded;
+package wres.eventsbroker;
 
 /**
  * A runtime exception indicating a failure to load the configuration needed to connect to a broker.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class CouldNotLoadBrokerConfigurationException extends RuntimeException

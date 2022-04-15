@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Objects;
+import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import jakarta.ws.rs.Consumes;
@@ -24,6 +26,8 @@ import org.slf4j.LoggerFactory;
 import wres.ExecutionResult;
 import wres.config.ProjectConfigPlus;
 import wres.eventsbroker.BrokerConnectionFactory;
+import wres.eventsbroker.BrokerUtilities;
+import wres.eventsbroker.embedded.EmbeddedBroker;
 import wres.io.concurrency.Executor;
 import wres.io.utilities.Database;
 import wres.pipeline.Evaluator;
@@ -64,13 +68,28 @@ public class ProjectService
     {
         long projectId;
 
-        // TODO: abstract out the connection factory, really only need one per ProjectService
-        try( BrokerConnectionFactory broker = BrokerConnectionFactory.of( false ) )
+        // TODO: the embedded broker and broker connections for statistics messaging should be one per service instance,
+        // not one per evaluation, but this class does not currently provide a hook for closing its resources, so 
+        // creating them and destroying them here for now.
+        
+        // Create the broker connections for statistics messaging
+        Properties brokerConnectionProperties =
+                BrokerUtilities.getBrokerConnectionProperties( BrokerConnectionFactory.DEFAULT_PROPERTIES );
+        
+        // Create an embedded broker for statistics messages, if needed
+        EmbeddedBroker broker = null;
+        if( BrokerUtilities.isEmbeddedBrokerRequired( brokerConnectionProperties ) )
+        {
+            broker = EmbeddedBroker.of( brokerConnectionProperties, false );
+        }
+        
+        // TODO: abstract out the connection factory, only need one per ProjectService
+        try( BrokerConnectionFactory brokerConnections = BrokerConnectionFactory.of( brokerConnectionProperties ) )
         {
             Evaluator evaluator = new Evaluator( ProjectService.SYSTEM_SETTINGS,
                                                  ProjectService.DATABASE,
                                                  ProjectService.EXECUTOR,
-                                                 broker );
+                                                 brokerConnections );
                     
             ProjectConfigPlus projectPlus =
                     ProjectConfigPlus.from( rawProjectConfig,
@@ -108,6 +127,20 @@ public class ProjectService
                                    "WRES experienced an unexpected internal issue. The top-level exception was: "
                                    + e.getMessage() )
                            .build();
+        }
+        finally
+        {
+            if( Objects.nonNull( broker ) )
+            {
+                try
+                {
+                    broker.close();
+                }
+                catch ( IOException e )
+                {
+                    LOGGER.warn( "Failed to destroy the embedded broker used for statistics messaging.", e );
+                }
+            }
         }
 
         return Response.ok( "I received project " + projectId
