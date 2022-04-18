@@ -26,11 +26,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import wres.events.broker.BrokerConnectionFactory;
+import wres.events.broker.BrokerUtilities;
 import wres.events.subscribe.ConsumerException;
 import wres.events.subscribe.ConsumerFactory;
 import wres.events.subscribe.EvaluationSubscriber;
-import wres.eventsbroker.BrokerConnectionFactory;
-import wres.eventsbroker.BrokerUtilities;
 import wres.eventsbroker.embedded.EmbeddedBroker;
 import wres.statistics.generated.Consumer;
 import wres.statistics.generated.Consumer.Format;

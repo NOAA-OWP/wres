@@ -19,11 +19,10 @@ import ucar.nc2.dataset.NetcdfDatasets;
 import ucar.nc2.dt.GridCoordSystem;
 import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
-
 import wres.config.ProjectConfigPlus;
 import wres.config.Validation;
 import wres.config.generated.ProjectConfig;
-import wres.eventsbroker.BrokerConnectionFactory;
+import wres.events.broker.BrokerConnectionFactory;
 import wres.io.Operations;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;

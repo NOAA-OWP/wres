@@ -22,10 +22,10 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import wres.events.broker.BrokerConnectionFactory;
+import wres.events.broker.BrokerUtilities;
 import wres.events.publish.MessagePublisher;
 import wres.events.publish.MessagePublisher.MessageProperty;
-import wres.eventsbroker.BrokerConnectionFactory;
-import wres.eventsbroker.BrokerUtilities;
 import wres.eventsbroker.embedded.EmbeddedBroker;
 import wres.statistics.generated.Consumer;
 import wres.statistics.generated.EvaluationStatus;

@@ -13,9 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import wres.eventsbroker.BrokerConnectionFactory;
-import wres.eventsbroker.BrokerUtilities;
-import wres.eventsbroker.CouldNotLoadBrokerConfigurationException;
+import wres.events.broker.BrokerConnectionFactory;
+import wres.events.broker.BrokerUtilities;
+import wres.events.broker.CouldNotLoadBrokerConfigurationException;
 import wres.eventsbroker.embedded.CouldNotStartEmbeddedBrokerException;
 import wres.eventsbroker.embedded.EmbeddedBroker;
 import wres.io.concurrency.Executor;

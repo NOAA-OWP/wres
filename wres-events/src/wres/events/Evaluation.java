@@ -29,10 +29,10 @@ import org.slf4j.LoggerFactory;
 import com.google.protobuf.Timestamp;
 
 import net.jcip.annotations.ThreadSafe;
+import wres.events.broker.BrokerConnectionFactory;
 import wres.events.publish.MessagePublisher;
 import wres.events.publish.MessagePublisher.MessageProperty;
 import wres.events.subscribe.SubscriberApprover;
-import wres.eventsbroker.BrokerConnectionFactory;
 import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.EvaluationStatus;

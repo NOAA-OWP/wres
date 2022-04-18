@@ -29,8 +29,8 @@ import org.slf4j.LoggerFactory;
 
 import wres.ExecutionResult;
 import wres.pipeline.Evaluator;
-import wres.eventsbroker.BrokerConnectionFactory;
-import wres.eventsbroker.BrokerUtilities;
+import wres.events.broker.BrokerConnectionFactory;
+import wres.events.broker.BrokerUtilities;
 import wres.eventsbroker.embedded.EmbeddedBroker;
 import wres.io.concurrency.Executor;
 import wres.io.utilities.Database;
