@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.events.EvaluationEventException;
 import wres.events.EvaluationEventUtilities;
-import wres.eventsbroker.BrokerConnectionFactory;
+import wres.events.broker.BrokerConnectionFactory;
 
 /**
  * Publishes messages to a destination that is supplied on construction. There is one {@link Connection} per instance 

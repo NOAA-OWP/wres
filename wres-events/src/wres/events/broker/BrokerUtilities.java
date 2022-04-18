@@ -1,4 +1,4 @@
-package wres.eventsbroker;
+package wres.events.broker;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -223,7 +223,7 @@ public class BrokerUtilities
      * @throws IllegalArgumentException if the name cannot be found
      */
 
-    public static void testConnectionProperty( String connectionPropertyName, Properties properties )
+    static void testConnectionProperty( String connectionPropertyName, Properties properties )
     {
         Objects.requireNonNull( connectionPropertyName );
         Objects.requireNonNull( properties );

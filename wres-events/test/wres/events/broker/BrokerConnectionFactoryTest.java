@@ -1,7 +1,7 @@
-package wres.eventsbroker;
+package wres.events.broker;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -18,7 +18,7 @@ import javax.jms.TextMessage;
 import javax.jms.Topic;
 import javax.naming.NamingException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,13 +30,13 @@ import wres.eventsbroker.embedded.EmbeddedBroker;
  * @author James Brown
  */
 
-public class BrokerConnectionFactoryTest
+class BrokerConnectionFactoryTest
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( BrokerConnectionFactoryTest.class );
 
     @Test
-    public void testMessageRouting() throws IOException, NamingException, JMSException, InterruptedException
+    void testMessageRouting() throws IOException, NamingException, JMSException, InterruptedException
     {
         Properties properties = BrokerUtilities.getBrokerConnectionProperties( "eventbroker.properties" );
         

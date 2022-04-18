@@ -30,9 +30,9 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import wres.events.broker.BrokerConnectionFactory;
+import wres.events.broker.BrokerUtilities;
 import wres.events.publish.MessagePublisher.MessageProperty;
-import wres.eventsbroker.BrokerConnectionFactory;
-import wres.eventsbroker.BrokerUtilities;
 import wres.eventsbroker.embedded.EmbeddedBroker;
 
 /**

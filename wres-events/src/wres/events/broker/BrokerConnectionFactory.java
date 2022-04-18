@@ -1,4 +1,4 @@
-package wres.eventsbroker;
+package wres.events.broker;
 
 import java.io.Closeable;
 import java.io.IOException;

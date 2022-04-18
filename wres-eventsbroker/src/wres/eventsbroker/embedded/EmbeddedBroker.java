@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -15,8 +16,6 @@ import org.apache.activemq.artemis.core.config.Configuration;
 import org.apache.activemq.artemis.core.config.impl.ConfigurationImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import wres.eventsbroker.BrokerUtilities;
 
 /**
  * An embedded broker for publishing and subscribing to evaluation messages.
@@ -82,8 +81,16 @@ public class EmbeddedBroker implements Closeable
                                      boolean dynamicBindingAllowed )
     {
         Objects.requireNonNull( properties );
-        String connectionPropertyName = BrokerUtilities.getConnectionPropertyName( properties );
-        BrokerUtilities.testConnectionProperty( connectionPropertyName, properties );
+        String connectionPropertyName = EmbeddedBroker.getConnectionPropertyName( properties );
+
+        if ( !properties.containsKey( connectionPropertyName ) )
+        {
+            throw new IllegalArgumentException( "Could not locate a connection property '"
+                                                + connectionPropertyName
+                                                + "' in the map of properties: "
+                                                + properties
+                                                + "." );
+        }
 
         String bindingUrl = properties.getProperty( connectionPropertyName );
 
@@ -267,6 +274,44 @@ public class EmbeddedBroker implements Closeable
         {
             return socket.getLocalPort();
         }
+    }
+    
+    /**
+     * Returns the connection property name from the map of properties.
+     * 
+     * @param properties the properties
+     * @return the connection property name or null if none could be found
+     * @throws NullPointerException if the properties is null
+     */
+
+    private static String getConnectionPropertyName( Properties properties )
+    {
+        Objects.requireNonNull( properties );
+
+        for ( Entry<Object, Object> nextEntry : properties.entrySet() )
+        {
+            Object key = nextEntry.getKey();
+
+            if ( Objects.nonNull( key ) && key.toString().contains( "connectionFactory" ) )
+            {
+                String name = key.toString();
+
+                if ( LOGGER.isDebugEnabled() )
+                {
+                    LOGGER.debug( "Discovered a connection property name of {} with value {} among the broker "
+                                  + "connection properties.",
+                                  name,
+                                  properties.get( key ) );
+                }
+
+                return name;
+            }
+        }
+
+        LOGGER.warn( "Unable to locate a connection property name among the properties: {}.", properties );
+
+        // None found
+        return null;
     }
 
     /**

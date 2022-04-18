@@ -1,9 +1,9 @@
-package wres.eventsbroker;
+package wres.events.broker;
 
 /**
  * A runtime exception indicating a failure to load connect to a broker.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class BrokerConnectionException extends RuntimeException

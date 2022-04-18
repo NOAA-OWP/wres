@@ -27,12 +27,12 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import wres.events.EvaluationEventUtilities;
+import wres.events.broker.BrokerConnectionFactory;
+import wres.events.broker.BrokerUtilities;
 import wres.events.subscribe.ConsumerFactory;
 import wres.events.subscribe.EvaluationSubscriber;
 import wres.events.subscribe.SubscriberStatus;
 import wres.events.subscribe.UnrecoverableSubscriberException;
-import wres.eventsbroker.BrokerConnectionFactory;
-import wres.eventsbroker.BrokerUtilities;
 import wres.eventsbroker.embedded.EmbeddedBroker;
 
 /**
