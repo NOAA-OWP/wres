@@ -148,16 +148,16 @@ public class BrokerUtilities
         String startBroker = System.getProperty( "wres.startBroker" );
         if ( "true".equalsIgnoreCase( startBroker ) )
         {
-            LOGGER.info( "Discovered the WRES system property wres.startBroker=true. Starting an embedded broker "
-                         + "at the binding URL {}...",
+            LOGGER.info( "Discovered the WRES system property wres.startBroker=true, indicating that an embedded "
+                         + "broker should be created and bound to {}...",
                          url );
 
             return true;
         }
         else if ( "false".equalsIgnoreCase( startBroker ) )
         {
-            LOGGER.warn( "Discovered the WRES system property wres.startBroker=false, so the evaluation will fail if "
-                         + "no active broker is discovered at the binding URL (after exhausting any failover options).",
+            LOGGER.warn( "Discovered the WRES system property wres.startBroker=false. The evaluation will fail if no "
+                         + "active broker is discovered at the binding URL (after exhausting any failover options).",
                          url );
 
             return false;
@@ -176,9 +176,9 @@ public class BrokerUtilities
             // Does the url contain the tcp reserved port 0, i.e. dynamic binding required?
             if ( url.contains( LOCALHOST_0 ) || url.contains( LOCALHOST_127_0_0_1_0 ) )
             {
-                LOGGER.info( "Discovered a binding URL of {}, which includes the reserved TCP port of 0. Starting an "
-                             + "embedded broker at this URL and allowing the broker to assign a port dynamically. The "
-                             + "assigned port will be identified after the embedded broker has launched successfully.",
+                LOGGER.info( "Discovered a binding URL of {}, which includes the reserved TCP port of 0. An "
+                             + "embedded broker will be created at this URL and the broker allowed to assign a port "
+                             + "dynamically.",
                              url );
 
                 returnMe = true;
@@ -194,17 +194,18 @@ public class BrokerUtilities
                 {
                     LOGGER.warn( "Probing for an active AMQP broker at the binding URL {}. This may take some time if "
                                  + "no active broker exists and retries are configured. If no active broker is "
-                                 + "discovered, an embedded broker will be started.",
+                                 + "discovered, an embedded broker will be required.",
                                  url );
 
                     BrokerConnectionFactory.testConnection( properties, 0 );
 
                     LOGGER.info( "Discovered an active AMQP broker at {}", url );
+                    
+                    returnMe = false;
                 }
                 catch ( BrokerConnectionException e )
                 {
-                    LOGGER.info( "Could not connect to an active AMQP broker at {}. Starting an embedded broker "
-                                 + "instead.",
+                    LOGGER.info( "Could not connect to an active AMQP broker at {}. An embedded broker is required.",
                                  url );
 
                     returnMe = true;

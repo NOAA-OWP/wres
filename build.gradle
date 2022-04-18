@@ -1367,8 +1367,16 @@ project(':wres-eventsbroker')
         // Qpid AMQP 1.0 JMS 2.0 client to test interaction with the embedded broker
         testImplementation group: 'org.apache.qpid', name: 'qpid-jms-client', version: '1.6.0'
 
-        testImplementation 'junit:junit:4.13.2'
+        // JUnit 5 API and runtime
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
     }
+
+    // Facilitate unit tests with JUnit
+    test {
+        useJUnitPlatform()
+    }
+
 }
 
 project(':wres-events')
