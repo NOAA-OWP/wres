@@ -7,6 +7,7 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -58,6 +59,13 @@ public class EmbeddedBroker implements Closeable
      */
 
     private final int port;
+
+    /**
+     * An exception encountered on starting the broker that is not fatal as judged by Artemis, but is fatal as judged
+     * by this application. See: https://www.mail-archive.com/issues@activemq.apache.org/msg50741.html
+     */
+
+    private final AtomicReference<Exception> exceptionOnStartup;
 
     /**
      * <p>Attempts to create an embedded broker in two stages:
@@ -145,9 +153,7 @@ public class EmbeddedBroker implements Closeable
         }
         catch ( CouldNotStartEmbeddedBrokerException e )
         {
-            LOGGER.debug( "Unable to bind an embedded broker to the configured port of {}. Choosing another port, "
-                          + "which will be available from the broker instance after startup.",
-                          port );
+            LOGGER.debug( "Unable to bind an embedded broker to the configured port of {}.", port );
 
             // Close now
             if ( Objects.nonNull( returnMe ) )
@@ -176,6 +182,11 @@ public class EmbeddedBroker implements Closeable
             }
 
             returnMe = EmbeddedBroker.of( 0 );
+
+            LOGGER.info( "Unable to bind an embedded broker to the configured port of {}. Since dynamic binding was "
+                         + "allowed, the broker chose another port, which is {}.",
+                         port,
+                         returnMe.getMessagingPort() );
         }
 
         // Update the properties with any automatically selected port
@@ -196,17 +207,27 @@ public class EmbeddedBroker implements Closeable
     {
         if ( !this.isStarted.get() )
         {
-
             LOGGER.debug( "Starting embedded broker." );
+
+            // Record any non-fatal start-up exception identified by the callback that is considered fatal here
+            Exception startupException = null;
 
             try
             {
                 this.broker.start();
+                startupException = this.exceptionOnStartup.get();
             }
             // Yuck
             catch ( Exception e )
             {
                 throw new CouldNotStartEmbeddedBrokerException( "Failed to start an embedded broker.", e );
+            }
+
+            // Exception on callback?
+            if ( Objects.nonNull( startupException ) )
+            {
+                throw new CouldNotStartEmbeddedBrokerException( "Failed to start an embedded broker.",
+                                                                this.exceptionOnStartup.get() );
             }
 
             if ( LOGGER.isInfoEnabled() )
@@ -275,7 +296,7 @@ public class EmbeddedBroker implements Closeable
             return socket.getLocalPort();
         }
     }
-    
+
     /**
      * Returns the connection property name from the map of properties.
      * 
@@ -324,8 +345,8 @@ public class EmbeddedBroker implements Closeable
     private static EmbeddedBroker of( int port )
     {
         return new EmbeddedBroker( port );
-    }    
-    
+    }
+
     /**
      * If the connection string contains a different port than the port actually used, then update the port inline to 
      * the properties map with the relevant AMQP port from the list of broker ports for which bindings were found. 
@@ -361,8 +382,8 @@ public class EmbeddedBroker implements Closeable
                       propertyValue,
                       connectionPropertyName,
                       updated );
-    }    
-    
+    }
+
     /**
      * Hidden constructor.
      * 
@@ -409,6 +430,10 @@ public class EmbeddedBroker implements Closeable
 
             this.broker = ActiveMQServers.newActiveMQServer( configuration );
             this.port = finalPort;
+
+            // Register any exception on start-up that is considered fatal by this application 
+            this.exceptionOnStartup = new AtomicReference<>();
+            this.broker.registerActivationFailureListener( this.exceptionOnStartup::set );
         }
         // Yuck
         catch ( Exception e )

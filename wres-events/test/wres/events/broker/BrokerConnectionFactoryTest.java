@@ -32,7 +32,6 @@ import wres.eventsbroker.embedded.EmbeddedBroker;
 
 class BrokerConnectionFactoryTest
 {
-
     private static final Logger LOGGER = LoggerFactory.getLogger( BrokerConnectionFactoryTest.class );
 
     @Test
