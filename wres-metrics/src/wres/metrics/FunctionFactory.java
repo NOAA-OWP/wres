@@ -80,13 +80,13 @@ public class FunctionFactory
 
     /**
      * <p>
-     * Return a function that computes a skill score from two elementary scores:
+     * Return a function that computes a skill score from two elementary scores whose perfect score is zero:
      * </p>
      * <p>
      * <code>(a,b) -&gt; 1.0 - (a / b)</code>
      * </p>
      * 
-     * @return a function that computes the skill
+     * @return a function that computes the skill for scores whose perfect value is 0
      */
 
     public static DoubleBinaryOperator skill()

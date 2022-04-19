@@ -57,7 +57,7 @@ plugins
     id 'org.owasp.dependencycheck' version '7.0.4.1'
     
     // Task to assist in downloading artifacts
-    id "de.undercouch.download" version "5.0.4"
+    id "de.undercouch.download" version "5.0.5"
 
     // To discover library versions with updates available
     id 'com.github.ben-manes.versions' version '0.42.0'
@@ -285,7 +285,7 @@ project(':wres-system')
         implementation 'org.apache.commons:commons-lang3:3.12.0'
 
         // to use native postgres copy, need this on compile, otherwise runtime
-        implementation( 'org.postgresql:postgresql:42.3.3' )
+        implementation( 'org.postgresql:postgresql:42.3.4' )
         {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
@@ -407,7 +407,7 @@ project(':wres-io')
         implementation 'org.apache.commons:commons-compress:1.21'
 
         // to use native postgres copy, need this on compile, otherwise runtime
-        implementation( 'org.postgresql:postgresql:42.3.3' )
+        implementation( 'org.postgresql:postgresql:42.3.4' )
         {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
@@ -429,7 +429,7 @@ project(':wres-io')
         implementation 'com.squareup.okhttp3:okhttp:4.10.0-RC1'
 
         // Update vulnerable kotlin-stdlib that okhttp/okio uses
-        implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.6.20-RC'
+        implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.6.20'
 
         // To accurately detect mime types of files.
         implementation 'org.apache.tika:tika-core:1.27'
