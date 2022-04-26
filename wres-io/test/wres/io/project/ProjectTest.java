@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.TimeZone;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -170,11 +171,12 @@ class ProjectTest
         Set<FeatureGroup> expected = Set.of( firstGroup, secondGroup, overallGroup );
 
         // Add some assertions to help diagnose #103804
-        assertEquals( 3, actual.size() );
-        assertTrue( actual.contains( firstGroup ) );
-        assertTrue( actual.contains( secondGroup ) );
-        assertTrue( actual.contains( overallGroup ) );
-        
+        Assertions.assertAll(
+                              () -> assertEquals( 3, actual.size() ),
+                              () -> assertTrue( actual.contains( firstGroup ) ),
+                              () -> assertTrue( actual.contains( secondGroup ) ),
+                              () -> assertTrue( actual.contains( overallGroup ) ) );
+
         assertEquals( expected, actual );
     }
 
