@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
+import wres.config.generated.EnsembleAverageType;
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
@@ -103,7 +104,7 @@ public class ProjectConfigsTest
                                                                      null ),
                                                null ),
                                    null,
-                                   Arrays.asList( new MetricsConfig( null, 0, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( null, 0, metrics, null, EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    "MockOne" );
@@ -123,7 +124,7 @@ public class ProjectConfigsTest
                                                                      null ),
                                                null ),
                                    null,
-                                   Arrays.asList( new MetricsConfig( null, 0, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( null, 0, metrics, null, EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    "MockOne" );
@@ -143,7 +144,7 @@ public class ProjectConfigsTest
                                                                      null ),
                                                null ),
                                    null,
-                                   Arrays.asList( new MetricsConfig( null, 0, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( null, 0, metrics, null, EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    "MockThree" );

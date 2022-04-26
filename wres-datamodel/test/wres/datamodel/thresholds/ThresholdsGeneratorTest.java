@@ -16,6 +16,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.EnsembleAverageType;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
@@ -70,7 +71,11 @@ public final class ThresholdsGeneratorTest
         this.defaultMockedConfig =
                 new ProjectConfig( null,
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( thresholds,
+                                                                     0,
+                                                                     metrics,
+                                                                     null,
+                                                                     EnsembleAverageType.MEAN ) ),
                                    new Outputs( Arrays.asList( new DestinationConfig( OutputTypeSelection.THRESHOLD_LEAD,
                                                                                       null,
                                                                                       null,
@@ -95,17 +100,17 @@ public final class ThresholdsGeneratorTest
         Set<OneOrTwoThresholds> atomicThresholds = new HashSet<>();
 
         atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                   Operator.GREATER,
-                                                                   ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT ) ) );
+                                                                        Operator.GREATER,
+                                                                        ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT ) ) );
         atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
-                                                                                       Operator.GREATER,
-                                                                                       ThresholdConstants.ThresholdDataType.LEFT ) ) );
+                                                                                            Operator.GREATER,
+                                                                                            ThresholdConstants.ThresholdDataType.LEFT ) ) );
         atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.2 ),
-                                                                                       Operator.GREATER,
-                                                                                       ThresholdConstants.ThresholdDataType.LEFT ) ) );
+                                                                                            Operator.GREATER,
+                                                                                            ThresholdConstants.ThresholdDataType.LEFT ) ) );
         atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
-                                                                                       Operator.GREATER,
-                                                                                       ThresholdConstants.ThresholdDataType.LEFT ) ) );
+                                                                                            Operator.GREATER,
+                                                                                            ThresholdConstants.ThresholdDataType.LEFT ) ) );
 
         expected.put( MetricConstants.BIAS_FRACTION, atomicThresholds );
         expected.put( MetricConstants.PEARSON_CORRELATION_COEFFICIENT, atomicThresholds );
@@ -147,7 +152,11 @@ public final class ThresholdsGeneratorTest
                                                    null,
                                                    null,
                                                    null ),
-                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( thresholds,
+                                                                     0,
+                                                                     metrics,
+                                                                     null,
+                                                                     EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    null );
@@ -188,7 +197,11 @@ public final class ThresholdsGeneratorTest
                                                    null,
                                                    null,
                                                    null ),
-                                   Arrays.asList( new MetricsConfig( null, 0, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( null,
+                                                                     0,
+                                                                     metrics,
+                                                                     null,
+                                                                     EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    null );
@@ -204,8 +217,8 @@ public final class ThresholdsGeneratorTest
         Set<OneOrTwoThresholds> atomicExpected = new HashSet<>();
 
         atomicExpected.add( OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                 Operator.GREATER,
-                                                                 ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT ) ) );
+                                                                      Operator.GREATER,
+                                                                      ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT ) ) );
         expected.put( MetricConstants.BIAS_FRACTION, atomicExpected );
 
         assertEquals( expected, actual );

@@ -30,7 +30,6 @@ import wres.datamodel.VectorOfDoubles;
 @Immutable
 public class Pool<T> implements Supplier<List<T>>
 {
-
     /**
      * Logger.
      */

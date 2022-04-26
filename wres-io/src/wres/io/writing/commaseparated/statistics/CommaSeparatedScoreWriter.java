@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
@@ -36,13 +37,14 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
+import wres.statistics.generated.Pool.EnsembleAverageType;
 
 /**
  * Helps write scores comprising {@link ScoreStatistic} to a file of Comma Separated Values (CSV).
  * 
  * @param <S>  the score component type
  * @param <T> the score type
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  * @deprecated since v5.8. Use the {@link CsvStatisticsWriter} instead.
  */
 
@@ -51,7 +53,6 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
         extends CommaSeparatedStatisticsWriter
         implements Function<List<T>, Set<Path>>
 {
-
     private static final Logger LOGGER = LoggerFactory.getLogger( CommaSeparatedScoreWriter.class );
 
     /**
@@ -159,7 +160,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
     private static <S extends ScoreComponent<?>, T extends ScoreStatistic<?, S>> Set<Path>
             writeOneScoreOutputType( Path outputDirectory,
                                      DestinationConfig destinationConfig,
-                                     List<T> output,
+                                     List<T> statistics,
                                      ChronoUnit durationUnits,
                                      Function<S, String> mapper )
                     throws IOException
@@ -167,33 +168,13 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
         Set<Path> pathsWrittenTo = new HashSet<>( 1 );
 
         // Loop across metrics
-        SortedSet<MetricConstants> metrics = Slicer.discover( output, T::getMetricName );
+        SortedSet<MetricConstants> metrics = Slicer.discover( statistics, T::getMetricName );
         for ( MetricConstants m : metrics )
         {
-            List<T> nextMetric = Slicer.filter( output, m );
+            List<T> nextMetric = Slicer.filter( statistics, m );
 
-            SortedSet<ThresholdOuter> secondThreshold =
-                    Slicer.discover( nextMetric,
-                                     next -> next.getMetadata().getThresholds().second() );
-
-            // As many outputs as secondary thresholds if secondary thresholds are defined
-            // and the output type is OutputTypeSelection.THRESHOLD_LEAD.
-            List<List<T>> allOutputs = new ArrayList<>();
-            if ( destinationConfig.getOutputType() == OutputTypeSelection.THRESHOLD_LEAD
-                 && !secondThreshold.isEmpty() )
-            {
-                // Slice by threshold two
-                secondThreshold.forEach( next -> allOutputs.add( Slicer.filter( nextMetric,
-                                                                                data -> data.getMetadata()
-                                                                                            .getThresholds()
-                                                                                            .second()
-                                                                                            .equals( next ) ) ) );
-            }
-            // One output only
-            else
-            {
-                allOutputs.add( nextMetric );
-            }
+            // Get the sliced statistics
+            List<List<T>> allOutputs = CommaSeparatedScoreWriter.getSlicedStatistics( destinationConfig, nextMetric );
 
             // Process each output
             for ( List<T> nextOutput : allOutputs )
@@ -203,8 +184,8 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
                 headerRow.add( "FEATURE DESCRIPTION" );
 
                 StringJoiner timeWindowHeader =
-                        CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( output.get( 0 )
-                                                                                             .getMetadata(),
+                        CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( statistics.get( 0 )
+                                                                                                 .getMetadata(),
                                                                                        durationUnits );
 
                 headerRow.merge( timeWindowHeader );
@@ -220,18 +201,8 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
                 rows.add( RowCompareByLeft.of( HEADER_INDEX, headerRow ) );
 
                 // Write the output
-                String append = null;
-
-                // Secondary threshold? If yes, only one, as this was sliced above
-                SortedSet<ThresholdOuter> secondThresholds =
-                        Slicer.discover( nextOutput,
-                                         next -> next.getMetadata().getThresholds().second() );
-                if ( destinationConfig.getOutputType() == OutputTypeSelection.THRESHOLD_LEAD
-                     && !secondThresholds.isEmpty() )
-                {
-                    append = secondThresholds.iterator().next().toStringSafe();
-                }
-
+                String append = CommaSeparatedScoreWriter.getPathQualifier( destinationConfig,
+                                                                            nextOutput );
                 PoolMetadata meta = nextOutput.get( 0 ).getMetadata();
                 Path outputPath = DataFactory.getPathFromPoolMetadata( outputDirectory,
                                                                        meta,
@@ -366,6 +337,106 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
                 }
             }
         }
+    }
+
+    /**
+     * Slices the statistics for individual graphics. Returns as many sliced lists of statistics as graphics to create.
+     * 
+     * @param destinationConfig the destination configuration
+     * @param the statistics to slice
+     * @return the sliced statistics to write
+     */
+
+    private static <S extends ScoreComponent<?>, T extends ScoreStatistic<?, S>> List<List<T>>
+            getSlicedStatistics( DestinationConfig destinationConfig,
+                                 List<T> statistics )
+    {
+        List<List<T>> sliced = new ArrayList<>();
+
+        SortedSet<ThresholdOuter> secondThreshold =
+                Slicer.discover( statistics, next -> next.getMetadata().getThresholds().second() );
+
+        // Slice by ensemble averaging function and then by secondary threshold
+        for ( EnsembleAverageType type : EnsembleAverageType.values() )
+        {
+            List<T> innerSlice = Slicer.filter( statistics,
+                                                value -> type == value.getMetadata()
+                                                                      .getPool()
+                                                                      .getEnsembleAverageType() );
+            // Slice by secondary threshold
+            if ( !innerSlice.isEmpty() )
+            {
+                if ( destinationConfig.getOutputType() == OutputTypeSelection.THRESHOLD_LEAD
+                     && !secondThreshold.isEmpty() )
+                {
+                    // Slice by the second threshold
+                    secondThreshold.forEach( next -> sliced.add( Slicer.filter( innerSlice,
+                                                                                value -> next.equals( value.getMetadata()
+                                                                                                           .getThresholds()
+                                                                                                           .second() ) ) ) );
+                }
+                // One output only
+                else
+                {
+                    sliced.add( innerSlice );
+                }
+            }
+        }
+
+        return Collections.unmodifiableList( sliced );
+    }
+
+    /**
+     * Generates a path qualifier based on the statistics provided.
+     * @param destinationConfig the destination configuration
+     * @param statistics the statistics
+     * @return a path qualifier or null if non is required
+     */
+
+    private static <S extends ScoreComponent<?>, T extends ScoreStatistic<?, S>> String
+            getPathQualifier( DestinationConfig destinationConfig,
+                              List<T> statistics )
+    {
+        String append = null;
+
+        // Secondary threshold? If yes, only one, as this was sliced above
+        SortedSet<ThresholdOuter> second =
+                Slicer.discover( statistics,
+                                 next -> next.getMetadata().getThresholds().second() );
+        if ( destinationConfig.getOutputType() == OutputTypeSelection.THRESHOLD_LEAD
+             && !second.isEmpty() )
+        {
+            append = second.iterator().next().toStringSafe();
+        }
+
+        // Non-default averaging types that should be qualified?
+        // #51670
+        SortedSet<EnsembleAverageType> types =
+                Slicer.discover( statistics,
+                                 next -> next.getMetadata().getPool().getEnsembleAverageType() );
+
+        Optional<EnsembleAverageType> type =
+                types.stream()
+                     .filter( next -> next != EnsembleAverageType.MEAN && next != EnsembleAverageType.NONE
+                                      && next != EnsembleAverageType.UNRECOGNIZED )
+                     .findFirst();
+
+        if ( type.isPresent() )
+        {
+            if ( Objects.nonNull( append ) )
+            {
+                append = append + "_ENSEMBLE_"
+                         + type.get()
+                               .name();
+            }
+            else
+            {
+                append = "ENSEMBLE_" + type.get()
+                                           .name();
+            }
+        }
+
+        return append;
     }
 
     /**

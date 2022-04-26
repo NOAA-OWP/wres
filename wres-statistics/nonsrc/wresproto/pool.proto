@@ -61,4 +61,22 @@ message Pool
 
     GeometryGroup geometry_group = 10;
     // The group of geometries associated with the pool.
+
+    enum EnsembleAverageType
+        {
+        // The type of average used when forming a pool of ensemble averages.
+
+        NONE = 0;
+        // The pool was not formed using ensemble averages.
+            
+        MEAN = 1;
+        // The pool was formed using ensemble mean values.
+
+        MEDIAN = 2;
+        // The pool was formed using ensemble median values.
+    }
+
+    EnsembleAverageType ensemble_average_type = 11;
+    // The type of ensemble average used when forming a pool of ensemble averages
+    // averages.
 }

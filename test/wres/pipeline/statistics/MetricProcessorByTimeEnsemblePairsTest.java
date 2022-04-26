@@ -22,6 +22,7 @@ import org.junit.Test;
 import wres.config.MetricConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
+import wres.config.generated.EnsembleAverageType;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
@@ -324,7 +325,11 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         ProjectConfig mockedConfig =
                 new ProjectConfig( new Inputs( null, null, null ),
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( thresholds,
+                                                                     0,
+                                                                     metrics,
+                                                                     null,
+                                                                     EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    null );
@@ -512,7 +517,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         NullPointerException actual = assertThrows( NullPointerException.class,
                                                     () -> processor.apply( null ) );
 
-        assertEquals( "Expected non-null input to the metric processor.", actual.getMessage() );
+        assertEquals( "Expected a non-null pool as input to the metric processor.", actual.getMessage() );
     }
 
     @Test
@@ -523,7 +528,8 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                 new MetricsConfig( null,
                                    0,
                                    Arrays.asList( new MetricConfig( null, MetricConfigName.BRIER_SCORE ) ),
-                                   null );
+                                   null,
+                                   EnsembleAverageType.MEAN );
 
         ProjectConfig config = new ProjectConfig( null,
                                                   null,
@@ -559,7 +565,11 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         ProjectConfig mockedConfig =
                 new ProjectConfig( null,
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( thresholds,
+                                                                     0,
+                                                                     metrics,
+                                                                     null,
+                                                                     EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    null );
@@ -595,7 +605,11 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         ProjectConfig mockedConfig =
                 new ProjectConfig( new Inputs( null, null, null ),
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( thresholds,
+                                                                     0,
+                                                                     metrics,
+                                                                     null,
+                                                                     EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    null );
@@ -625,7 +639,11 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         ProjectConfig mockedConfig =
                 new ProjectConfig( new Inputs( null, null, null ),
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( thresholds,
+                                                                     0,
+                                                                     metrics,
+                                                                     null,
+                                                                     EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    null );
@@ -1104,7 +1122,11 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                      null ),
                                                null ),
                                    null,
-                                   Arrays.asList( new MetricsConfig( null, 0, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( null,
+                                                                     0,
+                                                                     metrics,
+                                                                     null,
+                                                                     EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    null );
@@ -1161,7 +1183,11 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                      null ),
                                                null ),
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( thresholds,
+                                                                     0,
+                                                                     metrics,
+                                                                     null,
+                                                                     EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    null );

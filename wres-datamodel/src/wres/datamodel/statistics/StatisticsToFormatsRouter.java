@@ -120,7 +120,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
 
     /**
      * Builder.
-     * @author james.brown@hydrosolved.com
+     * @author James Brown
      */
     public static class Builder
     {
@@ -320,7 +320,6 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         {
             return new StatisticsToFormatsRouter( this );
         }
-
     }
 
     /**
@@ -435,8 +434,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         if ( statistics.stream().anyMatch( next -> next.getScoresCount() > 0 ) )
         {
             List<DoubleScoreStatisticOuter> wrapped = this.getWrappedAndSortedStatistics( statistics,
-                                                                                          this.getDoubleScoreMapper( poolSupplier ) );
-
+                                                                                          this.getDoubleScoreMapper( poolSupplier ) );            
             Set<Path> innerPaths = this.processDoubleScoreOutputs( wrapped );
             paths.addAll( innerPaths );
         }

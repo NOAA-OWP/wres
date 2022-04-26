@@ -77,6 +77,7 @@ import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentType;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
+import wres.statistics.generated.Pool.EnsembleAverageType;
 import wres.vis.data.ChartDataFactory;
 
 
@@ -226,7 +227,8 @@ public class ChartFactory
                                            null,
                                            durationUnits,
                                            ChartType.TIMING_ERROR_SUMMARY_STATISTICS,
-                                           StatisticType.DURATION_SCORE );
+                                           StatisticType.DURATION_SCORE,
+                                           null );
 
         String rangeTitle = metricName.toString() + " [HOURS]";
         String domainTitle = "SUMMARY STATISTIC";
@@ -283,6 +285,9 @@ public class ChartFactory
                                    .getMetric()
                                    .getHasDiagonal();
 
+        EnsembleAverageType ensembleAverageType = metadata.getPool()
+                                                          .getEnsembleAverageType();
+
         // Determine the output type
         ChartType chartType = ChartFactory.getChartType( metricName, graphicShape );
 
@@ -330,7 +335,8 @@ public class ChartFactory
                                                null,
                                                durationUnits,
                                                chartType,
-                                               StatisticType.DIAGRAM );
+                                               StatisticType.DIAGRAM,
+                                               ensembleAverageType );
 
             XYDataset dataset = null;
 
@@ -451,7 +457,8 @@ public class ChartFactory
                                            null,
                                            durationUnits,
                                            chartType,
-                                           StatisticType.DURATION_DIAGRAM );
+                                           StatisticType.DURATION_DIAGRAM,
+                                           null );
         String rangeTitle = metricName.toString() + " [HOURS]";
         String domainTitle = "FORECAST ISSUE TIME [UTC]";
 
@@ -509,6 +516,9 @@ public class ChartFactory
         String leadUnits = durationUnits.toString()
                                         .toUpperCase();
 
+        EnsembleAverageType ensembleAverageType = metadata.getPool()
+                                                          .getEnsembleAverageType();
+
         // Determine the output type
         ChartType chartType = ChartFactory.getChartType( metricName, GraphicShape.DEFAULT );
 
@@ -520,7 +530,8 @@ public class ChartFactory
                                            null,
                                            durationUnits,
                                            chartType,
-                                           metricName.getMetricOutputGroup() );
+                                           metricName.getMetricOutputGroup(),
+                                           ensembleAverageType );
         String rangeTitle = type.toString()
                                 .replace( "_", " " )
                             + " ["
@@ -652,6 +663,9 @@ public class ChartFactory
         MetricConstants metricComponentName = statistics.get( 0 )
                                                         .getMetricName();
 
+        EnsembleAverageType ensembleAverageType = metadata.getPool()
+                                                          .getEnsembleAverageType();
+
         // So not qualify a "main" score component because it is qualified by the overall metric name
         if ( metricComponentName == MetricConstants.MAIN )
         {
@@ -674,7 +688,8 @@ public class ChartFactory
                                            metricComponentName,
                                            durationUnits,
                                            chartType,
-                                           StatisticType.DOUBLE_SCORE );
+                                           StatisticType.DOUBLE_SCORE,
+                                           ensembleAverageType );
         String rangeTitle = metricName.toString()
                             + " ["
                             + metricUnits
@@ -1248,6 +1263,7 @@ public class ChartFactory
      * @param durationUnits the duration units, required
      * @param chartType the chart type, required
      * @param statisticType the type of statistics, required
+     * @param ensembleAverageType the ensemble average type, optional
      * @return the chart title
      * @throws NullPointerException if any required input is null
      */
@@ -1257,7 +1273,8 @@ public class ChartFactory
                                   MetricConstants metricComponentName,
                                   ChronoUnit durationUnits,
                                   ChartType chartType,
-                                  StatisticType statisticType )
+                                  StatisticType statisticType,
+                                  EnsembleAverageType ensembleAverageType )
     {
         Objects.requireNonNull( metadata );
         Objects.requireNonNull( metricName );
@@ -1270,6 +1287,17 @@ public class ChartFactory
         if ( Objects.nonNull( metricComponentName ) )
         {
             name += " " + metricComponentName;
+        }
+
+        // Qualify the ensemble average type if present and the metric is single-valued, unless it is a sample size or 
+        // a univariate metric applied to the LHS of the pairs. If the LHS eventually supports ensembles, the data 
+        // types will need to be qualified in the evaluation message.
+        if ( Objects.nonNull( ensembleAverageType ) && ensembleAverageType != EnsembleAverageType.NONE
+             && metricName.isInGroup( SampleDataGroup.SINGLE_VALUED )
+             && metricName != MetricConstants.SAMPLE_SIZE
+             && metricComponentName != MetricConstants.LEFT )
+        {
+            name += " of the ENSEMBLE " + ensembleAverageType.name();
         }
 
         String geoName = this.getGeoNameForTitle( metadata );

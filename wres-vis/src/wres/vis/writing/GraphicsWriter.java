@@ -37,7 +37,6 @@ import wres.statistics.generated.Outputs.SvgFormat;
 
 abstract class GraphicsWriter
 {
-
     private static final Logger LOGGER = LoggerFactory.getLogger( GraphicsWriter.class );
 
     private static final ChartFactory CHART_FACTORY = ChartFactory.of();
@@ -177,7 +176,7 @@ abstract class GraphicsWriter
 
             throw new GraphicsWriteException( "Error while writing chart to '" + resolvedPath + "'.", e );
         }
-    }
+    }    
 
     /**
      * Validates that the file object represented by the path does not already exist.

@@ -2,6 +2,7 @@ package wres.vis.writing;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -9,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.Function;
@@ -25,6 +27,7 @@ import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Outputs;
+import wres.statistics.generated.Pool.EnsembleAverageType;
 import wres.vis.charts.ChartBuildingException;
 import wres.vis.charts.ChartFactory;
 
@@ -84,11 +87,18 @@ public class DiagramGraphicsWriter extends GraphicsWriter
 
             for ( List<DiagramStatisticOuter> nextGroup : groups.values() )
             {
-                Set<Path> innerPathsWrittenTo =
-                        DiagramGraphicsWriter.writeDiagrams( super.getOutputDirectory(),
-                                                             super.getOutputsDescription(),
-                                                             nextGroup );
-                paths.addAll( innerPathsWrittenTo );
+                // Slice by ensemble averaging type
+                List<List<DiagramStatisticOuter>> sliced =
+                        DiagramGraphicsWriter.getSlicedStatistics( nextGroup );
+
+                for ( List<DiagramStatisticOuter> nextSlice : sliced )
+                {
+                    Set<Path> innerPathsWrittenTo =
+                            DiagramGraphicsWriter.writeDiagrams( super.getOutputDirectory(),
+                                                                 super.getOutputsDescription(),
+                                                                 nextSlice );
+                    paths.addAll( innerPathsWrittenTo );
+                }
             }
         }
 
@@ -138,23 +148,26 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                 {
                     // Build the output file name
                     Path outputImage = null;
-                    Object append = nextEntry.getKey();
-                    if ( append instanceof TimeWindowOuter )
+                    Object appendObject = nextEntry.getKey();
+                    String appendString = DiagramGraphicsWriter.getPathQualifier( statistics );
+                    if ( appendObject instanceof TimeWindowOuter )
                     {
                         outputImage = DataFactory.getPathFromPoolMetadata( outputDirectory,
                                                                            metadata,
-                                                                           (TimeWindowOuter) append,
+                                                                           (TimeWindowOuter) appendObject,
                                                                            helper.getDurationUnits(),
                                                                            metricName,
-                                                                           null );
+                                                                           null,
+                                                                           appendString );
                     }
-                    else if ( append instanceof OneOrTwoThresholds )
+                    else if ( appendObject instanceof OneOrTwoThresholds )
                     {
                         outputImage = DataFactory.getPathFromPoolMetadata( outputDirectory,
                                                                            metadata,
-                                                                           (OneOrTwoThresholds) append,
+                                                                           (OneOrTwoThresholds) appendObject,
                                                                            metricName,
-                                                                           null );
+                                                                           null,
+                                                                           appendString  );
                     }
                     else
                     {
@@ -181,6 +194,64 @@ public class DiagramGraphicsWriter extends GraphicsWriter
         return Collections.unmodifiableSet( pathsWrittenTo );
     }
 
+    /**
+     * Slices the statistics for individual graphics. Returns as many sliced lists of statistics as graphics to create.
+     * 
+     * @param the statistics to slice
+     * @return the sliced statistics to write
+     */
+
+    private static List<List<DiagramStatisticOuter>> getSlicedStatistics( List<DiagramStatisticOuter> statistics )
+    {
+        List<List<DiagramStatisticOuter>> sliced = new ArrayList<>();
+
+        // Slice by ensemble averaging function
+        for ( EnsembleAverageType type : EnsembleAverageType.values() )
+        {
+            List<DiagramStatisticOuter> innerSlice = Slicer.filter( statistics,
+                                                                    value -> type == value.getMetadata()
+                                                                                          .getPool()
+                                                                                          .getEnsembleAverageType() );
+            if ( !innerSlice.isEmpty() )
+            {
+                sliced.add( innerSlice );
+            }
+        }
+
+        return Collections.unmodifiableList( sliced );
+    }    
+    
+    /**
+     * Generates a path qualifier for the graphic based on the statistics provided.
+     * @param statistics the statistics
+     * @return a path qualifier or null if non is required
+     */
+
+    private static String getPathQualifier( List<DiagramStatisticOuter> statistics )
+    {
+        String append = null;
+
+        // Non-default averaging types that should be qualified?
+        // #51670
+        SortedSet<EnsembleAverageType> types =
+                Slicer.discover( statistics,
+                                 next -> next.getMetadata().getPool().getEnsembleAverageType() );
+
+        Optional<EnsembleAverageType> type =
+                types.stream()
+                     .filter( next -> next != EnsembleAverageType.MEAN && next != EnsembleAverageType.NONE
+                                      && next != EnsembleAverageType.UNRECOGNIZED )
+                     .findFirst();
+
+        if ( type.isPresent() )
+        {
+            append = "ENSEMBLE_" + type.get()
+                                       .name();
+        }
+
+        return append;
+    }    
+    
     /**
      * Hidden constructor.
      *

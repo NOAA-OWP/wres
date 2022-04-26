@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
@@ -39,6 +40,7 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.pools.PoolMetadata;
+import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
@@ -74,6 +76,7 @@ import wres.statistics.generated.Outputs.ProtobufFormat;
 import wres.statistics.generated.Outputs.SvgFormat;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.Pool.EnsembleAverageType;
 import wres.statistics.generated.Season;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.Threshold;
@@ -174,6 +177,36 @@ public class MessageFactory
                                 boolean isBaselinePool,
                                 long poolId )
     {
+        return MessageFactory.getPool( featureGroup,
+                                       timeWindow,
+                                       timeScale,
+                                       thresholds,
+                                       isBaselinePool,
+                                       poolId,
+                                       EnsembleAverageType.NONE );
+    }
+
+    /**
+     * Builds a pool from the input, some of which may be missing.
+     * 
+     * @param featureGroup the feature group
+     * @param timeWindow the time window
+     * @param timeScale the time scale
+     * @param thresholds the thresholds
+     * @param isBaselinePool is true if the pool refers to pairs of left and baseline data, otherwise left and right
+     * @param poolId the pool identifier
+     * @param ensembleAverageType the ensemble average type
+     * @return the pool
+     */
+
+    public static Pool getPool( FeatureGroup featureGroup,
+                                TimeWindowOuter timeWindow,
+                                TimeScaleOuter timeScale,
+                                OneOrTwoThresholds thresholds,
+                                boolean isBaselinePool,
+                                long poolId,
+                                EnsembleAverageType ensembleAverageType )
+    {
         Pool.Builder poolBuilder = Pool.newBuilder()
                                        .setIsBaselinePool( isBaselinePool )
                                        .setPoolId( poolId );
@@ -239,6 +272,15 @@ public class MessageFactory
 
             LOGGER.debug( "While creating pool metadata, populated the pool with a threshold of {}.",
                           thresholds );
+        }
+
+        // Ensemble average type
+        if ( Objects.nonNull( ensembleAverageType ) )
+        {
+            poolBuilder.setEnsembleAverageType( ensembleAverageType );
+
+            LOGGER.debug( "While creating pool metadata, populated the pool with an ensemble average type of {}.",
+                          ensembleAverageType );
         }
 
         return poolBuilder.build();
@@ -434,9 +476,11 @@ public class MessageFactory
     {
         Objects.requireNonNull( features );
 
-        Set<GeometryTuple> geometries = features.stream()
-                                                .map( FeatureTuple::getGeometryTuple )
-                                                .collect( Collectors.toSet() );
+        // Use a predictable order because the GeometryGroup contains a list
+        List<FeatureTuple> sorted = new ArrayList<>( new TreeSet<>( features ) );
+        List<GeometryTuple> geometries = sorted.stream()
+                                               .map( FeatureTuple::getGeometryTuple )
+                                               .collect( Collectors.toList() );
 
         GeometryGroup.Builder builder = GeometryGroup.newBuilder()
                                                      .addAllGeometryTuples( geometries );
@@ -1203,7 +1247,7 @@ public class MessageFactory
         // Set the minimum sample size
         statistics.setMinimumSampleSize( onePool.getMinimumSampleSize() );
 
-        PoolMetadata metadata = PoolMetadata.of();
+        List<PoolMetadata> metadatas = new ArrayList<>();
 
         boolean added = false;
 
@@ -1211,10 +1255,11 @@ public class MessageFactory
         if ( onePool.hasStatistic( StatisticType.DOUBLE_SCORE ) )
         {
             List<wres.datamodel.statistics.DoubleScoreStatisticOuter> doubleScores = onePool.getDoubleScoreStatistics();
-            doubleScores.forEach( next -> statistics.addScores( MessageFactory.parse( next ) ) );
+            doubleScores.forEach( next -> {
+                statistics.addScores( MessageFactory.parse( next ) );
+                metadatas.add( next.getMetadata() );
+            } );
 
-            // Because the input is a single pool
-            metadata = doubleScores.get( 0 ).getMetadata();
             added = true;
         }
 
@@ -1222,10 +1267,11 @@ public class MessageFactory
         if ( onePool.hasStatistic( StatisticType.DIAGRAM ) )
         {
             List<wres.datamodel.statistics.DiagramStatisticOuter> diagrams = onePool.getDiagramStatistics();
-            diagrams.forEach( next -> statistics.addDiagrams( MessageFactory.parse( next ) ) );
+            diagrams.forEach( next -> {
+                statistics.addDiagrams( MessageFactory.parse( next ) );
+                metadatas.add( next.getMetadata() );
+            } );
 
-            // Because the input is a single pool
-            metadata = diagrams.get( 0 ).getMetadata();
             added = true;
         }
 
@@ -1233,10 +1279,11 @@ public class MessageFactory
         if ( onePool.hasStatistic( StatisticType.BOXPLOT_PER_POOL ) )
         {
             List<wres.datamodel.statistics.BoxplotStatisticOuter> boxplots = onePool.getBoxPlotStatisticsPerPool();
-            boxplots.forEach( next -> statistics.addOneBoxPerPool( MessageFactory.parse( next ) ) );
+            boxplots.forEach( next -> {
+                statistics.addOneBoxPerPool( MessageFactory.parse( next ) );
+                metadatas.add( next.getMetadata() );
+            } );
 
-            // Because the input is a single pool
-            metadata = boxplots.get( 0 ).getMetadata();
             added = true;
         }
 
@@ -1244,8 +1291,11 @@ public class MessageFactory
         if ( onePool.hasStatistic( StatisticType.BOXPLOT_PER_PAIR ) )
         {
             List<wres.datamodel.statistics.BoxplotStatisticOuter> boxplots = onePool.getBoxPlotStatisticsPerPair();
-            boxplots.forEach( next -> statistics.addOneBoxPerPair( MessageFactory.parse( next ) ) );
-            metadata = boxplots.get( 0 ).getMetadata();
+            boxplots.forEach( next -> {
+                statistics.addOneBoxPerPair( MessageFactory.parse( next ) );
+                metadatas.add( next.getMetadata() );
+            } );
+
             added = true;
         }
 
@@ -1254,10 +1304,11 @@ public class MessageFactory
         {
             List<wres.datamodel.statistics.DurationScoreStatisticOuter> durationScores =
                     onePool.getDurationScoreStatistics();
-            durationScores.forEach( next -> statistics.addDurationScores( MessageFactory.parse( next ) ) );
+            durationScores.forEach( next -> {
+                statistics.addDurationScores( MessageFactory.parse( next ) );
+                metadatas.add( next.getMetadata() );
+            } );
 
-            // Because the input is a single pool
-            metadata = durationScores.get( 0 ).getMetadata();
             added = true;
         }
 
@@ -1266,10 +1317,16 @@ public class MessageFactory
         {
             List<wres.datamodel.statistics.DurationDiagramStatisticOuter> durationDiagrams =
                     onePool.getInstantDurationPairStatistics();
-            durationDiagrams.forEach( next -> statistics.addDurationDiagrams( MessageFactory.parse( next ) ) );
-            metadata = durationDiagrams.get( 0 ).getMetadata();
+            durationDiagrams.forEach( next -> {
+                statistics.addDurationDiagrams( MessageFactory.parse( next ) );
+                metadatas.add( next.getMetadata() );
+            } );
+
             added = true;
         }
+
+        List<PoolMetadata> unmodifiableMetadatas = Collections.unmodifiableList( metadatas );
+        PoolMetadata metadata = PoolSlicer.unionOf( unmodifiableMetadatas );
 
         // Return null
         if ( !added )
@@ -1296,60 +1353,62 @@ public class MessageFactory
     /**
      * Decomposes the input into pools. A pool contains a single set of space, time and threshold dimensions.
      *
-     * @param project the project statistics
+     * @param statisticsStore the project statistics
      * @return the decomposed statistics
      * @throws InterruptedException if the statistics could not be retrieved from the project
      * @throws NullPointerException if the input is null
      */
 
-    private static Collection<StatisticsStore> getStatisticsPerPool( StatisticsStore project )
+    private static Collection<StatisticsStore> getStatisticsPerPool( StatisticsStore statisticsStore )
             throws InterruptedException
     {
-        Objects.requireNonNull( project );
+        Objects.requireNonNull( statisticsStore );
 
         Map<PoolBoundaries, StatisticsStore.Builder> mappedStatistics = new HashMap<>();
 
         // Double scores
-        if ( project.hasStatistic( StatisticType.DOUBLE_SCORE ) )
+        if ( statisticsStore.hasStatistic( StatisticType.DOUBLE_SCORE ) )
         {
-            List<DoubleScoreStatisticOuter> statistics = project.getDoubleScoreStatistics();
+            List<DoubleScoreStatisticOuter> statistics = statisticsStore.getDoubleScoreStatistics();
             MessageFactory.addDoubleScoreStatisticsToPool( statistics, mappedStatistics );
         }
 
         // Duration scores
-        if ( project.hasStatistic( StatisticType.DURATION_SCORE ) )
+        if ( statisticsStore.hasStatistic( StatisticType.DURATION_SCORE ) )
         {
             List<wres.datamodel.statistics.DurationScoreStatisticOuter> statistics =
-                    project.getDurationScoreStatistics();
+                    statisticsStore.getDurationScoreStatistics();
             MessageFactory.addDurationScoreStatisticsToPool( statistics, mappedStatistics );
         }
 
         // Diagrams
-        if ( project.hasStatistic( StatisticType.DIAGRAM ) )
+        if ( statisticsStore.hasStatistic( StatisticType.DIAGRAM ) )
         {
-            List<wres.datamodel.statistics.DiagramStatisticOuter> statistics = project.getDiagramStatistics();
+            List<wres.datamodel.statistics.DiagramStatisticOuter> statistics = statisticsStore.getDiagramStatistics();
             MessageFactory.addDiagramStatisticsToPool( statistics, mappedStatistics );
         }
 
         // Box plots per pair
-        if ( project.hasStatistic( StatisticType.BOXPLOT_PER_PAIR ) )
+        if ( statisticsStore.hasStatistic( StatisticType.BOXPLOT_PER_PAIR ) )
         {
-            List<wres.datamodel.statistics.BoxplotStatisticOuter> statistics = project.getBoxPlotStatisticsPerPair();
+            List<wres.datamodel.statistics.BoxplotStatisticOuter> statistics =
+                    statisticsStore.getBoxPlotStatisticsPerPair();
             MessageFactory.addBoxPlotStatisticsToPool( statistics, mappedStatistics, false );
         }
 
         // Box plots statistics per pool
-        if ( project.hasStatistic( StatisticType.BOXPLOT_PER_POOL ) )
+        if ( statisticsStore.hasStatistic( StatisticType.BOXPLOT_PER_POOL ) )
         {
-            List<wres.datamodel.statistics.BoxplotStatisticOuter> statistics = project.getBoxPlotStatisticsPerPool();
+            List<wres.datamodel.statistics.BoxplotStatisticOuter> statistics =
+                    statisticsStore.getBoxPlotStatisticsPerPool();
             MessageFactory.addBoxPlotStatisticsToPool( statistics, mappedStatistics, true );
         }
 
         // Box plots statistics per pool
-        if ( project.hasStatistic( StatisticType.DURATION_DIAGRAM ) )
+        if ( statisticsStore.hasStatistic( StatisticType.DURATION_DIAGRAM ) )
         {
             List<DurationDiagramStatisticOuter> statistics =
-                    project.getInstantDurationPairStatistics();
+                    statisticsStore.getInstantDurationPairStatistics();
             MessageFactory.addPairedStatisticsToPool( statistics, mappedStatistics );
         }
 
@@ -1358,7 +1417,7 @@ public class MessageFactory
         // Build the per-pool statistics
         for ( StatisticsStore.Builder builder : mappedStatistics.values() )
         {
-            StatisticsStore statistics = builder.setMinimumSampleSize( project.getMinimumSampleSize() )
+            StatisticsStore statistics = builder.setMinimumSampleSize( statisticsStore.getMinimumSampleSize() )
                                                 .build();
             returnMe.add( statistics );
         }

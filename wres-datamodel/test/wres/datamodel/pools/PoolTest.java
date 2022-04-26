@@ -321,11 +321,11 @@ class PoolTest
         String expected = "Pool[mainMetadata=PoolMetadata[poolId=0,leftDataName=,rightDataName=,baselineDataName=,"
                           + "leftVariableName=,rightVariableName=,baselineVariableName=,isBaselinePool=false,"
                           + "features=<null>,timeWindow=<null>,thresholds=<null>,timeScale=<null>,measurementUnit="
-                          + "DIMENSIONLESS],mainData=[a, b, c],baselineMetadata=PoolMetadata[poolId=0,leftDataName=,"
-                          + "rightDataName=,baselineDataName=,leftVariableName=,rightVariableName=,"
-                          + "baselineVariableName=,isBaselinePool=false,features=<null>,timeWindow=<null>,"
-                          + "thresholds=<null>,timeScale=<null>,measurementUnit=DIMENSIONLESS],baselineData=[d, e, f],"
-                          + "climatology=[1.0, 2.0, 3.0]]";
+                          + "DIMENSIONLESS,ensembleAverageType=NONE],mainData=[a, b, c],baselineMetadata="
+                          + "PoolMetadata[poolId=0,leftDataName=,rightDataName=,baselineDataName=,leftVariableName=,"
+                          + "rightVariableName=,baselineVariableName=,isBaselinePool=false,features=<null>,"
+                          + "timeWindow=<null>,thresholds=<null>,timeScale=<null>,measurementUnit=DIMENSIONLESS,"
+                          + "ensembleAverageType=NONE],baselineData=[d, e, f],climatology=[1.0, 2.0, 3.0]]";
 
         assertEquals( expected, actual );
     }

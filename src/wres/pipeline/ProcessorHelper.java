@@ -435,7 +435,8 @@ class ProcessorHelper
 
                 int minimumSampleSize = ProcessorHelper.getMinimumSampleSize( metricsConfig.getMinimumSampleSize() );
                 ThresholdsByMetricAndFeature nextMetrics = ThresholdsByMetricAndFeature.of( nextThresholds,
-                                                                                            minimumSampleSize );
+                                                                                            minimumSampleSize,
+                                                                                            metricsConfig.getEnsembleAverage() );
                 thresholdsByMetricAndFeature.add( nextMetrics );
                 featuresWithExplicitThresholds.addAll( innerFeaturesWithExplicitThresholds );
             }

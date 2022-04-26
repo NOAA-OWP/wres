@@ -11,6 +11,7 @@ import java.util.TreeSet;
 import java.util.function.DoublePredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -21,14 +22,13 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.pools.Pool.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.Pool.EnsembleAverageType;
 
 /**
  * A utility class for slicing/dicing and transforming pool-shaped datasets
@@ -40,33 +40,25 @@ import wres.statistics.generated.GeometryGroup;
 
 public class PoolSlicer
 {
-
-    /**
-     * Logger.
-     */
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( PoolSlicer.class );
 
-    /**
-     * Failure to supply a non-null predicate.
-     */
-
+    /** Failure to supply a non-null predicate. */
     private static final String NULL_PREDICATE_EXCEPTION = "Specify a non-null predicate.";
 
-    /**
-     * Null mapper function error message.
-     */
-
+    /** Null mapper function error message. */
     private static final String NULL_MAPPER_EXCEPTION = "Specify a non-null function to map the input to an output.";
 
-    /**
-     * Null input error message.
-     */
+    /** Null input error message. */
     private static final String NULL_INPUT_EXCEPTION = "Specify a non-null input.";
+
+    /** Null metadata mapper function. */
+    private static final String NULL_META_MAPPER_EXCEPTION = "Specify a non-null function to transform the metadata.";
 
     /**
      * Transforms the input type to another type.
      * 
+     * @see #transform(Pool, Function, UnaryOperator)
      * @param <S> the input type
      * @param <T> the output type
      * @param pool the input
@@ -77,21 +69,46 @@ public class PoolSlicer
 
     public static <S, T> Pool<T> transform( Pool<S> pool, Function<S, T> transformer )
     {
+        return PoolSlicer.transform( pool, transformer, meta -> meta ); // No-op on metadata
+    }
+
+    /**
+     * Transforms the input type to another type.
+     * 
+     * @see #transform(Pool, Function)
+     * @param <S> the input type
+     * @param <T> the output type
+     * @param pool the input
+     * @param transformer the transformer
+     * @param metaTransformer the metadata transformer
+     * @return the transformed type
+     * @throws NullPointerException if any input is null
+     */
+
+    public static <S, T> Pool<T> transform( Pool<S> pool,
+                                            Function<S, T> transformer,
+                                            UnaryOperator<PoolMetadata> metaTransformer )
+    {
         Objects.requireNonNull( pool, PoolSlicer.NULL_INPUT_EXCEPTION );
         Objects.requireNonNull( transformer, PoolSlicer.NULL_MAPPER_EXCEPTION );
+        Objects.requireNonNull( metaTransformer, PoolSlicer.NULL_META_MAPPER_EXCEPTION );
 
-        Pool.Builder<T> poolBuilder = new Pool.Builder<T>().setMetadata( pool.getMetadata() );
+        PoolMetadata unmapped = pool.getMetadata();
+        PoolMetadata mapped = metaTransformer.apply( unmapped );
+        Pool.Builder<T> poolBuilder = new Pool.Builder<T>().setMetadata( mapped );
 
         if ( pool.hasBaseline() )
         {
-            poolBuilder.setMetadataForBaseline( pool.getBaselineData()
-                                                    .getMetadata() );
+            PoolMetadata unmappedBaseline = pool.getBaselineData()
+                                                .getMetadata();
+            PoolMetadata mappedBaseline = metaTransformer.apply( unmappedBaseline );
+            poolBuilder.setMetadataForBaseline( mappedBaseline );
         }
 
         // Preserve any small pools
         for ( Pool<S> next : pool.getMiniPools() )
         {
-            Pool<T> transformed = PoolSlicer.transformInner( next, transformer );
+            Pool<T> transformed = PoolSlicer.transformInner( next, transformer, metaTransformer );
             poolBuilder.addPool( transformed, false );
         }
 
@@ -103,32 +120,59 @@ public class PoolSlicer
      * Does not modify the metadata associated with the input.
      * 
      * @param <T> the type of data
-     * @param pool the data to slice
-     * @param condition the condition on which to slice
+     * @param pool the data to slice, not null
+     * @param condition the condition on which to slice, not null
      * @param applyToClimatology an optional filter for the climatology, may be null
      * @return the subset of pairs that meet the condition
-     * @throws NullPointerException if either the input or condition is null
+     * @throws NullPointerException if any required input is null
      */
 
     public static <T> Pool<T> filter( Pool<T> pool,
                                       Predicate<T> condition,
                                       DoublePredicate applyToClimatology )
     {
+        return PoolSlicer.filter( pool, condition, applyToClimatology, meta -> meta );
+    }
+
+    /**
+     * Returns the subset of pairs where the condition is met. Applies to both the main pairs and any baseline pairs.
+     * Does not modify the metadata associated with the input. Additionally transforms the metadata to reflect the 
+     * filtering of the pool.
+     * 
+     * @param <T> the type of data
+     * @param pool the data to slice, not null
+     * @param condition the condition on which to slice, not null
+     * @param applyToClimatology an optional filter for the climatology, may be null
+     * @param metaTransformer the metadata transformer, not null
+     * @return the subset of pairs that meet the condition
+     * @throws NullPointerException if any required input is null
+     */
+
+    public static <T> Pool<T> filter( Pool<T> pool,
+                                      Predicate<T> condition,
+                                      DoublePredicate applyToClimatology,
+                                      UnaryOperator<PoolMetadata> metaTransformer )
+    {
         Objects.requireNonNull( pool, PoolSlicer.NULL_INPUT_EXCEPTION );
         Objects.requireNonNull( condition, PoolSlicer.NULL_PREDICATE_EXCEPTION );
+        Objects.requireNonNull( metaTransformer, PoolSlicer.NULL_META_MAPPER_EXCEPTION );
 
-        Pool.Builder<T> poolBuilder = new Pool.Builder<T>().setMetadata( pool.getMetadata() );
+        PoolMetadata unmapped = pool.getMetadata();
+        PoolMetadata mapped = metaTransformer.apply( unmapped );
+        Pool.Builder<T> poolBuilder = new Pool.Builder<T>().setMetadata( mapped );
 
         if ( pool.hasBaseline() )
         {
-            poolBuilder.setMetadataForBaseline( pool.getBaselineData()
-                                                    .getMetadata() );
+            PoolMetadata unmappedBaseline = pool.getBaselineData()
+                                                .getMetadata();
+            PoolMetadata mappedBaseline = metaTransformer.apply( unmappedBaseline );
+            poolBuilder.setMetadataForBaseline( mappedBaseline );
         }
 
         // Preserve any small pools
         for ( Pool<T> next : pool.getMiniPools() )
         {
-            Pool<T> filtered = PoolSlicer.filterInner( next, condition, applyToClimatology );
+            Pool<T> filtered = PoolSlicer.filterInner( next, condition, applyToClimatology, metaTransformer );
             poolBuilder.addPool( filtered, false );
         }
 
@@ -154,15 +198,52 @@ public class PoolSlicer
                                                                Map<T, Predicate<S>> filters,
                                                                Function<PoolMetadata, T> metaMapper )
     {
+        return PoolSlicer.filter( pool, filters, metaMapper, meta -> meta );
+    }
+
+    /**
+     * Applies an attribute-specific filter to the corresponding attribute-specific subset of pairs in the input and 
+     * returns the union of those filtered subsets for a metadata attribute that is extracted from the pool metadata
+     * with a mapper. Additionally transforms the metadata to reflect the filtering of the pool.
+     * 
+     * @param <S> the pooled data type
+     * @param <T> the metadata attribute
+     * @param pool the pool to filter
+     * @param filters the filters to use
+     * @param metaMapper the function to extract an attribute from the metadata
+     * @param metaTransformer the metadata transformer, not null
+     * @return the union of the subsets, each subset filtered by an attribute-specific predicate
+     * @throws NullPointerException if any input is null
+     * @throws PoolException if the pool could not be filtered for any reason
+     */
+
+    public static <S, T extends Comparable<T>> Pool<S> filter( Pool<S> pool,
+                                                               Map<T, Predicate<S>> filters,
+                                                               Function<PoolMetadata, T> metaMapper,
+                                                               UnaryOperator<PoolMetadata> metaTransformer )
+    {
         Objects.requireNonNull( pool );
         Objects.requireNonNull( filters );
         Objects.requireNonNull( metaMapper );
 
-        // Optimization for no data
+        // Optimization for no data, only apply the metadata adjustment
         if ( pool.get().isEmpty() && ( !pool.hasBaseline() || pool.getBaselineData().get().isEmpty() )
              && ( !pool.hasClimatology() || pool.getClimatology().size() == 0 ) )
         {
-            return pool;
+            PoolMetadata unmapped = pool.getMetadata();
+            PoolMetadata mapped = metaTransformer.apply( unmapped );
+            Pool.Builder<S> poolBuilder = new Pool.Builder<S>().setMetadata( mapped )
+                                                               .setClimatology( pool.getClimatology() );
+
+            if ( pool.hasBaseline() )
+            {
+                PoolMetadata unmappedBaseline = pool.getBaselineData()
+                                                    .getMetadata();
+                PoolMetadata mappedBaseline = metaTransformer.apply( unmappedBaseline );
+                poolBuilder.setMetadataForBaseline( mappedBaseline );
+            }
+
+            return poolBuilder.build();
         }
 
         // Small pools
@@ -171,12 +252,16 @@ public class PoolSlicer
         // Iterate the pools and apply the filters
         Set<T> keysWithoutFilter = new HashSet<>();
 
-        Pool.Builder<S> poolBuilder = new Pool.Builder<S>().setMetadata( pool.getMetadata() );
+        PoolMetadata unmapped = pool.getMetadata();
+        PoolMetadata mapped = metaTransformer.apply( unmapped );
+        Pool.Builder<S> poolBuilder = new Pool.Builder<S>().setMetadata( mapped );
 
         if ( pool.hasBaseline() )
         {
-            poolBuilder.setMetadataForBaseline( pool.getBaselineData()
-                                                    .getMetadata() );
+            PoolMetadata unmappedBaseline = pool.getBaselineData()
+                                                .getMetadata();
+            PoolMetadata mappedBaseline = metaTransformer.apply( unmappedBaseline );
+            poolBuilder.setMetadataForBaseline( mappedBaseline );
         }
 
         for ( Map.Entry<T, Pool<S>> nextEntry : pools.entrySet() )
@@ -188,7 +273,7 @@ public class PoolSlicer
 
             if ( Objects.nonNull( nextPredicate ) )
             {
-                Pool<S> filtered = PoolSlicer.filter( nextPool, nextPredicate, null );
+                Pool<S> filtered = PoolSlicer.filter( nextPool, nextPredicate, null, metaTransformer );
                 poolBuilder.addPool( filtered, false );
             }
             else
@@ -239,9 +324,35 @@ public class PoolSlicer
                                                                      Map<T, Function<S, U>> transformers,
                                                                      Function<PoolMetadata, T> metaMapper )
     {
+        return PoolSlicer.transform( pool, transformers, metaMapper, meta -> meta );
+    }
+
+    /**
+     * Applies an attribute-specific transformer to the corresponding attribute-specific subset of pairs in the input 
+     * and returns the union of those transformed subsets for a metadata attribute that is extracted from the pool 
+     * metadata with a mapper. Also transforms the metadata to reflect the transformation of the pool.
+     * 
+     * @param <S> the pooled data type
+     * @param <T> the metadata attribute
+     * @param <U> the transformed pool data type
+     * @param pool the pool to transform
+     * @param transformers the transformers to use
+     * @param metaMapper the function to extract an attribute from the metadata
+     * @param metaTransformer the function that transforms the pool metadata to reflect the transformation of the pool
+     * @return the union of the subsets, each subset filtered by an attribute-specific predicate
+     * @throws NullPointerException if any input is null
+     * @throws PoolException if the pool could not be filtered for any reason
+     */
+
+    public static <S, T extends Comparable<T>, U> Pool<U> transform( Pool<S> pool,
+                                                                     Map<T, Function<S, U>> transformers,
+                                                                     Function<PoolMetadata, T> metaMapper,
+                                                                     UnaryOperator<PoolMetadata> metaTransformer )
+    {
         Objects.requireNonNull( pool );
         Objects.requireNonNull( transformers );
         Objects.requireNonNull( metaMapper );
+        Objects.requireNonNull( metaTransformer );
 
         // Small pools
         Map<T, Pool<S>> pools = PoolSlicer.decompose( metaMapper, pool );
@@ -249,12 +360,16 @@ public class PoolSlicer
         // Iterate the pools and apply the transformers
         Set<T> keysWithoutTransformer = new HashSet<>();
 
-        Pool.Builder<U> poolBuilder = new Pool.Builder<U>().setMetadata( pool.getMetadata() );
+        PoolMetadata unmapped = pool.getMetadata();
+        PoolMetadata mapped = metaTransformer.apply( unmapped );
+        Pool.Builder<U> poolBuilder = new Pool.Builder<U>().setMetadata( mapped );
 
         if ( pool.hasBaseline() )
         {
-            poolBuilder.setMetadataForBaseline( pool.getBaselineData()
-                                                    .getMetadata() );
+            Pool<S> baseline = pool.getBaselineData();
+            PoolMetadata unmappedBaseline = baseline.getMetadata();
+            PoolMetadata mappedBaseline = metaTransformer.apply( unmappedBaseline );
+            poolBuilder.setMetadataForBaseline( mappedBaseline );
         }
 
         for ( Map.Entry<T, Pool<S>> nextEntry : pools.entrySet() )
@@ -266,7 +381,7 @@ public class PoolSlicer
 
             if ( Objects.nonNull( nextTransformer ) )
             {
-                Pool<U> transformed = PoolSlicer.transform( nextPool, nextTransformer );
+                Pool<U> transformed = PoolSlicer.transform( nextPool, nextTransformer, metaTransformer );
                 poolBuilder.addPool( transformed, false );
             }
             else
@@ -438,7 +553,9 @@ public class PoolSlicer
 
     /**
      * Returns the union of the supplied metadata. All components of the input must be equal in terms of 
-     * {@link #equalsWithoutTimeWindowOrThresholdsOrFeaturesOrPoolId(PoolMetadata, PoolMetadata)}.
+     * {@link #equalsWithoutTimeWindowOrThresholdsOrFeaturesOrPoolIdOrEnsembleAverageType(PoolMetadata, PoolMetadata)}. 
+     * Furthermore, there cannot be more than one {@link EnsembleAverageType} after ignoring 
+     * {@link EnsembleAverageType#NONE}.
      * 
      * @param input the input metadata
      * @return the union of the input
@@ -463,6 +580,7 @@ public class PoolSlicer
         Set<FeatureTuple> unionFeatures = new TreeSet<>();
         Set<OneOrTwoThresholds> unionThresholds = new TreeSet<>();
         Set<String> unionRegionNames = new TreeSet<>();
+        Set<EnsembleAverageType> ensembleAverageType = new TreeSet<>();
 
         // Test entry
         PoolMetadata test = input.get( 0 );
@@ -473,7 +591,8 @@ public class PoolSlicer
         {
             Objects.requireNonNull( next, nullString );
 
-            if ( !PoolSlicer.equalsWithoutTimeWindowOrThresholdsOrFeaturesOrPoolId( next, test ) )
+            // Check that the union can be formed in principle. Validation of the ensemble average type is deferred.
+            if ( !PoolSlicer.equalsWithoutTimeWindowOrThresholdsOrFeaturesOrPoolIdOrEnsembleAverageType( next, test ) )
             {
                 throw new PoolMetadataException( "Only the time window and thresholds and features can differ when "
                                                  + "finding the union of metadata. The metadata for comparison was: "
@@ -501,6 +620,9 @@ public class PoolSlicer
             unionFeatures.addAll( next.getFeatureTuples() );
 
             PoolSlicer.addRegionName( unionRegionNames, next );
+            
+            wres.statistics.generated.Pool pool = next.getPool();
+            ensembleAverageType.add( pool.getEnsembleAverageType() );
         }
 
         LOGGER.debug( "While building the union metadata from {}, discovered these time windows in common: {}; and "
@@ -512,13 +634,21 @@ public class PoolSlicer
                       unionThresholds,
                       unionRegionNames );
 
-        TimeWindowOuter unionWindow = null;
+        // Copy to builder and clean attributes whose union has been formed
+        wres.statistics.generated.Pool.Builder builder = test.getPool()
+                                                             .toBuilder()
+                                                             .clearTimeWindow()
+                                                             .clearEventThreshold()
+                                                             .clearDecisionThreshold()
+                                                             .clearGeometryTuples()
+                                                             .clearRegionName()
+                                                             .clearGeometryGroup();
+
         if ( !unionWindows.isEmpty() )
         {
-            unionWindow = TimeWindowOuter.unionOf( unionWindows );
+            TimeWindowOuter unionWindow = TimeWindowOuter.unionOf( unionWindows );
+            builder.setTimeWindow( unionWindow.getTimeWindow() );
         }
-
-        FeatureGroup featureGroup = null;
 
         if ( !unionFeatures.isEmpty() )
         {
@@ -526,27 +656,23 @@ public class PoolSlicer
             if ( unionRegionNames.size() == 1 )
             {
                 regionName = unionRegionNames.iterator().next();
+                builder.setRegionName( regionName );
             }
 
             GeometryGroup geoGroup = MessageFactory.getGeometryGroup( regionName, unionFeatures );
-            featureGroup = FeatureGroup.of( geoGroup );
+            builder.setGeometryGroup( geoGroup );
+            builder.addAllGeometryTuples( geoGroup.getGeometryTuplesList() );
         }
-
-        OneOrTwoThresholds threshold = null;
 
         if ( unionThresholds.size() == 1 )
         {
-            threshold = unionThresholds.iterator().next();
+            PoolSlicer.addThreshold( builder, unionThresholds.iterator().next() );
         }
 
-        wres.statistics.generated.Pool unionPool = MessageFactory.getPool( featureGroup,
-                                                                           unionWindow,
-                                                                           timeScale,
-                                                                           threshold,
-                                                                           test.getPool().getIsBaselinePool(),
-                                                                           test.getPool().getPoolId() );
+        // Set the ensemble average type, which may throw an exception, since the check was deferred until now.
+        PoolSlicer.setEnsembleAverageType( builder, ensembleAverageType );
 
-        return PoolMetadata.of( test.getEvaluation(), unionPool );
+        return PoolMetadata.of( test.getEvaluation(), builder.build() );
     }
 
     /**
@@ -569,6 +695,53 @@ public class PoolSlicer
     }
 
     /**
+     * Adds a threshold to the builder.
+     * @param builder the builder
+     * @param threshold the threshold
+     */
+    private static void addThreshold( wres.statistics.generated.Pool.Builder builder, OneOrTwoThresholds threshold )
+    {
+        builder.setEventThreshold( threshold.first().getThreshold() );
+        if ( threshold.hasTwo() )
+        {
+            builder.setDecisionThreshold( threshold.second().getThreshold() );
+        }
+    }
+
+    /**
+     * Sets the ensemble average type in the builder from the set of options. If there is more than one option after
+     * filtering {@link EnsembleAverageType#NONE}, an exception is thrown because there is no union of inconsistent 
+     * metadatas.
+     * 
+     * @param builder the builder
+     * @param ensembleAverageTypes the ensemble average types
+     */
+
+    private static void setEnsembleAverageType( wres.statistics.generated.Pool.Builder builder,
+                                                Set<EnsembleAverageType> ensembleAverageTypes )
+    {
+        Set<EnsembleAverageType> filtered = new TreeSet<>( ensembleAverageTypes );
+        filtered.remove( EnsembleAverageType.NONE );
+
+        if ( filtered.size() > 1 )
+        {
+            throw new PoolMetadataException( "Cannot find the union of metadatas with more than one ensemble average "
+                                             + "type. Found: "
+                                             + ensembleAverageTypes
+                                             + "." );
+        }
+
+        if ( !filtered.isEmpty() )
+        {
+            EnsembleAverageType type = filtered.iterator()
+                                               .next();
+            builder.setEnsembleAverageType( type );
+            LOGGER.debug( "While finding the union of pool metadatas, sety the ensemble average type to {}.",
+                          type );
+        }
+    }
+
+    /**
      * Returns <code>true</code> if the two metadatas are equal after ignoring the time windows, thresholds,  
      * features and pool identifiers. In addition, the time scale will be ignored (lenient) if one of the time scales is 
      * null/unknown.
@@ -578,8 +751,9 @@ public class PoolSlicer
      * @return true if the metadatas are conditionally equal
      */
 
-    private static boolean equalsWithoutTimeWindowOrThresholdsOrFeaturesOrPoolId( PoolMetadata first,
-                                                                                  PoolMetadata second )
+    private static boolean
+            equalsWithoutTimeWindowOrThresholdsOrFeaturesOrPoolIdOrEnsembleAverageType( PoolMetadata first,
+                                                                                        PoolMetadata second )
     {
         if ( Objects.isNull( first ) != Objects.isNull( second ) )
         {
@@ -594,7 +768,7 @@ public class PoolSlicer
         // Lenient about the time scale when it is missing from one
         boolean ignoreTimeScale = !first.hasTimeScale() || !second.hasTimeScale();
 
-        // Adjust the pools to remove the time window and thresholds and feature-ish information
+        // Adjust the pools to remove the information to be ignored
         wres.statistics.generated.Pool.Builder adjustedPoolFirst = first.getPool()
                                                                         .toBuilder()
                                                                         .clearPoolId()
@@ -602,6 +776,7 @@ public class PoolSlicer
                                                                         .clearEventThreshold()
                                                                         .clearDecisionThreshold()
                                                                         .clearGeometryGroup()
+                                                                        .clearEnsembleAverageType()
                                                                         .clearGeometryTuples()
                                                                         .clearRegionName();
 
@@ -612,6 +787,7 @@ public class PoolSlicer
                                                                           .clearEventThreshold()
                                                                           .clearDecisionThreshold()
                                                                           .clearGeometryGroup()
+                                                                          .clearEnsembleAverageType()
                                                                           .clearGeometryTuples()
                                                                           .clearRegionName();
 
@@ -672,20 +848,23 @@ public class PoolSlicer
      * 
      * @param <S> the input type
      * @param <T> the output type
-     * @param input the input
+     * @param pool the input
      * @param transformer the transformer
+     * @param metaTransformer the metadata transformer
      * @return the transformed type
      */
 
-    private static <S, T> Pool<T> transformInner( Pool<S> input, Function<S, T> transformer )
+    private static <S, T> Pool<T> transformInner( Pool<S> pool,
+                                                  Function<S, T> transformer,
+                                                  UnaryOperator<PoolMetadata> metaTransformer )
     {
-        Builder<T> builder = new Builder<>();
-
-        builder.setClimatology( input.getClimatology() )
-               .setMetadata( input.getMetadata() );
+        PoolMetadata unmapped = pool.getMetadata();
+        PoolMetadata mapped = metaTransformer.apply( unmapped );
+        Pool.Builder<T> builder = new Pool.Builder<T>().setMetadata( mapped )
+                                                       .setClimatology( pool.getClimatology() );
 
         // Add the main series
-        for ( S next : input.get() )
+        for ( S next : pool.get() )
         {
             T transformed = transformer.apply( next );
             if ( Objects.nonNull( transformed ) )
@@ -695,9 +874,9 @@ public class PoolSlicer
         }
 
         // Add the baseline series if available
-        if ( input.hasBaseline() )
+        if ( pool.hasBaseline() )
         {
-            Pool<S> baseline = input.getBaselineData();
+            Pool<S> baseline = pool.getBaselineData();
 
             for ( S next : baseline.get() )
             {
@@ -708,7 +887,9 @@ public class PoolSlicer
                 }
             }
 
-            builder.setMetadataForBaseline( baseline.getMetadata() );
+            PoolMetadata unmappedBaseline = baseline.getMetadata();
+            PoolMetadata mappedBaseline = metaTransformer.apply( unmappedBaseline );
+            builder.setMetadataForBaseline( mappedBaseline );
         }
 
         return builder.build();
@@ -719,46 +900,54 @@ public class PoolSlicer
      * Does not modify the metadata associated with the input.
      * 
      * @param <T> the type of data
-     * @param input the data to slice
+     * @param pool the data to slice
      * @param condition the condition on which to slice
      * @param applyToClimatology an optional filter for the climatology, may be null
+     * @param metaTransformer the metadata transformer
      * @return the subset of pairs that meet the condition
      */
 
-    private static <T> Pool<T> filterInner( Pool<T> input,
+    private static <T> Pool<T> filterInner( Pool<T> pool,
                                             Predicate<T> condition,
-                                            DoublePredicate applyToClimatology )
+                                            DoublePredicate applyToClimatology,
+                                            UnaryOperator<PoolMetadata> metaTransformer )
     {
-        Builder<T> builder = new Builder<>();
+        Pool.Builder<T> builder = new Pool.Builder<>();
 
-        List<T> mainPairs = input.get();
+        List<T> mainPairs = pool.get();
         List<T> mainPairsSubset =
                 mainPairs.stream().filter( condition ).collect( Collectors.toList() );
 
-        builder.addData( mainPairsSubset ).setMetadata( input.getMetadata() );
+        PoolMetadata unmapped = pool.getMetadata();
+        PoolMetadata mapped = metaTransformer.apply( unmapped );
+        builder.addData( mainPairsSubset )
+               .setMetadata( mapped );
 
-        //Filter climatology as required
-        if ( input.hasClimatology() )
+        // Filter climatology as required
+        if ( pool.hasClimatology() )
         {
-            VectorOfDoubles climatology = input.getClimatology();
+            VectorOfDoubles climatology = pool.getClimatology();
 
             if ( Objects.nonNull( applyToClimatology ) )
             {
-                climatology = Slicer.filter( input.getClimatology(), applyToClimatology );
+                climatology = Slicer.filter( pool.getClimatology(), applyToClimatology );
             }
 
             builder.setClimatology( climatology );
         }
 
         //Filter baseline as required
-        if ( input.hasBaseline() )
+        if ( pool.hasBaseline() )
         {
-            Pool<T> baseline = input.getBaselineData();
+            Pool<T> baseline = pool.getBaselineData();
             List<T> basePairs = baseline.get();
             List<T> basePairsSubset =
                     basePairs.stream().filter( condition ).collect( Collectors.toList() );
 
-            builder.addDataForBaseline( basePairsSubset ).setMetadataForBaseline( baseline.getMetadata() );
+            PoolMetadata unmappedBaseline = baseline.getMetadata();
+            PoolMetadata mappedBaseline = metaTransformer.apply( unmappedBaseline );
+            builder.addDataForBaseline( basePairsSubset )
+                   .setMetadataForBaseline( mappedBaseline );
         }
 
         return builder.build();

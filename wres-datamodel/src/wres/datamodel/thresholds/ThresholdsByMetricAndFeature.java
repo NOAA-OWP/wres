@@ -9,8 +9,11 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.Immutable;
+import wres.config.generated.EnsembleAverageType;
 import wres.config.generated.MetricsConfig;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.space.FeatureGroup;
@@ -27,24 +30,20 @@ import wres.datamodel.space.FeatureTuple;
 @Immutable
 public class ThresholdsByMetricAndFeature
 {
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( ThresholdsByMetricAndFeature.class );
 
-    /**
-     * Thresholds by metric and feature.
-     */
-
+    /** Thresholds by metric and feature. */
     private final Map<FeatureTuple, ThresholdsByMetric> thresholds;
 
-    /**
-     * Union of all metrics.
-     */
-
+    /** Union of all metrics. */
     private final Set<MetricConstants> metrics;
 
-    /**
-     * The minimum sample size.
-     */
+    /** The minimum sample size. */
+    private final int minimumSampleSize;
 
-    private int minimumSampleSize;
+    /** The type of ensemble average to use. */
+    private final EnsembleAverageType ensembleAverageType;
 
     /**
      * Returns an instance from the inputs.
@@ -59,7 +58,25 @@ public class ThresholdsByMetricAndFeature
     public static ThresholdsByMetricAndFeature of( Map<FeatureTuple, ThresholdsByMetric> thresholds,
                                                    int minimumSampleSize )
     {
-        return new ThresholdsByMetricAndFeature( thresholds, minimumSampleSize );
+        return new ThresholdsByMetricAndFeature( thresholds, minimumSampleSize, null );
+    }
+
+    /**
+     * Returns an instance from the inputs.
+     * 
+     * @param thresholds the thresholds mapped to metrics and features
+     * @param minimumSampleSize the minimum sample size
+     * @param ensembleAverageType the type of averaging to use when translating an ensemble to a single value, optional
+     * @return an instance
+     * @throws IllegalArgumentException if the minimum sample size is less than zero
+     * @throws NullPointerException if the thresholdsByMetric is null
+     */
+
+    public static ThresholdsByMetricAndFeature of( Map<FeatureTuple, ThresholdsByMetric> thresholds,
+                                                   int minimumSampleSize,
+                                                   EnsembleAverageType ensembleAverageType )
+    {
+        return new ThresholdsByMetricAndFeature( thresholds, minimumSampleSize, ensembleAverageType );
     }
 
     /**
@@ -80,7 +97,7 @@ public class ThresholdsByMetricAndFeature
     public ThresholdsByMetricAndFeature getThresholdsByMetricAndFeature( FeatureGroup featureGroup )
     {
         Objects.requireNonNull( featureGroup );
-        
+
         Set<FeatureTuple> features = featureGroup.getFeatures();
 
         Map<FeatureTuple, ThresholdsByMetric> innerThresholds =
@@ -90,7 +107,9 @@ public class ThresholdsByMetricAndFeature
                                .collect( Collectors.toUnmodifiableMap( Map.Entry::getKey,
                                                                        Map.Entry::getValue ) );
 
-        return new ThresholdsByMetricAndFeature( innerThresholds, this.getMinimumSampleSize() );
+        return new ThresholdsByMetricAndFeature( innerThresholds,
+                                                 this.getMinimumSampleSize(),
+                                                 this.getEnsembleAverageType() );
     }
 
     /**
@@ -109,6 +128,15 @@ public class ThresholdsByMetricAndFeature
     public int getMinimumSampleSize()
     {
         return this.minimumSampleSize;
+    }
+
+    /**
+     * @return the type of ensemble averaging to use.
+     */
+
+    public EnsembleAverageType getEnsembleAverageType()
+    {
+        return this.ensembleAverageType;
     }
 
     @Override
@@ -151,12 +179,14 @@ public class ThresholdsByMetricAndFeature
      * 
      * @param thresholds the thresholds mapped to metrics and features
      * @param minimumSampleSize the minimum sample size
+     * @param ensembleAverageType the type of averaging to use when translating an ensemble to a single value, optional
      * @throws IllegalArgumentException if the minimum sample size is less than zero
      * @throws NullPointerException if the thresholdsByMetric is null
      */
 
     private ThresholdsByMetricAndFeature( Map<FeatureTuple, ThresholdsByMetric> thresholds,
-                                          int minimumSampleSize )
+                                          int minimumSampleSize,
+                                          EnsembleAverageType ensembleAverageType )
     {
         Objects.requireNonNull( thresholds );
 
@@ -165,6 +195,20 @@ public class ThresholdsByMetricAndFeature
             throw new IllegalArgumentException( "The minimum sample size must be greater than zero but was "
                                                 + minimumSampleSize
                                                 + "." );
+        }
+
+        // Default to ensemble mean where applicable
+        if ( Objects.isNull( ensembleAverageType ) )
+        {
+            LOGGER.debug( "Using a default ensemble average that corresponds to the {}.", EnsembleAverageType.MEAN );
+
+            this.ensembleAverageType = EnsembleAverageType.MEAN;
+        }
+        else
+        {
+            LOGGER.debug( "Setting the ensemble average type to {}.", ensembleAverageType);
+            
+            this.ensembleAverageType = ensembleAverageType;
         }
 
         this.thresholds =

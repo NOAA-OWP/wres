@@ -1694,6 +1694,8 @@ dependencies
         exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
     }
 
+    implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
+
     // JUnit 5 API and runtime
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'

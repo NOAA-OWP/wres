@@ -11,6 +11,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -22,6 +23,7 @@ import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
@@ -78,10 +80,10 @@ public class MetricProcessorByTimeSingleValuedPairs
     @Override
     public StatisticsStore apply( Pool<TimeSeries<Pair<Double, Double>>> pool )
     {
-        Objects.requireNonNull( pool, "Expected non-null input to the metric processor." );
+        Objects.requireNonNull( pool, "Expected a non-null pool as input to the metric processor." );
 
         Objects.requireNonNull( pool.getMetadata().getTimeWindow(),
-                                "Expected a non-null time window in the input metadata." );
+                                "Expected a non-null time window in the pool metadata." );
 
         //Remove missing values from pairs that do not preserver time order
         Pool<Pair<Double, Double>> unpackedNoMissing = null;
@@ -269,14 +271,17 @@ public class MetricProcessorByTimeSingleValuedPairs
                     ThresholdSlicer.getTransformersFromThresholds( thresholds,
                                                                    transformerGenerator );
 
-            //Transform the pairs
+            // Add the threshold to the metadata
+            ThresholdOuter outer = ThresholdSlicer.compose( Set.copyOf( thresholds.values() ) );
+            OneOrTwoThresholds composed = OneOrTwoThresholds.of( outer );
+            UnaryOperator<PoolMetadata> metaTransformer =
+                    untransformed -> PoolMetadata.of( untransformed, composed );
+
+            // Transform the pairs
             Pool<Pair<Boolean, Boolean>> transformed = PoolSlicer.transform( pool,
                                                                              transformers,
-                                                                             PoolSlicer.getFeatureMapper() );
-
-            // Add the threshold to the metadata
-            ThresholdOuter composed = ThresholdSlicer.compose( Set.copyOf( thresholds.values() ) );
-            transformed = this.addThresholdToPoolMetadata( transformed, OneOrTwoThresholds.of( composed ) );
+                                                                             PoolSlicer.getFeatureMapper(),
+                                                                             metaTransformer );
 
             super.processDichotomousPairs( transformed,
                                            futures,
@@ -329,13 +334,17 @@ public class MetricProcessorByTimeSingleValuedPairs
                     ThresholdSlicer.getFiltersFromThresholds( thresholds,
                                                               MetricProcessorByTime::getFilterForTimeSeriesOfSingleValuedPairs );
 
+            // Add the threshold to the pool metadata            
+            ThresholdOuter outer = ThresholdSlicer.compose( Set.copyOf( thresholds.values() ) );
+            OneOrTwoThresholds composed = OneOrTwoThresholds.of( outer );
+            UnaryOperator<PoolMetadata> metaTransformer =
+                    untransformed -> PoolMetadata.of( untransformed, composed );
+
+
             Pool<TimeSeries<Pair<Double, Double>>> sliced = PoolSlicer.filter( pool,
                                                                                slicers,
-                                                                               PoolSlicer.getFeatureMapper() );
-
-            // Add the threshold to the metadata
-            ThresholdOuter composed = ThresholdSlicer.compose( Set.copyOf( thresholds.values() ) );
-            sliced = this.addThresholdToPoolMetadata( sliced, OneOrTwoThresholds.of( composed ) );
+                                                                               PoolSlicer.getFeatureMapper(),
+                                                                               metaTransformer );
 
             // Build the future result
             Future<List<DurationDiagramStatisticOuter>> output = this.processTimeSeriesPairs( sliced,

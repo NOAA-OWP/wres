@@ -5,7 +5,7 @@ import wres.io.writing.WriteException;
 /**
  * A runtime exception associated with writing metric outputs of Comma Separated Values (CSV).
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class CommaSeparatedWriteException extends WriteException
