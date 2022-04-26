@@ -1,7 +1,7 @@
 package wres.datamodel.messages;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -23,8 +24,8 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.google.protobuf.Timestamp;
 
@@ -37,6 +38,7 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -64,6 +66,8 @@ import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponen
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
 import wres.statistics.generated.Evaluation.DefaultData;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Outputs.CsvFormat;
@@ -93,7 +97,7 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.Co
  * @author James Brown
  */
 
-public class MessageFactoryTest
+class MessageFactoryTest
 {
     private static final String ESP = "ESP";
     private static final String HEFS = "HEFS";
@@ -184,8 +188,8 @@ public class MessageFactoryTest
 
     private final Path outputDirectory = Paths.get( System.getProperty( "java.io.tmpdir" ) );
 
-    @Before
-    public void runBeforeEachTest()
+    @BeforeEach
+    void runBeforeEachTest()
     {
         this.scores = this.getScoreStatisticsForOnePool();
         this.durationScores = this.getDurationScoreStatisticsForOnePool();
@@ -196,7 +200,7 @@ public class MessageFactoryTest
     }
 
     @Test
-    public void testCreationOfOneStatisticsMessageWithThreeScoresAndOneDiagram()
+    void testCreationOfOneStatisticsMessageWithThreeScoresAndOneDiagram()
             throws IOException, InterruptedException
     {
         // Create a statistics message
@@ -231,7 +235,7 @@ public class MessageFactoryTest
     }
 
     @Test
-    public void testCreationOfTwoStatisticsMessagesEachWithThreeScoresAndOneDiagram()
+    void testCreationOfTwoStatisticsMessagesEachWithThreeScoresAndOneDiagram()
             throws IOException, InterruptedException
     {
         // Create a statistics message
@@ -269,7 +273,7 @@ public class MessageFactoryTest
     }
 
     @Test
-    public void testCreationOfOneStatisticsMessageWithTwoBoxPlots() throws IOException, InterruptedException
+    void testCreationOfOneStatisticsMessageWithTwoBoxPlots() throws IOException, InterruptedException
     {
         // Create a statistics message
         StatisticsStore statistics =
@@ -302,7 +306,7 @@ public class MessageFactoryTest
     }
 
     @Test
-    public void testCreationOfOneStatisticsMessageWithSeveralDurationScores() throws IOException, InterruptedException
+    void testCreationOfOneStatisticsMessageWithSeveralDurationScores() throws IOException, InterruptedException
     {
         // Create a statistics message
         StatisticsStore statistics =
@@ -334,7 +338,7 @@ public class MessageFactoryTest
     }
 
     @Test
-    public void testCreationOfOneStatisticsMessageWithOneDurationDiagram() throws IOException, InterruptedException
+    void testCreationOfOneStatisticsMessageWithOneDurationDiagram() throws IOException, InterruptedException
     {
         // Create a statistics message
         StatisticsStore statistics =
@@ -366,7 +370,7 @@ public class MessageFactoryTest
     }
 
     @Test
-    public void testParseByPool() throws InterruptedException
+    void testParseByPool() throws InterruptedException
     {
         // Create a statistics message composed of scores and diagrams
         StatisticsStore statistics =
@@ -405,7 +409,7 @@ public class MessageFactoryTest
      */
 
     @Test
-    public void testParseProjectToEvaluation() throws InterruptedException, IOException
+    void testParseProjectToEvaluation() throws InterruptedException, IOException
     {
 
         // Project from system test scenario007 with simplified override for drawing parameters
@@ -546,7 +550,7 @@ public class MessageFactoryTest
      */
 
     @Test
-    public void testParseOutputsCapturesGraphicsShape() throws InterruptedException, IOException
+    void testParseOutputsCapturesGraphicsShape() throws InterruptedException, IOException
     {
         String projectString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" +
                                "\r\n"
@@ -646,7 +650,7 @@ public class MessageFactoryTest
     }
 
     @Test
-    public void testParseFormatFromDestinationType()
+    void testParseFormatFromDestinationType()
     {
         assertEquals( Format.PNG, MessageFactory.parse( DestinationType.GRAPHIC ) );
         assertEquals( Format.PNG, MessageFactory.parse( DestinationType.PNG ) );
@@ -655,6 +659,46 @@ public class MessageFactoryTest
         assertEquals( Format.PROTOBUF, MessageFactory.parse( DestinationType.PROTOBUF ) );
         assertEquals( Format.CSV, MessageFactory.parse( DestinationType.NUMERIC ) );
         assertEquals( Format.CSV, MessageFactory.parse( DestinationType.CSV ) );
+    }
+
+    @Test
+    void testGetGeometryGroupProducesGroupWithPredictableOrderOfTuples()
+    {
+        GeometryTuple ga = GeometryTuple.newBuilder()
+                                        .setLeft( Geometry.newBuilder().setName( "a" ) )
+                                        .setRight( Geometry.newBuilder().setName( "a" ) )
+                                        .setBaseline( Geometry.newBuilder().setName( "a" ) )
+                                        .build();
+        FeatureTuple ta = FeatureTuple.of( ga );
+
+        GeometryTuple gb = GeometryTuple.newBuilder()
+                                        .setLeft( Geometry.newBuilder().setName( "b" ) )
+                                        .setRight( Geometry.newBuilder().setName( "b" ) )
+                                        .setBaseline( Geometry.newBuilder().setName( "b" ) )
+                                        .build();
+        FeatureTuple tb = FeatureTuple.of( gb );
+
+        GeometryTuple gc = GeometryTuple.newBuilder()
+                                        .setLeft( Geometry.newBuilder().setName( "c" ) )
+                                        .setRight( Geometry.newBuilder().setName( "c" ) )
+                                        .setBaseline( Geometry.newBuilder().setName( "c" ) )
+                                        .build();
+        FeatureTuple tc = FeatureTuple.of( gc );
+
+        Set<FeatureTuple> unsortedSet = new HashSet<>();
+        unsortedSet.add( ta );
+        unsortedSet.add( tb );
+        unsortedSet.add( tc );
+
+        Set<FeatureTuple> sortedSet = new TreeSet<>();
+        sortedSet.add( ta );
+        sortedSet.add( tb );
+        sortedSet.add( tc );
+
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( unsortedSet );
+        GeometryGroup geoGroupTwo = MessageFactory.getGeometryGroup( sortedSet );
+
+        assertEquals( geoGroup, geoGroupTwo );
     }
 
     /**

@@ -8,18 +8,16 @@ option java_multiple_files = true;
 
 message Geometry
 {
-    /*Elementary representation of a geometry with a spatial reference 
-     identifier (srid) and well-known text (wkt) string.*/
+    // Representation of an elementary geometry.
 
     string wkt = 1;
-    // Geometry string.
+    // Geometry string in Well Known Text format.
 
     int32 srid = 2;
     // Coordinate system.
 
     string name = 3;
-    /*User-friendly name for all sides of a pairing or the left side only if 
-    other sides are defined explicitly. (e.g., DRRC2).*/
+    // User-friendly name for the geometry (e.g., DRRC2).
 
     string description = 4;
     // User-friendly description of the geometry.

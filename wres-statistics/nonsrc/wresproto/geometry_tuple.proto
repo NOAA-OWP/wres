@@ -10,11 +10,8 @@ option java_multiple_files = true;
 
 message GeometryTuple
 {
-    /*A tuple of geometries for each dataset associated with an evaluation.
-     An evaluation may contain a separate geometry for each of the left, 
-     right and baseline data and, in future, possibly the climatological 
-     data too. If only one geometry is present, it is assumed to apply 
-     to all datasets.*/
+    // A tuple of geometries, one for each dataset associated with an 
+    // evaluation.
 
     Geometry left = 1;
     // Geometry for the left-sided data.
