@@ -54,7 +54,7 @@ plugins
     id 'com.github.ksoichiro.console.reporter' version '0.6.3'
 
     // To discover library versions with known vulnerabilities
-    id 'org.owasp.dependencycheck' version '7.0.4.1'
+    id 'org.owasp.dependencycheck' version '7.1.0.1'
     
     // Task to assist in downloading artifacts
     id "de.undercouch.download" version "5.0.5"
@@ -265,7 +265,7 @@ project(':wres-util')
         testImplementation 'junit:junit:4.13.2'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:4.4.0'
+        testImplementation 'org.mockito:mockito-core:4.5.1'
     }
 }
 
@@ -354,7 +354,7 @@ project(':wres-datamodel')
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:4.4.0'
+        testImplementation 'org.mockito:mockito-core:4.5.1'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
@@ -429,7 +429,7 @@ project(':wres-io')
         implementation 'com.squareup.okhttp3:okhttp:4.10.0-RC1'
 
         // Update vulnerable kotlin-stdlib that okhttp/okio uses
-        implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.6.20'
+        implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.6.21'
 
         // To accurately detect mime types of files.
         implementation 'org.apache.tika:tika-core:1.27'
@@ -459,7 +459,7 @@ project(':wres-io')
         testImplementation 'org.liquibase:liquibase-core:4.9.1'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-inline:4.4.0'
+        testImplementation 'org.mockito:mockito-inline:4.5.1'
 
         // Use mockserver as a mock server for mock API responses
         testImplementation 'org.mock-server:mockserver-netty:5.13.2'
@@ -525,7 +525,7 @@ project(':wres-metrics')
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha7'
 
         testImplementation 'junit:junit:4.13.2'
-        testImplementation 'org.mockito:mockito-core:4.4.0'
+        testImplementation 'org.mockito:mockito-core:4.5.1'
     }
 }
 
@@ -548,7 +548,7 @@ project(':wres-statistics')
         // Automatically download and use the correct protobuf compiler
         protoc
         {
-            artifact = 'com.google.protobuf:protoc:3.19.4'
+            artifact = 'com.google.protobuf:protoc:3.20.1'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
@@ -646,7 +646,7 @@ project(':wres-statistics')
 
     dependencies
     {
-        api 'com.google.protobuf:protobuf-java:3.19.4'
+        api 'com.google.protobuf:protobuf-java:3.20.1'
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha7'
         implementation project(':wres-config')
 
@@ -761,7 +761,7 @@ project(':wres-vis')
         testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.8.2'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:4.4.0'
+        testImplementation 'org.mockito:mockito-core:4.5.1'
 
         testRuntimeOnly files('dist/lib/conf')
 
@@ -961,7 +961,7 @@ project(':wres-messages')
         // Automatically download and use the correct protobuf compiler
         protoc
         {
-            artifact = 'com.google.protobuf:protoc:3.19.4'
+            artifact = 'com.google.protobuf:protoc:3.20.1'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
@@ -997,7 +997,7 @@ project(':wres-messages')
 
     dependencies
     {
-        api 'com.google.protobuf:protobuf-java:3.19.4'
+        api 'com.google.protobuf:protobuf-java:3.20.1'
 
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha7'
 
@@ -1097,7 +1097,7 @@ project(':wres-tasker')
         implementation project( ':wres-messages' )
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha7'
         implementation 'com.rabbitmq:amqp-client:5.14.2'
-        implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.0.0'
+        implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.1.0'
         implementation 'jakarta.annotation:jakarta.annotation-api:2.1.0'
 
         // Easy byte[] to hex conversion
@@ -1133,7 +1133,7 @@ project(':wres-tasker')
         implementation 'org.apache.tika:tika-core:1.27'
 
         // To persist job metadata while keeping it relatively fast
-        implementation 'org.redisson:redisson:3.17.0'
+        implementation 'org.redisson:redisson:3.17.1'
 
         // Upgrade jackson-databind used by redisson (CVE-2020-36518)
         implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.2.2'
@@ -1145,7 +1145,7 @@ project(':wres-tasker')
         implementation 'org.apache.commons:commons-lang3:3.12.0'
 
         // To send/receive messages
-        implementation 'com.google.protobuf:protobuf-java:3.19.4'
+        implementation 'com.google.protobuf:protobuf-java:3.20.1'
 
         runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha14' )
         {
@@ -1413,9 +1413,9 @@ project(':wres-events')
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:4.4.0'
+        testImplementation 'org.mockito:mockito-core:4.5.1'
         // Mocking final classes
-        testImplementation 'org.mockito:mockito-inline:4.4.0'
+        testImplementation 'org.mockito:mockito-inline:4.5.1'
 
         // To create an embedded broker for unit testing
         testImplementation project( ':wres-eventsbroker' )
@@ -1652,7 +1652,7 @@ dependencies
 
     implementation 'org.slf4j:slf4j-api:2.0.0-alpha7'
 
-    implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.0.0'
+    implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.1.0'
     implementation 'jakarta.annotation:jakarta.annotation-api:2.1.0'
 
     // For Java 9+ compatibility:
@@ -1702,7 +1702,7 @@ dependencies
     testCompileOnly 'junit:junit:4.13.2'
     testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.8.2'
 
-    testImplementation 'org.mockito:mockito-core:4.4.0'
+    testImplementation 'org.mockito:mockito-core:4.5.1'
 
     testImplementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 }
