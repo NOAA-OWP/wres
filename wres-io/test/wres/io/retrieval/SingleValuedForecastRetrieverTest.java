@@ -104,7 +104,7 @@ public class SingleValuedForecastRetrieverTest
         MockitoAnnotations.openMocks( this );
 
         // Create the database and connection pool
-        this.testDatabase = new TestDatabase( "SingleValuedForecastRetrieverTest" );
+        this.testDatabase = new TestDatabase( this.getClass().getName() );
         this.dataSource = this.testDatabase.getNewHikariDataSource();
 
         // Create the connection and schema
