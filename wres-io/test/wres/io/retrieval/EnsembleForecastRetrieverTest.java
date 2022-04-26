@@ -117,7 +117,7 @@ public class EnsembleForecastRetrieverTest
         MockitoAnnotations.openMocks( this );
 
         // Create the database and connection pool
-        this.testDatabase = new TestDatabase( "EnsembleForecastRetrieverTest" );
+        this.testDatabase = new TestDatabase( this.getClass().getName() );
         this.dataSource = this.testDatabase.getNewHikariDataSource();
 
         // Substitute our H2 connection pool for both pools:

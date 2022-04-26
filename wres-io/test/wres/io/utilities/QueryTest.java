@@ -41,7 +41,7 @@ public class QueryTest
     {
         LOGGER.trace( "@BeforeClass began" );
         // We need to create a test database so we aren't trying to reach out to a real, deployed database
-        QueryTest.testDatabase = new TestDatabase( "QueryTest" );
+        QueryTest.testDatabase = new TestDatabase( QueryTest.class.getName() );
         QueryTest.dataSource = QueryTest.testDatabase.getNewHikariDataSource();
         LOGGER.trace( "@BeforeClass ended" );
     }
