@@ -302,6 +302,7 @@ public class Project
         LOGGER.debug( "Setting the features and feature groups for project {}.", this.getId() );
         Pair<Set<FeatureTuple>, Set<FeatureGroup>> innerFeatures = this.getIntersectingFeatures( db );
 
+        // Immutable on construction
         this.featureGroups = innerFeatures.getRight();
 
         LOGGER.debug( "Finished setting the feature groups for project {}. Discovered {} feature groups: {}.",
@@ -1180,11 +1181,6 @@ public class Project
                                                 Set<FeatureTuple> featuresForGroups,
                                                 PairConfig pairConfig )
     {
-        if ( Objects.nonNull( this.featureGroups ) )
-        {
-            return this.featureGroups;
-        }
-
         LOGGER.debug( "Creating feature groups for project {}.", this.getId() );
         Set<FeatureGroup> innerGroups = new HashSet<>();
 
