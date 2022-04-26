@@ -18,6 +18,7 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.Pool.EnsembleAverageType;
 
 /**
  * An immutable store of metadata that describes a {@link Pool}.
@@ -185,6 +186,31 @@ public class PoolMetadata implements Comparable<PoolMetadata>
         return new PoolMetadata( evaluation, pool.build() );
     }
 
+    /**
+     * Builds a {@link PoolMetadata} from a prescribed input source and an override {@link EnsembleAverageType}.
+     * 
+     * @param input the source metadata
+     * @param ensembleAverageType the new ensemble average type
+     * @return a {@link PoolMetadata} object
+     * @throws NullPointerException if the input is null
+     */
+
+    public static PoolMetadata of( PoolMetadata input, EnsembleAverageType ensembleAverageType )
+    {
+        Objects.requireNonNull( input );
+
+        Evaluation evaluation = input.getEvaluation();
+
+        Pool.Builder pool = input.getPool().toBuilder();
+
+        if ( Objects.nonNull( ensembleAverageType ) )
+        {
+            pool.setEnsembleAverageType( ensembleAverageType );
+        }
+
+        return new PoolMetadata( evaluation, pool.build() );
+    }
+    
     /**
      * Builds a {@link PoolMetadata} from a prescribed input source and an override {@link TimeWindowOuter} and 
      * {@link TimeScaleOuter}.
@@ -376,6 +402,8 @@ public class PoolMetadata implements Comparable<PoolMetadata>
                                                                                      this.getTimeScale() )
                                                                             .append( "measurementUnit",
                                                                                      this.getMeasurementUnit() )
+                                                                            .append( "ensembleAverageType",
+                                                                                     innerPool.getEnsembleAverageType() )
                                                                             .build();
     }
 

@@ -51,7 +51,7 @@ message Evaluation
     included.*/
     
     ValueFilter value_filter = 12;
-    // Values that were not filtered when forming pairs.
+    // Values that were filtered when forming pairs.
 
     enum DefaultData
     {
@@ -66,5 +66,4 @@ message Evaluation
 
     Outputs outputs = 13;
     // The outputs requested for the evaluation.
-    
 }

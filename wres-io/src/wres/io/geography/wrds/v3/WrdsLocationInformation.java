@@ -22,10 +22,8 @@ public class WrdsLocationInformation
     private final WrdsLocation locations;
 
     @JsonCreator( mode = JsonCreator.Mode.PROPERTIES )
-    public WrdsLocationInformation( 
-                             @JsonProperty( "identifiers" ) 
-                             WrdsLocation locations 
-                           )
+    public WrdsLocationInformation(
+                                    @JsonProperty( "identifiers" ) WrdsLocation locations )
     {
         this.locations = locations;
     }

@@ -5,6 +5,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
+
+import wres.config.generated.EnsembleAverageType;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
@@ -16,7 +18,7 @@ class MetricVariable
     private static final String NONE = "NONE";
 
     private final ChronoUnit durationUnits;
-    
+
     private final String variableName;
     private final String longName;
 
@@ -34,56 +36,116 @@ class MetricVariable
 
     private final String earliestValidTime;
     private final String latestValidTime;
-    
+
     private final String timeScalePeriod;
     private final String timeScaleFunction;
 
     private final OneOrTwoThresholds thresholds;
-    
+
     // TODO: make these longs
     // Chris Tubbs: We can only write Netcdf-3, and Netcdf-3 doesn't support longs. Keeping them
     // as 'int's here helps us avoid potential value conversion issues down the line
     private final int earliestLead;
     private final int latestLead;
 
+    private final EnsembleAverageType ensembleAverageType;
+
+    /**
+     * Builder.
+     */
+    static class Builder
+    {
+        private String variableName;
+        private TimeWindowOuter timeWindow;
+        private String metricName;
+        private OneOrTwoThresholds thresholds;
+        private String units;
+        private TimeScaleOuter desiredTimeScale;
+        private ChronoUnit durationUnits;
+        private EnsembleAverageType ensembleAverageType;
+
+        Builder setVariableName( String variableName )
+        {
+            this.variableName = variableName;
+            return this;
+        }
+
+        Builder setTimeWindow( TimeWindowOuter timeWindow )
+        {
+            this.timeWindow = timeWindow;
+            return this;
+        }
+
+        Builder setMetricName( String metricName )
+        {
+            this.metricName = metricName;
+            return this;
+        }
+
+        Builder setThresholds( OneOrTwoThresholds thresholds )
+        {
+            this.thresholds = thresholds;
+            return this;
+        }
+
+        Builder setUnits( String units )
+        {
+            this.units = units;
+            return this;
+        }
+
+        Builder setDesiredTimeScale( TimeScaleOuter desiredTimeScale )
+        {
+            this.desiredTimeScale = desiredTimeScale;
+            return this;
+        }
+
+        Builder setDurationUnits( ChronoUnit durationUnits )
+        {
+            this.durationUnits = durationUnits;
+            return this;
+        }
+
+        Builder setEnsembleAverageType( EnsembleAverageType ensembleAverageType )
+        {
+            this.ensembleAverageType = ensembleAverageType;
+            return this;
+        }
+
+        /**
+         * @return an instance
+         */
+        MetricVariable build()
+        {
+            return new MetricVariable( this );
+        }
+    }
+
     /**
      * Builds a new variable.
      * 
-     * @param variableName the variable name
-     * @param timeWindow the time window
-     * @param metricName the metric name
-     * @param thresholds the thresholds
-     * @param units the measurement units
-     * @param desiredTimeScale the desired time scale
-     * @param durationUnits the duration units
+     * @param builder the builder
      */
-    
-    MetricVariable( String variableName,
-                    TimeWindowOuter timeWindow,
-                    String metricName,
-                    OneOrTwoThresholds thresholds,
-                    String units,
-                    TimeScaleOuter desiredTimeScale,
-                    ChronoUnit durationUnits )
+
+    private MetricVariable( Builder builder )
     {
-        this.durationUnits = durationUnits;
-
-        this.thresholds = thresholds;
-
-        this.variableName = variableName;
+        this.durationUnits = builder.durationUnits;
+        this.thresholds = builder.thresholds;
+        this.variableName = builder.variableName;
+        this.ensembleAverageType = builder.ensembleAverageType;
 
         // Build the long_name. This should not contain numbers for the thresholds because they can vary by feature.
-        String fullName = metricName + " " + this.getThreshold();
-        
+        String fullName = builder.metricName + " " + this.getThreshold();
+
         // Primary threshold has a label? If so, ignore that when replacing numbers in the long_name.
         // See #85465.
-        if( thresholds.first().hasLabel() )
+        if ( this.thresholds.first().hasLabel() )
         {
-            String label = thresholds.first().getLabel();
+            String label = this.thresholds.first().getLabel();
             // Replace with a temporary placeholder that contains no numbers
             fullName = fullName.replace( label, "oHhcAqApZQLTLmtDvaX" );
         }
-        
+
         // Replace all numbers with a "variable number" placeholder because these numbers can vary by feature. A more 
         // sophisticated approach would determine whether they do actually vary by feature and only replace them in that 
         // case. The CF convention is silent about variable names for thresholds that vary by feature. Some related 
@@ -91,16 +153,16 @@ class MetricVariable
         fullName = fullName.replaceAll( "\\d+", "#" );
 
         // Add back any label removed.
-        if( thresholds.first().hasLabel() )
+        if ( this.thresholds.first().hasLabel() )
         {
             String label = thresholds.first().getLabel();
             fullName = fullName.replace( "oHhcAqApZQLTLmtDvaX", label );
         }
-        
+
         this.longName = fullName;
 
-        this.measurementUnit = units;
-        
+        this.measurementUnit = builder.units;
+
         this.firstCondition = this.getThreshold().first().getOperator().name();
         this.firstDataType = this.getThreshold().first().getDataType().name();
 
@@ -114,7 +176,7 @@ class MetricVariable
         }
 
         // Two thresholds available
-        if ( thresholds.hasTwo() )
+        if ( this.thresholds.hasTwo() )
         {
             this.secondCondition = this.getThreshold().second().getOperator().name();
             this.secondDataType = this.getThreshold().second().getDataType().name();
@@ -130,32 +192,35 @@ class MetricVariable
         int leadLow = Integer.MIN_VALUE;
         int leadHigh = Integer.MAX_VALUE;
 
-        if ( !timeWindow.getEarliestLeadDuration().equals( TimeWindowOuter.DURATION_MIN ) )
+        TimeWindowOuter localWindow = builder.timeWindow;
+
+        if ( !localWindow.getEarliestLeadDuration().equals( TimeWindowOuter.DURATION_MIN ) )
         {
-            leadLow = (int) TimeHelper.durationToLongUnits( timeWindow.getEarliestLeadDuration(),
+            leadLow = (int) TimeHelper.durationToLongUnits( localWindow.getEarliestLeadDuration(),
                                                             this.getDurationUnits() );
         }
-        if ( !timeWindow.getLatestLeadDuration().equals( TimeWindowOuter.DURATION_MAX ) )
+        if ( !localWindow.getLatestLeadDuration().equals( TimeWindowOuter.DURATION_MAX ) )
         {
-            leadHigh = (int) TimeHelper.durationToLongUnits( timeWindow.getLatestLeadDuration(),
+            leadHigh = (int) TimeHelper.durationToLongUnits( localWindow.getLatestLeadDuration(),
                                                              this.getDurationUnits() );
         }
         this.earliestLead = leadLow;
         this.latestLead = leadHigh;
 
-        this.earliestReferenceTime = this.getInstantString( timeWindow.getEarliestReferenceTime() );
-        this.latestReferenceTime = this.getInstantString( timeWindow.getLatestReferenceTime() );
-        this.earliestValidTime = this.getInstantString( timeWindow.getEarliestValidTime() );
-        this.latestValidTime = this.getInstantString( timeWindow.getLatestValidTime() );
+        this.earliestReferenceTime = this.getInstantString( localWindow.getEarliestReferenceTime() );
+        this.latestReferenceTime = this.getInstantString( localWindow.getLatestReferenceTime() );
+        this.earliestValidTime = this.getInstantString( localWindow.getEarliestValidTime() );
+        this.latestValidTime = this.getInstantString( localWindow.getLatestValidTime() );
 
         // Add the time scale information if available
-        if ( Objects.nonNull( desiredTimeScale ) )
+        TimeScaleOuter localScale = builder.desiredTimeScale;
+        if ( Objects.nonNull( localScale ) )
         {
             // Use the default duration units
-            this.timeScalePeriod = Long.toString( TimeHelper.durationToLongUnits( desiredTimeScale.getPeriod(),
+            this.timeScalePeriod = Long.toString( TimeHelper.durationToLongUnits( localScale.getPeriod(),
                                                                                   this.getDurationUnits() ) );
             // Use the enum name()
-            this.timeScaleFunction = desiredTimeScale.getFunction().name();
+            this.timeScaleFunction = localScale.getFunction().name();
         }
         else
         {
@@ -172,13 +237,13 @@ class MetricVariable
     Map<String, Object> getAttributes()
     {
 
-        Map<String, Object> attributes = new TreeMap<>(  );
+        Map<String, Object> attributes = new TreeMap<>();
 
         attributes.put( "earliest_reference_time", this.earliestReferenceTime );
         attributes.put( "latest_reference_time", this.latestReferenceTime );
         attributes.put( "earliest_valid_time", this.earliestValidTime );
         attributes.put( "latest_valid_time", this.latestValidTime );
-        
+
         // Add the default duration units to qualify
         attributes.put( "earliest_lead_" + this.getDurationUnits().name().toLowerCase(),
                         this.earliestLead );
@@ -196,6 +261,7 @@ class MetricVariable
         attributes.put( "time_scale_period_" + this.getDurationUnits().name().toLowerCase(),
                         this.timeScalePeriod );
         attributes.put( "time_scale_function", this.timeScaleFunction );
+        attributes.put( "ensemble_average_type", this.ensembleAverageType.name() );
 
         return attributes;
     }
@@ -203,21 +269,21 @@ class MetricVariable
     private ChronoUnit getDurationUnits()
     {
         return this.durationUnits;
-    }    
+    }
 
     private OneOrTwoThresholds getThreshold()
     {
         return this.thresholds;
-    } 
-    
+    }
+
     private String getInstantString( Instant instant )
     {
-        if( Instant.MIN.equals( instant ) || Instant.MAX.equals( instant ) )
+        if ( Instant.MIN.equals( instant ) || Instant.MAX.equals( instant ) )
         {
             return "ALL";
         }
-        
+
         return instant.toString();
     }
-    
+
 }

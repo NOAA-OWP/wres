@@ -22,6 +22,7 @@ import org.junit.Test;
 
 import wres.config.MetricConfigException;
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.EnsembleAverageType;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
@@ -90,7 +91,11 @@ public final class MetricConfigHelperTest
         defaultMockedConfig =
                 new ProjectConfig( null,
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( thresholds,
+                                                                     0,
+                                                                     metrics,
+                                                                     null,
+                                                                     EnsembleAverageType.MEAN ) ),
                                    new Outputs( Arrays.asList( new DestinationConfig( OutputTypeSelection.THRESHOLD_LEAD,
                                                                                       null,
                                                                                       null,
@@ -239,7 +244,11 @@ public final class MetricConfigHelperTest
                                                    null,
                                                    null,
                                                    null ),
-                                   Arrays.asList( new MetricsConfig( thresholds, 0, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( thresholds,
+                                                                     0,
+                                                                     metrics,
+                                                                     null,
+                                                                     EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    null );
@@ -384,7 +393,11 @@ public final class MetricConfigHelperTest
         ProjectConfig mockedConfig =
                 new ProjectConfig( null,
                                    null,
-                                   Arrays.asList( new MetricsConfig( null, 0, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( null,
+                                                                     0,
+                                                                     metrics,
+                                                                     null,
+                                                                     EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    null );
@@ -396,7 +409,11 @@ public final class MetricConfigHelperTest
         ProjectConfig mockedConfigWithOutput =
                 new ProjectConfig( null,
                                    null,
-                                   Arrays.asList( new MetricsConfig( null, 0, metrics, null ) ),
+                                   Arrays.asList( new MetricsConfig( null,
+                                                                     0,
+                                                                     metrics,
+                                                                     null,
+                                                                     EnsembleAverageType.MEAN ) ),
                                    new Outputs( Arrays.asList( new DestinationConfig( OutputTypeSelection.LEAD_THRESHOLD,
                                                                                       null,
                                                                                       null,

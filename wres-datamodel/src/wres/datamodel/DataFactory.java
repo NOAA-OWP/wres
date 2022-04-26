@@ -538,6 +538,7 @@ public final class DataFactory
      * @param leadUnits the time units to use for the lead durations
      * @param metricName the metric name
      * @param metricComponentName name the optional component name
+     * @param append an optional string to append
      * @return a path to write, without a file type extension
      * @throws NullPointerException if any required input is null, including the identifier associated with the metadata
      * @throws IOException if the path cannot be produced
@@ -548,7 +549,8 @@ public final class DataFactory
                                                 TimeWindowOuter timeWindow,
                                                 ChronoUnit leadUnits,
                                                 MetricConstants metricName,
-                                                MetricConstants metricComponentName )
+                                                MetricConstants metricComponentName,
+                                                String append )
             throws IOException
     {
         Objects.requireNonNull( meta, DataFactory.ENTER_NON_NULL_METADATA_TO_ESTABLISH_A_PATH_FOR_WRITING );
@@ -558,12 +560,19 @@ public final class DataFactory
         Objects.requireNonNull( leadUnits,
                                 "Enter a non-null time unit for the lead durations to establish a path for writing." );
 
+        String appendString = DataFactory.durationToLongUnits( timeWindow.getLatestLeadDuration(),
+                                                               leadUnits )
+                              + "_"
+                              + leadUnits.name().toUpperCase();
+
+        if ( Objects.nonNull( append ) )
+        {
+            appendString = appendString + "_" + append;
+        }
+
         return DataFactory.getPathFromPoolMetadata( outputDirectory,
                                                     meta,
-                                                    DataFactory.durationToLongUnits( timeWindow.getLatestLeadDuration(),
-                                                                                     leadUnits )
-                                                          + "_"
-                                                          + leadUnits.name().toUpperCase(),
+                                                    appendString,
                                                     metricName,
                                                     metricComponentName );
     }
@@ -644,6 +653,7 @@ public final class DataFactory
      * @param threshold the threshold
      * @param metricName the metric name
      * @param metricComponentName name the optional component name
+     * @param append an optional string to append
      * @return a path to write, without a file type extension
      * @throws NullPointerException if any required input is null, including the identifier associated with the metadata
      * @throws IOException if the path cannot be produced
@@ -653,18 +663,26 @@ public final class DataFactory
                                                 PoolMetadata meta,
                                                 OneOrTwoThresholds threshold,
                                                 MetricConstants metricName,
-                                                MetricConstants metricComponentName )
+                                                MetricConstants metricComponentName,
+                                                String append )
             throws IOException
     {
         Objects.requireNonNull( meta, ENTER_NON_NULL_METADATA_TO_ESTABLISH_A_PATH_FOR_WRITING );
 
         Objects.requireNonNull( threshold, "Enter non-null threshold to establish a path for writing." );
 
-        return getPathFromPoolMetadata( outputDirectory,
-                                        meta,
-                                        threshold.toStringSafe(),
-                                        metricName,
-                                        metricComponentName );
+        String appendString = threshold.toStringSafe();
+
+        if ( Objects.nonNull( append ) )
+        {
+            appendString = appendString + "_" + append;
+        }
+
+        return DataFactory.getPathFromPoolMetadata( outputDirectory,
+                                                    meta,
+                                                    appendString,
+                                                    metricName,
+                                                    metricComponentName );
     }
 
     /**

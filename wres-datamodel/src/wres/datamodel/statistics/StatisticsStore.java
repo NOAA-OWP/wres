@@ -57,11 +57,11 @@ public class StatisticsStore
      */
 
     private final List<Future<List<DurationDiagramStatisticOuter>>> paired = new ArrayList<>();
-    
+
     /**
      * Minimum sample size used when forming the statistics.
      */
-    
+
     private final int minimumSampleSize;
 
     /**
@@ -220,12 +220,12 @@ public class StatisticsStore
     /**
      * @return the minimum sample size used when calculating statistics.
      */
-    
+
     public int getMinimumSampleSize()
     {
         return this.minimumSampleSize;
     }
-    
+
     /**
      * Builder.
      */
@@ -278,9 +278,9 @@ public class StatisticsStore
         /**
          * Minimum sample size used when forming the statistics.
          */
-        
+
         private int minimumSampleSize;
-        
+
         /**
          * Adds a new {@link DoubleScoreStatisticOuter} for a collection of metrics to the internal store, merging with existing 
          * items that share the same key, as required.
@@ -416,7 +416,7 @@ public class StatisticsStore
 
             return this;
         }
-        
+
         /**
          * Sets the minimum sample size for statistics calculation.
          * 
@@ -429,7 +429,7 @@ public class StatisticsStore
             this.minimumSampleSize = minimumSampleSize;
             return this;
         }
-        
+
         /**
          * Returns a {@link StatisticsStore}.
          * 

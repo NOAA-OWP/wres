@@ -6,7 +6,7 @@ import java.util.Objects;
 /**
  * An immutable composition of one or two {@link ThresholdOuter}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class OneOrTwoThresholds implements Comparable<OneOrTwoThresholds>

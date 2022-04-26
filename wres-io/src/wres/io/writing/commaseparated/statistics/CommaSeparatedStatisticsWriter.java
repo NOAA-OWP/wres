@@ -36,7 +36,7 @@ import wres.util.TimeHelper;
  * Helps write statistics as Comma Separated Values (CSV).
  *
  * @author jesse
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  * @deprecated since v5.8. Use the {@link CsvStatisticsWriter} instead.
  */
 

@@ -76,7 +76,7 @@
 
     <!-- Qpid logs with level "error" -->
     <logger name="org.apache.qpid" level="error" />
-    
+
     <!-- ActiveMQ server logs with level "error" -->
     <logger name="org.apache.activemq.artemis.core.server" level="error" />
 

@@ -584,7 +584,7 @@ class PoolSlicerTest
                                         1 );
 
         PoolMetadata expected = PoolMetadata.of( evaluation, expectedPool );
-
+        
         assertEquals( expected, actual );
     }
 

@@ -15,9 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConfigException;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
@@ -28,14 +26,12 @@ import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;
-import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.metrics.Metric;
 import wres.metrics.MetricCollection;
 import wres.metrics.MetricFactory;
 import wres.metrics.MetricParameterException;
-import wres.statistics.generated.Threshold;
 
 /**
  * Creates statistics by computing {@link Metric} with {@link Pool} and stores them in a {@link StatisticsStore}.
@@ -313,79 +309,6 @@ public abstract class MetricProcessor<S extends Pool<?>> implements Function<S, 
         filtered.remove( MetricConstants.TRUE_NEGATIVES );
 
         return filtered.toArray( new MetricConstants[filtered.size()] );
-    }
-    
-    /**
-     * Adds the prescribed threshold to the pool metadata.
-     * @param pool the pool
-     * @param threshold the threshold
-     * @return the pool with the input threshold in the metadata
-     * @throws NullPointerException if either input is null
-     */
-
-    <T> Pool<T> addThresholdToPoolMetadata( Pool<T> pool, OneOrTwoThresholds threshold )
-    {
-        Objects.requireNonNull( pool );
-        Objects.requireNonNull( threshold );
-        
-        Pool.Builder<T> builder = new Pool.Builder<T>().setMetadata( pool.getMetadata() );
-        for ( Pool<T> nextPool : pool.getMiniPools() )
-        {
-            Pool<T> inner = this.addThresholdToPoolMetadataInner( nextPool, threshold );
-            builder.addPool( inner, false );
-        }
-
-        return builder.build();
-    }
-
-    /**
-     * Adds the prescribed threshold to the pool metadata.
-     * @param pool the pool
-     * @param threshold the threshold
-     * @return the pool with the input threshold in the metadata
-     */
-
-    private <T> Pool<T> addThresholdToPoolMetadataInner( Pool<T> pool, OneOrTwoThresholds threshold )
-    {
-        PoolMetadata unadjustedMetadata = pool.getMetadata();
-        Threshold eventThreshold = MessageFactory.parse( threshold.first() );
-        wres.statistics.generated.Pool.Builder poolBuilder = unadjustedMetadata.getPool()
-                                                                               .toBuilder()
-                                                                               .setEventThreshold( eventThreshold );
-
-        Threshold decisionThreshold = null;
-        if ( threshold.hasTwo() )
-        {
-            decisionThreshold = MessageFactory.parse( threshold.second() );
-            poolBuilder.setDecisionThreshold( decisionThreshold );
-        }
-
-        PoolMetadata adjustedMetadata = PoolMetadata.of( unadjustedMetadata.getEvaluation(),
-                                                         poolBuilder.build() );
-        Pool.Builder<T> builder = new Pool.Builder<T>().addData( pool.get() )
-                                                       .setMetadata( adjustedMetadata )
-                                                       .setClimatology( pool.getClimatology() );
-
-        if ( pool.hasBaseline() )
-        {
-            wres.statistics.generated.Pool.Builder baselinePoolBuilder = pool.getBaselineData()
-                                                                             .getMetadata()
-                                                                             .getPool()
-                                                                             .toBuilder()
-                                                                             .setEventThreshold( eventThreshold );
-
-            if ( threshold.hasTwo() )
-            {
-                baselinePoolBuilder.setDecisionThreshold( decisionThreshold );
-            }
-            PoolMetadata adjustedMetadataForBaseline = PoolMetadata.of( unadjustedMetadata.getEvaluation(),
-                                                                        baselinePoolBuilder.build() );
-            builder.addDataForBaseline( pool.getBaselineData().get() )
-                   .setMetadataForBaseline( adjustedMetadataForBaseline );
-
-        }
-
-        return builder.build();
     }
 
 }

@@ -15,6 +15,7 @@ import org.mockito.Mockito;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
+import wres.config.generated.EnsembleAverageType;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
@@ -321,7 +322,8 @@ public class PoolMetadataTest
                                                                      0,
                                                                      Arrays.asList( new MetricConfig( null,
                                                                                                       MetricConfigName.BIAS_FRACTION ) ),
-                                                                     null ) ),
+                                                                     null,
+                                                                     EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    null );
@@ -362,7 +364,8 @@ public class PoolMetadataTest
                                                                      0,
                                                                      Arrays.asList( new MetricConfig( null,
                                                                                                       MetricConfigName.BIAS_FRACTION ) ),
-                                                                     null ) ),
+                                                                     null,
+                                                                     EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    null );
@@ -606,7 +609,8 @@ public class PoolMetadataTest
                                                                      0,
                                                                      Arrays.asList( new MetricConfig( null,
                                                                                                       MetricConfigName.BIAS_FRACTION ) ),
-                                                                     null ) ),
+                                                                     null,
+                                                                     EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    null );
@@ -647,7 +651,8 @@ public class PoolMetadataTest
                                                                      0,
                                                                      Arrays.asList( new MetricConfig( null,
                                                                                                       MetricConfigName.BIAS_FRACTION ) ),
-                                                                     null ) ),
+                                                                     null,
+                                                                     EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    null );

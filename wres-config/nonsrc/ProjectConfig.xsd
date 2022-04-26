@@ -57,6 +57,19 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="ensembleAverageType">
+        <xs:annotation>
+            <xs:documentation>
+                The name of a function that converts an ensemble of values into
+                a single value.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="mean" />
+            <xs:enumeration value="median" />
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:simpleType name="leftOrRightOrBaseline">
         <xs:annotation>
             <xs:documentation>
@@ -987,6 +1000,8 @@ time scale within a single class, rather than two classes.
             <xs:element name="metric" type="metric" minOccurs="0" maxOccurs="unbounded"/>
             <xs:element name="timeSeriesMetric" type="timeSeriesMetric" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>
+        
+        <xs:attribute name="ensembleAverage" type="ensembleAverageType" default="mean"/>
 
     </xs:complexType>
 
@@ -1059,7 +1074,7 @@ time scale within a single class, rather than two classes.
                             <xs:element name="destination" type="destination" maxOccurs="unbounded"/>
                         </xs:sequence>
 
-                        <xs:attribute name="durationFormat" type="durationUnit" default = "seconds" />
+                        <xs:attribute name="durationFormat" type="durationUnit" default="seconds" />
 
                     </xs:complexType>
                 </xs:element>

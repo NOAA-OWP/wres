@@ -2,12 +2,14 @@ package wres.vis.writing;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.Function;
@@ -26,6 +28,7 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Outputs;
+import wres.statistics.generated.Pool.EnsembleAverageType;
 import wres.vis.charts.ChartBuildingException;
 import wres.vis.charts.ChartFactory;
 
@@ -160,11 +163,18 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
 
             for ( List<BoxplotStatisticOuter> nextGroup : groups.values() )
             {
-                Set<Path> innerPathsWrittenTo =
-                        BoxplotGraphicsWriter.writeOneBoxPlotChartPerMetric( super.getOutputDirectory(),
-                                                                             super.getOutputsDescription(),
-                                                                             nextGroup );
-                paths.addAll( innerPathsWrittenTo );
+                // Slice by ensemble averaging type
+                List<List<BoxplotStatisticOuter>> sliced =
+                        BoxplotGraphicsWriter.getSlicedStatistics( nextGroup );
+
+                for ( List<BoxplotStatisticOuter> nextSlice : sliced )
+                {
+                    Set<Path> innerPathsWrittenTo =
+                            BoxplotGraphicsWriter.writeOneBoxPlotChartPerMetric( super.getOutputDirectory(),
+                                                                                 super.getOutputsDescription(),
+                                                                                 nextSlice );
+                    paths.addAll( innerPathsWrittenTo );
+                }
             }
         }
 
@@ -221,6 +231,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
                                                                             nextEntry.getKey(),
                                                                             helper.getDurationUnits(),
                                                                             metricName,
+                                                                            null,
                                                                             null );
 
                     JFreeChart chart = nextEntry.getValue();
@@ -255,7 +266,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
 
     private static Set<Path> writeOneBoxPlotChartPerMetric( Path outputDirectory,
                                                             Outputs outputsDescription,
-                                                            List<BoxplotStatisticOuter> output )
+                                                            List<BoxplotStatisticOuter> statistics )
     {
         Set<Path> pathsWrittenTo = new HashSet<>();
 
@@ -264,8 +275,8 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
         // Build chart
         try
         {
-            MetricConstants metricName = output.get( 0 ).getMetricName();
-            PoolMetadata metadata = output.get( 0 ).getMetadata();
+            MetricConstants metricName = statistics.get( 0 ).getMetricName();
+            PoolMetadata metadata = statistics.get( 0 ).getMetadata();
 
             // Collection of graphics parameters, one for each set of charts to write across N formats.
             Collection<Outputs> outputsMap =
@@ -277,11 +288,14 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
                 GraphicsHelper helper = GraphicsHelper.of( nextOutput );
 
                 // Build the chart engine
-                JFreeChart chart = factory.getBoxplotChart( output,
+                JFreeChart chart = factory.getBoxplotChart( statistics,
                                                             helper.getDurationUnits() );
+
+                String append = BoxplotGraphicsWriter.getPathQualifier( statistics );
 
                 Path outputImage = DataFactory.getPathFromPoolMetadata( outputDirectory,
                                                                         metadata,
+                                                                        append,
                                                                         metricName,
                                                                         null );
 
@@ -299,6 +313,64 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
         }
 
         return Collections.unmodifiableSet( pathsWrittenTo );
+    }
+
+    /**
+     * Slices the statistics for individual graphics. Returns as many sliced lists of statistics as graphics to create.
+     * 
+     * @param the statistics to slice
+     * @return the sliced statistics to write
+     */
+
+    private static List<List<BoxplotStatisticOuter>> getSlicedStatistics( List<BoxplotStatisticOuter> statistics )
+    {
+        List<List<BoxplotStatisticOuter>> sliced = new ArrayList<>();
+
+        // Slice by ensemble averaging function
+        for ( EnsembleAverageType type : EnsembleAverageType.values() )
+        {
+            List<BoxplotStatisticOuter> innerSlice = Slicer.filter( statistics,
+                                                                    value -> type == value.getMetadata()
+                                                                                          .getPool()
+                                                                                          .getEnsembleAverageType() );
+            if ( !innerSlice.isEmpty() )
+            {
+                sliced.add( innerSlice );
+            }
+        }
+
+        return Collections.unmodifiableList( sliced );
+    }
+
+    /**
+     * Generates a path qualifier for the graphic based on the statistics provided.
+     * @param statistics the statistics
+     * @return a path qualifier or null if non is required
+     */
+
+    private static String getPathQualifier( List<BoxplotStatisticOuter> statistics )
+    {
+        String append = null;
+
+        // Non-default averaging types that should be qualified?
+        // #51670
+        SortedSet<EnsembleAverageType> types =
+                Slicer.discover( statistics,
+                                 next -> next.getMetadata().getPool().getEnsembleAverageType() );
+
+        Optional<EnsembleAverageType> type =
+                types.stream()
+                     .filter( next -> next != EnsembleAverageType.MEAN && next != EnsembleAverageType.NONE
+                                      && next != EnsembleAverageType.UNRECOGNIZED )
+                     .findFirst();
+
+        if ( type.isPresent() )
+        {
+            append = "ENSEMBLE_" + type.get()
+                                       .name();
+        }
+
+        return append;
     }
 
     /**

@@ -8,6 +8,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DateCondition;
 import wres.config.generated.DurationUnit;
+import wres.config.generated.EnsembleAverageType;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
@@ -99,7 +100,11 @@ class TestDeclarationGenerator
                                               "0.5",
                                               ThresholdOperator.GREATER_THAN ) );
 
-        MetricsConfig metricsConfig = new MetricsConfig( thresholds, 0, metrics, null );
+        MetricsConfig metricsConfig = new MetricsConfig( thresholds,
+                                                         0,
+                                                         metrics,
+                                                         null,
+                                                         EnsembleAverageType.MEAN );
 
         return new ProjectConfig( inputsConfig, pairsConfig, List.of( metricsConfig ), null, null, null );
     }
@@ -210,7 +215,11 @@ class TestDeclarationGenerator
         metrics.add( new MetricConfig( null, MetricConfigName.VOLUMETRIC_EFFICIENCY ) );
         metrics.add( new MetricConfig( null, MetricConfigName.BOX_PLOT_OF_ERRORS ) );
 
-        MetricsConfig metricsConfig = new MetricsConfig( null, 0, metrics, null );
+        MetricsConfig metricsConfig = new MetricsConfig( null,
+                                                         0,
+                                                         metrics,
+                                                         null,
+                                                         EnsembleAverageType.MEAN );
 
         return new ProjectConfig( inputsConfig, pairsConfig, List.of( metricsConfig ), null, null, null );
     }
@@ -289,7 +298,11 @@ class TestDeclarationGenerator
                                               "4.9",
                                               ThresholdOperator.GREATER_THAN ) );
 
-        MetricsConfig metricsConfig = new MetricsConfig( thresholds, 0, metrics, null );
+        MetricsConfig metricsConfig = new MetricsConfig( thresholds,
+                                                         0,
+                                                         metrics,
+                                                         null,
+                                                         EnsembleAverageType.MEAN );
 
         return new ProjectConfig( inputsConfig, pairsConfig, List.of( metricsConfig ), null, null, null );
     }
@@ -358,7 +371,11 @@ class TestDeclarationGenerator
                                               "0.5",
                                               ThresholdOperator.GREATER_THAN ) );
 
-        MetricsConfig metricsConfig = new MetricsConfig( thresholds, 0, metrics, null );
+        MetricsConfig metricsConfig = new MetricsConfig( thresholds,
+                                                         0,
+                                                         metrics,
+                                                         null,
+                                                         EnsembleAverageType.MEAN );
 
         return new ProjectConfig( inputsConfig, pairsConfig, List.of( metricsConfig ), null, null, null );
     }
@@ -426,7 +443,11 @@ class TestDeclarationGenerator
                                                                                        SummaryStatisticsName.MAXIMUM,
                                                                                        SummaryStatisticsName.MEAN_ABSOLUTE ) ) ) );
 
-        MetricsConfig metricsConfig = new MetricsConfig( null, 0, null, metrics );
+        MetricsConfig metricsConfig = new MetricsConfig( null,
+                                                         0,
+                                                         null,
+                                                         metrics,
+                                                         EnsembleAverageType.MEAN );
 
         return new ProjectConfig( inputsConfig, pairsConfig, List.of( metricsConfig ), null, null, null );
     }
@@ -448,7 +469,11 @@ class TestDeclarationGenerator
                                               ThresholdOperator.GREATER_THAN ) );
 
         MetricsConfig metricsConfig =
-                new MetricsConfig( thresholds, 0, projectConfig.getMetrics().get( 0 ).getMetric(), null );
+                new MetricsConfig( thresholds,
+                                   0,
+                                   projectConfig.getMetrics().get( 0 ).getMetric(),
+                                   null,
+                                   EnsembleAverageType.MEAN );
 
         return new ProjectConfig( projectConfig.getInputs(),
                                   projectConfig.getPair(),
@@ -477,7 +502,11 @@ class TestDeclarationGenerator
         metrics.add( new MetricConfig( null, MetricConfigName.ROOT_MEAN_SQUARE_ERROR ) );
         metrics.add( new MetricConfig( null, MetricConfigName.CONTINUOUS_RANKED_PROBABILITY_SCORE ) );
 
-        MetricsConfig metricsConfig = new MetricsConfig( null, 0, metrics, null );
+        MetricsConfig metricsConfig = new MetricsConfig( null,
+                                                         0,
+                                                         metrics,
+                                                         null,
+                                                         EnsembleAverageType.MEAN );
 
         return new ProjectConfig( projectConfig.getInputs(),
                                   projectConfig.getPair(),
@@ -517,7 +546,11 @@ class TestDeclarationGenerator
         metrics.add( new MetricConfig( null, MetricConfigName.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM ) );
         metrics.add( new MetricConfig( null, MetricConfigName.SAMPLE_SIZE ) );
 
-        MetricsConfig metricsConfig = new MetricsConfig( thresholds, 0, metrics, null );
+        MetricsConfig metricsConfig = new MetricsConfig( thresholds,
+                                                         0,
+                                                         metrics,
+                                                         null,
+                                                         EnsembleAverageType.MEAN );
 
         return new ProjectConfig( projectConfig.getInputs(),
                                   projectConfig.getPair(),
@@ -605,7 +638,11 @@ class TestDeclarationGenerator
         List<MetricConfig> metrics = new ArrayList<>();
         metrics.add( new MetricConfig( null, MetricConfigName.CONTINGENCY_TABLE ) );
 
-        MetricsConfig metricsConfig = new MetricsConfig( thresholds, 0, metrics, null );
+        MetricsConfig metricsConfig = new MetricsConfig( thresholds,
+                                                         0,
+                                                         metrics,
+                                                         null,
+                                                         EnsembleAverageType.MEAN );
 
         return new ProjectConfig( projectConfig.getInputs(),
                                   pairsConfig,

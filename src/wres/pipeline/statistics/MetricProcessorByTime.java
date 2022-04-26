@@ -8,6 +8,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConfigException;
 import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
@@ -286,7 +288,7 @@ abstract class MetricProcessorByTime<S extends Pool<?>>
         FeatureGroup featureGroup = pool.getMetadata()
                                         .getFeatureGroup();
         thresholdsByMetricAndFeature = thresholdsByMetricAndFeature.getThresholdsByMetricAndFeature( featureGroup );
-        
+
         Map<FeatureTuple, ThresholdsByMetric> filtered = thresholdsByMetricAndFeature.getThresholdsByMetricAndFeature();
         filtered = ThresholdSlicer.filterByGroup( filtered,
                                                   SampleDataGroup.SINGLE_VALUED,
@@ -315,11 +317,16 @@ abstract class MetricProcessorByTime<S extends Pool<?>>
                                                               MetricProcessorByTime::getFilterForSingleValuedPairs );
 
             // Add the threshold to the pool metadata            
-            ThresholdOuter composed = ThresholdSlicer.compose( Set.copyOf( thresholds.values() ) );
-            Pool<Pair<Double, Double>> innerPool = this.addThresholdToPoolMetadata( pool,
-                                                                                    OneOrTwoThresholds.of( composed ) );
+            ThresholdOuter outer = ThresholdSlicer.compose( Set.copyOf( thresholds.values() ) );
+            OneOrTwoThresholds composed = OneOrTwoThresholds.of( outer );
+            
+            UnaryOperator<PoolMetadata> metaTransformer =
+                    untransformed -> PoolMetadata.of( untransformed, composed );
 
-            Pool<Pair<Double, Double>> sliced = PoolSlicer.filter( innerPool, slicers, PoolSlicer.getFeatureMapper() );
+            Pool<Pair<Double, Double>> sliced = PoolSlicer.filter( pool,
+                                                                   slicers,
+                                                                   PoolSlicer.getFeatureMapper(),
+                                                                   metaTransformer );
             
             this.processSingleValuedPairs( sliced,
                                            futures,

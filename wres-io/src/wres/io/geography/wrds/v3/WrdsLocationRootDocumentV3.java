@@ -196,13 +196,12 @@ public class WrdsLocationRootDocumentV3
     private final List<WrdsLocationInformation> locationInfos;
 
     @JsonCreator( mode = JsonCreator.Mode.PROPERTIES )
-    public WrdsLocationRootDocumentV3( @JsonProperty( "locations" )
-                                     List<WrdsLocationInformation> locationInfos )
+    public WrdsLocationRootDocumentV3( @JsonProperty( "locations" ) List<WrdsLocationInformation> locationInfos )
     {
         this.locationInfos = locationInfos;
     }
 
-    
+
     /**
      * Pass through the locations, extracting the identifier information, and 
      * returning it in a list.
@@ -211,7 +210,7 @@ public class WrdsLocationRootDocumentV3
     public List<WrdsLocation> getLocations()
     {
         List<WrdsLocation> locations = new ArrayList<>();
-        for (WrdsLocationInformation info: this.locationInfos)
+        for ( WrdsLocationInformation info : this.locationInfos )
         {
             locations.add( info.getLocations() );
         }
@@ -228,7 +227,7 @@ public class WrdsLocationRootDocumentV3
     public String toString()
     {
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
-                .append( "locations", locationInfos )
-                .toString();
+                                                                            .append( "locations", locationInfos )
+                                                                            .toString();
     }
 }

@@ -18,7 +18,9 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolRequest;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticsStore;
+import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;
 import wres.datamodel.time.TimeSeries;
 import wres.events.Evaluation;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
@@ -251,8 +253,8 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                                                                              this.projectConfig,
                                                                              this.traceCountEstimator )
                                                .apply( pool );
-
-        // Publish the statistics 
+        
+        // Publish the statistics
         Status status = this.publish( this.evaluation,
                                       statistics,
                                       this.getMessageGroupId() );
@@ -377,7 +379,8 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
     }
 
     /**
-     * Returns a function that consumes a {@link Pool} and produces {@link StatisticsStore}.
+     * Returns a function that consumes a {@link Pool} and produces a list of {@link StatisticsStore}. The list 
+     * contains one blob of statistics for each metrics declaration.
      * 
      * @param processors the metric processors
      * @param projectConfig the project declaration
@@ -408,53 +411,71 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                 return returnMe;
             }
 
-            // Implement all processing and store the results
-            try
+            // One blob of statistics for each processor, one processor for each metrics declaration
+            for ( MetricProcessor<Pool<TimeSeries<Pair<L, R>>>> processor : processors )
             {
-                // One blob of statistics for each processor, one processor for each metrics declaration
-                for ( MetricProcessor<Pool<TimeSeries<Pair<L, R>>>> processor : processors )
+                StatisticsStore nextStatistics = this.getStatistics( projectConfig, processor, pool );
+                returnMe.add( nextStatistics );
+
+                int baselineTraceCount = 0;
+                if ( pool.hasBaseline() )
                 {
-                    StatisticsStore statistics = processor.apply( pool );
-                    StatisticsStore.Builder builder = new StatisticsStore.Builder();
-
-                    builder.addStatistics( statistics )
-                           .setMinimumSampleSize( processor.getMetrics().getMinimumSampleSize() );
-
-                    // Compute separate statistics for the baseline?
-                    int baselineTraceCount = 0;
-                    if ( pool.hasBaseline() )
-                    {
-                        Pool<TimeSeries<Pair<L, R>>> baseline = pool.getBaselineData();
-
-                        if ( projectConfig.getInputs().getBaseline().isSeparateMetrics() )
-                        {
-                            LOGGER.debug( "Computing separate statistics for the baseline pairs associated with pool {}.",
-                                          baseline.getMetadata() );
-
-                            StatisticsStore baselineStatistics = processor.apply( baseline );
-                            builder.addStatistics( baselineStatistics );
-                        }
-
-                        baselineTraceCount = traceCountEstimator.applyAsInt( baseline );
-                    }
-
-                    StatisticsStore nextStatistics = builder.build();
-                    returnMe.add( nextStatistics );
-
-                    this.monitor.registerPool( pool, traceCountEstimator.applyAsInt( pool ), baselineTraceCount );
+                    Pool<TimeSeries<Pair<L, R>>> baseline = pool.getBaselineData();
+                    baselineTraceCount = traceCountEstimator.applyAsInt( baseline );
                 }
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.currentThread().interrupt();
 
-                throw new WresProcessingException( "Encountered an error while processing pool " + this.poolRequest
-                                                   + ".",
-                                                   e );
+                this.monitor.registerPool( pool, traceCountEstimator.applyAsInt( pool ), baselineTraceCount );
             }
 
             return Collections.unmodifiableList( returnMe );
         };
+    }
+
+    /**
+     * Returns the statistics from a processor and pool.
+     * @param projectConfig the project declaration
+     * @param processor the metrics processor
+     * @param pool the pool
+     * @return the statistics
+     */
+
+    private StatisticsStore getStatistics( ProjectConfig projectConfig,
+                                           MetricProcessor<Pool<TimeSeries<Pair<L, R>>>> processor,
+                                           Pool<TimeSeries<Pair<L, R>>> pool )
+    {
+        try
+        {
+            StatisticsStore statistics = processor.apply( pool );
+            StatisticsStore.Builder builder = new StatisticsStore.Builder();
+            ThresholdsByMetricAndFeature metrics = processor.getMetrics();
+            builder.addStatistics( statistics )
+                   .setMinimumSampleSize( metrics.getMinimumSampleSize() );
+            
+            // Compute separate statistics for the baseline?
+            if ( pool.hasBaseline() )
+            {
+                Pool<TimeSeries<Pair<L, R>>> baseline = pool.getBaselineData();
+
+                if ( projectConfig.getInputs().getBaseline().isSeparateMetrics() )
+                {
+                    LOGGER.debug( "Computing separate statistics for the baseline pairs associated with pool {}.",
+                                  baseline.getMetadata() );
+
+                    StatisticsStore baselineStatistics = processor.apply( baseline );
+                    builder.addStatistics( baselineStatistics );
+                }
+            }
+
+            return builder.build();
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+
+            throw new WresProcessingException( "Encountered an error while processing pool " + this.poolRequest
+                                               + ".",
+                                               e );
+        }
     }
 
     /**

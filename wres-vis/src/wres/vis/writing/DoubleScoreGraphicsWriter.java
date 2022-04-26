@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.Function;
@@ -25,8 +26,10 @@ import wres.datamodel.Slicer;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
+import wres.datamodel.statistics.StatisticsStore;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.statistics.generated.Outputs;
+import wres.statistics.generated.Pool.EnsembleAverageType;
 import wres.vis.charts.ChartBuildingException;
 import wres.vis.charts.ChartFactory;
 
@@ -111,14 +114,14 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
      *
      * @param outputDirectory the directory into which to write
      * @param outputsDescription a description of the outputs required
-     * @param output the metric output
+     * @param statistics the metric output
      * @return the paths written
      * @throws GraphicsWriteException when an error occurs during writing
      */
 
     private static Set<Path> writeScoreCharts( Path outputDirectory,
                                                Outputs outputsDescription,
-                                               List<DoubleScoreStatisticOuter> output )
+                                               List<DoubleScoreStatisticOuter> statistics )
     {
         Set<Path> pathsWrittenTo = new HashSet<>();
 
@@ -127,8 +130,8 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
         // Build charts
         try
         {
-            MetricConstants metricName = output.get( 0 ).getMetricName();
-            PoolMetadata metadata = output.get( 0 ).getMetadata();
+            MetricConstants metricName = statistics.get( 0 ).getMetricName();
+            PoolMetadata metadata = statistics.get( 0 ).getMetadata();
 
             // Collection of graphics parameters, one for each set of charts to write across N formats.
             Collection<Outputs> outputsMap =
@@ -139,42 +142,17 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                 // One helper per set of graphics parameters.
                 GraphicsHelper helper = GraphicsHelper.of( nextOutputs );
 
-                // As many outputs as secondary thresholds if secondary thresholds are defined
-                // and the output type is OutputTypeSelection.THRESHOLD_LEAD.
-                List<List<DoubleScoreStatisticOuter>> allOutputs = new ArrayList<>();
-
-                SortedSet<ThresholdOuter> secondThreshold =
-                        Slicer.discover( output, next -> next.getMetadata().getThresholds().second() );
-
-                if ( !secondThreshold.isEmpty() )
-                {
-                    // Slice by the second threshold
-                    secondThreshold.forEach( next -> allOutputs.add( Slicer.filter( output,
-                                                                                    value -> next.equals( value.getMetadata()
-                                                                                                               .getThresholds()
-                                                                                                               .second() ) ) ) );
-                }
-                // One output only
-                else
-                {
-                    allOutputs.add( output );
-                }
+                // Slice the statistics
+                List<List<DoubleScoreStatisticOuter>> allOutputs =
+                        DoubleScoreGraphicsWriter.getSlicedStatistics( statistics );
 
                 for ( List<DoubleScoreStatisticOuter> nextOutput : allOutputs )
-                {
+                {                    
                     Map<MetricConstants, JFreeChart> engines = chartFactory.getScoreCharts( nextOutput,
                                                                                             helper.getGraphicShape(),
                                                                                             helper.getDurationUnits() );
-                    String append = null;
 
-                    // Secondary threshold? If yes, only one, as this was sliced above
-                    SortedSet<ThresholdOuter> second =
-                            Slicer.discover( nextOutput,
-                                             next -> next.getMetadata().getThresholds().second() );
-                    if ( !second.isEmpty() )
-                    {
-                        append = second.iterator().next().toStringSafe();
-                    }
+                    String append = DoubleScoreGraphicsWriter.getPathQualifier( nextOutput );
 
                     Set<Path> paths = DoubleScoreGraphicsWriter.writeNextGroupOfDestinations( outputDirectory,
                                                                                               metadata,
@@ -192,6 +170,99 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
         }
 
         return Collections.unmodifiableSet( pathsWrittenTo );
+    }
+
+    /**
+     * Slices the statistics for individual graphics. Returns as many sliced lists of statistics as graphics to create.
+     * 
+     * @param the statistics to slice
+     * @return the sliced statistics to write
+     */
+
+    private static List<List<DoubleScoreStatisticOuter>>
+            getSlicedStatistics( List<DoubleScoreStatisticOuter> statistics )
+    {
+        List<List<DoubleScoreStatisticOuter>> sliced = new ArrayList<>();
+
+        SortedSet<ThresholdOuter> secondThreshold =
+                Slicer.discover( statistics, next -> next.getMetadata().getThresholds().second() );
+
+        // Slice by ensemble averaging function and then by secondary threshold
+        for ( EnsembleAverageType type : EnsembleAverageType.values() )
+        {
+            List<DoubleScoreStatisticOuter> innerSlice = Slicer.filter( statistics,
+                                                                        value -> type == value.getMetadata()
+                                                                                              .getPool()
+                                                                                              .getEnsembleAverageType() );
+            // Slice by secondary threshold
+            if ( !innerSlice.isEmpty() )
+            {
+                if ( !secondThreshold.isEmpty() )
+                {
+                    // Slice by the second threshold
+                    secondThreshold.forEach( next -> sliced.add( Slicer.filter( innerSlice,
+                                                                                value -> next.equals( value.getMetadata()
+                                                                                                           .getThresholds()
+                                                                                                           .second() ) ) ) );
+                }
+                // One output only
+                else
+                {
+                    sliced.add( innerSlice );
+                }
+            }
+        }
+
+        return Collections.unmodifiableList( sliced );
+    }
+
+    /**
+     * Generates a path qualifier for the graphic based on the statistics provided.
+     * @param statistics the statistics
+     * @return a path qualifier or null if non is required
+     */
+
+    private static String getPathQualifier( List<DoubleScoreStatisticOuter> statistics )
+    {
+        String append = null;
+
+        // Secondary threshold? If yes, only one, as this was sliced above
+        SortedSet<ThresholdOuter> second =
+                Slicer.discover( statistics,
+                                 next -> next.getMetadata().getThresholds().second() );
+        if ( !second.isEmpty() )
+        {
+            append = second.iterator().next().toStringSafe();
+        }
+
+        // Non-default averaging types that should be qualified?
+        // #51670
+        SortedSet<EnsembleAverageType> types =
+                Slicer.discover( statistics,
+                                 next -> next.getMetadata().getPool().getEnsembleAverageType() );
+
+        Optional<EnsembleAverageType> type =
+                types.stream()
+                     .filter( next -> next != EnsembleAverageType.MEAN && next != EnsembleAverageType.NONE
+                                      && next != EnsembleAverageType.UNRECOGNIZED )
+                     .findFirst();
+
+        if ( type.isPresent() )
+        {
+            if ( Objects.nonNull( append ) )
+            {
+                append = append + "_ENSEMBLE_"
+                         + type.get()
+                               .name();
+            }
+            else
+            {
+                append = "ENSEMBLE_" + type.get()
+                                           .name();
+            }
+        }
+
+        return append;
     }
 
     /**

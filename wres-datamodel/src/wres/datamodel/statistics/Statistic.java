@@ -13,7 +13,6 @@ import wres.datamodel.pools.PoolMetadata;
  */
 public interface Statistic<U>
 {
-
     /**
      * Returns the statistic.
      * 

@@ -12,18 +12,22 @@ import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.math3.stat.descriptive.rank.Median;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConfigException;
+import wres.config.generated.EnsembleAverageType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Probability;
 import wres.datamodel.Slicer;
 import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
@@ -71,7 +75,12 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
      * Function that computes an average from an array.
      */
 
-    private static final ToDoubleFunction<double[]> AVERAGE = right -> Arrays.stream( right ).average().getAsDouble();
+    private static final ToDoubleFunction<double[]> AVERAGE = right -> Arrays.stream( right )
+                                                                             .average()
+                                                                             .getAsDouble();
+
+    /** Median function. */
+    private static final Median MEDIAN = new Median();
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume discrete probability pairs and produce
@@ -122,12 +131,12 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
     private final Function<Pair<Double, Ensemble>, Pair<Double, Double>> toSingleValues;
 
     @Override
-    public StatisticsStore apply( Pool<TimeSeries<Pair<Double, Ensemble>>> input )
+    public StatisticsStore apply( Pool<TimeSeries<Pair<Double, Ensemble>>> pool )
     {
-        Objects.requireNonNull( input, "Expected non-null input to the metric processor." );
+        Objects.requireNonNull( pool, "Expected a non-null pool as input to the metric processor." );
 
-        Objects.requireNonNull( input.getMetadata().getTimeWindow(),
-                                "Expected a non-null time window in the input metadata." );
+        Objects.requireNonNull( pool.getMetadata().getTimeWindow(),
+                                "Expected a non-null time window in the pool metadata." );
 
         // Metric futures 
         MetricFuturesByTimeBuilder futures = new MetricFuturesByTimeBuilder();
@@ -135,7 +144,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         // Remove missing values. 
         // TODO: when time-series metrics are supported, leave missings in place for time-series
         // Also retain the time-series shape, where required
-        Pool<Pair<Double, Ensemble>> unpacked = PoolSlicer.unpack( input );
+        Pool<Pair<Double, Ensemble>> unpacked = PoolSlicer.unpack( pool );
         Pool<Pair<Double, Ensemble>> inputNoMissing =
                 PoolSlicer.transform( unpacked, Slicer.leftAndEachOfRight( MetricProcessor.ADMISSABLE_DATA ) );
 
@@ -148,9 +157,22 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         // Process the metrics that consume single-valued pairs
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED ) )
         {
-            //Derive the single-valued pairs from the ensemble pairs using the configured mapper
+            // Clarify the mapping used in the pool metadata
+            String typeName = this.getMetrics()
+                                  .getEnsembleAverageType()
+                                  .name();
+
+            wres.statistics.generated.Pool.EnsembleAverageType ensembleAverageType =
+                    wres.statistics.generated.Pool.EnsembleAverageType.valueOf( typeName );
+
+            // Adjust the metadata to include the transformation type
+            UnaryOperator<PoolMetadata> metaTransformer =
+                    unadjusted -> PoolMetadata.of( unadjusted, ensembleAverageType );
+
+            // Derive the single-valued pairs from the ensemble pairs using the configured mapper and metadata 
+            // transformer
             Pool<Pair<Double, Double>> singleValued =
-                    PoolSlicer.transform( inputNoMissing, this.toSingleValues );
+                    PoolSlicer.transform( inputNoMissing, this.toSingleValues, metaTransformer );
 
             super.processSingleValuedPairs( singleValued, futures );
         }
@@ -169,8 +191,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
 
         // Log
         LOGGER.debug( PROCESSING_COMPLETE_MESSAGE,
-                      input.getMetadata().getFeatureGroup(),
-                      input.getMetadata().getTimeWindow() );
+                      pool.getMetadata().getFeatureGroup(),
+                      pool.getMetadata().getTimeWindow() );
 
         // Process and return the result       
         MetricFuturesByTime futureResults = futures.build();
@@ -291,10 +313,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         }
 
         //Construct the default mapper from ensembles to single-values: this is not currently configurable
-        this.toSingleValues = in -> Pair.of( in.getLeft(),
-                                             Arrays.stream( in.getRight().getMembers() )
-                                                   .average()
-                                                   .getAsDouble() );
+        ToDoubleFunction<Ensemble> ensembleMapper = this.getEnsembleAverageFunction( metrics.getEnsembleAverageType() );
+        this.toSingleValues = in -> Pair.of( in.getLeft(), ensembleMapper.applyAsDouble( in.getRight() ) );
 
         // Finalize validation now all required parameters are available
         // This is also called by the constructor of the superclass, but local parameters must be validated too
@@ -475,13 +495,16 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                     ThresholdSlicer.getFiltersFromThresholds( thresholds,
                                                               MetricProcessorByTimeEnsemblePairs::getFilterForEnsemblePairs );
 
+            // Add the threshold to the pool metadata            
+            ThresholdOuter outer = ThresholdSlicer.compose( Set.copyOf( thresholds.values() ) );
+            OneOrTwoThresholds composed = OneOrTwoThresholds.of( outer );
+            UnaryOperator<PoolMetadata> metaTransformer =
+                    untransformed -> PoolMetadata.of( untransformed, composed );
+            
             Pool<Pair<Double, Ensemble>> sliced = PoolSlicer.filter( pool,
                                                                      slicers,
-                                                                     PoolSlicer.getFeatureMapper() );
-
-            // Add the threshold to the metadata
-            ThresholdOuter composed = ThresholdSlicer.compose( Set.copyOf( thresholds.values() ) );
-            sliced = this.addThresholdToPoolMetadata( sliced, OneOrTwoThresholds.of( composed ) );
+                                                                     PoolSlicer.getFeatureMapper(),
+                                                                     metaTransformer );
 
             this.processEnsemblePairs( sliced,
                                        futures,
@@ -622,14 +645,16 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                     ThresholdSlicer.getTransformersFromThresholds( thresholds,
                                                                    transformerGenerator );
 
+            // Add the threshold to the metadata
+            ThresholdOuter outer = ThresholdSlicer.compose( Set.copyOf( thresholds.values() ) );
+            OneOrTwoThresholds composed = OneOrTwoThresholds.of( outer );
+            UnaryOperator<PoolMetadata> metaTransformer = untransformed -> PoolMetadata.of( untransformed, composed );
+
             //Transform the pairs
             Pool<Pair<Probability, Probability>> transformed = PoolSlicer.transform( pool,
                                                                                      transformers,
-                                                                                     PoolSlicer.getFeatureMapper() );
-
-            // Add the threshold to the metadata
-            ThresholdOuter composed = ThresholdSlicer.compose( Set.copyOf( thresholds.values() ) );
-            transformed = this.addThresholdToPoolMetadata( transformed, OneOrTwoThresholds.of( composed ) );
+                                                                                     PoolSlicer.getFeatureMapper(),
+                                                                                     metaTransformer );
 
             this.processDiscreteProbabilityPairs( transformed,
                                                   futures,
@@ -830,7 +855,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
             Map<FeatureTuple, Set<ThresholdOuter>> unpackedInner = ThresholdSlicer.unpack( classifiers );
             List<Map<FeatureTuple, ThresholdOuter>> decomposedInner = ThresholdSlicer.decompose( unpackedInner );
 
-            //Define a mapper to convert the discrete probability pairs to dichotomous pairs
+            // Define a mapper to convert the discrete probability pairs to dichotomous pairs
             Function<ThresholdOuter, Function<Pair<Probability, Probability>, Pair<Boolean, Boolean>>> innerTransformerGenerator =
                     threshold -> pair -> Pair.of( threshold.test( pair.getLeft().getProbability() ),
                                                   threshold.test( pair.getRight().getProbability() ) );
@@ -841,15 +866,17 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                         ThresholdSlicer.getTransformersFromThresholds( innerThresholds,
                                                                        innerTransformerGenerator );
 
-                //Transform the inner pairs
-                Pool<Pair<Boolean, Boolean>> dichotomous = PoolSlicer.transform( transformed,
-                                                                                 innerTransformers,
-                                                                                 PoolSlicer.getFeatureMapper() );
-
                 // Add the threshold to the metadata
                 ThresholdOuter composedInner = ThresholdSlicer.compose( Set.copyOf( innerThresholds.values() ) );
-                dichotomous = this.addThresholdToPoolMetadata( dichotomous,
-                                                               OneOrTwoThresholds.of( composedOuter, composedInner ) );
+                OneOrTwoThresholds composed = OneOrTwoThresholds.of( composedOuter, composedInner );
+                UnaryOperator<PoolMetadata> metaTransformer =
+                        untransformed -> PoolMetadata.of( untransformed, composed );
+
+                // Transform the inner pairs
+                Pool<Pair<Boolean, Boolean>> dichotomous = PoolSlicer.transform( transformed,
+                                                                                 innerTransformers,
+                                                                                 PoolSlicer.getFeatureMapper(),
+                                                                                 metaTransformer );
 
                 super.processDichotomousPairs( dichotomous, futures, outGroup );
             }
@@ -880,6 +907,33 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         }
 
         return Math.min( occurrences, nonOccurrences );
+    }
+
+
+    /**
+     * Creates an averaging function that converts an {@link Ensemble} to a single value.
+     * @param ensembleAverageType the averaging type, not null
+     * @return the transformer
+     */
+    private ToDoubleFunction<Ensemble> getEnsembleAverageFunction( EnsembleAverageType ensembleAverageType )
+    {
+        Objects.requireNonNull( ensembleAverageType );
+
+        switch ( ensembleAverageType )
+        {
+            case MEAN:
+                return ensemble -> Arrays.stream( ensemble.getMembers() )
+                                         .average()
+                                         .getAsDouble();
+            case MEDIAN:
+                return ensemble -> MetricProcessorByTimeEnsemblePairs.MEDIAN.evaluate( ensemble.getMembers() );
+            default:
+                throw new IllegalArgumentException( "Unrecognized type for averaging an ensemble '"
+                                                    + ensembleAverageType
+                                                    + "'. The recognized types are "
+                                                    + Set.of( EnsembleAverageType.MEAN, EnsembleAverageType.MEDIAN )
+                                                    + "." );
+        }
     }
 
     /**

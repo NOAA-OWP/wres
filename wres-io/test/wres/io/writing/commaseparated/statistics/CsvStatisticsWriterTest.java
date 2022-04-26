@@ -36,11 +36,7 @@ import wres.statistics.generated.Statistics;
 
 class CsvStatisticsWriterTest
 {
-
-    /**
-     * Fixed header to expect.
-     */
-
+    /** Fixed header to expect. */
     private static final String LINE_ZERO_EXPECTED = "LEFT VARIABLE NAME,RIGHT VARIABLE NAME,BASELINE VARIABLE NAME,"
                                                      + "POOL NUMBER,EVALUATION SUBJECT,FEATURE GROUP NAME,LEFT FEATURE "
                                                      + "NAME,LEFT FEATURE WKT,LEFT FEATURE SRID,LEFT FEATURE "
@@ -242,7 +238,7 @@ class CsvStatisticsWriterTest
     @Test
     void testWriteBoxPlot() throws IOException
     {
-        // Get some box plot score statistics
+        // Get some box plot score statistics for both pairs and pools
         Statistics statistics = this.getBoxplotStatistics();
         Evaluation evaluation = this.getEvaluation();
 
@@ -266,7 +262,7 @@ class CsvStatisticsWriterTest
             // Assert content
             List<String> actual = Files.readAllLines( pathToStore );
 
-            assertEquals( 34, actual.size() );
+            assertEquals( 54, actual.size() );
 
             assertEquals( CsvStatisticsWriterTest.LINE_ZERO_EXPECTED, actual.get( 0 ) );
 
@@ -302,6 +298,14 @@ class CsvStatisticsWriterTest
                                            + "ERRORS BY OBSERVED VALUE,FORECAST ERROR,,,-Infinity,Infinity,0.0,13,27.0";
 
             assertEquals( lineThirtyOneExpected, actual.get( 31 ) );
+
+            String lineFiftyTwoExpected = "QINE,SQIN,,1,RIGHT,\"JUNP1-JUNP1\",\"JUNP1\",,,,\"JUNP1\",,,,,,,,"
+                                          + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
+                                          + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
+                                          + "PT24H,PT24H,PT0S,UNKNOWN,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,"
+                                          + "BOX PLOT OF ERRORS,FORECAST ERROR,,,-Infinity,Infinity,0.0,24,77.0";
+
+            assertEquals( lineFiftyTwoExpected, actual.get( 52 ) );
         }
     }
 
@@ -436,7 +440,7 @@ class CsvStatisticsWriterTest
         String fileName = "evaluation.csv";
 
         ExecutorService executor = Executors.newFixedThreadPool( 2 );
-        
+
         try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
         {
             Path directory = fileSystem.getPath( "test" );
@@ -462,7 +466,7 @@ class CsvStatisticsWriterTest
             // Read the lines written, sort them in natural order, and assert against them
             List<String> actual = Files.readAllLines( pathToStore );
             Collections.sort( actual );
-          
+
             assertEquals( 7, actual.size() );
 
             assertEquals( CsvStatisticsWriterTest.LINE_ZERO_EXPECTED, actual.get( 0 ) );
@@ -560,17 +564,23 @@ class CsvStatisticsWriterTest
 
     private Statistics getBoxplotStatistics()
     {
-        // Get some box plots
-        List<BoxplotStatisticOuter> boxes = WriterTestHelper.getBoxPlotPerPairForOnePool();
+        // Get some box plots per pair
+        List<BoxplotStatisticOuter> boxesPaired = WriterTestHelper.getBoxPlotPerPairForOnePool();
 
-        Pool pool = boxes.get( 0 )
-                         .getMetadata()
-                         .getPool();
+        // Get some box plots per pool: #104065
+        List<BoxplotStatisticOuter> boxesPooled = WriterTestHelper.getBoxPlotPerPoolForTwoPools();
+
+        Pool pool = boxesPaired.get( 0 )
+                               .getMetadata()
+                               .getPool();
 
         return Statistics.newBuilder()
-                         .addAllOneBoxPerPair( boxes.stream()
-                                                    .map( BoxplotStatisticOuter::getData )
-                                                    .collect( Collectors.toList() ) )
+                         .addAllOneBoxPerPair( boxesPaired.stream()
+                                                          .map( BoxplotStatisticOuter::getData )
+                                                          .collect( Collectors.toList() ) )
+                         .addAllOneBoxPerPool( boxesPooled.stream()
+                                                          .map( BoxplotStatisticOuter::getData )
+                                                          .collect( Collectors.toList() ) )
                          .setPool( pool )
                          .build();
     }

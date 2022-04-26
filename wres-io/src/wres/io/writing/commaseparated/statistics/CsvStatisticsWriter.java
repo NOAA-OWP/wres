@@ -37,6 +37,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.MetricDimension;
+import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.ReferenceTimeType;
@@ -66,6 +67,7 @@ import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.Pool.EnsembleAverageType;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.Threshold;
 import wres.statistics.generated.TimeScale;
@@ -81,23 +83,13 @@ import wres.statistics.generated.TimeWindow;
 @ThreadSafe
 public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeable
 {
-
-    /**
-     * A default name for the pairs.
-     */
-
+    /** A default name for the pairs. */
     public static final String DEFAULT_FILE_NAME = "evaluation.csv.gz";
 
-    /**
-     * Logger.
-     */
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( CsvStatisticsWriter.class );
 
-    /**
-     * The file header.
-     */
-
+    /** The file header. */
     private static final String HEADER = "LEFT VARIABLE NAME,RIGHT VARIABLE NAME,BASELINE VARIABLE NAME,POOL NUMBER,"
                                          + "EVALUATION SUBJECT,FEATURE GROUP NAME,LEFT FEATURE NAME,LEFT FEATURE WKT,"
                                          + "LEFT FEATURE SRID,LEFT FEATURE DESCRIPTION,RIGHT FEATURE NAME,RIGHT "
@@ -117,65 +109,38 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                          + "METRIC COMPONENT MAXIMUM,METRIC COMPONENT OPTIMUM,STATISTIC GROUP NUMBER,"
                                          + "STATISTIC";
 
-    /**
-     * The CSV delimiter.
-     */
-
+    /** The CSV delimiter. */
     private static final String DELIMITER = ",";
 
-    /**
-     * A delimiter for items within a list.
-     */
-
+    /** A delimiter for items within a list. */
     private static final String LIST_DELIMITER = ":";
 
-    /**
-     * Platform-dependent line separator.
-     */
-
+    /** Platform-dependent line separator as a byte array. */
     private static final byte[] LINE_SEPARATOR = System.lineSeparator()
                                                        .getBytes( StandardCharsets.UTF_8 );
 
-    /**
-     * Lock for writing csv to the {@link #path} for which this writer is built.
-     */
+    /** Repeated string. */
+    private static final String PROBABILITY = "PROBABILITY";
 
+    /** Lock for writing csv to the {@link #path} for which this writer is built. */
     private final ReentrantLock writeLock;
 
-    /**
-     * The evaluation description.
-     */
-
+    /** The evaluation description. */
     private final StringJoiner evaluationDescription;
 
-    /**
-     * Buffered writer to share, must be closed on completion.
-     */
-
+    /** Buffered writer to share, must be closed on completion. */
     private final BufferedOutputStream bufferedWriter;
 
-    /**
-     * Duration units.
-     */
-
+    /** Duration units. */
     private final ChronoUnit durationUnits;
 
-    /**
-     * Decimal formatter.
-     */
-
+    /** Decimal formatter. */
     private final DoubleFunction<String> decimalFormatter;
 
-    /**
-     * Nanoseconds per {@link #durationUnits}.
-     */
-
+    /** Nanoseconds per {@link #durationUnits}. */
     private final BigDecimal nanosPerDuration;
 
-    /**
-     * Path to write.
-     */
-
+    /** Path to write. */
     @GuardedBy( "writeLock" )
     private final Path path;
 
@@ -713,6 +678,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         // Get the evaluation and pool information
         Pool pool = statistics.getPool();
 
+        // Get the ensemble average type and use it to qualify metrics that consume single-valued pairs
+        EnsembleAverageType ensembleAverageType = pool.getEnsembleAverageType();
+
         if ( !statistics.hasPool() )
         {
             pool = statistics.getBaselinePool();
@@ -728,7 +696,11 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         // Write the double scores
         if ( !statistics.getScoresList().isEmpty() )
         {
-            this.writeDoubleScores( mergeDescription, statistics.getScoresList(), writer, groupNumber );
+            this.writeDoubleScores( mergeDescription,
+                                    statistics.getScoresList(),
+                                    writer,
+                                    groupNumber,
+                                    ensembleAverageType );
         }
 
         // Write the duration scores
@@ -747,7 +719,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             this.writeDiagrams( mergeDescription,
                                 statistics.getDiagramsList(),
                                 writer,
-                                groupNumber );
+                                groupNumber,
+                                ensembleAverageType );
         }
 
         // Write the box plots per pair (per pool)
@@ -756,16 +729,18 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             this.writeBoxPlots( mergeDescription,
                                 statistics.getOneBoxPerPairList(),
                                 writer,
-                                groupNumber );
+                                groupNumber,
+                                ensembleAverageType );
         }
 
         // Write the box plots per pool
-        if ( !statistics.getOneBoxPerPairList().isEmpty() )
+        if ( !statistics.getOneBoxPerPoolList().isEmpty() )
         {
             this.writeBoxPlots( mergeDescription,
                                 statistics.getOneBoxPerPoolList(),
                                 writer,
-                                groupNumber );
+                                groupNumber,
+                                ensembleAverageType );
         }
 
         // Write the timing error diagrams
@@ -786,13 +761,15 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * @param statistics the statistics
      * @param writer a shared writer, not to be closed
      * @param groupNumber the statistics group number
+     * @param ensembleAverageType the ensemble average type, where applicable
      * @throws IOException if the any of the scores could not be written
      */
 
     private void writeDoubleScores( StringJoiner poolDescription,
                                     List<DoubleScoreStatistic> statistics,
                                     BufferedOutputStream writer,
-                                    AtomicInteger groupNumber )
+                                    AtomicInteger groupNumber,
+                                    EnsembleAverageType ensembleAverageType )
             throws IOException
     {
         // Sort in metric name order
@@ -804,7 +781,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
         for ( DoubleScoreStatistic next : sorted )
         {
-            this.writeDoubleScore( poolDescription, next, writer, groupNumber );
+            this.writeDoubleScore( poolDescription, next, writer, groupNumber, ensembleAverageType );
         }
     }
 
@@ -846,13 +823,15 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * @param statistics the statistics
      * @param writer a shared writer, not to be closed
      * @param groupNumber the statistics group number
+     * @param ensembleAverageType the ensemble average type
      * @throws IOException if the any of the scores could not be written
      */
 
     private void writeDiagrams( StringJoiner poolDescription,
                                 List<DiagramStatistic> statistics,
                                 BufferedOutputStream writer,
-                                AtomicInteger groupNumber )
+                                AtomicInteger groupNumber,
+                                EnsembleAverageType ensembleAverageType )
             throws IOException
     {
         // Sort in metric name order
@@ -864,7 +843,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
         for ( DiagramStatistic next : sorted )
         {
-            this.writeDiagram( poolDescription, next, writer, groupNumber );
+            this.writeDiagram( poolDescription, next, writer, groupNumber, ensembleAverageType );
         }
     }
 
@@ -875,13 +854,15 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * @param statistics the statistics
      * @param writer a shared writer, not to be closed
      * @param groupNumber the statistics group number
+     * @param ensembleAverageType the ensemble average type, where applicable
      * @throws IOException if the any of the scores could not be written
      */
 
     private void writeBoxPlots( StringJoiner poolDescription,
                                 List<BoxplotStatistic> statistics,
                                 BufferedOutputStream writer,
-                                AtomicInteger groupNumber )
+                                AtomicInteger groupNumber,
+                                EnsembleAverageType ensembleAverageType )
             throws IOException
     {
         // Sort in metric name order
@@ -893,7 +874,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
         for ( BoxplotStatistic next : sorted )
         {
-            this.writeBoxplot( poolDescription, next, writer, groupNumber );
+            this.writeBoxplot( poolDescription, next, writer, groupNumber, ensembleAverageType );
         }
     }
 
@@ -936,13 +917,15 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * @param writer a shared writer, not to be closed
      * @param formatter the formatter
      * @param groupNumber the statistics group number
+     * @param ensembleAverageType the ensemble average type, where applicable
      * @throws IOException if the score could not be written
      */
 
     private void writeDoubleScore( StringJoiner poolDescription,
                                    DoubleScoreStatistic score,
                                    BufferedOutputStream writer,
-                                   AtomicInteger groupNumber )
+                                   AtomicInteger groupNumber,
+                                   EnsembleAverageType ensembleAverageType )
             throws IOException
     {
         DoubleScoreMetric metric = score.getMetric();
@@ -968,7 +951,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             this.append( joiner, namedMetricComponent.toString(), false );
 
             // Name qualifier
-            this.append( joiner, "", false );
+            String qualifier = this.getMetricComponentQualifier( namedMetric, ensembleAverageType );
+            this.append( joiner, qualifier, false );
 
             // Add the metric component units
             this.append( joiner, metricComponent.getUnits(), false );
@@ -1015,6 +999,30 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         }
 
         return String.valueOf( value );
+    }
+
+    /**
+     * Returns a metric component qualifier for single-valued metrics based on the type of ensemble average used.
+     * 
+     * @param metric the metric name to test whether it is a single-valued metric
+     * @param ensembleAverageType the ensemble average type
+     * @return a qualifier
+     */
+
+    private String getMetricComponentQualifier( MetricConstants metricName,
+                                                EnsembleAverageType ensembleAverageType )
+    {
+        Objects.requireNonNull( metricName );
+
+        String qualifier = "";
+
+        if ( Objects.nonNull( ensembleAverageType ) && metricName.isInGroup( SampleDataGroup.SINGLE_VALUED )
+             && ensembleAverageType != EnsembleAverageType.NONE )
+        {
+            qualifier = "ENSEMBLE " + ensembleAverageType.name();
+        }
+
+        return qualifier;
     }
 
     /**
@@ -1163,13 +1171,15 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * @param diagram the diagram
      * @param writer a shared writer, not to be closed
      * @param groupNumber the statistics group number
+     * @param ensembleAverageType the ensemble average type
      * @throws IOException if the score could not be written
      */
 
     private void writeDiagram( StringJoiner poolDescription,
                                DiagramStatistic diagram,
                                BufferedOutputStream writer,
-                               AtomicInteger groupNumber )
+                               AtomicInteger groupNumber,
+                               EnsembleAverageType ensembleAverageType )
             throws IOException
     {
         DiagramMetric metric = diagram.getMetric();
@@ -1197,8 +1207,14 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                 MetricDimension namedMetricComponent = MetricDimension.valueOf( metricComponent.getName().name() );
                 this.append( joiner, namedMetricComponent.toString(), false );
 
-                // Name qualifier
-                this.append( joiner, next.getName(), false );
+                // Name qualifier: use an explicit name qualifier first, else the ensemble average type for single-
+                // valued metrics. These two things do not overlap.
+                String qualifier = next.getName();
+                if ( Objects.isNull( qualifier ) || qualifier.isBlank() )
+                {
+                    qualifier = this.getMetricComponentQualifier( namedMetric, ensembleAverageType );
+                }
+                this.append( joiner, qualifier, false );
 
                 // Add the metric component units
                 this.append( joiner, metricComponent.getUnits(), false );
@@ -1338,13 +1354,15 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * @param boxplot the box plot
      * @param writer a shared writer, not to be closed
      * @param groupNumber the statistics group number
+     * @param ensembleAverageType the ensemble average type, where applicable
      * @throws IOException if the score could not be written
      */
 
     private void writeBoxplot( StringJoiner poolDescription,
                                BoxplotStatistic boxplot,
                                BufferedOutputStream writer,
-                               AtomicInteger groupNumber )
+                               AtomicInteger groupNumber,
+                               EnsembleAverageType ensembleAverageType )
             throws IOException
     {
         BoxplotMetric metric = boxplot.getMetric();
@@ -1359,7 +1377,6 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         for ( Box next : boxplot.getStatisticsList() )
         {
             LinkedValueType valueType = metric.getLinkedValueType();
-            String units = metric.getUnits();
 
             // Add the linked value if one exists
             if ( valueType != LinkedValueType.NONE )
@@ -1370,10 +1387,10 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                 this.writeBoxplotElement( poolDescription,
                                           metric,
                                           componentName,
-                                          units,
                                           gNumber + addToGroupNumber,
                                           statistic,
-                                          writer );
+                                          writer,
+                                          ensembleAverageType );
 
                 // Do not increment group number here: tie to the first probability/quantile of a box.
             }
@@ -1385,11 +1402,11 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             {
                 this.writeBoxplotElement( poolDescription,
                                           metric,
-                                          "PROBABILITY",
-                                          "PROBABILITY",
+                                          PROBABILITY,
                                           gNumber + addToGroupNumber + i,
                                           probabilities.get( i ),
-                                          writer );
+                                          writer,
+                                          ensembleAverageType );
             }
 
             // Add the quantiles
@@ -1400,10 +1417,10 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                 this.writeBoxplotElement( poolDescription,
                                           metric,
                                           quantileValueTypeString,
-                                          units,
                                           gNumber + addToGroupNumber + i,
                                           quantiles.get( i ),
-                                          writer );
+                                          writer,
+                                          ensembleAverageType );
             }
 
             // Increment the group number
@@ -1420,20 +1437,20 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * @param poolDescription the pool descriptions
      * @param metric the metric
      * @param metricComponentName the metric component name
-     * @param units the metric units
      * @param groupNumber the statistics group number
      * @param statistic the statistic
      * @param writer the writer
+     * @param ensembleAverageType the ensemble average type, where applicable
      * @throws IOException if the statistic could not be written
      */
 
     private void writeBoxplotElement( StringJoiner poolDescription,
                                       BoxplotMetric metric,
                                       String metricComponentName,
-                                      String units,
                                       int groupNumber,
                                       double statistic,
-                                      BufferedOutputStream writer )
+                                      BufferedOutputStream writer,
+                                      EnsembleAverageType ensembleAverageType )
             throws IOException
     {
         // Add a line separator for the next row
@@ -1451,10 +1468,16 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         // Add the component name            
         this.append( joiner, metricComponentName, false );
 
-        // Add the component qualifier            
-        this.append( joiner, "", false );
+        // Add the component qualifier
+        String qualifier = this.getMetricComponentQualifier( metricName, ensembleAverageType );
+        this.append( joiner, qualifier, false );
 
         // Add the metric component units
+        String units = metric.getUnits();
+        if ( PROBABILITY.equals( metricComponentName ) )
+        {
+            units = PROBABILITY;
+        }
         this.append( joiner, units, false );
 
         // Add the minimum value

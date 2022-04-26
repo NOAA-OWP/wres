@@ -48,6 +48,7 @@ import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
+import wres.config.generated.EnsembleAverageType;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.NetcdfType;
 import wres.config.generated.PairConfig;
@@ -109,7 +110,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     private final DestinationConfig destinationConfig;
     private final Path outputDirectory;
     private NetcdfType netcdfConfiguration;
-    
+
     // TODO: remove when netcdf writing is one stage. Until then, we must return the paths to blobs created rather than
     // statistics written, i.e., more paths are created than necessary
     private Set<Path> pathToBlobs;
@@ -249,10 +250,23 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         Set<TimeWindowOuter> timeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairConfig );
 
         // Find the thresholds-by-metric for which blobs should be created
-        ThresholdsByMetric thresholdsToWrite = this.getUniqueThresholdsForScoreMetrics( thresholdsByMetricAndFeature );
+
+        // Create a map of these with one ThresholdsByMetric for each ensemble average type??? Will that create only
+        // the variables needed or more than needed? For example, what happens if the mean error is requested for the 
+        // ensemble median and not for the ensemble mean - will that produce a variable for the ensemble median only?
+        Map<EnsembleAverageType, List<ThresholdsByMetricAndFeature>> byType =
+                thresholdsByMetricAndFeature.stream()
+                                            .collect( Collectors.groupingBy( ThresholdsByMetricAndFeature::getEnsembleAverageType ) );
+
+        Map<EnsembleAverageType, ThresholdsByMetric> thresholds = byType.entrySet()
+                                                                        .stream()
+                                                                        .collect( Collectors.toUnmodifiableMap( Map.Entry::getKey,
+                                                                                                                e -> this.getUniqueThresholdsForScoreMetrics( e.getValue() ) ) );
 
         // Should be at least one metric with at least one threshold
-        if ( thresholdsToWrite.getMetrics().isEmpty() )
+        if ( thresholds.values()
+                       .stream()
+                       .allMatch( next -> next.getMetrics().isEmpty() ) )
         {
             throw new IOException( "Could not identify any thresholds from which to create blobs." );
         }
@@ -280,7 +294,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                                          .getInputs(),
                                                                      featureGroups,
                                                                      timeWindows,
-                                                                     thresholdsToWrite,
+                                                                     thresholds,
                                                                      units,
                                                                      desiredTimeScale,
                                                                      this.deprecatedVersion );
@@ -294,7 +308,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
         // Expose the paths
         this.pathToBlobs = Collections.unmodifiableSet( allPathsCreated );
-        
+
         LOGGER.debug( "Created the following netcdf paths for writing: {}.", allPathsCreated );
     }
 
@@ -315,7 +329,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     {
         return this.projectConfig;
     }
-    
+
     /**
      * @return the paths to blobs created
      */
@@ -324,7 +338,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     {
         return this.pathToBlobs;
     }
-    
+
     /**
      * Creates the blobs into which outputs will be written.
      * 
@@ -342,7 +356,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     private Set<Path> createBlobsAndBlobWriters( Inputs inputs,
                                                  Set<FeatureGroup> featureGroups,
                                                  Set<TimeWindowOuter> timeWindows,
-                                                 ThresholdsByMetric thresholds,
+                                                 Map<EnsembleAverageType, ThresholdsByMetric> thresholds,
                                                  String units,
                                                  TimeScaleOuter desiredTimeScale,
                                                  boolean deprecatedVersion )
@@ -555,40 +569,55 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
     private Collection<MetricVariable> getMetricVariablesForOneTimeWindow( Inputs inputs,
                                                                            TimeWindowOuter timeWindow,
-                                                                           ThresholdsByMetric thresholds,
+                                                                           Map<EnsembleAverageType, ThresholdsByMetric> thresholds,
                                                                            String units,
                                                                            TimeScaleOuter desiredTimeScale )
     {
-        // Statistics for a separate baseline? If no, there's a single set of variables
-        if ( Objects.isNull( inputs.getBaseline() ) || !inputs.getBaseline().isSeparateMetrics() )
+        Collection<MetricVariable> merged = new ArrayList<>();
+        
+        // Iterate through the ensemble average types
+        for ( Map.Entry<EnsembleAverageType, ThresholdsByMetric> next : thresholds.entrySet() )
         {
-            return this.getMetricVariablesForOneTimeWindow( timeWindow,
-                                                            thresholds,
-                                                            units,
-                                                            desiredTimeScale,
-                                                            null,
-                                                            Objects.nonNull( inputs.getBaseline() ) );
+            EnsembleAverageType nextType = next.getKey();
+            ThresholdsByMetric nextThresholdsByMetric = next.getValue();
+
+            // Statistics for a separate baseline? If no, there's a single set of variables
+            if ( Objects.isNull( inputs.getBaseline() ) || !inputs.getBaseline().isSeparateMetrics() )
+            {
+                Collection<MetricVariable> variables = this.getMetricVariablesForOneTimeWindow( timeWindow,
+                                                                                                nextThresholdsByMetric,
+                                                                                                units,
+                                                                                                desiredTimeScale,
+                                                                                                null,
+                                                                                                Objects.nonNull( inputs.getBaseline() ),
+                                                                                                nextType );
+                merged.addAll( variables );
+            }
+            else
+            {
+                // Two sets of variables, one for the right and one for the baseline with separate metrics.
+                // For backwards compatibility, only clarify the baseline variable
+                Collection<MetricVariable> right = this.getMetricVariablesForOneTimeWindow( timeWindow,
+                                                                                            nextThresholdsByMetric,
+                                                                                            units,
+                                                                                            desiredTimeScale,
+                                                                                            null,
+                                                                                            Objects.nonNull( inputs.getBaseline() ),
+                                                                                            nextType );
+
+                Collection<MetricVariable> baseline = this.getMetricVariablesForOneTimeWindow( timeWindow,
+                                                                                               nextThresholdsByMetric,
+                                                                                               units,
+                                                                                               desiredTimeScale,
+                                                                                               LeftOrRightOrBaseline.BASELINE,
+                                                                                               Objects.nonNull( inputs.getBaseline() ),
+                                                                                               nextType );
+
+                merged.addAll( right );
+                merged.addAll( baseline );
+            }
         }
-
-        // Two sets of variables, one for the right and one for the baseline with separate metrics.
-        // For backwards compatibility, only clarify the baseline variable
-        Collection<MetricVariable> right = this.getMetricVariablesForOneTimeWindow( timeWindow,
-                                                                                    thresholds,
-                                                                                    units,
-                                                                                    desiredTimeScale,
-                                                                                    null,
-                                                                                    Objects.nonNull( inputs.getBaseline() ) );
-
-        Collection<MetricVariable> baseline = this.getMetricVariablesForOneTimeWindow( timeWindow,
-                                                                                       thresholds,
-                                                                                       units,
-                                                                                       desiredTimeScale,
-                                                                                       LeftOrRightOrBaseline.BASELINE,
-                                                                                       Objects.nonNull( inputs.getBaseline() ) );
-
-        Collection<MetricVariable> merged = new ArrayList<>( right );
-        merged.addAll( baseline );
-
+        
         return Collections.unmodifiableCollection( merged );
     }
 
@@ -601,6 +630,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      * @param desiredTimeScale the desired time scale, if available
      * @param context optional context for the variable
      * @param hasBaseline is true if a baseline is declared
+     * @param ensembleAverageType the ensemble average type
      * @return the metric variables
      */
 
@@ -609,7 +639,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                                            String units,
                                                                            TimeScaleOuter desiredTimeScale,
                                                                            LeftOrRightOrBaseline context,
-                                                                           boolean hasBaseline )
+                                                                           boolean hasBaseline,
+                                                                           EnsembleAverageType ensembleAverageType )
     {
 
         Map<MetricConstants, SortedSet<OneOrTwoThresholds>> thresholdMap = thresholds.getOneOrTwoThresholds();
@@ -624,6 +655,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         if ( Objects.nonNull( context ) )
         {
             append = "_" + context.name();
+        }
+
+        // Ensemble average type to append? For backwards compatibility, do not append the default value: #51670
+        if ( Objects.nonNull( ensembleAverageType ) && ensembleAverageType != EnsembleAverageType.MEAN )
+        {
+            append += "_ENSEMBLE_" + ensembleAverageType.name();
         }
 
         // One variable for each combination of metric and threshold. 
@@ -661,13 +698,16 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
                 String variableName = nextMetric + "_" + thresholdName + append;
 
-                MetricVariable nextVariable = new MetricVariable( variableName,
-                                                                  timeWindow,
-                                                                  nextMetric,
-                                                                  nextThreshold,
-                                                                  units,
-                                                                  desiredTimeScale,
-                                                                  this.getDurationUnits() );
+                MetricVariable nextVariable = new MetricVariable.Builder().setVariableName( variableName )
+                                                                          .setTimeWindow( timeWindow )
+                                                                          .setMetricName( nextMetric )
+                                                                          .setThresholds( nextThreshold )
+                                                                          .setUnits( units )
+                                                                          .setDesiredTimeScale( desiredTimeScale )
+                                                                          .setDurationUnits( this.getDurationUnits() )
+                                                                          .setEnsembleAverageType( ensembleAverageType )
+                                                                          .build();
+
                 returnMe.add( nextVariable );
             }
         }
@@ -793,7 +833,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         // TODO: eliminate this step when writing is one stage, thereby returning the paths with actual statistics
         Set<Path> pathsToBlobsCreated = this.getPathsToBlobsCreated();
         pathsWritten.addAll( pathsToBlobsCreated );
-        
+
         return Collections.unmodifiableSet( pathsWritten );
     }
 
@@ -1167,6 +1207,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         {
             PoolMetadata sampleMetadata = score.getMetadata();
 
+            // Locating the variable relies on the use of a naming convention that matches the naming convention at blob
+            // creation time. 
+            // TODO: use a common code pathway to generate the name at these two times or, better still, create blobs 
+            // on-demand when the first statistic arrives. This is not currently possible with Netcdf 3 and/or the UCAR
+            // Java library.
+            
             // Find the metric name
             MetricConstants metricComponentName =
                     MetricConstants.valueOf( score.getData()
@@ -1186,8 +1232,19 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 append = "_" + LeftOrRightOrBaseline.BASELINE.name();
             }
 
+            // Add the ensemble average type where applicable
+            wres.statistics.generated.Pool.EnsembleAverageType ensembleAverageType = sampleMetadata.getPool()
+                                                                                                   .getEnsembleAverageType();
+            if ( ensembleAverageType != wres.statistics.generated.Pool.EnsembleAverageType.MEAN
+                 && ensembleAverageType != wres.statistics.generated.Pool.EnsembleAverageType.NONE )
+            {
+                append += "_ENSEMBLE_" + ensembleAverageType.name();
+            }
+
             // Look for a threshold with a standard name that is like the threshold associated with this score
-            LOGGER.debug( "Searching the standard threshold names for metric name {}.", metricNameString );
+            LOGGER.debug( "Searching the standard threshold names for metric name {} with qualifier {}.", 
+                          metricNameString,
+                          append );
 
             Map<String, OneOrTwoThresholds> metricMap =
                     this.outputWriter.standardThresholdNames.get( metricNameString );

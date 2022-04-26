@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
@@ -38,11 +39,12 @@ import wres.io.writing.commaseparated.CommaSeparatedUtilities;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
 import wres.statistics.generated.BoxplotMetric.QuantileValueType;
 import wres.statistics.generated.BoxplotStatistic.Box;
+import wres.statistics.generated.Pool.EnsembleAverageType;
 
 /**
  * Helps write box plots comprising {@link BoxplotStatisticOuter} to a file of Comma Separated Values (CSV).
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  * @deprecated since v5.8. Use the {@link CsvStatisticsWriter} instead.
  */
 
@@ -115,12 +117,18 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
 
                 for ( List<BoxplotStatisticOuter> nextGroup : groups.values() )
                 {
-                    Set<Path> innerPathsWrittenTo =
-                            CommaSeparatedBoxPlotWriter.writeOneBoxPlotOutputType( super.getOutputDirectory(),
-                                                                                   nextGroup,
-                                                                                   formatter,
-                                                                                   super.getDurationUnits() );
-                    paths.addAll( innerPathsWrittenTo );
+                    // Slice by ensemble averaging type
+                    List<List<BoxplotStatisticOuter>> sliced =
+                            CommaSeparatedBoxPlotWriter.getSlicedStatistics( nextGroup );
+                    for ( List<BoxplotStatisticOuter> nextSlice : sliced )
+                    {
+                        Set<Path> innerPathsWrittenTo =
+                                CommaSeparatedBoxPlotWriter.writeOneBoxPlotOutputType( super.getOutputDirectory(),
+                                                                                       nextSlice,
+                                                                                       formatter,
+                                                                                       super.getDurationUnits() );
+                        paths.addAll( innerPathsWrittenTo );
+                    }
                 }
             }
             catch ( IOException e )
@@ -230,13 +238,15 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
             rows.add( RowCompareByLeft.of( HEADER_INDEX,
                                            CommaSeparatedBoxPlotWriter.getBoxPlotHeader( next, headerRow ) ) );
             // Write the output
+            String append = CommaSeparatedBoxPlotWriter.getPathQualifier( output );
             Path outputPath =
                     DataFactory.getPathFromPoolMetadata( outputDirectory,
-                                                           meta,
-                                                           nextWindow,
-                                                           durationUnits,
-                                                           metricName,
-                                                           null );
+                                                         meta,
+                                                         nextWindow,
+                                                         durationUnits,
+                                                         metricName,
+                                                         null,
+                                                         append );
 
             Path finishedPath = CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
             // If writeTabularOutputToFile did not throw an exception, assume
@@ -281,10 +291,12 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
             rows.add( RowCompareByLeft.of( HEADER_INDEX,
                                            CommaSeparatedBoxPlotWriter.getBoxPlotHeader( output, headerRow ) ) );
             // Write the output
+            String append = CommaSeparatedBoxPlotWriter.getPathQualifier( output );
             Path outputPath = DataFactory.getPathFromPoolMetadata( outputDirectory,
-                                                                     meta,
-                                                                     metricName,
-                                                                     null );
+                                                                   meta,
+                                                                   append,
+                                                                   metricName,
+                                                                   null );
 
             Path finishedPath = CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
             // If writeTabularOutputToFile did not throw an exception, assume
@@ -416,6 +428,65 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
         }
 
         return returnMe;
+    }
+
+    /**
+     * Slices the statistics for individual graphics. Returns as many sliced lists of statistics as graphics to create.
+     * 
+     * @param the statistics to slice
+     * @return the sliced statistics to write
+     */
+
+    private static List<List<BoxplotStatisticOuter>> getSlicedStatistics( List<BoxplotStatisticOuter> statistics )
+    {
+        List<List<BoxplotStatisticOuter>> sliced = new ArrayList<>();
+
+        // Slice by ensemble averaging function and then by secondary threshold
+        for ( EnsembleAverageType type : EnsembleAverageType.values() )
+        {
+            List<BoxplotStatisticOuter> innerSlice = Slicer.filter( statistics,
+                                                                    value -> type == value.getMetadata()
+                                                                                          .getPool()
+                                                                                          .getEnsembleAverageType() );
+            // Slice by secondary threshold
+            if ( !innerSlice.isEmpty() )
+            {
+                sliced.add( innerSlice );
+            }
+        }
+
+        return Collections.unmodifiableList( sliced );
+    }
+
+    /**
+     * Generates a path qualifier based on the statistics provided.
+     * @param statistics the statistics
+     * @return a path qualifier or null if non is required
+     */
+
+    private static String getPathQualifier( List<BoxplotStatisticOuter> statistics )
+    {
+        String append = null;
+
+        // Non-default averaging types that should be qualified?
+        // #51670
+        SortedSet<EnsembleAverageType> types =
+                Slicer.discover( statistics,
+                                 next -> next.getMetadata().getPool().getEnsembleAverageType() );
+
+        Optional<EnsembleAverageType> type =
+                types.stream()
+                     .filter( next -> next != EnsembleAverageType.MEAN && next != EnsembleAverageType.NONE
+                                      && next != EnsembleAverageType.UNRECOGNIZED )
+                     .findFirst();
+
+        if ( type.isPresent() )
+        {
+            append = "ENSEMBLE_" + type.get()
+                                       .name();
+        }
+
+        return append;
     }
 
     /**

@@ -143,7 +143,7 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
         this.getInternalMapping().forEach( ( key, value ) -> builder.append( "value", value ) );
 
         builder.append( "metadata", this.getMetadata() )
-               .append( "sample size", this.getData().getSampleSize() );
+               .append( "sampleSize", this.getData().getSampleSize() );
 
         return builder.toString();
     }
