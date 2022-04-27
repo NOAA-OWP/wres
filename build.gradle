@@ -72,6 +72,9 @@ plugins
 
     // To generate API documentation from JAX-RS annotations and javadocs
     id "io.swagger.core.v3.swagger-gradle-plugin" version "2.2.0"
+
+    // To generate JPMS images more easily with 3rd-party "automatic" modules
+    id "org.beryx.jlink" version "2.25.0"
 }
 
 repositories
@@ -588,12 +591,6 @@ project(':wres-statistics')
         }
     }
     
-    javadoc
-    {
-        // Protobuf does not appear to generate javadoc, so neither will we.
-        excludes = ['**/generated/*.java']
-    }
-    
     // Set the python version to use
     // TODO: cannot install miniconda in current build environment
     // Enable this when we have more control over the build environment
@@ -989,12 +986,6 @@ project(':wres-messages')
         }
     }
 
-    javadoc
-    {
-        // Protobuf does not appear to generate javadoc, so neither will we.
-        excludes = ['**/generated/*.java']
-    }
-
     dependencies
     {
         api 'com.google.protobuf:protobuf-java:3.20.1'
@@ -1003,6 +994,9 @@ project(':wres-messages')
 
         testImplementation 'junit:junit:4.13.2'
     }
+
+    // Make this a Java Platform Module System (Java 9 jigsaw) module
+    java.modularity.inferModulePath.set( true  )
 }
 
 
@@ -1024,6 +1018,10 @@ project(':wres-worker')
     }
 
     apply plugin: 'application'
+
+    // Experiment with jlink version of the application. See #62732. This is in
+    // addition to JPMS modules and is a possibility opened by use of modules.
+    apply plugin: 'org.beryx.jlink'
 
     mainClassName = 'wres.worker.Worker'
     applicationDefaultJvmArgs = ['-Xms64m','-Xmx64m',
@@ -1075,6 +1073,54 @@ project(':wres-worker')
             {
                 version = version + '-dev'
             }
+        }
+    }
+
+    // Make this a Java Platform Module System (Java 9 jigsaw) module
+    java.modularity.inferModulePath.set( true  )
+
+    // Jlink is separate from making the jar a module and is at the application
+    // level, but made possible by the use of JPMS modules.
+    jlink
+    {
+        def myCustomMergedModuleName = 'wres.worker.mergedDepsModule'
+
+        // The merged module is a technique from the org.beryx.jlink plugin that
+        // aggregates/merges improper/automatic modules into a proper JPMS
+        // module.
+        mergedModuleName = myCustomMergedModuleName
+
+        mergedModule
+        {
+            requires 'java.base'
+            requires 'org.slf4j'
+        }
+
+        customImage
+        {
+            jdkModules = [ 'java.base', 'java.xml', 'java.desktop' ]
+            appModules = [ 'wres.worker', myCustomMergedModuleName,
+                           'ch.qos.logback.classic' ]
+            options = ['--strip-debug', '--compress', '2', '--no-header-files',
+                       '--no-man-pages']
+        }
+
+        launcher
+        {
+            jvmArgs = ['-Dlogback.configurationFile=./logback.xml']
+        }
+    }
+
+
+    // Copy the logback.xml, other resources into bin. Perhaps we are supposed
+    // to include these in the module, but this follows the pattern established
+    // above and to-date where we keep these resources outside of jars.
+    tasks.jlink.doLast
+    {
+        copy
+        {
+            from 'dist/lib/conf'
+            into "$imageDir.asFile/bin"
         }
     }
 }
