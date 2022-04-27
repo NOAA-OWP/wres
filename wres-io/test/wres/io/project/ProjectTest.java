@@ -12,6 +12,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -49,6 +50,7 @@ import wres.io.data.details.SourceDetails;
 import wres.io.data.details.TimeScaleDetails;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.TestDatabase;
+import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.system.DatabaseType;
 import wres.system.SystemSettings;
@@ -176,6 +178,16 @@ class ProjectTest
                               () -> assertTrue( actual.contains( firstGroup ) ),
                               () -> assertTrue( actual.contains( secondGroup ) ),
                               () -> assertTrue( actual.contains( overallGroup ) ) );
+
+        // Assert equality for the canonical types: #103804
+        Set<GeometryGroup> expectedCanonical = expected.stream()
+                                                       .map( FeatureGroup::getGeometryGroup )
+                                                       .collect( Collectors.toSet() );
+
+        Set<GeometryGroup> actualCanonical = actual.stream()
+                                                   .map( FeatureGroup::getGeometryGroup )
+                                                   .collect( Collectors.toSet() );
+        assertEquals( expectedCanonical, actualCanonical );
 
         assertEquals( expected, actual );
     }
