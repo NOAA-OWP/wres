@@ -77,6 +77,9 @@ VOLUME /container_home
 VOLUME /wres_secrets
 
 USER ${BROKER_USER}
+# Remember, to exec into a container and open a shell, use: 
+# docker run -ti --entrypoint /bin/bash container_id
+# Without the --entrypoint, the entrypoint script below will run
 ENTRYPOINT [ "/docker-entrypoint.sh" ]
 
 EXPOSE ${BROKER_AMQP_PORT} ${BROKER_HTTP_PORT}
