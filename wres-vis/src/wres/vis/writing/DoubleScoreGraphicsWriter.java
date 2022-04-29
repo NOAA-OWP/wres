@@ -26,7 +26,6 @@ import wres.datamodel.Slicer;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticsStore;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Pool.EnsembleAverageType;
