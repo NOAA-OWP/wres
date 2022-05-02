@@ -654,6 +654,9 @@ project(':wres-statistics')
     test {
         useJUnitPlatform()
     }
+
+    // Make this a Java Platform Module System (Java 9 jigsaw) module
+    java.modularity.inferModulePath.set( true  )
 }
 
 // Return /etc/system-release file as a string if readable, else empty string.

@@ -43,7 +43,7 @@ out
 
 # WRES-generated code
 wres-messages/src/main/java/wres/messages/generated/*
-wres-statistics/src/*
+wres-statistics/src/main/java/wres/statistics/generated/*
 wres-statistics/dist/wresproto/doc/README.html
 wres-statistics/dist/wresproto/src/*
 
