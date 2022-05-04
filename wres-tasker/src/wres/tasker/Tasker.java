@@ -4,11 +4,13 @@ import java.security.Security;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.Slf4jRequestLogWriter;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -169,6 +171,9 @@ public class Tasker
         httpConfig.addCustomizer( new SecureRequestCustomizer() );
         SslConnectionFactory tlsConnectionFactory =
                 new SslConnectionFactory( contextFactory, alpn.getProtocol() );
+        jettyServer.setRequestLog(
+                new CustomRequestLog( new Slf4jRequestLogWriter(),
+                                      CustomRequestLog.EXTENDED_NCSA_FORMAT ) );
 
         try ( ServerConnector serverConnector = new ServerConnector( jettyServer,
                                                                      tlsConnectionFactory,
