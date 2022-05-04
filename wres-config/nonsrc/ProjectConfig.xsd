@@ -414,7 +414,7 @@
             <xs:element name="urlParameter" type="urlParameterType" minOccurs="0" maxOccurs="unbounded" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
-        <xs:attribute name="featureDimension" type="featureDimension" />
+        <xs:attribute name="featureDimension" type="featureDimension" default="custom"/>
     </xs:complexType>
 
     <xs:simpleType name="thresholdFormat">
@@ -1001,7 +1001,17 @@ time scale within a single class, rather than two classes.
             <xs:element name="timeSeriesMetric" type="timeSeriesMetric" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>
         
-        <xs:attribute name="ensembleAverage" type="ensembleAverageType" default="mean"/>
+        <xs:attribute name="ensembleAverage" type="ensembleAverageType" default="mean">
+            <xs:annotation>
+                <xs:documentation>The type of average to calculate from a collection 
+                        of ensemble members in order to compute a single-valued metric.
+                        The default is a "mean" average. For example, when computing 
+                        the mean absolute error (MAE) of an ensemble forecast, the 
+                        default option will compute the MAE of the ensemble mean 
+                        forecast.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
 
     </xs:complexType>
 
