@@ -15,25 +15,24 @@ import net.jcip.annotations.Immutable;
 @Immutable
 public class CachingSupplier<T> implements Supplier<T>
 {
-
     /** Cache of data.*/
     private volatile T cache;
 
-    /** The underlying retriever. */
-    private final Supplier<T> retriever;
+    /** The underlying supplier. */
+    private final Supplier<T> supplier;
 
     /**
      * Provides an instance.
      * 
-     * @param <T> the type of data to retrieve
-     * @param retriever the retriever
-     * @return a caching retriever
-     * @throws NullPointerException if the retriever is null
+     * @param <T> the type of data to supply
+     * @param supplier the supplier
+     * @return a caching supplier
+     * @throws NullPointerException if the supplier is null
      */
 
-    public static <T> CachingSupplier<T> of( Supplier<T> retriever )
+    public static <T> CachingSupplier<T> of( Supplier<T> supplier )
     {
-        return new CachingSupplier<>( retriever );
+        return new CachingSupplier<>( supplier );
     }
 
     @Override
@@ -48,7 +47,7 @@ public class CachingSupplier<T> implements Supplier<T>
                 localCache = this.cache;
                 if ( Objects.isNull( localCache ) )
                 {
-                    this.cache = localCache = this.retriever.get();
+                    this.cache = localCache = this.supplier.get();
                 }
             }
         }
@@ -59,15 +58,15 @@ public class CachingSupplier<T> implements Supplier<T>
     /**
      * Hidden constructor.
      * 
-     * @param retriever the retriever
+     * @param supplier the supplier
      * @throws NullPointerException if the retriever is null
      */
 
-    private CachingSupplier( Supplier<T> retriever )
+    private CachingSupplier( Supplier<T> supplier )
     {
-        Objects.requireNonNull( retriever );
+        Objects.requireNonNull( supplier );
 
-        this.retriever = retriever;
+        this.supplier = supplier;
     }
 
 }
