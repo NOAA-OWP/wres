@@ -13,9 +13,9 @@ if [[ -z $JAVA_ARGS ]]; then
     JAVA_ARGS="-XX:+PrintClassHistogram -XX:+UseG1GC -XX:+UseStringDeduplication -Xms2048m -Xmx2048m"
 fi
 
-export CONFIG_PATH ARTEMIS_CLUSTER_PROPS JAVA_ARGS
+export BROKER_CONFIG_PATH ARTEMIS_CLUSTER_PROPS JAVA_ARGS
 
-if ! [ -f ${CONFIG_PATH}/broker.xml ]; then
+if ! [ -f ${BROKER_CONFIG_PATH}/broker.xml ]; then
     echo "Creating broker instance in ${BROKER_INSTANCE} with arguments ${BROKER_CREATE_ARGS}"
     ${BROKER_HOME}/artemis/bin/artemis create ${BROKER_CREATE_ARGS} ${BROKER_INSTANCE}
     # Copy the broker configuration
