@@ -66,6 +66,9 @@ public class Tasker
     public static final String PATH_TO_SERVER_P12_PNAME = "wres.taskerPathToServerP12";
     private static final String PATH_TO_SERVER_P12;
 
+    /** A format like EXTENDED_NCSA_FORMAT but without an extra timestamp */
+    private static final String ACCESS_LOG_FORMAT = "%{client}a - %u \"%r\" %s %O \"%{Referer}i\" \"%{User-Agent}i\"";
+
     static
     {
         String serverP12 = System.getProperty( PATH_TO_SERVER_P12_PNAME );
@@ -173,7 +176,7 @@ public class Tasker
                 new SslConnectionFactory( contextFactory, alpn.getProtocol() );
         jettyServer.setRequestLog(
                 new CustomRequestLog( new Slf4jRequestLogWriter(),
-                                      CustomRequestLog.EXTENDED_NCSA_FORMAT ) );
+                                      ACCESS_LOG_FORMAT ) );
 
         try ( ServerConnector serverConnector = new ServerConnector( jettyServer,
                                                                      tlsConnectionFactory,
