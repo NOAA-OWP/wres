@@ -414,7 +414,7 @@
             <xs:element name="urlParameter" type="urlParameterType" minOccurs="0" maxOccurs="unbounded" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
-        <xs:attribute name="featureDimension" type="featureDimension" default="custom"/>
+        <xs:attribute name="featureDimension" type="featureDimension"/>
     </xs:complexType>
 
     <xs:simpleType name="thresholdFormat">
