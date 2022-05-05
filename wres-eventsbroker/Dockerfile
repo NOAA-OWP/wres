@@ -4,7 +4,7 @@
 
 FROM alpine AS builder
 
-ARG BROKER_VERSION=2.21.0
+ARG BROKER_VERSION=2.22.0
 
 WORKDIR /workspace
 
@@ -28,7 +28,7 @@ RUN apk add tar && \
 # Final image
 #############
 
-FROM registry.access.redhat.com/ubi8/ubi:8.5-239
+FROM registry.access.redhat.com/ubi8/ubi:8.5-239.1651231664
 
 RUN dnf install -y \
     java-11-openjdk-headless-1:11.0.15.0.9-2.el8_5 \
