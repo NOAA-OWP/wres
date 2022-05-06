@@ -9,8 +9,8 @@
 # When the Dockerfile has uncommitted modifications, flag "-dev" (dirty).
 function get_ver
 {
-    last_commit_hash=$( git log --format="%h" -n 1 -- build.gradle $@ )
-    last_commit_date=$( git log --date=iso8601 --format="%cd" -n 1 -- build.gradle $@ )
+    last_commit_hash=$( git log --format="%h" -n 1 -- build.gradle gradle $@ )
+    last_commit_date=$( git log --date=iso8601 --format="%cd" -n 1 -- build.gradle gradle $@ )
     last_commit_date_utc=$( date --date "${last_commit_date}" --iso-8601 --utc )
     last_commit_date_short=$( echo ${last_commit_date_utc} | sed 's/\-//g' - )
     potential_version=${last_commit_date_short}-${last_commit_hash}
