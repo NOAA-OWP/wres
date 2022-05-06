@@ -19,8 +19,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import javax.jms.JMSException;
-import javax.jms.Topic;
+import jakarta.jms.JMSException;
+import jakarta.jms.Topic;
 import javax.naming.NamingException;
 
 import org.slf4j.Logger;
