@@ -432,7 +432,7 @@ project(':wres-io')
         implementation 'com.squareup.okhttp3:okhttp:4.10.0-RC1'
 
         // Update vulnerable kotlin-stdlib that okhttp/okio uses
-        implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.6.21'
+        implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.7.0-Beta'
 
         // To accurately detect mime types of files.
         implementation 'org.apache.tika:tika-core:1.27'
