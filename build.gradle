@@ -98,7 +98,7 @@ subprojects
     targetCompatibility = '11'
 
     // Each module does not need a version update unless code in it has changed.
-    def gitCommit = grgit.log(paths: [project.name, 'build.gradle'], maxCommits:1).find()
+    def gitCommit = grgit.log(paths: [project.name, 'build.gradle', 'gradle'], maxCommits:1).find()
 
     // Default version string for new module with no history
     String currentDate = OffsetDateTime.now( ZoneOffset.UTC ).format('yyyyMMdd' )
@@ -768,7 +768,7 @@ project(':wres-vis')
         def gitCommitIdOfDependencies = gitCommitOfDependencies.id;
         def gitCommitDateOfDependencies = gitCommitOfDependencies.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
 
-        def gitCommitOfThisModule = grgit.log( paths: [project.name, 'build.gradle'], maxCommits:1 ).find()
+        def gitCommitOfThisModule = grgit.log( paths: [project.name, 'build.gradle', 'gradle'], maxCommits:1 ).find()
         def gitCommitDateOfThisModule = gitCommitOfThisModule.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
 
         def versionOfDependencies = gitCommitDateOfDependencies.format('yyyyMMdd') + '-' + gitCommitIdOfDependencies[0..6]
@@ -1254,7 +1254,7 @@ project(':wres-tasker')
         def gitCommitIdOfDependencies = gitCommitOfDependencies.id;
         def gitCommitDateOfDependencies = gitCommitOfDependencies.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
 
-        def gitCommitOfThisModule = grgit.log( paths: [project.name,'build.gradle'], maxCommits:1 ).find()
+        def gitCommitOfThisModule = grgit.log( paths: [project.name,'build.gradle','gradle'], maxCommits:1 ).find()
         def gitCommitDateOfThisModule = gitCommitOfThisModule.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
 
         def versionOfDependencies = gitCommitDateOfDependencies.format('yyyyMMdd') + '-' + gitCommitIdOfDependencies[0..6]
