@@ -45,10 +45,10 @@ public class WrdsAhpsTest
     private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT, true );
     private static final URI WRDS_AHPS_URI_ONE =
             URI.create( "https://" + WRDS_HOSTNAME
-                        + "/api/rfc_forecast/v1.1/forecast/streamflow/DRRC2?issuedTime=(2018-10-01T00%3A00%3A00Z%2C2018-10-07T23%3A23%3A59Z]&groupsRefTime=basisTime" );
+                        + "/api/rfc_forecast/v2.0/forecast/streamflow/nws_lid/DRRC2?issuedTime=(2018-10-01T00%3A00%3A00Z%2C2018-10-07T23%3A23%3A59Z]&proj=WRES_automated_testing" );
     private static final URI WRDS_AHPS_URI_TWO =
             URI.create( "https://" + WRDS_HOSTNAME
-                        + "/api/rfc_forecast/v1.1/forecast/streamflow/FROV2?issuedTime=(2020-03-01T00%3A00%3A00Z%2C2020-04-30T23%3A23%3A59Z]&groupsRefTime=basisTime" );
+                        + "/api/rfc_forecast/v2.0/forecast/streamflow/nws_lid/FROV2?issuedTime=(2020-03-01T00%3A00%3A00Z%2C2020-04-30T23%3A23%3A59Z]&proj=WRES_automated_testing" );
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Test
