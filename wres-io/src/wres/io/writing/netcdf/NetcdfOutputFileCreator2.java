@@ -1001,7 +1001,9 @@ class NetcdfOutputFileCreator2
                 else if ( interfaceShortHand.value()
                                             .startsWith( "ahps" )
                           || interfaceShortHand.value()
-                                               .endsWith( "ahps" ) )
+                                               .endsWith( "ahps" )
+                          || interfaceShortHand.value()
+                                               .equals( "wrds_obs" ) )
                 {
                     return FeatureDimension.NWS_LID;
                 }
