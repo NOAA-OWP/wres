@@ -26,7 +26,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import javax.jms.JMSException;
+import jakarta.jms.JMSException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

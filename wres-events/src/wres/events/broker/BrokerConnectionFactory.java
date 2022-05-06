@@ -8,10 +8,10 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.function.Supplier;
 
-import javax.jms.Connection;
-import javax.jms.ConnectionFactory;
-import javax.jms.Destination;
-import javax.jms.JMSException;
+import jakarta.jms.Connection;
+import jakarta.jms.ConnectionFactory;
+import jakarta.jms.Destination;
+import jakarta.jms.JMSException;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;

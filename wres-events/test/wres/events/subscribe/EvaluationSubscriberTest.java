@@ -15,7 +15,7 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
 
-import javax.jms.JMSException;
+import jakarta.jms.JMSException;
 import javax.naming.NamingException;
 
 import org.junit.jupiter.api.AfterAll;

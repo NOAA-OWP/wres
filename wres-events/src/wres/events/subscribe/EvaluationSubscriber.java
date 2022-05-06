@@ -19,15 +19,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import javax.jms.BytesMessage;
-import javax.jms.Connection;
-import javax.jms.ExceptionListener;
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageListener;
-import javax.jms.Session;
-import javax.jms.Topic;
+import jakarta.jms.BytesMessage;
+import jakarta.jms.Connection;
+import jakarta.jms.ExceptionListener;
+import jakarta.jms.JMSException;
+import jakarta.jms.Message;
+import jakarta.jms.MessageConsumer;
+import jakarta.jms.MessageListener;
+import jakarta.jms.Session;
+import jakarta.jms.Topic;
 import javax.naming.NamingException;
 
 import org.slf4j.Logger;
