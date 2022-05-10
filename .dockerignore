@@ -21,6 +21,8 @@ test
 testinput
 testoutput
 *.bat
+*.hprof
+*.jfr
 *.nc
 *.py
 *.txt
@@ -39,3 +41,4 @@ wres-tasker
 wres-util
 wres-vis
 wres.iml
+wres_evaluation_*
