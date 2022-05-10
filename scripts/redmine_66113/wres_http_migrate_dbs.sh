@@ -9,7 +9,7 @@ host=$1
 echo "We are using the $host environment in this program."
 read -n1 -r -p "Please ctrl-c if that is not correct, any key otherwise..." key
 
-wres_ca_file=../cacerts/dod_root_ca_3_expires_2029-12.pem
+wres_ca_file=${2-../cacerts/dod_root_ca_3_expires_2029-12.pem}
 
 
 if [ -f $wres_ca_file ]
