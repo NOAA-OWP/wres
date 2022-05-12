@@ -147,7 +147,7 @@ public final class MeanSquareErrorSkillScoreNormalizedTest
     @Test
     public void testGetCollectionOf()
     {
-        assertEquals( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE, this.msessn.getCollectionOf() );
+        assertEquals( MetricConstants.SUM_OF_SQUARE_ERROR, this.msessn.getCollectionOf() );
     }
 
     @Test

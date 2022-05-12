@@ -147,27 +147,17 @@ public final class PeirceSkillScoreTest
         assertSame( MetricConstants.CONTINGENCY_TABLE, this.pss.getCollectionOf() );
     }
 
-    /**
-     * Checks for an exception when calling {@link Collectable#aggregate(wres.datamodel.statistics.MetricOutput)} with 
-     * null input.
-     */
-
     @Test
     public void testExceptionOnNullInput()
     {
         PoolException exception =
                 assertThrows( PoolException.class,
-                              () -> this.pss.aggregate( (DoubleScoreStatisticOuter) null ) );
+                              () -> this.pss.aggregate( (DoubleScoreStatisticOuter) null, null ) );
 
         String expectedMessage = "Specify non-null input to the '" + this.pss.getName() + "'.";
 
         assertEquals( expectedMessage, exception.getMessage() );
     }
-
-    /**
-     * Checks for an exception when calling {@link Collectable#aggregate(wres.datamodel.statistics.MetricOutput)} with 
-     * input that is not square.
-     */
 
     @Test
     public void testExceptionOnInputThatIsNotSquare()
@@ -188,7 +178,7 @@ public final class PeirceSkillScoreTest
         DoubleScoreStatisticOuter statistic = DoubleScoreStatisticOuter.of( table, this.meta );
 
         MetricCalculationException exception =
-                assertThrows( MetricCalculationException.class, () -> this.pss.aggregate( statistic ) );
+                assertThrows( MetricCalculationException.class, () -> this.pss.aggregate( statistic, null ) );
 
         String expectedMessage = "Expected an intermediate result with a square number of elements when computing "
                                  + "the '"

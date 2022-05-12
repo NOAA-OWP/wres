@@ -127,7 +127,7 @@ public final class SumOfSquareErrorTest
     public void testAggregateExceptionOnNullInput()
     {
         PoolException actual = assertThrows( PoolException.class,
-                                             () -> this.sse.aggregate( null ) );
+                                             () -> this.sse.aggregate( null, null ) );
 
         assertEquals( "Specify non-null input to the '" + this.sse.getName() + "'.", actual.getMessage() );
     }

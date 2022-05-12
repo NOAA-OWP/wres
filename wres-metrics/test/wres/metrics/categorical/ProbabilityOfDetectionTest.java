@@ -145,16 +145,11 @@ public final class ProbabilityOfDetectionTest
         assertSame( MetricConstants.CONTINGENCY_TABLE , this.pod.getCollectionOf() );
     }
 
-    /**
-     * Checks for an exception when calling {@link Collectable#aggregate(wres.datamodel.statistics.MetricOutput)} with 
-     * null input.
-     */
-
     @Test
     public void testExceptionOnNullInput()
     {
         MetricCalculationException actual = assertThrows( MetricCalculationException.class,
-                                                   () -> this.pod.aggregate( (DoubleScoreStatisticOuter) null ) );
+                                                   () -> this.pod.aggregate( (DoubleScoreStatisticOuter) null, null ) );
 
         assertEquals( "Specify non-null input to the '" + this.pod.getName() + "'.", actual.getMessage() );
     }

@@ -17,7 +17,6 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.metrics.FunctionFactory;
-import wres.metrics.OrdinaryScore;
 import wres.metrics.ProbabilityScore;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -49,7 +48,6 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  */
 
 public class RelativeOperatingCharacteristicScore
-        extends OrdinaryScore<Pool<Pair<Probability, Probability>>, DoubleScoreStatisticOuter>
         implements ProbabilityScore<Pool<Pair<Probability, Probability>>, DoubleScoreStatisticOuter>
 {
 
@@ -164,6 +162,13 @@ public class RelativeOperatingCharacteristicScore
         return MetricGroup.NONE;
     }
 
+    @Override
+    public String toString()
+    {
+        return this.getMetricName()
+                   .toString();
+    }
+    
     /**
      * Returns the AUC using the procedure outlined in Mason and graham (2002).
      * 

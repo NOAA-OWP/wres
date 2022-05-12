@@ -3,6 +3,8 @@ package wres.metrics.singlevalued;
 import java.util.Objects;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.MetricGroup;
@@ -11,6 +13,8 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.metrics.Collectable;
+import wres.metrics.DecomposableScore;
+import wres.metrics.MetricCalculationException;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
@@ -24,22 +28,15 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * 
  * @author James Brown
  */
-public class MeanSquareErrorSkillScoreNormalized extends MeanSquareErrorSkillScore
+public class MeanSquareErrorSkillScoreNormalized extends DecomposableScore<Pool<Pair<Double, Double>>>
         implements Collectable<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
 {
-
-    /**
-     * Basic description of the metric.
-     */
-
+    /** Basic description of the metric. */
     public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
                                                                           .setName( MetricName.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED )
                                                                           .build();
 
-    /**
-     * Main score component.
-     */
-
+    /** Main score component. */
     public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
                                                                                     .setMinimum( 0 )
                                                                                     .setMaximum( 1 )
@@ -48,14 +45,20 @@ public class MeanSquareErrorSkillScoreNormalized extends MeanSquareErrorSkillSco
                                                                                     .setUnits( MeasurementUnit.DIMENSIONLESS )
                                                                                     .build();
 
-    /**
-     * Full description of the metric.
-     */
-
+    /** Full description of the metric. */
     public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
                                                                     .addComponents( MeanSquareErrorSkillScoreNormalized.MAIN )
                                                                     .setName( MetricName.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED )
                                                                     .build();
+
+    /** Instance of {@link SumOfSquareError}.*/
+    private final SumOfSquareError sse;
+
+    /** Instance of {@link MeanSquareErrorSkillScore}.*/
+    private final MeanSquareErrorSkillScore msess;
+
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( MeanSquareErrorSkillScoreNormalized.class );
 
     /**
      * Returns an instance.
@@ -71,7 +74,14 @@ public class MeanSquareErrorSkillScoreNormalized extends MeanSquareErrorSkillSco
     @Override
     public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Double>> s )
     {
-        return this.aggregate( this.getInputForAggregation( s ) );
+        LOGGER.debug( "Computing the {}.", this );
+
+        if ( Objects.isNull( s ) )
+        {
+            throw new PoolException( "Specify non-null input to the '" + this + "'." );
+        }
+
+        return this.aggregate( this.getIntermediateStatistic( s ), s );
     }
 
     @Override
@@ -93,18 +103,23 @@ public class MeanSquareErrorSkillScoreNormalized extends MeanSquareErrorSkillSco
     }
 
     @Override
-    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output )
+    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
     {
-        if ( Objects.isNull( output ) )
+        LOGGER.debug( "Computing the {} from the intermediate statistic, {}.", this, this.getCollectionOf() );
+
+        DoubleScoreStatisticOuter resultOuter = this.msess.aggregate( output, pool );
+
+        if ( this.getScoreOutputGroup() != MetricGroup.NONE )
         {
-            throw new PoolException( "Specify non-null input to the '" + this + "'." );
+            throw new MetricCalculationException( "Decomposition is not currently implemented for the '" + this
+                                                  + "'." );
         }
 
-        double input = output.getComponent( MetricConstants.MAIN )
-                             .getData()
-                             .getValue();
+        double resultInner = resultOuter.getComponent( MetricConstants.MAIN )
+                                        .getData()
+                                        .getValue();
 
-        double result = 1.0 / ( 2.0 - input );
+        double result = 1.0 / ( 2.0 - resultInner );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setMetric( MeanSquareErrorSkillScoreNormalized.MAIN )
@@ -121,15 +136,15 @@ public class MeanSquareErrorSkillScoreNormalized extends MeanSquareErrorSkillSco
     }
 
     @Override
-    public DoubleScoreStatisticOuter getInputForAggregation( Pool<Pair<Double, Double>> input )
+    public DoubleScoreStatisticOuter getIntermediateStatistic( Pool<Pair<Double, Double>> input )
     {
-        return super.apply( input );
+        return this.sse.apply( input );
     }
 
     @Override
     public MetricConstants getCollectionOf()
     {
-        return MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE;
+        return MetricConstants.SUM_OF_SQUARE_ERROR;
     }
 
     /**
@@ -139,6 +154,8 @@ public class MeanSquareErrorSkillScoreNormalized extends MeanSquareErrorSkillSco
     MeanSquareErrorSkillScoreNormalized()
     {
         super();
+        this.sse = SumOfSquareError.of();
+        this.msess = MeanSquareErrorSkillScore.of();
     }
 
 }

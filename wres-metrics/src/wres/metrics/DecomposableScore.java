@@ -12,9 +12,8 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter;
  * @author James Brown
  */
 
-public abstract class DecomposableScore<S extends Pool<?>> extends OrdinaryScore<S, DoubleScoreStatisticOuter>
+public abstract class DecomposableScore<S extends Pool<?>> implements Score<S, DoubleScoreStatisticOuter>
 {
-
     /**
      * The decomposition identifier.
      */
@@ -33,6 +32,13 @@ public abstract class DecomposableScore<S extends Pool<?>> extends OrdinaryScore
         return decompositionId;
     }
 
+    @Override
+    public String toString()
+    {
+        return this.getMetricName()
+                   .toString();
+    }
+    
     /**
      * Hidden constructor for a score with no decomposition, i.e. {@link MetricGroup#NONE}.
      */

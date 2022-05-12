@@ -133,7 +133,7 @@ public final class EquitableThreatScoreTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertSame( MetricGroup.NONE,  this.ets.getScoreOutputGroup() );
+        assertSame( MetricGroup.NONE, this.ets.getScoreOutputGroup() );
     }
 
     /**
@@ -146,16 +146,12 @@ public final class EquitableThreatScoreTest
         assertSame( MetricConstants.CONTINGENCY_TABLE, this.ets.getCollectionOf() );
     }
 
-    /**
-     * Checks for an exception when calling {@link Collectable#aggregate(wres.datamodel.statistics.MetricOutput)} with 
-     * null input.
-     */
-
     @Test
     public void testExceptionOnNullInput()
     {
         MetricCalculationException actual = assertThrows( MetricCalculationException.class,
-                                                          () -> this.ets.aggregate( (DoubleScoreStatisticOuter) null ) );
+                                                          () -> this.ets.aggregate( (DoubleScoreStatisticOuter) null,
+                                                                                    null ) );
 
         assertEquals( "Specify non-null input to the '" + this.ets.getName() + "'.", actual.getMessage() );
     }

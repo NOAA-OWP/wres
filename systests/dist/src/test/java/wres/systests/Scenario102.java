@@ -41,6 +41,7 @@ public class Scenario102
                     Path.of( "LGNN5_LGNN5_ESP_KLING_GUPTA_EFFICIENCY.csv" ),
                     Path.of( "LGNN5_LGNN5_ESP_MAXIMUM.csv" ),
                     Path.of( "LGNN5_LGNN5_ESP_MEAN_ABSOLUTE_ERROR.csv" ),
+                    Path.of( "LGNN5_LGNN5_ESP_MEAN_ABSOLUTE_ERROR_SKILL_SCORE.csv" ),                    
                     Path.of( "LGNN5_LGNN5_ESP_MEAN.csv" ),
                     Path.of( "LGNN5_LGNN5_ESP_MEAN_ERROR.csv" ),
                     Path.of( "LGNN5_LGNN5_ESP_MEAN_SQUARE_ERROR.csv" ),

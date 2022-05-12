@@ -3,6 +3,8 @@ package wres.metrics.singlevalued;
 import java.util.Objects;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
@@ -28,18 +30,12 @@ public class RootMeanSquareError extends DoubleErrorScore<Pool<Pair<Double, Doub
         implements Collectable<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
 {
 
-    /**
-     * Basic description of the metric.
-     */
-
+    /** Basic description of the metric. */
     public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
                                                                           .setName( MetricName.ROOT_MEAN_SQUARE_ERROR )
                                                                           .build();
 
-    /**
-     * Main score component.
-     */
-
+    /** Main score component. */
     public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
                                                                                     .setMinimum( 0 )
                                                                                     .setMaximum( Double.POSITIVE_INFINITY )
@@ -47,20 +43,17 @@ public class RootMeanSquareError extends DoubleErrorScore<Pool<Pair<Double, Doub
                                                                                     .setName( ComponentName.MAIN )
                                                                                     .build();
 
-    /**
-     * Full description of the metric.
-     */
-
+    /** Full description of the metric. */
     public static final DoubleScoreMetric METRIC_INNER = DoubleScoreMetric.newBuilder()
                                                                           .addComponents( RootMeanSquareError.MAIN )
                                                                           .setName( MetricName.ROOT_MEAN_SQUARE_ERROR )
                                                                           .build();
 
-    /**
-     * Instance of {@link SumOfSquareError}.
-     */
-
+    /** Instance of {@link SumOfSquareError}. */
     private final SumOfSquareError sse;
+    
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( RootMeanSquareError.class );
 
     /**
      * Returns an instance.
@@ -76,7 +69,9 @@ public class RootMeanSquareError extends DoubleErrorScore<Pool<Pair<Double, Doub
     @Override
     public DoubleScoreStatisticOuter apply( final Pool<Pair<Double, Double>> t )
     {
-        return this.aggregate( this.getInputForAggregation( t ) );
+        LOGGER.debug( "Computing the {}.", this );
+
+        return this.aggregate( this.getIntermediateStatistic( t ), t );
     }
 
     @Override
@@ -92,8 +87,10 @@ public class RootMeanSquareError extends DoubleErrorScore<Pool<Pair<Double, Doub
     }
 
     @Override
-    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output )
+    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
     {
+        LOGGER.debug( "Computing the {} from the intermediate statistic, {}.", this, this.getCollectionOf() );
+
         double input = output.getComponent( MetricConstants.MAIN )
                              .getData()
                              .getValue();
@@ -123,14 +120,16 @@ public class RootMeanSquareError extends DoubleErrorScore<Pool<Pair<Double, Doub
     }
 
     @Override
-    public DoubleScoreStatisticOuter getInputForAggregation( Pool<Pair<Double, Double>> input )
+    public DoubleScoreStatisticOuter getIntermediateStatistic( Pool<Pair<Double, Double>> input )
     {
+        LOGGER.debug( "Computing an intermediate statistic of {} for the {}.", this.getCollectionOf(), this );
+
         if ( Objects.isNull( input ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
-        return sse.apply( input );
+        return this.sse.apply( input );
     }
 
     @Override

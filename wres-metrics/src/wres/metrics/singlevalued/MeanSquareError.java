@@ -3,6 +3,8 @@ package wres.metrics.singlevalued;
 import java.util.Objects;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.MetricGroup;
@@ -28,19 +30,12 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  */
 public class MeanSquareError extends SumOfSquareError
 {
-
-    /**
-     * Basic description of the metric.
-     */
-
+    /** Basic description of the metric. */
     public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
                                                                           .setName( MetricName.MEAN_SQUARE_ERROR )
                                                                           .build();
 
-    /**
-     * Main score component.
-     */
-
+    /** Main score component. */
     public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
                                                                                     .setMinimum( 0 )
                                                                                     .setMaximum( Double.POSITIVE_INFINITY )
@@ -48,15 +43,15 @@ public class MeanSquareError extends SumOfSquareError
                                                                                     .setName( ComponentName.MAIN )
                                                                                     .build();
 
-    /**
-     * Full description of the metric.
-     */
-
+    /** Full description of the metric. */
     public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
                                                                     .addComponents( MeanSquareError.MAIN )
                                                                     .setName( MetricName.MEAN_SQUARE_ERROR )
                                                                     .build();
 
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( MeanSquareError.class );
+    
     /**
      * Returns an instance.
      * 
@@ -71,10 +66,12 @@ public class MeanSquareError extends SumOfSquareError
     @Override
     public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Double>> s )
     {
+        LOGGER.debug( "Computing the {}.", this );
+        
         switch ( this.getScoreOutputGroup() )
         {
             case NONE:
-                return this.aggregate( this.getInputForAggregation( s ) );
+                return this.aggregate( this.getIntermediateStatistic( s ), s );
             case CR:
             case LBR:
             case CR_AND_LBR:
@@ -91,8 +88,10 @@ public class MeanSquareError extends SumOfSquareError
     }
 
     @Override
-    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output )
+    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
     {
+        LOGGER.debug( "Computing the {} from the intermediate statistic, {}.", this, this.getCollectionOf() );
+        
         if ( Objects.isNull( output ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );

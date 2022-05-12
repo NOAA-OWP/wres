@@ -24,6 +24,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.metrics.MetricCollection.Builder;
 import wres.metrics.categorical.ContingencyTable;
 import wres.metrics.categorical.EquitableThreatScore;
+import wres.metrics.categorical.FalseAlarmRatio;
 import wres.metrics.categorical.FrequencyBias;
 import wres.metrics.categorical.PeirceSkillScore;
 import wres.metrics.categorical.ProbabilityOfDetection;
@@ -48,6 +49,7 @@ import wres.metrics.singlevalued.CorrelationPearsons;
 import wres.metrics.singlevalued.IndexOfAgreement;
 import wres.metrics.singlevalued.KlingGuptaEfficiency;
 import wres.metrics.singlevalued.MeanAbsoluteError;
+import wres.metrics.singlevalued.MeanAbsoluteErrorSkillScore;
 import wres.metrics.singlevalued.MeanError;
 import wres.metrics.singlevalued.MeanSquareError;
 import wres.metrics.singlevalued.MeanSquareErrorSkillScore;
@@ -538,6 +540,8 @@ public final class MetricFactory
                 return KlingGuptaEfficiency.of();
             case MEAN_ABSOLUTE_ERROR:
                 return MeanAbsoluteError.of();
+            case MEAN_ABSOLUTE_ERROR_SKILL_SCORE:
+                return MeanAbsoluteErrorSkillScore.of();
             case MEAN_ERROR:
                 return MeanError.of();
             case MEDIAN_ERROR:
@@ -703,6 +707,8 @@ public final class MetricFactory
                 return FrequencyBias.of();
             case CONTINGENCY_TABLE:
                 return ContingencyTable.of();
+            case FALSE_ALARM_RATIO:
+                return FalseAlarmRatio.of();
             default:
                 throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }

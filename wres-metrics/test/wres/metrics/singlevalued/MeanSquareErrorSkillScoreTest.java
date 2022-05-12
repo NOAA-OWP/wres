@@ -103,7 +103,7 @@ public final class MeanSquareErrorSkillScoreTest
 
         assertEquals( expected, actual.getData() );
     }
-
+    
     @Test
     public void testApplyWithoutBaselineTwo()
     {
@@ -138,6 +138,12 @@ public final class MeanSquareErrorSkillScoreTest
         assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
     }
 
+    @Test
+    public void testMetricIsASkillScore()
+    {
+        assertTrue( this.msess.isSkillScore() );
+    }
+    
     /**
      * Integration test with a persistence baseline generated from a raw time-series. See issue #99160. This tests a 
      * variant of the MSESS as defined by Kitanidis, P.K., and Bras, R.L. 1980. Real-time forecasting with a conceptual 
@@ -262,7 +268,7 @@ public final class MeanSquareErrorSkillScoreTest
     @Test
     public void testGetCollectionOf()
     {
-        assertEquals( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE, this.msess.getCollectionOf() );
+        assertEquals( MetricConstants.SUM_OF_SQUARE_ERROR, this.msess.getCollectionOf() );
     }
 
     @Test

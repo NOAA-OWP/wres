@@ -4,6 +4,8 @@ import java.util.Objects;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.Pool;
@@ -15,7 +17,7 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.metrics.Collectable;
 import wres.metrics.FunctionFactory;
 import wres.metrics.MetricCollection;
-import wres.metrics.OrdinaryScore;
+import wres.metrics.Score;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
@@ -30,22 +32,15 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * 
  * @author James Brown
  */
-public class CorrelationPearsons extends OrdinaryScore<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter>
-        implements Collectable<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+public class CorrelationPearsons implements Score<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter>,
+        Collectable<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
 {
-
-    /**
-     * Basic description of the metric.
-     */
-
+    /** Basic description of the metric. */
     public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
                                                                           .setName( MetricName.PEARSON_CORRELATION_COEFFICIENT )
                                                                           .build();
 
-    /**
-     * Main score component.
-     */
-
+    /** Main score component. */
     public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
                                                                                     .setMinimum( -1 )
                                                                                     .setMaximum( 1 )
@@ -54,20 +49,17 @@ public class CorrelationPearsons extends OrdinaryScore<Pool<Pair<Double, Double>
                                                                                     .setUnits( MeasurementUnit.DIMENSIONLESS )
                                                                                     .build();
 
-    /**
-     * Full description of the metric.
-     */
-
+    /** Full description of the metric. */
     public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
                                                                     .addComponents( CorrelationPearsons.MAIN )
                                                                     .setName( MetricName.PEARSON_CORRELATION_COEFFICIENT )
                                                                     .build();
 
-    /**
-     * Instance of {@link PearsonsCorrelation}.
-     */
-
+    /** Instance of {@link PearsonsCorrelation}. */
     private final PearsonsCorrelation correlation;
+
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( CorrelationPearsons.class );
 
     /**
      * Returns an instance.
@@ -83,6 +75,8 @@ public class CorrelationPearsons extends OrdinaryScore<Pool<Pair<Double, Double>
     @Override
     public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Double>> s )
     {
+        LOGGER.debug( "Computing the {}.", MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
+        
         if ( Objects.isNull( s ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
@@ -137,7 +131,7 @@ public class CorrelationPearsons extends OrdinaryScore<Pool<Pair<Double, Double>
     }
 
     @Override
-    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output )
+    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
     {
         if ( Objects.isNull( output ) )
         {
@@ -148,8 +142,11 @@ public class CorrelationPearsons extends OrdinaryScore<Pool<Pair<Double, Double>
     }
 
     @Override
-    public DoubleScoreStatisticOuter getInputForAggregation( Pool<Pair<Double, Double>> input )
+    public DoubleScoreStatisticOuter getIntermediateStatistic( Pool<Pair<Double, Double>> input )
     {
+        LOGGER.debug( "Computing the {}, which may be used as an intermediate statistic for other statistics.",
+                      MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
+
         return this.apply( input );
     }
 
@@ -157,6 +154,13 @@ public class CorrelationPearsons extends OrdinaryScore<Pool<Pair<Double, Double>
     public MetricConstants getCollectionOf()
     {
         return MetricConstants.PEARSON_CORRELATION_COEFFICIENT;
+    }
+
+    @Override
+    public String toString()
+    {
+        return this.getMetricName()
+                   .toString();
     }
 
     /**

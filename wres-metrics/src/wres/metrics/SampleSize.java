@@ -22,7 +22,7 @@ import wres.statistics.generated.MetricName;
  * 
  * @author James Brown
  */
-class SampleSize<S extends Pool<?>> extends OrdinaryScore<S, DoubleScoreStatisticOuter>
+class SampleSize<S extends Pool<?>> implements Score<S, DoubleScoreStatisticOuter>
 {
 
     /**
@@ -118,6 +118,13 @@ class SampleSize<S extends Pool<?>> extends OrdinaryScore<S, DoubleScoreStatisti
     public boolean hasRealUnits()
     {
         return false;
+    }
+
+    @Override
+    public String toString()
+    {
+        return this.getMetricName()
+                   .toString();
     }
 
     /**

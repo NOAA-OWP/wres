@@ -64,11 +64,12 @@ public class ProbabilityOfFalseDetection extends ContingencyTableScore
     @Override
     public DoubleScoreStatisticOuter apply( final Pool<Pair<Boolean, Boolean>> s )
     {
-        return aggregate( this.getInputForAggregation( s ) );
+        return aggregate( this.getIntermediateStatistic( s ), s );
     }
 
     @Override
-    public DoubleScoreStatisticOuter aggregate( final DoubleScoreStatisticOuter output )
+    public DoubleScoreStatisticOuter aggregate( final DoubleScoreStatisticOuter output, 
+                                                Pool<Pair<Boolean, Boolean>> pool )
     {
         this.is2x2ContingencyTable( output, this );
 

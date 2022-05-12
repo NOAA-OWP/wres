@@ -314,7 +314,7 @@ public class MetricCollectionTest
         n.addMetric( MeanError.of() );
 
         //Set an executor
-        n.setExecutorService( metricPool );
+        n.setExecutorService( this.metricPool );
 
         //Finalize
         final MetricCollection<Pool<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> collection =
@@ -324,7 +324,7 @@ public class MetricCollectionTest
         NullPointerException expected =
                 assertThrows( NullPointerException.class, () -> collection.apply( null ) );
 
-        assertEquals( "Specify non-null input to the metric collection.", expected.getMessage() );
+        assertEquals( "Specify a non-null pool as input to the metric collection.", expected.getMessage() );
     }
 
     /**

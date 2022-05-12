@@ -121,7 +121,7 @@ public final class MeanSquareErrorTest
     public void testAggregateExceptionOnNullInput()
     {
         PoolException actual = assertThrows( PoolException.class,
-                                                   () -> mse.aggregate( null ) );
+                                                   () -> mse.aggregate( null, null ) );
 
         assertEquals( "Specify non-null input to the '" + this.mse.getName() + "'.", actual.getMessage() );
     }
