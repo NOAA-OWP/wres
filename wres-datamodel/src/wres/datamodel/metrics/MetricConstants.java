@@ -60,6 +60,9 @@ public enum MetricConstants
             StatisticType.DOUBLE_SCORE, false, null,
             MetricGroup.CONTINGENCY_TABLE ),
 
+    /** False alarm ratio.*/
+    FALSE_ALARM_RATIO( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ),
+    
     /** Pearson's product-moment correlation coefficient.*/
     PEARSON_CORRELATION_COEFFICIENT( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
@@ -81,6 +84,9 @@ public enum MetricConstants
     /** Mean Absolute Error.*/
     MEAN_ABSOLUTE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
+    /** Mean Absolute Error Skill Score.*/
+    MEAN_ABSOLUTE_ERROR_SKILL_SCORE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true ),
+    
     /** Mean Error. */
     MEAN_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 

@@ -16,7 +16,7 @@ import wres.datamodel.metrics.MetricConstants.MetricGroup;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.metrics.DoubleErrorFunction;
 import wres.metrics.FunctionFactory;
-import wres.metrics.OrdinaryScore;
+import wres.metrics.Score;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
@@ -32,38 +32,28 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * @author James Brown
  */
 public abstract class DoubleErrorScore<S extends Pool<Pair<Double, Double>>>
-        extends OrdinaryScore<S, DoubleScoreStatisticOuter>
+        implements Score<S, DoubleScoreStatisticOuter>
 {
-    
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( DoubleErrorScore.class );
-    
-    /**
-     * The error function.
-     */
 
+    /** The error function. */
     final DoubleErrorFunction errorFunction;
 
-    /**
-     * The error accumulator function.
-     */
-
+    /** The error accumulator function. */
     final ToDoubleFunction<VectorOfDoubles> errorAccumulator;
 
-    /**
-     * The metric description.
-     */
-
+    /** The metric description.*/
     final DoubleScoreMetric metric;
 
-    /**
-     * Partial message on null input.
-     */
-
+    /** Partial message on null input. */
     private static final String NULL_INPUT_STRING = "Cannot construct the error score '";
 
     @Override
     public DoubleScoreStatisticOuter apply( final S pool )
     {
+        LOGGER.debug( "Computing the {}.", this );
+
         if ( Objects.isNull( pool ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
@@ -95,8 +85,8 @@ public abstract class DoubleErrorScore<S extends Pool<Pair<Double, Double>>>
                       .isBlank() )
             {
                 String unit = pool.getMetadata()
-                               .getMeasurementUnit()
-                               .toString();
+                                  .getMeasurementUnit()
+                                  .toString();
                 toSet = toSet.toBuilder()
                              .setUnits( unit )
                              .build();
@@ -133,6 +123,13 @@ public abstract class DoubleErrorScore<S extends Pool<Pair<Double, Double>>>
     public boolean isDecomposable()
     {
         return false;
+    }
+
+    @Override
+    public String toString()
+    {
+        return this.getMetricName()
+                   .toString();
     }
 
     /**
@@ -226,5 +223,4 @@ public abstract class DoubleErrorScore<S extends Pool<Pair<Double, Double>>>
     {
         return this.errorAccumulator;
     }
-
 }

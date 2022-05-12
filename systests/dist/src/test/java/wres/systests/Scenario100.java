@@ -56,6 +56,8 @@ public class Scenario100
                     Path.of( "LGNN5_LGNN5_HEFS_MAXIMUM.csv" ),
                     Path.of( "LGNN5_LGNN5_HEFS_MEAN_ABSOLUTE_ERROR.csv" ),
                     Path.of( "LGNN5_LGNN5_HEFS_MEAN_ABSOLUTE_ERROR.png" ),
+                    Path.of( "LGNN5_LGNN5_HEFS_MEAN_ABSOLUTE_ERROR_SKILL_SCORE.csv" ),
+                    Path.of( "LGNN5_LGNN5_HEFS_MEAN_ABSOLUTE_ERROR_SKILL_SCORE.png" ),
                     Path.of( "LGNN5_LGNN5_HEFS_MEAN.csv" ),
                     Path.of( "LGNN5_LGNN5_HEFS_MEAN_LEFT.png" ),
                     Path.of( "LGNN5_LGNN5_HEFS_MEAN_RIGHT.png" ),

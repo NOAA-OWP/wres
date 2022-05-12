@@ -13,7 +13,7 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.metrics.Collectable;
 import wres.metrics.Metric;
 import wres.metrics.MetricCalculationException;
-import wres.metrics.OrdinaryScore;
+import wres.metrics.Score;
 
 /**
  * A generic implementation of an error score that applies to the components of a {@link ContingencyTable}.
@@ -21,8 +21,8 @@ import wres.metrics.OrdinaryScore;
  * @author James Brown
  */
 
-abstract class ContingencyTableScore extends OrdinaryScore<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter>
-        implements Collectable<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+abstract class ContingencyTableScore implements Score<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter>,
+        Collectable<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
 {
 
     /**
@@ -35,7 +35,7 @@ abstract class ContingencyTableScore extends OrdinaryScore<Pool<Pair<Boolean, Bo
      * Null string warning, used in several places.
      */
 
-    private final String nullString = "Specify non-null input to the '" + toString() + "'.";
+    private final String nullString = "Specify non-null input to the '" + this.toString() + "'.";
 
     @Override
     public MetricConstants getCollectionOf()
@@ -44,13 +44,14 @@ abstract class ContingencyTableScore extends OrdinaryScore<Pool<Pair<Boolean, Bo
     }
 
     @Override
-    public DoubleScoreStatisticOuter getInputForAggregation( final Pool<Pair<Boolean, Boolean>> s )
+    public DoubleScoreStatisticOuter getIntermediateStatistic( final Pool<Pair<Boolean, Boolean>> s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new PoolException( nullString );
+            throw new PoolException( this.nullString );
         }
-        return table.apply( s );
+
+        return this.table.apply( s );
     }
 
     @Override
@@ -69,6 +70,13 @@ abstract class ContingencyTableScore extends OrdinaryScore<Pool<Pair<Boolean, Bo
     public boolean hasRealUnits()
     {
         return false;
+    }
+
+    @Override
+    public String toString()
+    {
+        return this.getMetricName()
+                   .toString();
     }
 
     /**

@@ -85,7 +85,7 @@ public final class CollectableTaskTest
                 } );
 
         CollectableTask<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> task =
-                new CollectableTask<>( this.m, futureInput );
+                new CollectableTask<>( this.m, futureInput, null );
 
         //Compute the pairs
         this.pairPool.submit( futureInput );
@@ -108,7 +108,7 @@ public final class CollectableTaskTest
 
         final CollectableTask<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> task2 =
                 new CollectableTask<>( this.m,
-                                       futureInputNull );
+                                       futureInputNull, null );
 
         //Should throw an exception
         assertThrows( PoolException.class, () -> task2.call() );

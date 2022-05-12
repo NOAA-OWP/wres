@@ -81,9 +81,9 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
     /**
      * All metrics in the collection.
      */
-    
+
     private final Set<MetricConstants> collected;
-    
+
     /**
      * Executor service. By default, the {@link ForkJoinPool#commonPool()}
      */
@@ -93,24 +93,26 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
     /**
      * Computes all metrics.
      * 
-     * @param input the input
+     * @param pool the pool
      * @return statistics the statistics
      * @throws NullPointerException if the input is null
      * @throws MetricCalculationException if the calculation fails for any other reason
      */
 
     @Override
-    public List<U> apply( S input )
+    public List<U> apply( S pool )
     {
-        Objects.requireNonNull( input, "Specify non-null input to the metric collection." );
+        Objects.requireNonNull( pool, "Specify a non-null pool as input to the metric collection." );
 
-        return this.apply( input, this.metrics, this.collectableMetrics );
+        LOGGER.debug( "Received a request to compute all metrics within the collection: {}.", this.getMetrics() );
+
+        return this.apply( pool, this.metrics, this.collectableMetrics );
     }
 
     /**
      * Computes a subset of metrics.
      * 
-     * @param input the input
+     * @param pool the input
      * @param metrics the metrics
      * @return the statistics
      * @throws NullPointerException if the input is null
@@ -118,17 +120,21 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
      * @throws MetricCalculationException if the calculation fails for any other reason
      */
 
-    public List<U> apply( S input, Set<MetricConstants> metrics )
+    public List<U> apply( S pool, Set<MetricConstants> metrics )
     {
-        Objects.requireNonNull( input, "Specify non-null input to the metric collection." );
-        Objects.requireNonNull( input, "Specify some metrics to calculate." );
+        Objects.requireNonNull( pool, "Specify non-null input to the metric collection." );
+        Objects.requireNonNull( pool, "Specify some metrics to calculate." );
+
+        LOGGER.debug( "Received a request to compute the following metrics within the collection: {}.", metrics );
 
         // None match?
-        if( this.collected.stream().noneMatch( metrics::contains ) )
+        if ( this.collected.stream().noneMatch( metrics::contains ) )
         {
-            throw new IllegalArgumentException( "This metric collection did not contain any of " + metrics + "." );
+            throw new IllegalArgumentException( "This metric collection did not contain any of " + metrics
+                                                + ". The available metrics are: "
+                                                + this.getMetrics() );
         }
-        
+
         // Filtered metrics
         Map<MetricConstants, Metric<S, U>> filtered =
                 this.metrics.entrySet()
@@ -157,18 +163,18 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
             }
         }
 
-        return this.apply( input, filtered, cFiltered );
+        return this.apply( pool, filtered, cFiltered );
     }
 
     /**
      * @return the metrics in the collection.
      */
-    
+
     public Set<MetricConstants> getMetrics()
     {
         return this.collected;
     }
-    
+
     @Override
     public String toString()
     {
@@ -296,6 +302,9 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
                            Map<MetricConstants, Metric<S, U>> metrics,
                            Map<MetricConstants, Map<MetricConstants, Collectable<S, T, U>>> collectableMetrics )
     {
+        LOGGER.debug( "Computing the following metrics: {} and the following collectable metrics: {}.",
+                      metrics,
+                      collectableMetrics );
         try
         {
             return this.applyInternal( input, metrics, collectableMetrics );
@@ -330,10 +339,10 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
             throws InterruptedException, ExecutionException
     {
 
-        //Collection of future metric results
+        // Collection of future metric results
         final List<CompletableFuture<U>> metricFutures = new ArrayList<>();
 
-        //Create the futures for the collectable metrics
+        // Create the futures for the collectable metrics
         for ( Map<MetricConstants, Collectable<S, T, U>> next : collectableMetrics.values() )
         {
             // Proceed
@@ -343,18 +352,20 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
 
                 Collectable<S, T, U> baseMetric = iterator.next();
                 final CompletableFuture<T> baseFuture =
-                        CompletableFuture.supplyAsync( () -> baseMetric.getInputForAggregation( input ),
+                        CompletableFuture.supplyAsync( () -> baseMetric.getIntermediateStatistic( input ),
                                                        this.metricPool );
-                //Using the future dependent result, compute a future of each of the independent results
-                next.forEach( ( id, metric ) -> metricFutures.add( baseFuture.thenApplyAsync( metric::aggregate,
-                                                                                              this.metricPool ) ) );
+                // Compute a final statistic for each statistic that depends on the intermediate one
+                next.forEach( ( id,
+                                metric ) -> metricFutures.add( baseFuture.thenApplyAsync( statistic -> metric.aggregate( statistic,
+                                                                                                                         input ),
+                                                                                          this.metricPool ) ) );
             }
         }
-        //Create the futures for the ordinary metrics
+        // Create the futures for the ordinary metrics
         metrics.forEach( ( key,
                            value ) -> metricFutures.add( CompletableFuture.supplyAsync( () -> value.apply( input ),
                                                                                         this.metricPool ) ) );
-        //Compute the results
+        // Compute the results
         List<U> unpacked = new ArrayList<>();
 
         this.logStartOfCalculation( LOGGER, metrics, collectableMetrics );
@@ -389,7 +400,7 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
                 new EnumMap<>( MetricConstants.class );
 
         Set<MetricConstants> localCollected = new HashSet<>( localMetrics.keySet() );
-        
+
         //Set the collectable metrics
         builder.collectableMetrics.forEach( ( id, metric ) -> {
 
@@ -405,14 +416,14 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
                 addMe.put( id, metric );
                 localCollectableMetrics.put( parent, addMe );
             }
-            
+
             localCollected.add( id );
         } );
 
         this.metrics = Collections.unmodifiableMap( localMetrics );
         this.collectableMetrics = Collections.unmodifiableMap( localCollectableMetrics );
         this.collected = Collections.unmodifiableSet( localCollected );
-        
+
         this.validate();
     }
 

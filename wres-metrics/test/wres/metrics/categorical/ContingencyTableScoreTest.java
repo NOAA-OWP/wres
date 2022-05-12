@@ -116,7 +116,7 @@ public final class ContingencyTableScoreTest
     }
 
     /**
-     * Compares the output from {@link ContingencyTableScore#getInputForAggregation(Pool)} 
+     * Compares the output from {@link ContingencyTableScore#getIntermediateStatistic(Pool)} 
      * against a benchmark.
      */
 
@@ -130,7 +130,7 @@ public final class ContingencyTableScoreTest
 
         DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( this.table, m1 );
 
-        DoubleScoreStatisticOuter actual = this.cs.getInputForAggregation( input );
+        DoubleScoreStatisticOuter actual = this.cs.getIntermediateStatistic( input );
 
         assertEquals( "Unexpected result for the contingency table.", expected, actual );
     }
@@ -166,7 +166,7 @@ public final class ContingencyTableScoreTest
 
         PoolMetadata expected = Boilerplate.getPoolMetadata();
 
-        assertEquals( expected, this.cs.getInputForAggregation( input ).getMetadata() );
+        assertEquals( expected, this.cs.getIntermediateStatistic( input ).getMetadata() );
     }
 
     /**

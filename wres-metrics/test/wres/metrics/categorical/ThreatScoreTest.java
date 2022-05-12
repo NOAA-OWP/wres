@@ -145,16 +145,12 @@ public final class ThreatScoreTest
         assertSame( MetricConstants.CONTINGENCY_TABLE, this.ts.getCollectionOf() );
     }
 
-    /**
-     * Checks for an exception when calling {@link Collectable#aggregate(wres.datamodel.statistics.MetricOutput)} with 
-     * null input.
-     */
-
     @Test
     public void testExceptionOnNullInput()
     {
         MetricCalculationException actual = assertThrows( MetricCalculationException.class,
-                                                          () -> this.ts.aggregate( (DoubleScoreStatisticOuter) null ) );
+                                                          () -> this.ts.aggregate( (DoubleScoreStatisticOuter) null,
+                                                                                   null ) );
 
         assertEquals( "Specify non-null input to the '" + this.ts.getName() + "'.", actual.getMessage() );
     }

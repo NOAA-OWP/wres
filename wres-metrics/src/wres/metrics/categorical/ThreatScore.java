@@ -70,11 +70,12 @@ public class ThreatScore extends ContingencyTableScore
     @Override
     public DoubleScoreStatisticOuter apply( final Pool<Pair<Boolean, Boolean>> s )
     {
-        return aggregate( getInputForAggregation( s ) );
+        return aggregate( getIntermediateStatistic( s ), s );
     }
 
     @Override
-    public DoubleScoreStatisticOuter aggregate( final DoubleScoreStatisticOuter output )
+    public DoubleScoreStatisticOuter aggregate( final DoubleScoreStatisticOuter output,
+                                                Pool<Pair<Boolean, Boolean>> pool )
     {
         is2x2ContingencyTable( output, this );
 

@@ -3,6 +3,8 @@ package wres.metrics.singlevalued;
 import java.util.Objects;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
@@ -30,18 +32,12 @@ public class SumOfSquareError extends DecomposableScore<Pool<Pair<Double, Double
         implements Collectable<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
 {
 
-    /**
-     * Basic description of the metric.
-     */
-
+    /** Basic description of the metric. */
     public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
                                                                           .setName( MetricName.SUM_OF_SQUARE_ERROR )
                                                                           .build();
 
-    /**
-     * Main score component.
-     */
-
+    /** Main score component.*/
     public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
                                                                                     .setMinimum( 0 )
                                                                                     .setMaximum( Double.POSITIVE_INFINITY )
@@ -49,14 +45,13 @@ public class SumOfSquareError extends DecomposableScore<Pool<Pair<Double, Double
                                                                                     .setName( ComponentName.MAIN )
                                                                                     .build();
 
-    /**
-     * Full description of the metric.
-     */
-
+    /** Full description of the metric.*/
     public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
                                                                     .addComponents( SumOfSquareError.MAIN )
                                                                     .setName( MetricName.SUM_OF_SQUARE_ERROR )
                                                                     .build();
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( SumOfSquareError.class );
 
     /**
      * Returns an instance.
@@ -72,7 +67,9 @@ public class SumOfSquareError extends DecomposableScore<Pool<Pair<Double, Double
     @Override
     public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Double>> s )
     {
-        return this.aggregate( this.getInputForAggregation( s ) );
+        LOGGER.debug( "Computing the {}.", this );
+
+        return this.aggregate( this.getIntermediateStatistic( s ), s );
     }
 
     @Override
@@ -88,8 +85,11 @@ public class SumOfSquareError extends DecomposableScore<Pool<Pair<Double, Double
     }
 
     @Override
-    public DoubleScoreStatisticOuter getInputForAggregation( Pool<Pair<Double, Double>> input )
+    public DoubleScoreStatisticOuter getIntermediateStatistic( Pool<Pair<Double, Double>> input )
     {
+        LOGGER.debug( "Computing the {}, which may be used as an intermediate statistic for other statistics.",
+                      MetricConstants.SUM_OF_SQUARE_ERROR );
+
         if ( Objects.isNull( input ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
@@ -131,7 +131,7 @@ public class SumOfSquareError extends DecomposableScore<Pool<Pair<Double, Double
     }
 
     @Override
-    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output )
+    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
     {
         if ( Objects.isNull( output ) )
         {

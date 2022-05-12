@@ -145,16 +145,11 @@ public final class FrequencyBiasTest
         assertSame( MetricConstants.CONTINGENCY_TABLE, fb.getCollectionOf() );
     }
 
-    /**
-     * Checks for an exception when calling {@link Collectable#aggregate(wres.datamodel.statistics.MetricOutput)} with 
-     * null input.
-     */
-
     @Test
     public void testExceptionOnNullInput()
     {
         MetricCalculationException actual = assertThrows( MetricCalculationException.class,
-                                                   () -> this.fb.aggregate( (DoubleScoreStatisticOuter) null ) );
+                                                   () -> this.fb.aggregate( (DoubleScoreStatisticOuter) null, null ) );
 
         assertEquals( "Specify non-null input to the '" + this.fb.getName() + "'.", actual.getMessage() );
     }

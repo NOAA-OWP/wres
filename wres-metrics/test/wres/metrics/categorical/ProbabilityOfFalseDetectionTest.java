@@ -145,16 +145,11 @@ public final class ProbabilityOfFalseDetectionTest
         assertSame( MetricConstants.CONTINGENCY_TABLE , this.pofd.getCollectionOf() );
     }
 
-    /**
-     * Checks for an exception when calling {@link Collectable#aggregate(wres.datamodel.statistics.MetricOutput)} with 
-     * null input.
-     */
-
     @Test
     public void testExceptionOnNullInput()
     {
         MetricCalculationException actual = assertThrows( MetricCalculationException.class,
-                                                          () -> this.pofd.aggregate( (DoubleScoreStatisticOuter) null ) );
+                                                          () -> this.pofd.aggregate( (DoubleScoreStatisticOuter) null, null ) );
 
         assertEquals( "Specify non-null input to the '" + this.pofd.getName() + "'.", actual.getMessage() );
     }

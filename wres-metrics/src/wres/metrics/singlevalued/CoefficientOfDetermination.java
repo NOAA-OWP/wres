@@ -3,6 +3,8 @@ package wres.metrics.singlevalued;
 import java.util.Objects;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.MeasurementUnit;
@@ -24,19 +26,12 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  */
 public class CoefficientOfDetermination extends CorrelationPearsons
 {
-
-    /**
-     * Basic description of the metric.
-     */
-
+    /** Basic description of the metric. */
     public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
                                                                           .setName( MetricName.COEFFICIENT_OF_DETERMINATION )
                                                                           .build();
 
-    /**
-     * Main score component.
-     */
-
+    /** Main score component. */
     public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
                                                                                     .setMinimum( 0 )
                                                                                     .setMaximum( 1 )
@@ -45,14 +40,14 @@ public class CoefficientOfDetermination extends CorrelationPearsons
                                                                                     .setUnits( MeasurementUnit.DIMENSIONLESS )
                                                                                     .build();
 
-    /**
-     * Full description of the metric.
-     */
-
+    /** Full description of the metric. */
     public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
                                                                     .addComponents( CoefficientOfDetermination.MAIN )
                                                                     .setName( MetricName.COEFFICIENT_OF_DETERMINATION )
                                                                     .build();
+
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( CoefficientOfDetermination.class );
 
     /**
      * Returns an instance.
@@ -68,7 +63,9 @@ public class CoefficientOfDetermination extends CorrelationPearsons
     @Override
     public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Double>> s )
     {
-        return aggregate( getInputForAggregation( s ) );
+        LOGGER.debug( "Computing the {}.", this );
+
+        return this.aggregate( getIntermediateStatistic( s ), s );
     }
 
     @Override
@@ -78,8 +75,10 @@ public class CoefficientOfDetermination extends CorrelationPearsons
     }
 
     @Override
-    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output )
+    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
     {
+        LOGGER.debug( "Computing the {} from the intermediate statistic, {}.", this, this.getCollectionOf() );
+
         if ( Objects.isNull( output ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
@@ -106,7 +105,7 @@ public class CoefficientOfDetermination extends CorrelationPearsons
     }
 
     @Override
-    public DoubleScoreStatisticOuter getInputForAggregation( Pool<Pair<Double, Double>> input )
+    public DoubleScoreStatisticOuter getIntermediateStatistic( Pool<Pair<Double, Double>> input )
     {
         if ( Objects.isNull( input ) )
         {

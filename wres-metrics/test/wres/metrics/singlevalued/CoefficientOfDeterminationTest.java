@@ -118,7 +118,7 @@ public final class CoefficientOfDeterminationTest
     {
 
         PoolException actual = assertThrows( PoolException.class,
-                                                   () -> this.cod.aggregate( null ) );
+                                                   () -> this.cod.aggregate( null, null ) );
 
         assertEquals( "Specify non-null input to the '" + this.cod.getName() + "'.", actual.getMessage() );
     }

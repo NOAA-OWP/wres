@@ -17,7 +17,7 @@ import wres.datamodel.statistics.Statistic;
  */
 
 class CollectableTask<S extends Pool<?>, T extends Statistic<?>, U extends Statistic<?>>
-implements Callable<U>
+        implements Callable<U>
 {
 
     /**
@@ -32,30 +32,38 @@ implements Callable<U>
     private final Future<T> input;
 
     /**
-     * Construct a task with a {@link Collectable} metric and a {@link Statistic} that represents the intermediate
-     * input to the {@link Collectable} metric. The {@link Statistic} is wrapped in a {@link Future}.
+     * The pool.
+     */
+    
+    private final S pool;
+    
+    /**
+     * Construct a task with a {@link Collectable} metric and an intermediate {@link Statistic}. The {@link Statistic} 
+     * is wrapped in a {@link Future}.
      * 
      * @param metric the collectable metric
-     * @param input the metric input
+     * @param statistic the metric input
+     * @param pool the pool, optional
      */
 
-    public CollectableTask(final Collectable<S, T, U> metric, final Future<T> input)
+    public CollectableTask( final Collectable<S, T, U> metric, final Future<T> statistic, S pool )
     {
-        Objects.requireNonNull(metric, "Specify a non-null metric from which to create a task.");
-        Objects.requireNonNull(input, "Specify a non-null input from which to create a task.");
+        Objects.requireNonNull( metric, "Specify a non-null metric from which to create a task." );
+        Objects.requireNonNull( statistic, "Specify a non-null statistic from which to create a task." );
         this.metric = metric;
-        this.input = input;
+        this.input = statistic;
+        this.pool = pool;
     }
 
     @Override
     public U call() throws InterruptedException, ExecutionException
     {
-        final T in = input.get();
-        if(Objects.isNull(in))
+        final T in = this.input.get();
+        if ( Objects.isNull( in ) )
         {
-            throw new PoolException("Specify non-null input to the '"+this+"'.");
+            throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
-        return metric.aggregate(in);
+        return metric.aggregate( in, this.pool );
     }
 
 }

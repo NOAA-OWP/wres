@@ -15,43 +15,33 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.Co
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
- * The Equitable Threat Score (ETS) is a dichotomous measure of the fraction of all predicted outcomes that occurred
- * (i.e. were true positives), after factoring out the correct predictions that were due to chance.
+ * Measures the fraction of observed occurrences that were incorrectly predicted. A ratio of 0.0 indicates that all
+ * observed occurrences were predicted correctly and a ratio of 1.0 indicates that all observed occurrences were 
+ * predicted incorrectly.
  * 
  * @author James Brown
  */
-public class EquitableThreatScore extends ContingencyTableScore
+public class FalseAlarmRatio extends ContingencyTableScore
 {
-
-    /**
-     * Basic description of the metric.
-     */
-
+    /** Basic description of the metric. */
     public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
-                                                                          .setName( MetricName.EQUITABLE_THREAT_SCORE )
+                                                                          .setName( MetricName.FALSE_ALARM_RATIO )
                                                                           .build();
 
-    /**
-     * Main score component.
-     */
-
+    /** Main score component. */
     public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( -1.0 / 3 )
-                                                                                    .setMaximum( Double.POSITIVE_INFINITY )
-                                                                                    .setOptimum( 1 )
+                                                                                    .setMinimum( 0 )
+                                                                                    .setMaximum( 1 )
+                                                                                    .setOptimum( 0 )
                                                                                     .setName( ComponentName.MAIN )
                                                                                     .setUnits( MeasurementUnit.DIMENSIONLESS )
                                                                                     .build();
 
-    /**
-     * Full description of the metric.
-     */
-
-    public static final DoubleScoreMetric METRIC =
-            DoubleScoreMetric.newBuilder()
-                             .addComponents( EquitableThreatScore.MAIN )
-                             .setName( MetricName.EQUITABLE_THREAT_SCORE )
-                             .build();
+    /** Full description of the metric. */
+    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
+                                                                    .addComponents( FalseAlarmRatio.MAIN )
+                                                                    .setName( MetricName.FALSE_ALARM_RATIO )
+                                                                    .build();
 
     /**
      * Returns an instance.
@@ -59,9 +49,9 @@ public class EquitableThreatScore extends ContingencyTableScore
      * @return an instance
      */
 
-    public static EquitableThreatScore of()
+    public static FalseAlarmRatio of()
     {
-        return new EquitableThreatScore();
+        return new FalseAlarmRatio();
     }
 
     @Override
@@ -71,7 +61,7 @@ public class EquitableThreatScore extends ContingencyTableScore
     }
 
     @Override
-    public DoubleScoreStatisticOuter aggregate( final DoubleScoreStatisticOuter output,
+    public DoubleScoreStatisticOuter aggregate( final DoubleScoreStatisticOuter output, 
                                                 Pool<Pair<Boolean, Boolean>> pool )
     {
         this.is2x2ContingencyTable( output, this );
@@ -83,26 +73,16 @@ public class EquitableThreatScore extends ContingencyTableScore
         double fP = output.getComponent( MetricConstants.FALSE_POSITIVES )
                           .getData()
                           .getValue();
-
-        double fN = output.getComponent( MetricConstants.FALSE_NEGATIVES )
-                          .getData()
-                          .getValue();
-
-        double tN = output.getComponent( MetricConstants.TRUE_NEGATIVES )
-                          .getData()
-                          .getValue();
-
-        final double t = tP + fP + fN;
-        final double hitsRandom = ( ( tP + fN ) * ( tP + fP ) ) / ( t + tN );
-        double result = FunctionFactory.finiteOrMissing()
-                                       .applyAsDouble( ( tP - hitsRandom ) / ( t - hitsRandom ) );
+        
+        final double value =
+                FunctionFactory.finiteOrMissing().applyAsDouble( ( fP ) / ( tP + fP ) );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setMetric( EquitableThreatScore.MAIN )
-                                                                               .setValue( result )
+                                                                               .setMetric( FalseAlarmRatio.MAIN )
+                                                                               .setValue( value )
                                                                                .build();
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( EquitableThreatScore.BASIC_METRIC )
+                                                         .setMetric( FalseAlarmRatio.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 
@@ -112,16 +92,15 @@ public class EquitableThreatScore extends ContingencyTableScore
     @Override
     public MetricConstants getMetricName()
     {
-        return MetricConstants.EQUITABLE_THREAT_SCORE;
+        return MetricConstants.FALSE_ALARM_RATIO;
     }
 
     /**
      * Hidden constructor.
      */
 
-    private EquitableThreatScore()
+    private FalseAlarmRatio()
     {
         super();
     }
-
 }
