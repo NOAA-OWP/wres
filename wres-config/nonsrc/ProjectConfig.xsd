@@ -86,10 +86,10 @@
     <xs:simpleType name="sourceTransformationType">
         <xs:annotation>
             <xs:documentation>This is only useful currently in one circumstance:
-                where a persistence forecast is to serve as a "baseline" source. In
-                that case, the "baseline" source should refer to a long time series,
-                such as observations or simulations (i.e., the "left" source) with
-                this flag specified as "persistence".
+                where a persistence forecast is to serve as a "baseline" source. 
+                In that case, the "baseline" source should refer to a long time 
+                series, such as observations or simulations (i.e., the "left" 
+                source) with this flag specified as "persistence".
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:string">
@@ -99,17 +99,17 @@
 
     <xs:simpleType name="persistence">
         <xs:annotation>
-            <xs:documentation>Creates a baseline by persisting the prescribed source
-                forwards in time with a specified order or "lag", which must be 
-                greater than or equal to zero. For non-forecast sources, the lag is
-                applied to the valid time. For example, a lag of 1 means that the 
-                persisted value is the value from the persistence source that is one 
-                time step prior to the current valid time. For a forecast source, the 
-                lag is applied to the forecast reference time, or the first reference 
-                time if there are many. In this context, a lag of 3 means that the 
-                persisted value at all forecast valid times is the value from the 
-                persistence source that is 3 steps prior to the forecast reference 
-                time.
+            <xs:documentation>Creates a baseline by persisting the prescribed 
+                source forwards in time with a specified order or "lag", which 
+                must be greater than or equal to zero. For non-forecast sources, 
+                the lag is applied to the valid time. For example, a lag of 1 
+                means that the persisted value is the value from the persistence 
+                source that is one time step prior to the current valid time. 
+                For a forecast source, the lag is applied to the forecast 
+                reference time, or the first reference time if there are many. 
+                In this context, a lag of 3 means that the persisted value at 
+                all forecast valid times is the value from the persistence 
+                source that is 3 steps prior to the forecast reference time.
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:int" />
@@ -165,9 +165,9 @@
                 name attribute: the contents of either ensembleMemberId or
                 ensembleMemberIndex for PI-XML, the zero-based integer index of
                 the ensemble trace for NWM (and sources with no trace names). If
-                the exclude flag is set to true, then the settings actually specify
-                time series to exclude; otherwise it specifies times series to
-                include.
+                the exclude flag is set to true, then the settings actually 
+                specify time series to exclude; otherwise it specifies times 
+                series to include.
             </xs:documentation>
         </xs:annotation>
         <xs:attribute name="label" type="xs:string" />
@@ -804,8 +804,9 @@ A unit of time
                 <jaxb:class name="TimeScaleConfig" />
             </xs:appinfo>
             <xs:documentation>
-Describes the time scale of a measurement within a time-series. The time scale includes a function that integrates the measurement
-over a prescribed period, in prescribed time units.
+                Describes the time scale of a measurement within a time-series. 
+                The time scale includes a function that integrates the 
+                measurement over a prescribed period, in prescribed time units.
             </xs:documentation>
         </xs:annotation>
 
@@ -827,9 +828,13 @@ over a prescribed period, in prescribed time units.
                 <jaxb:class name="DesiredTimeScaleConfig" />
             </xs:appinfo>
             <xs:documentation>
-Additionally declares the frequency with which measurements may repeat at the desired time scale, in the same units
-declared for the period. TODO: allow the frequency to be declared separately from the time scale and then model the
-time scale within a single class, rather than two classes.
+                The desired time scale is the time scale at which pairs should 
+                be created. When declaring the attribute lenient = "true", 
+                rescaling is performed for intervals that contain missing data 
+                or data whose valid times are at irregular intervals. When 
+                lenient = "false" or undefined, rescaling is only performed for
+                intervals that contain regularly spaced events with no missing 
+                data values.
             </xs:documentation>
         </xs:annotation>
 
@@ -838,8 +843,10 @@ time scale within a single class, rather than two classes.
                 <xs:sequence>
                     <xs:element name="frequency" type="duration" minOccurs="0" maxOccurs="1"/>
                 </xs:sequence>
+                <xs:attribute name="lenient" type="xs:boolean" default="false" />
             </xs:extension>
         </xs:complexContent>
+
     </xs:complexType>
 
 

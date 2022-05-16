@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.CrossPair;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
+import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.DoubleBoundsType;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
@@ -342,9 +343,15 @@ public class PoolFactory
 
         // Create a cross pairer, in case this is required by the declaration
         TimeSeriesCrossPairer<Double, Double> crossPairer = PoolFactory.getCrossPairerOrNull( pairConfig );
-
+        
+        // Lenient upscaling?
+        DesiredTimeScaleConfig desiredTimeScale = pairConfig.getDesiredTimeScale();
+        boolean lenient = Objects.nonNull( desiredTimeScale ) && desiredTimeScale.isLenient();
+        
+        LOGGER.debug( "While creating pool suppliers, discovered a rescaling leniency of: {}.", lenient );
+        
         // Create a default upscaler
-        TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleUpscaler.of();
+        TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleUpscaler.of( lenient );
 
         // Create a feature-specific baseline generator function (e.g., persistence), if required
         Function<Set<FeatureKey>, UnaryOperator<TimeSeries<Double>>> baselineGenerator = null;
@@ -438,9 +445,15 @@ public class PoolFactory
         // Create a cross pairer, in case this is required by the declaration
         TimeSeriesCrossPairer<Double, Ensemble> crossPairer = PoolFactory.getCrossPairerOrNull( pairConfig );
 
+        // Lenient upscaling?
+        DesiredTimeScaleConfig desiredTimeScale = pairConfig.getDesiredTimeScale();
+        boolean lenient = Objects.nonNull( desiredTimeScale ) && desiredTimeScale.isLenient();
+        
+        LOGGER.debug( "While creating pool suppliers, discovered a rescaling leniency of: {}.", lenient );
+        
         // Create a default upscaler for left-ish data
-        TimeSeriesUpscaler<Double> leftUpscaler = TimeSeriesOfDoubleUpscaler.of();
-        TimeSeriesUpscaler<Ensemble> rightUpscaler = TimeSeriesOfEnsembleUpscaler.of();
+        TimeSeriesUpscaler<Double> leftUpscaler = TimeSeriesOfDoubleUpscaler.of( lenient );
+        TimeSeriesUpscaler<Ensemble> rightUpscaler = TimeSeriesOfEnsembleUpscaler.of( lenient );
 
         // Left transformer
         DoubleUnaryOperator leftTransformer = PoolFactory.getSingleValuedTransformer( pairConfig.getValues() );

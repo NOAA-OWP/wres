@@ -138,7 +138,7 @@ message EvaluationStatus
             // A neutral information message.
             
             DEBUG = 4;
-            /*An event that represents a detailed level of caller-facing 
+            /*An event that represents a detailed level of user-facing 
             information, as distinct from developer-facing/logging.*/
         }
         

@@ -8,7 +8,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import org.apache.commons.math3.exception.MathArithmeticException;
 import org.apache.commons.math3.util.ArithmeticUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,12 +46,11 @@ import wres.statistics.generated.TimeScale;
  * 
  * <p>The internal data is stored, and accessible, as a {@link TimeScale}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
 {
-
     /**
      * An enumeration of mathematical functions. A time-series value corresponds to the output from a function over 
      * a prescribed period.

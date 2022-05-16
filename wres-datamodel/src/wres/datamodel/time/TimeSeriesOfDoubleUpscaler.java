@@ -24,17 +24,18 @@ import wres.datamodel.MissingValues;
  * for the values at 6Z, 12Z, 18Z and 0Z and not the five-point average. Indeed, if these values represented an average 
  * over PT1H, rather than instantaneous values, then the five-point average would consider a PT25H period.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class TimeSeriesOfDoubleUpscaler implements TimeSeriesUpscaler<Double>
 {
-
     /**
-     * Lenient on values that match the {@link MissingValues#DOUBLE}? TODO: expose this to declaration.
+     * Lenient means that upscaling can proceed when values that match the {@link MissingValues#DOUBLE} are encountered
+     * or when the values to upscale are spaced irregularly over the interval (e.g., because data is implicitly 
+     * missing).
      */
 
-    private static final boolean LENIENT = false;
+    private final boolean isLenient;
 
     /**
      * Function that returns a double value or {@link MissingValues#DOUBLE} if the
@@ -45,14 +46,29 @@ public class TimeSeriesOfDoubleUpscaler implements TimeSeriesUpscaler<Double>
             a -> Double.isFinite( a ) ? a : MissingValues.DOUBLE;
 
     /**
-     * Creates an instance.
+     * Creates an instance that enforces strict upscaling or no leniency.
      * 
+     * @see #of(boolean)
      * @return an instance of the upscaler
      */
 
     public static TimeSeriesOfDoubleUpscaler of()
     {
-        return new TimeSeriesOfDoubleUpscaler();
+        return new TimeSeriesOfDoubleUpscaler( false );
+    }
+
+    /**
+     * Creates an instance with a prescribed leniency. Lenient upscaling means that missing data does not prevent 
+     * upscaling and that irregularly spaced data (which could indicate implicitly missing values) does not prevent 
+     * upscaling. Data is explicitly missing if it matches the {@link MissingValues#DOUBLE}.
+     * 
+     * @param isLenient is {@code true} to enforce lenient upscaling, {@code false} otherwise
+     * @return an instance of the ensemble upscaler
+     */
+
+    public static TimeSeriesOfDoubleUpscaler of( boolean isLenient )
+    {
+        return new TimeSeriesOfDoubleUpscaler( isLenient );
     }
 
     @Override
@@ -66,13 +82,26 @@ public class TimeSeriesOfDoubleUpscaler implements TimeSeriesUpscaler<Double>
     public RescaledTimeSeriesPlusValidation<Double> upscale( TimeSeries<Double> timeSeries,
                                                              TimeScaleOuter desiredTimeScale,
                                                              SortedSet<Instant> endsAt )
-    {       
+    {
         Objects.requireNonNull( desiredTimeScale );
 
         TimeScaleFunction desiredFunction = desiredTimeScale.getFunction();
         ToDoubleFunction<SortedSet<Event<Double>>> upscaler = this.getUpscaler( desiredFunction );
-        
-        return RescalingHelper.upscale( timeSeries, upscaler::applyAsDouble, desiredTimeScale, endsAt );
+
+        return RescalingHelper.upscale( timeSeries,
+                                        upscaler::applyAsDouble,
+                                        desiredTimeScale,
+                                        endsAt,
+                                        this.isLenient() );
+    }
+
+    /**
+     * @return {@code true} if lenient upscaling is required, {@code false} otherwise.
+     */
+
+    private boolean isLenient()
+    {
+        return this.isLenient;
     }
 
     /**
@@ -92,7 +121,7 @@ public class TimeSeriesOfDoubleUpscaler implements TimeSeriesUpscaler<Double>
 
             SortedSet<Event<Double>> eventsToUse = events;
 
-            if ( TimeSeriesOfDoubleUpscaler.LENIENT )
+            if ( this.isLenient() )
             {
                 eventsToUse = eventsToUse.stream()
                                          .filter( next -> Double.isFinite( next.getValue() ) )
@@ -138,10 +167,13 @@ public class TimeSeriesOfDoubleUpscaler implements TimeSeriesUpscaler<Double>
 
     /**
      * Hidden constructor.
+     * 
+     * @param isLenient is true if the lenient upscaling is required, false otherwise
      */
 
-    private TimeSeriesOfDoubleUpscaler()
+    private TimeSeriesOfDoubleUpscaler( boolean isLenient )
     {
+        this.isLenient = isLenient;
     }
 
 }

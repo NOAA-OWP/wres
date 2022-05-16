@@ -22,17 +22,18 @@ import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
  * values. Makes the same assumptions as the {@link TimeSeriesOfDoubleUpscaler}, but additionally requires that every
  * {@link Ensemble} contains the same number of ensemble members.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble>
 {
-
     /**
-     * Lenient on values that match the {@link MissingValues#DOUBLE}? TODO: expose this to declaration.
+     * Lenient means that upscaling can proceed when values that match the {@link MissingValues#DOUBLE} are encountered
+     * or when the values to upscale are spaced irregularly over the interval (e.g., because data is implicitly 
+     * missing).
      */
 
-    private static final boolean LENIENT = false;
+    private final boolean isLenient;
 
     /**
      * Function that returns a double value or {@link MissingValues#DOUBLE} if the
@@ -43,14 +44,29 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
             a -> Double.isFinite( a ) ? a : MissingValues.DOUBLE;
 
     /**
-     * Creates an instance.
+     * Creates an instance that enforces strict upscaling or no leniency.
      * 
+     * @see #of(boolean)
      * @return an instance of the ensemble upscaler
      */
 
     public static TimeSeriesOfEnsembleUpscaler of()
     {
-        return new TimeSeriesOfEnsembleUpscaler();
+        return new TimeSeriesOfEnsembleUpscaler( false );
+    }
+
+    /**
+     * Creates an instance with a prescribed leniency. Lenient upscaling means that missing data does not prevent 
+     * upscaling and that irregularly spaced data (which could indicate implicitly missing values) does not prevent 
+     * upscaling. Data is explicitly missing if it matches the {@link MissingValues#DOUBLE}.
+     * 
+     * @param isLenient is {@code true} to enforce lenient upscaling, {@code false} otherwise
+     * @return an instance of the ensemble upscaler
+     */
+
+    public static TimeSeriesOfEnsembleUpscaler of( boolean isLenient )
+    {
+        return new TimeSeriesOfEnsembleUpscaler( isLenient );
     }
 
     @Override
@@ -70,7 +86,7 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
         TimeScaleFunction desiredFunction = desiredTimeScale.getFunction();
         Function<SortedSet<Event<Ensemble>>, Ensemble> upscaler = this.getEnsembleUpscaler( desiredFunction );
 
-        return RescalingHelper.upscale( timeSeries, upscaler, desiredTimeScale, endsAt );
+        return RescalingHelper.upscale( timeSeries, upscaler, desiredTimeScale, endsAt, this.isLenient() );
     }
 
     /**
@@ -141,6 +157,15 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
     }
 
     /**
+     * @return {@code true} if lenient upscaling is required, {@code false} otherwise.
+     */
+
+    private boolean isLenient()
+    {
+        return this.isLenient;
+    }
+
+    /**
      * Returns a function that corresponds to a {@link TimeScaleFunction}, additionally wrapped by 
      * {@link #RETURN_DOUBLE_OR_MISSING} so that missing input produces missing output.
      * 
@@ -157,7 +182,7 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
 
             List<Double> eventsToUse = events;
 
-            if ( TimeSeriesOfEnsembleUpscaler.LENIENT )
+            if ( this.isLenient() )
             {
                 eventsToUse = eventsToUse.stream()
                                          .filter( Double::isFinite )
@@ -205,11 +230,12 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
     /**
      * Hidden constructor.
      * 
-     * @throws NullPointerException of the input is null
+     * @param isLenient is true if the lenient upscaling is required, false otherwise
      */
 
-    private TimeSeriesOfEnsembleUpscaler()
+    private TimeSeriesOfEnsembleUpscaler( boolean isLenient )
     {
+        this.isLenient = isLenient;
     }
 
 }

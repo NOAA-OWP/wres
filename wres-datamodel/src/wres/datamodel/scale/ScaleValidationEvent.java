@@ -5,9 +5,7 @@ import java.util.Objects;
 import wres.statistics.generated.EvaluationStatus;
 
 /**
- * <p>Records a validation event related to scale information or rescaling. There are two types of validation event, 
- * represented by the {@link EventType} enumeration within this class, namely {@link EventType#WARN}, which represents 
- * a warning and {@link EventType#ERROR}, which represents an error. A {@link ScaleValidationEvent} provides a 
+ * <p>Records a validation event related to scale information or rescaling. A {@link ScaleValidationEvent} provides a 
  * mechanism to collect together multiple validation events before acting or reporting on them collectively, such as by 
  * throwing an exception with a summary of all validation events encountered, rather than drip-feeding validation 
  * failures.
@@ -19,41 +17,32 @@ import wres.statistics.generated.EvaluationStatus;
  * TODO: update 20200814. This class should wrap an {@link EvaluationStatus} message. The reason to wrap rather than 
  * replace is its implementation of {@link Comparable}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class ScaleValidationEvent implements Comparable<ScaleValidationEvent>
 {
-
     /**
      * Describes a type of scale validation event.
      * 
-     * @author james.brown@hydrosolved.com
+     * @author James Brown
      */
 
     public enum EventType
     {
-        /**
-         * An event that represents a warning.
-         */
+        /** An event that represents a warning. */
         WARN,
         
-        /**
-         * An event that represents a debug level of information, but still externally facing, i.e. not intended for 
-         * developers.
-         */
+        /** This should be interpreted as a detailed warning. It is externally facing, i.e. not intended for developers, 
+         * but should be used when the information is detailed/specific or there are many such occurrences. */
         DEBUG,
         
-        /**
-         * An event that represents an error.
-         */
+        /** An event that represents an error. */
         ERROR,
         
-        /**
-         * A neutral information message.
-         */
+        /** A neutral information message. */
         INFO;
-    }    
+    }
     
     /**
      * The event type.
