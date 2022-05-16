@@ -14,12 +14,11 @@ import wres.datamodel.scale.TimeScaleOuter;
  * amount of data.
  * 
  * @param <T> the type of event value
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public interface TimeSeriesUpscaler<T>
 {
-
     /**
      * Upscales the input {@link TimeSeries} to the desired {@link TimeScaleOuter} without any constraints on the times 
      * at which the upscaled values must end. In other words, upscaling starts from the beginning of the input time-

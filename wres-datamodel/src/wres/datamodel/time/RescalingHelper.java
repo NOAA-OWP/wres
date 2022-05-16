@@ -28,16 +28,12 @@ import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 /**
  * Helper class for supporting rescaling operations.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 class RescalingHelper
 {
-
-    /**
-     * Logger.
-     */
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( RescalingHelper.class );
 
     private static final ScaleValidationEvent DID_NOT_DETECT_AN_ATTEMPT_TO_ACCUMULATE =
@@ -117,6 +113,12 @@ class RescalingHelper
 
     private static final String SEVEN_MEMBER_MESSAGE = "{}{}{}{}{}";
 
+    private static final String THE_LENIENCY_STATUS_WAS = ". The leniency status was: ";
+
+    /** Default group rescaling status. */
+    private static final GroupRescalingStatus DEFAULT_GROUP_RESCALING_STATUS =
+            new GroupRescalingStatus( true, List.of() );
+
     /**
      * Conducts upscaling of a time-series.
      * 
@@ -125,13 +127,15 @@ class RescalingHelper
      * @param upscaler the function that upscales the event values
      * @param desiredTimeScale the desired time scale
      * @param endsAt the set of times at which upscaled values should end
+     * @param lenient is true to upscale irregularly spaced data (e.g., due to missing values)
      * @return the upscaled time-series and associated validation events
      */
 
     static <T> RescaledTimeSeriesPlusValidation<T> upscale( TimeSeries<T> timeSeries,
                                                             Function<SortedSet<Event<T>>, T> upscaler,
                                                             TimeScaleOuter desiredTimeScale,
-                                                            SortedSet<Instant> endsAt )
+                                                            SortedSet<Instant> endsAt,
+                                                            boolean lenient )
     {
         Objects.requireNonNull( timeSeries );
 
@@ -243,7 +247,8 @@ class RescalingHelper
                                                           upscaler,
                                                           desiredTimeScale,
                                                           endsAt,
-                                                          validationEvents );
+                                                          validationEvents,
+                                                          lenient );
     }
 
     /**
@@ -255,6 +260,7 @@ class RescalingHelper
      * @param desiredTimeScale the desired time scale
      * @param endsAt the set of times at which upscaled values should end
      * @param validationEvents the validation events
+     * @param lenient is true to upscale irregularly spaced data (e.g., due to missing values)
      * @return the upscaled time-series and associated validation events
      */
 
@@ -262,7 +268,8 @@ class RescalingHelper
                                                                                       Function<SortedSet<Event<T>>, T> upscaler,
                                                                                       TimeScaleOuter desiredTimeScale,
                                                                                       SortedSet<Instant> endsAt,
-                                                                                      List<ScaleValidationEvent> validationEvents )
+                                                                                      List<ScaleValidationEvent> validationEvents,
+                                                                                      boolean lenient )
     {
         // No times at which values should end, so start at the beginning
         if ( endsAt.isEmpty() )
@@ -285,16 +292,17 @@ class RescalingHelper
         List<ScaleValidationEvent> mutableValidationEvents = new ArrayList<>( validationEvents );
         validationEvents = mutableValidationEvents;
 
-        // Upscale each group
+        // Upscale each group, if possible
         for ( Map.Entry<Instant, SortedSet<Event<T>>> nextGroup : groups.entrySet() )
         {
-            List<ScaleValidationEvent> validation = RescalingHelper.checkThatUpscalingIsPossible( nextGroup.getValue(),
-                                                                                                  nextGroup.getKey(),
-                                                                                                  period );
-            validationEvents.addAll( validation );
+            GroupRescalingStatus status = RescalingHelper.checkThatUpscalingIsPossible( nextGroup.getValue(),
+                                                                                        nextGroup.getKey(),
+                                                                                        period,
+                                                                                        lenient );
+            validationEvents.addAll( status.getScaleValidationEvents() );
 
-            // No validation events, upscaling can proceed
-            if ( validation.isEmpty() )
+            // No group-wise validation events, upscaling can proceed for this group
+            if ( status.canRescale() )
             {
                 T result = upscaler.apply( nextGroup.getValue() );
                 Event<T> upscaled = Event.of( nextGroup.getKey(), result );
@@ -398,14 +406,16 @@ class RescalingHelper
      * 
      * @param events the events
      * @param endsAt the end of the interval to aggregate, which is used for logging
-     * @param period The period over which to upscale
+     * @param period the period over which to upscale
+     * @param lenient is true to upscale irregularly spaced data (e.g., due to missing values)
      * @return a list of scale validation events, empty if upscaling is possible
      * @throws NullPointerException if any input is null
      */
 
-    private static <T> List<ScaleValidationEvent> checkThatUpscalingIsPossible( SortedSet<Event<T>> events,
-                                                                                Instant endsAt,
-                                                                                Duration period )
+    private static <T> GroupRescalingStatus checkThatUpscalingIsPossible( SortedSet<Event<T>> events,
+                                                                          Instant endsAt,
+                                                                          Duration period,
+                                                                          boolean lenient )
     {
         Objects.requireNonNull( events );
         Objects.requireNonNull( endsAt );
@@ -421,7 +431,8 @@ class RescalingHelper
                              + DISCOVERED_FEWER_THAN_TWO_EVENTS_IN_THE_COLLECTION_WHICH_IS_INSUFFICIENT_FOR
                              + UPSCALING;
 
-            return List.of( ScaleValidationEvent.debug( message ) );
+            List<ScaleValidationEvent> validationEvents = List.of( ScaleValidationEvent.debug( message ) );
+            return new GroupRescalingStatus( false, validationEvents );
         }
 
         // Unpack the event times
@@ -437,7 +448,6 @@ class RescalingHelper
         // Check for even spacing if there are two or more gaps
         if ( times.size() > 2 )
         {
-
             String message = WHILE_ATTEMPING_TO_UPSCALE_A_COLLECTION_OF + events.size()
                              + EVENTS_TO_A_PERIOD_OF
                              + period
@@ -445,6 +455,8 @@ class RescalingHelper
                              + endsAt
                              + DISCOVERED_THAT_THE_VALUES_WERE_NOT_EVENLY_SPACED_WITHIN_THE_PERIOD_IDENTIFIED
                              + THESE_INTERVALS_BEFORE_STOPPING;
+
+            String leniencyStatus = THE_LENIENCY_STATUS_WAS + lenient + ".";
 
             Instant last = null;
             Duration lastPeriod = null;
@@ -457,8 +469,13 @@ class RescalingHelper
 
                     if ( !Objects.equals( lastPeriod, nextPeriod ) )
                     {
+                        ScaleValidationEvent nextEvent =
+                                ScaleValidationEvent.debug( message + Set.of( lastPeriod, nextPeriod )
+                                                            + leniencyStatus );
+                        List<ScaleValidationEvent> nextEventList = List.of( nextEvent );
 
-                        return List.of( ScaleValidationEvent.debug( message + Set.of( lastPeriod, nextPeriod ) ) );
+                        // If lenient, the group can be rescaled
+                        return new GroupRescalingStatus( lenient, nextEventList );
                     }
                 }
 
@@ -471,7 +488,7 @@ class RescalingHelper
             }
         }
 
-        return List.of();
+        return DEFAULT_GROUP_RESCALING_STATUS;
     }
 
     /**
@@ -796,6 +813,46 @@ class RescalingHelper
         }
 
         return DID_NOT_DETECT_AN_ATTEMPT_TO_ACCUMULATE;
+    }
+
+    /**
+     * A smaller class that wraps a collection of {@link ScaleValidationEvent} as they relate to a particular group of
+     * time-series events to rescale, plus a flag that indicates whether that group of time-series events can be 
+     * rescaled. A time-series may compose several groups of events to rescale and this class allows for the status to 
+     * be tracked at the finest possible level, i.e., of one group of events to rescale.
+     * 
+     * @author James Brown
+     */
+    private static class GroupRescalingStatus
+    {
+        /** Is {@code true} if the group can be rescaled, otherwise {@code false}. */
+        private final boolean canRescale;
+
+        /** The scale validation events. */
+        private final List<ScaleValidationEvent> events;
+
+        /**
+         * @return whether rescaling is allowed
+         */
+        private boolean canRescale()
+        {
+            return this.canRescale;
+        }
+
+        private List<ScaleValidationEvent> getScaleValidationEvents()
+        {
+            return this.events;
+        }
+
+        /**
+         * @param canRescale is {@code true} if the group can be rescaled, otherwise {@code false}
+         * @param events the scale validation events
+         */
+        private GroupRescalingStatus( boolean canRescale, List<ScaleValidationEvent> events )
+        {
+            this.canRescale = canRescale;
+            this.events = events;
+        }
     }
 
     /**
