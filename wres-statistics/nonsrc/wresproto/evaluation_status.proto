@@ -12,20 +12,20 @@ option java_multiple_files = true;
 message EvaluationStatus
 {
     /*A message that encapsulates the status of an evaluation that has been 
-    started. An evaluation identifier is required to connect an EvaluationStatus 
-    message to an Evaluation message. It is assumed that this identifier is 
-    packaged with the protocol; it is not provided inband. An EvaluationStatus 
-    message may record some or all of the EvaluationStatusEvent associated with 
-    an evaluation at the point of request. For example, it may record only those 
-    "new" events surfaced since the last request. Publishers and subscribers 
-    also report on their status, in order to allow for evaluations to be 
-    completed, validated as complete, and resources returned. A publisher 
-    reports when publication is complete and a subscriber reports when 
-    consumption has started and completed. A subscriber registers and reports 
-    with a consumer identifier in the protocol metadata. Once an evaluation 
-    reports publication complete and all subscribers report consumption complete, 
-    then the evaluation itself can complete. Each messaging client has a unique 
-    client identifier.*/
+    started. An evaluation identifier is required to connect an 
+    EvaluationStatus message to an Evaluation message. It is assumed that this 
+    identifier is packaged with the protocol; it is not provided inband. An 
+    EvaluationStatus message may record some or all of the 
+    EvaluationStatusEvent associated with an evaluation at the point of 
+    request. For example, it may record only those "new" events surfaced since 
+    the last request. Publishers and subscribers also report on their status, 
+    in order to allow for evaluations to be completed, validated as complete, 
+    and resources returned. A publisher reports when publication is complete 
+    and a subscriber reports when consumption has started and completed. A 
+    subscriber registers and reports with a consumer identifier in the protocol 
+    metadata. Once an evaluation reports publication complete and all 
+    subscribers report consumption complete, then the evaluation itself can 
+    complete. Each messaging client has a unique client identifier.*/
 
     string client_id = 1;
     // The unique identifier of the messaging client that is responsible for 
@@ -78,15 +78,16 @@ message EvaluationStatus
         // of a consumption contract. When a publisher reports 
         // CONSUMER_REQUIRED, a consumer responds READY_TO_CONSUME. Being ready 
         // does not guarantee the contract to the consumer reporting ready. A 
-        // consumer must be identified in order to correlate with its completion 
-        // status. See the Consumer field in the encapsulating EvaluationStatus 
-        // message.
+        // consumer must be identified in order to correlate with its 
+        // completion status. See the Consumer field in the encapsulating 
+        // EvaluationStatus message.
 
         CONSUMPTION_ONGOING = 10;
         // A consumer reports consumption ongoing. This may be used to register
-        // that a consumer is alive when consumption is long-running. A consumer 
-        // must be identified in order to correlate with its completion status. 
-        // See the Consumer field in the encapsulating EvaluationStatus message.
+        // that a consumer is alive when consumption is long-running. A 
+        // consumer must be identified in order to correlate with its 
+        // completion status. See the Consumer field in the encapsulating 
+        // EvaluationStatus message.
 
         CONSUMPTION_COMPLETE_REPORTED_SUCCESS = 11; 
         // A consumer reports completion without errors.
@@ -99,7 +100,9 @@ message EvaluationStatus
         // identifier should be set in the groupId field of the encapsulating 
         // EvaluationStatus message. A consumer must be identified in order to 
         // correlate with its completion status. See the Consumer field in the 
-        // encapsulating EvaluationStatus message.
+        // encapsulating EvaluationStatus message. When group consumption 
+        // completes, it implicitly succeeds, else the status message should 
+        // report CONSUMPTION_COMPLETE_REPORTED_FAILURE (i.e., overall failure).
     }
     
     CompletionStatus completion_status = 3;
@@ -121,9 +124,9 @@ message EvaluationStatus
         /*A message that encapsulates an evaluation status event, such as a 
         warning to a user.*/
         
-        enum StatusMessageType
+        enum StatusLevel
         {
-            // The type or severity of evaluation status message.
+            // The level or severity of the evaluation status event.
                    
             UNDEFINED = 0;
             // Undefined status.
@@ -142,7 +145,7 @@ message EvaluationStatus
             information, as distinct from developer-facing/logging.*/
         }
         
-        StatusMessageType event_type = 1;
+        StatusLevel status_level = 1;
         // The type of event.
 
         string event_message = 2;
@@ -153,6 +156,45 @@ message EvaluationStatus
 
         EvaluationStatusEvent cause = 4;
         // Inner event containing the cause of the outer event
+
+       enum EvaluationStage
+       {
+           // The stage within the evaluation to which the status event refers. 
+           // This enumeration is an abstraction of an evaluation pipeline.
+
+            UNKNOWN = 0;
+            // Undefined status.
+            
+            READING = 1;
+            // An event that occurred whike reading time series data.
+            
+            INGESTING = 2;
+            // An event that occurred whike ingesting time series data into a 
+            // data store, such as a database.
+            
+            RETRIEVING = 3;
+            // An event that occurred while retrieving time series data from a 
+            // data store, such as a database.
+                    
+            RESCALING = 4;
+            // An event that occurred while rescaling time series data.
+            
+            PAIRING = 5;
+            // An event that occurred while pairing time series data.
+            
+            POOLING = 6;
+            // An event that occurred while placing time series data into pools.
+            
+            CALCULATING_STATISTICS = 7;
+            // An event that occurred while calculating evaluation statistics.
+            
+            WRITING = 8;
+            // An event that occurred while writing statistics formats.
+       }
+
+       EvaluationStage evaluation_stage = 5;
+       // The stage within the evaluation pipeline where the status event 
+       // occurred.
     }    
 
     repeated EvaluationStatusEvent status_events = 7;

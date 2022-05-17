@@ -19,11 +19,12 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.datamodel.messages.EvaluationStatusMessage;
 import wres.datamodel.scale.RescalingException;
-import wres.datamodel.scale.ScaleValidationEvent;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.scale.ScaleValidationEvent.EventType;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
+import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.EvaluationStage;
+import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLevel;
 
 /**
  * Helper class for supporting rescaling operations.
@@ -36,27 +37,33 @@ class RescalingHelper
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( RescalingHelper.class );
 
-    private static final ScaleValidationEvent DID_NOT_DETECT_AN_ATTEMPT_TO_ACCUMULATE =
-            ScaleValidationEvent.debug( "Did not detect an attempt to accumulate "
-                                        + "something that is not an accumulation." );
+    private static final EvaluationStatusMessage DID_NOT_DETECT_AN_ATTEMPT_TO_ACCUMULATE =
+            EvaluationStatusMessage.info( EvaluationStage.RESCALING,
+                                          "Did not detect an attempt to accumulate "
+                                                                     + "something that is not an accumulation." );
 
-    private static final ScaleValidationEvent NOT_ATTEMPTING_TO_ACCUMULATE_AN_INSTANTANEOUS_VALUE =
-            ScaleValidationEvent.debug( "Not attempting to accumulate an instantaneous value." );
+    private static final EvaluationStatusMessage NOT_ATTEMPTING_TO_ACCUMULATE_AN_INSTANTANEOUS_VALUE =
+            EvaluationStatusMessage.info( EvaluationStage.RESCALING,
+                                          "Not attempting to accumulate an instantaneous value." );
 
-    private static final ScaleValidationEvent NO_ATTEMPT_WAS_MADE_TO_CHANGE_THE_TIME_SCALE_FUNCTION =
-            ScaleValidationEvent.debug( "No attempt was made to change the time scale function without "
-                                        + "also changing the period." );
+    private static final EvaluationStatusMessage NO_ATTEMPT_WAS_MADE_TO_CHANGE_THE_TIME_SCALE_FUNCTION =
+            EvaluationStatusMessage.info( EvaluationStage.RESCALING,
+                                          "No attempt was made to change the time scale function without "
+                                                                     + "also changing the period." );
 
-    private static final ScaleValidationEvent THE_DESIRED_PERIOD_OF_ZERO_IS_AN_INTEGER_MULTIPLE =
-            ScaleValidationEvent.debug( "The desired period is an integer multiple of the existing "
-                                        + "period and is, therefore, acceptable." );
+    private static final EvaluationStatusMessage THE_DESIRED_PERIOD_OF_ZERO_IS_AN_INTEGER_MULTIPLE =
+            EvaluationStatusMessage.info( EvaluationStage.RESCALING,
+                                          "The desired period is an integer multiple of the existing "
+                                                                     + "period and is, therefore, acceptable." );
 
-    private static final ScaleValidationEvent THE_EXISTING_PERIOD_OF_ZERO_IS_NOT_LARGER_THAN_THE_DESIRED_PERIOD =
-            ScaleValidationEvent.debug( "The existing period is not larger than the desired period and "
-                                        + "is, therefore, acceptable." );
+    private static final EvaluationStatusMessage THE_EXISTING_PERIOD_OF_ZERO_IS_NOT_LARGER_THAN_THE_DESIRED_PERIOD =
+            EvaluationStatusMessage.info( EvaluationStage.RESCALING,
+                                          "The existing period is not larger than the desired period and "
+                                                                     + "is, therefore, acceptable." );
 
-    private static final ScaleValidationEvent THE_DESIRED_FUNCTION_IS_NOT_UNKNOWN_AND_IS_THEREFORE_ACCEPTABLE =
-            ScaleValidationEvent.debug( "The desired function is not unknown and is, therefore, acceptable." );
+    private static final EvaluationStatusMessage THE_DESIRED_FUNCTION_IS_NOT_UNKNOWN_AND_IS_THEREFORE_ACCEPTABLE =
+            EvaluationStatusMessage.info( EvaluationStage.RESCALING,
+                                          "The desired function is not unknown and is, therefore, acceptable." );
 
     private static final String THE_FUNCTION_ASSOCIATED_WITH = "The function associated with "
                                                                + "the desired time scale is a ''{0}'', "
@@ -114,6 +121,10 @@ class RescalingHelper
     private static final String SEVEN_MEMBER_MESSAGE = "{}{}{}{}{}";
 
     private static final String THE_LENIENCY_STATUS_WAS = ". The leniency status was: ";
+    
+    private static final String DESIRED_TIME_SCALE_LENIENT = " Consider setting the option <desiredTimeScale "
+            + "lenient=\"true\"> to ignore missing data or to allow "
+            + "for unequally spaced values.";
 
     /** Default group rescaling status. */
     private static final GroupRescalingStatus DEFAULT_GROUP_RESCALING_STATUS =
@@ -144,7 +155,7 @@ class RescalingHelper
         Objects.requireNonNull( endsAt );
 
         // Validate the request
-        List<ScaleValidationEvent> validationEvents = RescalingHelper.validate( timeSeries, desiredTimeScale );
+        List<EvaluationStatusMessage> validationEvents = RescalingHelper.validate( timeSeries, desiredTimeScale );
 
         // Empty time-series
         if ( timeSeries.getEvents().isEmpty() )
@@ -268,7 +279,7 @@ class RescalingHelper
                                                                                       Function<SortedSet<Event<T>>, T> upscaler,
                                                                                       TimeScaleOuter desiredTimeScale,
                                                                                       SortedSet<Instant> endsAt,
-                                                                                      List<ScaleValidationEvent> validationEvents,
+                                                                                      List<EvaluationStatusMessage> validationEvents,
                                                                                       boolean lenient )
     {
         // No times at which values should end, so start at the beginning
@@ -289,7 +300,7 @@ class RescalingHelper
         TimeSeries.Builder<T> builder = new TimeSeries.Builder<>();
 
         // Create a mutable copy of the validation events to add more, as needed
-        List<ScaleValidationEvent> mutableValidationEvents = new ArrayList<>( validationEvents );
+        List<EvaluationStatusMessage> mutableValidationEvents = new ArrayList<>( validationEvents );
         validationEvents = mutableValidationEvents;
 
         // Upscale each group, if possible
@@ -372,15 +383,16 @@ class RescalingHelper
      * @return the validation events
      */
 
-    private static <T> List<ScaleValidationEvent> validate( TimeSeries<T> timeSeries, TimeScaleOuter desiredTimeScale )
+    private static <T> List<EvaluationStatusMessage> validate( TimeSeries<T> timeSeries,
+                                                               TimeScaleOuter desiredTimeScale )
     {
-        List<ScaleValidationEvent> events =
+        List<EvaluationStatusMessage> events =
                 RescalingHelper.validateForUpscaling( timeSeries.getTimeScale(), desiredTimeScale );
 
         // Errors to translate into exceptions?
-        List<ScaleValidationEvent> errors = events.stream()
-                                                  .filter( a -> a.getEventType() == EventType.ERROR )
-                                                  .collect( Collectors.toList() );
+        List<EvaluationStatusMessage> errors = events.stream()
+                                                     .filter( a -> a.getStatusLevel() == StatusLevel.ERROR )
+                                                     .collect( Collectors.toList() );
         String spacer = "    ";
 
         if ( !errors.isEmpty() )
@@ -401,8 +413,8 @@ class RescalingHelper
     }
 
     /**
-     * Returns an empty list of {@link ScaleValidationEvent} if the inputs can produce an upscaled value, otherwise
-     * one or more {@link ScaleValidationEvent} that explain why this is not possible.
+     * Returns an empty list of {@link EvaluationStatusMessage} if the inputs can produce an upscaled value, otherwise
+     * one or more {@link EvaluationStatusMessage} that explain why this is not possible.
      * 
      * @param events the events
      * @param endsAt the end of the interval to aggregate, which is used for logging
@@ -431,7 +443,8 @@ class RescalingHelper
                              + DISCOVERED_FEWER_THAN_TWO_EVENTS_IN_THE_COLLECTION_WHICH_IS_INSUFFICIENT_FOR
                              + UPSCALING;
 
-            List<ScaleValidationEvent> validationEvents = List.of( ScaleValidationEvent.debug( message ) );
+            List<EvaluationStatusMessage> validationEvents =
+                    List.of( EvaluationStatusMessage.debug( EvaluationStage.RESCALING, message ) );
             return new GroupRescalingStatus( false, validationEvents );
         }
 
@@ -458,6 +471,11 @@ class RescalingHelper
 
             String leniencyStatus = THE_LENIENCY_STATUS_WAS + lenient + ".";
 
+            if ( !lenient )
+            {
+                leniencyStatus += DESIRED_TIME_SCALE_LENIENT;
+            }
+
             Instant last = null;
             Duration lastPeriod = null;
 
@@ -469,10 +487,11 @@ class RescalingHelper
 
                     if ( !Objects.equals( lastPeriod, nextPeriod ) )
                     {
-                        ScaleValidationEvent nextEvent =
-                                ScaleValidationEvent.debug( message + Set.of( lastPeriod, nextPeriod )
-                                                            + leniencyStatus );
-                        List<ScaleValidationEvent> nextEventList = List.of( nextEvent );
+                        EvaluationStatusMessage nextEvent =
+                                EvaluationStatusMessage.debug( EvaluationStage.RESCALING,
+                                                               message + Set.of( lastPeriod, nextPeriod )
+                                                                                          + leniencyStatus );
+                        List<EvaluationStatusMessage> nextEventList = List.of( nextEvent );
 
                         // If lenient, the group can be rescaled
                         return new GroupRescalingStatus( lenient, nextEventList );
@@ -493,7 +512,7 @@ class RescalingHelper
 
     /**
      * <p>Validates the request to upscale and throws an exception if the request is invalid. The validation is composed
-     * of many separate pieces, each of which produces a {@link ScaleValidationEvent}. These validation events are 
+     * of many separate pieces, each of which produces a {@link EvaluationStatusMessage}. These validation events are 
      * collected together and, if any show {@link EventType#ERROR}, then an exception is thrown with all such cases 
      * identified.
      * 
@@ -503,8 +522,8 @@ class RescalingHelper
      * @param desiredTimeScale the desired scale
      */
 
-    private static List<ScaleValidationEvent> validateForUpscaling( TimeScaleOuter existingTimeScale,
-                                                                    TimeScaleOuter desiredTimeScale )
+    private static List<EvaluationStatusMessage> validateForUpscaling( TimeScaleOuter existingTimeScale,
+                                                                       TimeScaleOuter desiredTimeScale )
     {
         // Existing time-scale is unknown
         if ( Objects.isNull( existingTimeScale ) )
@@ -515,14 +534,15 @@ class RescalingHelper
             {
                 String message = MessageFormat.format( EXISTING_TIME_SCALE_IS_MISSING, desiredTimeScale );
 
-                return List.of( ScaleValidationEvent.error( message ) );
+                return List.of( EvaluationStatusMessage.error( EvaluationStage.RESCALING, message ) );
             }
 
-            return List.of( ScaleValidationEvent.info( EXISTING_TIME_SCALE_IS_MISSING_DESIRED_INSTANTANEOUS ) );
+            return List.of( EvaluationStatusMessage.info( EvaluationStage.RESCALING,
+                                                          EXISTING_TIME_SCALE_IS_MISSING_DESIRED_INSTANTANEOUS ) );
         }
 
         // The validation events encountered
-        List<ScaleValidationEvent> allEvents = new ArrayList<>();
+        List<EvaluationStatusMessage> allEvents = new ArrayList<>();
 
         // Change of scale required, i.e. not absolutely equal and not instantaneous
         // (which has a more lenient interpretation)
@@ -589,13 +609,13 @@ class RescalingHelper
 
     /**
      * Checks whether the desiredFunction is {@link TimeScaleFunction#UNKNOWN}, which is not allowed. If so,
-     * returns a {@link ScaleValidationEvent} that is {@link EventType#ERROR}, otherwise {@link EventType#PASS}.
+     * returns a {@link EvaluationStatusMessage} that is {@link EventType#ERROR}, otherwise {@link EventType#PASS}.
      *
      * @param desiredScale the desired scale
      * @return a validation event
      */
 
-    private static ScaleValidationEvent checkIfDesiredFunctionIsUnknown( TimeScaleOuter desiredScale )
+    private static EvaluationStatusMessage checkIfDesiredFunctionIsUnknown( TimeScaleOuter desiredScale )
     {
         if ( desiredScale.getFunction() == TimeScaleFunction.UNKNOWN )
         {
@@ -603,7 +623,7 @@ class RescalingHelper
                                                    + "to conduct rescaling.",
                                                    desiredScale );
 
-            return ScaleValidationEvent.error( message );
+            return EvaluationStatusMessage.error( EvaluationStage.RESCALING, message );
         }
 
         return THE_DESIRED_FUNCTION_IS_NOT_UNKNOWN_AND_IS_THEREFORE_ACCEPTABLE;
@@ -611,15 +631,15 @@ class RescalingHelper
 
     /**
      * Checks whether the existingPeriod is larger than the desiredPeriod, which is not allowed. If so, returns
-     * a {@link ScaleValidationEvent} that is {@link EventType#ERROR}, otherwise {@link EventType#PASS}.
+     * a {@link EvaluationStatusMessage} that is {@link EventType#ERROR}, otherwise {@link EventType#PASS}.
      * 
      * @param existingPeriod the existing period
      * @param desiredPeriod the desired period
      * @return a validation event
      */
 
-    private static ScaleValidationEvent checkIfDownscalingRequested( Duration existingPeriod,
-                                                                     Duration desiredPeriod )
+    private static EvaluationStatusMessage checkIfDownscalingRequested( Duration existingPeriod,
+                                                                        Duration desiredPeriod )
     {
         if ( existingPeriod.compareTo( desiredPeriod ) > 0 )
         {
@@ -628,7 +648,7 @@ class RescalingHelper
                                                    desiredPeriod,
                                                    existingPeriod );
 
-            return ScaleValidationEvent.error( message );
+            return EvaluationStatusMessage.error( EvaluationStage.RESCALING, message );
         }
 
         return THE_EXISTING_PERIOD_OF_ZERO_IS_NOT_LARGER_THAN_THE_DESIRED_PERIOD;
@@ -636,15 +656,15 @@ class RescalingHelper
 
     /**
      * Checks whether the desiredPeriod is an integer multiple of the existingPeriod. If not an integer multiple, 
-     * returns a {@link ScaleValidationEvent} that is {@link EventType#ERROR}, otherwise {@link EventType#PASS}.  
+     * returns a {@link EvaluationStatusMessage} that is {@link EventType#ERROR}, otherwise {@link EventType#PASS}.  
      * 
      * @param inputPeriod the existing period
      * @param desiredPeriod the desired period 
      * @return a validation event
      */
 
-    private static ScaleValidationEvent checkIfDesiredPeriodDoesNotCommute( Duration inputPeriod,
-                                                                            Duration desiredPeriod )
+    private static EvaluationStatusMessage checkIfDesiredPeriodDoesNotCommute( Duration inputPeriod,
+                                                                               Duration desiredPeriod )
     {
         boolean isOneZero = Duration.ZERO.equals( inputPeriod ) || Duration.ZERO.equals( desiredPeriod );
 
@@ -668,7 +688,7 @@ class RescalingHelper
                                                    desiredPeriod,
                                                    inputPeriod );
 
-            return ScaleValidationEvent.error( message );
+            return EvaluationStatusMessage.error( EvaluationStage.RESCALING, message );
         }
 
         return THE_DESIRED_PERIOD_OF_ZERO_IS_AN_INTEGER_MULTIPLE;
@@ -681,12 +701,12 @@ class RescalingHelper
      * 
      * <ol>
      * <li>If the {@link TimeScaleOuter#getPeriod()} match and the {@link TimeScaleOuter#getFunction()} do not match and 
-     * the existingTimeScale is {@link TimeScaleFunction#UNKNOWN}, returns a {@link ScaleValidationEvent} that is 
+     * the existingTimeScale is {@link TimeScaleFunction#UNKNOWN}, returns a {@link EvaluationStatusMessage} that is 
      * a {@link EventType#DEBUG}, which assumes, leniently, that the desiredTimeScale can be achieved.</li>
      * <li>If the {@link TimeScaleOuter#getPeriod()} match and the {@link TimeScaleOuter#getFunction()} do not match and 
-     * the existingTimeScale is not a {@link TimeScaleFunction#UNKNOWN}, returns a {@link ScaleValidationEvent} that is 
+     * the existingTimeScale is not a {@link TimeScaleFunction#UNKNOWN}, returns a {@link EvaluationStatusMessage} that is 
      * a {@link EventType#ERROR}.</li>
-     * <li>Otherwise, returns a {@link ScaleValidationEvent} that is a {@link EventType#PASS}.</li>
+     * <li>Otherwise, returns a {@link EvaluationStatusMessage} that is a {@link EventType#PASS}.</li>
      * </ol>
      * 
      * @param existingTimeScale the existing time scale
@@ -694,8 +714,8 @@ class RescalingHelper
      * @returns a validation event
      */
 
-    private static ScaleValidationEvent checkIfPeriodsMatchAndFunctionsDiffer( TimeScaleOuter existingTimeScale,
-                                                                               TimeScaleOuter desiredTimeScale )
+    private static EvaluationStatusMessage checkIfPeriodsMatchAndFunctionsDiffer( TimeScaleOuter existingTimeScale,
+                                                                                  TimeScaleOuter desiredTimeScale )
     {
         if ( existingTimeScale.getPeriod().equals( desiredTimeScale.getPeriod() )
              && existingTimeScale.getFunction() != desiredTimeScale.getFunction() )
@@ -711,7 +731,7 @@ class RescalingHelper
                                                            TimeScaleFunction.UNKNOWN,
                                                            desiredTimeScale.getFunction() );
 
-                    return ScaleValidationEvent.debug( message ); // #87288, #93220
+                    return EvaluationStatusMessage.debug( EvaluationStage.RESCALING, message ); // #87288, #93220
                 }
             }
             else
@@ -726,7 +746,7 @@ class RescalingHelper
                                                        existingTimeScale.getFunction(),
                                                        desiredTimeScale.getFunction() );
 
-                return ScaleValidationEvent.error( message );
+                return EvaluationStatusMessage.error( EvaluationStage.RESCALING, message );
             }
         }
 
@@ -735,7 +755,7 @@ class RescalingHelper
 
     /**
      * <p>Checks whether attempting to accumulate a quantity that is instantaneous, which is not allowed. If so, returns
-     * a {@link ScaleValidationEvent} that is {@link EventType#ERROR}, otherwise {@link EventType#PASS}. 
+     * a {@link EvaluationStatusMessage} that is {@link EventType#ERROR}, otherwise {@link EventType#PASS}. 
      * 
      * <p>TODO: in principle, this might be supported in future, but involves both an integral
      * estimate and a change in units. For example, if the input is precipitation in mm/s
@@ -747,8 +767,8 @@ class RescalingHelper
      * @return a validation event
      */
 
-    private static ScaleValidationEvent checkIfAccumulatingInstantaneous( TimeScaleOuter existingScale,
-                                                                          TimeScaleFunction desiredFunction )
+    private static EvaluationStatusMessage checkIfAccumulatingInstantaneous( TimeScaleOuter existingScale,
+                                                                             TimeScaleFunction desiredFunction )
     {
         if ( existingScale.isInstantaneous() && desiredFunction == TimeScaleFunction.TOTAL )
         {
@@ -757,7 +777,7 @@ class RescalingHelper
                                                    + "time scale to something other than a ''{0}''.",
                                                    TimeScaleFunction.TOTAL );
 
-            return ScaleValidationEvent.error( message );
+            return EvaluationStatusMessage.error( EvaluationStage.RESCALING, message );
         }
 
         return NOT_ATTEMPTING_TO_ACCUMULATE_AN_INSTANTANEOUS_VALUE;
@@ -769,13 +789,13 @@ class RescalingHelper
      * 
      * <ol>
      * <li>If the desired function is a {@link TimeScaleFunction#TOTAL} and the existing function is a
-     * {@link TimeScaleFunction#UNKNOWN}, returns a {@link ScaleValidationEvent} that is
+     * {@link TimeScaleFunction#UNKNOWN}, returns a {@link EvaluationStatusMessage} that is
      * a {@link EventType#DEBUG}, which assumes, leniently, that the existing function is a 
      * {@link TimeScaleFunction#TOTAL}.</li>
      * <li>If the desired function is a {@link TimeScaleFunction#TOTAL} and the existing function is not
-     * {@link TimeScaleFunction#UNKNOWN}, returns a {@link ScaleValidationEvent} that is
+     * {@link TimeScaleFunction#UNKNOWN}, returns a {@link EvaluationStatusMessage} that is
      * a {@link EventType#ERROR}.</li>
-     * <li>Otherwise, returns a {@link ScaleValidationEvent} that is a {@link EventType#PASS}.</li>
+     * <li>Otherwise, returns a {@link EvaluationStatusMessage} that is a {@link EventType#PASS}.</li>
      * </ol>
      * 
      * @param existingFunction the existing function
@@ -783,8 +803,8 @@ class RescalingHelper
      * @return a validation event
      */
 
-    private static ScaleValidationEvent checkIfAccumulatingNonAccumulation( TimeScaleFunction existingFunction,
-                                                                            TimeScaleFunction desiredFunction )
+    private static EvaluationStatusMessage checkIfAccumulatingNonAccumulation( TimeScaleFunction existingFunction,
+                                                                               TimeScaleFunction desiredFunction )
     {
         if ( desiredFunction == TimeScaleFunction.TOTAL && existingFunction != TimeScaleFunction.TOTAL )
         {
@@ -796,7 +816,7 @@ class RescalingHelper
                                               TimeScaleFunction.UNKNOWN,
                                               TimeScaleFunction.TOTAL );
 
-                return ScaleValidationEvent.debug( message ); // #87288, #93220
+                return EvaluationStatusMessage.debug( EvaluationStage.RESCALING, message ); // #87288, #93220
             }
             else
             {
@@ -808,7 +828,7 @@ class RescalingHelper
                                               TimeScaleFunction.TOTAL,
                                               existingFunction );
 
-                return ScaleValidationEvent.error( message );
+                return EvaluationStatusMessage.error( EvaluationStage.RESCALING, message );
             }
         }
 
@@ -816,7 +836,7 @@ class RescalingHelper
     }
 
     /**
-     * A smaller class that wraps a collection of {@link ScaleValidationEvent} as they relate to a particular group of
+     * A smaller class that wraps a collection of {@link EvaluationStatusMessage} as they relate to a particular group of
      * time-series events to rescale, plus a flag that indicates whether that group of time-series events can be 
      * rescaled. A time-series may compose several groups of events to rescale and this class allows for the status to 
      * be tracked at the finest possible level, i.e., of one group of events to rescale.
@@ -829,7 +849,7 @@ class RescalingHelper
         private final boolean canRescale;
 
         /** The scale validation events. */
-        private final List<ScaleValidationEvent> events;
+        private final List<EvaluationStatusMessage> events;
 
         /**
          * @return whether rescaling is allowed
@@ -839,7 +859,7 @@ class RescalingHelper
             return this.canRescale;
         }
 
-        private List<ScaleValidationEvent> getScaleValidationEvents()
+        private List<EvaluationStatusMessage> getScaleValidationEvents()
         {
             return this.events;
         }
@@ -848,7 +868,7 @@ class RescalingHelper
          * @param canRescale is {@code true} if the group can be rescaled, otherwise {@code false}
          * @param events the scale validation events
          */
-        private GroupRescalingStatus( boolean canRescale, List<ScaleValidationEvent> events )
+        private GroupRescalingStatus( boolean canRescale, List<EvaluationStatusMessage> events )
         {
             this.canRescale = canRescale;
             this.events = events;

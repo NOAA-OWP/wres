@@ -1,5 +1,6 @@
 package wres.datamodel.pools;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -8,6 +9,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 import net.jcip.annotations.Immutable;
+import wres.datamodel.messages.EvaluationStatusMessage;
 import wres.datamodel.messages.MessageUtilities;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
@@ -32,12 +34,16 @@ import wres.statistics.generated.Pool.EnsembleAverageType;
 @Immutable
 public class PoolMetadata implements Comparable<PoolMetadata>
 {
-
     /** A description of the evaluation. */
     private final Evaluation evaluation;
 
     /** A description of the pool to which the sample data belongs. */
     private final Pool pool;
+
+    /** A list of user-facing evaluation status events encountered while building this pool. These messages are not 
+     * part of the pool description and should not be considered when testing for equality, for example. TODO: publish 
+     * these messages at source: #100560.*/
+    private final List<EvaluationStatusMessage> statusEvents;
 
     /** The wrapped measurement unit for convenient access. */
     private final MeasurementUnit measurementUnit;
@@ -65,7 +71,22 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     public static PoolMetadata of( Evaluation evaluation, Pool pool )
     {
-        return new PoolMetadata( evaluation, pool );
+        return new PoolMetadata( evaluation, pool, List.of() );
+    }
+
+    /**
+     * Creates an instance from an {@link Evaluation} and a {@link Pool}.
+     * 
+     * @param evaluation the evaluation
+     * @param pool the pool
+     * @param statusEvents a list of zero or more evaluation status events encountered while creating the pool
+     * @return an instance
+     * @throws NullPointerException if any input is null.
+     */
+
+    public static PoolMetadata of( Evaluation evaluation, Pool pool, List<EvaluationStatusMessage> statusEvents )
+    {
+        return new PoolMetadata( evaluation, pool, statusEvents );
     }
 
     /**
@@ -83,7 +104,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
         Pool pool = Pool.getDefaultInstance();
 
-        return new PoolMetadata( evaluation, pool );
+        return new PoolMetadata( evaluation, pool, List.of() );
     }
 
     /**
@@ -104,7 +125,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
                         .setIsBaselinePool( isBaselinePool )
                         .build();
 
-        return new PoolMetadata( evaluation, pool );
+        return new PoolMetadata( evaluation, pool, List.of() );
     }
 
     /**
@@ -133,7 +154,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
             }
         }
 
-        return new PoolMetadata( evaluation, pool.build() );
+        return new PoolMetadata( evaluation, pool.build(), input.getEvaluationStatusEvents() );
     }
 
     /**
@@ -158,7 +179,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
             pool.setTimeWindow( timeWindow.getTimeWindow() );
         }
 
-        return new PoolMetadata( evaluation, pool.build() );
+        return new PoolMetadata( evaluation, pool.build(), input.getEvaluationStatusEvents() );
     }
 
     /**
@@ -183,7 +204,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
             pool.setTimeScale( timeScale.getTimeScale() );
         }
 
-        return new PoolMetadata( evaluation, pool.build() );
+        return new PoolMetadata( evaluation, pool.build(), input.getEvaluationStatusEvents() );
     }
 
     /**
@@ -208,9 +229,9 @@ public class PoolMetadata implements Comparable<PoolMetadata>
             pool.setEnsembleAverageType( ensembleAverageType );
         }
 
-        return new PoolMetadata( evaluation, pool.build() );
+        return new PoolMetadata( evaluation, pool.build(), input.getEvaluationStatusEvents() );
     }
-    
+
     /**
      * Builds a {@link PoolMetadata} from a prescribed input source and an override {@link TimeWindowOuter} and 
      * {@link TimeScaleOuter}.
@@ -242,7 +263,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
             pool.setTimeWindow( timeWindow.getTimeWindow() );
         }
 
-        return new PoolMetadata( evaluation, pool.build() );
+        return new PoolMetadata( evaluation, pool.build(), input.getEvaluationStatusEvents() );
     }
 
     /**
@@ -280,7 +301,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
             pool.setTimeWindow( timeWindow.getTimeWindow() );
         }
 
-        return new PoolMetadata( evaluation, pool.build() );
+        return new PoolMetadata( evaluation, pool.build(), input.getEvaluationStatusEvents() );
     }
 
     /**
@@ -325,7 +346,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
             pool.clearGeometryGroup();
         }
 
-        return new PoolMetadata( evaluation, pool.build() );
+        return new PoolMetadata( evaluation, pool.build(), input.getEvaluationStatusEvents() );
     }
 
     @Override
@@ -539,20 +560,34 @@ public class PoolMetadata implements Comparable<PoolMetadata>
     }
 
     /**
+     * Returns a list of evaluation status events encountered while building the pool attached to this metadata.
+     * 
+     * @return the evaluation status events
+     */
+
+    public List<EvaluationStatusMessage> getEvaluationStatusEvents()
+    {
+        return this.statusEvents; // Immutable on construction
+    }
+
+    /**
      * Hidden constructor.
      * 
      * @param evaluation the evaluation
      * @param pool the pool
-     * @throws NullPointerException if either input is null or the measurement unit is not set
+     * @param statusEvents a list of zero or more events encountered while building the pool
+     * @throws NullPointerException if any input is null or the measurement unit is not set
      */
 
-    private PoolMetadata( Evaluation evaluation, Pool pool )
+    private PoolMetadata( Evaluation evaluation, Pool pool, List<EvaluationStatusMessage> statusEvents )
     {
         Objects.requireNonNull( evaluation );
         Objects.requireNonNull( pool );
+        Objects.requireNonNull( statusEvents );
 
         this.evaluation = evaluation;
         this.pool = pool;
+        this.statusEvents = statusEvents;
 
         // Validate the state
         this.validate();

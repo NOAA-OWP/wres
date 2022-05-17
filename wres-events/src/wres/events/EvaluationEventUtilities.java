@@ -7,12 +7,12 @@ import java.util.List;
 import java.util.Objects;
 
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
-import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusMessageType;
+import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLevel;
 
 /**
  * A utility class to help with the messaging of evaluations.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class EvaluationEventUtilities
@@ -49,7 +49,7 @@ public class EvaluationEventUtilities
         Objects.requireNonNull( exception );
 
         EvaluationStatusEvent.Builder event = EvaluationStatusEvent.newBuilder()
-                                                                   .setEventType( StatusMessageType.ERROR )
+                                                                   .setStatusLevel( StatusLevel.ERROR )
                                                                    .setEventMessage( exception.getClass() + ": "
                                                                                      + exception.getMessage() );
 
@@ -67,11 +67,11 @@ public class EvaluationEventUtilities
                 {
                     message = cause.getMessage();
                 }
-                
+
                 String eventMessage = causeClass + message;
-                
+
                 EvaluationStatusEvent.Builder causeEvent = EvaluationStatusEvent.newBuilder()
-                                                                                .setEventType( StatusMessageType.ERROR )
+                                                                                .setStatusLevel( StatusLevel.ERROR )
                                                                                 .setEventMessage( eventMessage );
                 causes.add( causeEvent );
             }
@@ -117,11 +117,11 @@ public class EvaluationEventUtilities
             return encoder.encodeToString( buffer );
         }
     }
-    
+
     /**
      * Do not construct.
      */
-    
+
     private EvaluationEventUtilities()
     {
     }
