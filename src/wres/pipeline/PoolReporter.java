@@ -4,6 +4,8 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -13,15 +15,19 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigPlus;
+import wres.datamodel.messages.EvaluationStatusMessage;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.EvaluationStage;
+import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLevel;
 
 /**
  * Reports on the completion status of the pools associated with an evaluation. A pool is the atomic unit of work in an 
@@ -103,13 +109,12 @@ class PoolReporter implements Consumer<PoolProcessingResult>
             this.startTime = Instant.now();
         }
 
-        FeatureGroup featureGroup = result.getPoolRequest()
-                                          .getMetadata()
-                                          .getFeatureGroup();
+        PoolMetadata metadata = result.getPoolRequest()
+                                      .getMetadata();
+        FeatureGroup featureGroup =
+                metadata.getFeatureGroup();
 
-        TimeWindowOuter timeWindow = result.getPoolRequest()
-                                           .getMetadata()
-                                           .getTimeWindow();
+        TimeWindowOuter timeWindow = metadata.getTimeWindow();
 
         switch ( result.getStatus() )
         {
@@ -117,7 +122,7 @@ class PoolReporter implements Consumer<PoolProcessingResult>
                 reportStatisticsAvailableNotPublished( featureGroup, timeWindow );
                 break;
             case STATISTICS_NOT_AVAILABLE:
-                reportStatisticsNotAvailable( featureGroup, timeWindow );
+                reportStatisticsNotAvailable( featureGroup, timeWindow, result.getEvaluationStatusEvents() );
                 break;
             case STATISTICS_PUBLISHED:
                 this.successfulPools.add( result.getPoolRequest() );
@@ -244,16 +249,87 @@ class PoolReporter implements Consumer<PoolProcessingResult>
      * @param timeWindow the time window
      */
 
-    private void reportStatisticsNotAvailable( FeatureGroup featureGroup, TimeWindowOuter timeWindow )
+    private void reportStatisticsNotAvailable( FeatureGroup featureGroup,
+                                               TimeWindowOuter timeWindow,
+                                               List<EvaluationStatusMessage> statusEvents )
     {
         if ( LOGGER.isWarnEnabled() )
         {
-            LOGGER.warn( "[{}/{}] Completed a pool in feature group '{}', but no statistics were produced. This "
-                         + "probably occurred because the pool did not contain any pairs. The time window was: {}.",
-                         this.processed.incrementAndGet(),
-                         this.totalPools,
-                         featureGroup.getName(),
-                         TIME_WINDOW_STRINGIFIER.apply( timeWindow ) );
+            // Any status events marked WARN or DEBUG aka "detailed warning" that might help a user?
+            List<EvaluationStatusMessage> warnings =
+                    statusEvents.stream()
+                                .filter( next -> next.getStatusLevel() == StatusLevel.WARN
+                                                 || next.getStatusLevel() == StatusLevel.DEBUG )
+                                .collect( Collectors.toList() );
+
+            // Any status events that might help a user?
+            if ( !warnings.isEmpty() )
+            {
+                StringBuilder message = new StringBuilder();
+                message.append( "[{}/{}] Completed a pool in feature group '{}', but no statistics were produced. This "
+                                + "probably occurred because the pool did not contain any pairs. The time window was: "
+                                + "{}. Encountered {} evaluation status warnings when creating the pool." );
+
+                // Map the number of warnings by evaluation stage
+                Map<EvaluationStage, Long> counts = warnings.stream()
+                                                            .collect( Collectors.groupingBy( EvaluationStatusMessage::getEvaluationStage,
+                                                                                             Collectors.counting() ) );
+
+                message.append( " Of these warnings, " );
+
+                int count = 0;
+                int totalCount = counts.size();
+                for ( Map.Entry<EvaluationStage, Long> next : counts.entrySet() )
+                {
+                    message.append( next.getValue() )
+                           .append( " originated from '" )
+                           .append( next.getKey() )
+                           .append( "'" );
+                    count++;
+
+                    if ( count == totalCount )
+                    {
+                        message.append( "." );
+                    }
+                    else if ( totalCount > 1 && count == totalCount - 1 )
+                    {
+                        message.append( ", and " );
+                    }
+                    else if ( totalCount > 1 )
+                    {
+                        message.append( ", " );
+                    }
+                }
+
+                message.append( " An example warning follows for each evaluation stage that produced one or more "
+                                + "warnings. To review the individual warnings, turn on debug logging. Example "
+                                + "warnings: " );
+
+                // One example warning per evaluation stage
+                Map<EvaluationStage, EvaluationStatusMessage> oneWarningPerStage = warnings.stream()
+                                                                                           .collect( Collectors.toMap( EvaluationStatusMessage::getEvaluationStage,
+                                                                                                                       Function.identity(),
+                                                                                                                       ( s,
+                                                                                                                         a ) -> s ) );
+                message.append( oneWarningPerStage )
+                       .append( "." );
+
+                LOGGER.warn( message.toString(),
+                             this.processed.incrementAndGet(),
+                             this.totalPools,
+                             featureGroup.getName(),
+                             TIME_WINDOW_STRINGIFIER.apply( timeWindow ),
+                             warnings.size() );
+            }
+            else
+            {
+                LOGGER.warn( "[{}/{}] Completed a pool in feature group '{}', but no statistics were produced. This "
+                             + "probably occurred because the pool did not contain any pairs. The time window was: {}.",
+                             this.processed.incrementAndGet(),
+                             this.totalPools,
+                             featureGroup.getName(),
+                             TIME_WINDOW_STRINGIFIER.apply( timeWindow ) );
+            }
         }
     }
 

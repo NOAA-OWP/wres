@@ -32,17 +32,16 @@ import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.messages.EvaluationStatusMessage;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.pools.pairs.CrossPairs;
 import wres.datamodel.pools.pairs.PairingException;
 import wres.datamodel.scale.RescalingException;
-import wres.datamodel.scale.ScaleValidationEvent;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
-import wres.datamodel.scale.ScaleValidationEvent.EventType;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.RescaledTimeSeriesPlusValidation;
@@ -57,6 +56,7 @@ import wres.io.config.ConfigHelper;
 import wres.io.pooling.RescalingEvent.RescalingType;
 import wres.io.retrieval.DataAccessException;
 import wres.io.retrieval.NoSuchUnitConversionException;
+import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLevel;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.TimeWindow;
 import wres.config.generated.DesiredTimeScaleConfig;
@@ -90,159 +90,83 @@ import wres.config.generated.ProjectConfig;
 @ThreadSafe
 public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>>
 {
-
-    /**
-     * Logger.
-     */
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( PoolSupplier.class );
 
-    /**
-     * If <code>true</code>, when conducting upscaling, target periods that increment regularly, <code>false</code>
+    /** If <code>true</code>, when conducting upscaling, target periods that increment regularly, <code>false</code>
      * to include all possible pairs. In this context, regular means back-to-back or overlapping with a fixed 
      * frequency, but not all possible pairs, which may include pairs that do not increment with a regular frequency,
-     * but are nevertheless valid pairs.
-     */
-
+     * but are nevertheless valid pairs. */
     private static final boolean REGULAR_PAIRS = true;
 
-    /**
-     * Message re-used several times.
-     */
-
+    /** Message re-used several times. */
     private static final String WHILE_CONSTRUCTING_A_POOL_SUPPLIER_FOR = "While constructing a pool supplier for {}, ";
 
-    /**
-     * Set of reference times for observation-like time-series.
-     */
-
+    /** Set of reference times for observation-like time-series. */
     private static final Set<ReferenceTimeType> OBSERVATION_REFERENCE_TIME_TYPE =
             Set.of( ReferenceTimeType.LATEST_OBSERVATION );
 
-    /**
-     * Climatological data source at the desired time scale.
-     */
-
+    /** Climatological data source at the desired time scale. */
     private final Supplier<Stream<TimeSeries<L>>> climatology;
 
-    /**
-     * Mapper from the left-type of climatological data to a double-type.
-     */
-
+    /** Mapper from the left-type of climatological data to a double-type. */
     private final ToDoubleFunction<L> climatologyMapper;
 
-    /**
-     * Left data source.
-     */
-
+    /** Left data source. */
     private final Supplier<Stream<TimeSeries<L>>> left;
 
-    /**
-     * Right data source.
-     */
-
+    /** Right data source. */
     private final Supplier<Stream<TimeSeries<R>>> right;
 
-    /**
-     * Baseline data source. Optional.
-     */
-
+    /** Baseline data source. Optional. */
     private final Supplier<Stream<TimeSeries<R>>> baseline;
 
-    /**
-     * Generator for baseline data source. Optional.
-     */
-
+    /** Generator for baseline data source. Optional. */
     private final Function<Set<FeatureKey>, UnaryOperator<TimeSeries<R>>> baselineGenerator;
 
-    /**
-     * Pairer.
-     */
-
+    /** Pairer. */
     private final TimeSeriesPairer<L, R> pairer;
 
-    /**
-     * An optional cross-pairer to ensure that the main pairs and baseline pairs are coincident in time.
-     */
-
+    /** An optional cross-pairer to ensure that the main pairs and baseline pairs are coincident in time. */
     private final TimeSeriesCrossPairer<L, R> crossPairer;
 
-    /**
-     * Upscaler for left-type data. Optional on construction, but may be exceptional if later required.
-     */
-
+    /** Upscaler for left-type data. Optional on construction, but may be exceptional if later required. */
     private final TimeSeriesUpscaler<L> leftUpscaler;
 
-    /**
-     * Upscaler for right-type data. Optional on construction, but may be exceptional if later required.
-     */
-
+    /** Upscaler for right-type data. Optional on construction, but may be exceptional if later required. */
     private final TimeSeriesUpscaler<R> rightUpscaler;
 
-    /**
-     * The desired time scale.
-     */
-
+    /** The desired time scale. */
     private final TimeScaleOuter desiredTimeScale;
 
-    /**
-     * Metadata for the mains pairs.
-     */
-
+    /** Metadata for the mains pairs. */
     private final PoolMetadata metadata;
 
-    /**
-     * Metadata for the baseline pairs.
-     */
-
+    /** Metadata for the baseline pairs. */
     private final PoolMetadata baselineMetadata;
 
-    /**
-     * The declaration.
-     */
-
+    /** The declaration. */
     private final ProjectConfig projectConfig;
 
-    /**
-     * A function that transforms according to value. Used to apply value constraints to the left-style data.
-     */
-
+    /** A function that transforms according to value. Used to apply value constraints to the left-style data. */
     private final UnaryOperator<L> leftTransformer;
 
-    /**
-     * A function that transforms right-ish data and may consider the encapsulating event.
-     */
-
+    /** A function that transforms right-ish data and may consider the encapsulating event. */
     private final UnaryOperator<Event<R>> rightTransformer;
 
-    /**
-     * A function that transforms baseline-ish data and may consider the encapsulating event.
-     */
-
+    /** A function that transforms baseline-ish data and may consider the encapsulating event. */
     private final UnaryOperator<Event<R>> baselineTransformer;
 
-    /**
-     * An offset to apply to the valid times of the left data.
-     */
-
+    /** An offset to apply to the valid times of the left data. */
     private final Duration leftOffset;
 
-    /**
-     * An offset to apply to the valid times of the right data.
-     */
-
+    /** An offset to apply to the valid times of the right data. */
     private final Duration rightOffset;
 
-    /**
-     * An offset to apply to the valid times of the baseline data.
-     */
-
+    /** An offset to apply to the valid times of the baseline data. */
     private final Duration baselineOffset;
 
-    /**
-     * Frequency with which pairs should be constructed at the desired time scale.
-     */
-
+    /** Frequency with which pairs should be constructed at the desired time scale. */
     private final Duration frequency;
 
     /**
@@ -342,112 +266,58 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     static class Builder<L, R>
     {
 
-        /**
-         * Climatological data source. Optional.
-         */
-
+        /** Climatological data source. Optional. */
         private Supplier<Stream<TimeSeries<L>>> climatology;
 
-        /**
-         * Climatology mapper.
-         */
-
+        /** Climatology mapper. */
         private ToDoubleFunction<L> climatologyMapper;
 
-        /**
-         * Left data source.
-         */
-
+        /** Left data source. */
         private Supplier<Stream<TimeSeries<L>>> left;
 
-        /**
-         * Right data source.
-         */
-
+        /** Right data source. */
         private Supplier<Stream<TimeSeries<R>>> right;
 
-        /**
-         * Baseline data source. Optional.
-         */
-
+        /** Baseline data source. Optional. */
         private Supplier<Stream<TimeSeries<R>>> baseline;
 
-        /**
-         * Generator for baseline data source. Optional.
-         */
-
+        /** Generator for baseline data source. Optional. */
         private Function<Set<FeatureKey>, UnaryOperator<TimeSeries<R>>> baselineGenerator;
 
-        /**
-         * Pairer.
-         */
-
+        /** Pairer. */
         private TimeSeriesPairer<L, R> pairer;
 
-        /**
-         * Upscaler for left-type data. Optional on construction, but may be exceptional if later required.
-         */
-
+        /** Upscaler for left-type data. Optional on construction, but may be exceptional if later required. */
         private TimeSeriesUpscaler<L> leftUpscaler;
 
-        /**
-         * Upscaler for right-type data. Optional on construction, but may be exceptional if later required.
-         */
-
+        /** Upscaler for right-type data. Optional on construction, but may be exceptional if later required. */
         private TimeSeriesUpscaler<R> rightUpscaler;
 
-        /**
-         * The desired time scale.
-         */
-
+        /** The desired time scale. */
         private TimeScaleOuter desiredTimeScale;
 
-        /**
-         * Project declaration.
-         */
-
+        /** Project declaration. */
         private ProjectConfig projectConfig;
 
-        /**
-         * Metadata for the mains pairs.
-         */
-
+        /** Metadata for the mains pairs. */
         private PoolMetadata metadata;
 
-        /**
-         * Metadata for the baseline pairs.
-         */
-
+        /** Metadata for the baseline pairs. */
         private PoolMetadata baselineMetadata;
 
-        /**
-         * A function that transforms according to value. Used to apply value constraints to the left-style data.
-         */
-
+        /** A function that transforms according to value. Used to apply value constraints to the left-style data. */
         private UnaryOperator<L> leftTransformer;
 
-        /**
-         * A function that transforms right-ish data and may consider the encapsulating event.
-         */
-
+        /** A function that transforms right-ish data and may consider the encapsulating event. */
         private UnaryOperator<Event<R>> rightTransformer;
 
-        /**
-         * A function that transforms baseline-ish data and may consider the encapsulating event.
-         */
-
+        /** A function that transforms baseline-ish data and may consider the encapsulating event. */
         private UnaryOperator<Event<R>> baselineTransformer;
 
-        /**
-         * The frequency at which pairs should be produced.
-         */
-
+        /** The frequency at which pairs should be produced. */
         private Duration frequency;
 
-        /**
-         * An optional cross-pairer to ensure that the main pairs and baseline pairs are coincident in time.
-         */
-
+        /** An optional cross-pairer to ensure that the main pairs and baseline pairs are coincident in time. */
         private TimeSeriesCrossPairer<L, R> crossPairer;
 
         /**
@@ -680,6 +550,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         // operations on the pool, such as feature-specific threshold filters or decomposition-by-feature
         Set<FeatureTuple> noData = new HashSet<>();
         TimeScaleOuter timeScale = null;
+        List<EvaluationStatusMessage> statusEvents = new ArrayList<>();
+        List<EvaluationStatusMessage> statusEventsBaseline = new ArrayList<>();
         for ( FeatureTuple nextTuple : tuples )
         {
             // Get the feature-specific time-series or an empty list
@@ -689,6 +561,15 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
             // Add mini pool
             Pool<TimeSeries<Pair<L, R>>> miniPool = this.createPoolPerFeatureTuple( nextTuple, l, r, b );
+            statusEvents.addAll( miniPool.getMetadata().getEvaluationStatusEvents() );
+
+            if ( miniPool.hasBaseline() )
+            {
+                List<EvaluationStatusMessage> statusEventsBaselineInner = miniPool.getBaselineData()
+                                                                                  .getMetadata()
+                                                                                  .getEvaluationStatusEvents();
+                statusEventsBaseline.addAll( statusEventsBaselineInner );
+            }
 
             timeScale = miniPool.getMetadata()
                                 .getTimeScale();
@@ -703,12 +584,18 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         }
 
         // Set the metadata for the overall pool using the updated time scale information
-        PoolMetadata adjusted = PoolMetadata.of( this.metadata, timeScale );
+        PoolMetadata withEvents = PoolMetadata.of( this.metadata.getEvaluation(),
+                                                   this.metadata.getPool(),
+                                                   statusEvents );
+        PoolMetadata adjusted = PoolMetadata.of( withEvents, timeScale );
         builder.setMetadata( adjusted );
 
         if ( this.hasBaseline() )
         {
-            PoolMetadata adjustedBaseline = PoolMetadata.of( this.baselineMetadata, timeScale );
+            PoolMetadata withEventsBaseline = PoolMetadata.of( this.baselineMetadata.getEvaluation(),
+                                                               this.baselineMetadata.getPool(),
+                                                               statusEventsBaseline );
+            PoolMetadata adjustedBaseline = PoolMetadata.of( withEventsBaseline, timeScale );
             builder.setMetadataForBaseline( adjustedBaseline );
         }
 
@@ -771,9 +658,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             newMetadataBuilder.setTimeScale( desiredTimeScaleToUse.getTimeScale() );
         }
 
-        PoolMetadata sampleMetadata = PoolMetadata.of( this.metadata.getEvaluation(), newMetadataBuilder.build() );
-        builder.setMetadata( sampleMetadata );
-
         // The left data is most likely to contain a large set of observations, such as climatology
         // Snipping a large observation-like dataset helps with performance and does not affect accuracy
         // For now, only apply to the left side, as this is most likely to contain observation-like data that extends
@@ -788,13 +672,20 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         // Get the paired frequency
         Duration pairedFrequency = this.getPairedFrequency();
 
-        List<TimeSeries<Pair<L, R>>> mainPairs = this.createPairs( leftData,
-                                                                   rightData,
-                                                                   this.getRightTransformer(),
-                                                                   desiredTimeScaleToUse,
-                                                                   pairedFrequency,
-                                                                   LeftOrRightOrBaseline.RIGHT,
-                                                                   sampleMetadata.getTimeWindow() );
+        TimeSeriesPlusValidation<L, R> mainPairsPlus = this.createPairs( leftData,
+                                                                         rightData,
+                                                                         this.getRightTransformer(),
+                                                                         desiredTimeScaleToUse,
+                                                                         pairedFrequency,
+                                                                         LeftOrRightOrBaseline.RIGHT,
+                                                                         this.metadata.getTimeWindow() );
+
+        List<TimeSeries<Pair<L, R>>> mainPairs = mainPairsPlus.getTimeSeries();
+
+        PoolMetadata sampleMetadata = PoolMetadata.of( this.metadata.getEvaluation(),
+                                                       newMetadataBuilder.build(),
+                                                       mainPairsPlus.getEvaluationStatusMessages() );
+        builder.setMetadata( sampleMetadata );
 
         // Create the baseline pairs
         if ( this.hasBaseline() )
@@ -812,16 +703,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                 newBaselineMetadataBuilder.setTimeScale( desiredTimeScaleToUse.getTimeScale() );
             }
 
-            PoolMetadata baselineSampleMetadata = PoolMetadata.of( this.baselineMetadata.getEvaluation(),
-                                                                   newBaselineMetadataBuilder.build() );
-
-            builder.setMetadataForBaseline( baselineSampleMetadata );
-
-            LOGGER.debug( "Adding pairs for the baseline to feature tuple {} of pool {}. The baseline metadata is: {}.",
-                          feature,
-                          this.metadata,
-                          baselineSampleMetadata );
-
             // Baseline that is generated?
             if ( Objects.nonNull( this.baselineGenerator ) )
             {
@@ -829,13 +710,26 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                                                     mainPairs );
             }
 
-            List<TimeSeries<Pair<L, R>>> basePairs = this.createPairs( leftData,
-                                                                       baselineData,
-                                                                       this.getBaselineTransformer(),
-                                                                       desiredTimeScaleToUse,
-                                                                       pairedFrequency,
-                                                                       LeftOrRightOrBaseline.BASELINE,
-                                                                       baselineSampleMetadata.getTimeWindow() );
+            TimeSeriesPlusValidation<L, R> basePairsPlus = this.createPairs( leftData,
+                                                                             baselineData,
+                                                                             this.getBaselineTransformer(),
+                                                                             desiredTimeScaleToUse,
+                                                                             pairedFrequency,
+                                                                             LeftOrRightOrBaseline.BASELINE,
+                                                                             this.baselineMetadata.getTimeWindow() );
+
+            List<TimeSeries<Pair<L, R>>> basePairs = basePairsPlus.getTimeSeries();
+
+            PoolMetadata baselineSampleMetadata = PoolMetadata.of( this.baselineMetadata.getEvaluation(),
+                                                                   newBaselineMetadataBuilder.build(),
+                                                                   basePairsPlus.getEvaluationStatusMessages() );
+
+            builder.setMetadataForBaseline( baselineSampleMetadata );
+
+            LOGGER.debug( "Adding pairs for the baseline to feature tuple {} of pool {}. The baseline metadata is: {}.",
+                          feature,
+                          this.metadata,
+                          baselineSampleMetadata );
 
             // Cross-pair?
             if ( Objects.nonNull( this.crossPairer ) )
@@ -899,32 +793,40 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      * @throws NullPointerException if the left, rightOrBaseline or timeWindow is null
      */
 
-    private List<TimeSeries<Pair<L, R>>> createPairs( List<TimeSeries<L>> left,
-                                                      List<TimeSeries<R>> rightOrBaseline,
-                                                      UnaryOperator<Event<R>> rightOrBaselineTransformer,
-                                                      TimeScaleOuter desiredTimeScale,
-                                                      Duration frequency,
-                                                      LeftOrRightOrBaseline orientation,
-                                                      TimeWindowOuter timeWindow )
+    private TimeSeriesPlusValidation<L, R> createPairs( List<TimeSeries<L>> left,
+                                                        List<TimeSeries<R>> rightOrBaseline,
+                                                        UnaryOperator<Event<R>> rightOrBaselineTransformer,
+                                                        TimeScaleOuter desiredTimeScale,
+                                                        Duration frequency,
+                                                        LeftOrRightOrBaseline orientation,
+                                                        TimeWindowOuter timeWindow )
     {
         Objects.requireNonNull( left );
 
         Objects.requireNonNull( rightOrBaseline );
 
         List<TimeSeries<Pair<L, R>>> returnMe = new ArrayList<>();
+        List<EvaluationStatusMessage> validation = new ArrayList<>();
 
         // Iterate through each combination of left/right series 
         for ( TimeSeries<L> nextLeft : left )
         {
             for ( TimeSeries<R> nextRight : rightOrBaseline )
             {
-                TimeSeries<Pair<L, R>> pairs = this.createSeriesPairs( nextLeft,
-                                                                       nextRight,
-                                                                       rightOrBaselineTransformer,
-                                                                       desiredTimeScale,
-                                                                       frequency,
-                                                                       timeWindow,
-                                                                       orientation );
+                TimeSeriesPlusValidation<L, R> pairsPlus = this.createSeriesPairs( nextLeft,
+                                                                                   nextRight,
+                                                                                   rightOrBaselineTransformer,
+                                                                                   desiredTimeScale,
+                                                                                   frequency,
+                                                                                   timeWindow,
+                                                                                   orientation );
+
+                // One time-series of pairs
+                TimeSeries<Pair<L, R>> pairs = pairsPlus.getTimeSeries()
+                                                        .get( 0 );
+
+                List<EvaluationStatusMessage> statusEvents = pairsPlus.getEvaluationStatusMessages();
+                validation.addAll( statusEvents );
 
                 if ( !pairs.getEvents().isEmpty() )
                 {
@@ -939,7 +841,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             }
         }
 
-        // Log the number of time-series available for pairing and the number of paried time-series created
+        // Log the number of time-series available for pairing and the number of paired time-series created
         if ( LOGGER.isDebugEnabled() )
         {
             PoolMetadata metaToReport = this.metadata;
@@ -959,7 +861,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                           returnMe.size() );
         }
 
-        return Collections.unmodifiableList( returnMe );
+        return new TimeSeriesPlusValidation<>( returnMe, validation );
     }
 
     /**
@@ -976,13 +878,13 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      * @throws NullPointerException if the left, rightOrBaseline or timeWindow is null
      */
 
-    private TimeSeries<Pair<L, R>> createSeriesPairs( TimeSeries<L> left,
-                                                      TimeSeries<R> rightOrBaseline,
-                                                      UnaryOperator<Event<R>> rightOrBaselineTransformer,
-                                                      TimeScaleOuter desiredTimeScale,
-                                                      Duration frequency,
-                                                      TimeWindowOuter timeWindow,
-                                                      LeftOrRightOrBaseline orientation )
+    private TimeSeriesPlusValidation<L, R> createSeriesPairs( TimeSeries<L> left,
+                                                              TimeSeries<R> rightOrBaseline,
+                                                              UnaryOperator<Event<R>> rightOrBaselineTransformer,
+                                                              TimeScaleOuter desiredTimeScale,
+                                                              Duration frequency,
+                                                              TimeWindowOuter timeWindow,
+                                                              LeftOrRightOrBaseline orientation )
     {
         Objects.requireNonNull( left );
         Objects.requireNonNull( rightOrBaseline );
@@ -996,6 +898,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         boolean upscaleLeft = Objects.nonNull( desiredTimeScale ) && !desiredTimeScale.equals( left.getTimeScale() );
         boolean upscaleRight = Objects.nonNull( desiredTimeScale )
                                && !desiredTimeScale.equals( rightOrBaseline.getTimeScale() );
+
+        List<EvaluationStatusMessage> statusEvents = new ArrayList<>();
 
         // Upscale left?
         if ( upscaleLeft )
@@ -1025,6 +929,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                                                                                endsAt );
 
             scaledLeft = upscaledLeft.getTimeSeries();
+            statusEvents.addAll( upscaledLeft.getValidationEvents() );
 
             if ( LOGGER.isTraceEnabled() )
             {
@@ -1070,6 +975,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                                                                                  endsAt );
 
             scaledRight = upscaledRight.getTimeSeries();
+            statusEvents.addAll( upscaledRight.getValidationEvents() );
 
             if ( LOGGER.isTraceEnabled() )
             {
@@ -1131,7 +1037,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                           desiredTimeScale );
         }
 
-        return snippedPairs;
+        return new TimeSeriesPlusValidation<>( snippedPairs, statusEvents );
     }
 
     /**
@@ -1729,16 +1635,16 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      */
 
     private static void logScaleValidationWarnings( TimeSeries<?> context,
-                                                    List<ScaleValidationEvent> scaleValidationEvents )
+                                                    List<EvaluationStatusMessage> scaleValidationEvents )
     {
         Objects.requireNonNull( scaleValidationEvents );
 
         // Any warnings? Push to log for now, but see #61930 (logging isn't for users)
         if ( LOGGER.isWarnEnabled() )
         {
-            Set<ScaleValidationEvent> warnEvents = scaleValidationEvents.stream()
-                                                                        .filter( a -> a.getEventType() == EventType.WARN )
-                                                                        .collect( Collectors.toSet() );
+            Set<EvaluationStatusMessage> warnEvents = scaleValidationEvents.stream()
+                                                                           .filter( a -> a.getStatusLevel() == StatusLevel.WARN )
+                                                                           .collect( Collectors.toSet() );
             if ( !warnEvents.isEmpty() )
             {
                 StringJoiner message = new StringJoiner( System.lineSeparator() );
@@ -1757,9 +1663,9 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         // Any user-facing debug-level events? Push to log for now, but see #61930 (logging isn't for users)
         if ( LOGGER.isDebugEnabled() )
         {
-            Set<ScaleValidationEvent> debugWarnEvents = scaleValidationEvents.stream()
-                                                                             .filter( a -> a.getEventType() == EventType.DEBUG )
-                                                                             .collect( Collectors.toSet() );
+            Set<EvaluationStatusMessage> debugWarnEvents = scaleValidationEvents.stream()
+                                                                                .filter( a -> a.getStatusLevel() == StatusLevel.DEBUG )
+                                                                                .collect( Collectors.toSet() );
             if ( !debugWarnEvents.isEmpty() )
             {
                 StringJoiner message = new StringJoiner( System.lineSeparator() );
@@ -2257,6 +2163,58 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         }
 
         return returnMe;
+    }
+
+    /**
+     * A smaller value class for storing time series plus their associated validation events.
+     * @author James Brown
+     * @param <L> the left-ish data type
+     * @param <R> the right-ish data type
+     */
+    private static class TimeSeriesPlusValidation<L, R>
+    {
+        /** The time series. */
+        private final List<TimeSeries<Pair<L, R>>> series;
+        /** The status events. */
+        private List<EvaluationStatusMessage> statusEvents;
+
+        /**
+         * @return the time series
+         */
+        private List<TimeSeries<Pair<L, R>>> getTimeSeries()
+        {
+            return this.series;
+        }
+
+        /**
+         * @return the evaluation status events
+         */
+        private List<EvaluationStatusMessage> getEvaluationStatusMessages()
+        {
+            return this.statusEvents;
+        }
+
+        /**
+         * @param series the time series
+         * @param validation the validation events
+         */
+        private TimeSeriesPlusValidation( List<TimeSeries<Pair<L, R>>> series,
+                                          List<EvaluationStatusMessage> statusEvents )
+        {
+            this.series = Collections.unmodifiableList( series );
+            this.statusEvents = Collections.unmodifiableList( statusEvents );
+        }
+
+        /**
+         * @param series the time series
+         * @param validation the validation events
+         */
+        private TimeSeriesPlusValidation( TimeSeries<Pair<L, R>> series,
+                                          List<EvaluationStatusMessage> statusEvents )
+        {
+            this.series = List.of( series );
+            this.statusEvents = Collections.unmodifiableList( statusEvents );
+        }
     }
 
 }

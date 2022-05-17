@@ -1,7 +1,10 @@
 package wres.pipeline;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
+import wres.datamodel.messages.EvaluationStatusMessage;
 import wres.datamodel.pools.PoolRequest;
 
 /**
@@ -27,17 +30,27 @@ class PoolProcessingResult
 
     /** Pool status. */
     private final Status status;
+    
+    /** Status events encountered when creating the pool. */
+    private final List<EvaluationStatusMessage> statusEvents;
 
     /**
      * @param poolRequest the pool description
-     * @param hasStatistics is true if statistics were published
+     * @param status the status the status
+     * @param statusEvents the evaluation status events encountered while creating the pool, if any
+     * @throws NullPointerException if any input is null
      */
     PoolProcessingResult( PoolRequest poolRequest,
-                          Status status )
+                          Status status,
+                          List<EvaluationStatusMessage> statusEvents )
     {
         Objects.requireNonNull( poolRequest );
+        Objects.requireNonNull( statusEvents );
+        Objects.requireNonNull( status );
+        
         this.status = status;
         this.poolRequest = poolRequest;
+        this.statusEvents = Collections.unmodifiableList( statusEvents );
     }
 
     /**
@@ -56,6 +69,15 @@ class PoolProcessingResult
     PoolRequest getPoolRequest()
     {
         return this.poolRequest;
+    }
+    
+    /**
+     * @return the evaluation status events
+     */
+    
+    List<EvaluationStatusMessage> getEvaluationStatusEvents()
+    {
+        return this.statusEvents;
     }
 
     @Override

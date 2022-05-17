@@ -34,7 +34,7 @@ import wres.datamodel.time.TimeSeries.Builder;
 public class TimeSeriesOfDoubleUpscalerTest
 {
     private static final String VARIABLE_NAME = "Fruit";
-    private static final FeatureKey FEATURE_NAME = FeatureKey.of( 
+    private static final FeatureKey FEATURE_NAME = FeatureKey.of(
                                                                   MessageFactory.getGeometry( "Tropics" ) );
     private static final String UNIT = "kg/h";
 
@@ -94,13 +94,13 @@ public class TimeSeriesOfDoubleUpscalerTest
 
         // Time-series to upscale
         TimeSeries<Double> timeSeries = new Builder<Double>().addEvent( one )
-                                                                       .addEvent( two )
-                                                                       .addEvent( three )
-                                                                       .addEvent( four )
-                                                                       .addEvent( five )
-                                                                       .addEvent( six )
-                                                                       .setMetadata( metadata )
-                                                                       .build();
+                                                             .addEvent( two )
+                                                             .addEvent( three )
+                                                             .addEvent( four )
+                                                             .addEvent( five )
+                                                             .addEvent( six )
+                                                             .setMetadata( metadata )
+                                                             .build();
 
         // Where the upscaled values should end (e.g., forecast valid times)
         SortedSet<Instant> endsAt = new TreeSet<>();
@@ -117,10 +117,10 @@ public class TimeSeriesOfDoubleUpscalerTest
         // Create the expected series with the desired time scale
         TimeSeriesMetadata expectedMetadata = getBoilerplateMetadataWithTimeScale( desiredTimeScale );
         TimeSeries<Double> expected = new Builder<Double>().addEvent( Event.of( second, 3.0 ) )
-                                                                     .addEvent( Event.of( fourth, 7.0 ) )
-                                                                     .addEvent( Event.of( sixth, 11.0 ) )
-                                                                     .setMetadata( expectedMetadata )
-                                                                     .build();
+                                                           .addEvent( Event.of( fourth, 7.0 ) )
+                                                           .addEvent( Event.of( sixth, 11.0 ) )
+                                                           .setMetadata( expectedMetadata )
+                                                           .build();
 
         assertEquals( expected, actual );
 
@@ -157,13 +157,13 @@ public class TimeSeriesOfDoubleUpscalerTest
 
         // Time-series to upscale
         TimeSeries<Double> timeSeries = new Builder<Double>().addEvent( one )
-                                                                       .addEvent( two )
-                                                                       .addEvent( three )
-                                                                       .addEvent( four )
-                                                                       .addEvent( five )
-                                                                       .addEvent( six )
-                                                                       .setMetadata( existingMetadata )
-                                                                       .build();
+                                                             .addEvent( two )
+                                                             .addEvent( three )
+                                                             .addEvent( four )
+                                                             .addEvent( five )
+                                                             .addEvent( six )
+                                                             .setMetadata( existingMetadata )
+                                                             .build();
 
         // Where the upscaled values should end (e.g., forecast valid times)
         SortedSet<Instant> endsAt = new TreeSet<>();
@@ -181,10 +181,10 @@ public class TimeSeriesOfDoubleUpscalerTest
         TimeSeriesMetadata expectedMetadata =
                 getBoilerplateMetadataWithTimeScale( desiredTimeScale );
         TimeSeries<Double> expected = new Builder<Double>().addEvent( Event.of( third, 9.0 ) )
-                                                                     .addEvent( Event.of( sixth,
-                                                                                          MissingValues.DOUBLE ) )
-                                                                     .setMetadata( expectedMetadata )
-                                                                     .build();
+                                                           .addEvent( Event.of( sixth,
+                                                                                MissingValues.DOUBLE ) )
+                                                           .setMetadata( expectedMetadata )
+                                                           .build();
 
         assertEquals( expected, actual );
     }
@@ -235,18 +235,18 @@ public class TimeSeriesOfDoubleUpscalerTest
 
         // Time-series to upscale
         TimeSeries<Double> forecast = new Builder<Double>().addEvent( one )
-                                                                     .addEvent( two )
-                                                                     .addEvent( three )
-                                                                     .addEvent( four )
-                                                                     .addEvent( five )
-                                                                     .addEvent( six )
-                                                                     .addEvent( seven )
-                                                                     .addEvent( eight )
-                                                                     .addEvent( nine )
-                                                                     .addEvent( ten )
-                                                                     .addEvent( eleven )
-                                                                     .setMetadata( existingMetadata )
-                                                                     .build();
+                                                           .addEvent( two )
+                                                           .addEvent( three )
+                                                           .addEvent( four )
+                                                           .addEvent( five )
+                                                           .addEvent( six )
+                                                           .addEvent( seven )
+                                                           .addEvent( eight )
+                                                           .addEvent( nine )
+                                                           .addEvent( ten )
+                                                           .addEvent( eleven )
+                                                           .setMetadata( existingMetadata )
+                                                           .build();
 
         // Create an observed time-series for pairing
         // There are three observations, each ending at 6Z
@@ -258,11 +258,11 @@ public class TimeSeriesOfDoubleUpscalerTest
         TimeSeriesMetadata desiredMetadata =
                 getBoilerplateMetadataWithTimeScale( desiredTimeScale );
         TimeSeries<Double> observed = new Builder<Double>().addEvent( one )
-                                                                     .addEvent( Event.of( third, 27.0 ) )
-                                                                     .addEvent( Event.of( seventh, 2.0 ) )
-                                                                     .addEvent( Event.of( eleventh, 111.0 ) )
-                                                                     .setMetadata( desiredMetadata )
-                                                                     .build();
+                                                           .addEvent( Event.of( third, 27.0 ) )
+                                                           .addEvent( Event.of( seventh, 2.0 ) )
+                                                           .addEvent( Event.of( eleventh, 111.0 ) )
+                                                           .setMetadata( desiredMetadata )
+                                                           .build();
 
         // Upscaled forecasts must end at observed times, in order to allow pairing
         SortedSet<Instant> endsAt = observed.getEvents()
@@ -278,9 +278,9 @@ public class TimeSeriesOfDoubleUpscalerTest
                                                           desiredTimeScale );
         // Create the expected series with the desired time scale
         TimeSeries<Double> expectedForecast = new Builder<Double>().addEvent( Event.of( seventh, 13.0 ) )
-                                                                             .addEvent( Event.of( eleventh, 9.25 ) )
-                                                                             .setMetadata( expectedMetadata )
-                                                                             .build();
+                                                                   .addEvent( Event.of( eleventh, 9.25 ) )
+                                                                   .setMetadata( expectedMetadata )
+                                                                   .build();
 
         assertEquals( expectedForecast, actualForecast );
 
@@ -295,9 +295,9 @@ public class TimeSeriesOfDoubleUpscalerTest
 
         TimeSeries<Pair<Double, Double>> expectedPairs =
                 new Builder<Pair<Double, Double>>().addEvent( Event.of( seventh, pairOne ) )
-                                                             .addEvent( Event.of( eleventh, pairTwo ) )
-                                                             .setMetadata( expectedMetadata )
-                                                             .build();
+                                                   .addEvent( Event.of( eleventh, pairTwo ) )
+                                                   .setMetadata( expectedMetadata )
+                                                   .build();
 
         assertEquals( expectedPairs, actualPairs );
     }
@@ -361,25 +361,25 @@ public class TimeSeriesOfDoubleUpscalerTest
                 getBoilerplateMetadataWithT0AndTimeScale( referenceTime,
                                                           existingScale );
         TimeSeries<Double> forecast = new Builder<Double>().addEvent( one )
-                                                                     .addEvent( two )
-                                                                     .addEvent( three )
-                                                                     .addEvent( four )
-                                                                     .addEvent( five )
-                                                                     .addEvent( six )
-                                                                     .addEvent( seven )
-                                                                     .addEvent( eight )
-                                                                     .addEvent( nine )
-                                                                     .addEvent( ten )
-                                                                     .addEvent( eleven )
-                                                                     .addEvent( twelve )
-                                                                     .addEvent( thirteen )
-                                                                     .addEvent( fourteen )
-                                                                     .addEvent( fifteen )
-                                                                     .addEvent( sixteen )
-                                                                     .addEvent( seventeen )
-                                                                     .addEvent( eighteen )
-                                                                     .setMetadata( existingMetadata )
-                                                                     .build();
+                                                           .addEvent( two )
+                                                           .addEvent( three )
+                                                           .addEvent( four )
+                                                           .addEvent( five )
+                                                           .addEvent( six )
+                                                           .addEvent( seven )
+                                                           .addEvent( eight )
+                                                           .addEvent( nine )
+                                                           .addEvent( ten )
+                                                           .addEvent( eleven )
+                                                           .addEvent( twelve )
+                                                           .addEvent( thirteen )
+                                                           .addEvent( fourteen )
+                                                           .addEvent( fifteen )
+                                                           .addEvent( sixteen )
+                                                           .addEvent( seventeen )
+                                                           .addEvent( eighteen )
+                                                           .setMetadata( existingMetadata )
+                                                           .build();
 
         TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 96 ), TimeScaleFunction.MAXIMUM );
 
@@ -390,10 +390,10 @@ public class TimeSeriesOfDoubleUpscalerTest
                 getBoilerplateMetadataWithT0AndTimeScale( referenceTime,
                                                           desiredTimeScale );
         TimeSeries<Double> expected = new Builder<Double>()
-                                                                     .addEvent( Event.of( eighteen.getTime(),
-                                                                                          four.getValue() ) )
-                                                                     .setMetadata( expectedMetadata )
-                                                                     .build();
+                                                           .addEvent( Event.of( eighteen.getTime(),
+                                                                                four.getValue() ) )
+                                                           .setMetadata( expectedMetadata )
+                                                           .build();
 
         assertEquals( expected, actual );
     }
@@ -448,23 +448,23 @@ public class TimeSeriesOfDoubleUpscalerTest
                 getBoilerplateMetadataWithT0AndTimeScale( referenceTime,
                                                           existingScale );
         TimeSeries<Double> forecast = new Builder<Double>().addEvent( one )
-                                                                     .addEvent( two )
-                                                                     .addEvent( three )
-                                                                     .addEvent( four )
-                                                                     .addEvent( five )
-                                                                     .addEvent( six )
-                                                                     .addEvent( seven )
-                                                                     .addEvent( eight )
-                                                                     .addEvent( nine )
-                                                                     .addEvent( ten )
-                                                                     .addEvent( eleven )
-                                                                     .addEvent( twelve )
-                                                                     .addEvent( thirteen )
-                                                                     .addEvent( fourteen )
-                                                                     .addEvent( fifteen )
-                                                                     .addEvent( sixteen )
-                                                                     .setMetadata( existingMetadata )
-                                                                     .build();
+                                                           .addEvent( two )
+                                                           .addEvent( three )
+                                                           .addEvent( four )
+                                                           .addEvent( five )
+                                                           .addEvent( six )
+                                                           .addEvent( seven )
+                                                           .addEvent( eight )
+                                                           .addEvent( nine )
+                                                           .addEvent( ten )
+                                                           .addEvent( eleven )
+                                                           .addEvent( twelve )
+                                                           .addEvent( thirteen )
+                                                           .addEvent( fourteen )
+                                                           .addEvent( fifteen )
+                                                           .addEvent( sixteen )
+                                                           .setMetadata( existingMetadata )
+                                                           .build();
 
         TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 24 ), TimeScaleFunction.MEAN );
 
@@ -492,26 +492,26 @@ public class TimeSeriesOfDoubleUpscalerTest
                 getBoilerplateMetadataWithT0AndTimeScale( referenceTime,
                                                           desiredTimeScale );
         TimeSeries<Double> expected = new Builder<Double>()
-                                                                     .addEvent( Event.of( eighth,
-                                                                                          51.368748851818964 ) )
-                                                                     .addEvent( Event.of( ninth,
-                                                                                          51.59624884673394 ) )
-                                                                     .addEvent( Event.of( tenth,
-                                                                                          51.956248838687316 ) )
-                                                                     .addEvent( Event.of( eleventh,
-                                                                                          52.40374882868491 ) )
-                                                                     .addEvent( Event.of( twelfth,
-                                                                                          52.86124881845899 ) )
-                                                                     .addEvent( Event.of( thirteenth,
-                                                                                          53.28749880893156 ) )
-                                                                     .addEvent( Event.of( fourteenth,
-                                                                                          53.66624880046584 ) )
-                                                                     .addEvent( Event.of( fifteenth,
-                                                                                          53.9949987931177 ) )
-                                                                     .addEvent( Event.of( sixteenth,
-                                                                                          54.277498786803335 ) )
-                                                                     .setMetadata( expectedMetadata )
-                                                                     .build();
+                                                           .addEvent( Event.of( eighth,
+                                                                                51.368748851818964 ) )
+                                                           .addEvent( Event.of( ninth,
+                                                                                51.59624884673394 ) )
+                                                           .addEvent( Event.of( tenth,
+                                                                                51.956248838687316 ) )
+                                                           .addEvent( Event.of( eleventh,
+                                                                                52.40374882868491 ) )
+                                                           .addEvent( Event.of( twelfth,
+                                                                                52.86124881845899 ) )
+                                                           .addEvent( Event.of( thirteenth,
+                                                                                53.28749880893156 ) )
+                                                           .addEvent( Event.of( fourteenth,
+                                                                                53.66624880046584 ) )
+                                                           .addEvent( Event.of( fifteenth,
+                                                                                53.9949987931177 ) )
+                                                           .addEvent( Event.of( sixteenth,
+                                                                                54.277498786803335 ) )
+                                                           .setMetadata( expectedMetadata )
+                                                           .build();
 
         assertEquals( expected, actual );
     }
@@ -527,12 +527,12 @@ public class TimeSeriesOfDoubleUpscalerTest
 
         TimeSeriesMetadata existingMetadata = getBoilerplateMetadataWithTimeScale( existingTimeScale );
         TimeSeries<Double> fake = new Builder<Double>().setMetadata( existingMetadata )
-                                                                 .build();
+                                                       .build();
 
         RescalingException exception =
                 assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
 
-        String message = "ERROR: Downscaling is not supported: the desired "
+        String message = "Downscaling is not supported: the desired "
                          + "time scale of 'PT1M' cannot be smaller than "
                          + "the existing time scale of 'PT1H'.";
 
@@ -550,7 +550,7 @@ public class TimeSeriesOfDoubleUpscalerTest
 
         TimeSeriesMetadata existingMetadata = getBoilerplateMetadataWithTimeScale( existingTimeScale );
         TimeSeries<Double> fake = new Builder<Double>().setMetadata( existingMetadata )
-                                                                 .build();
+                                                       .build();
 
         RescalingException exception =
                 assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
@@ -572,12 +572,12 @@ public class TimeSeriesOfDoubleUpscalerTest
 
         TimeSeriesMetadata existingMetadata = getBoilerplateMetadataWithTimeScale( existingTimeScale );
         TimeSeries<Double> fake = new Builder<Double>().setMetadata( existingMetadata )
-                                                                 .build();
+                                                       .build();
 
         RescalingException exception =
                 assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
 
-        String message = "ERROR: The desired period of 'PT1H15M' is not an integer multiple of the existing "
+        String message = "The desired period of 'PT1H15M' is not an integer multiple of the existing "
                          + "period, which is 'PT1H'. If the data has multiple time-steps that vary by time or "
                          + "feature, it may not be possible to achieve the desired time scale for all of the data. In "
                          + "that case, consider removing the desired time scale and performing an evaluation at the "
@@ -596,12 +596,12 @@ public class TimeSeriesOfDoubleUpscalerTest
                                                              TimeScaleFunction.TOTAL );
         TimeSeriesMetadata existingMetadata = getBoilerplateMetadataWithTimeScale( existingTimeScale );
         TimeSeries<Double> fake = new Builder<Double>().setMetadata( existingMetadata )
-                                                                 .build();
+                                                       .build();
 
         RescalingException exception =
                 assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
 
-        String message = "ERROR: The period associated with the existing and desired time scales is "
+        String message = "The period associated with the existing and desired time scales is "
                          + "'PT1H', but the time scale function associated with the existing time scale is 'MEAN', "
                          + "which differs from the function associated with the desired time scale, namely 'TOTAL'. "
                          + "This is not allowed. The function cannot be changed without changing the period.";
@@ -620,11 +620,11 @@ public class TimeSeriesOfDoubleUpscalerTest
 
         TimeSeriesMetadata existingMetadata = getBoilerplateMetadataWithTimeScale( existingTimeScale );
         TimeSeries<Double> fake = new Builder<Double>().setMetadata( existingMetadata )
-                                                                 .build();
+                                                       .build();
         RescalingException exception =
                 assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
 
-        String message = "ERROR: Cannot accumulate instantaneous values. Change the existing time scale or "
+        String message = "Cannot accumulate instantaneous values. Change the existing time scale or "
                          + "change the function associated with the desired time scale to something other than a "
                          + "'TOTAL'.";
 
@@ -642,11 +642,11 @@ public class TimeSeriesOfDoubleUpscalerTest
 
         TimeSeriesMetadata existingMetadata = getBoilerplateMetadataWithTimeScale( existingTimeScale );
         TimeSeries<Double> fake = new Builder<Double>().setMetadata( existingMetadata )
-                                                                 .build();
+                                                       .build();
         RescalingException exception =
                 assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
 
-        String message = "ERROR: Cannot accumulate values that are not already accumulations. The "
+        String message = "Cannot accumulate values that are not already accumulations. The "
                          + "function associated with the existing time scale must be a 'TOTAL', "
                          + "rather than a 'MEAN', or the function associated with the desired time "
                          + "scale must be changed.";

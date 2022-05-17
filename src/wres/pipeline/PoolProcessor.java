@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.messages.EvaluationStatusMessage;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolRequest;
@@ -252,7 +253,7 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                                                                              this.projectConfig,
                                                                              this.traceCountEstimator )
                                                .apply( pool );
-        
+
         // Publish the statistics
         Status status = this.publish( this.evaluation,
                                       statistics,
@@ -270,7 +271,11 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         this.getPairWritingTask( true, this.basePairsWriter )
             .accept( pool );
 
-        return new PoolProcessingResult( this.poolRequest, status );
+        // Any status events?
+        List<EvaluationStatusMessage> statusEvents = pool.getMetadata()
+                                                         .getEvaluationStatusEvents();
+
+        return new PoolProcessingResult( this.poolRequest, status, statusEvents );
     }
 
     /**
@@ -449,7 +454,7 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
             ThresholdsByMetricAndFeature metrics = processor.getMetrics();
             builder.addStatistics( statistics )
                    .setMinimumSampleSize( metrics.getMinimumSampleSize() );
-            
+
             // Compute separate statistics for the baseline?
             if ( pool.hasBaseline() )
             {

@@ -6,6 +6,7 @@ import java.util.Objects;
 import com.google.protobuf.ProtocolStringList;
 
 import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -1003,6 +1004,53 @@ public class MessageUtilities
         }
 
         return MessageUtilities.compareListOfDoubleTo( first.getRightList(), second.getRightList() );
+    }
+
+    /**
+     * Compares the first {@link EvaluationStatusEvent} against the second and returns zero, a positive or negative 
+     * value as to whether the first description is equal to, greater than or less than the second description.
+     * 
+     * @param first the first description
+     * @param second the second description
+     * @return a number that is zero, negative or positive when first description is the same as, less than or greater 
+     *            than the second, respectively
+     * @throws NullPointerException if either input is null
+     */
+
+    public static int compare( EvaluationStatusEvent first, EvaluationStatusEvent second )
+    {
+        Objects.requireNonNull( first );
+        Objects.requireNonNull( second );
+
+        // For efficiency, check that the objects are identity equals
+        if ( first == second )
+        {
+            return 0;
+        }
+
+        int compare = first.getStatusLevel().compareTo( second.getStatusLevel() );
+
+        if ( compare != 0 )
+        {
+            return compare;
+        }
+
+        compare = first.getEvaluationStage().compareTo( second.getEvaluationStage() );
+
+        if ( compare != 0 )
+        {
+            return compare;
+        }
+
+        compare = first.getEventMessage().compareTo( second.getEventMessage() );
+
+        if ( compare != 0 )
+        {
+            return compare;
+        }
+
+        // Recursive, noting that a cause is never null
+        return MessageUtilities.compare( first.getCause(), second.getCause() );
     }
 
     /**

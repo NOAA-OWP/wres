@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import wres.datamodel.scale.ScaleValidationEvent;
+import wres.datamodel.messages.EvaluationStatusMessage;
 
 /**
  * An immutable value class that stores the results of a rescaling operation, namely:
@@ -31,7 +31,7 @@ public class RescaledTimeSeriesPlusValidation<T>
      * The scale validation events.
      */
 
-    private final List<ScaleValidationEvent> validationEvents;
+    private final List<EvaluationStatusMessage> validationEvents;
 
     /**
      * Returns an instance.
@@ -42,7 +42,7 @@ public class RescaledTimeSeriesPlusValidation<T>
      */
 
     static <T> RescaledTimeSeriesPlusValidation<T> of( TimeSeries<T> timeSeries,
-                                                       List<ScaleValidationEvent> validationEvents )
+                                                       List<EvaluationStatusMessage> validationEvents )
     {
         return new RescaledTimeSeriesPlusValidation<>( timeSeries, validationEvents );
     }
@@ -64,7 +64,7 @@ public class RescaledTimeSeriesPlusValidation<T>
      * @return the validation events
      */
 
-    public List<ScaleValidationEvent> getValidationEvents()
+    public List<EvaluationStatusMessage> getValidationEvents()
     {
         return this.validationEvents; // Rendered immutable on construction
     }
@@ -77,7 +77,7 @@ public class RescaledTimeSeriesPlusValidation<T>
      * @throws NullPointerException if either input is null
      */
 
-    private RescaledTimeSeriesPlusValidation( TimeSeries<T> timeSeries, List<ScaleValidationEvent> validationEvents )
+    private RescaledTimeSeriesPlusValidation( TimeSeries<T> timeSeries, List<EvaluationStatusMessage> validationEvents )
     {
         Objects.requireNonNull( timeSeries );
 

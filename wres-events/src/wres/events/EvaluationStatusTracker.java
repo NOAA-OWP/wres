@@ -47,13 +47,13 @@ import wres.events.subscribe.SubscriberTimedOutException;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
-import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusMessageType;
+import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLevel;
 
 /**
  * A class that tracks the status of an evaluation via its {@link EvaluationStatus} messages and awaits its 
  * completion upon request ({@link #await()}).
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 @ThreadSafe
@@ -502,7 +502,7 @@ class EvaluationStatusTracker implements Closeable
 
         // Stop the flow controller for the current thread if the lock is held by this thread
         this.flowController.stop();
-        
+
         // Stop the evaluation
         this.getEvaluation()
             .stop( null );
@@ -673,7 +673,7 @@ class EvaluationStatusTracker implements Closeable
                                                      .addAllFormats( formats ) )
                                .setCompletionStatus( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE )
                                .addStatusEvents( EvaluationStatusEvent.newBuilder()
-                                                                      .setEventType( StatusMessageType.ERROR )
+                                                                      .setStatusLevel( StatusLevel.ERROR )
                                                                       .setEventMessage( message ) )
                                .build();
     }
@@ -1389,7 +1389,7 @@ class EvaluationStatusTracker implements Closeable
                                                       .setClientId( this.statusTracker.getClientId() )
                                                       .setCompletionStatus( CompletionStatus.EVALUATION_COMPLETE_REPORTED_FAILURE )
                                                       .addStatusEvents( EvaluationStatusEvent.newBuilder()
-                                                                                             .setEventType( StatusMessageType.ERROR )
+                                                                                             .setStatusLevel( StatusLevel.ERROR )
                                                                                              .setEventMessage( message ) )
                                                       .build();
 
