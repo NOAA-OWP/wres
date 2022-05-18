@@ -1,4 +1,5 @@
 import java.util.concurrent.TimeUnit;
+import java.security.MessageDigest;
 
 // This build.gradle is released along with gradle wrapper inside a system tests
 // zip, such that the user of the zip may use gradle to compile and run system
@@ -28,13 +29,20 @@ task( unzipArtifactToTest, type: Copy, group: 'test' )
 {
     description = 'Unzips the wres zip artifact to be tested.'
 
-    def zipFile = file( "${wresZipDirectory}/wres-${versionToTest}.zip" )
+    def artifactName = "wres-${versionToTest}.zip"
+    def zipFile = file( "${wresZipDirectory}/" + artifactName )
     def outputDir = file( "${buildDir}" )
 
     println( "buildDir: ${buildDir}" )
     println( "wresZipDirectory: " + wresZipDirectory )
     println( "zipFile: " + zipFile )
     println( "outputDir: " + outputDir )
+
+    byte[] binaryContent = zipFile.bytes
+    MessageDigest digest = MessageDigest.getInstance( "SHA-256" );
+    byte[] hashbytes = digest.digest( binaryContent )
+    String shaHex = bytesToHex( hashbytes );
+    println( "Artifact " + artifactName + " has a SHA-256 of: " + shaHex )
 
     from zipTree(zipFile)
     into outputDir
@@ -47,8 +55,8 @@ compileTestJava.dependsOn( unzipArtifactToTest )
 task( unzipGraphicsArtifactToTest, dependsOn: unzipArtifactToTest, type: Copy, group: 'test' )
 {
     description = 'Unzips the wres graphics zip artifact to be tested.'
-
-    def zipFile = file( "${wresGraphicsZipDirectory}/wres-vis-${graphicsVersionToTest}.zip" )
+    def artifactName = "wres-vis-${graphicsVersionToTest}.zip"
+    def zipFile = file( "${wresGraphicsZipDirectory}/" + artifactName )
 
     def outputDir = file( "${buildDir}" )
 
@@ -56,8 +64,29 @@ task( unzipGraphicsArtifactToTest, dependsOn: unzipArtifactToTest, type: Copy, g
     println( "graphicsZipFile: " + zipFile )
     println( "outputDir: " + outputDir )
 
+    byte[] binaryContent = zipFile.bytes
+    MessageDigest digest = MessageDigest.getInstance( "SHA-256" );
+    byte[] hashbytes = digest.digest( binaryContent )
+    String shaHex = bytesToHex( hashbytes );
+    println( "Graphics artifact "+ artifactName + " has a SHA-256 of: " + shaHex )
+
     from zipTree(zipFile)
     into outputDir
+}
+
+// Converts a byte array to a hex string 
+private String bytesToHex( byte[] hash ) {
+    StringBuilder hexString = new StringBuilder( 2 * hash.length );
+    for ( int i = 0; i < hash.length; i++ ) 
+    {
+        String hex = Integer.toHexString( 0xff & hash[i] );
+        if( hex.length() == 1 ) 
+        {
+            hexString.append( '0' );
+        }
+        hexString.append( hex );
+    }
+    return hexString.toString();
 }
 
 // The graphics process to destroy on completion of the test task
