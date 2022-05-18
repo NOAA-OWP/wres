@@ -256,7 +256,7 @@ project(':wres-util')
         implementation 'org.apache.httpcomponents:httpcore:4.4.15'
         implementation 'org.apache.httpcomponents:httpmime:4.5.13'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha14' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha15' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -360,12 +360,12 @@ project(':wres-datamodel')
         testImplementation 'org.mockito:mockito-core:4.5.1'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-M1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-M1'
 
         // Backwards compatibility for JUnit 4 tests
         testCompileOnly 'junit:junit:4.13.2'
-        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.8.2'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.9.0-M1'
     }
     // Facilitate unit tests with JUnit
     test {
@@ -383,19 +383,18 @@ project(':wres-io')
         implementation project(':wres-statistics')
         implementation project(':wres-config')
         implementation project(':wres-grid')
-        implementation project(':wres-events')
 
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha7'
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
         // JSON deserialization uses jackson directly. Specify recent version.
-        implementation 'com.fasterxml.jackson:jackson-bom:2.13.2.20220328'
-        implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.2.2'
-        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.13.2'
-        implementation 'com.fasterxml.jackson.core:jackson-core:2.13.2'
+        implementation 'com.fasterxml.jackson:jackson-bom:2.13.3'
+        implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.3'
+        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.13.3'
+        implementation 'com.fasterxml.jackson.core:jackson-core:2.13.3'
 
         // For Java 8 java.time support
-        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.13.2'
+        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.13.3'
 
         implementation( 'edu.ucar:cdm-core:5.4.2' )
         {
@@ -468,12 +467,12 @@ project(':wres-io')
         testImplementation 'org.mock-server:mockserver-netty:5.13.2'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-M1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-M1'
 
         // Backwards compatibility for JUnit 4 tests
         testImplementation 'junit:junit:4.13.2'
-        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.8.2'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.9.0-M1'
 
         // In-memory implementation of a java.nio.file abstract file system api
         // to test writing of files without actually writing files on the host machine
@@ -527,7 +526,7 @@ project(':wres-metrics')
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha7'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha14' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha15' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -536,12 +535,12 @@ project(':wres-metrics')
         testImplementation 'org.mockito:mockito-core:4.5.1'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-M1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-M1'
 
         // Backwards compatibility for JUnit 4 tests
         testCompileOnly 'junit:junit:4.13.2'
-        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.8.2'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.9.0-M1'
     }
 
     test
@@ -664,8 +663,8 @@ project(':wres-statistics')
         api 'com.google.protobuf:protobuf-java:3.20.1'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-M1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-M1'
     }
 
     // Facilitate unit tests with JUnit
@@ -747,7 +746,7 @@ project(':wres-vis')
         // SVG graphics from JFreeChart instances
         implementation group: 'org.jfree', name: 'jfreesvg', version: '3.4.2'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha14' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha15' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -757,12 +756,12 @@ project(':wres-vis')
         runtimeOnly group: 'org.slf4j', name: 'log4j-over-slf4j', version: '2.0.0-alpha7'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-M1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-M1'
 
         // Backwards compatibility for JUnit 4 tests
         testImplementation 'junit:junit:4.13.2'
-        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.8.2'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.9.0-M1'
 
         // Mocking help
         testImplementation 'org.mockito:mockito-core:4.5.1'
@@ -832,8 +831,8 @@ project(':wres-config')
         // Trying json-values based on vavr, potential replacement for xjc/jaxb.
         testImplementation 'com.github.imrafaelmerino:json-values:10.0.0'
 
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-M1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-M1'
 
         // May help in future with #37380, may need to modify sources
         // available at https://git.apache.org/cxf-xjc-utils.git in dv dir:
@@ -941,7 +940,7 @@ project(':wres-grid')
             exclude group: 'org.jdom', module: 'jdom2'
         }
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha14' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha15' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -1015,7 +1014,7 @@ project(':wres-worker')
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha7'
         implementation 'com.rabbitmq:amqp-client:5.14.2'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha14' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha15' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -1186,21 +1185,28 @@ project(':wres-tasker')
         implementation 'org.apache.tika:tika-core:1.27'
 
         // To persist job metadata while keeping it relatively fast
-        implementation 'org.redisson:redisson:3.17.1'
+        implementation( 'org.redisson:redisson:3.17.1' )
+        {
+            // Because of CVE-2022-24823. TODO: remove when Redisson catches up
+            exclude group: 'io.netty'
+        }
+
+        // Because of CVE-2022-24823. TODO: remove when Redisson catches up
+        implementation group: 'io.netty', name: 'netty-all', version: '4.1.77.Final'
 
         // Upgrade jackson-databind used by redisson (CVE-2020-36518)
-        implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.2.2'
+        implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.3'
         // Upgrade some jackson libs used by redisson for good measure
-        implementation 'com.fasterxml.jackson:jackson-bom:2.13.2.20220328'
-        implementation 'com.fasterxml.jackson.core:jackson-core:2.13.2'
-        implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.13.2'
+        implementation 'com.fasterxml.jackson:jackson-bom:2.13.3'
+        implementation 'com.fasterxml.jackson.core:jackson-core:2.13.3'
+        implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.13.3'
         // For ToStringBuilder
         implementation 'org.apache.commons:commons-lang3:3.12.0'
 
         // To send/receive messages
         implementation 'com.google.protobuf:protobuf-java:3.20.1'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha14' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha15' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -1392,6 +1398,9 @@ project(':wres-eventsbroker')
 
             // Because we use slf4j, not jboss-logmanager:
             exclude group: 'org.jboss.logmanager', module: 'jboss-logmanager'
+
+            // Because of CVE-2022-24823. TODO: remove when Artemis catches up
+            exclude group: 'io.netty'
         }
 
         // AMQP 1.0 protocol support for the ActiveMQ Artemis server
@@ -1402,13 +1411,19 @@ project(':wres-eventsbroker')
 
             // Because we use slf4j, not jboss-logmanager:
             exclude group: 'org.jboss.logmanager', module: 'jboss-logmanager'
+
+            // Because of CVE-2022-24823. TODO: remove when Artemis catches up
+            exclude group: 'io.netty'
         }
+
+        // Because of CVE-2022-24823. TODO: remove when Artemis catches up
+        implementation group: 'io.netty', name: 'netty-all', version: '4.1.77.Final'
 
         // JCIP annotations
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha14' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha15' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -1418,11 +1433,15 @@ project(':wres-eventsbroker')
         runtimeOnly 'org.slf4j:jcl-over-slf4j:2.0.0-alpha7'
 
         // Qpid AMQP 1.0 Jakarta Messaging API client to test interaction with the embedded broker
-        testImplementation group: 'org.apache.qpid', name: 'qpid-jms-client', version: '2.0.0'
+        testImplementation( 'org.apache.qpid:qpid-jms-client:2.0.0' )
+        {
+            // Because of CVE-2022-24823. TODO: remove when Qpid catches up
+            exclude group: 'io.netty'
+        }
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-M1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-M1'
     }
 
     // Facilitate unit tests with JUnit
@@ -1453,17 +1472,24 @@ project(':wres-events')
         implementation group: 'jakarta.jms', name: 'jakarta.jms-api', version: '3.0.0'
 
         // Qpid AMQP 1.0 Jakarta Messaging API client
-        implementation group: 'org.apache.qpid', name: 'qpid-jms-client', version: '2.0.0'
+        implementation( 'org.apache.qpid:qpid-jms-client:2.0.0' )
+        {
+            // Because of CVE-2022-24823. TODO: remove when Qpid catches up
+            exclude group: 'io.netty'
+        }
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha14' )
+        // Because of CVE-2022-24823. TODO: remove when Qpid catches up
+        implementation group: 'io.netty', name: 'netty-all', version: '4.1.77.Final'
+
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha15' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-M1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-M1'
 
         // Mocking help
         testImplementation 'org.mockito:mockito-core:4.5.1'
@@ -1741,7 +1767,7 @@ dependencies
     runtimeOnly 'org.glassfish.jersey.containers:jersey-container-jetty-http:3.1.0-M2'
     runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:3.1.0-M2'
 
-    runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha14' )
+    runtimeOnly( 'ch.qos.logback:logback-classic:1.3.0-alpha15' )
     {
         // Not used at runtime, bloat
         exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -1750,12 +1776,12 @@ dependencies
     implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
     // JUnit 5 API and runtime
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-M1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-M1'
 
     // Backwards compatibility for JUnit 4 tests
     testCompileOnly 'junit:junit:4.13.2'
-    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.8.2'
+    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.9.0-M1'
 
     testImplementation 'org.mockito:mockito-core:4.5.1'
 
