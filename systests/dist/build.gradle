@@ -38,11 +38,15 @@ task( unzipArtifactToTest, type: Copy, group: 'test' )
     println( "zipFile: " + zipFile )
     println( "outputDir: " + outputDir )
 
-    byte[] binaryContent = zipFile.bytes
-    MessageDigest digest = MessageDigest.getInstance( "SHA-256" );
-    byte[] hashbytes = digest.digest( binaryContent )
-    String shaHex = bytesToHex( hashbytes );
-    println( "Artifact " + artifactName + " has a SHA-256 of: " + shaHex )
+    // Print the SHA-256 of the graphics artifact if it exists
+    if( zipFile.exists() )
+    {
+        byte[] binaryContent = zipFile.bytes
+        MessageDigest digest = MessageDigest.getInstance( "SHA-256" );
+        byte[] hashbytes = digest.digest( binaryContent )
+        String shaHex = bytesToHex( hashbytes );
+        println( "Artifact " + artifactName + " has a SHA-256 of: " + shaHex )
+    }
 
     from zipTree(zipFile)
     into outputDir
@@ -64,11 +68,15 @@ task( unzipGraphicsArtifactToTest, dependsOn: unzipArtifactToTest, type: Copy, g
     println( "graphicsZipFile: " + zipFile )
     println( "outputDir: " + outputDir )
 
-    byte[] binaryContent = zipFile.bytes
-    MessageDigest digest = MessageDigest.getInstance( "SHA-256" );
-    byte[] hashbytes = digest.digest( binaryContent )
-    String shaHex = bytesToHex( hashbytes );
-    println( "Graphics artifact "+ artifactName + " has a SHA-256 of: " + shaHex )
+    // Print the SHA-256 of the graphics artifact if it exists
+    if( zipFile.exists() )
+    { 
+        byte[] binaryContent = zipFile.bytes
+        MessageDigest digest = MessageDigest.getInstance( "SHA-256" );
+        byte[] hashbytes = digest.digest( binaryContent )
+        String shaHex = bytesToHex( hashbytes );
+        println( "Graphics artifact "+ artifactName + " has a SHA-256 of: " + shaHex )
+    }
 
     from zipTree(zipFile)
     into outputDir
