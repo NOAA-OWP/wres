@@ -74,21 +74,6 @@ task( unzipGraphicsArtifactToTest, dependsOn: unzipArtifactToTest, type: Copy, g
     into outputDir
 }
 
-// Converts a byte array to a hex string 
-private String bytesToHex( byte[] hash ) {
-    StringBuilder hexString = new StringBuilder( 2 * hash.length );
-    for ( int i = 0; i < hash.length; i++ ) 
-    {
-        String hex = Integer.toHexString( 0xff & hash[i] );
-        if( hex.length() == 1 ) 
-        {
-            hexString.append( '0' );
-        }
-        hexString.append( hex );
-    }
-    return hexString.toString();
-}
-
 // The graphics process to destroy on completion of the test task
 Process graphicsProcess = null;
 
@@ -179,7 +164,23 @@ test.finalizedBy( stopGraphicsClient )
 // Windows OS?
 boolean isWindows()
 {
-    return System.properties['os.name'].toLowerCase().contains( 'windows' );
+    return System.properties[ 'os.name' ].toLowerCase().contains( 'windows' );
+}
+
+// Converts a byte array to a hex string 
+String bytesToHex( byte[] hash ) 
+{
+    StringBuilder hexString = new StringBuilder( 2 * hash.length );
+    for ( int i = 0; i < hash.length; i++ ) 
+    {
+        String hex = Integer.toHexString( 0xff & hash[i] );
+        if( hex.length() == 1 ) 
+        {
+            hexString.append( '0' );
+        }
+        hexString.append( hex );
+    }
+    return hexString.toString();
 }
 
 dependencies
