@@ -1,13 +1,13 @@
-FROM registry.access.redhat.com/ubi8/ubi:8.5-239.1651231664
+FROM registry.access.redhat.com/ubi8/ubi:8.6-754
 
 RUN dnf install -y \
-    java-11-openjdk-headless-1:11.0.15.0.9-2.el8_5 \
-    unzip-6.0-45.el8_4 \
+    java-11-openjdk-headless-1:11.0.15.0.10-2.el8_6 \
+    unzip-6.0-46.el8 \
     fontconfig-2.13.1-4.el8 \
     dejavu-fonts-common-2.35-7.el8 \
     dejavu-sans-fonts-2.35-7.el8 \
     procps-ng-3.3.15-6.el8 \
-    iproute-5.12.0-4.el8 \
+    iproute-5.15.0-4.el8 \
     hostname-3.20-6.el8 \
     && dnf clean all
 
