@@ -1388,7 +1388,7 @@ project(':wres-eventsbroker')
         implementation 'org.apache.commons:commons-lang3:3.12.0'
 
         // Jakarta Messaging API
-        implementation group: 'jakarta.jms', name: 'jakarta.jms-api', version: '3.0.0'
+        implementation group: 'jakarta.jms', name: 'jakarta.jms-api', version: '3.1.0'
 
         // Apache ActiveMQ Artemis server
         implementation( 'org.apache.activemq:artemis-server:2.22.0' )
@@ -1469,7 +1469,7 @@ project(':wres-events')
         }
 
         // Jakarta Messaging API
-        implementation group: 'jakarta.jms', name: 'jakarta.jms-api', version: '3.0.0'
+        implementation group: 'jakarta.jms', name: 'jakarta.jms-api', version: '3.1.0'
 
         // Qpid AMQP 1.0 Jakarta Messaging API client
         implementation( 'org.apache.qpid:qpid-jms-client:2.0.0' )
