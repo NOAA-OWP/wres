@@ -572,16 +572,17 @@ public class DataSource
             String start = new String( firstBytes, StandardCharsets.US_ASCII );
 
             // Datacard always starts with $ and has max 80 chars in a line.
+            // See #105035. Relax for comment lines. Cannot find any evidence that
+            // the NWS standard (such as it is) requires <=80 chars per comment line.
             // Ambiguous whether \r\n is allowed or only \n.
             int indexOfFirstNewLine = start.indexOf( '\n' );
             int indexOfSecondNewLine = start.indexOf( '\n',
                                                       indexOfFirstNewLine + 1 );
+
             if ( start.startsWith( "$" )
                  && indexOfFirstNewLine > 0
-                 && indexOfFirstNewLine <= 80
                  // We assume there are always two newlines here.
-                 && indexOfSecondNewLine > indexOfFirstNewLine + 1
-                 && indexOfSecondNewLine <= indexOfFirstNewLine + 81 )
+                 && indexOfSecondNewLine > indexOfFirstNewLine + 1 )
             {
                 disposition = DataDisposition.DATACARD;
             }
