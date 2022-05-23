@@ -37,7 +37,7 @@ start() {
     # Run the broker in the background and await it so that this script traps signals properly
     # https://github.com/moby/moby/issues/33319#issuecomment-457914349
     echo "Starting the wres-eventsbroker..."    
-    ${BROKER_INSTANCE}/bin/artemis run
+    ${BROKER_INSTANCE}/bin/artemis run &
     wait $!
 }
 
