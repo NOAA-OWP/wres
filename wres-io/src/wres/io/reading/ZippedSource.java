@@ -47,6 +47,7 @@ import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.TimeScales;
+import wres.io.reading.DataSource.DataDisposition;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.ProgressMonitor;
@@ -424,7 +425,7 @@ public class ZippedSource extends BasicSource {
         LOGGER.debug( "The file '{}' will now be read.", archivedFileName );
         WRESCallable<List<IngestResult>> ingest;
 
-        if ( disposition == XML_PI_TIMESERIES )
+        if ( disposition == DataDisposition.XML_PI_TIMESERIES || disposition == DataDisposition.XML_FI_TIMESERIES )
         {
             DataSource innerDataSource = DataSource.of( disposition,
                                                         dataSource.getSource(),
@@ -492,9 +493,10 @@ public class ZippedSource extends BasicSource {
         File tempFile;
 
         try
-        {
+        {            
             tempFile = File.createTempFile( TEMP_FILE_PREFIX,
                                             "_" + endOfName );
+            LOGGER.debug( "Created temporary file {}.", endOfName );
         }
         catch ( IOException ioe )
         {

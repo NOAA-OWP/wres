@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info>
+  <mime-type type="application/fastinfosetxml">
+     <_comment>Fast-Infoset encoded XML</_comment>
+     <sub-class-of type="application/fastinfoset"/>
+     <glob pattern="*.fi"/>
+     <glob pattern="*.finf"/>
+   </mime-type>
+</mime-info>

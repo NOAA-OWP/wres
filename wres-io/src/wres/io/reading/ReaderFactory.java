@@ -80,6 +80,7 @@ public class ReaderFactory {
                                         projectConfig,
                                         dataSource );
 				break;
+            case XML_FI_TIMESERIES:
             case XML_PI_TIMESERIES:
                 source = new FEWSSource( systemSettings,
                                          database,
