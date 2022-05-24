@@ -484,9 +484,8 @@ final class DatabaseSettings
         DatabaseType type = this.getDatabaseType();
         String className = type.getDataSourceClassName();
         poolConfig.setDataSourceClassName( className );
-        int maxSize = this.maxPoolSize;
-        poolConfig.setMaximumPoolSize( maxSize );
-        poolConfig.setConnectionTimeout( connectionTimeoutMs );
+        poolConfig.setMaximumPoolSize( this.maxPoolSize );
+        poolConfig.setConnectionTimeout( this.connectionTimeoutMs );
         return new HikariDataSource( poolConfig );
 	}
 
@@ -498,9 +497,8 @@ final class DatabaseSettings
         DatabaseType type = this.getDatabaseType();
         String className = type.getDataSourceClassName();
         poolConfig.setDataSourceClassName( className );
-        int maxSize = this.maxHighPriorityPoolSize;
-        poolConfig.setMaximumPoolSize( maxSize );
-        poolConfig.setConnectionTimeout( connectionTimeoutMs );
+        poolConfig.setMaximumPoolSize( this.maxHighPriorityPoolSize );
+        poolConfig.setConnectionTimeout( this.connectionTimeoutMs );
         return new HikariDataSource( poolConfig );
 	}
 

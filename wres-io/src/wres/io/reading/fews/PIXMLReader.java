@@ -55,6 +55,7 @@ import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.TimeScales;
 import wres.io.reading.DataSource;
+import wres.io.reading.DataSource.DataDisposition;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.InvalidInputDataException;
@@ -105,10 +106,10 @@ public final class PIXMLReader extends XMLReader
     private int highestLineNumber = 0;
 
 
-	/**
-	 * Constructor for a reader that may be for forecasts or observations
+    /**
+     * Constructor for a reader that may be for forecasts or observations
      * @throws IOException when an attempt to get the file from classpath fails.
-	 */
+     */
     PIXMLReader( SystemSettings systemSettings,
                  Database database,
                  Features featuresCache,
@@ -119,9 +120,10 @@ public final class PIXMLReader extends XMLReader
                  DataSource dataSource,
                  DatabaseLockManager lockManager )
             throws IOException
-	{
-		super( dataSource.getUri() );
-		this.systemSettings = systemSettings;
+    {
+        super( dataSource.getUri(),
+               dataSource.getDisposition() == DataDisposition.XML_FI_TIMESERIES );
+        this.systemSettings = systemSettings;
         this.database = database;
         this.featuresCache = featuresCache;
         this.timeScalesCache = timeScalesCache;
@@ -145,7 +147,9 @@ public final class PIXMLReader extends XMLReader
                         DatabaseLockManager lockManager )
             throws IOException
 	{
-		super( dataSource.getUri(), inputStream );
+        super( dataSource.getUri(),
+               inputStream,
+               dataSource.getDisposition() == DataDisposition.XML_FI_TIMESERIES );
 		this.systemSettings = systemSettings;
         this.database = database;
         this.featuresCache = featuresCache;
@@ -203,12 +207,12 @@ public final class PIXMLReader extends XMLReader
         return this.dataSource;
     }
 
-	@Override
-	protected void parseElement( XMLStreamReader reader )
-			throws IOException
-	{
-		if (reader.isStartElement())
-		{
+    @Override
+    protected void parseElement( XMLStreamReader reader )
+            throws IOException
+    {
+        if ( reader.isStartElement() )
+        {
             String localName = reader.getLocalName();
 
             if ( localName.equalsIgnoreCase( "timeSeries" ) )
@@ -267,12 +271,12 @@ public final class PIXMLReader extends XMLReader
                                      + ", encountered an issue.";
                     throw new IngestException( message, e );
                 }
-			}
-		}
+            }
+        }
 
         this.highestLineNumber = reader.getLocation()
                                        .getLineNumber();
-	}
+    }
 
     @Override
     protected Logger getLogger()
@@ -346,37 +350,32 @@ public final class PIXMLReader extends XMLReader
                              "band in the data");
             }
         }
-
-		//	If the current tag is the series tag itself, move on to the next tag
-		if (reader.isStartElement() && reader.getLocalName().equalsIgnoreCase("series"))
-		{
-			reader.next();
-		}
-
-
+        
 		String localName;
 
-		//	Loop through every element in a series (header -> entry -> entry -> ... )
-		while (reader.hasNext())
-		{
-			reader.next();
-			if (reader.isEndElement() && reader.getLocalName().equalsIgnoreCase("series"))
-			{
-				break;
-			}
-			else if (reader.isStartElement())
-			{
-				localName = reader.getLocalName();
-				if (localName.equalsIgnoreCase("header"))
-				{
-					parseHeader(reader);
-				}
-				else if(localName.equalsIgnoreCase("event"))
-				{
-					parseEvent(reader);
-				}
-			}
-		}
+        //	Loop through every element in a series (header -> entry -> entry -> ... )
+        while ( reader.hasNext() )
+        {
+            reader.next();
+
+            if ( reader.isEndElement() && reader.getLocalName().equalsIgnoreCase( "series" ) )
+            {
+                break;
+            }
+            else if ( reader.isStartElement() )
+            {
+                localName = reader.getLocalName();
+
+                if ( localName.equalsIgnoreCase( "header" ) )
+                {
+                    this.parseHeader( reader );
+                }
+                else if ( localName.equalsIgnoreCase( "event" ) )
+                {
+                    this.parseEvent( reader );
+                }
+            }
+        }
 	}
 
 
@@ -390,6 +389,19 @@ public final class PIXMLReader extends XMLReader
 
 	private void parseEvent(XMLStreamReader reader)
     {
+        // #102285
+        if ( Objects.isNull( this.currentTraceName ) )
+        {
+            throw new PreIngestException( "An event for metadata '"
+                                          + this.currentTimeSeriesMetadata
+                                          + "' in "
+                                          + this.getFilename()
+                                          + " did not have a trace name for the current trace. "
+                                          + "Either the source is not properly formed or the "
+                                          + "header was not read properly. Parsing cannot "
+                                          + "continue." );
+        }
+
 		String value = null;
 		String localName;
         LocalDate localDate = null;
@@ -417,6 +429,8 @@ public final class PIXMLReader extends XMLReader
 			}
 		}
 
+		LOGGER.debug( "Parsed an event: date={}, time={}, value={}.", dateText, timeText, value );
+		
 		if ( Objects.isNull( value ) || value.isBlank() )
         {
             LOGGER.debug( "The event at {} {} in '{}' didn't have a value to save.",
@@ -435,6 +449,7 @@ public final class PIXMLReader extends XMLReader
         LocalDateTime dateTime = LocalDateTime.of( localDate, localTime );
         Instant fullDateTime = OffsetDateTime.of( dateTime, this.zoneOffset )
                                              .toInstant();
+        
         SortedMap<Instant,Double> values = this.traceValues.get( this.currentTraceName );
 
         if ( Objects.isNull( values ) )
@@ -677,6 +692,31 @@ public final class PIXMLReader extends XMLReader
             wktGeometry.add( ")" );
             locationWkt = wktGeometry.toString();
         }
+
+        LOGGER.debug( "Parsed PI-XML header: scalePeriod={}, scaleFunction={}, timeStep={}, forecastDate={}, "
+                      + "locationName={}, variableName={}, unitName={}, traceName={}, ensembleMemberId={}, "
+                      + "ensembleMemberIndex={}, missingValue={}, locationLongName={}, locationStationName={}, "
+                      + "locationDescription={}, latitude={}, longitude={}, x={}, y={}, z={}.",
+                      scalePeriod,
+                      scaleFunction,
+                      timeStep,
+                      forecastDate,
+                      locationName,
+                      variableName,
+                      unitName,
+                      traceName,
+                      ensembleMemberId,
+                      ensembleMemberIndex,
+                      missingValue,
+                      locationLongName,
+                      locationStationName,
+                      locationDescription,
+                      latitude,
+                      longitude,
+                      x,
+                      y,
+                      z );
+        
         
         Geometry geometry = MessageFactory.getGeometry( locationName, 
                                                         locationDescription,
@@ -712,8 +752,6 @@ public final class PIXMLReader extends XMLReader
         // Create new trace for each header in PI-XML data.
         this.currentTimeSeriesMetadata = justParsed;
     }
-
-
 
 	/**
 	 * Reads the date and time from an XML reader that stores the date and time in separate attributes

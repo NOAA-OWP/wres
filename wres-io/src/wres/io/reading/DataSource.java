@@ -1,5 +1,6 @@
 package wres.io.reading;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -13,14 +14,20 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
+
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.detect.Detector;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.TikaCoreProperties;
 import org.apache.tika.mime.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.sun.xml.fastinfoset.stax.StAXDocumentParser; //NOSONAR
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
@@ -54,6 +61,9 @@ public class DataSource
         TARBALL,
         /** The data has been detected as a pi-xml timeseries stream. */
         XML_PI_TIMESERIES,
+        /** The data has been detected as a fast-infoset encoded pi-xml 
+         * timeseries stream. */
+        XML_FI_TIMESERIES,
         /** The data has been detected as a datacard stream. */
         DATACARD,
         /** The data has been detected as a netCDF blob. */
@@ -426,7 +436,7 @@ public class DataSource
         LOGGER.debug( "detectFormat called on input stream for {}", uri );
         MediaType detectedMediaType;
         Metadata metadata = new Metadata();
-        metadata.set( Metadata.RESOURCE_NAME_KEY,
+        metadata.set( TikaCoreProperties.RESOURCE_NAME_KEY,
                       uri.toString() );
         byte[] firstBytes;
         DataDisposition disposition = DataDisposition.UNKNOWN;
@@ -594,7 +604,20 @@ public class DataSource
             }
             else
             {
-                LOGGER.warn( "Found text/plain document but it did not appear to be NWS datacard: '{}'",
+                LOGGER.warn( "Found a text/plain document, but it did not appear to be NWS datacard: '{}'",
+                             uri );
+            }
+        }
+        else if ( subtype.equals( "fastinfosetxml" ) )
+        {
+            // It is nominally Fast Infoset encoded XML, but is it Published Interface XML?
+            if ( DataSource.isFastInfosetPixml( firstBytes, uri ) )
+            {
+                disposition = DataDisposition.XML_FI_TIMESERIES;
+            }
+            else
+            {
+                LOGGER.warn( "Found an application/fastinfosetxml document, but it did not appear to be PI-XML: '{}'",
                              uri );
             }
         }
@@ -692,7 +715,49 @@ public class DataSource
         return StandardCharsets.UTF_8;
     }
 
+    /**
+     * Determines whether application/fastinfoset formatted data is in Published Interface XML format.
+     * @param firstBytes the first bytes to use for content type detection
+     * @param uri the URI
+     * @return true if the data is PI-XML, false otherwise
+     */
 
+    private static boolean isFastInfosetPixml( byte[] firstBytes, URI uri )
+    {
+        try ( InputStream stream = new ByteArrayInputStream( firstBytes ); )
+        {
+            XMLStreamReader reader = new StAXDocumentParser( stream );
+
+            // Look for an expected tag
+            while ( reader.hasNext() )
+            {
+                reader.nextTag();
+
+                if ( reader.getLocalName().equalsIgnoreCase( "TimeSeries" ) )
+                {
+                    if ( LOGGER.isDebugEnabled() )
+                    {
+                        LOGGER.debug( "While inspecting {} closely, discovered that it was Fast Infoset encoded "
+                                      + "PI-XML.",
+                                      uri );
+                    }
+
+                    return true;
+                }
+            }
+        }
+        catch ( IOException | XMLStreamException e )
+        {
+            if ( LOGGER.isDebugEnabled() )
+            {
+                String message = "Failed to detect Fast Infoset encoded PI-XML in " + uri;
+                LOGGER.debug( message, e );
+            }
+        }
+
+        return false;
+    }
+    
     /**
      * Since tika sometimes reports tarballs as text/plain, do some more work
      * to detect.

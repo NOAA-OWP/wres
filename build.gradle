@@ -313,6 +313,9 @@ project(':wres-system')
         // at compile time because we need to expose a class to JUL.
         implementation 'org.slf4j:jul-to-slf4j:2.0.0-alpha7'
 
+        // Fast-Infoset encoded XML
+        implementation group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '2.1.0'
+
         //JB @ 02/16/17
         testImplementation group: 'com.google.guava', name: 'guava-testlib', version: '31.1-jre'
 
@@ -434,7 +437,7 @@ project(':wres-io')
         implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.7.0-Beta'
 
         // To accurately detect mime types of files.
-        implementation 'org.apache.tika:tika-core:1.27'
+        implementation 'org.apache.tika:tika-core:2.4.0'
 
         // To cache
         implementation( 'com.github.ben-manes.caffeine:caffeine:3.1.0' )
@@ -446,6 +449,9 @@ project(':wres-io')
         // For geometries
         implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.18.2'
         implementation group: 'org.locationtech.jts', name: 'jts-io', version: '1.18.2', ext: 'pom'
+
+        // Fast-Infoset encoded XML
+        implementation group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '2.1.0'
 
         compileOnly 'net.jcip:jcip-annotations:1.0'
 
@@ -1182,7 +1188,7 @@ project(':wres-tasker')
         }
 
         // To accurately detect mime types of files.
-        implementation 'org.apache.tika:tika-core:1.27'
+        implementation 'org.apache.tika:tika-core:2.4.0'
 
         // To persist job metadata while keeping it relatively fast
         implementation( 'org.redisson:redisson:3.17.1' )

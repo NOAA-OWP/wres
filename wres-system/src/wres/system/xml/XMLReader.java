@@ -18,6 +18,8 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stax.StAXSource;
 import javax.xml.transform.stream.StreamResult;
 
+import com.sun.xml.fastinfoset.stax.StAXDocumentParser;  //NOSONAR
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +37,7 @@ public abstract class XMLReader
     private final URI filename;
     private final InputStream inputStream;
     private final XMLInputFactory factory;
+    private final boolean fastInfoset;
 
     /**
      * Convenience constructor - finds in either the classpath or filesystem.
@@ -46,7 +49,19 @@ public abstract class XMLReader
     {
         this( filename, null );
     }
-
+    
+    /**
+     * Convenience constructor - finds in either the classpath or filesystem
+     * @param filename the file name to look for on the classpath or filesystem
+     * @param fastInfoset is true if the file is fast-infoset encoded
+     * @throws IOException when the file cannot be found.
+     */
+    protected XMLReader( URI filename, boolean fastInfoset )
+            throws IOException
+    {
+        this( filename, null, fastInfoset );
+    }
+    
     /**
      * Create an XMLReader.
      * <br>
@@ -59,10 +74,27 @@ public abstract class XMLReader
     protected XMLReader( URI fileName, InputStream inputStream )
             throws IOException
     {
+        this( fileName, inputStream, false );
+    }
+
+    /**
+     * Create an XMLReader.
+     * <br>
+     * By the time this constructor is finished, we have an open InputStream
+     * for the file name specified.
+     * @param fileName the name of the file to read, non-null
+     * @param inputStream null or optionat inputstream to read from
+     * @param fastInfoset is true if the file is fast-infoset encoded
+     * @throws IOException when anything goes wrong
+     */
+    protected XMLReader( URI fileName, InputStream inputStream, boolean fastInfoset )
+            throws IOException
+    {
         Objects.requireNonNull( fileName );
 
         this.filename = fileName;
         this.factory = DEFAULT_FACTORY;
+        this.fastInfoset = fastInfoset;
 
         InputStream possibleInputStream = inputStream;
 
@@ -105,6 +137,7 @@ public abstract class XMLReader
         this.filename = null;
         this.inputStream = null;
         this.factory = null;
+        this.fastInfoset = false;
     }
 
     protected URI getFilename()
@@ -122,13 +155,21 @@ public abstract class XMLReader
         return XMLReader.class.getClassLoader()
                               .getResourceAsStream( resourceName.getPath() );
     }
+    
+    /**
+     * @return true if the file is fast-infoset encoded, false otherwise
+     */
+    private boolean isFastInfoset()
+    {
+        return this.fastInfoset;
+    }
 
     public void parse() throws IOException
     {
         XMLStreamReader reader = null;
         try
         {
-            reader = createReader();
+            reader = this.createReader();
 
             if ( reader == null )
             {
@@ -181,7 +222,14 @@ public abstract class XMLReader
 
     private XMLStreamReader createReader() throws XMLStreamException
     {
-        return factory.createXMLStreamReader( inputStream );
+        if( this.isFastInfoset() )
+        {
+            return new StAXDocumentParser( this.inputStream );
+        }
+        else 
+        {
+            return this.factory.createXMLStreamReader( this.inputStream );
+        }
     }
 
     public String getRawXML() throws XMLStreamException, TransformerException
