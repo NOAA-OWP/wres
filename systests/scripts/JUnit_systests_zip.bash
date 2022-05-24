@@ -265,8 +265,9 @@ fi
 
 MAIL_SUBJECT="JUnit in $SYSTESTS_DIR Tested $WRES_REVISION with $WRESVIS_REVISION  : $pass_nums PASSED; $failure_nums FAILED"
 LOGFILESIZE=`ls -s $LOGFILE | gawk '{print $1}'`
-echo "LOGFILESIZE = $LOGFILESIZE" 2>&1 | /usr/bin/tee --append $LOGFILE
-if [ $LOGFILESIZE -lt 9999 ]
+echo "LOGFILESIZE block size = $LOGFILESIZE" 2>&1 | /usr/bin/tee --append $LOGFILE
+#if [ $LOGFILESIZE -lt 9999 ]
+if [ $LOGFILESIZE -lt 9999999 ]
 then
 # WRES Team prefer send the test result summary to Redmine ticket #89538 instead direct email to them. April, 2021 by RHC
 # Below two lines are direct email summary
