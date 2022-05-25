@@ -78,7 +78,7 @@ final class DatabaseSettings
 
     // Get-connection timeout is in milliseconds. Default to default query timeout.
     private int connectionTimeoutMs = queryTimeout * 1000;
-
+    
     /**
      * Loads the database driver for the declared database type.
      * @throws SQLException if the driver could not be loaded
@@ -317,8 +317,7 @@ final class DatabaseSettings
 
                 if ( this.getDatabaseType() == DatabaseType.POSTGRESQL )
                 {
-                    ConnectionSupplier connectionSupplier =
-                            new ConnectionSupplier( this.getDatabaseName() );
+                    ConnectionSupplier connectionSupplier = new ConnectionSupplier();
                     lockManager = new DatabaseLockManagerPostgres( connectionSupplier );
                 }
                 else if ( this.getDatabaseType() == DatabaseType.H2 )
@@ -332,8 +331,7 @@ final class DatabaseSettings
 
                 try ( DatabaseSchema schema = new DatabaseSchema( this.getDatabaseName(),
                                                                   lockManager );
-                      Connection connection = this.getRawConnection( this.getConnectionString(
-                              this.getDatabaseName() ) ) )
+                      Connection connection = this.getRawConnection(); )
                 {
                     schema.applySchema( connection );
                 }
@@ -374,7 +372,7 @@ final class DatabaseSettings
             // Load the driver
             this.loadDriver();
 
-            try ( Connection connection = this.getRawConnection( null );
+            try ( Connection connection = this.getRawConnection();
                   Statement clean = connection.createStatement() )
             {
                 clean.execute( script );
@@ -438,7 +436,7 @@ final class DatabaseSettings
         // Load the driver
         this.loadDriver();
 
-        try ( Connection connection = this.getRawConnection( null );
+        try ( Connection connection = this.getRawConnection();
               Statement test = connection.createStatement() )
         {
             test.execute("SELECT 1;");
@@ -462,21 +460,22 @@ final class DatabaseSettings
         return this.dataSourceProperties.get( this.getDatabaseType() );
     }
 
-    Connection getRawConnection(String connectionString) throws SQLException
+    Connection getRawConnection() throws SQLException
 	{
-	    if (!Strings.hasValue( connectionString ))
-        {
-            connectionString = this.getConnectionString( this.databaseName );
-        }
+        // Load the driver
+        this.loadDriver();
 
-	    // Load the driver
-		this.loadDriver();
-
+        String connectionString = this.getConnectionString( this.databaseName );
         return DriverManager.getConnection( connectionString,
                                             this.getConnectionProperties() );
 	}
 
-    DataSource createDatasource()
+    /**
+     * @param maxPoolSize the maximum pool size
+     * @param connectionTimeOutMs the maximum connection timeout in milliseconds
+     * @return
+     */
+    DataSource createDataSource( int maxPoolSize, long connectionTimeOutMs )
 	{
         HikariConfig poolConfig = new HikariConfig();
         Properties properties = this.getConnectionProperties();
@@ -484,21 +483,8 @@ final class DatabaseSettings
         DatabaseType type = this.getDatabaseType();
         String className = type.getDataSourceClassName();
         poolConfig.setDataSourceClassName( className );
-        poolConfig.setMaximumPoolSize( this.maxPoolSize );
-        poolConfig.setConnectionTimeout( this.connectionTimeoutMs );
-        return new HikariDataSource( poolConfig );
-	}
-
-    DataSource createHighPriorityDataSource()
-    {
-        HikariConfig poolConfig = new HikariConfig();
-        Properties properties = this.getConnectionProperties();
-        poolConfig.setDataSourceProperties( properties );
-        DatabaseType type = this.getDatabaseType();
-        String className = type.getDataSourceClassName();
-        poolConfig.setDataSourceClassName( className );
-        poolConfig.setMaximumPoolSize( this.maxHighPriorityPoolSize );
-        poolConfig.setConnectionTimeout( this.connectionTimeoutMs );
+        poolConfig.setMaximumPoolSize( maxPoolSize );
+        poolConfig.setConnectionTimeout( connectionTimeOutMs );
         return new HikariDataSource( poolConfig );
 	}
 
@@ -516,7 +502,6 @@ final class DatabaseSettings
         this.host = host;
     }
 
-
     /**
      * Get the jdbc url that was set. Takes precedence over type:host:port
      * @return
@@ -525,7 +510,6 @@ final class DatabaseSettings
     {
         return this.jdbcUrl;
     }
-
 
     /**
      * Sets the jdbc url of the database DataSource. Takes precedence over .
@@ -920,6 +904,15 @@ final class DatabaseSettings
 	{
 	    return this.maxHighPriorityPoolSize;
 	}
+
+    /**
+     * @return the connection timeout in millseconds
+     */
+    
+    int getConnectionTimeoutMs()
+    {
+        return this.connectionTimeoutMs;
+    }
 	
     @Override
     public String toString()
@@ -1079,18 +1072,14 @@ final class DatabaseSettings
      */
 	private final class ConnectionSupplier implements Supplier<Connection>
     {
-        private final String rootDbName;
-        private ConnectionSupplier( String rootDbName )
-        {
-            this.rootDbName = rootDbName;
-        }
+        private ConnectionSupplier() {}
 
         @Override
         public Connection get()
         {
             try
             {
-                return getRawConnection( getConnectionString( rootDbName ) );
+                return getRawConnection();
             }
             catch ( SQLException se )
             {
