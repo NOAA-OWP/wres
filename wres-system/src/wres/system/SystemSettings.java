@@ -547,7 +547,9 @@ public class SystemSettings extends XMLReader
 	 */
     public DataSource getConnectionPool()
     {
-        DataSource inner = this.databaseConfiguration.createDatasource();
+        int maxPoolSize = this.databaseConfiguration.getMaxPoolSize();
+        long connectionTimeoutMs = this.databaseConfiguration.getConnectionTimeoutMs();
+        DataSource inner = this.databaseConfiguration.createDataSource( maxPoolSize, connectionTimeoutMs );
         return new JfrDataSource( inner );  // Monitor JDBC traffic with JFR: #61680
     }
 
@@ -556,7 +558,9 @@ public class SystemSettings extends XMLReader
      */
     public DataSource getHighPriorityConnectionPool()
     {
-        DataSource inner = this.databaseConfiguration.createHighPriorityDataSource();
+        int maxPoolSize = this.databaseConfiguration.getMaxHighPriorityPoolSize();
+        long connectionTimeoutMs = this.databaseConfiguration.getConnectionTimeoutMs();
+        DataSource inner = this.databaseConfiguration.createDataSource( maxPoolSize, connectionTimeoutMs );
         return new JfrDataSource( inner ); // Monitor JDBC traffic with JFR: #61680
     }
 
@@ -579,7 +583,7 @@ public class SystemSettings extends XMLReader
     
     Connection getRawDatabaseConnection() throws SQLException
     {
-        return this.databaseConfiguration.getRawConnection(null);
+        return this.databaseConfiguration.getRawConnection();
     }
 
     public int getMaximumPoolThreads()
