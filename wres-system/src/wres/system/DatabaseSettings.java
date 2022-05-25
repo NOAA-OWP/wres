@@ -81,10 +81,11 @@ final class DatabaseSettings
     
     /**
      * Loads the database driver for the declared database type.
+     * @return the driver class loaded
      * @throws SQLException if the driver could not be loaded
      */
 
-    private void loadDriver() throws SQLException
+    private Class<?> loadDriver() throws SQLException
     {
         DatabaseType type = this.getDatabaseType();
         String driverName = type.getDataSourceClassName();
@@ -95,7 +96,7 @@ final class DatabaseSettings
                           databaseType,
                           driverName );
 
-            Class.forName( driverName );
+            return Class.forName( driverName );
         }
         catch ( ClassNotFoundException classError )
         {
@@ -434,24 +435,32 @@ final class DatabaseSettings
 		}
 
         // Load the driver
-        this.loadDriver();
+        Class<?> driver = this.loadDriver();
 
         try ( Connection connection = this.getRawConnection();
               Statement test = connection.createStatement() )
         {
             test.execute("SELECT 1;");
         }
-        catch (SQLException sqlError)
+        catch ( SQLException sqlError )
         {
-            String message = "The database could not be reached for connection verification." + System.lineSeparator() + System.lineSeparator();
+            String message = "The database could not be reached for connection verification. The database driver class "
+                             + "is: "
+                             + driver
+                             + "."
+                             + System.lineSeparator()
+                             + System.lineSeparator();
             message += sqlError.getMessage() + System.lineSeparator() + System.lineSeparator();
             message += "Please ensure that you have:" + System.lineSeparator();
-            message += "1) The correct URL to your database: " + this.getConnectionString( null ) + System.lineSeparator();
+            message +=
+                    "1) The correct URL to your database: " + this.getConnectionString( null ) + System.lineSeparator();
             message += "2) The correct username for your database: " + this.getUsername() + System.lineSeparator();
             message += "3) The correct password for your user in the database" + System.lineSeparator();
-            message += "4) An active connection to a network that may reach the requested database server" + System.lineSeparator() + System.lineSeparator();
+            message += "4) An active connection to a network that may reach the requested database server"
+                       + System.lineSeparator()
+                       + System.lineSeparator();
             message += "The application will now exit.";
-            throw new SQLException(message, sqlError);
+            throw new SQLException( message, sqlError );
         }
     }
 

@@ -298,7 +298,7 @@ project(':wres-system')
 
         // Database drivers need to be on the runtime classpath in order to 
         // acquire connections initially. See #103431
-        implementation 'com.h2database:h2:2.1.210'
+        implementation 'com.h2database:h2:2.1.212'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
         runtimeOnly 'com.mattbertolini:liquibase-slf4j:4.1.0'
@@ -419,7 +419,7 @@ project(':wres-io')
         }
 
         // Use H2 for truly embedded SQL db
-        implementation 'com.h2database:h2:2.1.210'
+        implementation 'com.h2database:h2:2.1.212'
 
         // connection pooling:
         implementation 'com.zaxxer:HikariCP:5.0.1'
