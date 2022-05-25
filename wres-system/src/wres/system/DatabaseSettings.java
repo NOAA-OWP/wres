@@ -45,6 +45,18 @@ final class DatabaseSettings
 	private static final Logger LOGGER =
 			LoggerFactory.getLogger( DatabaseSettings.class );
 
+    static
+    {
+        try
+        {
+            Class.forName( "org.h2.Driver" );
+        }
+        catch ( ClassNotFoundException classError )
+        {
+            LOGGER.error( "Failed to load the H2 database driver", classError );
+        }
+    }
+	
     /** From databaseType to the properties for its DataSource */
     private final Map<DatabaseType, Properties> dataSourceProperties;
 
@@ -436,7 +448,13 @@ final class DatabaseSettings
 
         // Load the driver
         Class<?> driver = this.loadDriver();
-
+        String driverName = "";
+        if( Objects.nonNull( driver ) )
+        {
+            driverName = driver.getName();
+        }
+        
+        
         try ( Connection connection = this.getRawConnection();
               Statement test = connection.createStatement() )
         {
@@ -445,8 +463,8 @@ final class DatabaseSettings
         catch ( SQLException sqlError )
         {
             String message = "The database could not be reached for connection verification. The database driver class "
-                             + "is: "
-                             + driver
+                             + "name is: "
+                             + driverName
                              + "."
                              + System.lineSeparator()
                              + System.lineSeparator();
