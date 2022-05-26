@@ -45,18 +45,24 @@ final class DatabaseSettings
 	private static final Logger LOGGER =
 			LoggerFactory.getLogger( DatabaseSettings.class );
 
+    // Initialize all available driver classes for known databases. Strictly, this should not be necessary for JDBC 4.0+
+    // drivers, which should be loaded automatically. However, #103770 suggests otherwise in some environments or class 
+    // loading contexts.
     static
     {
-        try
+        for ( DatabaseType nextType : DatabaseType.values() )
         {
-            Class.forName( "org.h2.Driver" );
-        }
-        catch ( ClassNotFoundException classError )
-        {
-            LOGGER.error( "Failed to load the H2 database driver", classError );
+            try
+            {
+                Class.forName( nextType.getDriverClassName() );
+            }
+            catch ( ClassNotFoundException classError )
+            {
+                LOGGER.debug( "Failed to load the database driver class {}.", nextType.getDriverClassName() );
+            }
         }
     }
-	
+
     /** From databaseType to the properties for its DataSource */
     private final Map<DatabaseType, Properties> dataSourceProperties;
 
@@ -90,35 +96,6 @@ final class DatabaseSettings
 
     // Get-connection timeout is in milliseconds. Default to default query timeout.
     private int connectionTimeoutMs = queryTimeout * 1000;
-    
-    /**
-     * Loads the database driver for the declared database type.
-     * @return the driver class loaded
-     * @throws SQLException if the driver could not be loaded
-     */
-
-    private Class<?> loadDriver() throws SQLException
-    {
-        DatabaseType type = this.getDatabaseType();
-        String driverName = type.getDataSourceClassName();
-
-        try
-        {
-            LOGGER.debug( "Attempting to load a driver for database type: {}. The driver name is {}.",
-                          databaseType,
-                          driverName );
-
-            return Class.forName( driverName );
-        }
-        catch ( ClassNotFoundException classError )
-        {
-            String message = "The specified database type of '" +
-                             this.getDatabaseType()
-                             +
-                             "' is not valid and a connection could not be created. Shutting down...";
-            throw new SQLException( message, classError );
-        }
-    }
 	
     /** To be called after setting member variables based on wres config */
     private Map<DatabaseType, Properties> createDatasourceProperties()
@@ -382,9 +359,6 @@ final class DatabaseSettings
             script += "    AND datname = '" + this.getDatabaseName() + "'" + NEWLINE;
             script += "GROUP BY PT.pid;";
 
-            // Load the driver
-            this.loadDriver();
-
             try ( Connection connection = this.getRawConnection();
                   Statement clean = connection.createStatement() )
             {
@@ -446,15 +420,6 @@ final class DatabaseSettings
                                    + "') is not accessible." );
 		}
 
-        // Load the driver
-        Class<?> driver = this.loadDriver();
-        String driverName = "";
-        if( Objects.nonNull( driver ) )
-        {
-            driverName = driver.getName();
-        }
-        
-        
         try ( Connection connection = this.getRawConnection();
               Statement test = connection.createStatement() )
         {
@@ -462,19 +427,18 @@ final class DatabaseSettings
         }
         catch ( SQLException sqlError )
         {
-            String message = "The database could not be reached for connection verification. The database driver class "
-                             + "name is: "
-                             + driverName
-                             + "."
+            String message = "The database could not be reached for connection verification: "
                              + System.lineSeparator()
                              + System.lineSeparator();
             message += sqlError.getMessage() + System.lineSeparator() + System.lineSeparator();
             message += "Please ensure that you have:" + System.lineSeparator();
-            message +=
-                    "1) The correct URL to your database: " + this.getConnectionString( null ) + System.lineSeparator();
+            message += "1) The correct URL to your database: " + this.getConnectionString( null )
+                       + System.lineSeparator();
             message += "2) The correct username for your database: " + this.getUsername() + System.lineSeparator();
             message += "3) The correct password for your user in the database" + System.lineSeparator();
             message += "4) An active connection to a network that may reach the requested database server"
+                       + System.lineSeparator();
+            message += "5) The correct database driver class on the application classpath"
                        + System.lineSeparator()
                        + System.lineSeparator();
             message += "The application will now exit.";
@@ -489,9 +453,6 @@ final class DatabaseSettings
 
     Connection getRawConnection() throws SQLException
 	{
-        // Load the driver
-        this.loadDriver();
-
         String connectionString = this.getConnectionString( this.databaseName );
         return DriverManager.getConnection( connectionString,
                                             this.getConnectionProperties() );
