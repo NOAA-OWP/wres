@@ -1,6 +1,7 @@
 package wres.system;
 
 import javax.sql.DataSource;
+import java.sql.Driver;
 
 /** 
  * The type of relational database management system. The {@link DataSource} class names come from: 
@@ -9,22 +10,25 @@ import javax.sql.DataSource;
 public enum DatabaseType
 {
     /** Postgres is supported and recommended. */
-    POSTGRESQL( "org.postgresql.ds.PGSimpleDataSource", true, false, true ),
+    POSTGRESQL( "org.postgresql.ds.PGSimpleDataSource", "org.postgresql.Driver", true, false, true ),
 
     /** H2 has experimental support in in-memory mode and is used in tests. */
-    H2( "org.h2.jdbcx.JdbcDataSource", true, true, true ),
+    H2( "org.h2.jdbcx.JdbcDataSource", "org.h2.Driver", true, true, true ),
 
     /** Code changes and testing are needed to support MySQL. Uses the same {@link DataSource} as {@link #MARIADB}. */
-    MYSQL( "org.mariadb.jdbc.MariaDbDataSource", true, true, false ),
+    MYSQL( "org.mariadb.jdbc.MariaDbDataSource", "org.mariadb.jdbc.Driver", true, true, false ),
 
     /** Code changes and testing are needed to support MariaDB. */
-    MARIADB( "org.mariadb.jdbc.MariaDbDataSource", true, true, false ),
+    MARIADB( "org.mariadb.jdbc.MariaDbDataSource", "org.mariadb.jdbc.Driver", true, true, false ),
 
     /** Code changes and testing are needed to support SQLite. */
-    SQLITE( "org.sqlite.SQLiteDataSource", true, false, false );
+    SQLITE( "org.sqlite.SQLiteDataSource", "org.sqlite.JDBC", true, false, false );
 
     /** The fully qualified data source class name, to be discovered on the class path. **/
     private final String dataSourceClassName;
+
+    /** The fully qualified driver class name, to be discovered on the class path. **/
+    private final String driverClassName;
 
     /** Is {@code true} if the database supports a {@code LIMIT} clause, {@code false} otherwise. */
     private final boolean hasLimit;
@@ -50,6 +54,14 @@ public enum DatabaseType
     public String getDataSourceClassName()
     {
         return this.dataSourceClassName;
+    }
+
+    /**
+     * @return the fully qualified name of the database {@link Driver}.
+     */
+    public String getDriverClassName()
+    {
+        return this.driverClassName;
     }
 
     /**
@@ -97,15 +109,21 @@ public enum DatabaseType
     /**
      * Hidden constructor.
      * 
-     * @param driverName the fully qualified driver class name, to be discovered on the class path
+     * @param dataSourceClassName the fully qualified data source class name, to be discovered on the class path
+     * @param driverClassName the fully qualified driver name, to be discovered on the class path
      * @param hasLimit is {@code true} if the database supports a {@code LIMIT} clause, {@code false} otherwise
      * @param hasUser is {@code true} if the database supports a user function, {@code false} otherwise
      * @param hasAnalyze is {@code true} if the database supports an analyze step, {@code false} otherwise
      */
 
-    private DatabaseType( String driverName, boolean hasLimit, boolean hasUser, boolean hasAnalyze )
+    private DatabaseType( String dataSourceClassName,
+                          String driverClassName,
+                          boolean hasLimit,
+                          boolean hasUser,
+                          boolean hasAnalyze )
     {
-        this.dataSourceClassName = driverName;
+        this.dataSourceClassName = dataSourceClassName;
+        this.driverClassName = driverClassName;
         this.hasLimit = hasLimit;
         this.hasUser = hasUser;
         this.hasAnalyze = hasAnalyze;
