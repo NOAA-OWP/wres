@@ -277,69 +277,80 @@ final class DatabaseSettings
             testConnection();
 
             // TODO: move liquibase migration out of initialization.
-
-            // Stop-gap measure between always-migrate and never-migrate.
-            boolean migrate = this.attemptToMigrate;
-            String attemptToMigrateSetting = System.getProperty( "wres.attemptToMigrate" );
-
-            if ( attemptToMigrateSetting != null
-                 && !attemptToMigrateSetting.isBlank() )
-            {
-                if ( attemptToMigrateSetting.equalsIgnoreCase( "true" ) )
-                {
-                    migrate = true;
-                }
-                else if ( attemptToMigrateSetting.equalsIgnoreCase( "false" ) )
-                {
-                    migrate = false;
-                }
-                else
-                {
-                    LOGGER.warn( "Value for wres.attemptToMigrate must be 'true' or 'false', not '{}'",
-                                 attemptToMigrateSetting );
-                }
-            }
-
-            if ( migrate )
-            {
-                LOGGER.info( "Beginning database migration. This takes time." );
-                DatabaseLockManager lockManager;
-
-                if ( this.getDatabaseType() == DatabaseType.POSTGRESQL )
-                {
-                    ConnectionSupplier connectionSupplier = new ConnectionSupplier();
-                    lockManager = new DatabaseLockManagerPostgres( connectionSupplier );
-                }
-                else if ( this.getDatabaseType() == DatabaseType.H2 )
-                {
-                    lockManager = new DatabaseLockManagerNoop();
-                }
-                else
-                {
-                    throw new UnsupportedOperationException( "Only postgresql and h2 are currently supported" );
-                }
-
-                try ( DatabaseSchema schema = new DatabaseSchema( this.getDatabaseName(),
-                                                                  lockManager );
-                      Connection connection = this.getRawConnection(); )
-                {
-                    schema.applySchema( connection );
-                }
-                finally
-                {
-                    lockManager.shutdown();
-                }
-
-                cleanPriorRuns();
-                LOGGER.info( "Finished database migration." );
-            }
+            this.migrateAndClean();
         }
 		catch ( XMLStreamException | SQLException | IOException e )
 		{
 			throw new ExceptionInInitializerError( e );
 		}
-	}
+    }
 
+    /**
+     * Attempts to migrate the database, respecting any system property override {@code wres.attemptToMigrate} when 
+     * defined.
+     * @throws IOException if the migration fails
+     * @throws SQLException if cleaning fails after migration
+     */
+
+    private void migrateAndClean() throws SQLException, IOException
+    {
+        // Stop-gap measure between always-migrate and never-migrate.
+        boolean migrate = this.attemptToMigrate;
+        String attemptToMigrateSetting = System.getProperty( "wres.attemptToMigrate" );
+
+        if ( attemptToMigrateSetting != null
+             && !attemptToMigrateSetting.isBlank() )
+        {
+            if ( attemptToMigrateSetting.equalsIgnoreCase( "true" ) )
+            {
+                migrate = true;
+            }
+            else if ( attemptToMigrateSetting.equalsIgnoreCase( "false" ) )
+            {
+                migrate = false;
+            }
+            else
+            {
+                LOGGER.warn( "Value for wres.attemptToMigrate must be 'true' or 'false', not '{}'",
+                             attemptToMigrateSetting );
+            }
+        }
+
+        if ( migrate )
+        {
+            LOGGER.info( "Beginning database migration. This takes time." );
+            DatabaseLockManager lockManager;
+
+            if ( this.getDatabaseType() == DatabaseType.POSTGRESQL )
+            {
+                ConnectionSupplier connectionSupplier = new ConnectionSupplier();
+                lockManager = new DatabaseLockManagerPostgres( connectionSupplier );
+            }
+            else if ( this.getDatabaseType() == DatabaseType.H2 )
+            {
+                lockManager = new DatabaseLockManagerNoop();
+            }
+            else
+            {
+                throw new UnsupportedOperationException( "Only postgresql and h2 are currently supported" );
+            }
+
+            try ( DatabaseSchema schema = new DatabaseSchema( this.getDatabaseName(),
+                                                              lockManager );
+                  Connection connection = this.getRawConnection(); )
+            {
+                schema.applySchema( connection );
+            }
+            finally
+            {
+                lockManager.shutdown();
+            }
+
+            cleanPriorRuns();
+            LOGGER.info( "Finished database migration." );
+        }
+    }
+	
 	private void cleanPriorRuns() throws SQLException
 	{
         if ( this.getDatabaseType() == DatabaseType.POSTGRESQL )
