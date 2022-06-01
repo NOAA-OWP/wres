@@ -38,6 +38,7 @@ import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Outputs.PngFormat;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.Statistics;
+import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
@@ -184,7 +185,7 @@ class GraphicsClientTest
     {
         wres.datamodel.scale.TimeScaleOuter timeScale =
                 wres.datamodel.scale.TimeScaleOuter.of( java.time.Duration.ofHours( 1 ),
-                                                        wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction.MEAN );
+                                                        TimeScaleFunction.MEAN );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( wres.datamodel.thresholds.ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),

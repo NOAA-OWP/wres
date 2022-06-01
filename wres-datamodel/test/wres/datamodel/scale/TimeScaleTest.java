@@ -18,7 +18,7 @@ import org.junit.Test;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.TimeScaleConfig;
 
-import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
+import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 /**
  * Tests the {@link TimeScaleOuter}.
@@ -316,9 +316,9 @@ public final class TimeScaleTest
                           + "time scale. Instead found ["
                           + TimeScaleFunction.MEAN
                           + ", "
-                          + TimeScaleFunction.MAXIMUM
-                          + ", "
                           + TimeScaleFunction.TOTAL
+                          + ", "
+                          + TimeScaleFunction.MAXIMUM
                           + "].";
 
         assertEquals( expected, actual.getMessage() );

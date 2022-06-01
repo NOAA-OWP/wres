@@ -77,6 +77,7 @@ import wres.statistics.generated.Outputs.PngFormat;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.Statistics;
+import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
 import wres.statistics.generated.BoxplotMetric;
@@ -711,7 +712,7 @@ class MessageFactoryTest
     {
         wres.datamodel.scale.TimeScaleOuter timeScale =
                 wres.datamodel.scale.TimeScaleOuter.of( java.time.Duration.ofHours( 1 ),
-                                                        wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction.MEAN );
+                                                        TimeScaleFunction.MEAN );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( wres.datamodel.thresholds.ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
@@ -782,7 +783,7 @@ class MessageFactoryTest
     {
         wres.datamodel.scale.TimeScaleOuter timeScale =
                 wres.datamodel.scale.TimeScaleOuter.of( java.time.Duration.ofHours( 1 ),
-                                                        wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction.MEAN );
+                                                        TimeScaleFunction.MEAN );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( wres.datamodel.thresholds.ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),
@@ -864,7 +865,7 @@ class MessageFactoryTest
     {
         wres.datamodel.scale.TimeScaleOuter timeScale =
                 wres.datamodel.scale.TimeScaleOuter.of( java.time.Duration.ofHours( 1 ),
-                                                        wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction.MEAN );
+                                                        TimeScaleFunction.MEAN );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( wres.datamodel.thresholds.ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),

@@ -1386,30 +1386,6 @@ public class Validation
         result = Validation.areUnitAliasDeclarationsValid( projectConfigPlus,
                                                            pairConfig );
 
-        TimeScaleConfig aggregationConfig =
-                pairConfig.getDesiredTimeScale();
-
-        if ( aggregationConfig != null
-             && TimeScaleOuter.of( aggregationConfig ).isInstantaneous() )
-        {
-            if ( LOGGER.isWarnEnabled() )
-            {
-                String msg = FILE_LINE_COLUMN_BOILERPLATE
-                             + " In the pair declaration, the aggregation "
-                             + "duration provided for pairing is prescriptive "
-                             + "so it cannot be 'instant' it needs to be "
-                             + "one of the other time units such as 'hour'.";
-
-                LOGGER.warn( msg,
-                             projectConfigPlus.getOrigin(),
-                             aggregationConfig.sourceLocation().getLineNumber(),
-                             aggregationConfig.sourceLocation()
-                                              .getColumnNumber() );
-            }
-
-            result = false;
-        }
-
         result = result && Validation.areFeaturesValidInSingletonContext( pairConfig.getFeature() );
 
         result = result && Validation.areFeatureGroupsValid( projectConfigPlus, pairConfig );
@@ -2151,68 +2127,454 @@ public class Validation
         return result;
     }
 
+    /**
+     * @param projectConfigPlus the project declaration
+     * @param pairConfig the pair declaration
+     * @return true if the {@code desiredTimeScale} is valid, false otherwise
+     */
+    
     private static boolean isDesiredTimeScaleValid( ProjectConfigPlus projectConfigPlus,
                                                     PairConfig pairConfig )
     {
-        DesiredTimeScaleConfig aggregationConfig = pairConfig.getDesiredTimeScale();
+        DesiredTimeScaleConfig timeScaleConfig = pairConfig.getDesiredTimeScale();
 
         // No declaration, must be valid
-        if ( aggregationConfig == null )
+        if ( Objects.isNull( timeScaleConfig ) )
         {
             return true;
         }
 
-        boolean valid = true;
+        // Check that the expected elements are complete
+        boolean valid = Validation.isDesiredTimeScaleComplete( projectConfigPlus, pairConfig );
 
-        StringBuilder warning = new StringBuilder();
+        // Check that the period is valid
+        valid = Validation.isNonNullPeriodOfDesiredTimeScaleGreaterThanZero( projectConfigPlus, pairConfig ) && valid;
 
-        // Non-null frequency must be >= 1
-        if ( aggregationConfig.getFrequency() != null && aggregationConfig.getFrequency() < 0 )
-        {
-            valid = false;
+        // Check that the time units are present when required
+        valid = Validation.isDesiredTimeScaleUnitPresentWhenRequired( projectConfigPlus, pairConfig ) && valid;
 
-            if ( warning.length() > 0 )
-            {
-                warning.append( System.lineSeparator() );
-            }
+        // Check that the frequency is valid
+        valid = Validation.isNonNullFrequencyOfDesiredTimeScaleGreaterThanZero( projectConfigPlus, pairConfig )
+                && valid;
 
-            warning.append( "A time aggregation frequency of " +
-                            aggregationConfig.getFrequency()
-                            +
-                            " is not valid; it must be at least 1 in order to "
-                            +
-                            "move on to the next window." );
-        }
+        // Check that the time scale is non-instantaneous
+        valid = Validation.isDesiredTimeScaleNonInstantaneous( projectConfigPlus, pairConfig ) && valid;
 
-        if ( aggregationConfig.getPeriod() < 1 )
-        {
-            valid = false;
+        // Check that the function is valid
+        valid = Validation.isDesiredTimeScaleFunctionValid( projectConfigPlus, pairConfig ) && valid;
 
-            if ( warning.length() > 0 )
-            {
-                warning.append( System.lineSeparator() );
-            }
-
-            warning.append( "The period of a window for time aggregation " +
-                            "must be at least 1." );
-        }
-
-        // TODO: validate time units
-
-        if ( !valid && LOGGER.isWarnEnabled() )
-        {
-            LOGGER.warn( warning.toString() );
-        }
-
-        // Check that the time aggregation function is valid
-        valid = isDesiredTimeScaleFunctionValid( projectConfigPlus, pairConfig ) && valid;
-
-        // Check that the time aggregation period is valid 
-        valid = isDesiredTimeScalePeriodValid( projectConfigPlus, pairConfig ) && valid;
+        // Check that the period is valid 
+        valid = Validation.isDesiredTimeScalePeriodValid( projectConfigPlus, pairConfig ) && valid;
+        
+        // Check that the monthdays are valid
+        valid = Validation.areDesiredTimeScaleMonthDaysValid( projectConfigPlus, pairConfig ) && valid;
 
         return valid;
     }
+    
+    /**
+     * @param projectConfigPlus the project declaration
+     * @param pairConfig the pair declaration
+     * @return true if the {@code desiredTimeScale} has all expected elements, false otherwise
+     */
 
+    private static boolean isDesiredTimeScaleComplete( ProjectConfigPlus projectConfigPlus,
+                                                       PairConfig pairConfig )
+    {
+        DesiredTimeScaleConfig timeScaleConfig = pairConfig.getDesiredTimeScale();
+
+        if ( Objects.isNull( timeScaleConfig ) )
+        {
+            return true;
+        }
+
+        boolean result = true;
+
+        boolean earliestMonthPresent = Objects.nonNull( timeScaleConfig.getEarliestMonth() );
+        boolean earliestDayPresent = Objects.nonNull( timeScaleConfig.getEarliestDay() );
+        boolean latestMonthPresent = Objects.nonNull( timeScaleConfig.getLatestMonth() );
+        boolean latestDayPresent = Objects.nonNull( timeScaleConfig.getLatestDay() );
+
+        // Both elements of a monthday must have the same state
+        if ( earliestMonthPresent != earliestDayPresent )
+        {
+            result = false;
+
+            if ( LOGGER.isWarnEnabled() )
+            {
+                String msg = FILE_LINE_COLUMN_BOILERPLATE
+                             + " In the pair declaration, the desired time scale was incorrectly specified. When "
+                             + "declaring an earliest monthday, both the month and the day must be present.";
+
+                LOGGER.warn( msg,
+                             projectConfigPlus.getOrigin(),
+                             timeScaleConfig.sourceLocation().getLineNumber(),
+                             timeScaleConfig.sourceLocation()
+                                            .getColumnNumber() );
+            }
+        }
+        
+        if ( latestMonthPresent != latestDayPresent )
+        {
+            result = false;
+
+            if ( LOGGER.isWarnEnabled() )
+            {
+                String msg = FILE_LINE_COLUMN_BOILERPLATE
+                             + " In the pair declaration, the desired time scale was incorrectly specified. When "
+                             + "declaring a latest monthday, both the month and the day must be present.";
+
+                LOGGER.warn( msg,
+                             projectConfigPlus.getOrigin(),
+                             timeScaleConfig.sourceLocation().getLineNumber(),
+                             timeScaleConfig.sourceLocation()
+                                            .getColumnNumber() );
+            }
+        }
+        
+        // Period required, unless both monthdays are present
+        if ( Objects.isNull( timeScaleConfig.getPeriod() )
+             && ( !earliestMonthPresent || earliestDayPresent || latestMonthPresent || latestDayPresent ) )
+        {
+            result = false;
+
+            if ( LOGGER.isWarnEnabled() )
+            {
+                String msg = FILE_LINE_COLUMN_BOILERPLATE
+                             + " In the pair declaration, the desired time scale was incomplete. Either declare a "
+                             + "period and associated unit or declare an earliest and latest monthday.";
+
+                LOGGER.warn( msg,
+                             projectConfigPlus.getOrigin(),
+                             timeScaleConfig.sourceLocation().getLineNumber(),
+                             timeScaleConfig.sourceLocation()
+                                            .getColumnNumber() );
+            }
+        }
+
+        // Period cannot be present when both monthdays are present
+        if ( Objects.nonNull( timeScaleConfig.getPeriod() ) && earliestMonthPresent
+             && earliestDayPresent
+             && latestMonthPresent
+             && latestDayPresent )
+        {
+            result = false;
+
+            if ( LOGGER.isWarnEnabled() )
+            {
+                String msg = FILE_LINE_COLUMN_BOILERPLATE
+                             + " In the pair declaration, the desired time scale was incorrectly specified. Either "
+                             + "include a period and associated unit or declare an earliest and latest monthday, but "
+                             + "do not declare both.";
+
+                LOGGER.warn( msg,
+                             projectConfigPlus.getOrigin(),
+                             timeScaleConfig.sourceLocation().getLineNumber(),
+                             timeScaleConfig.sourceLocation()
+                                            .getColumnNumber() );
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * @param projectConfigPlus the project declaration
+     * @param pairConfig the pair declaration
+     * @return true if the {@code desiredTimeScale} is valid, false otherwise
+     */
+
+    private static boolean isDesiredTimeScaleNonInstantaneous( ProjectConfigPlus projectConfigPlus,
+                                                               PairConfig pairConfig )
+    {
+        DesiredTimeScaleConfig timeScaleConfig = pairConfig.getDesiredTimeScale();
+
+        if ( Objects.isNull( timeScaleConfig ) )
+        {
+            return true;
+        }
+
+        boolean result = true;
+
+        String msg = FILE_LINE_COLUMN_BOILERPLATE
+                     + " In the pair declaration, the desired time scale is prescriptive so it cannot be an "
+                     + "'instant', it needs to be larger, such as 'one hour'.";
+
+        // Check for an explicit period
+        if ( Objects.nonNull( timeScaleConfig.getPeriod() ) && Objects.nonNull( timeScaleConfig.getUnit() ) )
+        {
+            Duration period = ProjectConfigs.getDurationFromTimeScale( timeScaleConfig );
+
+            if ( TimeScaleOuter.INSTANTANEOUS_DURATION.compareTo( period ) >= 0 )
+            {
+                result = false;
+
+                if ( LOGGER.isWarnEnabled() )
+                {
+                    LOGGER.warn( msg,
+                                 projectConfigPlus.getOrigin(),
+                                 timeScaleConfig.sourceLocation().getLineNumber(),
+                                 timeScaleConfig.sourceLocation()
+                                                .getColumnNumber() );
+                }
+            }
+        }
+        
+        boolean earliestMonthPresent = Objects.nonNull( timeScaleConfig.getEarliestMonth() );
+        boolean earliestDayPresent = Objects.nonNull( timeScaleConfig.getEarliestDay() );
+        boolean latestMonthPresent = Objects.nonNull( timeScaleConfig.getLatestMonth() );
+        boolean latestDayPresent = Objects.nonNull( timeScaleConfig.getLatestDay() );
+
+        if ( earliestMonthPresent && latestMonthPresent
+             && earliestDayPresent
+             && latestDayPresent
+             && Objects.equals( timeScaleConfig.getEarliestMonth(), timeScaleConfig.getLatestMonth() )
+             && Objects.equals( timeScaleConfig.getEarliestDay(), timeScaleConfig.getLatestDay() ) )
+        {
+            result = false;
+
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( msg,
+                             projectConfigPlus.getOrigin(),
+                             timeScaleConfig.sourceLocation().getLineNumber(),
+                             timeScaleConfig.sourceLocation()
+                                            .getColumnNumber() );
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * @param projectConfigPlus the project declaration
+     * @param pairConfig the pair declaration
+     * @return false if the {@code desiredTimeScale} has a {@code frequency} that is <=0, true otherwise
+     */
+
+    private static boolean isNonNullFrequencyOfDesiredTimeScaleGreaterThanZero( ProjectConfigPlus projectConfigPlus,
+                                                                                PairConfig pairConfig )
+    {
+        DesiredTimeScaleConfig timeScaleConfig = pairConfig.getDesiredTimeScale();
+
+        if ( Objects.isNull( timeScaleConfig ) )
+        {
+            return true;
+        }
+
+        boolean result = true;
+
+        // Non-null frequency must be >= 1
+        if ( timeScaleConfig.getFrequency() != null && timeScaleConfig.getFrequency() < 1 )
+        {
+            result = false;
+
+            if ( LOGGER.isWarnEnabled() )
+            {
+                String msg = FILE_LINE_COLUMN_BOILERPLATE
+                             + " In the pair declaration, the frequency associated with the desired time scale must be "
+                             + "empty or greater than zero.";
+
+                LOGGER.warn( msg,
+                             projectConfigPlus.getOrigin(),
+                             timeScaleConfig.sourceLocation().getLineNumber(),
+                             timeScaleConfig.sourceLocation()
+                                            .getColumnNumber() );
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * @param projectConfigPlus the project declaration
+     * @param pairConfig the pair declaration
+     * @return false if the {@code desiredTimeScale} has a {@code period} that is <=0, true otherwise
+     */
+
+    private static boolean isNonNullPeriodOfDesiredTimeScaleGreaterThanZero( ProjectConfigPlus projectConfigPlus,
+                                                                             PairConfig pairConfig )
+    {
+        DesiredTimeScaleConfig timeScaleConfig = pairConfig.getDesiredTimeScale();
+
+        if ( Objects.isNull( timeScaleConfig ) )
+        {
+            return true;
+        }
+        
+        boolean result = true;
+
+        // Non-null period must be >= 1
+        if ( timeScaleConfig.getPeriod() != null && timeScaleConfig.getPeriod() < 1 )
+        {
+            result = false;
+
+            if ( LOGGER.isWarnEnabled() )
+            {
+                String msg = FILE_LINE_COLUMN_BOILERPLATE
+                             + " In the pair declaration, the period associated with the desired time scale must be "
+                             + "empty or greater than zero.";
+
+                LOGGER.warn( msg,
+                             projectConfigPlus.getOrigin(),
+                             timeScaleConfig.sourceLocation().getLineNumber(),
+                             timeScaleConfig.sourceLocation()
+                                            .getColumnNumber() );
+            }
+        }
+
+        return result;
+    }
+    
+    /**
+     * @param projectConfigPlus the project declaration
+     * @param pairConfig the pair declaration
+     * @return true if the {@code desiredTimeScale} has a {@code unit} present when required, false otherwise
+     */
+    
+    private static boolean isDesiredTimeScaleUnitPresentWhenRequired( ProjectConfigPlus projectConfigPlus,
+                                                                      PairConfig pairConfig )
+    {
+        DesiredTimeScaleConfig timeScaleConfig = pairConfig.getDesiredTimeScale();
+
+        if ( Objects.isNull( timeScaleConfig ) )
+        {
+            return true;
+        }
+
+        boolean result = true;
+
+        // Units expected
+        if ( Objects.isNull( timeScaleConfig.getUnit() ) && ( Objects.nonNull( timeScaleConfig.getPeriod() )
+                                                              || Objects.nonNull( timeScaleConfig.getFrequency() ) ) )
+        {
+            result = false;
+
+            if ( LOGGER.isWarnEnabled() )
+            {
+                String msg = FILE_LINE_COLUMN_BOILERPLATE
+                             + " In the pair declaration, the units associated with the desired time scale must be "
+                             + "declared when either the period or frequency is declared, since they are prescribed in "
+                             + "time units.";
+
+                LOGGER.warn( msg,
+                             projectConfigPlus.getOrigin(),
+                             timeScaleConfig.sourceLocation().getLineNumber(),
+                             timeScaleConfig.sourceLocation()
+                                            .getColumnNumber() );
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * @param projectConfigPlus the project declaration
+     * @param pairConfig the pair declaration
+     * @return true if the {@code desiredTimeScale} has earliest and latest monthdays that are valid, false otherwise
+     */
+
+    private static boolean areDesiredTimeScaleMonthDaysValid( ProjectConfigPlus projectConfigPlus,
+                                                              PairConfig pairConfig )
+    {
+        DesiredTimeScaleConfig timeScaleConfig = pairConfig.getDesiredTimeScale();
+
+        if ( Objects.isNull( timeScaleConfig ) )
+        {
+            return true;
+        }
+
+        boolean result = true;
+
+        boolean earliestMonthPresent = Objects.nonNull( timeScaleConfig.getEarliestMonth() );
+        boolean earliestDayPresent = Objects.nonNull( timeScaleConfig.getEarliestDay() );
+        boolean latestMonthPresent = Objects.nonNull( timeScaleConfig.getLatestMonth() );
+        boolean latestDayPresent = Objects.nonNull( timeScaleConfig.getLatestDay() );
+
+        // Check the earliest monthday
+        // Another validation asserts pairs whose values are both present or absent
+        MonthDay earliestMonthDay = null;
+        if ( earliestMonthPresent && earliestDayPresent )
+        {
+            try
+            {
+                earliestMonthDay = MonthDay.of( timeScaleConfig.getEarliestMonth(), timeScaleConfig.getEarliestDay() );
+                
+                LOGGER.debug( "Discovered an earliest monthday of {}.", earliestMonthDay );
+            }
+            catch ( DateTimeException e )
+            {
+                result = false;
+
+                if ( LOGGER.isWarnEnabled() )
+                {
+                    String msg = FILE_LINE_COLUMN_BOILERPLATE
+                                 + " In the pair declaration, discovered a desired time scale with an invalid earliest "
+                                 + "month and day: {}.";
+
+                    LOGGER.warn( msg,
+                                 projectConfigPlus.getOrigin(),
+                                 timeScaleConfig.sourceLocation().getLineNumber(),
+                                 timeScaleConfig.sourceLocation()
+                                                .getColumnNumber(),
+                                 e.getMessage() );
+                }
+            }
+        }
+
+        // Check the latest monthday
+        MonthDay latestMonthDay = null;
+        if ( latestMonthPresent && latestDayPresent )
+        {
+            try
+            {
+                latestMonthDay = MonthDay.of( timeScaleConfig.getLatestMonth(), timeScaleConfig.getLatestDay() );
+
+                LOGGER.debug( "Discovered a latest monthday of {}.", latestMonthDay );
+            }
+            catch ( DateTimeException e )
+            {
+                result = false;
+
+                if ( LOGGER.isWarnEnabled() )
+                {
+                    String msg = FILE_LINE_COLUMN_BOILERPLATE
+                                 + " In the pair declaration, discovered a desired time scale with an invalid latest "
+                                 + "month and day: {}.";
+
+                    LOGGER.warn( msg,
+                                 projectConfigPlus.getOrigin(),
+                                 timeScaleConfig.sourceLocation().getLineNumber(),
+                                 timeScaleConfig.sourceLocation()
+                                                .getColumnNumber(),
+                                 e.getMessage() );
+                }
+            }
+        }
+
+        // Latest monthday is after earliest
+        if ( Objects.nonNull( earliestMonthDay ) && Objects.nonNull( latestMonthDay )
+             && !latestMonthDay.isAfter( earliestMonthDay ) )
+        {
+            result = false;
+
+            if ( LOGGER.isWarnEnabled() )
+            {
+                String msg = FILE_LINE_COLUMN_BOILERPLATE
+                             + " In the pair declaration, discovered a desired time scale whose latest month and "
+                             + "day is no later than the earliest month and day, which is not allowed.";
+
+                LOGGER.warn( msg,
+                             projectConfigPlus.getOrigin(),
+                             timeScaleConfig.sourceLocation().getLineNumber(),
+                             timeScaleConfig.sourceLocation()
+                                            .getColumnNumber() );
+            }
+        }
+
+        return result;
+    }
+    
     /**
      * Returns true if the time aggregation function associated with the desiredTimeScale is valid given the time
      * aggregation functions associated with the existingTimeScale for each source.

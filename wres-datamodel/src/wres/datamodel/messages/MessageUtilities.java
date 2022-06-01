@@ -624,14 +624,53 @@ public class MessageUtilities
             return compare;
         }
 
-        compare = Long.compare( first.getPeriod().getSeconds(), second.getPeriod().getSeconds() );
+        // Compare the period if available
+        compare = Boolean.compare( first.hasPeriod(), second.hasPeriod() );
 
         if ( compare != 0 )
         {
             return compare;
         }
 
-        return Integer.compare( first.getPeriod().getNanos(), second.getPeriod().getNanos() );
+        if ( first.hasPeriod() )
+        {
+            compare = Long.compare( first.getPeriod().getSeconds(), second.getPeriod().getSeconds() );
+
+            if ( compare != 0 )
+            {
+                return compare;
+            }
+
+            compare = Integer.compare( first.getPeriod().getNanos(), second.getPeriod().getNanos() );
+
+            if ( compare != 0 )
+            {
+                return compare;
+            }
+        }
+
+        compare = Integer.compare( first.getStartDay(), second.getStartDay() );
+
+        if ( compare != 0 )
+        {
+            return compare;
+        }
+
+        compare = Integer.compare( first.getStartMonth(), second.getStartMonth() );
+
+        if ( compare != 0 )
+        {
+            return compare;
+        }
+
+        compare = Integer.compare( first.getEndDay(), second.getEndDay() );
+
+        if ( compare != 0 )
+        {
+            return compare;
+        }
+
+        return Integer.compare( first.getEndMonth(), second.getEndMonth() );
     }
 
     /**

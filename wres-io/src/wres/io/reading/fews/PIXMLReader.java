@@ -62,6 +62,7 @@ import wres.io.reading.InvalidInputDataException;
 import wres.io.reading.PreIngestException;
 import wres.io.utilities.Database;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 import wres.system.xml.XMLHelper;
@@ -485,7 +486,7 @@ public final class PIXMLReader extends XMLReader
 
         String localName;
 		Duration scalePeriod = null;
-		TimeScaleOuter.TimeScaleFunction scaleFunction = TimeScaleOuter.TimeScaleFunction.UNKNOWN;
+		TimeScaleFunction scaleFunction = TimeScaleFunction.UNKNOWN;
 		Duration timeStep = null;
         LocalDateTime forecastDate = null;
         String locationName = null;

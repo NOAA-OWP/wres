@@ -14,12 +14,12 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.TimeWindow;
+import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 /**
  * Tests the {@link CommaSeparatedUtilities}.

@@ -59,6 +59,7 @@ import wres.io.reading.PreIngestException;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 import wres.util.Strings;
@@ -302,8 +303,7 @@ public class CSVSource extends BasicSource
 
                 if ( timeScaleFunction != null )
                 {
-                    TimeScaleOuter.TimeScaleFunction function =
-                            TimeScaleOuter.TimeScaleFunction.valueOf( timeScaleFunction );
+                    TimeScaleFunction function = TimeScaleFunction.valueOf( timeScaleFunction );
                     timeScale = TimeScaleOuter.of( duration, function );
                 }
                 else

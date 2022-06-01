@@ -3,18 +3,16 @@ package wres.io.data.caching;
 import java.sql.SQLException;
 import java.time.Duration;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.io.data.details.TimeScaleDetails;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
+
+import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 /**
  * Caches TimeScale rows

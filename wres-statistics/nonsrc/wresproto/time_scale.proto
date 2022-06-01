@@ -11,7 +11,11 @@ option java_multiple_files = true;
 message TimeScale
 {
     /*Message that encapsulates the time-scale at which an evaluation was 
-    performed.*/
+    performed. Either an explicit period or a period beginning at a start
+    monthday or a period ending at an end monthday or an implicit period, 
+    composed of a start and end monthday (without an explicit period). 
+    For example, a 1 April through 31 July reservoir volume is described 
+    with a start monthday and an end monthday, respectively.*/
 
     enum TimeScaleFunction
     {
@@ -30,4 +34,16 @@ message TimeScale
     
     google.protobuf.Duration period = 2;
     // Period over which the value is distributed.
+
+    int32 start_month = 3;
+    // The start month associated with a scaled value.
+
+    int32 start_day = 4;
+    // The start day associated with a scaled value.
+
+    int32 end_month = 5;
+    // The end month associated with a scaled value.
+
+    int32 end_day = 6;
+    // The end day associated with a scaled value.
 }

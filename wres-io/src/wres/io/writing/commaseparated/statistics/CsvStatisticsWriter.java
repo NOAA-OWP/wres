@@ -295,9 +295,17 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         joiner = joiner.merge( timeWindowDescription );
 
         // Merge in the time scale description
-        StringJoiner timeScaleDescription = this.getTimeScaleDescription( pool.getTimeScale() );
-        joiner = joiner.merge( timeScaleDescription );
-
+        if( pool.hasTimeScale() )
+        {
+            StringJoiner timeScaleDescription = this.getTimeScaleDescription( pool.getTimeScale() );
+            joiner = joiner.merge( timeScaleDescription );
+        }
+        // Add placeholders
+        else
+        {
+            CsvStatisticsWriter.addEmptyValues( joiner, 2 );
+        }
+        
         // Merge in each threshold
         if ( pool.hasEventThreshold() )
         {

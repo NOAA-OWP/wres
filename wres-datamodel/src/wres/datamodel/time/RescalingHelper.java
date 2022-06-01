@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 import wres.datamodel.messages.EvaluationStatusMessage;
 import wres.datamodel.scale.RescalingException;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
+import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.EvaluationStage;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLevel;
 
@@ -121,10 +121,10 @@ class RescalingHelper
     private static final String SEVEN_MEMBER_MESSAGE = "{}{}{}{}{}";
 
     private static final String THE_LENIENCY_STATUS_WAS = ". The leniency status was: ";
-    
+
     private static final String DESIRED_TIME_SCALE_LENIENT = " Consider setting the option <desiredTimeScale "
-            + "lenient=\"true\"> to ignore missing data or to allow "
-            + "for unequally spaced values.";
+                                                             + "lenient=\"true\"> to ignore missing data or to allow "
+                                                             + "for unequally spaced values.";
 
     /** Default group rescaling status. */
     private static final GroupRescalingStatus DEFAULT_GROUP_RESCALING_STATUS =
