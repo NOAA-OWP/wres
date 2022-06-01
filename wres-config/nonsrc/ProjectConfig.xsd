@@ -812,8 +812,8 @@ A unit of time
 
         <xs:sequence>
             <xs:element name="function" type="timeScaleFunction" default="mean" />
-            <xs:element name="period" type="duration" />
-            <xs:element name="unit" type="durationUnit" />
+            <xs:element name="period" type="duration" minOccurs="0" maxOccurs="1" />
+            <xs:element name="unit" type="durationUnit" minOccurs="0" maxOccurs="1" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
 
@@ -834,21 +834,29 @@ A unit of time
                 or data whose valid times are at irregular intervals. When 
                 lenient = "false" or undefined, rescaling is only performed for
                 intervals that contain regularly spaced events with no missing 
-                data values.
+                data values. Optionally, the desired time scale may represent 
+                a period bounded by an earliest or latest monthday or a pair
+                of monthdays, representing the lower and upper (inclusive) 
+                bookends of the period, such as a 1 April through 31 July 
+                volume. The period cannot be declared when both bookends are
+                present. The times are 0Z and the bookends are inclusive.
             </xs:documentation>
         </xs:annotation>
 
         <xs:complexContent>
             <xs:extension base="timeScale">
                 <xs:sequence>
-                    <xs:element name="frequency" type="duration" minOccurs="0" maxOccurs="1"/>
+                    <xs:element name="frequency" type="duration" minOccurs="0" maxOccurs="1" />
+                    <xs:element name="earliestMonth" type="xs:short" minOccurs="0" maxOccurs="1" />
+                    <xs:element name="earliestDay" type="xs:short" minOccurs="0" maxOccurs="1" />
+                    <xs:element name="latestMonth" type="xs:short" minOccurs="0" maxOccurs="1" />
+                    <xs:element name="latestDay" type="xs:short" minOccurs="0" maxOccurs="1" />
                 </xs:sequence>
                 <xs:attribute name="lenient" type="xs:boolean" default="false" />
             </xs:extension>
         </xs:complexContent>
 
     </xs:complexType>
-
 
     <xs:complexType name="dateCondition">
         <!-- xs:dateTime ends up being yucky XMLGregorianCalendar. Use string, let app deal with it. -->
@@ -936,7 +944,7 @@ A unit of time
             <xs:element name="dates" type="dateCondition" minOccurs="0" />
             <xs:element name="issuedDates" type="dateCondition" minOccurs="0" />
 
-            <!-- Intended for seasonal verification, GMT, valid time: -->
+            <!-- Intended for seasonal verification, 0Z, valid time: -->
             <xs:element name="season" minOccurs="0" maxOccurs="1">
                 <xs:complexType>
                     <xs:all>

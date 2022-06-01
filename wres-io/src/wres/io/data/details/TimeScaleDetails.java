@@ -9,10 +9,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
+
+import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 /**
  * Represents a TimeScale row from the database.

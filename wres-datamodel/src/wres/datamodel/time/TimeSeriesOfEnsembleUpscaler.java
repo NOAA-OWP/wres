@@ -15,7 +15,8 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.MissingValues;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
+
+import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 /**
  * <p>A minimal implementation of a {@link TimeSeriesUpscaler} for a {@link TimeSeries} comprised of {@link Ensemble} 

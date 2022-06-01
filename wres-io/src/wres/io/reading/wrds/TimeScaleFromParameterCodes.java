@@ -8,7 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
+
+import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 /**
  * <p>Helper class that builds a {@link TimeScaleOuter} from a set of {@link ParameterCodes}.

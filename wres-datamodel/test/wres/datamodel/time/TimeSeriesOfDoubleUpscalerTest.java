@@ -21,7 +21,7 @@ import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.RescalingException;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
+import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.TimeSeries.Builder;
 

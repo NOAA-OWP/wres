@@ -1,6 +1,8 @@
 package wres.datamodel.scale;
 
+import java.time.DateTimeException;
 import java.time.Duration;
+import java.time.MonthDay;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Optional;
@@ -14,31 +16,20 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigs;
 import wres.config.generated.TimeScaleConfig;
+import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.messages.MessageUtilities;
 import wres.statistics.generated.TimeScale;
+import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 /**
- * <p>Metadata that describes the time scale associated with each value in a time-series. The time scale is described 
- * by:</p>
+ * <p>Metadata that describes the time scale associated with each value in a time-series. Wraps a canonical 
+ * {@link TimeScale}.
  * 
- * <ol>
- * <li>The period to which the value refers, which is also known as the "support" of the value.</li>
- * <li>The name of the mathematical function whose output corresponds to the value over the prescribed period.</li>
- * </ol>
- * 
- * <p>The period is represented by a {@link Duration}. The function is represented by a {@link TimeScaleFunction}.
- * </p>
- * 
- * <p>Each value in a time-series is associated with a specific datetime. The time scale does not describe the 
- * orientation of the period with respect to that datetime. Similarly, the time scale does not describe whether the 
- * earliest or latest datetime implied by the period was included or excluded in the input to the function from which 
- * the value was produced, only that the period has a specific duration. Both of these attributes are determined by 
- * convention. Additionally, the meaning of "instantaneous" is defined by convention.</p>
- * 
- * <p>As of 20 August 2018, the convention adopted by the wres is that values "end at" the specified datetime. In 
- * other words, the datetime represents the right bookened of the period to which the value refers. The treatment of 
- * the left and right bookends as including or excluding the datetime at which they begin and end, respectively, is 
- * undefined. Finally, the meaning of "instantaneous" is a period that corresponds to a duration of one second, 
- * regardless of the function.</p>
+ * <p>As of 20 August 2018, the convention adopted by the WRES is that time series values "end at" the specified valid 
+ * time. In other words, the datetime represents the right bookened of the time scale to which the value refers. The 
+ * treatment of the left and right bookends as including or excluding the datetime at which they begin and end, 
+ * respectively, is undefined. Finally, the meaning of an "instantaneous" time scale is given by 
+ * {@link #INSTANTANEOUS_DURATION}.</p>
  * 
  * <p>Further information can be found in #44539.</p>
  *
@@ -51,55 +42,13 @@ import wres.statistics.generated.TimeScale;
 
 public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
 {
-    /**
-     * An enumeration of mathematical functions. A time-series value corresponds to the output from a function over 
-     * a prescribed period.
-     */
+    /** Upper bound (inclusive) for an instantaneous duration. */
+    public static final Duration INSTANTANEOUS_DURATION = Duration.ofSeconds( 60 );
 
-    public enum TimeScaleFunction
-    {
-        /**
-         * The time scale function is unknown.
-         */
-
-        UNKNOWN,
-
-        /**
-         * The time scale function is a mean average over the period.
-         */
-
-        MEAN,
-
-        /**
-         * The time scale function is the minimum value recorded within the period.
-         */
-
-        MINIMUM,
-
-        /**
-         * The time scale function is the maximum value recorded within the period.
-         */
-
-        MAXIMUM,
-
-        /**
-         * The time scale function is the accumulated value over the period.
-         */
-
-        TOTAL;
-
-    }
-
-    /**
-     * Logger.
-     */
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeScaleOuter.class );
 
-    /**
-     * The canonical representation of a time scale.
-     */
-
+    /** The canonical representation of a time scale. */
     private final TimeScale timeScale;
 
     /**
@@ -124,7 +73,17 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
 
     public static TimeScaleOuter of( Duration period )
     {
-        return new TimeScaleOuter( period, TimeScaleFunction.UNKNOWN );
+        Objects.requireNonNull( period );
+
+        TimeScale timeScaleInner =
+                TimeScale.newBuilder()
+                         .setPeriod( com.google.protobuf.Duration.newBuilder()
+                                                                 .setSeconds( period.getSeconds() )
+                                                                 .setNanos( period.getNano() ) )
+                         .setFunction( wres.statistics.generated.TimeScale.TimeScaleFunction.UNKNOWN )
+                         .build();
+
+        return new TimeScaleOuter( timeScaleInner );
     }
 
     /**
@@ -151,7 +110,18 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
 
     public static TimeScaleOuter of( Duration period, TimeScaleFunction function )
     {
-        return new TimeScaleOuter( period, function );
+        Objects.requireNonNull( period );
+        Objects.requireNonNull( function );
+
+        TimeScale timeScaleInner =
+                TimeScale.newBuilder()
+                         .setPeriod( com.google.protobuf.Duration.newBuilder()
+                                                                 .setSeconds( period.getSeconds() )
+                                                                 .setNanos( period.getNano() ) )
+                         .setFunction( function )
+                         .build();
+
+        return new TimeScaleOuter( timeScaleInner );
     }
 
     /**
@@ -169,32 +139,57 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
     {
         Objects.requireNonNull( config, "Specify non-null time-series configuration" );
 
-        Duration period = ProjectConfigs.getDurationFromTimeScale( config );
+        TimeScale.Builder timeScaleInner = TimeScale.newBuilder();
 
-        TimeScaleFunction function = null;
+        if ( Objects.nonNull( config.getPeriod() ) )
+        {
+            Duration period = ProjectConfigs.getDurationFromTimeScale( config );
+            com.google.protobuf.Duration canonicalPeriod = MessageFactory.parse( period );
+            timeScaleInner.setPeriod( canonicalPeriod );
+        }
 
         if ( Objects.isNull( config.getFunction() ) )
         {
-            function = TimeScaleFunction.UNKNOWN;
+            timeScaleInner.setFunction( TimeScaleFunction.UNKNOWN );
         }
         else
         {
-            function = TimeScaleFunction.valueOf( config.getFunction().name() );
+            wres.statistics.generated.TimeScale.TimeScaleFunction innerFunction =
+                    wres.statistics.generated.TimeScale.TimeScaleFunction.valueOf( config.getFunction().name() );
+            timeScaleInner.setFunction( innerFunction );
         }
 
-        return new TimeScaleOuter( period, function );
+        return new TimeScaleOuter( timeScaleInner.build() );
     }
 
     /**
-     * Returns the period associated with the time scale
+     * @return true if the period associated with the time scale is defined explicitly using a combination of start and
+     * end month-days, false if an explicit period is defined.
+     */
+
+    public boolean hasPeriod()
+    {
+        return this.timeScale.hasPeriod();
+    }
+
+    /**
+     * Returns the explicit period associated with the time scale or null if an implicit period is defined. An implicit
+     * period is a period separated by two month-days.
      * 
      * @return the period
      */
 
     public Duration getPeriod()
     {
-        return Duration.ofSeconds( this.getTimeScale().getPeriod().getSeconds(),
-                                   this.getTimeScale().getPeriod().getNanos() );
+        Duration period = null;
+
+        if ( this.hasPeriod() )
+        {
+            period = Duration.ofSeconds( this.getTimeScale().getPeriod().getSeconds(),
+                                         this.getTimeScale().getPeriod().getNanos() );
+        }
+
+        return period;
     }
 
     /**
@@ -205,7 +200,8 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
 
     public TimeScaleFunction getFunction()
     {
-        return TimeScaleFunction.valueOf( this.getTimeScale().getFunction().name() );
+        return this.getTimeScale()
+                   .getFunction();
     }
 
     /**
@@ -233,7 +229,7 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
         }
         TimeScaleOuter in = (TimeScaleOuter) o;
 
-        return in.getPeriod().equals( this.getPeriod() ) && in.getFunction() == this.getFunction();
+        return Objects.equals( in.getTimeScale(), this.getTimeScale() );
     }
 
     /**
@@ -275,14 +271,7 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
     {
         Objects.requireNonNull( o );
 
-        int returnMe = this.getPeriod().compareTo( o.getPeriod() );
-
-        if ( returnMe != 0 )
-        {
-            return returnMe;
-        }
-
-        return this.getFunction().compareTo( o.getFunction() );
+        return MessageUtilities.compare( this.timeScale, o.getTimeScale() );
     }
 
     /**
@@ -297,13 +286,51 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
 
     public boolean isInstantaneous()
     {
-        return this.getPeriod().compareTo( Duration.ofSeconds( 60 ) ) <= 0;
+        // Explicit period
+        if ( this.hasPeriod() )
+        {
+            return INSTANTANEOUS_DURATION.compareTo( this.getPeriod() ) >= 0;
+        }
+
+        // An implicit period with equal earliest and latest month-days is not allowed
+        return false;
     }
 
+    /**
+     * @return the start month-day associated with the time scale or null if none is defined
+     */
+
+    public MonthDay getStartMonthDay()
+    {
+        MonthDay startMonthDay = null;
+
+        if ( this.timeScale.getStartDay() != 0 && this.timeScale.getStartMonth() != 0 )
+        {
+            startMonthDay = MonthDay.of( this.timeScale.getStartMonth(), this.timeScale.getStartDay() );
+        }
+
+        return startMonthDay;
+    }
 
     /**
-     * <p>Computes the Least Common Multiple or Least Common Scale (LCS) of the inputs at a time resolution of milliseconds.
-     * The LCS is the integer number of milliseconds that is a common multiple of all of the inputs.
+     * @return the end month-day associated with the time scale or null if none is defined
+     */
+
+    public MonthDay getEndMonthDay()
+    {
+        MonthDay endMonthDay = null;
+
+        if ( this.timeScale.getEndDay() != 0 && this.timeScale.getEndMonth() != 0 )
+        {
+            endMonthDay = MonthDay.of( this.timeScale.getEndMonth(), this.timeScale.getEndDay() );
+        }
+
+        return endMonthDay;
+    }
+
+    /**
+     * <p>Computes the Least Common Multiple or Least Common Scale (LCS) of the inputs at a time resolution of 
+     * milliseconds. The LCS is the integer number of milliseconds that is a common multiple of all of the inputs.
      * 
      * <p>When the input contains an instantaneous time scale (see {@link TimeScaleOuter#isInstantaneous()}), then this
      * method either returns the other time scale present or throws an exception if more than one additional time 
@@ -315,7 +342,7 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
      * @throws RescalingException if the input contains more than one scale function or one function plus a time scale
      *            that represents instantaneous data or if the LCS could not be calculated from the input
      * @throws NullPointerException if the inputs are null
-     * @throws IllegalArgumentException if the input is empty
+     * @throws IllegalArgumentException if the input is empty or if one or more time scales have an implicit period
      */
 
     public static TimeScaleOuter getLeastCommonTimeScale( Set<TimeScaleOuter> timeScales )
@@ -325,6 +352,13 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
         if ( timeScales.isEmpty() )
         {
             throw new IllegalArgumentException( "Cannot compute the Least Common Scale from empty input." );
+        }
+
+        // All time scales must have an explicit period
+        if ( timeScales.stream().anyMatch( next -> !next.hasPeriod() ) )
+        {
+            throw new IllegalArgumentException( "Cannot compute the Least Common Scale from one or more individual "
+                                                + "time scales that do not have an explicit time scale period." );
         }
 
         Set<TimeScaleFunction> functions =
@@ -441,46 +475,87 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
      * @throws NullPointerException if either input is null
      */
 
-    private TimeScaleOuter( Duration period,
-                            TimeScaleFunction function )
-    {
-        Objects.requireNonNull( period, "Specify a non-null period for the time scale." );
-
-        Objects.requireNonNull( function, "Specify a non-null function for the time scale." );
-
-        if ( period.isZero() )
-        {
-            throw new IllegalArgumentException( "Cannot build a time scale with a period of zero." );
-        }
-
-        if ( period.isNegative() )
-        {
-            throw new IllegalArgumentException( "Cannot build a time scale with a negative period." );
-        }
-
-        this.timeScale =
-                TimeScale.newBuilder()
-                         .setPeriod( com.google.protobuf.Duration.newBuilder()
-                                                                 .setSeconds( period.getSeconds() )
-                                                                 .setNanos( period.getNano() ) )
-                         .setFunction( wres.statistics.generated.TimeScale.TimeScaleFunction.valueOf( function.name() ) )
-                         .build();
-    }
-
-    /**
-     * Hidden constructor.
-     * 
-     * @param period the positive period
-     * @param function the function
-     * @throws IllegalArgumentException if the period is zero or negative
-     * @throws NullPointerException if either input is null
-     */
-
     private TimeScaleOuter( TimeScale timeScale )
     {
         Objects.requireNonNull( timeScale, "Specify a non-null time scale." );
 
+        // Validate the time scale
+        if ( timeScale.hasPeriod() )
+        {
+            if ( timeScale.getPeriod().getSeconds() == 0 && timeScale.getPeriod().getNanos() == 0 )
+            {
+                throw new IllegalArgumentException( "Cannot build a time scale with a period of zero." );
+            }
+
+            if ( timeScale.getPeriod().getSeconds() < 0 || timeScale.getPeriod().getNanos() < 0 )
+            {
+                throw new IllegalArgumentException( "Cannot build a time scale with a negative period." );
+            }
+        }
+        // Both the start and end month-days must be present
+        else if ( timeScale.getStartMonth() == 0 || timeScale.getEndMonth() == 0
+                  || timeScale.getStartDay() == 0
+                  || timeScale.getEndDay() == 0 )
+        {
+            throw new IllegalArgumentException( "A time scale must have an explicit period, else an implicit period "
+                                                + "that is fully-defined, which requires both the start and end "
+                                                + "month-days to be present. There was no period and one or more of "
+                                                + "the start and end days or months were missing" );
+        }
+
+        // The monthdays must be valid
+        this.validateMonthDays( timeScale );
+
         this.timeScale = timeScale;
+    }
+
+    /**
+     * Validates the earliest and latest monthdays when available.
+     * @param timeScale the timeScale, not null
+     * @throws IllegalArgumentException if either monthday is invalid
+     */
+    private void validateMonthDays( TimeScale timeScale )
+    {
+        MonthDay earliestMonthDay = null;
+        MonthDay latestMonthDay = null;
+
+        if ( timeScale.getStartMonth() != 0 || timeScale.getStartDay() != 0 )
+        {
+            try
+            {
+                earliestMonthDay = MonthDay.of( timeScale.getStartMonth(), timeScale.getStartDay() );
+                LOGGER.debug( "Encountered an earliest monthday of {}.", earliestMonthDay );
+            }
+            catch ( DateTimeException e )
+            {
+                throw new IllegalArgumentException( "While attempting to set the start month and day associated with "
+                                                    + "the time scale, encountered invalid input.",
+                                                    e );
+            }
+        }
+
+        if ( timeScale.getEndMonth() != 0 || timeScale.getEndDay() != 0 )
+        {
+            try
+            {
+                latestMonthDay = MonthDay.of( timeScale.getEndMonth(), timeScale.getEndDay() );
+                LOGGER.debug( "Encountered a latest monthday of {}.", latestMonthDay );
+            }
+            catch ( DateTimeException e )
+            {
+                throw new IllegalArgumentException( "While attempting to set the end month and day associated with the "
+                                                    + "time scale, encountered invalid input.",
+                                                    e );
+            }
+        }
+
+        if ( Objects.nonNull( earliestMonthDay ) && Objects.nonNull( latestMonthDay )
+             && !latestMonthDay.isAfter( earliestMonthDay ) )
+        {
+            throw new IllegalArgumentException( "When declaring a time scale, the latest month and day must be later "
+                                                + "than the earliest month and day." );
+        }
+
     }
 
 }

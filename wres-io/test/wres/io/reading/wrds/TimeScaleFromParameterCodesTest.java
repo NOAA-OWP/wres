@@ -8,12 +8,13 @@ import java.time.Duration;
 import org.junit.Test;
 
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
+
+import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 /**
  * Tests the {@link TimeScaleFromParameterCodes}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class TimeScaleFromParameterCodesTest
 {

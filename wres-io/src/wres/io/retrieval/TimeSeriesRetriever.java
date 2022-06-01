@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
+
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
@@ -39,10 +39,12 @@ import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 
+import wres.statistics.generated.TimeScale.TimeScaleFunction;
+
 /**
  * Abstract base class for retrieving {@link TimeSeries} from the WRES database.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
@@ -766,7 +768,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         // Function available?
         if ( Objects.nonNull( functionString ) )
         {
-            functionToUse = TimeScaleOuter.TimeScaleFunction.valueOf( functionString.toUpperCase() );
+            functionToUse = TimeScaleFunction.valueOf( functionString.toUpperCase() );
         }
 
         // Otherwise, existing scale to help augment?

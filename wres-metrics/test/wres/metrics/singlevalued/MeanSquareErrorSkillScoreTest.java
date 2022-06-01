@@ -26,7 +26,6 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.pools.pairs.CrossPairs;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.time.Event;
@@ -40,6 +39,7 @@ import wres.datamodel.time.generators.PersistenceGenerator;
 import wres.metrics.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
+import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 /**
  * Tests the {@link MeanSquareErrorSkillScore}.

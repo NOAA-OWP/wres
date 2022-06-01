@@ -10,7 +10,7 @@ import java.util.function.ToDoubleFunction;
 import java.util.stream.Collectors;
 
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
+import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.datamodel.MissingValues;
 
 /**
