@@ -1,5 +1,6 @@
 package wres.io.writing.commaseparated;
 
+import java.time.MonthDay;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -11,7 +12,7 @@ import wres.util.TimeHelper;
 /**
  * Utility class that helps to write Comma Separated Values (CSV).
  *
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public class CommaSeparatedUtilities
 {
@@ -20,7 +21,7 @@ public class CommaSeparatedUtilities
      * Delimiter for the header.
      */
 
-    static final String HEADER_DELIMITER = " ";
+    public static final String HEADER_DELIMITER = " ";
 
     /**
      * Returns a default header from the {@link PoolMetadata} to which additional information may be appended.
@@ -47,32 +48,30 @@ public class CommaSeparatedUtilities
         {
             TimeScaleOuter s = sampleMetadata.getTimeScale();
 
-            if ( s.isInstantaneous() )
-            {
-                timeScale = HEADER_DELIMITER + s.toString();
-            }
-            else
-            {
-                timeScale = HEADER_DELIMITER
-                            + "["
-                            + s.getFunction()
-                            + HEADER_DELIMITER
-                            + "OVER"
-                            + HEADER_DELIMITER
-                            + "PAST"
-                            + HEADER_DELIMITER
-                            + TimeHelper.durationToLongUnits( s.getPeriod(),
-                                                              durationUnits )
-                            + HEADER_DELIMITER
-                            + durationUnits.name()
-                            + "]";
-            }
+            timeScale = timeScale + HEADER_DELIMITER
+                        + CommaSeparatedUtilities.getTimeScaleForHeader( s, durationUnits );
         }
 
-        joiner.add( "EARLIEST ISSUE TIME" )
-              .add( "LATEST ISSUE TIME" )
-              .add( "EARLIEST VALID TIME" )
-              .add( "LATEST VALID TIME" )
+        joiner.add( "EARLIEST"
+                    + HEADER_DELIMITER
+                    + "ISSUE"
+                    + HEADER_DELIMITER
+                    + "TIME" )
+              .add( "LATEST"
+                    + HEADER_DELIMITER
+                    + "ISSUE"
+                    + HEADER_DELIMITER
+                    + "TIME" )
+              .add( "EARLIEST"
+                    + HEADER_DELIMITER
+                    + "VALID"
+                    + HEADER_DELIMITER
+                    + "TIME" )
+              .add( "LATEST"
+                    + HEADER_DELIMITER
+                    + "VALID"
+                    + HEADER_DELIMITER
+                    + "TIME" )
               .add( "EARLIEST" + HEADER_DELIMITER
                     + "LEAD"
                     + HEADER_DELIMITER
@@ -93,6 +92,68 @@ public class CommaSeparatedUtilities
                     + timeScale );
 
         return joiner;
+    }
+
+    /**
+     * Creates a time scale string for a header.
+     * @param timeScaleOuter the time scale
+     * @param timeResolution the time units
+     * @return the time scale string
+     * @throws NullPointerException if the input is null
+     */
+
+    public static String getTimeScaleForHeader( TimeScaleOuter timeScaleOuter, ChronoUnit timeResolution )
+    {
+        Objects.requireNonNull( timeScaleOuter );
+
+        String timeScaleString = "";
+
+        if ( timeScaleOuter.isInstantaneous() )
+        {
+            timeScaleString = timeScaleOuter.toString();
+        }
+        else
+        {
+            StringJoiner innerJoiner = new StringJoiner( HEADER_DELIMITER, "[", "]" );
+
+            // Period present?
+            if ( timeScaleOuter.hasPeriod() )
+            {
+
+                String period = timeScaleOuter.getFunction()
+                                + HEADER_DELIMITER
+                                + "OVER PAST"
+                                + HEADER_DELIMITER
+                                + Long.toString( TimeHelper.durationToLongUnits( timeScaleOuter.getPeriod(),
+                                                                                 timeResolution ) )
+                                + HEADER_DELIMITER
+                                + timeResolution.toString().toUpperCase();
+
+                innerJoiner.add( period );
+            }
+            else
+            {
+                innerJoiner.add( timeScaleOuter.getFunction().toString() );
+            }
+
+            MonthDay startMonthDay = timeScaleOuter.getStartMonthDay();
+
+            if ( Objects.nonNull( startMonthDay ) )
+            {
+                innerJoiner.add( startMonthDay.toString() );
+            }
+
+            MonthDay endMonthDay = timeScaleOuter.getEndMonthDay();
+
+            if ( Objects.nonNull( endMonthDay ) )
+            {
+                innerJoiner.add( endMonthDay.toString() );
+            }
+
+            timeScaleString = innerJoiner.toString();
+        }
+
+        return timeScaleString;
     }
 
 }

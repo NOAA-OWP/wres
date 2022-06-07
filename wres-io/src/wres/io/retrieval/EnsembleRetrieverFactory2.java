@@ -156,8 +156,9 @@ public class EnsembleRetrieverFactory2 implements RetrieverFactory<Double, Ensem
 
     private TimeWindowOuter adjustByTimeScalePeriod( TimeWindowOuter timeWindow )
     {
+        Duration period = TimeScaleOuter.getOrInferPeriodFromTimeScale( this.desiredTimeScale );
         Duration lowerD = timeWindow.getEarliestLeadDuration()
-                .minus( this.desiredTimeScale.getPeriod() );
+                                    .minus( period );
         com.google.protobuf.Duration lower =
                 com.google.protobuf.Duration.newBuilder()
                                             .setSeconds( lowerD.getSeconds() )

@@ -158,8 +158,14 @@ public abstract class PairsWriter<L, R>
 
         StringJoiner joiner = new StringJoiner( "," );
 
-        joiner.add( "FEATURE DESCRIPTION" )
-              .add( "FEATURE GROUP NAME" );
+        joiner.add( "FEATURE"
+                    + CommaSeparatedUtilities.HEADER_DELIMITER
+                    + "DESCRIPTION" )
+              .add( "FEATURE"
+                    + CommaSeparatedUtilities.HEADER_DELIMITER
+                    + "GROUP"
+                    + CommaSeparatedUtilities.HEADER_DELIMITER
+                    + "NAME" );
 
         // Time window?
         if ( pairs.getMetadata().hasTimeWindow() )
@@ -169,33 +175,36 @@ public abstract class PairsWriter<L, R>
         }
 
         // Valid time of pair
-        joiner.add( "VALID TIME OF PAIR" );
+        joiner.add( "VALID"
+                    + CommaSeparatedUtilities.HEADER_DELIMITER
+                    + "TIME"
+                    + CommaSeparatedUtilities.HEADER_DELIMITER
+                    + "OF"
+                    + CommaSeparatedUtilities.HEADER_DELIMITER
+                    + "PAIR" );
 
         // Lead duration
-        String leadDurationString = "LEAD DURATION OF PAIR IN " + this.getTimeResolution().toString().toUpperCase();
+        String leadDurationString = "LEAD" + CommaSeparatedUtilities.HEADER_DELIMITER
+                                    + "DURATION"
+                                    + CommaSeparatedUtilities.HEADER_DELIMITER
+                                    + "OF"
+                                    + CommaSeparatedUtilities.HEADER_DELIMITER
+                                    + "PAIR"
+                                    + CommaSeparatedUtilities.HEADER_DELIMITER
+                                    + "IN"
+                                    + CommaSeparatedUtilities.HEADER_DELIMITER
+                                    + this.getTimeResolution()
+                                          .toString()
+                                          .toUpperCase();
 
         // Time scale for lead duration?
         if ( pairs.getMetadata().hasTimeScale() )
         {
-
-            if ( pairs.getMetadata().getTimeScale().isInstantaneous() )
-            {
-                leadDurationString = leadDurationString
-                                     + " "
-                                     + pairs.getMetadata().getTimeScale().toString();
-            }
-            else
-            {
-                TimeScaleOuter s = pairs.getMetadata().getTimeScale();
-                leadDurationString = leadDurationString + " ["
-                                     + s.getFunction()
-                                     + " OVER PAST "
-                                     + Long.toString( TimeHelper.durationToLongUnits( s.getPeriod(),
-                                                                                      this.getTimeResolution() ) )
-                                     + " "
-                                     + this.getTimeResolution().toString().toUpperCase()
-                                     + "]";
-            }
+            TimeScaleOuter timeScaleOuter = pairs.getMetadata().getTimeScale();
+            leadDurationString =
+                    leadDurationString + CommaSeparatedUtilities.HEADER_DELIMITER
+                                 + CommaSeparatedUtilities.getTimeScaleForHeader( timeScaleOuter,
+                                                                                  this.getTimeResolution() );
         }
 
         joiner.add( leadDurationString );

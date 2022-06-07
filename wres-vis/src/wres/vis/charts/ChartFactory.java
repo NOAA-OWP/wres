@@ -17,6 +17,7 @@ import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.MonthDay;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Collectors;
@@ -57,6 +59,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.OutputTypeSelection;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.Slicer;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.MetricDimension;
@@ -1461,14 +1464,40 @@ public class ChartFactory
             }
             else
             {
-                String period =
-                        Long.toString( GraphicsUtils.durationToLongUnits( metadata.getTimeScale()
-                                                                                  .getPeriod(),
-                                                                          durationUnits ) )
-                                + " "
-                                + durationUnits.name().toUpperCase();
+                StringJoiner joiner = new StringJoiner( ", ", "[", "]" );
 
-                timeScale = "[" + period + ", " + metadata.getTimeScale().getFunction() + "]";
+                TimeScaleOuter timeScaleOuter = metadata.getTimeScale();
+
+                if ( timeScaleOuter.hasPeriod() )
+                {
+
+                    String period =
+                            Long.toString( GraphicsUtils.durationToLongUnits( metadata.getTimeScale()
+                                                                                      .getPeriod(),
+                                                                              durationUnits ) )
+                                    + " "
+                                    + durationUnits.name().toUpperCase();
+
+                    joiner.add( period );
+                }
+
+                joiner.add( timeScaleOuter.getFunction().toString() );
+
+                MonthDay startMonthDay = timeScaleOuter.getStartMonthDay();
+
+                if ( Objects.nonNull( startMonthDay ) )
+                {
+                    joiner.add( startMonthDay.toString() );
+                }
+
+                MonthDay endMonthDay = timeScaleOuter.getEndMonthDay();
+
+                if ( Objects.nonNull( endMonthDay ) )
+                {
+                    joiner.add( endMonthDay.toString() );
+                }
+
+                timeScale = joiner.toString();
             }
         }
 

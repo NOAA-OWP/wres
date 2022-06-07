@@ -13,7 +13,7 @@ import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 /**
  * <p>Helper class that builds a {@link TimeScaleOuter} from a set of {@link ParameterCodes}.
- * A {@link TimeScaleOuter} comprises a {@link TimeScaleOuter#getPeriod()} and a 
+ * In the simplest case, a {@link TimeScaleOuter} comprises a {@link TimeScaleOuter#getPeriod()} and a 
  * {@link TimeScaleOuter#getFunction()}. The main hint is the 
  * {@link ParameterCodes#getDuration()}, which describes the <code>period</code> 
  * over which the value applies. The <code>function</code> depends on the 
@@ -21,7 +21,7 @@ import wres.statistics.generated.TimeScale.TimeScaleFunction;
  * 
  * TODO: implement this class more fully, accounting for other types of {@link ParameterCodes#getPhysicalElement()}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class TimeScaleFromParameterCodes

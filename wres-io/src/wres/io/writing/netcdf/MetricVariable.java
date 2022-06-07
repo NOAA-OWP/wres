@@ -15,6 +15,10 @@ import wres.util.TimeHelper;
 class MetricVariable
 {
 
+    private static final String UNDEFINED = "UNDEFINED";
+
+    private static final String UNKNOWN = "UNKNOWN";
+
     private static final String NONE = "NONE";
 
     private final ChronoUnit durationUnits;
@@ -39,6 +43,9 @@ class MetricVariable
 
     private final String timeScalePeriod;
     private final String timeScaleFunction;
+
+    private final String timeScaleStartMonthDay;
+    private final String timeScaleEndMonthDay;
 
     private final OneOrTwoThresholds thresholds;
 
@@ -214,19 +221,92 @@ class MetricVariable
 
         // Add the time scale information if available
         TimeScaleOuter localScale = builder.desiredTimeScale;
-        if ( Objects.nonNull( localScale ) )
+
+        this.timeScalePeriod = this.getTimeScalePeriod( localScale );
+        this.timeScaleFunction = this.getTimeScaleFunction( localScale );
+        this.timeScaleStartMonthDay = this.getTimeScaleStartMonthDay( localScale );
+        this.timeScaleEndMonthDay = this.getTimeScaleEndMonthDay( localScale );
+    }
+
+    /**
+     * @param timeScale the time scale
+     * @return the time scale period
+     */
+    private String getTimeScalePeriod( TimeScaleOuter timeScale )
+    {
+        if ( Objects.nonNull( timeScale ) )
         {
-            // Use the default duration units
-            this.timeScalePeriod = Long.toString( TimeHelper.durationToLongUnits( localScale.getPeriod(),
-                                                                                  this.getDurationUnits() ) );
-            // Use the enum name()
-            this.timeScaleFunction = localScale.getFunction().name();
+            if ( timeScale.hasPeriod() )
+            {
+                // Use the default duration units
+                return Long.toString( TimeHelper.durationToLongUnits( timeScale.getPeriod(),
+                                                                      this.getDurationUnits() ) );
+            }
+            else
+            {
+                return UNDEFINED;
+            }
         }
-        else
+
+        return UNKNOWN;
+    }
+
+    /**
+     * @param timeScale the time scale
+     * @return the time scale function
+     */
+    private String getTimeScaleFunction( TimeScaleOuter timeScale )
+    {
+        if ( Objects.nonNull( timeScale ) )
         {
-            this.timeScalePeriod = "UNKNOWN";
-            this.timeScaleFunction = "UNKNOWN";
+            return timeScale.getFunction().name();
         }
+
+        return UNKNOWN;
+    }
+
+    /**
+     * @param timeScale the time scale
+     * @return the time scale start month-day
+     */
+    private String getTimeScaleStartMonthDay( TimeScaleOuter timeScale )
+    {
+        if ( Objects.nonNull( timeScale ) )
+        {
+            if ( Objects.nonNull( timeScale.getStartMonthDay() ) )
+            {
+                return timeScale.getStartMonthDay()
+                                .toString();
+            }
+            else
+            {
+                return UNDEFINED;
+            }
+        }
+
+        return UNKNOWN;
+    }
+
+    /**
+     * @param timeScale the time scale
+     * @return the time scale end month-day
+     */
+    private String getTimeScaleEndMonthDay( TimeScaleOuter timeScale )
+    {
+        if ( Objects.nonNull( timeScale ) )
+        {
+            if ( Objects.nonNull( timeScale.getEndMonthDay() ) )
+            {
+                return timeScale.getEndMonthDay()
+                                .toString();
+            }
+            else
+            {
+                return UNDEFINED;
+            }
+        }
+
+        return UNKNOWN;
     }
 
     public String getName()
@@ -261,6 +341,9 @@ class MetricVariable
         attributes.put( "time_scale_period_" + this.getDurationUnits().name().toLowerCase(),
                         this.timeScalePeriod );
         attributes.put( "time_scale_function", this.timeScaleFunction );
+        attributes.put( "time_scale_start_month_day", this.timeScaleStartMonthDay );
+        attributes.put( "time_scale_end_month_day", this.timeScaleEndMonthDay );
+
         attributes.put( "ensemble_average_type", this.ensembleAverageType.name() );
 
         return attributes;

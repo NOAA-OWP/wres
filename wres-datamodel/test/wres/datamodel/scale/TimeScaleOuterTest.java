@@ -1,10 +1,10 @@
 package wres.datamodel.scale;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -12,20 +12,19 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import wres.config.generated.DurationUnit;
 import wres.config.generated.TimeScaleConfig;
-
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 /**
  * Tests the {@link TimeScaleOuter}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
-public final class TimeScaleTest
+final class TimeScaleOuterTest
 {
 
     /**
@@ -34,8 +33,8 @@ public final class TimeScaleTest
 
     private TimeScaleOuter timeScale;
 
-    @Before
-    public void setupBeforeEachTest()
+    @BeforeEach
+    void setupBeforeEachTest()
     {
         this.timeScale = TimeScaleOuter.of( Duration.ofDays( 1 ), TimeScaleFunction.MEAN );
     }
@@ -45,7 +44,7 @@ public final class TimeScaleTest
      */
 
     @Test
-    public void testGetPeriodReturnsExpectedPeriod()
+    void testGetPeriodReturnsExpectedPeriod()
     {
         assertEquals( this.timeScale.getPeriod(), Duration.ofDays( 1 ) );
     }
@@ -55,7 +54,7 @@ public final class TimeScaleTest
      */
 
     @Test
-    public void testGetFunctionReturnsExpectedFunction()
+    void testGetFunctionReturnsExpectedFunction()
     {
         assertEquals( TimeScaleFunction.MEAN, this.timeScale.getFunction() );
 
@@ -67,7 +66,7 @@ public final class TimeScaleTest
      */
 
     @Test
-    public void testConstructionProducesExpectedTimeScale()
+    void testConstructionProducesExpectedTimeScale()
     {
         assertEquals( TimeScaleOuter.of(), TimeScaleOuter.of( Duration.ofMillis( 1 ), TimeScaleFunction.UNKNOWN ) );
     }
@@ -77,7 +76,7 @@ public final class TimeScaleTest
      */
 
     @Test
-    public void testConstructionWithConfigProducesExpectedTimeScale()
+    void testConstructionWithConfigProducesExpectedTimeScale()
     {
         TimeScaleConfig first =
                 new TimeScaleConfig( wres.config.generated.TimeScaleFunction.MEAN, 1, DurationUnit.DAYS, null );
@@ -103,7 +102,7 @@ public final class TimeScaleTest
      */
 
     @Test
-    public void testEquals()
+    void testEquals()
     {
         // Reflexive 
         assertEquals( this.timeScale, this.timeScale );
@@ -134,15 +133,15 @@ public final class TimeScaleTest
         TimeScaleOuter unequalOnFunction = TimeScaleOuter.of( Duration.ofDays( 1 ), TimeScaleFunction.MINIMUM );
         assertNotEquals( this.timeScale, unequalOnFunction );
     }
-    
+
     @Test
-    public void testEqualsOrInstantaneous()
-    {  
+    void testEqualsOrInstantaneous()
+    {
         // Reflexive 
         assertTrue( TimeScaleOuter.of().equalsOrInstantaneous( TimeScaleOuter.of() ) );
-        
+
         TimeScaleOuter aTimeScale = TimeScaleOuter.of( Duration.ofSeconds( 1 ), TimeScaleFunction.MEAN );
-      
+
         // Symmetric for instantaneous
         TimeScaleOuter otherTimeScale = TimeScaleOuter.of( Duration.ofMinutes( 1 ), TimeScaleFunction.MEAN );
         assertTrue( aTimeScale.equalsOrInstantaneous( otherTimeScale ) );
@@ -164,14 +163,14 @@ public final class TimeScaleTest
         // Unequal on period
         TimeScaleOuter unequalOnPeriod = TimeScaleOuter.of( Duration.ofDays( 3 ), TimeScaleFunction.MEAN );
         assertFalse( aTimeScale.equalsOrInstantaneous( unequalOnPeriod ) );
-    }    
+    }
 
     /**
      * Tests the {@link TimeScaleOuter#hashCode()}.
      */
 
     @Test
-    public void testHashcode()
+    void testHashcode()
     {
         // Consistent with equals 
         TimeScaleOuter otherTimeScale = TimeScaleOuter.of( Duration.ofDays( 1 ), TimeScaleFunction.MEAN );
@@ -189,7 +188,7 @@ public final class TimeScaleTest
      * Tests that the {@link TimeScaleOuter#toString()} produces an expected string representation.
      */
     @Test
-    public void testToString()
+    void testToString()
     {
         assertEquals( "[PT24H,MEAN]", this.timeScale.toString() );
 
@@ -201,7 +200,7 @@ public final class TimeScaleTest
      */
 
     @Test
-    public void testConstructionThrowsExceptionWhenPeriodIsZero()
+    void testConstructionThrowsExceptionWhenPeriodIsZero()
     {
         IllegalArgumentException actual = assertThrows( IllegalArgumentException.class,
                                                         () -> TimeScaleOuter.of( Duration.ZERO ) );
@@ -214,7 +213,7 @@ public final class TimeScaleTest
      */
 
     @Test
-    public void testConstructionThrowsExceptionWhenPeriodIsNegative()
+    void testConstructionThrowsExceptionWhenPeriodIsNegative()
     {
         IllegalArgumentException actual = assertThrows( IllegalArgumentException.class,
                                                         () -> TimeScaleOuter.of( Duration.ofSeconds( -100 ) ) );
@@ -227,7 +226,7 @@ public final class TimeScaleTest
      */
 
     @Test
-    public void testCompareTo()
+    void testCompareTo()
     {
         TimeScaleOuter scale = TimeScaleOuter.of( Duration.ofSeconds( 60 ), TimeScaleFunction.MEAN );
         TimeScaleOuter largerScale = TimeScaleOuter.of( Duration.ofSeconds( 120 ), TimeScaleFunction.MEAN );
@@ -256,7 +255,7 @@ public final class TimeScaleTest
      */
 
     @Test
-    public void testIsInstantaneous()
+    void testIsInstantaneous()
     {
         assertTrue( TimeScaleOuter.of( Duration.ofSeconds( 60 ) ).isInstantaneous() );
 
@@ -273,7 +272,7 @@ public final class TimeScaleTest
      * when the input is empty.
      */
     @Test
-    public void testGetLCSThrowsExceptionWithEmptyInput()
+    void testGetLeastCommonScaleThrowsExceptionWithEmptyInput()
     {
         IllegalArgumentException actual = assertThrows( IllegalArgumentException.class,
                                                         () -> TimeScaleOuter.getLeastCommonTimeScale( Collections.emptySet() ) );
@@ -286,7 +285,7 @@ public final class TimeScaleTest
      * when the input is null.
      */
     @Test
-    public void testGetLCSThrowsExceptionWithNullInput()
+    void testGetLeastCommonScaleThrowsExceptionWithNullInput()
     {
         NullPointerException actual = assertThrows( NullPointerException.class,
                                                     () -> TimeScaleOuter.getLeastCommonTimeScale( null ) );
@@ -299,7 +298,7 @@ public final class TimeScaleTest
      * when the input contains more than two different time scales.
      */
     @Test
-    public void testGetLCSThrowsExceptionWithMoreThanTwoTimeScales()
+    void testGetLeastCommonScaleThrowsExceptionWithMoreThanTwoTimeScales()
     {
         // Insertion ordered set to reflect declaration order of enum type
         Set<TimeScaleOuter> scales = new TreeSet<>();
@@ -329,7 +328,7 @@ public final class TimeScaleTest
      * when the input contains two different time scales and none are instantaneous.
      */
     @Test
-    public void testGetLCSThrowsExceptionWithTwoTimeScalesOfWhichNoneAreInstantaneous()
+    void testGetLeastCommonScaleThrowsExceptionWithTwoTimeScalesOfWhichNoneAreInstantaneous()
     {
         Set<TimeScaleOuter> scales = new TreeSet<>();
 
@@ -355,7 +354,7 @@ public final class TimeScaleTest
      * when the input contains a time scale that is the {@link Long#MAX_VALUE} in seconds.
      */
     @Test
-    public void testGetLCSThrowsExceptionWhenTimeScaleOverflowsLongSeconds()
+    void testGetLeastCommonScaleThrowsExceptionWhenTimeScaleOverflowsLongSeconds()
     {
         Set<TimeScaleOuter> scales = new TreeSet<>();
 
@@ -375,7 +374,7 @@ public final class TimeScaleTest
      * from an input with one time scale.
      */
     @Test
-    public void testGetLCSReturnsInputWhenInputHasOne()
+    void testGetLeastCommonScaleReturnsInputWhenInputHasOne()
     {
         TimeScaleOuter one = TimeScaleOuter.of( Duration.ofSeconds( 1 ) );
 
@@ -387,7 +386,7 @@ public final class TimeScaleTest
      * non-instantaneous time scale from the input that contains one non-instantaneous time scale.
      */
     @Test
-    public void testGetLCSReturnsNonInstantaneousInputWhenInputHasTwoAndOneIsInstantaneous()
+    void testGetLeastCommonScaleReturnsNonInstantaneousInputWhenInputHasTwoAndOneIsInstantaneous()
     {
         Set<TimeScaleOuter> scales = new HashSet<>( 2 );
         TimeScaleOuter expected = TimeScaleOuter.of( Duration.ofSeconds( 61 ) );
@@ -404,7 +403,7 @@ public final class TimeScaleTest
      * <p>https://en.wikipedia.org/wiki/Least_common_multiple
      */
     @Test
-    public void testGetLCSReturnsExpectedResultFromThreeInputs()
+    void testGetLeastCommonScaleReturnsExpectedResultFromThreeInputs()
     {
         Set<TimeScaleOuter> scales = new HashSet<>( 3 );
 
@@ -424,7 +423,7 @@ public final class TimeScaleTest
      * <p>https://en.wikipedia.org/wiki/Least_common_multiple
      */
     @Test
-    public void testGetLCSReturnsExpectedResultFromTwoInputs()
+    void testGetLeastCommonScaleReturnsExpectedResultFromTwoInputs()
     {
         Set<TimeScaleOuter> scales = new HashSet<>( 3 );
 
@@ -441,7 +440,7 @@ public final class TimeScaleTest
      * when the input is empty.
      */
     @Test
-    public void testGetLCDThrowsExceptionWithEmptyInput()
+    void testGetLeastCommonDurationThrowsExceptionWithEmptyInput()
     {
         IllegalArgumentException actual = assertThrows( IllegalArgumentException.class,
                                                         () -> TimeScaleOuter.getLeastCommonDuration( Collections.emptySet() ) );
@@ -454,7 +453,7 @@ public final class TimeScaleTest
      * when the input is null.
      */
     @Test
-    public void testGetLCDThrowsExceptionWithNullInput()
+    void testGetLeastCommonDurationThrowsExceptionWithNullInput()
     {
         NullPointerException actual = assertThrows( NullPointerException.class,
                                                     () -> TimeScaleOuter.getLeastCommonDuration( null ) );
@@ -467,7 +466,7 @@ public final class TimeScaleTest
      * from an input with one time duration.
      */
     @Test
-    public void testGetLCDReturnsInputWhenInputHasOne()
+    void testGetLeastCommonDurationReturnsInputWhenInputHasOne()
     {
         Duration one = Duration.ofSeconds( 1 );
         assertEquals( one, TimeScaleOuter.getLeastCommonDuration( Collections.singleton( one ) ) );
@@ -480,7 +479,7 @@ public final class TimeScaleTest
      * <p>https://en.wikipedia.org/wiki/Least_common_multiple
      */
     @Test
-    public void testGetLCDReturnsExpectedResultFromThreeInputs()
+    void testGetLeastCommonDurationReturnsExpectedResultFromThreeInputs()
     {
         Set<Duration> durations = new HashSet<>( 3 );
 

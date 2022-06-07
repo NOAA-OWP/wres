@@ -9,6 +9,9 @@ import java.util.function.DoubleUnaryOperator;
 import java.util.function.ToDoubleFunction;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.datamodel.MissingValues;
@@ -29,19 +32,16 @@ import wres.datamodel.MissingValues;
 
 public class TimeSeriesOfDoubleUpscaler implements TimeSeriesUpscaler<Double>
 {
-    /**
-     * Lenient means that upscaling can proceed when values that match the {@link MissingValues#DOUBLE} are encountered
-     * or when the values to upscale are spaced irregularly over the interval (e.g., because data is implicitly 
-     * missing).
-     */
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesOfDoubleUpscaler.class );
 
+    /** Lenient means that upscaling can proceed when values that match the {@link MissingValues#DOUBLE} are encountered
+     * or when the values to upscale are spaced irregularly over the interval (e.g., because data is implicitly 
+     * missing). */
     private final boolean isLenient;
 
-    /**
-     * Function that returns a double value or {@link MissingValues#DOUBLE} if the
-     * input is not finite. 
-     */
-
+    /** Function that returns a double value or {@link MissingValues#DOUBLE} if the
+     * input is not finite. */
     private static final DoubleUnaryOperator RETURN_DOUBLE_OR_MISSING =
             a -> Double.isFinite( a ) ? a : MissingValues.DOUBLE;
 
@@ -126,6 +126,14 @@ public class TimeSeriesOfDoubleUpscaler implements TimeSeriesUpscaler<Double>
                 eventsToUse = eventsToUse.stream()
                                          .filter( next -> Double.isFinite( next.getValue() ) )
                                          .collect( Collectors.toCollection( TreeSet::new ) );
+            }
+
+            // No data to upscale
+            if ( eventsToUse.isEmpty() )
+            {
+                LOGGER.debug( "While attempting to upscale a collection of events, discovered no events to upscale." );
+
+                return MissingValues.DOUBLE;
             }
 
             switch ( function )

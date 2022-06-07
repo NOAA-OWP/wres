@@ -2,11 +2,14 @@ package wres.datamodel.time.generators;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Predicate;
@@ -39,45 +42,30 @@ import wres.datamodel.time.TimeWindowOuter;
 
 public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 {
-
-    /**
-     * Logging message.
-     */
-
     private static final String WHILE_GENERATING_A_PERSISTENCE_TIME_SERIES_USING_INPUT_SERIES =
             "While generating a persistence time-series using input series {}{}";
 
-    /**
-     * Logger.
-     */
+    private static final String MONTH_DAYS = "month-days, {}";
 
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( PersistenceGenerator.class );
 
-    /**
-     * The order of persistence relative to the start of the template series from which the persistence value should 
-     * be derived. Order means the number of times prior to the reference time in the template.
-     */
-
+    /** The order of persistence relative to the start of the template series from which the persistence value should 
+     * be derived. Order means the number of times prior to the reference time in the template. */
     private final int order;
 
-    /**
-     * The source data from which the persistence values should be generated.
-     */
-
+    /** The source data from which the persistence values should be generated. */
     private final TimeSeries<T> persistenceSource;
 
-    /**
-     * An optional upscaler to use in generating a persistence value from the {@link #persistenceSource}.
-     */
-
+    /** An optional upscaler to use in generating a persistence value from the {@link #persistenceSource}. */
     private final TimeSeriesUpscaler<T> upscaler;
 
-    /**
-     * An optional constraint on admissible values. If a value is not eligible for persistence, the empty series is
-     * returned.
-     */
-
+    /** An optional constraint on admissible values. If a value is not eligible for persistence, the empty series is
+     * returned. */
     private final Predicate<T> admissibleValue;
+
+    /** Zone ID, used several times. */
+    private static final ZoneId ZONE_ID = ZoneId.of( "UTC" );
 
     /**
      * Provides an instance for persistence of order one, i.e., lag-1 persistence.
@@ -97,7 +85,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
     {
         return new PersistenceGenerator<>( 1, persistenceSource, upscaler, admissibleValue );
     }
-    
+
     /**
      * Provides an instance for persistence of order one, i.e., lag-1 persistence.
      * 
@@ -118,7 +106,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
                                                   int lag )
     {
         return new PersistenceGenerator<>( lag, persistenceSource, upscaler, admissibleValue );
-    }    
+    }
 
     /**
      * Creates a persistence time-series at a lag supplied on construction using the input time-series as a template.
@@ -175,34 +163,54 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
     private TimeSeries<T> getPersistenceForFirstReferenceTime( TimeSeries<T> template )
     {
+        // Upscale? 
+        TimeScaleOuter desiredTimeScale = template.getTimeScale();
+        if ( Objects.nonNull( desiredTimeScale )
+             && Objects.nonNull( this.persistenceSource.getTimeScale() )
+             && !desiredTimeScale.equals( this.persistenceSource.getTimeScale() ) )
+        {
+            return this.getPersistenceForFirstReferenceTimeWithUpscaling( template );
+        }
+        else
+        {
+            return this.getPersistenceForFirstReferenceTimeWithoutUpscaling( template );
+        }
+    }
+
+    /**
+     * Returns a persistence time-series with respect to the first reference time in the input. This method is 
+     * appropriate when no upscaling is required.
+     * @param template the template time-series
+     * @return a persistence time-series that uses the valid times
+     */
+
+    private TimeSeries<T> getPersistenceForFirstReferenceTimeWithoutUpscaling( TimeSeries<T> template )
+    {
+        LOGGER.trace( "Generating persistence for a time-series with a reference time where upscaling is not "
+                      + "required." );
+
         // Put the persistence values into a list. There are at least N+1 values in the list, established at 
         // construction
         List<Event<T>> eventsToSearch = this.persistenceSource.getEvents()
                                                               .stream()
                                                               .collect( Collectors.toList() );
 
-        TimeSeriesMetadata templateMetadata = template.getMetadata();
-        Builder<T> builder = new Builder<>();
-        builder.setMetadata( templateMetadata );
-
         Map<ReferenceTimeType, Instant> referenceTimes = template.getReferenceTimes();
 
         // Take the first available reference time
         // If multiple reference times are provided in future, adapt
-        if ( referenceTimes.size() > 1 && LOGGER.isTraceEnabled() )
-        {
-            LOGGER.trace( "While generating a persistence time-series using input series {}, discovered that the "
-                          + "input series has multiple reference times. Using the first time of {}.",
-                          template.hashCode(),
-                          referenceTimes.values()
-                                        .iterator()
-                                        .next() );
-        }
-
         // Compute the instant at which the persistence value should end
         Instant referenceTime = referenceTimes.values()
                                               .iterator()
                                               .next();
+
+        if ( referenceTimes.size() > 1 && LOGGER.isTraceEnabled() )
+        {
+            LOGGER.trace( "While generating a persistence time-series using input series {}, discovered that the "
+                          + "input series has multiple reference times. Using the first time of {}.",
+                          template.getMetadata(),
+                          referenceTime );
+        }
 
         Event<T> persistenceEvent = this.getNthNearestValueInstant( eventsToSearch, referenceTime, this.order );
 
@@ -213,22 +221,127 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
                           referenceTime,
                           eventsToSearch.size() );
 
-            return builder.build();
+            return new Builder<T>().setMetadata( template.getMetadata() )
+                                   .build();
         }
 
-        T persistenceValue = null;
-        Instant persistenceEventTime = persistenceEvent.getTime();
+        T persistenceValue = persistenceEvent.getValue();
 
-        // Upscale? 
-        TimeScaleOuter desiredTimeScale = template.getTimeScale();
-        if ( Objects.nonNull( desiredTimeScale )
-             && Objects.nonNull( this.persistenceSource.getTimeScale() )
-             && !desiredTimeScale.equals( this.persistenceSource.getTimeScale() ) )
+        return this.getPersistenceTimeSeriesFromTemplateAndPersistenceValue( template, persistenceValue );
+    }
+
+    /**
+     * Returns a persistence time-series with respect to the first reference time in the input. This method is 
+     * appropriate when upscaling is required.
+     * @param template the template time-series
+     * @return a persistence time-series that uses the valid times
+     */
+
+    private TimeSeries<T> getPersistenceForFirstReferenceTimeWithUpscaling( TimeSeries<T> template )
+    {
+        LOGGER.trace( "Generating persistence for a time-series with a reference time where upscaling is required." );
+
+        Map<ReferenceTimeType, Instant> referenceTimes = template.getReferenceTimes();
+
+        // Take the first available reference time
+        // If multiple reference times are provided in future, adapt
+        Instant referenceTime = referenceTimes.values()
+                                              .iterator()
+                                              .next();
+
+        if ( referenceTimes.size() > 1 && LOGGER.isTraceEnabled() )
         {
+            LOGGER.trace( "While generating a persistence time-series using input series {}, discovered that the "
+                          + "input series has multiple reference times. Using the first time of {}.",
+                          template.getMetadata(),
+                          referenceTime );
+        }
+
+        TimeScaleOuter timeScale = template.getTimeScale();
+
+        // The rescaled periods start and/or end at a precise month-day
+        if ( timeScale.hasMonthDays() )
+        {
+            LOGGER.trace( "Generating a persistence value for a reference time and a desired time scale with explicit "
+                          + MONTH_DAYS,
+                          timeScale );
+
+            // No explicit valid times at which the upscaled values are required
+            TimeSeries<T> upscaled = this.getUpscaledPersistenceSeriesAtTheseTimes( template,
+                                                                                    this.persistenceSource,
+                                                                                    Collections.emptySortedSet() );
+
+            ZonedDateTime time = referenceTime.atZone( ZONE_ID );
+            int yearsToSubtract = this.order;
+            time = time.minusYears( yearsToSubtract );
+            Instant targetLower = time.toInstant();
+            Instant targetUpper = time.plusYears( 1 )
+                                      .toInstant();
+
+            // Find an upscaled event that is between N years and N-1 years earlier than the reference time, inclusive
+            Optional<Event<T>> targetEvent = upscaled.getEvents()
+                                                     .stream()
+                                                     // The upscaled event time is between the lower and upper bounds, 
+                                                     // inclusive
+                                                     .filter( nextEvent -> nextEvent.getTime().equals( targetLower )
+                                                                           || nextEvent.getTime().equals( targetUpper )
+                                                                           || ( nextEvent.getTime()
+                                                                                         .isAfter( targetLower )
+                                                                                && nextEvent.getTime()
+                                                                                            .isBefore( targetUpper ) ) )
+                                                     .findFirst();
+
+            if ( targetEvent.isPresent() )
+            {
+                T persistenceValue = targetEvent.get()
+                                                .getValue();
+                return this.getPersistenceTimeSeriesFromTemplateAndPersistenceValue( template, persistenceValue );
+            }
+            else
+            {
+                LOGGER.trace( "While attempting to generate a persistence value for the reference time of {}, failed "
+                              + "to find a corresponding time in the upscaled persistence source, {}.",
+                              referenceTime,
+                              upscaled );
+
+                return new Builder<T>().setMetadata( template.getMetadata() )
+                                       .build();
+            }
+        }
+        else
+        {
+            LOGGER.trace( "Generating a persistence value for a reference time and a desired time scale without "
+                          + "explicit month-days, {}",
+                          timeScale );
+
+            // Put the persistence values into a list. There are at least N+1 values in the list, established at 
+            // construction
+            List<Event<T>> eventsToSearch = this.persistenceSource.getEvents()
+                                                                  .stream()
+                                                                  .collect( Collectors.toList() );
+
+            Event<T> persistenceEvent = this.getNthNearestValueInstant( eventsToSearch, referenceTime, this.order );
+
+            if ( Objects.isNull( persistenceEvent ) )
+            {
+                LOGGER.trace( "While attempting to generate a persistence value for the reference time of {}, failed to "
+                              + "find a corresponding time in the persistence source, which contained {} values.",
+                              referenceTime,
+                              eventsToSearch.size() );
+
+                return new Builder<T>().setMetadata( template.getMetadata() )
+                                       .build();
+            }
+
+            T persistenceValue = null;
+            Instant persistenceEventTime = persistenceEvent.getTime();
+
             SortedSet<Instant> times = new TreeSet<>();
             times.add( persistenceEventTime );
 
-            TimeSeries<T> upscaled = this.getUpscaledPersistenceSeriesAtTheseTimes( template, times );
+            TimeSeries<T> upscaled = this.getUpscaledPersistenceSeriesAtTheseTimes( template,
+                                                                                    this.persistenceSource,
+                                                                                    times );
 
             if ( !upscaled.getEvents().isEmpty() )
             {
@@ -236,26 +349,35 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
                                            .first()
                                            .getValue();
             }
+
+            return this.getPersistenceTimeSeriesFromTemplateAndPersistenceValue( template, persistenceValue );
         }
-        else
-        {
-            persistenceValue = persistenceEvent.getValue();
-        }
+    }
+
+    /**
+     * Generates a persistence time-series from a template time-series and a persistence value.
+     * @param template the template
+     * @param persistenceValue the persistence value
+     * @return the persistence time-series
+     */
+
+    private TimeSeries<T> getPersistenceTimeSeriesFromTemplateAndPersistenceValue( TimeSeries<T> template,
+                                                                                   T persistenceValue )
+    {
+        Builder<T> builder = new Builder<T>().setMetadata( template.getMetadata() );
 
         // Persistence value admissible?
         if ( ( Objects.isNull( persistenceValue ) || !this.admissibleValue.test( persistenceValue ) ) )
         {
-            int seriesCode = template.hashCode();
-
-            LOGGER.trace( "While generating a persistence time-series using input series {}, discovered that the "
-                          + "persistent value of {} was inadmissible. Unable to create a persistence time-series "
-                          + "from input series {}. Returning the empty time-series instead.",
-                          seriesCode,
-                          persistenceValue,
-                          seriesCode );
+            LOGGER.trace( "While generating a persistence time-series for {}, discovered that the persistent value of "
+                          + "{} was inadmissible. Unable to create a persistence time-series from the input series. "
+                          + "Returning the empty time-series instead.",
+                          template.getMetadata(),
+                          persistenceValue );
         }
         else
         {
+            // Use the persistence value for every valid time in the template
             for ( Event<T> next : template.getEvents() )
             {
                 Event<T> persistedValue = Event.of( next.getTime(), persistenceValue );
@@ -267,13 +389,37 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
     }
 
     /**
-     * Returns a persistence time-series with respect to each valid time in the input.
+     * Returns a persistence time-series with respect to each valid time in the input. 
+     * @param template the template time-series to populate with persistence values
+     * @return a persistence time-series that uses the valid times
+     */
+    private TimeSeries<T> getPersistenceForEachValidTime( TimeSeries<T> template )
+    {
+        // Upscale? 
+        TimeScaleOuter desiredTimeScale = template.getTimeScale();
+        if ( Objects.nonNull( desiredTimeScale )
+             && Objects.nonNull( this.persistenceSource.getTimeScale() )
+             && !desiredTimeScale.equals( this.persistenceSource.getTimeScale() ) )
+        {
+            return this.getPersistenceForEachValidTimeWithUpscaling( template );
+        }
+        else
+        {
+            return this.getPersistenceForEachValidTimeWithoutUpscaling( template );
+        }
+    }
+
+    /**
+     * Returns a persistence time-series with respect to each valid time in the input. This method is appropriate when
+     * no upscaling is required.
      * @param template the template time-series to populate with persistence values
      * @return a persistence time-series that uses the valid times
      */
 
-    private TimeSeries<T> getPersistenceForEachValidTime( TimeSeries<T> template )
+    private TimeSeries<T> getPersistenceForEachValidTimeWithoutUpscaling( TimeSeries<T> template )
     {
+        LOGGER.trace( "Generating persistence for multiple valid times where upscaling is not required." );
+
         // Put the persistence values into a list. There are at least N+1 values in the list, established at 
         // construction
         List<Event<T>> eventsToSearch = this.persistenceSource.getEvents()
@@ -288,45 +434,127 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
         List<Event<T>> persistenceEvents = this.getNthNearestValueInstant( eventsToSearch, validTimes, this.order );
 
-        // Upscale? 
-        TimeScaleOuter desiredTimeScale = template.getTimeScale();
-        if ( Objects.nonNull( desiredTimeScale )
-             && Objects.nonNull( this.persistenceSource.getTimeScale() )
-             && !desiredTimeScale.equals( this.persistenceSource.getTimeScale() ) )
+        TimeSeriesMetadata templateMetadata = template.getMetadata();
+        Builder<T> builder = new Builder<>();
+        builder.setMetadata( templateMetadata );
+
+        for ( int i = 0; i < validTimes.size(); i++ )
         {
-            SortedSet<Instant> persistenceEventTimes = persistenceEvents.stream()
-                                                                        .filter( Objects::nonNull )
-                                                                        .map( Event::getTime )
-                                                                        .collect( Collectors.toCollection( TreeSet::new ) );
-
-            // This is the upscaled time-series for values that end at the persistence event times. Now need to map
-            // these back to the valid times for which persistence events are required
-            TimeSeries<T> upscaled = this.getUpscaledPersistenceSeriesAtTheseTimes( template, persistenceEventTimes );
-
-            return this.mapUpscaledEventsToValidTimes( validTimes, persistenceEvents, upscaled );
-        }
-        else
-        {
-            TimeSeriesMetadata templateMetadata = template.getMetadata();
-            Builder<T> builder = new Builder<>();
-            builder.setMetadata( templateMetadata );
-
-            for ( int i = 0; i < validTimes.size(); i++ )
+            Event<T> nextEvent = persistenceEvents.get( i );
+            Instant nextTime = validTimes.get( i );
+            if ( Objects.nonNull( nextEvent ) && this.admissibleValue.test( nextEvent.getValue() ) )
             {
-                Event<T> nextEvent = persistenceEvents.get( i );
-                Instant nextTime = validTimes.get( i );
-                if ( Objects.nonNull( nextEvent ) && this.admissibleValue.test( nextEvent.getValue() ) )
+                Event<T> persistedValue = Event.of( nextTime, nextEvent.getValue() );
+                builder.addEvent( persistedValue );
+            }
+            else if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "Failed to identify a valid persistence value for time {}. Skipping.", nextTime );
+            }
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Returns a persistence time-series with respect to each valid time in the input. This method is appropriate when
+     * upscaling is required.
+     * @param template the template time-series to populate with persistence values
+     * @return a persistence time-series that uses the valid times
+     */
+
+    private TimeSeries<T> getPersistenceForEachValidTimeWithUpscaling( TimeSeries<T> template )
+    {
+        LOGGER.trace( "Generating persistence for multiple valid times where upscaling is required." );
+
+        TimeScaleOuter timeScale = template.getTimeScale();
+
+        // The rescaled periods start and/or end at a precise month-day
+        if ( timeScale.hasMonthDays() )
+        {
+            LOGGER.trace( "Generating a persistence value for a valid time and a desired time scale with explicit "
+                          + MONTH_DAYS,
+                          timeScale );
+
+            TimeSeries<T> upscaled = this.getUpscaledPersistenceSeriesAtTheseTimes( template,
+                                                                                    this.persistenceSource,
+                                                                                    Collections.emptySortedSet() );
+
+            // Find the upscaled period whose valid time is N prior to each template valid time. Since a month-day 
+            // range can occur only once per year, this is effectively N years prior to the template valid time
+            TimeSeries.Builder<T> builder = new TimeSeries.Builder<T>().setMetadata( upscaled.getMetadata() );
+            ZoneId zoneId = ZoneId.of( "UTC" );
+
+            // Search the template events and find a corresponding upscaled event that is between N years and N-1 years
+            // earlier than each valid time of interest, inclusive
+            for ( Event<T> next : template.getEvents() )
+            {
+                Instant nextTime = next.getTime();
+                ZonedDateTime time = nextTime.atZone( zoneId );
+                int yearsToSubtract = this.order;
+                time = time.minusYears( yearsToSubtract );
+                Instant targetLower = time.toInstant();
+                Instant targetUpper = time.plusYears( 1 )
+                                          .toInstant();
+
+                // Find an upscaled event that is between the target times
+                Optional<Event<T>> event = upscaled.getEvents()
+                                                   .stream()
+                                                   // The upscaled event time is between the lower and upper bounds, 
+                                                   // inclusive
+                                                   .filter( nextEvent -> nextEvent.getTime().equals( targetLower )
+                                                                         || nextEvent.getTime().equals( targetUpper )
+                                                                         || ( nextEvent.getTime().isAfter( targetLower )
+                                                                              && nextEvent.getTime()
+                                                                                          .isBefore( targetUpper ) ) )
+                                                   .findFirst();
+                if ( event.isPresent() )
                 {
-                    Event<T> persistedValue = Event.of( nextTime, nextEvent.getValue() );
-                    builder.addEvent( persistedValue );
-                }
-                else if ( LOGGER.isTraceEnabled() )
-                {
-                    LOGGER.trace( "Failed to identify a valid persistence value for time {}. Skipping.", nextTime );
+                    Instant currentTime = next.getTime(); // Current event time
+                    T laggedValue = event.get()
+                                         .getValue(); // Lagged event value   
+                    Event<T> nextEvent = Event.of( currentTime, laggedValue );
+                    builder.addEvent( nextEvent );
                 }
             }
 
             return builder.build();
+        }
+        else
+        {
+            LOGGER.trace( "Generating a persistence value for a valid time and a desired time scale without explicit "
+                          + MONTH_DAYS,
+                          timeScale );
+
+            // The valid times from the template series at which persistence events are required
+            List<Instant> validTimes = template.getEvents()
+                                               .stream()
+                                               .map( Event::getTime )
+                                               .collect( Collectors.toList() );
+
+            // The persistence values. There are at least N+1 values in the list, established at construction
+            List<Event<T>> eventsToSearch = this.persistenceSource.getEvents()
+                                                                  .stream()
+                                                                  .collect( Collectors.toList() );
+
+            // Find a persistence event from the eventsToSearch for each valid time in the template
+            List<Event<T>> persistenceEvents = this.getNthNearestValueInstant( eventsToSearch, validTimes, this.order );
+
+            // Find the persistence event times at which the upscaled values must end
+            List<Instant> persistenceEventTimes = persistenceEvents.stream()
+                                                                   .filter( Objects::nonNull )
+                                                                   .map( Event::getTime )
+                                                                   .collect( Collectors.toList() );
+
+            SortedSet<Instant> persistenceEventTimesSorted = new TreeSet<>( persistenceEventTimes );
+
+            // This is the upscaled time-series for values that end at the persistence event times. Now need to map
+            // these back to the valid times for which persistence events are required
+            TimeSeries<T> upscaled = this.getUpscaledPersistenceSeriesAtTheseTimes( template,
+                                                                                    this.persistenceSource,
+                                                                                    persistenceEventTimesSorted );
+
+            return this.mapUpscaledEventsToValidTimes( validTimes, persistenceEventTimes, upscaled );
         }
     }
 
@@ -334,11 +562,13 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
      * Returns the persistence time-series upscaled to the desired time scale of the template series at the prescribed
      * end times.
      * @param template the template series
+     * @param seriesToUpscale the time series to upscale
      * @param endsAtSorted the times at which upscaled values should end
      * @return the upscaled series
      */
 
     private TimeSeries<T> getUpscaledPersistenceSeriesAtTheseTimes( TimeSeries<T> template,
+                                                                    TimeSeries<T> seriesToUpscale,
                                                                     SortedSet<Instant> endsAtSorted )
     {
         if ( Objects.isNull( this.upscaler ) )
@@ -354,7 +584,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
                                                     + " and no temporal upscaler was supplied on construction." );
         }
 
-        TimeSeries<T> upscaled = this.upscaler.upscale( this.persistenceSource,
+        TimeSeries<T> upscaled = this.upscaler.upscale( seriesToUpscale,
                                                         template.getTimeScale(),
                                                         Collections.unmodifiableSortedSet( endsAtSorted ) )
                                               .getTimeSeries();
@@ -467,23 +697,23 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
      * the mapping implied by the times at equivalent index positions in the two supplied lists.
      * 
      * @param validTimes the valid times to which the time-series should be remapped
-     * @param persistenceEvents the persistence events
+     * @param persistenceEventTimes the persistence event times
      * @param upscaled the upscaled time-series expressed with persistence event times
      * @return the upscaled time-series expressed with valid event times
      */
 
     private TimeSeries<T> mapUpscaledEventsToValidTimes( List<Instant> validTimes,
-                                                         List<Event<T>> persistenceEvents,
+                                                         List<Instant> persistenceEventTimes,
                                                          TimeSeries<T> upscaled )
     {
-        if ( validTimes.size() != persistenceEvents.size() )
+        if ( validTimes.size() != persistenceEventTimes.size() )
         {
             throw new IllegalStateException( "Failed to map upscaled persistence events to their corresponding "
                                              + "valid times because the number of valid times and persistence events "
                                              + "was unequal, which is not expected: ["
                                              + validTimes.size()
                                              + ", "
-                                             + persistenceEvents.size()
+                                             + persistenceEventTimes.size()
                                              + "]." );
         }
         // Map the persistence event times in which the upscaled series is expressed to the corresponding valid times.
@@ -492,10 +722,10 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
         for ( int i = 0; i < validTimes.size(); i++ )
         {
-            Event<T> nextEvent = persistenceEvents.get( i );
-            if ( Objects.nonNull( nextEvent ) )
+            Instant nextEventInstant = persistenceEventTimes.get( i );
+            if ( Objects.nonNull( nextEventInstant ) )
             {
-                mappedTimes.put( nextEvent.getTime(), validTimes.get( i ) );
+                mappedTimes.put( nextEventInstant, validTimes.get( i ) );
             }
         }
 
@@ -572,6 +802,8 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
         {
             this.admissibleValue = admissibleValue;
         }
+
+        LOGGER.debug( "Created a persistence generator for lagged persistence of order {}.", this.order );
     }
 
 }

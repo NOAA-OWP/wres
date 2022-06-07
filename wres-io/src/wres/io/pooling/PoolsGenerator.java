@@ -910,9 +910,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                                                      .getTimeScale();
 
                 // Upscale? A difference in period is the minimum needed
-                if ( Objects.nonNull( desiredTimeScale )
-                     && Objects.nonNull( nextScale )
-                     && !desiredTimeScale.getPeriod().equals( nextScale.getPeriod() ) )
+                if ( this.shouldUpscale( nextScale, desiredTimeScale ) )
                 {
                     if ( Objects.isNull( upscaler ) )
                     {
@@ -962,6 +960,19 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
 
             return returnMe.stream();
         };
+    }
+
+    /**
+     * @param existingTimeScale the existing time scale
+     * @param desiredTimeScale the desired time scale
+     * @return true if both scales are not null and the desired time scale has a larger period
+     */
+
+    private boolean shouldUpscale( TimeScaleOuter existingTimeScale, TimeScaleOuter desiredTimeScale )
+    {
+        return Objects.nonNull( existingTimeScale ) && Objects.nonNull( desiredTimeScale )
+               && TimeScaleOuter.getOrInferPeriodFromTimeScale( desiredTimeScale )
+                                .compareTo( TimeScaleOuter.getOrInferPeriodFromTimeScale( existingTimeScale ) ) > 0;
     }
 
 }

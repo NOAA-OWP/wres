@@ -98,16 +98,16 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                          + "DESCRIPTION,EARLIEST ISSUED TIME EXCLUSIVE,LATEST ISSUED TIME INCLUSIVE,"
                                          + "EARLIEST VALID TIME EXCLUSIVE,LATEST VALID TIME INCLUSIVE,EARLIEST LEAD "
                                          + "DURATION EXCLUSIVE,LATEST LEAD DURATION INCLUSIVE,TIME SCALE DURATION,"
-                                         + "TIME SCALE FUNCTION,EVENT THRESHOLD NAME,EVENT THRESHOLD LOWER VALUE,EVENT "
+                                         + "TIME SCALE FUNCTION,TIME SCALE START MONTH-DAY INCLUSIVE,TIME SCALE END "
+                                         + "MONTH-DAY INCLUSIVE,EVENT THRESHOLD NAME,EVENT THRESHOLD LOWER VALUE,EVENT "
                                          + "THRESHOLD UPPER VALUE,EVENT THRESHOLD UNITS,EVENT THRESHOLD LOWER "
                                          + "PROBABILITY,EVENT THRESHOLD UPPER PROBABILITY,EVENT THRESHOLD SIDE,EVENT "
                                          + "THRESHOLD OPERATOR,DECISION THRESHOLD NAME,DECISION THRESHOLD LOWER VALUE,"
                                          + "DECISION THRESHOLD UPPER VALUE,DECISION THRESHOLD UNITS,DECISION THRESHOLD "
                                          + "LOWER PROBABILITY,DECISION THRESHOLD UPPER PROBABILITY,DECISION THRESHOLD "
                                          + "SIDE,DECISION THRESHOLD OPERATOR,METRIC NAME,METRIC COMPONENT NAME,METRIC "
-                                         + "COMPONENT QUALIFIER,METRIC COMPONENT UNITS,METRIC COMPONENT MINIMUM,"
-                                         + "METRIC COMPONENT MAXIMUM,METRIC COMPONENT OPTIMUM,STATISTIC GROUP NUMBER,"
-                                         + "STATISTIC";
+                                         + "COMPONENT QUALIFIER,METRIC COMPONENT UNITS,METRIC COMPONENT MINIMUM,METRIC "
+                                         + "COMPONENT MAXIMUM,METRIC COMPONENT OPTIMUM,STATISTIC GROUP NUMBER,STATISTIC";
 
     /** The CSV delimiter. */
     private static final String DELIMITER = ",";
@@ -295,7 +295,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         joiner = joiner.merge( timeWindowDescription );
 
         // Merge in the time scale description
-        if( pool.hasTimeScale() )
+        if ( pool.hasTimeScale() )
         {
             StringJoiner timeScaleDescription = this.getTimeScaleDescription( pool.getTimeScale() );
             joiner = joiner.merge( timeScaleDescription );
@@ -303,9 +303,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         // Add placeholders
         else
         {
-            CsvStatisticsWriter.addEmptyValues( joiner, 2 );
+            CsvStatisticsWriter.addEmptyValues( joiner, 4 );
         }
-        
+
         // Merge in each threshold
         if ( pool.hasEventThreshold() )
         {
@@ -571,8 +571,38 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         // Use a more helpful api
         TimeScaleOuter outer = TimeScaleOuter.of( timeScale );
 
-        joiner.add( outer.getPeriod().toString() )
-              .add( outer.getFunction().toString() );
+        if ( timeScale.hasPeriod() )
+        {
+            joiner.add( outer.getPeriod().toString() );
+        }
+        else
+        {
+            CsvStatisticsWriter.addEmptyValues( joiner, 1 );
+        }
+
+        joiner.add( outer.getFunction().toString() );
+
+        if ( Objects.nonNull( outer.getStartMonthDay() ) )
+        {
+            joiner.add( outer.getStartMonthDay()
+                             .toString()
+                             .replace( "--", "" ) );
+        }
+        else
+        {
+            CsvStatisticsWriter.addEmptyValues( joiner, 1 );
+        }
+
+        if ( Objects.nonNull( outer.getEndMonthDay() ) )
+        {
+            joiner.add( outer.getEndMonthDay()
+                             .toString()
+                             .replace( "--", "" ) );
+        }
+        else
+        {
+            CsvStatisticsWriter.addEmptyValues( joiner, 1 );
+        }
 
         return joiner;
     }
@@ -1715,10 +1745,10 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         String columnClasses = "\"String\",\"String\",\"String\",\"String\",\"Integer\",\"String\",\"String\",\"WKT\","
                                + "\"Integer\",\"String\",\"String\",\"WKT\",\"Integer\",\"String\",\"String\",\"WKT\","
                                + "\"Integer\",\"String\",\"String\",\"String\",\"String\",\"String\",\"String\","
-                               + "\"String\",\"String\",\"String\",\"String\",\"Real\",\"Real\",\"String\",\"Real\","
-                               + "\"Real\",\"String\",\"String\",\"String\",\"Real\",\"Real\",\"String\",\"Real\","
-                               + "\"Real\",\"String\",\"String\",\"String\",\"String\",\"String\",\"String\",\"Real\","
-                               + "\"Real\",\"Real\",\"Integer\",\"Real\"";
+                               + "\"String\",\"String\",\"String\",\"String\",\"String\",\"String\",\"Real\",\"Real\","
+                               + "\"String\",\"Real\",\"Real\",\"String\",\"String\",\"String\",\"Real\",\"Real\","
+                               + "\"String\",\"Real\",\"Real\",\"String\",\"String\",\"String\",\"String\",\"String\","
+                               + "\"String\",\"Real\",\"Real\",\"Real\",\"Integer\",\"Real\"";
 
         // Sanity check that the number of column classes equals the number of columns
         int classCount = columnClasses.split( "," ).length;

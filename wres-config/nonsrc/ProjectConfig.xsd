@@ -836,10 +836,14 @@ A unit of time
                 intervals that contain regularly spaced events with no missing 
                 data values. Optionally, the desired time scale may represent 
                 a period bounded by an earliest or latest monthday or a pair
-                of monthdays, representing the lower and upper (inclusive) 
-                bookends of the period, such as a 1 April through 31 July 
-                volume. The period cannot be declared when both bookends are
-                present. The times are 0Z and the bookends are inclusive.
+                of monthdays, representing the lower and upper bookends 
+                of the period, such as 1 April through 31 July. The period 
+                cannot be declared when both bookends are present. The low 
+                bookend begins at the start of the day (0Z) and the upper 
+                bookend finishes at the end of the day (one instant before 0Z 
+                of the next day). Otherwise, a rescaled period spans a right-
+                closed interval that ends at (and includes) a particular valid 
+                time. 
             </xs:documentation>
         </xs:annotation>
 
