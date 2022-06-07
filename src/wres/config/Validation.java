@@ -2592,26 +2592,6 @@ public class Validation
             }
         }
 
-        // Latest monthday is after earliest
-        if ( Objects.nonNull( earliestMonthDay ) && Objects.nonNull( latestMonthDay )
-             && !latestMonthDay.isAfter( earliestMonthDay ) )
-        {
-            result = false;
-
-            if ( LOGGER.isWarnEnabled() )
-            {
-                String msg = FILE_LINE_COLUMN_BOILERPLATE
-                             + " In the pair declaration, discovered a desired time scale whose latest month and "
-                             + "day is no later than the earliest month and day, which is not allowed.";
-
-                LOGGER.warn( msg,
-                             projectConfigPlus.getOrigin(),
-                             timeScaleConfig.sourceLocation().getLineNumber(),
-                             timeScaleConfig.sourceLocation()
-                                            .getColumnNumber() );
-            }
-        }
-
         return result;
     }
     

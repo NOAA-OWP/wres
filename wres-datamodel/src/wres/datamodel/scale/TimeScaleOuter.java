@@ -686,14 +686,6 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
                                                     e );
             }
         }
-
-        if ( Objects.nonNull( earliestMonthDay ) && Objects.nonNull( latestMonthDay )
-             && !latestMonthDay.isAfter( earliestMonthDay ) )
-        {
-            throw new IllegalArgumentException( "When declaring a time scale, the latest month and day must be later "
-                                                + "than the earliest month and day." );
-        }
-
     }
 
 }

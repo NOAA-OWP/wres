@@ -485,7 +485,18 @@ public final class TimeSeriesSlicer
 
             if ( Objects.nonNull( startMonthDay ) )
             {
-                LocalDate startLocal = startMonthDay.atYear( year );
+                LocalDate startLocal = null;
+
+                // Interval spans a year end
+                if ( Objects.nonNull( endMonthDay ) && startMonthDay.isAfter( endMonthDay ) )
+                {
+                    startLocal = startMonthDay.atYear( year - 1 );
+                }
+                // Interval falls within a year of there is no end month-day
+                else
+                {
+                    startLocal = startMonthDay.atYear( year );
+                }
 
                 // Start of day should be inclusive, so move back one instant
                 start = startLocal.atStartOfDay( zoneId )

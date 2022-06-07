@@ -992,8 +992,9 @@ public final class TimeSeriesSlicerTest
                                                 .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
                                                 .build();
 
-        SortedSet<Pair<Instant, Instant>> actual = TimeSeriesSlicer.getIntervalsFromTimeScaleWithMonthDays( outerTimeScale,
-                                                                                               fooSeries );
+        SortedSet<Pair<Instant, Instant>> actual =
+                TimeSeriesSlicer.getIntervalsFromTimeScaleWithMonthDays( outerTimeScale,
+                                                                         fooSeries );
 
         SortedSet<Pair<Instant, Instant>> expected = new TreeSet<>();
         expected.add( Pair.of( Instant.parse( "1988-03-31T23:59:59.999999999Z" ),
@@ -1002,6 +1003,43 @@ public final class TimeSeriesSlicerTest
                                Instant.parse( "1989-07-31T23:59:59.999999999Z" ) ) );
         expected.add( Pair.of( Instant.parse( "1990-03-31T23:59:59.999999999Z" ),
                                Instant.parse( "1990-07-31T23:59:59.999999999Z" ) ) );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    public void testGetIntervalsFromTimeScaleWithBothMonthDaysPresentAndYearEndWrapping()
+    {
+        // Interval that wraps a year end
+        TimeScale timeScale = TimeScale.newBuilder()
+                                       .setStartDay( 31 )
+                                       .setStartMonth( 12 )
+                                       .setEndDay( 1 )
+                                       .setEndMonth( 1 )
+                                       .build();
+
+        TimeScaleOuter outerTimeScale = TimeScaleOuter.of( timeScale );
+
+        // Create a time-series that contains three times
+        TimeSeries<String> fooSeries =
+                new TimeSeries.Builder<String>().addEvent( Event.of( Instant.parse( "1988-12-31T18:00:00Z" ),
+                                                                     "a" ) )
+                                                .addEvent( Event.of( Instant.parse( "1989-01-01T00:00:00Z" ),
+                                                                     "b" ) )
+                                                .addEvent( Event.of( Instant.parse( "1989-01-01T06:00:00Z" ),
+                                                                     "c" ) )
+                                                .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
+                                                .build();
+
+        SortedSet<Pair<Instant, Instant>> actual =
+                TimeSeriesSlicer.getIntervalsFromTimeScaleWithMonthDays( outerTimeScale,
+                                                                         fooSeries );
+
+        SortedSet<Pair<Instant, Instant>> expected = new TreeSet<>();
+        expected.add( Pair.of( Instant.parse( "1987-12-30T23:59:59.999999999Z" ),
+                               Instant.parse( "1988-01-01T23:59:59.999999999Z" ) ) );
+        expected.add( Pair.of( Instant.parse( "1988-12-30T23:59:59.999999999Z" ),
+                               Instant.parse( "1989-01-01T23:59:59.999999999Z" ) ) );
 
         assertEquals( expected, actual );
     }
@@ -1030,8 +1068,9 @@ public final class TimeSeriesSlicerTest
                                                 .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
                                                 .build();
 
-        SortedSet<Pair<Instant, Instant>> actual = TimeSeriesSlicer.getIntervalsFromTimeScaleWithMonthDays( outerTimeScale,
-                                                                                               fooSeries );
+        SortedSet<Pair<Instant, Instant>> actual =
+                TimeSeriesSlicer.getIntervalsFromTimeScaleWithMonthDays( outerTimeScale,
+                                                                         fooSeries );
 
         SortedSet<Pair<Instant, Instant>> expected = new TreeSet<>();
         expected.add( Pair.of( Instant.parse( "1988-03-31T23:59:59.999999999Z" ),
