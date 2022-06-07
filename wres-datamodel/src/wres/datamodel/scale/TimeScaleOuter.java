@@ -2,11 +2,15 @@ package wres.datamodel.scale;
 
 import java.time.DateTimeException;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.MonthDay;
+import java.time.ZoneId;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
@@ -15,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigs;
+import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.messages.MessageUtilities;
@@ -50,6 +55,9 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
 
     /** The canonical representation of a time scale. */
     private final TimeScale timeScale;
+
+    /** Static string, re-used. */
+    private static final String UTC = "UTC";
 
     /**
      * Constructs a {@link TimeScaleOuter} whose {@link TimeScaleOuter#isInstantaneous()} returns 
@@ -159,17 +167,51 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
             timeScaleInner.setFunction( innerFunction );
         }
 
+        if ( config instanceof DesiredTimeScaleConfig )
+        {
+            DesiredTimeScaleConfig desiredConfig = (DesiredTimeScaleConfig) config;
+
+            if ( Objects.nonNull( desiredConfig.getEarliestDay() ) )
+            {
+                timeScaleInner.setStartDay( desiredConfig.getEarliestDay() );
+            }
+
+            if ( Objects.nonNull( desiredConfig.getEarliestMonth() ) )
+            {
+                timeScaleInner.setStartMonth( desiredConfig.getEarliestMonth() );
+            }
+
+            if ( Objects.nonNull( desiredConfig.getLatestDay() ) )
+            {
+                timeScaleInner.setEndDay( desiredConfig.getLatestDay() );
+            }
+
+            if ( Objects.nonNull( desiredConfig.getLatestMonth() ) )
+            {
+                timeScaleInner.setEndMonth( desiredConfig.getLatestMonth() );
+            }
+        }
+
         return new TimeScaleOuter( timeScaleInner.build() );
     }
 
     /**
      * @return true if the period associated with the time scale is defined explicitly using a combination of start and
-     * end month-days, false if an explicit period is defined.
+     * end month-days, false if an explicit period is defined
      */
 
     public boolean hasPeriod()
     {
         return this.timeScale.hasPeriod();
+    }
+
+    /**
+     * @return true if one or both month-days is present, false otherwise
+     */
+
+    public boolean hasMonthDays()
+    {
+        return Objects.nonNull( this.getStartMonthDay() ) || Objects.nonNull( this.getEndMonthDay() );
     }
 
     /**
@@ -263,7 +305,31 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
         {
             return "[INSTANTANEOUS]";
         }
-        return "[" + this.getPeriod() + "," + this.getFunction() + "]";
+
+        StringJoiner joiner = new StringJoiner( ",", "[", "]" );
+
+        if ( this.hasPeriod() )
+        {
+            joiner.add( this.getPeriod() + "" );
+        }
+
+        joiner.add( this.getFunction().toString() );
+
+        MonthDay startMonthDay = this.getStartMonthDay();
+
+        if ( Objects.nonNull( startMonthDay ) )
+        {
+            joiner.add( startMonthDay.toString() );
+        }
+
+        MonthDay endMonthDay = this.getEndMonthDay();
+
+        if ( Objects.nonNull( endMonthDay ) )
+        {
+            joiner.add( endMonthDay.toString() );
+        }
+
+        return joiner.toString();
     }
 
     @Override
@@ -467,6 +533,70 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
     }
 
     /**
+     * If the time scale is not instantaneous, inspects the time scale for a period. If no period is defined, attempts 
+     * to infer it from the month-day bookends that must be present. For the latter, assumes a leap year to maximize 
+     * the period. If {@link TimeScaleOuter#isInstantaneous()} returns {@code true}, returns 
+     * {@link #INSTANTANEOUS_DURATION}.
+     * 
+     * @param timeScale the time scale
+     * @return the period
+     * @throws NullPointerException if the timeScale is null
+     */
+    public static Duration getOrInferPeriodFromTimeScale( TimeScaleOuter timeScale )
+    {
+        Objects.requireNonNull( timeScale );
+
+        Duration period = null;
+
+        if ( !timeScale.isInstantaneous() )
+        {
+            if ( timeScale.hasPeriod() )
+            {
+                period = timeScale.getPeriod();
+                LOGGER.debug( "Acquired the period from the time scale of {}, which was {}.",
+                              timeScale,
+                              period );
+            }
+            else
+            {
+                MonthDay earliest = timeScale.getStartMonthDay();
+                MonthDay latest = timeScale.getStartMonthDay();
+
+                if ( Objects.isNull( earliest ) || Objects.isNull( latest ) )
+                {
+                    throw new IllegalStateException( "Start and end month-days cannot be missing in this context." );
+                }
+
+                ZoneId zoneId = ZoneId.of( "UTC" );
+
+                // Start of day, i.e., including 0Z
+                Instant start = earliest.atYear( 2020 ) // Leap year
+                                        .atStartOfDay( zoneId )
+                                        .minusNanos( 1 )
+                                        .toInstant();
+
+                // End of day, i.e., immediately before 0Z of the next day
+                Instant end = latest.atYear( 2020 ) // Leap year
+                                    .atStartOfDay( zoneId )
+                                    .plusDays( 1 )
+                                    .minusNanos( 1 )
+                                    .toInstant();
+
+                period = Duration.between( start, end );
+                LOGGER.debug( "Inferred the period from the time scale of {}, which was {}.",
+                              timeScale,
+                              period );
+            }
+        }
+        else
+        {
+            period = TimeScaleOuter.INSTANTANEOUS_DURATION;
+        }
+
+        return period;
+    }
+
+    /**
      * Hidden constructor.
      * 
      * @param period the positive period
@@ -500,7 +630,15 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
             throw new IllegalArgumentException( "A time scale must have an explicit period, else an implicit period "
                                                 + "that is fully-defined, which requires both the start and end "
                                                 + "month-days to be present. There was no period and one or more of "
-                                                + "the start and end days or months were missing" );
+                                                + "the start and end days or months were missing. The start month was "
+                                                + timeScale.getStartMonth()
+                                                + ", the start day was "
+                                                + timeScale.getStartDay()
+                                                + ", the end month was "
+                                                + timeScale.getEndMonth()
+                                                + ", and the end day was "
+                                                + timeScale.getEndDay()
+                                                + "." );
         }
 
         // The monthdays must be valid

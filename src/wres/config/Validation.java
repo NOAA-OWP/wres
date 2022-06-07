@@ -2129,6 +2129,46 @@ public class Validation
 
     /**
      * @param projectConfigPlus the project declaration
+     * @param dataSourceConfig the data source declaration
+     * @param lrb the left/right/baseline context to help with messaging
+     * @return true if the {@code existingTimeScale} is valid, false otherwise
+     */
+
+    private static boolean isExistingTimeScaleValid( ProjectConfigPlus projectConfigPlus,
+                                                     DataSourceConfig dataSourceConfig,
+                                                     LeftOrRightOrBaseline lrb )
+    {
+        // Absent, so must be valid
+        if ( Objects.isNull( dataSourceConfig.getExistingTimeScale() ) )
+        {
+            return true;
+        }
+
+        TimeScaleConfig timeScaleConfig = dataSourceConfig.getExistingTimeScale();
+
+        boolean result = true;
+
+        if ( Objects.isNull( timeScaleConfig.getPeriod() ) || Objects.isNull( timeScaleConfig.getUnit() ) )
+        {
+            result = false;
+
+            String msg = FILE_LINE_COLUMN_BOILERPLATE
+                         + " In the inputs declaration, the existing time scale of the {} sources was incorrectly "
+                         + "specified. An existing time scale requires both a period and a unit.";
+
+            LOGGER.warn( msg,
+                         projectConfigPlus.getOrigin(),
+                         timeScaleConfig.sourceLocation().getLineNumber(),
+                         timeScaleConfig.sourceLocation()
+                                        .getColumnNumber(),
+                         lrb );
+        }
+
+        return result;
+    }
+
+    /**
+     * @param projectConfigPlus the project declaration
      * @param pairConfig the pair declaration
      * @return true if the {@code desiredTimeScale} is valid, false otherwise
      */
@@ -2234,7 +2274,7 @@ public class Validation
         
         // Period required, unless both monthdays are present
         if ( Objects.isNull( timeScaleConfig.getPeriod() )
-             && ( !earliestMonthPresent || earliestDayPresent || latestMonthPresent || latestDayPresent ) )
+             && ( !earliestMonthPresent || !earliestDayPresent || !latestMonthPresent || !latestDayPresent ) )
         {
             result = false;
 
@@ -3296,21 +3336,28 @@ public class Validation
             result = false;
         }
 
-        result = result && Validation.areDataSourcesValid( projectConfigPlus, left );
+        result = Validation.areDataSourcesValid( projectConfigPlus, left ) && result;
 
-        result = result && Validation.areDataSourcesValid( projectConfigPlus, right );
+        result = Validation.areDataSourcesValid( projectConfigPlus, right ) && result;
 
-        result = result && Validation.isTypeConsistentWithOtherDeclaration( projectConfigPlus, left );
+        result = Validation.isTypeConsistentWithOtherDeclaration( projectConfigPlus, left ) && result;
 
-        result = result && Validation.isTypeConsistentWithOtherDeclaration( projectConfigPlus, right );
+        result = Validation.isTypeConsistentWithOtherDeclaration( projectConfigPlus, right ) && result;
+
+        result = Validation.isExistingTimeScaleValid( projectConfigPlus, left, LeftOrRightOrBaseline.LEFT ) && result;
+
+        result = Validation.isExistingTimeScaleValid( projectConfigPlus, right, LeftOrRightOrBaseline.RIGHT ) && result;
 
         if ( baseline != null )
         {
-            result = result && Validation.areDataSourcesValid( projectConfigPlus, baseline );
+            result = Validation.areDataSourcesValid( projectConfigPlus, baseline ) && result;
 
-            result = result && Validation.areLeftAndBaselineConsistent( projectConfigPlus, left, baseline );
+            result = Validation.areLeftAndBaselineConsistent( projectConfigPlus, left, baseline ) && result;
 
-            result = result && Validation.isTypeConsistentWithOtherDeclaration( projectConfigPlus, baseline );
+            result = Validation.isTypeConsistentWithOtherDeclaration( projectConfigPlus, baseline ) && result;
+
+            result = Validation.isExistingTimeScaleValid( projectConfigPlus, baseline, LeftOrRightOrBaseline.BASELINE )
+                     && result;
         }
 
         return result;

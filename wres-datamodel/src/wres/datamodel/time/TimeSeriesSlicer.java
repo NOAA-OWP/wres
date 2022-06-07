@@ -2,6 +2,9 @@ package wres.datamodel.time;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.MonthDay;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -26,6 +29,7 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.pools.PoolSlicer;
+import wres.datamodel.scale.TimeScaleOuter;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -336,10 +340,6 @@ public final class TimeSeriesSlicer
      * that event to the group associated with <code>endsAt</code>. Use this method to determine groups of events for
      * upscaling values that end at <code>endsAt</code>.
      * 
-     * TODO: this method has a nested loop, which implies O(n^2) complexity, where <code>n</code> is the cardinality of
-     * <code>endsAt</code>. While it does exploit time-ordering to avoid searching the entire set of 
-     * <code>endsAt</code>, it does not scale well for very large datasets.
-     * 
      * @param <T> the type of event value
      * @param events the events to group
      * @param endsAt the end of each group, inclusive
@@ -359,6 +359,37 @@ public final class TimeSeriesSlicer
 
         Objects.requireNonNull( period, NULL_INPUT_EXCEPTION );
 
+        // Calculate the intervals
+        SortedSet<Pair<Instant, Instant>> intervals = endsAt.stream()
+                                                            .map( next -> Pair.of( next.minus( period ), next ) )
+                                                            .collect( Collectors.toCollection( TreeSet::new ) );
+
+        return TimeSeriesSlicer.groupEventsByInterval( events, Collections.unmodifiableSortedSet( intervals ) );
+    }
+
+    /**
+     * Groups the input events according to the event valid time. An event falls within a group if its valid time falls 
+     * within the corresponding group interval. Each interval is right-closed.
+     * 
+     * TODO: this method has a nested loop, which implies O(n^2) complexity, where <code>n</code> is the cardinality of
+     * <code>endsAt</code>. While it does exploit time-ordering to avoid searching the entire set of 
+     * <code>endsAt</code>, it does not scale well for very large datasets.
+     * 
+     * @param <T> the type of event value
+     * @param events the events to group
+     * @param intervals the intervals within which to group events
+     * @return the grouped events
+     * @throws NullPointerException if any input is null
+     */
+
+
+    public static <T> Map<Instant, SortedSet<Event<T>>> groupEventsByInterval( SortedSet<Event<T>> events,
+                                                                               SortedSet<Pair<Instant, Instant>> intervals )
+    {
+        Objects.requireNonNull( events, NULL_INPUT_EXCEPTION );
+
+        Objects.requireNonNull( intervals, NULL_INPUT_EXCEPTION );
+
         Map<Instant, SortedSet<Event<T>>> grouped = new HashMap<>();
 
         // Events in a sorted list
@@ -367,10 +398,11 @@ public final class TimeSeriesSlicer
 
         // Iterate the end times and group events whose times fall in (nextEnd-period,nextEnd]
         int startIndex = 0; // Position at which to start searching the listed events
-        for ( Instant nextEnd : endsAt )
+        for ( Pair<Instant, Instant> nextInterval : intervals )
         {
             // Lower bound exclusive
-            Instant nextStart = nextEnd.minus( period );
+            Instant nextStart = nextInterval.getLeft();
+            Instant nextEnd = nextInterval.getRight();
 
             // Is event time within (start,nextEnd]?
             SortedSet<Event<T>> nextGroup = grouped.get( nextEnd );
@@ -408,6 +440,190 @@ public final class TimeSeriesSlicer
         }
 
         return Collections.unmodifiableMap( grouped );
+    }
+
+    /**
+     * Creates as many intervals as years within the supplied time series using the time scale, which must have one or
+     * both month-day bookends defined. Each interval is right-closed.
+     * 
+     * @param <T> the type of time series event value
+     * @param desiredTimeScale the desired time scale
+     * @param timeSeries the time series
+     * @return the intervals
+     * @throws NullPointerException if any input is null
+     */
+
+    public static <T> SortedSet<Pair<Instant, Instant>>
+            getIntervalsFromTimeScaleWithMonthDays( TimeScaleOuter desiredTimeScale,
+                                                    TimeSeries<T> timeSeries )
+    {
+        Objects.requireNonNull( desiredTimeScale );
+        Objects.requireNonNull( timeSeries );
+
+        MonthDay startMonthDay = desiredTimeScale.getStartMonthDay();
+        MonthDay endMonthDay = desiredTimeScale.getEndMonthDay();
+
+        // At least one must be present. If only one is present, the period is guaranteed present
+        if ( Objects.isNull( startMonthDay ) && Objects.isNull( endMonthDay ) )
+        {
+            throw new IllegalArgumentException( "Cannot extract intervals from a desored time scale that has no "
+                                                + "bookends present." );
+        }
+
+        // Create a mapper function that maps from an event to an interval
+        Function<? super Event<T>, ? extends Pair<Instant, Instant>> mapper = event -> {
+
+            ZoneId zoneId = ZoneId.of( "UTC" );
+
+            // Extract the year
+            int year = event.getTime()
+                            .atZone( zoneId )
+                            .getYear();
+
+            Instant start = null;
+            Instant end = null;
+
+            if ( Objects.nonNull( startMonthDay ) )
+            {
+                LocalDate startLocal = startMonthDay.atYear( year );
+
+                // Start of day should be inclusive, so move back one instant
+                start = startLocal.atStartOfDay( zoneId )
+                                  .minusNanos( 1 )
+                                  .toInstant();
+            }
+
+            if ( Objects.nonNull( endMonthDay ) )
+            {
+                LocalDate endLocal = endMonthDay.atYear( year );
+
+                // End of day, which occurs one instant before the start of the next day
+                end = endLocal.atStartOfDay( zoneId )
+                              .plusDays( 1 )
+                              .minusNanos( 1 )
+                              .toInstant();
+            }
+
+            // One bookend plus the period must be present, see above
+            if ( Objects.isNull( start ) )
+            {
+                start = end.minus( desiredTimeScale.getPeriod() );
+            }
+
+            if ( Objects.isNull( end ) )
+            {
+                end = start.plus( desiredTimeScale.getPeriod() );
+            }
+
+            return Pair.of( start, end );
+        };
+
+        SortedSet<Pair<Instant, Instant>> intervals = timeSeries.getEvents()
+                                                                .stream()
+                                                                .map( mapper )
+                                                                .collect( Collectors.toCollection( TreeSet::new ) );
+
+        return Collections.unmodifiableSortedSet( intervals );
+    }
+
+    /**
+     * <p>When conducting upscaling, all possible times are produced. This may include upscaled volumes that are more 
+     * frequent than the desired frequency. By default, the desired frequency is the <code>period</code> associated 
+     * with the desired time scale (aka "back-to-back" pairs), otherwise an explicit frequency.
+     * 
+     * <p>This method makes a best attempt to retain events from the input superset of events whose valid times follow a 
+     * prescribed frequency. Consequently, this method effectively "thins out" the superset of all possible events in 
+     * order to provide a subset of regularly spaced events. In general, there is no unique subset of events that 
+     * follows a prescribed frequency unless a starting position is defined. Here, counting occurs with respect to a 
+     * reference time (i.e., the reference time helps to select a subset). 
+     * 
+     * <p>See #47158-24.
+     * 
+     * <p>This is to re-assert my opinion, stated in #47158, that we should not attempt to find such a subset, but 
+     * instead compute all events. For the same reason, the <code>frequency</code> associated with the 
+     * <code>desiredTimeScale</code> should be eliminated. This method is an inevitable source of brittleness.
+     * 
+     * @param <T> the type of time series event
+     * @param toFilter the time-series to inspect
+     * @param referenceTime the reference time from which to count
+     * @param period the period associated with the desired time scale
+     * @param frequency the regular frequency with which to count periods, defaults to the period
+     * @return the filtered pairs
+     * @throws NullPointerException if the toFilter, referenceTime or period is null
+     */
+
+    public static <T> TimeSeries<T> filterEventsByFrequency( TimeSeries<T> toFilter,
+                                                             Instant referenceTime,
+                                                             Duration period,
+                                                             Duration frequency )
+    {
+        Objects.requireNonNull( toFilter );
+
+        Objects.requireNonNull( referenceTime );
+
+        Objects.requireNonNull( period );
+
+        // More than one pair?
+        TimeSeries<T> filtered = toFilter;
+        if ( toFilter.getEvents().size() > 1 )
+        {
+            // Duration by which to jump between periods
+            // Default to the period, aka "back-to-back"
+            Duration jump = frequency;
+            if ( Objects.isNull( frequency ) )
+            {
+                jump = period;
+            }
+
+            TimeSeries.Builder<T> filteredSeries = new TimeSeries.Builder<>();
+            TimeSeriesMetadata localMetadata = toFilter.getMetadata();
+            filteredSeries.setMetadata( localMetadata );
+
+            List<Event<T>> events = new ArrayList<>( toFilter.getEvents() );
+
+            // Get the start time for the regular sequence
+            Instant nextTime =
+                    TimeSeriesSlicer.getStartTimeForRegularSequenceOfEvents( referenceTime, period, jump, events );
+
+            int totalEvents = events.size();
+            Instant lastTime = events.get( totalEvents - 1 ).getTime();
+
+            // Increment the sequence from the start time
+            int start = 0;
+            while ( nextTime.compareTo( lastTime ) <= 0 )
+            {
+                // Does a pair exist at the next regular time?
+                for ( int i = start; i < totalEvents; i++ )
+                {
+                    Event<T> nextEvent = events.get( i );
+                    Instant nextEventTime = nextEvent.getTime();
+
+                    // Yes it does. Add it.
+                    if ( nextEventTime.equals( nextTime ) )
+                    {
+                        filteredSeries.addEvent( nextEvent );
+                        start = i + 1;
+                        break;
+                    }
+                }
+
+                nextTime = nextTime.plus( jump );
+            }
+
+            filtered = filteredSeries.build();
+
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "Inspected {} pairs and eliminated {} pairs to be consistent with the production of "
+                              + "regular pairs that have a period of {} and repeat every {}.",
+                              toFilter.getEvents().size(),
+                              filtered.getEvents().size() - toFilter.getEvents().size(),
+                              period,
+                              frequency );
+            }
+        }
+
+        return filtered;
     }
 
     /**
@@ -1318,6 +1534,101 @@ public final class TimeSeriesSlicer
 
         return duration.equals( upperInclusive ) ||
                ( duration.compareTo( lowerExclusive ) > 0 && duration.compareTo( upperInclusive ) < 0 );
+    }
+
+
+    /**
+     * Steps away from the reference time by the period, initially, then the frequency, until an event is discovered in
+     * the list with the same valid time. If no event is discovered, returns the valid time of the first event in the 
+     * list.
+     * 
+     * @param <T> the type of time series event
+     * @param referenceTime the reference time
+     * @param period the period
+     * @param frequency the frequency
+     * @param timeOrderedListOfEvents the events in order of valid time
+     * @return the start time
+     */
+
+    private static <T> Instant getStartTimeForRegularSequenceOfEvents( Instant referenceTime,
+                                                                       Duration period,
+                                                                       Duration frequency,
+                                                                       List<Event<T>> timeOrderedListOfEvents )
+    {
+        Instant firstTime = timeOrderedListOfEvents.get( 0 ).getTime();
+
+        // First valid time is before the reference time: use the first valid time. The alternative would be to search
+        // a regular sequence moving back in time and choosing the earliest instance on that sequence, similar to the 
+        // forward search below. This would guarantee consistent behavior for time-series that span the reference time, 
+        // ensuring the same choice of pairs, regardless of the earliest lead duration considered, but it would also add 
+        // complexity and negative lead durations are an edge case.
+        if ( firstTime.compareTo( referenceTime ) < 0 )
+        {
+            return firstTime;
+        }
+
+        // First valid time is after the reference time so step forwards
+        return TimeSeriesSlicer.getStartTimeForRegularSequenceOfEventsSearchingForwards( referenceTime,
+                                                                                         period,
+                                                                                         frequency,
+                                                                                         timeOrderedListOfEvents );
+    }
+
+    /**
+     * Steps forwards from the reference time by the period, initially, then the frequency, until an event is discovered 
+     * in the list with the same valid time. If no event is discovered, returns the valid time of the first event in the 
+     * list.
+     * 
+     * @param <T> the type of time series event
+     * @param referenceTime the reference time
+     * @param period the period
+     * @param frequency the frequency
+     * @param timeOrderedListOfEvents the events in order of valid time
+     * @return the start time
+     */
+
+    private static <T> Instant getStartTimeForRegularSequenceOfEventsSearchingForwards( Instant referenceTime,
+                                                                                        Duration period,
+                                                                                        Duration frequency,
+                                                                                        List<Event<T>> timeOrderedListOfEvents )
+    {
+        int totalEvents = timeOrderedListOfEvents.size();
+        Instant firstTime = timeOrderedListOfEvents.get( 0 ).getTime();
+        Instant lastTime = timeOrderedListOfEvents.get( totalEvents - 1 ).getTime();
+
+        // Increment the sequence of valid times until the last time
+        // It is debatable whether the first step away from the reference time should use the period or the frequency.
+        // The period is chosen here.
+        Instant nextSequenceTime = referenceTime.plus( period );
+
+        // Iterate the regular sequence until the end
+        while ( nextSequenceTime.compareTo( lastTime ) <= 0 )
+        {
+            // Does a pair exist in the list of pairs whose valid time matches the next time in the sequence?
+            for ( int i = 0; i < totalEvents; i++ )
+            {
+                Event<T> nextEvent = timeOrderedListOfEvents.get( i );
+                Instant nextEventTime = nextEvent.getTime();
+
+                int compare = nextEventTime.compareTo( nextSequenceTime );
+
+                // Yes it does. Return it.
+                if ( compare == 0 )
+                {
+                    return nextEventTime;
+                }
+                // Next event time is after the sequence time and the times are ordered, so break
+                else if ( compare > 0 )
+                {
+                    break;
+                }
+            }
+
+            nextSequenceTime = nextSequenceTime.plus( frequency );
+        }
+
+        // Resort to the first valid time in the list
+        return firstTime;
     }
 
     /**

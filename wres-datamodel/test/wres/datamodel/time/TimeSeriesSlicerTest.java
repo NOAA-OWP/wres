@@ -29,6 +29,7 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
+import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeWindow;
 
 /**
@@ -966,6 +967,81 @@ public final class TimeSeriesSlicerTest
         Instant expected = Instant.parse( "1985-01-05T12:00:00Z" );
 
         assertEquals( "Unexpected error in mid-point of time window.", expected, actual );
+    }
+
+    @Test
+    public void testGetIntervalsFromTimeScaleWithBothMonthDaysPresent()
+    {
+        TimeScale timeScale = TimeScale.newBuilder()
+                                       .setStartDay( 1 )
+                                       .setStartMonth( 4 )
+                                       .setEndDay( 31 )
+                                       .setEndMonth( 7 )
+                                       .build();
+
+        TimeScaleOuter outerTimeScale = TimeScaleOuter.of( timeScale );
+
+        // Create a time-series that contains three years
+        TimeSeries<String> fooSeries =
+                new TimeSeries.Builder<String>().addEvent( Event.of( Instant.parse( "1988-10-05T00:00:00Z" ),
+                                                                     "a" ) )
+                                                .addEvent( Event.of( Instant.parse( "1989-10-05T00:00:00Z" ),
+                                                                     "b" ) )
+                                                .addEvent( Event.of( Instant.parse( "1990-10-05T00:00:00Z" ),
+                                                                     "c" ) )
+                                                .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
+                                                .build();
+
+        SortedSet<Pair<Instant, Instant>> actual = TimeSeriesSlicer.getIntervalsFromTimeScaleWithMonthDays( outerTimeScale,
+                                                                                               fooSeries );
+
+        SortedSet<Pair<Instant, Instant>> expected = new TreeSet<>();
+        expected.add( Pair.of( Instant.parse( "1988-03-31T23:59:59.999999999Z" ),
+                               Instant.parse( "1988-07-31T23:59:59.999999999Z" ) ) );
+        expected.add( Pair.of( Instant.parse( "1989-03-31T23:59:59.999999999Z" ),
+                               Instant.parse( "1989-07-31T23:59:59.999999999Z" ) ) );
+        expected.add( Pair.of( Instant.parse( "1990-03-31T23:59:59.999999999Z" ),
+                               Instant.parse( "1990-07-31T23:59:59.999999999Z" ) ) );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    public void testGetIntervalsFromTimeScaleWithStartMonthDayAndPeriodPresent()
+    {
+        // 90 days from 1 April
+        TimeScale timeScale = TimeScale.newBuilder()
+                                       .setStartDay( 1 )
+                                       .setStartMonth( 4 )
+                                       .setPeriod( com.google.protobuf.Duration.newBuilder()
+                                                                               .setSeconds( 60 * 60 * 24 * 90 ) )
+                                       .build();
+
+        TimeScaleOuter outerTimeScale = TimeScaleOuter.of( timeScale );
+
+        // Create a time-series that contains three years
+        TimeSeries<String> fooSeries =
+                new TimeSeries.Builder<String>().addEvent( Event.of( Instant.parse( "1988-10-05T00:00:00Z" ),
+                                                                     "a" ) )
+                                                .addEvent( Event.of( Instant.parse( "1989-10-05T00:00:00Z" ),
+                                                                     "b" ) )
+                                                .addEvent( Event.of( Instant.parse( "1990-10-05T00:00:00Z" ),
+                                                                     "c" ) )
+                                                .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
+                                                .build();
+
+        SortedSet<Pair<Instant, Instant>> actual = TimeSeriesSlicer.getIntervalsFromTimeScaleWithMonthDays( outerTimeScale,
+                                                                                               fooSeries );
+
+        SortedSet<Pair<Instant, Instant>> expected = new TreeSet<>();
+        expected.add( Pair.of( Instant.parse( "1988-03-31T23:59:59.999999999Z" ),
+                               Instant.parse( "1988-06-29T23:59:59.999999999Z" ) ) );
+        expected.add( Pair.of( Instant.parse( "1989-03-31T23:59:59.999999999Z" ),
+                               Instant.parse( "1989-06-29T23:59:59.999999999Z" ) ) );
+        expected.add( Pair.of( Instant.parse( "1990-03-31T23:59:59.999999999Z" ),
+                               Instant.parse( "1990-06-29T23:59:59.999999999Z" ) ) );
+
+        assertEquals( expected, actual );
     }
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0 )

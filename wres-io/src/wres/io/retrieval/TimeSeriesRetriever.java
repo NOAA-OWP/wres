@@ -49,137 +49,71 @@ import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 {
-
-    /**
-     * String used repeatedly to denote a reference_time.
-     */
-
     static final String REFERENCE_TIME = "reference_time";
 
-    /**
-     * Message used several times.
-     */
+    private static final String AND = " = ? AND ";
 
     private static final String WHILE_BUILDING_THE_RETRIEVER = "While building the retriever for project_id '{}' "
                                                                + "and data type {}, ";
 
-    /**
-     * Script string used several times.
-     */
-
     private static final String INTERVAL_1_MINUTE = " + INTERVAL '1' MINUTE * ";
-
-    /**
-     * Operator used several times in scripts.
-     */
 
     private static final String LESS_EQUAL = " <= ?";
 
-    /**
-     * Logger.
-     */
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesRetriever.class );
 
-    /**
-     * Log message for the retriever script.
-     */
-
+    /** Log message for the retriever script. */
     private static final String LOG_SCRIPT = "Built retriever {}:{}{}The script was built as a prepared statement with "
                                              + "the following list of parameters: {}.";
 
-    /**
-     * Database instance.
-     */
-
+    /** Database instance. */
     private final Database database;
 
-    /**
-     * Features cache/orm to allow "get db id from a FeatureKey."
-     */
-
+    /** Features cache/orm to allow "get db id from a FeatureKey." */
     private final Features featuresCache;
 
-    /**
-     * Time window filter.
-     */
-
+    /** Time window filter. */
     private final TimeWindowOuter timeWindow;
 
-    /**
-     * The desired time scale, which is used to adjust retrieval when a forecast lead duration ends within
-     * the {@link #timeWindow} but starts outside it.
-     */
-
+    /** The desired time scale, which is used to adjust retrieval when a forecast lead duration ends within
+     * the {@link #timeWindow} but starts outside it. */
     private final TimeScaleOuter desiredTimeScale;
 
-    /**
-     * The <code>wres.Project.project_id</code>.
-     */
-
+    /** The <code>wres.Project.project_id</code>. */
     private final long projectId;
 
-    /**
-     * The features.
-     */
-
+    /** The features. */
     private final Set<FeatureKey> features;
 
-    /**
-     * The variable name.
-     */
-
+    /** The variable name. */
     private final String variableName;
 
-    /**
-     * The data type.
-     */
-
+    /** The data type. */
     private final LeftOrRightOrBaseline lrb;
 
-    /**
-     * Mapper for changing measurement units.
-     */
-
+    /** Mapper for changing measurement units. */
     private final UnitMapper unitMapper;
 
-    /**
-     * A declared existing time-scale, which can be used to augment a source, but not override it.
-     */
-
+    /** A declared existing time-scale, which can be used to augment a source, but not override it. */
     private final TimeScaleOuter declaredExistingTimeScale;
 
-    /**
-     * The start monthday of a season constraint.
-     */
-
+    /** The start monthday of a season constraint. */
     private final MonthDay seasonStart;
 
-    /**
-     * The end monthday of a season constraint.
-     */
-
+    /** The end monthday of a season constraint. */
     private final MonthDay seasonEnd;
 
-    /**
-     * The time column name, including the table alias (e.g., O.observation_time). This may be a reference time or a
-     * valid time, depending on context. See {@link #timeColumnIsAReferenceTime()}.
-     */
-
+    /** The time column name, including the table alias (e.g., O.observation_time). This may be a reference time or a
+     * valid time, depending on context. See {@link #timeColumnIsAReferenceTime()}. */
     private String timeColumn;
 
-    /**
-     * The lead duration column name, including the table alias (e.g., TSV.lead).
-     */
-
+    /** The lead duration column name, including the table alias (e.g., TSV.lead). */
     private final String leadDurationColumn;
 
-    /**
-     * Reference time type. If there are multiple instances per time-series in future, then the shape of retrieval will 
+    /** Reference time type. If there are multiple instances per time-series in future, then the shape of retrieval will 
      * substantively differ and the reference time type would necessarily become inline to the time-series, not 
-     * declared upfront.  
-     */
-
+     * declared upfront. */
     private ReferenceTimeType referenceTimeType = ReferenceTimeType.UNKNOWN;
 
     /**
@@ -253,17 +187,17 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
             TimeScaleOuter lastScale = null; // Record of last scale
             long lastSeriesId = -1;
-            
+
             while ( provider.next() )
             {
                 long seriesId = provider.getLong( "series_id" );
-                
+
                 // Reset the last time scale
-                if( seriesId != lastSeriesId )
+                if ( seriesId != lastSeriesId )
                 {
                     lastScale = null;
                 }
-                
+
                 int seriesCount = 1;
 
                 // Records occurrences?
@@ -316,10 +250,10 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                     period = Duration.ofMillis( periodInMs );
                 }
 
-                TimeScaleOuter latestScale = this.checkAndGetLatestScale( lastScale,
-                                                                          period,
-                                                                          functionString,
-                                                                          validTime );
+                TimeScaleOuter latestScale = this.checkAndGetLatestTimeScale( lastScale,
+                                                                              period,
+                                                                              functionString,
+                                                                              validTime );
 
                 long featureId = provider.getLong( "feature_id" );
                 FeatureKey featureKey = this.featuresCache.getFeatureKey( featureId );
@@ -427,7 +361,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                                 "date and after the earliest" );
                 script.addTab( tabsIn + 1 )
                       .addLine( "( " + monthOfYearTemplate + " < ? OR ( ",
-                                monthOfYearTemplate + " = ? AND ",
+                                monthOfYearTemplate + AND,
                                 dayOfMonthTemplate + " <= ? ) )",
                                 " -- In the set [1/1, ",
                                 earliestDay.getMonthValue(),
@@ -436,7 +370,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                                 "]" );
                 script.addTab( tabsIn + 1 )
                       .addLine( "OR ( " + monthOfYearTemplate + " > ? OR ( ",
-                                monthOfYearTemplate + " = ? AND ",
+                                monthOfYearTemplate + AND,
                                 dayOfMonthTemplate + " >= ? ) )",
                                 " -- Or in the set [",
                                 latestDay.getMonthValue(),
@@ -447,12 +381,14 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             }
             else
             {
-                script.addTab().addLine( "AND ( " + monthOfYearTemplate + " > ? OR ( ",
-                                         monthOfYearTemplate + " = ? AND ",
-                                         dayOfMonthTemplate + " >= ? ) )" );
-                script.addTab().addLine( "AND ( " + monthOfYearTemplate + " < ? OR ( ",
-                                         monthOfYearTemplate + " = ? ",
-                                         "AND " + dayOfMonthTemplate + " <= ? ) )" );
+                script.addTab()
+                      .addLine( "AND ( " + monthOfYearTemplate + " > ? OR ( ",
+                                monthOfYearTemplate + AND,
+                                dayOfMonthTemplate + " >= ? ) )" );
+                script.addTab()
+                      .addLine( "AND ( " + monthOfYearTemplate + " < ? OR ( ",
+                                monthOfYearTemplate + " = ? ",
+                                "AND " + dayOfMonthTemplate + " <= ? ) )" );
             }
 
             // Add the parameters in order
@@ -494,14 +430,14 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             Long[] featureIds = this.getFeatureIds();
             Object parameter = featureIds;
             String clause = "S.feature_id = ANY(?)";
-            
+
             // Simplify script if there is only one
-            if(featureIds.length==1 )
+            if ( featureIds.length == 1 )
             {
                 parameter = featureIds[0];
                 clause = "S.feature_id = ?";
             }
-            
+
             this.addWhereOrAndClause( script,
                                       tabsIn,
                                       clause,
@@ -751,11 +687,13 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @throws DataAccessException if the current time scale is inconsistent with the last time scale
      */
 
-    TimeScaleOuter checkAndGetLatestScale( TimeScaleOuter lastScale,
-                                           Duration period,
-                                           String functionString,
-                                           Instant validTime )
+    TimeScaleOuter checkAndGetLatestTimeScale( TimeScaleOuter lastScale,
+                                               Duration period,
+                                               String functionString,
+                                               Instant validTime )
     {
+        // As of v6.5, the db schema represents a time scale with a period and a function only and does not admit
+        // month-days
         Duration periodToUse = null;
         TimeScaleFunction functionToUse = null;
 
@@ -900,24 +838,27 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         // Lower bound
         if ( !filter.getEarliestLeadDuration().equals( TimeWindowOuter.DURATION_MIN ) )
         {
-            lowerLead = filter.getEarliestLeadDuration().toMinutes();
+            Duration period = Duration.ZERO;
 
-            // Adjust by the desired time scale if the desired time scale is not instantaneous
-            if ( Objects.nonNull( this.desiredTimeScale ) && !this.desiredTimeScale.isInstantaneous() )
+            if ( Objects.nonNull( this.desiredTimeScale ) )
             {
+                period = TimeScaleOuter.getOrInferPeriodFromTimeScale( this.desiredTimeScale );
+            }
 
-                Duration lowered = filter.getEarliestLeadDuration()
-                                         .minus( this.desiredTimeScale.getPeriod() );
+            Duration lowered = filter.getEarliestLeadDuration()
+                                     .minus( period );
 
+            if ( Objects.nonNull( this.desiredTimeScale ) && LOGGER.isDebugEnabled() )
+            {
                 LOGGER.debug( "Adjusting the lower lead duration of time window {} from {} to {} "
                               + "in order to acquire data at the desired time scale of {}.",
                               filter,
                               filter.getEarliestLeadDuration(),
                               lowered,
                               this.desiredTimeScale );
-
-                lowerLead = lowered.toMinutes();
             }
+
+            lowerLead = lowered.toMinutes();
         }
         // Upper bound
         if ( !filter.getLatestLeadDuration().equals( TimeWindowOuter.DURATION_MAX ) )
@@ -1116,12 +1057,15 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 {
                     lowerValidTime = lowerValidTime.plus( timeWindow.getEarliestLeadDuration() );
 
-                    //Adjust for the desired time scale
-                    if ( Objects.nonNull( this.getDesiredTimeScale() )
-                         && !this.getDesiredTimeScale().isInstantaneous() )
+                    //Adjust for the desired time scale, if available
+                    Duration period = Duration.ZERO;
+
+                    if ( Objects.nonNull( this.desiredTimeScale ) )
                     {
-                        lowerValidTime = lowerValidTime.minus( this.getDesiredTimeScale().getPeriod() );
+                        period = TimeScaleOuter.getOrInferPeriodFromTimeScale( this.desiredTimeScale );
                     }
+
+                    lowerValidTime = lowerValidTime.minus( period );
                 }
             }
         }

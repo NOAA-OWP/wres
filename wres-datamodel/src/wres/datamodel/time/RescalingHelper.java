@@ -16,6 +16,7 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,6 +66,10 @@ class RescalingHelper
             EvaluationStatusMessage.info( EvaluationStage.RESCALING,
                                           "The desired function is not unknown and is, therefore, acceptable." );
 
+    private static final EvaluationStatusMessage GROUPED_EVENTS_MESSAGE =
+            EvaluationStatusMessage.info( EvaluationStage.RESCALING,
+                                          "Computing grouped events for rescaling using the time scale period only." );
+
     private static final String THE_FUNCTION_ASSOCIATED_WITH = "The function associated with "
                                                                + "the desired time scale is a ''{0}'', "
                                                                + "but the function associated with the "
@@ -109,7 +114,7 @@ class RescalingHelper
 
     private static final String ENDING_AT = " ending at ";
 
-    private static final String EVENTS_TO_A_PERIOD_OF = " events to a period of ";
+    private static final String EVENTS_TO_A_DESIRED_TIME_SCALE_OF = " events to a desired time scale of ";
 
     private static final String WHILE_ATTEMPING_TO_UPSCALE_A_COLLECTION_OF =
             "While attemping to upscale a collection of ";
@@ -225,7 +230,9 @@ class RescalingHelper
 
         // If the period is the same, return the existing series with the desired scale
         // The validation of the function happens above. For example, the existing could be UNKNOWN
-        if ( desiredTimeScale.getPeriod().equals( timeSeries.getTimeScale().getPeriod() ) )
+        if ( desiredTimeScale.hasPeriod() && desiredTimeScale.getPeriod()
+                                                             .equals( timeSeries.getTimeScale()
+                                                                                .getPeriod() ) )
         {
             if ( LOGGER.isTraceEnabled() )
             {
@@ -273,6 +280,7 @@ class RescalingHelper
      * @param validationEvents the validation events
      * @param lenient is true to upscale irregularly spaced data (e.g., due to missing values)
      * @return the upscaled time-series and associated validation events
+     * @throws NullPointerException if any input is null
      */
 
     private static <T> RescaledTimeSeriesPlusValidation<T> upscaleWithChangeOfPeriod( TimeSeries<T> timeSeries,
@@ -282,42 +290,44 @@ class RescalingHelper
                                                                                       List<EvaluationStatusMessage> validationEvents,
                                                                                       boolean lenient )
     {
-        // No times at which values should end, so start at the beginning
-        if ( endsAt.isEmpty() )
-        {
-            endsAt = RescalingHelper.getEndTimesFromSeries( timeSeries, desiredTimeScale );
-        }
-
-        // Group the events according to whether their valid times fall within the desired period that ends at a 
-        // particular valid time
-        Duration period = desiredTimeScale.getPeriod();
-
-        // This grouping operation is expensive: see the notes attached to the method
-        Map<Instant, SortedSet<Event<T>>> groups =
-                TimeSeriesSlicer.groupEventsByInterval( timeSeries.getEvents(), endsAt, period );
-
-        // Process the groups whose events are evenly-spaced and have no missing values, otherwise skip and log
-        TimeSeries.Builder<T> builder = new TimeSeries.Builder<>();
+        Objects.requireNonNull( timeSeries );
+        Objects.requireNonNull( upscaler );
+        Objects.requireNonNull( desiredTimeScale );
+        Objects.requireNonNull( endsAt );
+        Objects.requireNonNull( validationEvents );
 
         // Create a mutable copy of the validation events to add more, as needed
         List<EvaluationStatusMessage> mutableValidationEvents = new ArrayList<>( validationEvents );
         validationEvents = mutableValidationEvents;
 
+        // Get the grouped events to upscale
+        Map<Instant, SortedSet<Event<T>>> groups = RescalingHelper.getGroupedEventsToUpscale( timeSeries,
+                                                                                              desiredTimeScale,
+                                                                                              endsAt,
+                                                                                              validationEvents );
+
+        // Process the groups whose events are evenly-spaced and have no missing values, otherwise skip and log
+        TimeSeries.Builder<T> builder = new TimeSeries.Builder<>();
+
         // Upscale each group, if possible
         for ( Map.Entry<Instant, SortedSet<Event<T>>> nextGroup : groups.entrySet() )
         {
+            Instant endsAtTime = nextGroup.getKey();
+
             GroupRescalingStatus status = RescalingHelper.checkThatUpscalingIsPossible( nextGroup.getValue(),
-                                                                                        nextGroup.getKey(),
-                                                                                        period,
+                                                                                        endsAtTime,
+                                                                                        desiredTimeScale,
                                                                                         lenient );
+
             validationEvents.addAll( status.getScaleValidationEvents() );
 
-            // No group-wise validation events, upscaling can proceed for this group
+            // Can rescale?
             if ( status.canRescale() )
             {
-                T result = upscaler.apply( nextGroup.getValue() );
-                Event<T> upscaled = Event.of( nextGroup.getKey(), result );
-
+                Instant nextKey = nextGroup.getKey();
+                SortedSet<Event<T>> nextValue = nextGroup.getValue();
+                T result = upscaler.apply( nextValue );
+                Event<T> upscaled = Event.of( nextKey, result );
                 builder.addEvent( upscaled );
             }
         }
@@ -332,6 +342,60 @@ class RescalingHelper
         builder.setMetadata( metadata );
 
         return RescaledTimeSeriesPlusValidation.of( builder.build(), Collections.unmodifiableList( validationEvents ) );
+    }
+
+    /**
+     * Creates the grouped events to upscale.
+     * 
+     * @param <T> the type of event value
+     * @param timeSeries the time series
+     * @param desiredTimeScale the desired time scale
+     * @param endsAt the time at which values should end, if applicable
+     * @param validationEvents a mutable list of validation events
+     * @return the grouped events
+     */
+
+    private static <T> Map<Instant, SortedSet<Event<T>>> getGroupedEventsToUpscale( TimeSeries<T> timeSeries,
+                                                                                    TimeScaleOuter desiredTimeScale,
+                                                                                    SortedSet<Instant> endsAt,
+                                                                                    List<EvaluationStatusMessage> validationEvents )
+    {
+        // No month-days present?
+        if ( !desiredTimeScale.hasMonthDays() )
+        {
+            validationEvents.add( GROUPED_EVENTS_MESSAGE );
+
+            SortedSet<Instant> endsAtTime = endsAt;
+
+            // No times at which values should end, so start at the beginning
+            if ( endsAtTime.isEmpty() )
+            {
+                endsAtTime = RescalingHelper.getEndTimesFromSeries( timeSeries, desiredTimeScale );
+            }
+
+            // Group the events according to whether their valid times fall within the desired period that ends at a 
+            // particular valid time
+            Duration period = desiredTimeScale.getPeriod();
+
+            // This grouping operation is expensive: see the notes attached to the method
+            return TimeSeriesSlicer.groupEventsByInterval( timeSeries.getEvents(), endsAtTime, period );
+        }
+
+        // One or both month-days are present, so compute end times directly. Input end times are unexpected and will be 
+        // ignored. This is developer-facing information, not user-facing information, so log
+        if ( !endsAt.isEmpty() && LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "When attempting to rescale a time-series whose desired time scale contains one or both "
+                          + "month-days, discovered an explicit list of end times at which to derive rescaled values, "
+                          + "which is unexpected. These end times will be ignored." );
+        }
+
+        // Create the intervals
+        SortedSet<Pair<Instant, Instant>> intervals = TimeSeriesSlicer.getIntervalsFromTimeScaleWithMonthDays( desiredTimeScale,
+                                                                                                  timeSeries );
+
+        // Group the events by interval
+        return TimeSeriesSlicer.groupEventsByInterval( timeSeries.getEvents(), intervals );
     }
 
     /**
@@ -417,8 +481,8 @@ class RescalingHelper
      * one or more {@link EvaluationStatusMessage} that explain why this is not possible.
      * 
      * @param events the events
-     * @param endsAt the end of the interval to aggregate, which is used for logging
-     * @param period the period over which to upscale
+     * @param endsAt the end of the interval to aggregate
+     * @param desiredTimeScale the period over which to upscale
      * @param lenient is true to upscale irregularly spaced data (e.g., due to missing values)
      * @return a list of scale validation events, empty if upscaling is possible
      * @throws NullPointerException if any input is null
@@ -426,18 +490,18 @@ class RescalingHelper
 
     private static <T> GroupRescalingStatus checkThatUpscalingIsPossible( SortedSet<Event<T>> events,
                                                                           Instant endsAt,
-                                                                          Duration period,
+                                                                          TimeScaleOuter desiredTimeScale,
                                                                           boolean lenient )
     {
         Objects.requireNonNull( events );
         Objects.requireNonNull( endsAt );
-        Objects.requireNonNull( period );
+        Objects.requireNonNull( desiredTimeScale );
 
         if ( events.size() < 2 )
         {
             String message = WHILE_ATTEMPING_TO_UPSCALE_A_COLLECTION_OF + events.size()
-                             + EVENTS_TO_A_PERIOD_OF
-                             + period
+                             + EVENTS_TO_A_DESIRED_TIME_SCALE_OF
+                             + desiredTimeScale
                              + ENDING_AT
                              + endsAt
                              + DISCOVERED_FEWER_THAN_TWO_EVENTS_IN_THE_COLLECTION_WHICH_IS_INSUFFICIENT_FOR
@@ -454,16 +518,20 @@ class RescalingHelper
                       .map( Event::getTime )
                       .collect( Collectors.toCollection( TreeSet::new ) );
 
-        // Add the lower bound, as the gap between this bound and the 
-        // first time should be considered too
-        times.add( endsAt.minus( period ) );
+        // If the desired time scale does not use fixed month-days, add the lower bound as the gap between this bound 
+        // and the first time should be considered too
+        if ( !desiredTimeScale.hasMonthDays() )
+        {
+            Duration period = desiredTimeScale.getPeriod();
+            times.add( endsAt.minus( period ) );
+        }
 
         // Check for even spacing if there are two or more gaps
         if ( times.size() > 2 )
         {
             String message = WHILE_ATTEMPING_TO_UPSCALE_A_COLLECTION_OF + events.size()
-                             + EVENTS_TO_A_PERIOD_OF
-                             + period
+                             + EVENTS_TO_A_DESIRED_TIME_SCALE_OF
+                             + desiredTimeScale
                              + ENDING_AT
                              + endsAt
                              + DISCOVERED_THAT_THE_VALUES_WERE_NOT_EVENLY_SPACED_WITHIN_THE_PERIOD_IDENTIFIED
@@ -548,21 +616,24 @@ class RescalingHelper
         // (which has a more lenient interpretation)
         if ( RescalingHelper.isChangeOfScaleRequired( existingTimeScale, desiredTimeScale ) )
         {
+            // Can only validate the period upfront if it is available/fixed
+            if ( desiredTimeScale.hasPeriod() )
+            {
+                // Downscaling not currently allowed
+                allEvents.add( RescalingHelper.checkIfDownscalingRequested( existingTimeScale.getPeriod(),
+                                                                            desiredTimeScale.getPeriod() ) );
+
+                // The desired time scale period must be an integer multiple of the existing time scale period
+                allEvents.add( RescalingHelper.checkIfDesiredPeriodDoesNotCommute( existingTimeScale.getPeriod(),
+                                                                                   desiredTimeScale.getPeriod() ) );
+
+                // If the existing and desired periods are the same, the function cannot differ
+                allEvents.add( RescalingHelper.checkIfPeriodsMatchAndFunctionsDiffer( existingTimeScale,
+                                                                                      desiredTimeScale ) );
+            }
 
             // The desired time scale must be a sensible function in the context of rescaling
             allEvents.add( RescalingHelper.checkIfDesiredFunctionIsUnknown( desiredTimeScale ) );
-
-            // Downscaling not currently allowed
-            allEvents.add( RescalingHelper.checkIfDownscalingRequested( existingTimeScale.getPeriod(),
-                                                                        desiredTimeScale.getPeriod() ) );
-
-            // The desired time scale period must be an integer multiple of the existing time scale period
-            allEvents.add( RescalingHelper.checkIfDesiredPeriodDoesNotCommute( existingTimeScale.getPeriod(),
-                                                                               desiredTimeScale.getPeriod() ) );
-
-            // If the existing and desired periods are the same, the function cannot differ
-            allEvents.add( RescalingHelper.checkIfPeriodsMatchAndFunctionsDiffer( existingTimeScale,
-                                                                                  desiredTimeScale ) );
 
             // If the existing time scale is instantaneous, do not allow accumulations (for now)
             allEvents.add( RescalingHelper.checkIfAccumulatingInstantaneous( existingTimeScale,

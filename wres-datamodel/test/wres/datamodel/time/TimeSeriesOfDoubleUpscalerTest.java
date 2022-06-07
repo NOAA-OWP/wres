@@ -21,6 +21,7 @@ import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.RescalingException;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.TimeSeries.Builder;
@@ -652,6 +653,110 @@ public class TimeSeriesOfDoubleUpscalerTest
                          + "scale must be changed.";
 
         assertTrue( exception.getMessage().contains( message ) );
+    }
+
+    @Test
+    public void testUpscaleObservationsBetweenTwoMonthDays()
+    {
+        // Four event times, one day apart
+        Instant first = Instant.parse( "2080-01-01T00:00:00Z" );
+        Instant second = Instant.parse( "2080-01-02T00:00:00Z" );
+        Instant third = Instant.parse( "2080-01-03T00:00:00Z" );
+        Instant fourth = Instant.parse( "2080-01-04T00:00:00Z" );
+
+        // Four events
+        Event<Double> one = Event.of( first, 12.0 );
+        Event<Double> two = Event.of( second, 15.0 );
+        Event<Double> three = Event.of( third, 3.0 );
+        Event<Double> four = Event.of( fourth, 22.0 );
+
+        // Time scale of the event values: instantaneous
+        TimeScaleOuter existingScale = TimeScaleOuter.of();
+        TimeSeriesMetadata existingMetadata =
+                getBoilerplateMetadataWithTimeScale( existingScale );
+
+        // Time-series to upscale
+        TimeSeries<Double> timeSeries = new Builder<Double>().addEvent( one )
+                                                             .addEvent( two )
+                                                             .addEvent( three )
+                                                             .addEvent( four )
+                                                             .setMetadata( existingMetadata )
+                                                             .build();
+
+        // The desired scale
+        TimeScale timeScale = TimeScale.newBuilder()
+                                       .setFunction( TimeScaleFunction.MEAN )
+                                       .setStartDay( 1 )
+                                       .setStartMonth( 1 )
+                                       .setEndDay( 3 )
+                                       .setEndMonth( 1 )
+                                       .build();
+
+        TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( timeScale );
+
+        TimeSeries<Double> actual = this.upscaler.upscale( timeSeries, desiredTimeScale )
+                                                 .getTimeSeries();
+
+        // Create the expected series with the desired time scale
+        TimeSeriesMetadata expectedMetadata =
+                getBoilerplateMetadataWithTimeScale( desiredTimeScale );
+        TimeSeries<Double> expected = new Builder<Double>().addEvent( Event.of( fourth.minusNanos( 1L ), 10.0 ) )
+                                                           .setMetadata( expectedMetadata )
+                                                           .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    public void testUpscaleObservationsBoundedByOneMonthDay()
+    {
+        // Four event times, one day apart
+        Instant first = Instant.parse( "2080-01-01T00:00:00Z" );
+        Instant second = Instant.parse( "2080-01-02T00:00:00Z" );
+        Instant third = Instant.parse( "2080-01-03T00:00:00Z" );
+        Instant fourth = Instant.parse( "2080-01-04T00:00:00Z" );
+
+        // Four events
+        Event<Double> one = Event.of( first, 12.0 );
+        Event<Double> two = Event.of( second, 15.0 );
+        Event<Double> three = Event.of( third, 3.0 );
+        Event<Double> four = Event.of( fourth, 22.0 );
+
+        // Time scale of the event values: instantaneous
+        TimeScaleOuter existingScale = TimeScaleOuter.of();
+        TimeSeriesMetadata existingMetadata =
+                getBoilerplateMetadataWithTimeScale( existingScale );
+
+        // Time-series to upscale
+        TimeSeries<Double> timeSeries = new Builder<Double>().addEvent( one )
+                                                             .addEvent( two )
+                                                             .addEvent( three )
+                                                             .addEvent( four )
+                                                             .setMetadata( existingMetadata )
+                                                             .build();
+
+        // The desired scale
+        TimeScale timeScale = TimeScale.newBuilder()
+                                       .setFunction( TimeScaleFunction.MEAN )
+                                       .setStartDay( 1 )
+                                       .setStartMonth( 1 )
+                                       .setPeriod( com.google.protobuf.Duration.newBuilder()
+                                                                               .setSeconds( 60 * 60 * 24 * 3 ) )
+                                       .build();
+
+        TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( timeScale );
+
+        TimeSeries<Double> actual = this.upscaler.upscale( timeSeries, desiredTimeScale )
+                                                 .getTimeSeries();
+
+        // Create the expected series with the desired time scale
+        TimeSeriesMetadata expectedMetadata =
+                getBoilerplateMetadataWithTimeScale( desiredTimeScale );
+        TimeSeries<Double> expected = new Builder<Double>().addEvent( Event.of( fourth.minusNanos( 1L ), 10.0 ) )
+                                                           .setMetadata( expectedMetadata )
+                                                           .build();
+
+        assertEquals( expected, actual );
     }
 
 }
