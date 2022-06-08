@@ -1577,6 +1577,11 @@ project( ':wres-external-services-tests' )
                 {
                     into( 'lib/conf' )
                 }
+                from( '../dist/lib/conf/DODSWCA_60.pem' )
+                {
+                    into( 'lib/conf' )
+                }
+
             }
         }
     }
