@@ -84,6 +84,7 @@ public class TimeWindowOuter implements Comparable<TimeWindowOuter>
     /**
      * Constructs a {@link TimeWindowOuter} with a canonical {@link TimeWindow}.
      * 
+     * @see MessageFactory#getTimeWindow() and related methods
      * @param timeWindow a time window
      * @return a time window
      */

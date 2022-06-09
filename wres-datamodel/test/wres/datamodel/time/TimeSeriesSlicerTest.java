@@ -2,7 +2,6 @@ package wres.datamodel.time;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -39,7 +38,6 @@ import wres.statistics.generated.TimeWindow;
  */
 public final class TimeSeriesSlicerTest
 {
-
     private static final String CFS = "CFS";
     private static final String STREAMFLOW = "STREAMFLOW";
     private static final FeatureKey DRRC2 = FeatureKey.of(
@@ -245,7 +243,7 @@ public final class TimeSeriesSlicerTest
                     TimeSeriesSlicer.filter( ts.get().get( 0 ), window );
             for ( Event<Pair<Double, Double>> nextPair : events.getEvents() )
             {
-                assertTrue( nextPair.getValue().equals( Pair.of( nextValue, nextValue ) ) );
+                assertEquals( Pair.of( nextValue, nextValue ), nextPair.getValue() );
             }
 
             nextValue++;
@@ -1079,6 +1077,305 @@ public final class TimeSeriesSlicerTest
                                Instant.parse( "1989-06-29T23:59:59.999999999Z" ) ) );
         expected.add( Pair.of( Instant.parse( "1990-03-31T23:59:59.999999999Z" ),
                                Instant.parse( "1990-06-29T23:59:59.999999999Z" ) ) );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    public void testGetRegularSequenceOfIntersectingTimesForOneTimeWindow()
+    {
+        SortedSet<Event<Double>> leftEvents = new TreeSet<>();
+        leftEvents.add( Event.of( Instant.parse( "1988-10-04T18:00:00Z" ), 1.0 ) );
+        leftEvents.add( Event.of( Instant.parse( "1988-10-04T21:00:00Z" ), 2.0 ) );
+        leftEvents.add( Event.of( Instant.parse( "1988-10-05T00:00:00Z" ), 3.0 ) );
+        leftEvents.add( Event.of( Instant.parse( "1988-10-05T03:00:00Z" ), 4.0 ) );
+        leftEvents.add( Event.of( Instant.parse( "1988-10-05T06:00:00Z" ), 5.0 ) );
+
+        TimeSeries<Double> left =
+                new TimeSeries.Builder<Double>().addEvents( leftEvents )
+                                                .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
+                                                .build();
+
+        Instant referenceTime = Instant.parse( "1988-10-04T06:00:00Z" );
+
+        SortedSet<Event<Double>> rightEvents = new TreeSet<>();
+        rightEvents.add( Event.of( Instant.parse( "1988-10-04T12:00:00Z" ), 1.0 ) );
+        rightEvents.add( Event.of( Instant.parse( "1988-10-04T18:00:00Z" ), 2.0 ) );
+        rightEvents.add( Event.of( Instant.parse( "1988-10-05T00:00:00Z" ), 3.0 ) );
+        rightEvents.add( Event.of( Instant.parse( "1988-10-05T06:00:00Z" ), 4.0 ) );
+
+        TimeSeries<Double> right =
+                new TimeSeries.Builder<Double>().addEvents( rightEvents )
+                                                .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadataWithT0( referenceTime ) )
+                                                .build();
+
+        TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 6 ) );
+
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( MessageFactory.getTimeWindow() );
+
+        Duration frequency = Duration.ofHours( 6 );
+
+        SortedSet<Instant> actual = TimeSeriesSlicer.getRegularSequenceOfIntersectingTimes( left,
+                                                                                            right,
+                                                                                            timeWindow,
+                                                                                            desiredTimeScale,
+                                                                                            frequency );
+
+        SortedSet<Instant> expected = new TreeSet<>();
+        expected.add( Instant.parse( "1988-10-04T18:00:00Z" ) );
+        expected.add( Instant.parse( "1988-10-05T00:00:00Z" ) );
+        expected.add( Instant.parse( "1988-10-05T06:00:00Z" ) );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    public void testGetRegularSequenceOfIntersectingTimesForOneTimeWindowAndFrequencySmallerThanPeriod()
+    {
+        SortedSet<Event<Double>> leftEvents = new TreeSet<>();
+        leftEvents.add( Event.of( Instant.parse( "1988-10-04T18:00:00Z" ), 1.0 ) );
+        leftEvents.add( Event.of( Instant.parse( "1988-10-04T21:00:00Z" ), 2.0 ) );
+        leftEvents.add( Event.of( Instant.parse( "1988-10-05T00:00:00Z" ), 3.0 ) );
+        leftEvents.add( Event.of( Instant.parse( "1988-10-05T03:00:00Z" ), 4.0 ) );
+        leftEvents.add( Event.of( Instant.parse( "1988-10-05T06:00:00Z" ), 5.0 ) );
+
+        TimeSeries<Double> left =
+                new TimeSeries.Builder<Double>().addEvents( leftEvents )
+                                                .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
+                                                .build();
+
+        Instant referenceTime = Instant.parse( "1988-10-04T06:00:00Z" );
+
+        SortedSet<Event<Double>> rightEvents = new TreeSet<>();
+        rightEvents.add( Event.of( Instant.parse( "1988-10-04T12:00:00Z" ), 1.0 ) );
+        rightEvents.add( Event.of( Instant.parse( "1988-10-04T15:00:00Z" ), 1.0 ) );
+        rightEvents.add( Event.of( Instant.parse( "1988-10-04T18:00:00Z" ), 2.0 ) );
+        rightEvents.add( Event.of( Instant.parse( "1988-10-04T21:00:00Z" ), 1.0 ) );
+        rightEvents.add( Event.of( Instant.parse( "1988-10-05T00:00:00Z" ), 3.0 ) );
+        rightEvents.add( Event.of( Instant.parse( "1988-10-05T03:00:00Z" ), 1.0 ) );
+        rightEvents.add( Event.of( Instant.parse( "1988-10-05T06:00:00Z" ), 4.0 ) );
+
+        TimeSeries<Double> right =
+                new TimeSeries.Builder<Double>().addEvents( rightEvents )
+                                                .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadataWithT0( referenceTime ) )
+                                                .build();
+
+        TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 6 ) );
+
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( MessageFactory.getTimeWindow() );
+
+        Duration frequency = Duration.ofHours( 3 );
+
+        SortedSet<Instant> actual = TimeSeriesSlicer.getRegularSequenceOfIntersectingTimes( left,
+                                                                                            right,
+                                                                                            timeWindow,
+                                                                                            desiredTimeScale,
+                                                                                            frequency );
+
+        SortedSet<Instant> expected = new TreeSet<>();
+        expected.add( Instant.parse( "1988-10-04T18:00:00Z" ) );
+        expected.add( Instant.parse( "1988-10-04T21:00:00Z" ) );
+        expected.add( Instant.parse( "1988-10-05T00:00:00Z" ) );
+        expected.add( Instant.parse( "1988-10-05T03:00:00Z" ) );
+        expected.add( Instant.parse( "1988-10-05T06:00:00Z" ) );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    public void testGetRegularSequenceOfIntersectingTimesForTwoTimeWindows()
+    {
+        Instant referenceTime = Instant.parse( "1988-10-04T12:00:00Z" );
+
+        SortedSet<Event<Double>> events = new TreeSet<>();
+        events.add( Event.of( Instant.parse( "1988-10-04T18:00:00Z" ), 1.0 ) );
+        events.add( Event.of( Instant.parse( "1988-10-05T00:00:00Z" ), 2.0 ) );
+        events.add( Event.of( Instant.parse( "1988-10-05T06:00:00Z" ), 3.0 ) );
+        events.add( Event.of( Instant.parse( "1988-10-05T12:00:00Z" ), 4.0 ) );
+        events.add( Event.of( Instant.parse( "1988-10-05T18:00:00Z" ), 5.0 ) );
+        events.add( Event.of( Instant.parse( "1988-10-06T00:00:00Z" ), 6.0 ) );
+        events.add( Event.of( Instant.parse( "1988-10-06T06:00:00Z" ), 7.0 ) );
+        events.add( Event.of( Instant.parse( "1988-10-06T12:00:00Z" ), 8.0 ) );
+        events.add( Event.of( Instant.parse( "1988-10-06T18:00:00Z" ), 9.0 ) );
+        events.add( Event.of( Instant.parse( "1988-10-07T00:00:00Z" ), 10.0 ) );
+
+        TimeSeries<Double> left =
+                new TimeSeries.Builder<Double>().addEvents( events )
+                                                .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
+                                                .build();
+
+        TimeSeries<Double> right =
+                new TimeSeries.Builder<Double>().addEvents( events )
+                                                .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadataWithT0( referenceTime ) )
+                                                .build();
+
+        TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofDays( 1 ) );
+
+        TimeWindowOuter timeWindow =
+                TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ZERO, Duration.ofDays( 1 ) ) );
+
+        Duration frequency = Duration.ofDays( 1 );
+
+        SortedSet<Instant> actualOne = TimeSeriesSlicer.getRegularSequenceOfIntersectingTimes( left,
+                                                                                               right,
+                                                                                               timeWindow,
+                                                                                               desiredTimeScale,
+                                                                                               frequency );
+
+        SortedSet<Instant> expectedOne = new TreeSet<>();
+        expectedOne.add( Instant.parse( "1988-10-05T12:00:00Z" ) );
+
+        assertEquals( expectedOne, actualOne );
+
+        TimeWindowOuter timeWindowTwo =
+                TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofDays( 1 ), Duration.ofDays( 2 ) ) );
+
+
+        SortedSet<Instant> actualTwo = TimeSeriesSlicer.getRegularSequenceOfIntersectingTimes( left,
+                                                                                               right,
+                                                                                               timeWindowTwo,
+                                                                                               desiredTimeScale,
+                                                                                               frequency );
+        SortedSet<Instant> expectedTwo = new TreeSet<>();
+        expectedTwo.add( Instant.parse( "1988-10-06T12:00:00Z" ) );
+
+        assertEquals( expectedTwo, actualTwo );
+    }
+
+    @Test
+    public void testGetRegularSequenceOfIntersectingTimesForOneTimeWindowLargePeriod()
+    {
+        // Akin to system test scenario801, but with 6-hourly observations
+
+        // CKLN6_STG.xml
+        SortedSet<Event<Double>> leftEvents = new TreeSet<>();
+        leftEvents.add( Event.of( Instant.parse( "2017-01-04T12:00:00Z" ), 5.56 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-04T18:00:00Z" ), 6.06 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-05T00:00:00Z" ), 6.45 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-05T06:00:00Z" ), 6.68 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-05T12:00:00Z" ), 6.94 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-05T18:00:00Z" ), 7.01 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-06T00:00:00Z" ), 6.92 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-06T06:00:00Z" ), 6.76 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-06T12:00:00Z" ), 6.54 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-06T18:00:00Z" ), 6.29 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-07T00:00:00Z" ), 6.09 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-07T06:00:00Z" ), 5.89 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-07T12:00:00Z" ), 5.65 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-07T18:00:00Z" ), 5.34 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-08T00:00:00Z" ), 5.2 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-08T06:00:00Z" ), 5.3 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-08T12:00:00Z" ), 5.25 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-08T18:00:00Z" ), 5.02 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-09T00:00:00Z" ), 4.62 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-09T06:00:00Z" ), 4.68 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-09T12:00:00Z" ), 4.79 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-09T18:00:00Z" ), 4.25 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-10T00:00:00Z" ), 4.43 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-10T06:00:00Z" ), 5.45 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-10T12:00:00Z" ), 4.94 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-10T18:00:00Z" ), 4.72 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-11T00:00:00Z" ), 4.64 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-11T06:00:00Z" ), 4.67 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-11T12:00:00Z" ), 4.73 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-11T18:00:00Z" ), 4.52 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-12T00:00:00Z" ), 4.81 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-12T06:00:00Z" ), 5.1 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-12T12:00:00Z" ), 5.18 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-12T18:00:00Z" ), 5.4 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-13T00:00:00Z" ), 6.15 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-13T06:00:00Z" ), 6.91 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-13T12:00:00Z" ), 8.48 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-13T18:00:00Z" ), 8.37 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-14T00:00:00Z" ), 8.59 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-14T06:00:00Z" ), 8.64 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-14T12:00:00Z" ), 8.6 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-14T18:00:00Z" ), 8.39 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-15T00:00:00Z" ), 8.02 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-15T06:00:00Z" ), 7.54 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-15T12:00:00Z" ), 7.09 ) );
+        leftEvents.add( Event.of( Instant.parse( "2017-01-15T18:00:00Z" ), 6.78 ) );
+
+        TimeSeries<Double> left =
+                new TimeSeries.Builder<Double>().addEvents( leftEvents )
+                                                .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
+                                                .build();
+
+        // 2017010512_HEFS_export.xml
+        Instant referenceTime = Instant.parse( "2017-01-05T12:00:00Z" );
+
+        SortedSet<Event<Double>> rightEvents = new TreeSet<>();
+        rightEvents.add( Event.of( Instant.parse( "2017-01-04T12:00:00Z" ), 5.8802495 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-04T18:00:00Z" ), 6.33563 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-05T00:00:00Z" ), 6.7591863 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-05T06:00:00Z" ), 6.977034 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-05T12:00:00Z" ), 7.1925855 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-05T18:00:00Z" ), 7.2486877 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-06T00:00:00Z" ), 7.246063 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-06T06:00:00Z" ), 7.2526245 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-06T12:00:00Z" ), 7.318242 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-06T18:00:00Z" ), 7.491798 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-07T00:00:00Z" ), 7.586942 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-07T06:00:00Z" ), 7.5095143 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-07T12:00:00Z" ), 7.3517056 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-07T18:00:00Z" ), 7.1551843 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-08T00:00:00Z" ), 6.9317584 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-08T06:00:00Z" ), 6.6955385 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-08T12:00:00Z" ), 6.477034 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-08T18:00:00Z" ), 6.290026 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-09T00:00:00Z" ), 6.11811 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-09T06:00:00Z" ), 5.963911 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-09T12:00:00Z" ), 5.836942 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-09T18:00:00Z" ), 5.720801 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-10T00:00:00Z" ), 5.612861 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-10T06:00:00Z" ), 5.507218 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-10T12:00:00Z" ), 5.4028873 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-10T18:00:00Z" ), 5.714895 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-11T00:00:00Z" ), 6.7982283 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-11T06:00:00Z" ), 7.7752624 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-11T12:00:00Z" ), 8.2732935 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-11T18:00:00Z" ), 8.717192 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-12T00:00:00Z" ), 9.030184 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-12T06:00:00Z" ), 9.397637 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-12T12:00:00Z" ), 9.540026 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-12T18:00:00Z" ), 9.365814 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-13T00:00:00Z" ), 9.079068 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-13T06:00:00Z" ), 8.835629 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-13T12:00:00Z" ), 8.660762 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-13T18:00:00Z" ), 8.644686 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-14T00:00:00Z" ), 8.871718 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-14T06:00:00Z" ), 9.053805 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-14T12:00:00Z" ), 9.056759 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-14T18:00:00Z" ), 9.064304 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-15T00:00:00Z" ), 9.055446 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-15T06:00:00Z" ), 9.0544615 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-15T12:00:00Z" ), 8.967192 ) );
+        rightEvents.add( Event.of( Instant.parse( "2017-01-15T18:00:00Z" ), 8.737533 ) );
+
+        TimeSeries<Double> right =
+                new TimeSeries.Builder<Double>().addEvents( rightEvents )
+                                                .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadataWithT0( referenceTime ) )
+                                                .build();
+
+        Duration period = Duration.ofHours( 96 );
+        TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( period );
+        
+        // Time window from 144 hours to 240 hours
+        Duration lowerLeadBound = Duration.ZERO;
+        Duration upperLeadBound = Duration.ofHours( 240 );
+        
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( MessageFactory.getTimeWindow( lowerLeadBound,
+                                                                                       upperLeadBound ) );
+
+        SortedSet<Instant> actual = TimeSeriesSlicer.getRegularSequenceOfIntersectingTimes( left,
+                                                                                            right,
+                                                                                            timeWindow,
+                                                                                            desiredTimeScale,
+                                                                                            period );
+
+        SortedSet<Instant> expected = new TreeSet<>();
+        expected.add( Instant.parse( "2017-01-09T12:00:00Z" ) );
+        expected.add( Instant.parse( "2017-01-13T12:00:00Z" ) );
 
         assertEquals( expected, actual );
     }

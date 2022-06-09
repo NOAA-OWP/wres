@@ -45,16 +45,14 @@ import org.slf4j.LoggerFactory;
 
 public final class TimeSeriesSlicer
 {
+    /** Re-used log message string. */
+    private static final String WHILE_ATTEMPTING_TO_FIND_THE_INTERSECTING_TIMES_BETWEEN_THE_LEFT_SERIES_AND_THE_RIGHT =
+            "While attempting to find the intersecting times between the left series {} and the right ";
 
-    /**
-     * Null input error message.
-     */
+    /** Null input error message. */
     private static final String NULL_INPUT_EXCEPTION = "Specify a non-null input.";
 
-    /**
-     * Logger.
-     */
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesSlicer.class );
 
     /**
@@ -538,103 +536,146 @@ public final class TimeSeriesSlicer
     }
 
     /**
-     * <p>When conducting upscaling, all possible times are produced. This may include upscaled volumes that are more 
-     * frequent than the desired frequency. By default, the desired frequency is the <code>period</code> associated 
-     * with the desired time scale (aka "back-to-back" pairs), otherwise an explicit frequency.
+     * Helper that returns the times associated with values in the input series.
      * 
-     * <p>This method makes a best attempt to retain events from the input superset of events whose valid times follow a 
-     * prescribed frequency. Consequently, this method effectively "thins out" the superset of all possible events in 
-     * order to provide a subset of regularly spaced events. In general, there is no unique subset of events that 
-     * follows a prescribed frequency unless a starting position is defined. Here, counting occurs with respect to a 
-     * reference time (i.e., the reference time helps to select a subset). 
+     * @param <T> the type of time series event values
+     * @param timeSeries the time-series whose valid times should be determined
+     * @return the valid times
+     */
+
+    public static <T> SortedSet<Instant> getValidTimes( TimeSeries<T> timeSeries )
+    {
+        SortedSet<Instant> endsAt =
+                timeSeries.getEvents()
+                          .stream()
+                          .map( Event::getTime )
+                          .collect( Collectors.toCollection( TreeSet::new ) );
+
+        return Collections.unmodifiableSortedSet( endsAt );
+    }
+
+    /**
+     * <p>Returns a regular sequence of times that are present in both time series and are consistent with the desired 
+     * time scale and begin within the designated time window. If the desired time scale contains month-day bookends, 
+     * returns the empty set.
+     * 
+     * <p>When both time series require upscaling, this method makes a best attempt to retain those times from the 
+     * superset of possible valid times that follow a prescribed frequency. Consequently, this method effectively 
+     * "thins out" the superset of all possible times in order to provide a subset of regularly spaced times. In 
+     * general, there is no unique subset of times that follows a prescribed frequency unless a starting position is 
+     * defined. Here, counting occurs with respect to a reference time, when available (i.e., the reference time helps 
+     * to select a subset). 
      * 
      * <p>See #47158-24.
      * 
-     * <p>This is to re-assert my opinion, stated in #47158, that we should not attempt to find such a subset, but 
-     * instead compute all events. For the same reason, the <code>frequency</code> associated with the 
-     * <code>desiredTimeScale</code> should be eliminated. This method is an inevitable source of brittleness.
+     * <p>This is to re-assert my opinion, stated in #47158, that choosing a subset of possible times is somewhat 
+     * arbitrary. This method is an inevitable source of brittleness or surprise.
      * 
-     * @param <T> the type of time series event
-     * @param toFilter the time-series to inspect
-     * @param referenceTime the reference time from which to count
-     * @param period the period associated with the desired time scale
-     * @param frequency the regular frequency with which to count periods, defaults to the period
-     * @return the filtered pairs
-     * @throws NullPointerException if the toFilter, referenceTime or period is null
+     * @param <L> the type of left value
+     * @param <R> the type of right value
+     * @param left the left-ish time-series
+     * @param right the right-ish time series
+     * @param timeWindow the time window
+     * @param desiredTimeScale the optional desired time scale
+     * @param frequency the optional frequency at which values should be sampled, defaults to the time scale period
+     * @return a regular sequence of intersecting times
+     * @throws NullPointerException if any input is null
      */
 
-    public static <T> TimeSeries<T> filterEventsByFrequency( TimeSeries<T> toFilter,
-                                                             Instant referenceTime,
-                                                             Duration period,
-                                                             Duration frequency )
+    public static <L, R> SortedSet<Instant> getRegularSequenceOfIntersectingTimes( TimeSeries<L> left,
+                                                                                   TimeSeries<R> right,
+                                                                                   TimeWindowOuter timeWindow,
+                                                                                   TimeScaleOuter desiredTimeScale,
+                                                                                   Duration frequency )
     {
-        Objects.requireNonNull( toFilter );
+        Objects.requireNonNull( left );
+        Objects.requireNonNull( right );
+        Objects.requireNonNull( timeWindow );
 
-        Objects.requireNonNull( referenceTime );
-
-        Objects.requireNonNull( period );
-
-        // More than one pair?
-        TimeSeries<T> filtered = toFilter;
-        if ( toFilter.getEvents().size() > 1 )
+        if ( Objects.nonNull( desiredTimeScale ) && desiredTimeScale.hasMonthDays() )
         {
-            // Duration by which to jump between periods
-            // Default to the period, aka "back-to-back"
-            Duration jump = frequency;
-            if ( Objects.isNull( frequency ) )
-            {
-                jump = period;
-            }
+            LOGGER.debug( WHILE_ATTEMPTING_TO_FIND_THE_INTERSECTING_TIMES_BETWEEN_THE_LEFT_SERIES_AND_THE_RIGHT
+                          + "series {} at the desired time scale of {}, discovered month-day bookends in the desired "
+                          + "time scale. Returning the empty set.",
+                          left.getMetadata(),
+                          right.getMetadata(),
+                          desiredTimeScale );
 
-            TimeSeries.Builder<T> filteredSeries = new TimeSeries.Builder<>();
-            TimeSeriesMetadata localMetadata = toFilter.getMetadata();
-            filteredSeries.setMetadata( localMetadata );
-
-            List<Event<T>> events = new ArrayList<>( toFilter.getEvents() );
-
-            // Get the start time for the regular sequence
-            Instant nextTime =
-                    TimeSeriesSlicer.getStartTimeForRegularSequenceOfEvents( referenceTime, period, jump, events );
-
-            int totalEvents = events.size();
-            Instant lastTime = events.get( totalEvents - 1 ).getTime();
-
-            // Increment the sequence from the start time
-            int start = 0;
-            while ( nextTime.compareTo( lastTime ) <= 0 )
-            {
-                // Does a pair exist at the next regular time?
-                for ( int i = start; i < totalEvents; i++ )
-                {
-                    Event<T> nextEvent = events.get( i );
-                    Instant nextEventTime = nextEvent.getTime();
-
-                    // Yes it does. Add it.
-                    if ( nextEventTime.equals( nextTime ) )
-                    {
-                        filteredSeries.addEvent( nextEvent );
-                        start = i + 1;
-                        break;
-                    }
-                }
-
-                nextTime = nextTime.plus( jump );
-            }
-
-            filtered = filteredSeries.build();
-
-            if ( LOGGER.isTraceEnabled() )
-            {
-                LOGGER.trace( "Inspected {} pairs and eliminated {} pairs to be consistent with the production of "
-                              + "regular pairs that have a period of {} and repeat every {}.",
-                              toFilter.getEvents().size(),
-                              filtered.getEvents().size() - toFilter.getEvents().size(),
-                              period,
-                              frequency );
-            }
+            return Collections.emptySortedSet();
         }
 
-        return filtered;
+        // Both contain reference times and those times are unequal, return the empty set
+        if ( !left.getReferenceTimes().isEmpty() && !right.getReferenceTimes().isEmpty()
+             && !left.getReferenceTimes().equals( right.getReferenceTimes() ) )
+        {
+            LOGGER.debug( WHILE_ATTEMPTING_TO_FIND_THE_INTERSECTING_TIMES_BETWEEN_THE_LEFT_SERIES_AND_THE_RIGHT
+                          + "series {} at the desired time scale of {}, discovered unequal reference times. Returning "
+                          + "the empty set.",
+                          left.getMetadata(),
+                          right.getMetadata(),
+                          desiredTimeScale );
+
+            return Collections.emptySortedSet();
+        }
+
+        // Find the intersecting valid times
+        SortedSet<Instant> leftValidTimes = TimeSeriesSlicer.getValidTimes( left );
+        SortedSet<Instant> rightValidTimes = TimeSeriesSlicer.getValidTimes( right );
+        SortedSet<Instant> intersectingTimes = new TreeSet<>( leftValidTimes );
+        intersectingTimes.retainAll( rightValidTimes );
+
+        //Thinning required? If not, then return the intersecting times.
+        boolean upscaleLeft = Objects.nonNull( desiredTimeScale ) && !desiredTimeScale.equals( left.getTimeScale() );
+        boolean upscaleRight = Objects.nonNull( desiredTimeScale )
+                               && !desiredTimeScale.equals( right.getTimeScale() );
+
+        SortedSet<Instant> immutableIntersectingTimes = Collections.unmodifiableSortedSet( intersectingTimes );
+
+        if ( intersectingTimes.isEmpty() || !upscaleLeft || !upscaleRight )
+        {
+            LOGGER.trace( WHILE_ATTEMPTING_TO_FIND_THE_INTERSECTING_TIMES_BETWEEN_THE_LEFT_SERIES_AND_THE_RIGHT
+                          + "series {} at the desired time scale of {}, discovered {} intersecting times. No thinning "
+                          + "will be performed. Returning these times: {}.",
+                          left.getMetadata(),
+                          right.getMetadata(),
+                          desiredTimeScale,
+                          immutableIntersectingTimes );
+
+            return immutableIntersectingTimes;
+        }
+
+        Duration period = desiredTimeScale.getPeriod();
+        Duration frequencyToUse = frequency;
+        if ( Objects.isNull( frequencyToUse ) )
+        {
+            frequencyToUse = period;
+        }
+
+        // Use the first available reference time or the first valid time
+        Instant referenceTime = TimeSeriesSlicer.getFirstReferenceTime( left, right );
+        Instant start = referenceTime;
+
+        if ( Objects.isNull( start ) )
+        {
+            start = TimeSeriesSlicer.getFirstValidTimeAdjustedForTimeScalePeriod( immutableIntersectingTimes, period );
+        }
+
+        SortedSet<Instant> snippedSequence = TimeSeriesSlicer.snip( immutableIntersectingTimes,
+                                                                    timeWindow,
+                                                                    referenceTime );
+
+        LOGGER.debug( "Attempting to acquire a regular sequence of times with a reference time of {}, a frequency of "
+                      + "{}, a start time of {} and a sequence of {} valid times snipped to a time windows of {}.",
+                      referenceTime,
+                      frequency,
+                      start,
+                      snippedSequence.size(),
+                      timeWindow );
+
+        return TimeSeriesSlicer.getRegularSequence( snippedSequence,
+                                                    start,
+                                                    period,
+                                                    frequencyToUse );
     }
 
     /**
@@ -1547,26 +1588,167 @@ public final class TimeSeriesSlicer
                ( duration.compareTo( lowerExclusive ) > 0 && duration.compareTo( upperInclusive ) < 0 );
     }
 
+    /**
+     * Helper that returns the first available reference time from the time series, otherwise <code>null</code>.
+     * 
+     * @param left the left time series
+     * @param right the right time series
+     * @return the first available reference time or null
+     */
+
+    private static Instant getFirstReferenceTime( TimeSeries<?> left,
+                                                  TimeSeries<?> right )
+    {
+        Collection<Instant> times = new ArrayList<>( left.getReferenceTimes().values() );
+        times.addAll( right.getReferenceTimes().values() );
+
+        Instant returnMe = null;
+
+        if ( !times.isEmpty() )
+        {
+            returnMe = times.iterator()
+                            .next();
+        }
+
+        return returnMe;
+    }
+
+    /**
+     * Helper that returns the first available valid time, adjusted for the <code>period</code> associated with the 
+     * time scale, otherwise <code>null</code>.
+     * 
+     * @param validTimes the valid times
+     * @param period the time scale period
+     * @return the first available valid time adjusted for the time scale period
+     */
+
+    private static Instant getFirstValidTimeAdjustedForTimeScalePeriod( SortedSet<Instant> validTimes,
+                                                                        Duration period )
+    {
+        Instant returnMe = null;
+
+        // Valid time instead?
+        if ( !validTimes.isEmpty() )
+        {
+            returnMe = validTimes.first();
+
+            if ( Objects.nonNull( period ) )
+            {
+                returnMe = returnMe.minus( period );
+            }
+        }
+
+        return returnMe;
+    }
+
+    /**
+     * Returns a regular sequence of times from the supplied set of times using the prescribed period and frequency.
+     * 
+     * @param timesToThin the times from which a regular sequence should be created
+     * @param origin the start of the sequence
+     * @param period the period associated with the desired time scale
+     * @param frequency the regular frequency with which to count periods, defaults to the period
+     * @return a regular sequence of times
+     * @throws NullPointerException if any input is null
+     */
+
+    private static SortedSet<Instant> getRegularSequence( SortedSet<Instant> timesToThin,
+                                                          Instant origin,
+                                                          Duration period,
+                                                          Duration frequency )
+    {
+        Objects.requireNonNull( timesToThin );
+        Objects.requireNonNull( origin );
+        Objects.requireNonNull( period );
+
+        LOGGER.debug( "Constructing a regular sequence of times with an origin of {}, a period of {}, and a frequency "
+                      + "of {}.",
+                      origin,
+                      period,
+                      frequency );
+
+        // fewer than two times? Nothing to thin
+        if ( timesToThin.size() < 2 )
+        {
+            LOGGER.debug( "Discovered {} times to thin in the input set of times, so returning the input set.",
+                          timesToThin.size() );
+
+            return timesToThin;
+        }
+
+        // More than one pair?
+        SortedSet<Instant> thinnedTimes = new TreeSet<>();
+        // Duration by which to jump between periods
+        // Default to the period, aka "back-to-back"
+        Duration jump = frequency;
+        if ( Objects.isNull( frequency ) )
+        {
+            jump = period;
+        }
+
+        List<Instant> listedTimesToThin = Collections.unmodifiableList( new ArrayList<>( timesToThin ) );
+
+        // Get the start time for the regular sequence
+        Instant nextTime = TimeSeriesSlicer.getStartTimeForRegularSequence( origin,
+                                                                            period,
+                                                                            jump,
+                                                                            listedTimesToThin );
+
+        int totalEvents = timesToThin.size();
+        Instant lastTime = timesToThin.last();
+
+        // Increment the sequence from the start time
+        int start = 0;
+        while ( nextTime.compareTo( lastTime ) <= 0 )
+        {
+            // Does a time exist at the next regular time?
+            for ( int i = start; i < totalEvents; i++ )
+            {
+                Instant nextListedTime = listedTimesToThin.get( i );
+
+                // Yes it does. Add it.
+                if ( nextListedTime.equals( nextTime ) )
+                {
+                    thinnedTimes.add( nextListedTime );
+                    start = i + 1;
+                    break;
+                }
+            }
+
+            nextTime = nextTime.plus( jump );
+        }
+
+        if ( LOGGER.isTraceEnabled() )
+        {
+            LOGGER.trace( "Inspected {} times and eliminated {} times to produce a regular sequence that has a "
+                          + "period of {} and repeats every {}.",
+                          timesToThin.size(),
+                          timesToThin.size() - thinnedTimes.size(),
+                          period,
+                          frequency );
+        }
+
+        return Collections.unmodifiableSortedSet( thinnedTimes );
+    }
 
     /**
      * Steps away from the reference time by the period, initially, then the frequency, until an event is discovered in
      * the list with the same valid time. If no event is discovered, returns the valid time of the first event in the 
      * list.
      * 
-     * @param <T> the type of time series event
      * @param referenceTime the reference time
      * @param period the period
      * @param frequency the frequency
-     * @param timeOrderedListOfEvents the events in order of valid time
+     * @param timeOrderedListOfTimes the events in order of valid time
      * @return the start time
      */
 
-    private static <T> Instant getStartTimeForRegularSequenceOfEvents( Instant referenceTime,
-                                                                       Duration period,
-                                                                       Duration frequency,
-                                                                       List<Event<T>> timeOrderedListOfEvents )
+    private static Instant getStartTimeForRegularSequence( Instant referenceTime,
+                                                           Duration period,
+                                                           Duration frequency,
+                                                           List<Instant> timeOrderedListOfTimes )
     {
-        Instant firstTime = timeOrderedListOfEvents.get( 0 ).getTime();
+        Instant firstTime = timeOrderedListOfTimes.get( 0 );
 
         // First valid time is before the reference time: use the first valid time. The alternative would be to search
         // a regular sequence moving back in time and choosing the earliest instance on that sequence, similar to the 
@@ -1579,33 +1761,31 @@ public final class TimeSeriesSlicer
         }
 
         // First valid time is after the reference time so step forwards
-        return TimeSeriesSlicer.getStartTimeForRegularSequenceOfEventsSearchingForwards( referenceTime,
-                                                                                         period,
-                                                                                         frequency,
-                                                                                         timeOrderedListOfEvents );
+        return TimeSeriesSlicer.getStartTimeForRegularSequenceSearchingForwards( referenceTime,
+                                                                                 period,
+                                                                                 frequency,
+                                                                                 timeOrderedListOfTimes );
     }
 
     /**
-     * Steps forwards from the reference time by the period, initially, then the frequency, until an event is discovered 
-     * in the list with the same valid time. If no event is discovered, returns the valid time of the first event in the 
-     * list.
+     * Steps forwards from the reference time by the period, initially, then the frequency, until a time is discovered 
+     * in the list. If no time is discovered, returns the first time in the list.
      * 
-     * @param <T> the type of time series event
      * @param referenceTime the reference time
      * @param period the period
      * @param frequency the frequency
-     * @param timeOrderedListOfEvents the events in order of valid time
+     * @param timeOrderedListOfTimes the events in order of valid time
      * @return the start time
      */
 
-    private static <T> Instant getStartTimeForRegularSequenceOfEventsSearchingForwards( Instant referenceTime,
-                                                                                        Duration period,
-                                                                                        Duration frequency,
-                                                                                        List<Event<T>> timeOrderedListOfEvents )
+    private static Instant getStartTimeForRegularSequenceSearchingForwards( Instant referenceTime,
+                                                                            Duration period,
+                                                                            Duration frequency,
+                                                                            List<Instant> timeOrderedListOfTimes )
     {
-        int totalEvents = timeOrderedListOfEvents.size();
-        Instant firstTime = timeOrderedListOfEvents.get( 0 ).getTime();
-        Instant lastTime = timeOrderedListOfEvents.get( totalEvents - 1 ).getTime();
+        int totalTimes = timeOrderedListOfTimes.size();
+        Instant firstTime = timeOrderedListOfTimes.get( 0 );
+        Instant lastTime = timeOrderedListOfTimes.get( totalTimes - 1 );
 
         // Increment the sequence of valid times until the last time
         // It is debatable whether the first step away from the reference time should use the period or the frequency.
@@ -1615,18 +1795,17 @@ public final class TimeSeriesSlicer
         // Iterate the regular sequence until the end
         while ( nextSequenceTime.compareTo( lastTime ) <= 0 )
         {
-            // Does a pair exist in the list of pairs whose valid time matches the next time in the sequence?
-            for ( int i = 0; i < totalEvents; i++ )
+            // Does a time exist in the list of times that matches the next time in the sequence?
+            for ( int i = 0; i < totalTimes; i++ )
             {
-                Event<T> nextEvent = timeOrderedListOfEvents.get( i );
-                Instant nextEventTime = nextEvent.getTime();
+                Instant nextTime = timeOrderedListOfTimes.get( i );
 
-                int compare = nextEventTime.compareTo( nextSequenceTime );
+                int compare = nextTime.compareTo( nextSequenceTime );
 
                 // Yes it does. Return it.
                 if ( compare == 0 )
                 {
-                    return nextEventTime;
+                    return nextTime;
                 }
                 // Next event time is after the sequence time and the times are ordered, so break
                 else if ( compare > 0 )
@@ -1640,6 +1819,53 @@ public final class TimeSeriesSlicer
 
         // Resort to the first valid time in the list
         return firstTime;
+    }
+
+    /**
+     * Returns the subset of valid times that fall within the time window.
+     * @param times the times
+     * @param timeWindow the time window
+     * @param referenceTime an optional forecast reference time
+     * @return the subset of times that fall within the window
+     */
+
+    private static SortedSet<Instant> snip( SortedSet<Instant> times,
+                                            TimeWindowOuter timeWindow,
+                                            Instant referenceTime )
+    {
+        Objects.requireNonNull( times );
+        Objects.requireNonNull( timeWindow );
+
+        SortedSet<Instant> contained = new TreeSet<>();
+
+        for ( Instant nextValidTime : times )
+        {
+            boolean include = true;
+
+            // Filter by valid times
+            // Falls on upper bound or falls within bounds
+            include = nextValidTime.equals( timeWindow.getLatestValidTime() )
+                      || ( nextValidTime.isAfter( timeWindow.getEarliestValidTime() )
+                           && nextValidTime.isBefore( timeWindow.getLatestValidTime() ) );
+
+            // Filter by lead durations
+            if ( include && Objects.nonNull( referenceTime ) && !timeWindow.bothLeadDurationsAreUnbounded() )
+            {
+                Duration leadDuration = Duration.between( referenceTime, nextValidTime );
+
+                // Falls on upper bound or falls within bounds
+                include = leadDuration.equals( timeWindow.getLatestLeadDuration() )
+                          || ( leadDuration.compareTo( timeWindow.getEarliestLeadDuration() ) > 0
+                               && leadDuration.compareTo( timeWindow.getLatestLeadDuration() ) <= 0 );
+            }
+
+            if ( include )
+            {
+                contained.add( nextValidTime );
+            }
+        }
+
+        return Collections.unmodifiableSortedSet( contained );
     }
 
     /**
