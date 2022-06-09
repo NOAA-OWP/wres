@@ -93,12 +93,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( PoolSupplier.class );
 
-    /** If <code>true</code>, when conducting upscaling, target periods that increment regularly, <code>false</code>
-     * to include all possible pairs. In this context, regular means back-to-back or overlapping with a fixed 
-     * frequency, but not all possible pairs, which may include pairs that do not increment with a regular frequency,
-     * but are nevertheless valid pairs. */
-    private static final boolean REGULAR_PAIRS = true;
-
     /** Message re-used several times. */
     private static final String WHILE_CONSTRUCTING_A_POOL_SUPPLIER_FOR = "While constructing a pool supplier for {}, ";
 
@@ -781,6 +775,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      * 
      * @param left the left data
      * @param rightOrBaseline the right or baseline data
+     * @param rightOrBaselineTransformer the transformer for right or baseline-ish data
      * @param desiredTimeScale the desired time scale
      * @param frequency the frequency with which to create pairs at the desired time scale
      * @param orientation the orientation of the non-left data, one of {@link LeftOrRightOrBaseline#RIGHT} or 
@@ -869,6 +864,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      * 
      * @param left the left time-series
      * @param rightOrBaseline the right or baseline time-series
+     * @param rightOrBaselineTransformer the transformer for right or baseline-ish data
      * @param desiredTimeScale the desired time scale
      * @param frequency the frequency with which to create pairs at the desired time scale
      * @param timeWindow the time window to snip the pairs
@@ -902,6 +898,15 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
         List<EvaluationStatusMessage> statusEvents = new ArrayList<>();
 
+        // Get the end times for paired values if upscaling is required. If upscaling both the left and right, the 
+        // superset of intersecting times is thinned to a regular sequence that depends on the desired time scale and 
+        // frequency
+        SortedSet<Instant> endsAt = TimeSeriesSlicer.getRegularSequenceOfIntersectingTimes( scaledLeft,
+                                                                                            scaledRight,
+                                                                                            timeWindow,
+                                                                                            desiredTimeScale,
+                                                                                            frequency );
+
         // Upscale left?
         if ( upscaleLeft )
         {
@@ -919,9 +924,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                               left.getTimeScale(),
                               desiredTimeScale );
             }
-
-            // Acquire the times from the right series at which left upscaled values should end
-            SortedSet<Instant> endsAt = this.getEventValidTimes( rightOrBaseline, desiredTimeScale );
 
             TimeSeriesUpscaler<L> leftUp = this.getLeftUpscaler();
             // #92892
@@ -967,9 +969,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                               desiredTimeScale );
             }
 
-            // Acquire the times from the left series at which right upscaled values should end
-            SortedSet<Instant> endsAt = this.getEventValidTimes( scaledLeft, desiredTimeScale );
-
             TimeSeriesUpscaler<R> rightUp = this.getRightUpscaler();
             RescaledTimeSeriesPlusValidation<R> upscaledRight = rightUp.upscale( rightOrBaseline,
                                                                                  desiredTimeScale,
@@ -1005,24 +1004,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
         // Snip the pairs to the pool boundary
         TimeSeries<Pair<L, R>> snippedPairs = this.snip( pairs, timeWindow );
-
-        // When upscaling both sides, the superset of pairs may contain "unwanted" pairs.
-        // Unwanted pairs are pairs that occur more frequently than the desired frequency.
-        // By default, the desired frequency is the period associated with the desired time scale
-        // aka, "back-to-back", but an explicit frequency otherwise
-        // Filter any unwanted pairs from the superset. This is not relevant if the desired time scale has month-days 
-        // present
-        if ( !snippedPairs.getEvents().isEmpty() && PoolSupplier.REGULAR_PAIRS
-             && upscaleLeft
-             && upscaleRight
-             && !desiredTimeScale.hasMonthDays() )
-        {
-            Instant start = this.getFirstReferenceTimeOrFirstValidTimeAdjustedForTimeScalePeriod( snippedPairs );
-            snippedPairs = TimeSeriesSlicer.filterEventsByFrequency( snippedPairs,
-                                                                     start,
-                                                                     desiredTimeScale.getPeriod(),
-                                                                     frequency );
-        }
 
         // Log the pairing 
         if ( LOGGER.isTraceEnabled() )
@@ -1377,39 +1358,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     }
 
     /**
-     * Helper that returns the times associated with values in the input series. If the desired time scale has 
-     * month-days, returns the empty set because the end times are redundant when the desired time scale declares them.
-     * 
-     * @param <T> the time-series event value type
-     * @param timeSeries the time-series to use in determining when values should end
-     * @return the times at which upscaled values should end
-     */
-
-    private <T> SortedSet<Instant> getEventValidTimes( TimeSeries<T> timeSeries, TimeScaleOuter desiredTimeScale )
-    {
-        if ( desiredTimeScale.hasMonthDays() )
-        {
-            if ( LOGGER.isTraceEnabled() )
-            {
-                LOGGER.trace( "Skipping the identification of times at which to end rescaled values because the "
-                              + "desired time scale contains explicit month-days. The time-series was: {}",
-                              timeSeries.getMetadata() );
-            }
-
-            return Collections.emptySortedSet();
-        }
-
-        // All possible times
-        SortedSet<Instant> endsAt =
-                timeSeries.getEvents()
-                          .stream()
-                          .map( Event::getTime )
-                          .collect( Collectors.toCollection( TreeSet::new ) );
-
-        return Collections.unmodifiableSortedSet( endsAt );
-    }
-
-    /**
      * Returns the frequency at which to create pairs. By default this is equal to the 
      * {@link TimeScaleOuter#getPeriod()} associated with the {@link #desiredTimeScale}, where defined, otherwise the 
      * value supplied on construction, which normally corresponds to the <code>frequency</code> associated with the 
@@ -1429,41 +1377,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         else if ( Objects.nonNull( this.desiredTimeScale ) && this.desiredTimeScale.hasPeriod() )
         {
             returnMe = this.desiredTimeScale.getPeriod();
-        }
-
-        return returnMe;
-    }
-
-    /**
-     * Helper that returns the first available reference time from a time-series, otherwise the first valid time,
-     * adjusted for the <code>period</code> associated with the time scale, otherwise <code>null</code>.
-     * 
-     * @param timeSeries
-     * @return the first available reference time or the first valid time adjusted for the time scale period
-     */
-
-    private Instant getFirstReferenceTimeOrFirstValidTimeAdjustedForTimeScalePeriod( TimeSeries<?> timeSeries )
-    {
-        Collection<Instant> times = timeSeries.getReferenceTimes().values();
-
-        Instant returnMe = null;
-
-        if ( !times.isEmpty() )
-        {
-            returnMe = times.iterator().next();
-        }
-
-        // Valid time instead?
-        if ( Objects.isNull( returnMe ) && !timeSeries.getEvents().isEmpty() )
-        {
-            returnMe = timeSeries.getEvents().first().getTime();
-
-            TimeScaleOuter timeScale = timeSeries.getTimeScale();
-
-            if ( Objects.nonNull( timeScale ) && !timeScale.hasMonthDays() )
-            {
-                returnMe = returnMe.minus( timeSeries.getTimeScale().getPeriod() );
-            }
         }
 
         return returnMe;
