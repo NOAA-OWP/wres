@@ -111,7 +111,7 @@ public class Validation
     /** The warning message boilerplate for logger (includes 3 placeholders) */
     private static final String FILE_LINE_COLUMN_BOILERPLATE =
             "In the project declaration from {}, near line {} and column {}, "
-            + "WRES found an issue.";
+                                                               + "WRES found an issue.";
 
     private static final String API_SOURCE_MISSING_ISSUED_DATES_ERROR_MESSAGE =
             "One must specify issued dates with both earliest and latest (e.g. "
@@ -120,9 +120,9 @@ public class Validation
                                                                                 + "source for forecasts (see source near line {} and column {}";
     private static final String API_SOURCE_MISSING_DATES_ERROR_MESSAGE =
             "One must specify dates with both earliest and latest (e.g. "
-                                                                        + "<dates earliest=\"2018-12-28T15:42:00Z\" "
-                                                                        + "latest=\"2019-01-01T00:00:00Z\" />) when using a web API as a "
-                                                                        + "source for observations (see source near line {} and column {}";
+                                                                         + "<dates earliest=\"2018-12-28T15:42:00Z\" "
+                                                                         + "latest=\"2019-01-01T00:00:00Z\" />) when using a web API as a "
+                                                                         + "source for observations (see source near line {} and column {}";
 
 
     private Validation()
@@ -148,58 +148,57 @@ public class Validation
         // Assume valid until demonstrated otherwise
         boolean result = true;
 
-        // TODO: remove this boolean when releasing 7.0
-        boolean sourceFormatEventsFound = false;
+        // Warned about format already?
+        // TODO: remove this warning when releasing 7.0
+        boolean formatWarnedAlready = false;
 
         for ( ValidationEvent ve : projectConfigPlus.getValidationEvents() )
         {
-            if ( LOGGER.isWarnEnabled() )
-            {
-                if ( ve.getLocator() != null )
-                {
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + " The parser said: {}",
-                                 projectConfigPlus.getOrigin(),
-                                 ve.getLocator().getLineNumber(),
-                                 ve.getLocator().getColumnNumber(),
-                                 ve.getMessage(),
-                                 ve.getLinkedException() );
-                }
-                else
-                {
-                    LOGGER.warn( "In the project declaration from "
-                                 + projectConfigPlus.getOrigin() + ", WRES "
-                                 + "found an issue. The XML parser/validator "
-                                 + "reports this detail: " + ve.getMessage(),
-                                 ve.getLinkedException() );
-                }
-            }
-
             // TODO: remove this exception to validation when releasing 7.0
             if ( ve.getMessage()
                    .contains( "'format' is not allowed to appear in element 'source'" ) )
             {
-                sourceFormatEventsFound = true;
+                if ( LOGGER.isWarnEnabled() && !formatWarnedAlready )
+                {
+                    formatWarnedAlready = true;
+                    LOGGER.warn( " The 'format' attribute is deprecated in left/"
+                                 + "right/baseline declarations (non-threshold "
+                                 + "declarations) and will be removed in a future "
+                                 + "release. Alternatives: specify one source per "
+                                 + "resource, use the 'pattern' attribute with a glob "
+                                 + "pattern specified (e.g. 'pattern=\"**/D*.xml\"' to "
+                                 + "include all files starting with 'D' and ending with"
+                                 + "'.xml' in all subdirectories), or to leave pattern "
+                                 + "unspecified and let WRES auto-detect what it can "
+                                 + "read on all files included in/under the URI." );
+                }
             }
             else
             {
                 result = false;
-            }
-        }
 
-        // TODO: remove this message when releasing 7.0
-        if ( sourceFormatEventsFound )
-        {
-            LOGGER.warn( " The 'format' attribute is deprecated in left/"
-                         + "right/baseline declarations (non-threshold "
-                         + "declarations) and will be removed in a future "
-                         + "release. Alternatives: specify one source per "
-                         + "resource, use the 'pattern' attribute with a glob "
-                         + "pattern specified (e.g. 'pattern=\"**/D*.xml\"' to "
-                         + "include all files starting with 'D' and ending with"
-                         + "'.xml' in all subdirectories), or to leave pattern "
-                         + "unspecified and let WRES auto-detect what it can "
-                         + "read on all files included in/under the URI." );
+                if ( LOGGER.isErrorEnabled() )
+                {
+                    if ( ve.getLocator() != null )
+                    {
+                        LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                                      + " The parser said: {}",
+                                      projectConfigPlus.getOrigin(),
+                                      ve.getLocator().getLineNumber(),
+                                      ve.getLocator().getColumnNumber(),
+                                      ve.getMessage(),
+                                      ve.getLinkedException() );
+                    }
+                    else
+                    {
+                        LOGGER.error( "In the project declaration from {}, WRES found an issue. The XML parser/"
+                                      + "validator reports this message: {}; and this linked exception: {}.",
+                                      projectConfigPlus.getOrigin(),
+                                      ve.getMessage(),
+                                      ve.getLinkedException() );
+                    }
+                }
+            }
         }
 
         // Validate data sources
@@ -298,23 +297,23 @@ public class Validation
         if ( Objects.nonNull( firstSourceThatRequiresFeatures )
              && noFeatureDeclaration )
         {
-            if ( LOGGER.isWarnEnabled() )
+            if ( LOGGER.isErrorEnabled() )
             {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " At least one of the declared data sources "
-                             + "required one or more <feature> or "
-                             + "<featureGroup> declarations under <pair> or a "
-                             + "<featureService> declaration under <pair> "
-                             + "but no such feature-related declaration was "
-                             + "found. Add <feature> or <featureGroup> "
-                             + "declarations such that WRES can get data for "
-                             + "those geographic features using the declared "
-                             + "data source.",
-                             projectConfigPlus.getOrigin(),
-                             firstSourceThatRequiresFeatures.sourceLocation()
-                                                            .getLineNumber(),
-                             firstSourceThatRequiresFeatures.sourceLocation()
-                                                            .getColumnNumber() );
+                LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                              + " At least one of the declared data sources "
+                              + "required one or more <feature> or "
+                              + "<featureGroup> declarations under <pair> or a "
+                              + "<featureService> declaration under <pair> "
+                              + "but no such feature-related declaration was "
+                              + "found. Add <feature> or <featureGroup> "
+                              + "declarations such that WRES can get data for "
+                              + "those geographic features using the declared "
+                              + "data source.",
+                              projectConfigPlus.getOrigin(),
+                              firstSourceThatRequiresFeatures.sourceLocation()
+                                                             .getLineNumber(),
+                              firstSourceThatRequiresFeatures.sourceLocation()
+                                                             .getColumnNumber() );
             }
 
             isValid = false;
@@ -360,38 +359,38 @@ public class Validation
         {
             isValid = false;
 
-            if ( LOGGER.isWarnEnabled() )
+            if ( LOGGER.isErrorEnabled() )
             {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " At least one <feature> was declared with a "
-                             + "baseline dataset geographic feature name, but "
-                             + "there was no baseline dataset declared in the "
-                             + "<inputs> declaration. WRES will look in the "
-                             + "left, right, and baseline datasets for the "
-                             + "names declared in <feature> attributes left, "
-                             + "right, and baseline, respectively. Either add "
-                             + "a baseline dataset or remove the baseline "
-                             + "feature name to resolve this issue. If the "
-                             + "name is known for some dimension not used by "
-                             + "either the left or right datasets, such as an "
-                             + "evaluation of National Water Model data "
-                             + "(nwm_feature_id) on the right versus USGS data "
-                             + "(usgs_site_code) on the left, while only the "
-                             + "NWS Location ID (nws_lid) is known, then use "
-                             + "the <featureService> with a <group> for each "
-                             + "feature, e.g. with <type>nws_lid</type> (the "
-                             + "known dimension) and <value>DRRC2</value> (the "
-                             + "known feature name in that dimension) and "
-                             + "omit the <feature> declarations too.",
-                             projectConfigPlus.getOrigin(),
-                             baselineFeatureNameButNoBaseline.sourceLocation()
-                                                             .getLineNumber(),
-                             baselineFeatureNameButNoBaseline.sourceLocation()
-                                                             .getColumnNumber() );
+                LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                              + " At least one <feature> was declared with a "
+                              + "baseline dataset geographic feature name, but "
+                              + "there was no baseline dataset declared in the "
+                              + "<inputs> declaration. WRES will look in the "
+                              + "left, right, and baseline datasets for the "
+                              + "names declared in <feature> attributes left, "
+                              + "right, and baseline, respectively. Either add "
+                              + "a baseline dataset or remove the baseline "
+                              + "feature name to resolve this issue. If the "
+                              + "name is known for some dimension not used by "
+                              + "either the left or right datasets, such as an "
+                              + "evaluation of National Water Model data "
+                              + "(nwm_feature_id) on the right versus USGS data "
+                              + "(usgs_site_code) on the left, while only the "
+                              + "NWS Location ID (nws_lid) is known, then use "
+                              + "the <featureService> with a <group> for each "
+                              + "feature, e.g. with <type>nws_lid</type> (the "
+                              + "known dimension) and <value>DRRC2</value> (the "
+                              + "known feature name in that dimension) and "
+                              + "omit the <feature> declarations too.",
+                              projectConfigPlus.getOrigin(),
+                              baselineFeatureNameButNoBaseline.sourceLocation()
+                                                              .getLineNumber(),
+                              baselineFeatureNameButNoBaseline.sourceLocation()
+                                                              .getColumnNumber() );
             }
         }
 
-        return isValid && Validation.hasVariablesIfGridded( projectConfigPlus );
+        return Validation.hasVariablesIfGridded( projectConfigPlus ) && isValid;
     }
 
     /**
@@ -414,27 +413,27 @@ public class Validation
         if ( Objects.isNull( inputsConfig.getLeft().getVariable() ) )
         {
             isValid = false;
-            if ( LOGGER.isWarnEnabled() )
+            if ( LOGGER.isErrorEnabled() )
             {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + THIS_EVALUATION_APPEARS_TO_CONTAIN_GRIDDED_DATA,
-                             projectConfigPlus.getOrigin(),
-                             inputsConfig.getLeft().sourceLocation().getLineNumber(),
-                             inputsConfig.getLeft().sourceLocation().getColumnNumber(),
-                             LeftOrRightOrBaseline.LEFT );
+                LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                              + THIS_EVALUATION_APPEARS_TO_CONTAIN_GRIDDED_DATA,
+                              projectConfigPlus.getOrigin(),
+                              inputsConfig.getLeft().sourceLocation().getLineNumber(),
+                              inputsConfig.getLeft().sourceLocation().getColumnNumber(),
+                              LeftOrRightOrBaseline.LEFT );
             }
         }
         if ( Objects.isNull( inputsConfig.getRight().getVariable() ) )
         {
             isValid = false;
-            if ( LOGGER.isWarnEnabled() )
+            if ( LOGGER.isErrorEnabled() )
             {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + THIS_EVALUATION_APPEARS_TO_CONTAIN_GRIDDED_DATA,
-                             projectConfigPlus.getOrigin(),
-                             inputsConfig.getRight().sourceLocation().getLineNumber(),
-                             inputsConfig.getRight().sourceLocation().getColumnNumber(),
-                             LeftOrRightOrBaseline.RIGHT );
+                LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                              + THIS_EVALUATION_APPEARS_TO_CONTAIN_GRIDDED_DATA,
+                              projectConfigPlus.getOrigin(),
+                              inputsConfig.getRight().sourceLocation().getLineNumber(),
+                              inputsConfig.getRight().sourceLocation().getColumnNumber(),
+                              LeftOrRightOrBaseline.RIGHT );
             }
         }
 
@@ -442,14 +441,14 @@ public class Validation
              && Objects.isNull( inputsConfig.getBaseline().getVariable() ) )
         {
             isValid = false;
-            if ( LOGGER.isWarnEnabled() )
+            if ( LOGGER.isErrorEnabled() )
             {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + THIS_EVALUATION_APPEARS_TO_CONTAIN_GRIDDED_DATA,
-                             projectConfigPlus.getOrigin(),
-                             inputsConfig.getBaseline().sourceLocation().getLineNumber(),
-                             inputsConfig.getBaseline().sourceLocation().getColumnNumber(),
-                             LeftOrRightOrBaseline.BASELINE );
+                LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                              + THIS_EVALUATION_APPEARS_TO_CONTAIN_GRIDDED_DATA,
+                              projectConfigPlus.getOrigin(),
+                              inputsConfig.getBaseline().sourceLocation().getLineNumber(),
+                              inputsConfig.getBaseline().sourceLocation().getColumnNumber(),
+                              LeftOrRightOrBaseline.BASELINE );
             }
         }
 
@@ -458,33 +457,16 @@ public class Validation
 
     private static boolean requiresFeatureOrFeatureService( DataSourceConfig.Source source )
     {
-        if ( Objects.nonNull( source.getInterface() ) )
-        {
-            if ( source.getInterface()
-                       .equals( InterfaceShortHand.WRDS_AHPS ) )
-            {
-                return true;
-            }
-            else if ( source.getInterface()
-                            .equals( InterfaceShortHand.WRDS_NWM ) )
-            {
-                return true;
-            }
-            else if ( source.getInterface()
-                            .equals( InterfaceShortHand.USGS_NWIS ) )
-            {
-                return true;
-            }
-            else if ( source.getInterface()
-                            .value()
-                            .toLowerCase()
-                            .startsWith( "nwm_" ) )
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return Objects.nonNull( source.getInterface() ) && ( source.getInterface()
+                                                                   .equals( InterfaceShortHand.WRDS_AHPS )
+                                                             || source.getInterface()
+                                                                      .equals( InterfaceShortHand.WRDS_NWM )
+                                                             || source.getInterface()
+                                                                      .equals( InterfaceShortHand.USGS_NWIS )
+                                                             || source.getInterface()
+                                                                      .value()
+                                                                      .toLowerCase()
+                                                                      .startsWith( "nwm_" ) );
     }
 
     /**
@@ -504,13 +486,10 @@ public class Validation
         boolean result = Validation.isAllMetricsConfigInternallyConsistent( projectConfigPlus );
 
         // Check that each named metric is consistent with the other declaration
-        result = result && Validation.isAllMetricsConfigConsistentWithOtherConfig( projectConfigPlus );
+        result = Validation.isAllMetricsConfigConsistentWithOtherConfig( projectConfigPlus ) && result;
 
         // Check that any external thresholds refer to readable files
-        result = result && Validation.areAllPathsToThresholdsReadable( systemSettings,
-                                                                       projectConfigPlus );
-
-        return result;
+        return Validation.areAllPathsToThresholdsReadable( systemSettings, projectConfigPlus ) && result;
     }
 
 
@@ -531,14 +510,13 @@ public class Validation
         // #58737
         result = Validation.hasUpToOneDestinationPerDestinationType( projectConfigPlus );
 
-        result = result && Validation.isNetcdfOutputConfigValid( projectConfigPlus.toString(),
-                                                                 projectConfigPlus.getProjectConfig()
-                                                                                  .getOutputs()
-                                                                                  .getDestination() );
+        result = Validation.isNetcdfOutputConfigValid( projectConfigPlus.toString(),
+                                                       projectConfigPlus.getProjectConfig()
+                                                                        .getOutputs()
+                                                                        .getDestination() )
+                 && result;
 
-        result = result && Validation.areNetcdfOutputsValid( projectConfigPlus );
-
-        return result;
+        return Validation.areNetcdfOutputsValid( projectConfigPlus ) && result;
     }
 
     /**
@@ -596,7 +574,7 @@ public class Validation
             }
 
             // Warn about deprecated types
-            if ( nextType == DestinationType.CSV || nextType == DestinationType.NUMERIC )
+            if ( LOGGER.isWarnEnabled() && ( nextType == DestinationType.CSV || nextType == DestinationType.NUMERIC ) )
             {
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                              + " The declaration requests {} outputs. This output format has been marked deprecated, "
@@ -611,7 +589,7 @@ public class Validation
             }
 
             // Warn about incubating types
-            if ( nextType == DestinationType.CSV2 )
+            if ( LOGGER.isWarnEnabled() && nextType == DestinationType.CSV2 )
             {
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                              + " The declaration requests {} outputs. This output format has been marked incubating. "
@@ -624,7 +602,7 @@ public class Validation
             }
         }
 
-        if ( !isValid )
+        if ( !isValid && LOGGER.isErrorEnabled() )
         {
             // Make the synonyms intelligible
             String mapString = destinationsByType.toString();
@@ -632,14 +610,14 @@ public class Validation
             mapString = mapString.replaceAll( DestinationType.GRAPHIC.name(), "GRAPHIC/PNG" );
             mapString = mapString.replaceAll( DestinationType.NUMERIC.name(), "NUMERIC/CSV" );
 
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                         + " The declaration contains more than one destination of a given type, which is not allowed. "
-                         + "Please declare only one destination per destination type. The number of destinations by "
-                         + "type is: {}.",
-                         projectConfigPlus.getOrigin(),
-                         outputs.sourceLocation().getLineNumber(),
-                         outputs.sourceLocation().getColumnNumber(),
-                         mapString );
+            LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                          + " The declaration contains more than one destination of a given type, which is not allowed. "
+                          + "Please declare only one destination per destination type. The number of destinations by "
+                          + "type is: {}.",
+                          projectConfigPlus.getOrigin(),
+                          outputs.sourceLocation().getLineNumber(),
+                          outputs.sourceLocation().getColumnNumber(),
+                          mapString );
         }
 
         return isValid;
@@ -688,14 +666,14 @@ public class Validation
 
         if ( foundScratchNetcdf && foundTemplateNetcdf )
         {
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                         + " In this version of WRES, \"netcdf\" and "
-                         + "\"netcdf2\" are mutually exclusive within a single "
-                         + "evaluation. Declare one or the other but not both "
-                         + "simultaneously.",
-                         projectConfigPlus.getOrigin(),
-                         locator.getLineNumber(),
-                         locator.getColumnNumber() );
+            LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                          + " In this version of WRES, \"netcdf\" and "
+                          + "\"netcdf2\" are mutually exclusive within a single "
+                          + "evaluation. Declare one or the other but not both "
+                          + "simultaneously.",
+                          projectConfigPlus.getOrigin(),
+                          locator.getLineNumber(),
+                          locator.getColumnNumber() );
             isValid = false;
         }
 
@@ -705,15 +683,15 @@ public class Validation
                                                       .getFeatureGroup()
                                                       .isEmpty() )
         {
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                         + " In this version of WRES, \"netcdf\" cannot "
-                         + "be declared in combination with \"featureGroup\". "
-                         + "Declare one or the other, but not both "
-                         + "simultaneously. Hint: the \"netcdf2\" format is "
-                         + "supported alongside \"featureGroup\".",
-                         projectConfigPlus.getOrigin(),
-                         locator.getLineNumber(),
-                         locator.getColumnNumber() );
+            LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                          + " In this version of WRES, \"netcdf\" cannot "
+                          + "be declared in combination with \"featureGroup\". "
+                          + "Declare one or the other, but not both "
+                          + "simultaneously. Hint: the \"netcdf2\" format is "
+                          + "supported alongside \"featureGroup\".",
+                          projectConfigPlus.getOrigin(),
+                          locator.getLineNumber(),
+                          locator.getColumnNumber() );
             isValid = false;
         }
 
@@ -723,15 +701,15 @@ public class Validation
                                                      .getFeatureGroup()
                                                      .isEmpty() )
         {
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                         + " In this version of WRES, while \"netcdf2\" is "
-                         + "supported in combination with \"featureGroup\" "
-                         + "the statistics for a feature group will be repeated"
-                         + " for each individual feature in that group in the"
-                         + " resulting netCDF statistics data.",
-                         projectConfigPlus.getOrigin(),
-                         locator.getLineNumber(),
-                         locator.getColumnNumber() );
+            LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                          + " In this version of WRES, while \"netcdf2\" is "
+                          + "supported in combination with \"featureGroup\" "
+                          + "the statistics for a feature group will be repeated"
+                          + " for each individual feature in that group in the"
+                          + " resulting netCDF statistics data.",
+                          projectConfigPlus.getOrigin(),
+                          locator.getLineNumber(),
+                          locator.getColumnNumber() );
         }
 
         return isValid;
@@ -741,10 +719,12 @@ public class Validation
     /**
      * @deprecated since 5.2 ('netcdf' is deprecated, 'netcdf2' ignores extra declarations)
      */
-    @Deprecated( since="5.2" )
+    @Deprecated( since = "5.2" )
     private static boolean isNetcdfOutputConfigValid( String path, List<DestinationConfig> destinations )
     {
         Objects.requireNonNull( destinations, NON_NULL );
+
+        boolean isValid = true;
 
         // Look for a Netcdf Destination config that has a template that doesn't exist
         DestinationConfig templateMissing = wres.util.Collections.find( destinations,
@@ -757,13 +737,14 @@ public class Validation
                                                                                                               Paths.get( destinationConfig.getNetcdf()
                                                                                                                                           .getTemplatePath() ) ) );
 
-        if ( templateMissing != null )
+        if ( templateMissing != null && LOGGER.isErrorEnabled() )
         {
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                         + " The indicated Netcdf Output template does not exist.",
-                         path,
-                         templateMissing.sourceLocation().getLineNumber(),
-                         templateMissing.sourceLocation().getColumnNumber() );
+            isValid = false;
+            LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                          + " The indicated Netcdf Output template does not exist.",
+                          path,
+                          templateMissing.sourceLocation().getLineNumber(),
+                          templateMissing.sourceLocation().getColumnNumber() );
         }
 
         // Look for destinations that aren't for Netcdf but have netcdf specifications
@@ -774,17 +755,22 @@ public class Validation
 
         if ( !incorrectDestinations.isEmpty() )
         {
-            for ( DestinationConfig destinationConfig : incorrectDestinations )
+            isValid = false;
+
+            if ( LOGGER.isErrorEnabled() )
             {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " Netcdf output declarations are only valid for Netcdf Output.",
-                             path,
-                             destinationConfig.sourceLocation().getLineNumber(),
-                             destinationConfig.sourceLocation().getColumnNumber() );
+                for ( DestinationConfig destinationConfig : incorrectDestinations )
+                {
+                    LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                                  + " Netcdf output declarations are only valid for Netcdf Output.",
+                                  path,
+                                  destinationConfig.sourceLocation().getLineNumber(),
+                                  destinationConfig.sourceLocation().getColumnNumber() );
+                }
             }
         }
 
-        return templateMissing == null && incorrectDestinations.isEmpty();
+        return isValid;
     }
 
     /**
@@ -809,16 +795,16 @@ public class Validation
             Integer minimumSampleSize = next.getMinimumSampleSize();
             if ( Objects.nonNull( minimumSampleSize ) && minimumSampleSize < 0 )
             {
-                if ( LOGGER.isWarnEnabled() )
+                if ( LOGGER.isErrorEnabled() )
                 {
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + " The minimum sample size must be greater than zero ({}).",
-                                 projectConfigPlus,
-                                 next.sourceLocation()
-                                     .getLineNumber(),
-                                 next.sourceLocation()
-                                     .getColumnNumber(),
-                                 minimumSampleSize );
+                    LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                                  + " The minimum sample size must be greater than zero ({}).",
+                                  projectConfigPlus,
+                                  next.sourceLocation()
+                                      .getLineNumber(),
+                                  next.sourceLocation()
+                                      .getColumnNumber(),
+                                  minimumSampleSize );
                 }
 
                 returnMe = false;
@@ -855,15 +841,15 @@ public class Validation
         List<TimeSeriesMetricConfig> timeSeriesMetrics = metrics.getTimeSeriesMetric();
         if ( metricConfig.isEmpty() && timeSeriesMetrics.isEmpty() )
         {
-            if ( LOGGER.isWarnEnabled() )
+            if ( LOGGER.isErrorEnabled() )
             {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " No metrics are listed for calculation: add a regular metric or a time-series metric.",
-                             projectConfigPlus,
-                             metrics.sourceLocation()
-                                    .getLineNumber(),
-                             metrics.sourceLocation()
-                                    .getColumnNumber() );
+                LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                              + " No metrics are listed for calculation: add a regular metric or a time-series metric.",
+                              projectConfigPlus,
+                              metrics.sourceLocation()
+                                     .getLineNumber(),
+                              metrics.sourceLocation()
+                                     .getColumnNumber() );
             }
             returnMe = false;
         }
@@ -875,14 +861,17 @@ public class Validation
                                  .getRight()
                                  .getType() != DatasourceType.SINGLE_VALUED_FORECASTS )
         {
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                         + " Currently, time-series metrics can only be applied to single-valued forecasts.",
-                         projectConfigPlus,
-                         metrics.sourceLocation()
-                                .getLineNumber(),
-                         metrics
-                                .sourceLocation()
-                                .getColumnNumber() );
+            if ( LOGGER.isErrorEnabled() )
+            {
+                LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                              + " Currently, time-series metrics can only be applied to single-valued forecasts.",
+                              projectConfigPlus,
+                              metrics.sourceLocation()
+                                     .getLineNumber(),
+                              metrics
+                                     .sourceLocation()
+                                     .getColumnNumber() );
+            }
             returnMe = false;
         }
 
@@ -892,13 +881,13 @@ public class Validation
             //Unnamed metric
             if ( MetricConfigName.ALL_VALID == next.getName() && metricConfig.size() > 1 )
             {
-                if ( LOGGER.isWarnEnabled() )
+                if ( LOGGER.isErrorEnabled() )
                 {
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + " All valid' metrics cannot be requested alongside named metrics.",
-                                 projectConfigPlus,
-                                 next.sourceLocation().getLineNumber(),
-                                 next.sourceLocation().getColumnNumber() );
+                    LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                                  + " All valid' metrics cannot be requested alongside named metrics.",
+                                  projectConfigPlus,
+                                  next.sourceLocation().getLineNumber(),
+                                  next.sourceLocation().getColumnNumber() );
                 }
                 returnMe = false;
             }
@@ -971,30 +960,36 @@ public class Validation
                            if ( projectConfigPlus.getProjectConfig().getPair().getIssuedDatesPoolingWindow() != null )
                            {
                                result.set( false );
-                               LOGGER.warn( "In the project declaration from {}"
-                                            + ", a metric named {} was "
-                                            + "requested, but is not allowed. "
-                                            + "Verification diagrams are not currently supported in "
-                                            + "combination with issuedDatesPoolingWindow. Please remove either "
-                                            + "the {} or the issuedDatesPoolingWindow.",
-                                            projectConfigPlus.getOrigin(),
-                                            nextMetric.getName(),
-                                            nextMetric.getName() );
+                               if ( LOGGER.isErrorEnabled() )
+                               {
+                                   LOGGER.error( "In the project declaration from {}"
+                                                 + ", a metric named {} was "
+                                                 + "requested, but is not allowed. "
+                                                 + "Verification diagrams are not currently supported in "
+                                                 + "combination with issuedDatesPoolingWindow. Please remove either "
+                                                 + "the {} or the issuedDatesPoolingWindow.",
+                                                 projectConfigPlus.getOrigin(),
+                                                 nextMetric.getName(),
+                                                 nextMetric.getName() );
+                               }
                            }
 
                            // Valid dates pooling window
                            if ( projectConfigPlus.getProjectConfig().getPair().getValidDatesPoolingWindow() != null )
                            {
                                result.set( false );
-                               LOGGER.warn( "In the project declaration from {}"
-                                            + ", a metric named {} was "
-                                            + "requested, but is not allowed. "
-                                            + "Verification diagrams are not currently supported in "
-                                            + "combination with validDatesPoolingWindow. Please remove either "
-                                            + "the {} or the validDatesPoolingWindow.",
-                                            projectConfigPlus.getOrigin(),
-                                            nextMetric.getName(),
-                                            nextMetric.getName() );
+                               if ( LOGGER.isErrorEnabled() )
+                               {
+                                   LOGGER.error( "In the project declaration from {}"
+                                                 + ", a metric named {} was "
+                                                 + "requested, but is not allowed. "
+                                                 + "Verification diagrams are not currently supported in "
+                                                 + "combination with validDatesPoolingWindow. Please remove either "
+                                                 + "the {} or the validDatesPoolingWindow.",
+                                                 projectConfigPlus.getOrigin(),
+                                                 nextMetric.getName(),
+                                                 nextMetric.getName() );
+                               }
                            }
                        }
 
@@ -1004,16 +999,13 @@ public class Validation
                        {
                            result.set( false );
 
-                           if ( LOGGER.isWarnEnabled() )
+                           if ( LOGGER.isErrorEnabled() )
                            {
-                               LOGGER.warn( "In the project declaration from "
-                                            + projectConfigPlus.getOrigin()
-                                            + " a metric named "
-                                            + nextMetric.getName()
-                                            + " was requested, which requires "
-                                            + "an explicit baseline. Remove "
-                                            + "this metric or add the required "
-                                            + "baseline declaration." );
+                               LOGGER.error( "In the project declaration from {} a metric named {} was requested, "
+                                             + "which requires an explicit baseline. Remove this metric or add "
+                                             + "the required baseline declaration.",
+                                             projectConfigPlus.getOrigin(),
+                                             nextMetric.getName() );
                            }
                        }
                    }
@@ -1021,11 +1013,13 @@ public class Validation
                    // unlikely and implies an incomplete implementation of a metric by the system  
                    catch ( MetricConfigException e )
                    {
-                       LOGGER.warn( "In the project declaration from "
-                                    + projectConfigPlus.getOrigin() + ", a "
-                                    + "metric named " + nextMetric.getName()
-                                    + " was requested, but is not recognized by"
-                                    + " the system." );
+                       if ( LOGGER.isErrorEnabled() )
+                       {
+                           LOGGER.error( "In the project declaration from {}, a metric named {} was requested, "
+                                         + "but is not recognized.",
+                                         projectConfigPlus.getOrigin(),
+                                         nextMetric.getName() );
+                       }
                        result.set( false );
                    }
                } );
@@ -1098,13 +1092,16 @@ public class Validation
         {
             isValid = false;
 
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                         + " The declaration contains decision thresholds, which are only valid for ensemble or "
-                         + "probability forecasts and no such forecasts were declared. Please remove the thresholds "
-                         + "of type 'probability classifier' from this evaluation.",
-                         projectConfigPlus.getOrigin(),
-                         metricsConfig.sourceLocation().getLineNumber(),
-                         metricsConfig.sourceLocation().getColumnNumber() );
+            if ( LOGGER.isErrorEnabled() )
+            {
+                LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                              + " The declaration contains decision thresholds, which are only valid for ensemble or "
+                              + "probability forecasts and no such forecasts were declared. Please remove the thresholds "
+                              + "of type 'probability classifier' from this evaluation.",
+                              projectConfigPlus.getOrigin(),
+                              metricsConfig.sourceLocation().getLineNumber(),
+                              metricsConfig.sourceLocation().getColumnNumber() );
+            }
         }
 
         // Input type declaration is ensemble
@@ -1117,52 +1114,61 @@ public class Validation
             {
                 isValid = false;
 
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " The categorical metrics {} require two types of thresholds to obtain "
-                             + "categorical pairs from the ensemble pairs. First, event thresholds "
-                             + "are required to obtain probability pairs from the ensemble members. Second, "
-                             + "decision thresholds or 'probability classifiers' are required to obtain "
-                             + "categorical pairs from the probability pairs. Neither of these thresholds were "
-                             + "supplied. Add some thresholds of type {} or {} to the metrics declaration and, "
-                             + "separately, add some thresholds of type {}. Otherwise, remove these metrics.",
-                             projectConfigPlus.getOrigin(),
-                             metricsConfig.sourceLocation().getLineNumber(),
-                             metricsConfig.sourceLocation().getColumnNumber(),
-                             categorical,
-                             ThresholdType.VALUE.name(),
-                             ThresholdType.PROBABILITY.name(),
-                             ThresholdType.PROBABILITY_CLASSIFIER.name() );
+                if ( LOGGER.isErrorEnabled() )
+                {
+                    LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                                  + " The categorical metrics {} require two types of thresholds to obtain "
+                                  + "categorical pairs from the ensemble pairs. First, event thresholds "
+                                  + "are required to obtain probability pairs from the ensemble members. Second, "
+                                  + "decision thresholds or 'probability classifiers' are required to obtain "
+                                  + "categorical pairs from the probability pairs. Neither of these thresholds were "
+                                  + "supplied. Add some thresholds of type {} or {} to the metrics declaration and, "
+                                  + "separately, add some thresholds of type {}. Otherwise, remove these metrics.",
+                                  projectConfigPlus.getOrigin(),
+                                  metricsConfig.sourceLocation().getLineNumber(),
+                                  metricsConfig.sourceLocation().getColumnNumber(),
+                                  categorical,
+                                  ThresholdType.VALUE.name(),
+                                  ThresholdType.PROBABILITY.name(),
+                                  ThresholdType.PROBABILITY_CLASSIFIER.name() );
+                }
             }
             else if ( !eventThresholds )
             {
                 isValid = false;
 
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " The categorical metrics {} require event thresholds to obtain categorical "
-                             + "pairs from the continuous numerical pairs, but no event thresholds were "
-                             + "supplied. Add some thresholds of type {} or {} to the metrics declaration or "
-                             + "remove these metrics before proceeding.",
-                             projectConfigPlus.getOrigin(),
-                             metricsConfig.sourceLocation().getLineNumber(),
-                             metricsConfig.sourceLocation().getColumnNumber(),
-                             categorical,
-                             ThresholdType.VALUE.name(),
-                             ThresholdType.PROBABILITY.name() );
+                if ( LOGGER.isErrorEnabled() )
+                {
+                    LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                                  + " The categorical metrics {} require event thresholds to obtain categorical "
+                                  + "pairs from the continuous numerical pairs, but no event thresholds were "
+                                  + "supplied. Add some thresholds of type {} or {} to the metrics declaration or "
+                                  + "remove these metrics before proceeding.",
+                                  projectConfigPlus.getOrigin(),
+                                  metricsConfig.sourceLocation().getLineNumber(),
+                                  metricsConfig.sourceLocation().getColumnNumber(),
+                                  categorical,
+                                  ThresholdType.VALUE.name(),
+                                  ThresholdType.PROBABILITY.name() );
+                }
             }
             else if ( !decisionThresholds )
             {
                 isValid = false;
 
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " The categorical metrics {} require decision thresholds or 'probability "
-                             + "classifiers' to obtain categorical pairs from the probability pairs, but no "
-                             + "decision thresholds were supplied. Add some thresholds of type {} to the "
-                             + "metrics declaration or remove these metrics before proceeding.",
-                             projectConfigPlus.getOrigin(),
-                             metricsConfig.sourceLocation().getLineNumber(),
-                             metricsConfig.sourceLocation().getColumnNumber(),
-                             categorical,
-                             ThresholdType.PROBABILITY_CLASSIFIER.name() );
+                if ( LOGGER.isErrorEnabled() )
+                {
+                    LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                                  + " The categorical metrics {} require decision thresholds or 'probability "
+                                  + "classifiers' to obtain categorical pairs from the probability pairs, but no "
+                                  + "decision thresholds were supplied. Add some thresholds of type {} to the "
+                                  + "metrics declaration or remove these metrics before proceeding.",
+                                  projectConfigPlus.getOrigin(),
+                                  metricsConfig.sourceLocation().getLineNumber(),
+                                  metricsConfig.sourceLocation().getColumnNumber(),
+                                  categorical,
+                                  ThresholdType.PROBABILITY_CLASSIFIER.name() );
+                }
             }
         }
         // Other (single-valued) types
@@ -1170,18 +1176,20 @@ public class Validation
         {
             isValid = false;
 
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                         + " The categorical metrics {} require event thresholds to obtain categorical pairs "
-                         + "from the continuous numerical pairs, but no event thresholds were supplied. Add "
-                         + "some thresholds of type {} or {} to the metrics declaration or remove these metrics "
-                         + "before proceeding.",
-                         projectConfigPlus.getOrigin(),
-                         metricsConfig.sourceLocation().getLineNumber(),
-                         metricsConfig.sourceLocation().getColumnNumber(),
-                         categorical,
-                         ThresholdType.VALUE,
-                         ThresholdType.PROBABILITY );
-
+            if ( LOGGER.isErrorEnabled() )
+            {
+                LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                              + " The categorical metrics {} require event thresholds to obtain categorical pairs "
+                              + "from the continuous numerical pairs, but no event thresholds were supplied. Add "
+                              + "some thresholds of type {} or {} to the metrics declaration or remove these metrics "
+                              + "before proceeding.",
+                              projectConfigPlus.getOrigin(),
+                              metricsConfig.sourceLocation().getLineNumber(),
+                              metricsConfig.sourceLocation().getColumnNumber(),
+                              categorical,
+                              ThresholdType.VALUE,
+                              ThresholdType.PROBABILITY );
+            }
         }
 
         return isValid;
@@ -1229,17 +1237,17 @@ public class Validation
         {
             isValid = false;
 
-            if ( LOGGER.isWarnEnabled() )
+            if ( LOGGER.isErrorEnabled() )
             {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " The ensemble metrics {} require ensemble pairs, but the declared data type for the RIGHT "
-                             + "data source is '{}'. Either correct this data type to 'ensemble forecasts' or remove the "
-                             + "ensemble metrics before proceeding.",
-                             projectConfigPlus.getOrigin(),
-                             projectConfig.getInputs().getRight().sourceLocation().getLineNumber(),
-                             projectConfig.getInputs().getRight().sourceLocation().getColumnNumber(),
-                             ensemble,
-                             type.name().toLowerCase() );
+                LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                              + " The ensemble metrics {} require ensemble pairs, but the declared data type for the RIGHT "
+                              + "data source is '{}'. Either correct this data type to 'ensemble forecasts' or remove the "
+                              + "ensemble metrics before proceeding.",
+                              projectConfigPlus.getOrigin(),
+                              projectConfig.getInputs().getRight().sourceLocation().getLineNumber(),
+                              projectConfig.getInputs().getRight().sourceLocation().getColumnNumber(),
+                              ensemble,
+                              type.name().toLowerCase() );
             }
         }
 
@@ -1247,17 +1255,17 @@ public class Validation
         {
             isValid = false;
 
-            if ( LOGGER.isWarnEnabled() )
+            if ( LOGGER.isErrorEnabled() )
             {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " The discrete probability metrics {} require ensemble pairs, but the declared data type for "
-                             + "the RIGHT data source is '{}'. Either correct this data type to 'ensemble forecasts' or "
-                             + "remove the discrete probability metrics before proceeding.",
-                             projectConfigPlus.getOrigin(),
-                             projectConfig.getInputs().getRight().sourceLocation().getLineNumber(),
-                             projectConfig.getInputs().getRight().sourceLocation().getColumnNumber(),
-                             discreteProbability,
-                             type.name().toLowerCase() );
+                LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                              + " The discrete probability metrics {} require ensemble pairs, but the declared data type for "
+                              + "the RIGHT data source is '{}'. Either correct this data type to 'ensemble forecasts' or "
+                              + "remove the discrete probability metrics before proceeding.",
+                              projectConfigPlus.getOrigin(),
+                              projectConfig.getInputs().getRight().sourceLocation().getLineNumber(),
+                              projectConfig.getInputs().getRight().sourceLocation().getColumnNumber(),
+                              discreteProbability,
+                              type.name().toLowerCase() );
             }
         }
 
@@ -1279,8 +1287,8 @@ public class Validation
 
         boolean result = true;
 
-        final String PLEASE_UPDATE = "Please update the project declaration "
-                                     + "with a readable source of external thresholds.";
+        final String pleaseUpdate = "Please update the project declaration with a readable source of external "
+                                    + "thresholds.";
 
         // Iterate through the metric group
         for ( MetricsConfig nextMetric : projectConfigPlus.getProjectConfig().getMetrics() )
@@ -1325,29 +1333,29 @@ public class Validation
                     }
                     catch ( MalformedURLException exception )
                     {
-                        LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE +
-                                     "The URL '{}' is not a proper address and therefore cannot be used to access a "
-                                     +
-                                     "remote threshold dataset. {}",
-                                     projectConfigPlus.getOrigin(),
-                                     nextThreshold.sourceLocation().getLineNumber(),
-                                     nextThreshold.sourceLocation().getColumnNumber(),
-                                     thresholdData,
-                                     PLEASE_UPDATE );
+                        LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE +
+                                      "The URL '{}' is not a proper address and therefore cannot be used to access a "
+                                      +
+                                      "remote threshold dataset. {}",
+                                      projectConfigPlus.getOrigin(),
+                                      nextThreshold.sourceLocation().getLineNumber(),
+                                      nextThreshold.sourceLocation().getColumnNumber(),
+                                      thresholdData,
+                                      pleaseUpdate );
 
                         result = false;
                         continue;
                     }
                     catch ( InvalidPathException | FileSystemNotFoundException | SecurityException e )
                     {
-                        LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                     + " The path {} could not be used. "
-                                     + " {}",
-                                     projectConfigPlus.getOrigin(),
-                                     nextThreshold.sourceLocation().getLineNumber(),
-                                     nextThreshold.sourceLocation().getColumnNumber(),
-                                     thresholdData,
-                                     PLEASE_UPDATE );
+                        LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                                      + " The path {} could not be used. "
+                                      + " {}",
+                                      projectConfigPlus.getOrigin(),
+                                      nextThreshold.sourceLocation().getLineNumber(),
+                                      nextThreshold.sourceLocation().getColumnNumber(),
+                                      thresholdData,
+                                      pleaseUpdate );
 
                         result = false;
                         continue;
@@ -1357,14 +1365,14 @@ public class Validation
 
                     if ( !destinationFile.canRead() || destinationFile.isDirectory() )
                     {
-                        LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                     + " The path {} is not a readable file."
-                                     + " {}",
-                                     projectConfigPlus.getOrigin(),
-                                     nextThreshold.sourceLocation().getLineNumber(),
-                                     nextThreshold.sourceLocation().getColumnNumber(),
-                                     thresholdData,
-                                     PLEASE_UPDATE );
+                        LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                                      + " The path {} is not a readable file."
+                                      + " {}",
+                                      projectConfigPlus.getOrigin(),
+                                      nextThreshold.sourceLocation().getLineNumber(),
+                                      nextThreshold.sourceLocation().getColumnNumber(),
+                                      thresholdData,
+                                      pleaseUpdate );
 
                         result = false;
                     }
@@ -1386,31 +1394,29 @@ public class Validation
         result = Validation.areUnitAliasDeclarationsValid( projectConfigPlus,
                                                            pairConfig );
 
-        result = result && Validation.areFeaturesValidInSingletonContext( pairConfig.getFeature() );
+        result = Validation.areFeaturesValidInSingletonContext( pairConfig.getFeature() ) && result;
 
-        result = result && Validation.areFeatureGroupsValid( projectConfigPlus, pairConfig );
+        result = Validation.areFeatureGroupsValid( projectConfigPlus, pairConfig ) && result;
 
-        result = result && Validation.areDatesValid( projectConfigPlus, pairConfig.getDates() );
+        result = Validation.areDatesValid( projectConfigPlus, pairConfig.getDates() ) && result;
 
-        result = result && Validation.areDatesValid( projectConfigPlus, pairConfig.getIssuedDates() );
+        result = Validation.areDatesValid( projectConfigPlus, pairConfig.getIssuedDates() ) && result;
 
-        result = result && Validation.areLeadTimesValid( projectConfigPlus, pairConfig.getLeadHours() );
+        result = Validation.areLeadTimesValid( projectConfigPlus, pairConfig.getLeadHours() ) && result;
 
-        result = result && Validation.isSeasonValid( projectConfigPlus, pairConfig );
+        result = Validation.isSeasonValid( projectConfigPlus, pairConfig ) && result;
 
-        result = result && Validation.isDesiredTimeScaleValid( projectConfigPlus, pairConfig );
+        result = Validation.isDesiredTimeScaleValid( projectConfigPlus, pairConfig ) && result;
 
-        result = result && Validation.areTimeWindowsValid( projectConfigPlus, pairConfig );
+        result = Validation.areTimeWindowsValid( projectConfigPlus, pairConfig ) && result;
 
-        result = result && Validation.isGridSelectionValid( projectConfigPlus, pairConfig );
-
-        return result;
+        return Validation.isGridSelectionValid( projectConfigPlus, pairConfig ) && result;
     }
 
     private static boolean areUnitAliasDeclarationsValid( ProjectConfigPlus projectConfigPlus,
                                                           PairConfig pairConfig )
     {
-        Map<String,String> aliases = new HashMap<>();
+        Map<String, String> aliases = new HashMap<>();
         boolean noDuplicates = true;
 
         for ( UnitAlias alias : pairConfig.getUnitAlias() )
@@ -1424,15 +1430,18 @@ public class Validation
 
                 String msg = FILE_LINE_COLUMN_BOILERPLATE + " Multiple"
                              + " declarations for a single unit alias are not "
-                             + "supported. Found repeated '" + alias.getAlias()
+                             + "supported. Found repeated '"
+                             + alias.getAlias()
                              + "' alias. Remove all but one declaration for "
-                             + "alias '" + alias.getAlias() + "'.";
+                             + "alias '"
+                             + alias.getAlias()
+                             + "'.";
 
-                LOGGER.warn( msg,
-                             projectConfigPlus.getOrigin(),
-                             alias.sourceLocation().getLineNumber(),
-                             alias.sourceLocation()
-                                  .getColumnNumber() );
+                LOGGER.error( msg,
+                              projectConfigPlus.getOrigin(),
+                              alias.sourceLocation().getLineNumber(),
+                              alias.sourceLocation()
+                                   .getColumnNumber() );
             }
         }
 
@@ -1455,11 +1464,11 @@ public class Validation
                              + "is not currently supported. Please replace this declaration with a <polygon> filter "
                              + AND_TRY_AGAIN;
 
-                LOGGER.warn( msg,
-                             projectConfigPlus.getOrigin(),
-                             pairConfig.sourceLocation().getLineNumber(),
-                             pairConfig.sourceLocation()
-                                       .getColumnNumber() );
+                LOGGER.error( msg,
+                              projectConfigPlus.getOrigin(),
+                              pairConfig.sourceLocation().getLineNumber(),
+                              pairConfig.sourceLocation()
+                                        .getColumnNumber() );
 
                 break;
             }
@@ -1488,14 +1497,9 @@ public class Validation
                                                                  LeftOrRightOrBaseline.RIGHT );
         List<String> baselineRawNames = getFeatureNames( features,
                                                          LeftOrRightOrBaseline.BASELINE );
-        valid = valid && Validation.validateFeatureNames( leftRawNames,
-                                                          LeftOrRightOrBaseline.LEFT );
-        valid = valid && Validation.validateFeatureNames( rightRawNames,
-                                                          LeftOrRightOrBaseline.RIGHT );
-        valid = valid && Validation.validateFeatureNames( baselineRawNames,
-                                                          LeftOrRightOrBaseline.BASELINE );
-
-        return valid;
+        valid = Validation.validateFeatureNames( leftRawNames, LeftOrRightOrBaseline.LEFT ) && valid;
+        valid = Validation.validateFeatureNames( rightRawNames, LeftOrRightOrBaseline.RIGHT ) && valid;
+        return Validation.validateFeatureNames( baselineRawNames, LeftOrRightOrBaseline.BASELINE ) && valid;
     }
 
     /**
@@ -1546,13 +1550,13 @@ public class Validation
                          + "allowed. The duplicate feature tuples "
                          + "and their counts are {}.";
 
-            LOGGER.warn( msg,
-                         projectConfigPlus.getOrigin(),
-                         pairConfig.sourceLocation().getLineNumber(),
-                         pairConfig.sourceLocation().getColumnNumber(),
-                         duplicateTuplesWithCounts.size(),
-                         contextString,
-                         duplicateTuplesWithCounts );
+            LOGGER.error( msg,
+                          projectConfigPlus.getOrigin(),
+                          pairConfig.sourceLocation().getLineNumber(),
+                          pairConfig.sourceLocation().getColumnNumber(),
+                          duplicateTuplesWithCounts.size(),
+                          contextString,
+                          duplicateTuplesWithCounts );
         }
 
         // Check for blank names, which are not allowed
@@ -1569,15 +1573,15 @@ public class Validation
         {
             valid = false;
 
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE + " Discovered {} feature tuples {}that contained one or more "
-                         + "blank names, which is now allowed. For each blank name, omit the name instead. The following "
-                         + "feature tuples had one or more blank names: {}.",
-                         projectConfigPlus.getOrigin(),
-                         pairConfig.sourceLocation().getLineNumber(),
-                         pairConfig.sourceLocation().getColumnNumber(),
-                         featuresWithBlankNames.size(),
-                         contextString,
-                         featuresWithBlankNames );
+            LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE + " Discovered {} feature tuples {}that contained one or more "
+                          + "blank names, which is now allowed. For each blank name, omit the name instead. The following "
+                          + "feature tuples had one or more blank names: {}.",
+                          projectConfigPlus.getOrigin(),
+                          pairConfig.sourceLocation().getLineNumber(),
+                          pairConfig.sourceLocation().getColumnNumber(),
+                          featuresWithBlankNames.size(),
+                          contextString,
+                          featuresWithBlankNames );
         }
 
         return valid;
@@ -1608,25 +1612,26 @@ public class Validation
                              + " Feature grouping is not supported for gridded evaluations. Please remove the "
                              + "<featureGroup> declaration and try again.";
 
-                LOGGER.warn( msg,
-                             projectConfigPlus.getOrigin(),
-                             pairConfig.sourceLocation().getLineNumber(),
-                             pairConfig.sourceLocation().getColumnNumber() );
+                LOGGER.error( msg,
+                              projectConfigPlus.getOrigin(),
+                              pairConfig.sourceLocation().getLineNumber(),
+                              pairConfig.sourceLocation().getColumnNumber() );
             }
 
             // Validate the group names
-            valid = valid && Validation.validateFeatureGroupNames( groups, projectConfigPlus, pairConfig );
+            valid = Validation.validateFeatureGroupNames( groups, projectConfigPlus, pairConfig ) && valid;
 
             // Validate the individual features
-            valid = valid && Validation.validateIndividualFeaturesFromFeatureGroups( groups, 
-                                                                                     projectConfigPlus, 
-                                                                                     pairConfig );
+            valid = Validation.validateIndividualFeaturesFromFeatureGroups( groups,
+                                                                            projectConfigPlus,
+                                                                            pairConfig )
+                    && valid;
         }
 
         return valid;
     }
-    
-    private static boolean validateFeatureGroupNames( List<FeaturePool> groups, 
+
+    private static boolean validateFeatureGroupNames( List<FeaturePool> groups,
                                                       ProjectConfigPlus projectConfigPlus,
                                                       PairConfig pairConfig )
     {
@@ -1655,13 +1660,13 @@ public class Validation
                          + "feature groups contained duplicate names {}. Please de-duplicate these feature group "
                          + "names and try again.";
 
-            LOGGER.warn( msg,
-                         projectConfigPlus.getOrigin(),
-                         pairConfig.sourceLocation().getLineNumber(),
-                         pairConfig.sourceLocation().getColumnNumber(),
-                         duplicates );
+            LOGGER.error( msg,
+                          projectConfigPlus.getOrigin(),
+                          pairConfig.sourceLocation().getLineNumber(),
+                          pairConfig.sourceLocation().getColumnNumber(),
+                          duplicates );
         }
-        
+
         // Group names that are too long?
         Set<String> tooLongNames = groups.stream()
                                          // Remove groups without a declared name as the software will choose one
@@ -1670,7 +1675,7 @@ public class Validation
                                                                  .length() > wres.datamodel.space.FeatureGroup.MAXIMUM_NAME_LENGTH )
                                          .map( FeaturePool::getName )
                                          .collect( Collectors.toSet() );
-        
+
         if ( !tooLongNames.isEmpty() )
         {
             valid = false;
@@ -1680,18 +1685,18 @@ public class Validation
                          + "exceeded this maximum length. Please rename these groups using a shorter name. The "
                          + "offending feature group names are {}.";
 
-            LOGGER.warn( msg,
-                         projectConfigPlus.getOrigin(),
-                         pairConfig.sourceLocation().getLineNumber(),
-                         pairConfig.sourceLocation().getColumnNumber(),
-                         wres.datamodel.space.FeatureGroup.MAXIMUM_NAME_LENGTH,
-                         tooLongNames.size(),
-                         tooLongNames );
+            LOGGER.error( msg,
+                          projectConfigPlus.getOrigin(),
+                          pairConfig.sourceLocation().getLineNumber(),
+                          pairConfig.sourceLocation().getColumnNumber(),
+                          wres.datamodel.space.FeatureGroup.MAXIMUM_NAME_LENGTH,
+                          tooLongNames.size(),
+                          tooLongNames );
         }
-        
+
         return valid;
     }
-    
+
 
     /**
      * Validates individual features that are supplied in a grouped context.
@@ -1715,15 +1720,16 @@ public class Validation
 
         for ( FeaturePool group : groups )
         {
-            valid = valid && Validation.areFeaturesValidInGroupedContext( group.getFeature(),
-                                                                          group.getName(),
-                                                                          projectConfigPlus,
-                                                                          pairConfig );
+            valid = Validation.areFeaturesValidInGroupedContext( group.getFeature(),
+                                                                 group.getName(),
+                                                                 projectConfigPlus,
+                                                                 pairConfig )
+                    && valid;
         }
 
         return valid;
     }
-    
+
     /**
      * Each attribute is individually optional in feature, but at least one must
      * be present.
@@ -1747,8 +1753,8 @@ public class Validation
 
         if ( countOfEmptyFeatures > 0 )
         {
-            LOGGER.warn( "Found {} features with no left nor right nor baseline name declared.",
-                         countOfEmptyFeatures );
+            LOGGER.error( "Found {} features with no left nor right nor baseline name declared.",
+                          countOfEmptyFeatures );
             return false;
         }
 
@@ -1825,13 +1831,13 @@ public class Validation
         {
             isValid = false;
 
-            if ( LOGGER.isWarnEnabled() )
+            if ( LOGGER.isErrorEnabled() )
             {
                 // TODO: Enhance WRES to make this statement no longer true.
-                LOGGER.warn( "Found multiple instances of these names on the {}: {}. {}",
-                             leftOrRightOrBaseline.value(),
-                             duplicateNames,
-                             "This version of WRES requires that a feature be declared no more than once." );
+                LOGGER.error( "Found multiple instances of these names on the {}: {}. {}",
+                              leftOrRightOrBaseline.value(),
+                              duplicateNames,
+                              "This version of WRES requires that a feature be declared no more than once." );
             }
         }
 
@@ -1839,13 +1845,13 @@ public class Validation
         {
             isValid = false;
 
-            if ( LOGGER.isWarnEnabled() )
+            if ( LOGGER.isErrorEnabled() )
             {
-                LOGGER.warn( "Found {} blank feature name(s) on {}. Instead of {}{}",
-                             blankCount,
-                             leftOrRightOrBaseline.value(),
-                             leftOrRightOrBaseline.value(),
-                             "=\"\", omit the attribute altogether." );
+                LOGGER.error( "Found {} blank feature name(s) on {}. Instead of {}{}",
+                              blankCount,
+                              leftOrRightOrBaseline.value(),
+                              leftOrRightOrBaseline.value(),
+                              "=\"\", omit the attribute altogether." );
             }
         }
 
@@ -1888,7 +1894,7 @@ public class Validation
                 if ( result && usesUSGSData && latest.isAfter( now ) )
                 {
                     result = false;
-                    if ( LOGGER.isWarnEnabled() )
+                    if ( LOGGER.isErrorEnabled() )
                     {
                         String msg = FILE_LINE_COLUMN_BOILERPLATE
                                      + " Data from the future cannot be"
@@ -1898,11 +1904,11 @@ public class Validation
                                      + " but it is currently "
                                      + now;
 
-                        LOGGER.warn( msg,
-                                     projectConfigPlus.getOrigin(),
-                                     dates.sourceLocation().getLineNumber(),
-                                     dates.sourceLocation()
-                                          .getColumnNumber() );
+                        LOGGER.error( msg,
+                                      projectConfigPlus.getOrigin(),
+                                      dates.sourceLocation().getLineNumber(),
+                                      dates.sourceLocation()
+                                           .getColumnNumber() );
                     }
                 }
             }
@@ -1948,27 +1954,18 @@ public class Validation
         return false;
     }
 
-
     private static boolean usesUSGSData( DataSourceConfig.Source source )
     {
         InterfaceShortHand interfaceShortHand = source.getInterface();
         URI uri = source.getValue();
 
-        if ( Objects.nonNull( interfaceShortHand )
-             && interfaceShortHand.equals( InterfaceShortHand.USGS_NWIS ) )
-        {
-            return true;
-        }
-        else if ( Objects.nonNull( uri )
-                  && Objects.nonNull( uri.getPath() )
-                  && uri.getPath()
-                        .toLowerCase()
-                        .contains( "/nwis/" ) )
-        {
-            return true;
-        }
-
-        return false;
+        return ( Objects.nonNull( interfaceShortHand )
+                 && interfaceShortHand.equals( InterfaceShortHand.USGS_NWIS ) )
+               || ( Objects.nonNull( uri )
+                    && Objects.nonNull( uri.getPath() )
+                    && uri.getPath()
+                          .toLowerCase()
+                          .contains( "/nwis/" ) );
     }
 
     private static boolean isDateStringValid( ProjectConfigPlus projectConfigPlus,
@@ -1987,7 +1984,7 @@ public class Validation
         }
         catch ( DateTimeException dte )
         {
-            if ( LOGGER.isWarnEnabled() )
+            if ( LOGGER.isErrorEnabled() )
             {
                 String msg = FILE_LINE_COLUMN_BOILERPLATE
                              + " In the pair declaration, the text '"
@@ -1997,11 +1994,11 @@ public class Validation
                              + " zoneOffset, and second-precision, e.g. "
                              + "'2017-11-27 17:36:00Z'.";
 
-                LOGGER.warn( msg,
-                             projectConfigPlus.getOrigin(),
-                             locatable.sourceLocation().getLineNumber(),
-                             locatable.sourceLocation()
-                                      .getColumnNumber() );
+                LOGGER.error( msg,
+                              projectConfigPlus.getOrigin(),
+                              locatable.sourceLocation().getLineNumber(),
+                              locatable.sourceLocation()
+                                       .getColumnNumber() );
             }
 
             result = false;
@@ -2036,12 +2033,12 @@ public class Validation
                          + " The maximum lead time '{}' cannot be greater "
                          + "than the minimum lead time '{}'.";
 
-            LOGGER.warn( msg,
-                         projectConfigPlus.getOrigin(),
-                         leadTimes.sourceLocation().getLineNumber(),
-                         leadTimes.sourceLocation().getColumnNumber(),
-                         leadTimes.getMaximum(),
-                         leadTimes.getMinimum() );
+            LOGGER.error( msg,
+                          projectConfigPlus.getOrigin(),
+                          leadTimes.sourceLocation().getLineNumber(),
+                          leadTimes.sourceLocation().getColumnNumber(),
+                          leadTimes.getMaximum(),
+                          leadTimes.getMinimum() );
         }
 
         return isValid;
@@ -2073,16 +2070,16 @@ public class Validation
             }
             catch ( DateTimeException dte )
             {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + THE_MONTH_AND_DAY_COMBINATION_DOES
-                             + NOT_APPEAR_TO_BE_VALID_PLEASE_USE_NUMERIC
-                             + "month and numeric day, such as 4 for April "
-                             + "and 20 for 20th.",
-                             projectConfigPlus.getOrigin(),
-                             season.sourceLocation().getLineNumber(),
-                             season.sourceLocation().getColumnNumber(),
-                             season.getEarliestMonth(),
-                             season.getEarliestDay() );
+                LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                              + THE_MONTH_AND_DAY_COMBINATION_DOES
+                              + NOT_APPEAR_TO_BE_VALID_PLEASE_USE_NUMERIC
+                              + "month and numeric day, such as 4 for April "
+                              + "and 20 for 20th.",
+                              projectConfigPlus.getOrigin(),
+                              season.sourceLocation().getLineNumber(),
+                              season.sourceLocation().getColumnNumber(),
+                              season.getEarliestMonth(),
+                              season.getEarliestDay() );
                 result = false;
             }
 
@@ -2093,33 +2090,33 @@ public class Validation
             }
             catch ( DateTimeException dte )
             {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + THE_MONTH_AND_DAY_COMBINATION_DOES
-                             + NOT_APPEAR_TO_BE_VALID_PLEASE_USE_NUMERIC
-                             + "month and numeric day, such as 8 for August"
-                             + " and 30 for 30th.",
-                             projectConfigPlus.getOrigin(),
-                             season.sourceLocation().getLineNumber(),
-                             season.sourceLocation().getColumnNumber(),
-                             season.getLatestMonth(),
-                             season.getLatestDay() );
+                LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                              + THE_MONTH_AND_DAY_COMBINATION_DOES
+                              + NOT_APPEAR_TO_BE_VALID_PLEASE_USE_NUMERIC
+                              + "month and numeric day, such as 8 for August"
+                              + " and 30 for 30th.",
+                              projectConfigPlus.getOrigin(),
+                              season.sourceLocation().getLineNumber(),
+                              season.sourceLocation().getColumnNumber(),
+                              season.getLatestMonth(),
+                              season.getLatestDay() );
                 result = false;
             }
 
             // Is valid, but deserves a warning, 
             if ( Objects.nonNull( start ) && Objects.nonNull( end ) && start.isAfter( end ) )
             {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " The minimum month '{}' and day '{}' is later"
-                             + " than the maximum month '{}' and day '{}': wrapping is"
-                             + " allowed, but unusual.",
-                             projectConfigPlus.getOrigin(),
-                             season.sourceLocation().getLineNumber(),
-                             season.sourceLocation().getColumnNumber(),
-                             season.getEarliestMonth(),
-                             season.getEarliestDay(),
-                             season.getLatestMonth(),
-                             season.getLatestDay() );
+                LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                              + " The minimum month '{}' and day '{}' is later"
+                              + " than the maximum month '{}' and day '{}': wrapping is"
+                              + " allowed, but unusual.",
+                              projectConfigPlus.getOrigin(),
+                              season.sourceLocation().getLineNumber(),
+                              season.sourceLocation().getColumnNumber(),
+                              season.getEarliestMonth(),
+                              season.getEarliestDay(),
+                              season.getLatestMonth(),
+                              season.getLatestDay() );
             }
 
         }
@@ -2156,12 +2153,12 @@ public class Validation
                          + " In the inputs declaration, the existing time scale of the {} sources was incorrectly "
                          + "specified. An existing time scale requires both a period and a unit.";
 
-            LOGGER.warn( msg,
-                         projectConfigPlus.getOrigin(),
-                         timeScaleConfig.sourceLocation().getLineNumber(),
-                         timeScaleConfig.sourceLocation()
-                                        .getColumnNumber(),
-                         lrb );
+            LOGGER.error( msg,
+                          projectConfigPlus.getOrigin(),
+                          timeScaleConfig.sourceLocation().getLineNumber(),
+                          timeScaleConfig.sourceLocation()
+                                         .getColumnNumber(),
+                          lrb );
         }
 
         return result;
@@ -2172,7 +2169,7 @@ public class Validation
      * @param pairConfig the pair declaration
      * @return true if the {@code desiredTimeScale} is valid, false otherwise
      */
-    
+
     private static boolean isDesiredTimeScaleValid( ProjectConfigPlus projectConfigPlus,
                                                     PairConfig pairConfig )
     {
@@ -2205,13 +2202,13 @@ public class Validation
 
         // Check that the period is valid 
         valid = Validation.isDesiredTimeScalePeriodValid( projectConfigPlus, pairConfig ) && valid;
-        
+
         // Check that the monthdays are valid
         valid = Validation.areDesiredTimeScaleMonthDaysValid( projectConfigPlus, pairConfig ) && valid;
 
         return valid;
     }
-    
+
     /**
      * @param projectConfigPlus the project declaration
      * @param pairConfig the pair declaration
@@ -2240,55 +2237,55 @@ public class Validation
         {
             result = false;
 
-            if ( LOGGER.isWarnEnabled() )
+            if ( LOGGER.isErrorEnabled() )
             {
                 String msg = FILE_LINE_COLUMN_BOILERPLATE
                              + " In the pair declaration, the desired time scale was incorrectly specified. When "
                              + "declaring an earliest monthday, both the month and the day must be present.";
 
-                LOGGER.warn( msg,
-                             projectConfigPlus.getOrigin(),
-                             timeScaleConfig.sourceLocation().getLineNumber(),
-                             timeScaleConfig.sourceLocation()
-                                            .getColumnNumber() );
+                LOGGER.error( msg,
+                              projectConfigPlus.getOrigin(),
+                              timeScaleConfig.sourceLocation().getLineNumber(),
+                              timeScaleConfig.sourceLocation()
+                                             .getColumnNumber() );
             }
         }
-        
+
         if ( latestMonthPresent != latestDayPresent )
         {
             result = false;
 
-            if ( LOGGER.isWarnEnabled() )
+            if ( LOGGER.isErrorEnabled() )
             {
                 String msg = FILE_LINE_COLUMN_BOILERPLATE
                              + " In the pair declaration, the desired time scale was incorrectly specified. When "
                              + "declaring a latest monthday, both the month and the day must be present.";
 
-                LOGGER.warn( msg,
-                             projectConfigPlus.getOrigin(),
-                             timeScaleConfig.sourceLocation().getLineNumber(),
-                             timeScaleConfig.sourceLocation()
-                                            .getColumnNumber() );
+                LOGGER.error( msg,
+                              projectConfigPlus.getOrigin(),
+                              timeScaleConfig.sourceLocation().getLineNumber(),
+                              timeScaleConfig.sourceLocation()
+                                             .getColumnNumber() );
             }
         }
-        
+
         // Period required, unless both monthdays are present
         if ( Objects.isNull( timeScaleConfig.getPeriod() )
              && ( !earliestMonthPresent || !earliestDayPresent || !latestMonthPresent || !latestDayPresent ) )
         {
             result = false;
 
-            if ( LOGGER.isWarnEnabled() )
+            if ( LOGGER.isErrorEnabled() )
             {
                 String msg = FILE_LINE_COLUMN_BOILERPLATE
                              + " In the pair declaration, the desired time scale was incomplete. Either declare a "
                              + "period and associated unit or declare an earliest and latest monthday.";
 
-                LOGGER.warn( msg,
-                             projectConfigPlus.getOrigin(),
-                             timeScaleConfig.sourceLocation().getLineNumber(),
-                             timeScaleConfig.sourceLocation()
-                                            .getColumnNumber() );
+                LOGGER.error( msg,
+                              projectConfigPlus.getOrigin(),
+                              timeScaleConfig.sourceLocation().getLineNumber(),
+                              timeScaleConfig.sourceLocation()
+                                             .getColumnNumber() );
             }
         }
 
@@ -2300,18 +2297,18 @@ public class Validation
         {
             result = false;
 
-            if ( LOGGER.isWarnEnabled() )
+            if ( LOGGER.isErrorEnabled() )
             {
                 String msg = FILE_LINE_COLUMN_BOILERPLATE
                              + " In the pair declaration, the desired time scale was incorrectly specified. Either "
                              + "include a period and associated unit or declare an earliest and latest monthday, but "
                              + "do not declare both.";
 
-                LOGGER.warn( msg,
-                             projectConfigPlus.getOrigin(),
-                             timeScaleConfig.sourceLocation().getLineNumber(),
-                             timeScaleConfig.sourceLocation()
-                                            .getColumnNumber() );
+                LOGGER.error( msg,
+                              projectConfigPlus.getOrigin(),
+                              timeScaleConfig.sourceLocation().getLineNumber(),
+                              timeScaleConfig.sourceLocation()
+                                             .getColumnNumber() );
             }
         }
 
@@ -2349,17 +2346,17 @@ public class Validation
             {
                 result = false;
 
-                if ( LOGGER.isWarnEnabled() )
+                if ( LOGGER.isErrorEnabled() )
                 {
-                    LOGGER.warn( msg,
-                                 projectConfigPlus.getOrigin(),
-                                 timeScaleConfig.sourceLocation().getLineNumber(),
-                                 timeScaleConfig.sourceLocation()
-                                                .getColumnNumber() );
+                    LOGGER.error( msg,
+                                  projectConfigPlus.getOrigin(),
+                                  timeScaleConfig.sourceLocation().getLineNumber(),
+                                  timeScaleConfig.sourceLocation()
+                                                 .getColumnNumber() );
                 }
             }
         }
-        
+
         boolean earliestMonthPresent = Objects.nonNull( timeScaleConfig.getEarliestMonth() );
         boolean earliestDayPresent = Objects.nonNull( timeScaleConfig.getEarliestDay() );
         boolean latestMonthPresent = Objects.nonNull( timeScaleConfig.getLatestMonth() );
@@ -2373,13 +2370,13 @@ public class Validation
         {
             result = false;
 
-            if ( LOGGER.isWarnEnabled() )
+            if ( LOGGER.isErrorEnabled() )
             {
-                LOGGER.warn( msg,
-                             projectConfigPlus.getOrigin(),
-                             timeScaleConfig.sourceLocation().getLineNumber(),
-                             timeScaleConfig.sourceLocation()
-                                            .getColumnNumber() );
+                LOGGER.error( msg,
+                              projectConfigPlus.getOrigin(),
+                              timeScaleConfig.sourceLocation().getLineNumber(),
+                              timeScaleConfig.sourceLocation()
+                                             .getColumnNumber() );
             }
         }
 
@@ -2409,17 +2406,17 @@ public class Validation
         {
             result = false;
 
-            if ( LOGGER.isWarnEnabled() )
+            if ( LOGGER.isErrorEnabled() )
             {
                 String msg = FILE_LINE_COLUMN_BOILERPLATE
                              + " In the pair declaration, the frequency associated with the desired time scale must be "
                              + "empty or greater than zero.";
 
-                LOGGER.warn( msg,
-                             projectConfigPlus.getOrigin(),
-                             timeScaleConfig.sourceLocation().getLineNumber(),
-                             timeScaleConfig.sourceLocation()
-                                            .getColumnNumber() );
+                LOGGER.error( msg,
+                              projectConfigPlus.getOrigin(),
+                              timeScaleConfig.sourceLocation().getLineNumber(),
+                              timeScaleConfig.sourceLocation()
+                                             .getColumnNumber() );
             }
         }
 
@@ -2441,7 +2438,7 @@ public class Validation
         {
             return true;
         }
-        
+
         boolean result = true;
 
         // Non-null period must be >= 1
@@ -2449,29 +2446,29 @@ public class Validation
         {
             result = false;
 
-            if ( LOGGER.isWarnEnabled() )
+            if ( LOGGER.isErrorEnabled() )
             {
                 String msg = FILE_LINE_COLUMN_BOILERPLATE
                              + " In the pair declaration, the period associated with the desired time scale must be "
                              + "empty or greater than zero.";
 
-                LOGGER.warn( msg,
-                             projectConfigPlus.getOrigin(),
-                             timeScaleConfig.sourceLocation().getLineNumber(),
-                             timeScaleConfig.sourceLocation()
-                                            .getColumnNumber() );
+                LOGGER.error( msg,
+                              projectConfigPlus.getOrigin(),
+                              timeScaleConfig.sourceLocation().getLineNumber(),
+                              timeScaleConfig.sourceLocation()
+                                             .getColumnNumber() );
             }
         }
 
         return result;
     }
-    
+
     /**
      * @param projectConfigPlus the project declaration
      * @param pairConfig the pair declaration
      * @return true if the {@code desiredTimeScale} has a {@code unit} present when required, false otherwise
      */
-    
+
     private static boolean isDesiredTimeScaleUnitPresentWhenRequired( ProjectConfigPlus projectConfigPlus,
                                                                       PairConfig pairConfig )
     {
@@ -2490,18 +2487,18 @@ public class Validation
         {
             result = false;
 
-            if ( LOGGER.isWarnEnabled() )
+            if ( LOGGER.isErrorEnabled() )
             {
                 String msg = FILE_LINE_COLUMN_BOILERPLATE
                              + " In the pair declaration, the units associated with the desired time scale must be "
                              + "declared when either the period or frequency is declared, since they are prescribed in "
                              + "time units.";
 
-                LOGGER.warn( msg,
-                             projectConfigPlus.getOrigin(),
-                             timeScaleConfig.sourceLocation().getLineNumber(),
-                             timeScaleConfig.sourceLocation()
-                                            .getColumnNumber() );
+                LOGGER.error( msg,
+                              projectConfigPlus.getOrigin(),
+                              timeScaleConfig.sourceLocation().getLineNumber(),
+                              timeScaleConfig.sourceLocation()
+                                             .getColumnNumber() );
             }
         }
 
@@ -2539,25 +2536,25 @@ public class Validation
             try
             {
                 earliestMonthDay = MonthDay.of( timeScaleConfig.getEarliestMonth(), timeScaleConfig.getEarliestDay() );
-                
+
                 LOGGER.debug( "Discovered an earliest monthday of {}.", earliestMonthDay );
             }
             catch ( DateTimeException e )
             {
                 result = false;
 
-                if ( LOGGER.isWarnEnabled() )
+                if ( LOGGER.isErrorEnabled() )
                 {
                     String msg = FILE_LINE_COLUMN_BOILERPLATE
                                  + " In the pair declaration, discovered a desired time scale with an invalid earliest "
                                  + "month and day: {}.";
 
-                    LOGGER.warn( msg,
-                                 projectConfigPlus.getOrigin(),
-                                 timeScaleConfig.sourceLocation().getLineNumber(),
-                                 timeScaleConfig.sourceLocation()
-                                                .getColumnNumber(),
-                                 e.getMessage() );
+                    LOGGER.error( msg,
+                                  projectConfigPlus.getOrigin(),
+                                  timeScaleConfig.sourceLocation().getLineNumber(),
+                                  timeScaleConfig.sourceLocation()
+                                                 .getColumnNumber(),
+                                  e.getMessage() );
                 }
             }
         }
@@ -2576,25 +2573,25 @@ public class Validation
             {
                 result = false;
 
-                if ( LOGGER.isWarnEnabled() )
+                if ( LOGGER.isErrorEnabled() )
                 {
                     String msg = FILE_LINE_COLUMN_BOILERPLATE
                                  + " In the pair declaration, discovered a desired time scale with an invalid latest "
                                  + "month and day: {}.";
 
-                    LOGGER.warn( msg,
-                                 projectConfigPlus.getOrigin(),
-                                 timeScaleConfig.sourceLocation().getLineNumber(),
-                                 timeScaleConfig.sourceLocation()
-                                                .getColumnNumber(),
-                                 e.getMessage() );
+                    LOGGER.error( msg,
+                                  projectConfigPlus.getOrigin(),
+                                  timeScaleConfig.sourceLocation().getLineNumber(),
+                                  timeScaleConfig.sourceLocation()
+                                                 .getColumnNumber(),
+                                  e.getMessage() );
                 }
             }
         }
 
         return result;
     }
-    
+
     /**
      * Returns true if the time aggregation function associated with the desiredTimeScale is valid given the time
      * aggregation functions associated with the existingTimeScale for each source.
@@ -2686,15 +2683,15 @@ public class Validation
         {
             returnMe = false;
 
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                         + " When using a desired time aggregation of {}, "
-                         + "the existing time aggregation on the {} cannot "
-                         + "be instantaneous.",
-                         projectConfigPlus.getOrigin(),
-                         inputConfig.sourceLocation().getLineNumber(),
-                         inputConfig.sourceLocation().getColumnNumber(),
-                         TimeScaleFunction.TOTAL,
-                         helper );
+            LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                          + " When using a desired time aggregation of {}, "
+                          + "the existing time aggregation on the {} cannot "
+                          + "be instantaneous.",
+                          projectConfigPlus.getOrigin(),
+                          inputConfig.sourceLocation().getLineNumber(),
+                          inputConfig.sourceLocation().getColumnNumber(),
+                          TimeScaleFunction.TOTAL,
+                          helper );
         }
 
         // Existing function must be a sum
@@ -2703,16 +2700,16 @@ public class Validation
         {
             returnMe = false;
 
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                         + " When using a desired time aggregation of {}, "
-                         + "the existing time aggregation on the {} "
-                         + "must also be a {}.",
-                         projectConfigPlus.getOrigin(),
-                         inputConfig.sourceLocation().getLineNumber(),
-                         inputConfig.sourceLocation().getColumnNumber(),
-                         TimeScaleFunction.TOTAL,
-                         helper,
-                         TimeScaleFunction.TOTAL );
+            LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                          + " When using a desired time aggregation of {}, "
+                          + "the existing time aggregation on the {} "
+                          + "must also be a {}.",
+                          projectConfigPlus.getOrigin(),
+                          inputConfig.sourceLocation().getLineNumber(),
+                          inputConfig.sourceLocation().getColumnNumber(),
+                          TimeScaleFunction.TOTAL,
+                          helper,
+                          TimeScaleFunction.TOTAL );
         }
         return returnMe;
     }
@@ -2814,25 +2811,25 @@ public class Validation
         if ( desired.compareTo( existing ) < 0 )
         {
             returnMe = false;
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                         + " The desired time aggregation of the pairs is smaller than the existing time "
-                         + "aggregation of the {}: disaggregation is not supported.",
-                         projectConfigPlus.getOrigin(),
-                         helper.sourceLocation().getLineNumber(),
-                         helper.sourceLocation().getColumnNumber(),
-                         helperString );
+            LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                          + " The desired time aggregation of the pairs is smaller than the existing time "
+                          + "aggregation of the {}: disaggregation is not supported.",
+                          projectConfigPlus.getOrigin(),
+                          helper.sourceLocation().getLineNumber(),
+                          helper.sourceLocation().getColumnNumber(),
+                          helperString );
         }
         // Desired is not an integer multiple of existing
         if ( desired.toMillis() % existing.toMillis() != 0 )
         {
             returnMe = false;
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                         + " The desired time aggregation of the pairs is not an integer multiple of the "
-                         + "existing time aggregation of the {}.",
-                         projectConfigPlus.getOrigin(),
-                         helper.sourceLocation().getLineNumber(),
-                         helper.sourceLocation().getColumnNumber(),
-                         helperString );
+            LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                          + " The desired time aggregation of the pairs is not an integer multiple of the "
+                          + "existing time aggregation of the {}.",
+                          projectConfigPlus.getOrigin(),
+                          helper.sourceLocation().getLineNumber(),
+                          helper.sourceLocation().getColumnNumber(),
+                          helperString );
         }
         return returnMe;
     }
@@ -2847,17 +2844,13 @@ public class Validation
 
     private static boolean areTimeWindowsValid( ProjectConfigPlus projectConfigPlus, PairConfig pairConfig )
     {
-        boolean valid = true;
+        boolean valid = Validation.areDateTimeIntervalsValid( projectConfigPlus, pairConfig );
 
-        valid = Validation.areDateTimeIntervalsValid( projectConfigPlus, pairConfig );
+        valid = Validation.isValidDatesPoolingWindowValid( projectConfigPlus, pairConfig ) && valid;
 
-        valid = valid && Validation.isValidDatesPoolingWindowValid( projectConfigPlus, pairConfig );
+        valid = Validation.isIssuedDatesPoolingWindowValid( projectConfigPlus, pairConfig ) && valid;
 
-        valid = valid && Validation.isIssuedDatesPoolingWindowValid( projectConfigPlus, pairConfig );
-
-        valid = valid && Validation.isLeadTimesPoolingWindowValid( projectConfigPlus, pairConfig );
-
-        return valid;
+        return Validation.isLeadTimesPoolingWindowValid( projectConfigPlus, pairConfig ) && valid;
     }
 
     /**
@@ -2884,15 +2877,15 @@ public class Validation
             {
                 valid = false;
 
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " The earliest valid datetime cannot be later the latest valid datetime, but the "
-                             + "earliest valid datetime is {} and the latest valid datetime is {}. Please correct "
-                             + "this declaration and try again.",
-                             projectConfigPlus.getOrigin(),
-                             validDates.sourceLocation().getLineNumber(),
-                             validDates.sourceLocation().getColumnNumber(),
-                             earliest,
-                             latest );
+                LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                              + " The earliest valid datetime cannot be later the latest valid datetime, but the "
+                              + "earliest valid datetime is {} and the latest valid datetime is {}. Please correct "
+                              + "this declaration and try again.",
+                              projectConfigPlus.getOrigin(),
+                              validDates.sourceLocation().getLineNumber(),
+                              validDates.sourceLocation().getColumnNumber(),
+                              earliest,
+                              latest );
             }
         }
 
@@ -2908,15 +2901,15 @@ public class Validation
             {
                 valid = false;
 
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " The earliest issued datetime cannot be later than the latest issued datetime, but the "
-                             + "earliest issued datetime is {} and the latest issued datetime is {}. Please correct "
-                             + "this declaration and try again.",
-                             projectConfigPlus.getOrigin(),
-                             issuedDates.sourceLocation().getLineNumber(),
-                             issuedDates.sourceLocation().getColumnNumber(),
-                             earliest,
-                             latest );
+                LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                              + " The earliest issued datetime cannot be later than the latest issued datetime, but the "
+                              + "earliest issued datetime is {} and the latest issued datetime is {}. Please correct "
+                              + "this declaration and try again.",
+                              projectConfigPlus.getOrigin(),
+                              issuedDates.sourceLocation().getLineNumber(),
+                              issuedDates.sourceLocation().getColumnNumber(),
+                              earliest,
+                              latest );
             }
         }
 
@@ -2948,13 +2941,13 @@ public class Validation
             {
                 valid = false;
 
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + "{} the earliest and latest valid dates are required, but were not found. Please add "
-                             + "these dates and try again.",
-                             projectConfigPlus.getOrigin(),
-                             pairConfig.sourceLocation().getLineNumber(),
-                             pairConfig.sourceLocation().getColumnNumber(),
-                             validBoiler );
+                LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                              + "{} the earliest and latest valid dates are required, but were not found. Please add "
+                              + "these dates and try again.",
+                              projectConfigPlus.getOrigin(),
+                              pairConfig.sourceLocation().getLineNumber(),
+                              pairConfig.sourceLocation().getColumnNumber(),
+                              validBoiler );
             }
             else
             {
@@ -2963,13 +2956,13 @@ public class Validation
                 {
                     valid = false;
 
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + "{} the earliest valid date is required, but was not found. Please add this date "
-                                 + AND_TRY_AGAIN,
-                                 projectConfigPlus.getOrigin(),
-                                 pairConfig.getDates().sourceLocation().getLineNumber(),
-                                 pairConfig.getDates().sourceLocation().getColumnNumber(),
-                                 validBoiler );
+                    LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                                  + "{} the earliest valid date is required, but was not found. Please add this date "
+                                  + AND_TRY_AGAIN,
+                                  projectConfigPlus.getOrigin(),
+                                  pairConfig.getDates().sourceLocation().getLineNumber(),
+                                  pairConfig.getDates().sourceLocation().getColumnNumber(),
+                                  validBoiler );
                 }
 
                 // Check for the maximum
@@ -2977,13 +2970,13 @@ public class Validation
                 {
                     valid = false;
 
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + "{} the latest valid date is required, but was not found. Please add this date and"
-                                 + TRY_AGAIN,
-                                 projectConfigPlus.getOrigin(),
-                                 pairConfig.getDates().sourceLocation().getLineNumber(),
-                                 pairConfig.getDates().sourceLocation().getColumnNumber(),
-                                 validBoiler );
+                    LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                                  + "{} the latest valid date is required, but was not found. Please add this date and"
+                                  + TRY_AGAIN,
+                                  projectConfigPlus.getOrigin(),
+                                  pairConfig.getDates().sourceLocation().getLineNumber(),
+                                  pairConfig.getDates().sourceLocation().getColumnNumber(),
+                                  validBoiler );
                 }
 
                 // Both are present, check that they can produce a time window
@@ -3004,25 +2997,25 @@ public class Validation
                     {
                         valid = false;
 
-                        LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                     + " Could not generate any valid time pools because the earliest valid time ({}) "
-                                     + "plus the period associated with the validDatesPoolingWindow ({}) is later than "
-                                     + "the latest valid time ({}). There must be at least one pool per evaluation "
-                                     + "and, for a pool to be valid, its rightmost valid time must be earlier than the "
-                                     + "latest valid time.",
-                                     projectConfigPlus.getOrigin(),
-                                     pairConfig.getDates().sourceLocation().getLineNumber(),
-                                     pairConfig.getDates().sourceLocation().getColumnNumber(),
-                                     start,
-                                     period,
-                                     end );
+                        LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                                      + " Could not generate any valid time pools because the earliest valid time ({}) "
+                                      + "plus the period associated with the validDatesPoolingWindow ({}) is later than "
+                                      + "the latest valid time ({}). There must be at least one pool per evaluation "
+                                      + "and, for a pool to be valid, its rightmost valid time must be earlier than the "
+                                      + "latest valid time.",
+                                      projectConfigPlus.getOrigin(),
+                                      pairConfig.getDates().sourceLocation().getLineNumber(),
+                                      pairConfig.getDates().sourceLocation().getColumnNumber(),
+                                      start,
+                                      period,
+                                      end );
                     }
                 }
             }
 
             // Validate the contents
-            valid = valid
-                    && Validation.isPoolingWindowValid( projectConfigPlus, validDatesPoolingConfig, "valid dates" );
+            valid = Validation.isPoolingWindowValid( projectConfigPlus, validDatesPoolingConfig, "valid dates" )
+                    && valid;
 
         }
 
@@ -3055,13 +3048,13 @@ public class Validation
             {
                 valid = false;
 
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + "{} the earliest and latest issued dates are required, but were not found. Please add "
-                             + "these dates and try again.",
-                             projectConfigPlus.getOrigin(),
-                             pairConfig.sourceLocation().getLineNumber(),
-                             pairConfig.sourceLocation().getColumnNumber(),
-                             issuedBoiler );
+                LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                              + "{} the earliest and latest issued dates are required, but were not found. Please add "
+                              + "these dates and try again.",
+                              projectConfigPlus.getOrigin(),
+                              pairConfig.sourceLocation().getLineNumber(),
+                              pairConfig.sourceLocation().getColumnNumber(),
+                              issuedBoiler );
             }
             else
             {
@@ -3070,13 +3063,13 @@ public class Validation
                 {
                     valid = false;
 
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + "{} the earliest issued date is required, but was not found. Please add this date "
-                                 + AND_TRY_AGAIN,
-                                 projectConfigPlus.getOrigin(),
-                                 pairConfig.getIssuedDates().sourceLocation().getLineNumber(),
-                                 pairConfig.getIssuedDates().sourceLocation().getColumnNumber(),
-                                 issuedBoiler );
+                    LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                                  + "{} the earliest issued date is required, but was not found. Please add this date "
+                                  + AND_TRY_AGAIN,
+                                  projectConfigPlus.getOrigin(),
+                                  pairConfig.getIssuedDates().sourceLocation().getLineNumber(),
+                                  pairConfig.getIssuedDates().sourceLocation().getColumnNumber(),
+                                  issuedBoiler );
                 }
 
                 // Check for the maximum
@@ -3084,13 +3077,13 @@ public class Validation
                 {
                     valid = false;
 
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + "{} the latest issued date is required, but was not found. Please add this date and "
-                                 + TRY_AGAIN,
-                                 projectConfigPlus.getOrigin(),
-                                 pairConfig.getIssuedDates().sourceLocation().getLineNumber(),
-                                 pairConfig.getIssuedDates().sourceLocation().getColumnNumber(),
-                                 issuedBoiler );
+                    LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                                  + "{} the latest issued date is required, but was not found. Please add this date and "
+                                  + TRY_AGAIN,
+                                  projectConfigPlus.getOrigin(),
+                                  pairConfig.getIssuedDates().sourceLocation().getLineNumber(),
+                                  pairConfig.getIssuedDates().sourceLocation().getColumnNumber(),
+                                  issuedBoiler );
                 }
 
                 // Both are present, check that they can produce a time window
@@ -3111,25 +3104,25 @@ public class Validation
                     {
                         valid = false;
 
-                        LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                     + " Could not generate any issued time pools because the earliest issued time "
-                                     + "({}) plus the period associated with the issuedDatesPoolingWindow ({}) is "
-                                     + "later than the latest issued time ({}). There must be at least one pool per "
-                                     + "evaluation and, for a pool to be valid, its rightmost issued time must be "
-                                     + "earlier than the latest issued time.",
-                                     projectConfigPlus.getOrigin(),
-                                     pairConfig.getIssuedDates().sourceLocation().getLineNumber(),
-                                     pairConfig.getIssuedDates().sourceLocation().getColumnNumber(),
-                                     start,
-                                     period,
-                                     end );
+                        LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                                      + " Could not generate any issued time pools because the earliest issued time "
+                                      + "({}) plus the period associated with the issuedDatesPoolingWindow ({}) is "
+                                      + "later than the latest issued time ({}). There must be at least one pool per "
+                                      + "evaluation and, for a pool to be valid, its rightmost issued time must be "
+                                      + "earlier than the latest issued time.",
+                                      projectConfigPlus.getOrigin(),
+                                      pairConfig.getIssuedDates().sourceLocation().getLineNumber(),
+                                      pairConfig.getIssuedDates().sourceLocation().getColumnNumber(),
+                                      start,
+                                      period,
+                                      end );
                     }
                 }
             }
 
             // Validate the contents
-            valid = valid
-                    && Validation.isPoolingWindowValid( projectConfigPlus, issuedDatesPoolingConfig, "issued dates" );
+            valid = Validation.isPoolingWindowValid( projectConfigPlus, issuedDatesPoolingConfig, "issued dates" )
+                    && valid;
 
         }
 
@@ -3162,13 +3155,13 @@ public class Validation
             {
                 valid = false;
 
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + "{} the minimum and maximum lead durations are required but were not found. Please add "
-                             + "these durations and try again.",
-                             projectConfigPlus.getOrigin(),
-                             pairConfig.sourceLocation().getLineNumber(),
-                             pairConfig.sourceLocation().getColumnNumber(),
-                             leadBoiler );
+                LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                              + "{} the minimum and maximum lead durations are required but were not found. Please add "
+                              + "these durations and try again.",
+                              projectConfigPlus.getOrigin(),
+                              pairConfig.sourceLocation().getLineNumber(),
+                              pairConfig.sourceLocation().getColumnNumber(),
+                              leadBoiler );
             }
             else
             {
@@ -3177,13 +3170,13 @@ public class Validation
                 {
                     valid = false;
 
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + "{} the minimum lead duration is required, but was not found. Please add this "
-                                 + "duration and try again.",
-                                 projectConfigPlus.getOrigin(),
-                                 pairConfig.getLeadHours().sourceLocation().getLineNumber(),
-                                 pairConfig.getLeadHours().sourceLocation().getColumnNumber(),
-                                 leadBoiler );
+                    LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                                  + "{} the minimum lead duration is required, but was not found. Please add this "
+                                  + "duration and try again.",
+                                  projectConfigPlus.getOrigin(),
+                                  pairConfig.getLeadHours().sourceLocation().getLineNumber(),
+                                  pairConfig.getLeadHours().sourceLocation().getColumnNumber(),
+                                  leadBoiler );
                 }
 
                 // Check for the maximum
@@ -3191,13 +3184,13 @@ public class Validation
                 {
                     valid = false;
 
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + "{} the maximum lead duration is required, but was not found. Please add this "
-                                 + "duration and try again.",
-                                 projectConfigPlus.getOrigin(),
-                                 pairConfig.getLeadHours().sourceLocation().getLineNumber(),
-                                 pairConfig.getLeadHours().sourceLocation().getColumnNumber(),
-                                 leadBoiler );
+                    LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                                  + "{} the maximum lead duration is required, but was not found. Please add this "
+                                  + "duration and try again.",
+                                  projectConfigPlus.getOrigin(),
+                                  pairConfig.getLeadHours().sourceLocation().getLineNumber(),
+                                  pairConfig.getLeadHours().sourceLocation().getColumnNumber(),
+                                  leadBoiler );
                 }
 
                 // Both are present, check that they can produce a time window
@@ -3218,24 +3211,24 @@ public class Validation
                     {
                         valid = false;
 
-                        LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                     + " Could not generate any lead duration pools because the minimum lead duration "
-                                     + "({}) plus the period associated with the leadTimesPoolingWindow ({}) is later "
-                                     + "than the maximum lead duration ({}). There must be at least one pool per "
-                                     + "evaluation and, for a pool to be valid, its rightmost lead duration must be "
-                                     + "smaller than the maximum lead duration.",
-                                     projectConfigPlus.getOrigin(),
-                                     pairConfig.getIssuedDates().sourceLocation().getLineNumber(),
-                                     pairConfig.getIssuedDates().sourceLocation().getColumnNumber(),
-                                     start,
-                                     period,
-                                     end );
+                        LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                                      + " Could not generate any lead duration pools because the minimum lead duration "
+                                      + "({}) plus the period associated with the leadTimesPoolingWindow ({}) is later "
+                                      + "than the maximum lead duration ({}). There must be at least one pool per "
+                                      + "evaluation and, for a pool to be valid, its rightmost lead duration must be "
+                                      + "smaller than the maximum lead duration.",
+                                      projectConfigPlus.getOrigin(),
+                                      pairConfig.getIssuedDates().sourceLocation().getLineNumber(),
+                                      pairConfig.getIssuedDates().sourceLocation().getColumnNumber(),
+                                      start,
+                                      period,
+                                      end );
                     }
                 }
             }
 
             // Validate the contents
-            valid = valid && Validation.isPoolingWindowValid( projectConfigPlus, leadTimesPoolingConfig, "lead times" );
+            valid = Validation.isPoolingWindowValid( projectConfigPlus, leadTimesPoolingConfig, "lead times" ) && valid;
 
         }
 
@@ -3262,15 +3255,15 @@ public class Validation
         {
             valid = false;
 
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                         + " Error when evaluating the declaration for {} "
-                         + "pooling windows: the frequency must be at least 1 "
-                         + "but was '{}', which is not valid.",
-                         projectConfigPlus.getOrigin(),
-                         windowConfig.sourceLocation().getLineNumber(),
-                         windowConfig.sourceLocation().getColumnNumber(),
-                         windowType,
-                         windowConfig.getFrequency() );
+            LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                          + " Error when evaluating the declaration for {} "
+                          + "pooling windows: the frequency must be at least 1 "
+                          + "but was '{}', which is not valid.",
+                          projectConfigPlus.getOrigin(),
+                          windowConfig.sourceLocation().getLineNumber(),
+                          windowConfig.sourceLocation().getColumnNumber(),
+                          windowType,
+                          windowConfig.getFrequency() );
         }
 
         // Period must be >= 0
@@ -3279,15 +3272,15 @@ public class Validation
         {
             valid = false;
 
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                         + " Error when evaluating the declaration for {} "
-                         + "pooling windows: the period must be zero or greater "
-                         + "but was '{}', which is not valid.",
-                         projectConfigPlus.getOrigin(),
-                         windowConfig.sourceLocation().getLineNumber(),
-                         windowConfig.sourceLocation().getColumnNumber(),
-                         windowType,
-                         windowConfig.getPeriod() );
+            LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                          + " Error when evaluating the declaration for {} "
+                          + "pooling windows: the period must be zero or greater "
+                          + "but was '{}', which is not valid.",
+                          projectConfigPlus.getOrigin(),
+                          windowConfig.sourceLocation().getLineNumber(),
+                          windowConfig.sourceLocation().getColumnNumber(),
+                          windowType,
+                          windowConfig.getPeriod() );
         }
 
         return valid;
@@ -3307,11 +3300,11 @@ public class Validation
         if ( left.getType() == DatasourceType.ENSEMBLE_FORECASTS &&
              right.getType() == DatasourceType.ENSEMBLE_FORECASTS )
         {
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                         + " Cannot evaluate ensemble forecasts against ensemble forecasts.",
-                         projectConfigPlus,
-                         left.sourceLocation().getLineNumber(),
-                         left.sourceLocation().getColumnNumber() );
+            LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                          + " Cannot evaluate ensemble forecasts against ensemble forecasts.",
+                          projectConfigPlus,
+                          left.sourceLocation().getLineNumber(),
+                          left.sourceLocation().getColumnNumber() );
 
             result = false;
         }
@@ -3359,17 +3352,17 @@ public class Validation
 
         if ( dataSourceConfig.getSource() == null )
         {
-            if ( LOGGER.isWarnEnabled() )
+            if ( LOGGER.isErrorEnabled() )
             {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + "A source needs to exist within each of the "
-                             + "left and right sections of the "
-                             + "declaration.",
-                             projectConfigPlus,
-                             dataSourceConfig.sourceLocation()
-                                             .getLineNumber(),
-                             dataSourceConfig.sourceLocation()
-                                             .getColumnNumber() );
+                LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                              + "A source needs to exist within each of the "
+                              + "left and right sections of the "
+                              + "declaration.",
+                              projectConfigPlus,
+                              dataSourceConfig.sourceLocation()
+                                              .getLineNumber(),
+                              dataSourceConfig.sourceLocation()
+                                              .getColumnNumber() );
             }
 
             dataSourcesValid = false;
@@ -3383,7 +3376,7 @@ public class Validation
                                                                                  s );
             }
         }
-        
+
         // Validate any persistence transformation
         // Start by warning against a transformation, of which there is only one type supported
         if ( Objects.nonNull( dataSourceConfig.getTransformation() ) )
@@ -3403,28 +3396,28 @@ public class Validation
              && Objects.nonNull( dataSourceConfig.getTransformation() )
              && dataSourceConfig.getTransformation() == SourceTransformationType.PERSISTENCE )
         {
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                         + " The declaration contains both a <transformation>persistence</transformation> and a "
-                         + "<persistence>{}</persistence>, which is not allowed. Please delete the "
-                         + "<transformation>persistence</transformation> and try again.",
-                         projectConfigPlus.getOrigin(),
-                         dataSourceConfig.sourceLocation().getLineNumber(),
-                         dataSourceConfig.sourceLocation().getColumnNumber(),
-                         dataSourceConfig.getPersistence() );
+            LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                          + " The declaration contains both a <transformation>persistence</transformation> and a "
+                          + "<persistence>{}</persistence>, which is not allowed. Please delete the "
+                          + "<transformation>persistence</transformation> and try again.",
+                          projectConfigPlus.getOrigin(),
+                          dataSourceConfig.sourceLocation().getLineNumber(),
+                          dataSourceConfig.sourceLocation().getColumnNumber(),
+                          dataSourceConfig.getPersistence() );
             dataSourcesValid = false;
         }
 
         // The lag associated with persistence is non-negative
         if ( Objects.nonNull( dataSourceConfig.getPersistence() ) && dataSourceConfig.getPersistence() < 0 )
         {
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                         + " The declaration contains a persistence transformation with a lag of {}, which is not "
-                         + "allowed. The lag must be non-negative. Please correct the lag to 0 or greater and try "
-                         + "again.",
-                         projectConfigPlus.getOrigin(),
-                         dataSourceConfig.sourceLocation().getLineNumber(),
-                         dataSourceConfig.sourceLocation().getColumnNumber(),
-                         dataSourceConfig.getPersistence() );
+            LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                          + " The declaration contains a persistence transformation with a lag of {}, which is not "
+                          + "allowed. The lag must be non-negative. Please correct the lag to 0 or greater and try "
+                          + "again.",
+                          projectConfigPlus.getOrigin(),
+                          dataSourceConfig.sourceLocation().getLineNumber(),
+                          dataSourceConfig.sourceLocation().getColumnNumber(),
+                          dataSourceConfig.getPersistence() );
             dataSourcesValid = false;
         }
 
@@ -3443,16 +3436,17 @@ public class Validation
                                           DataSourceConfig.Source source )
     {
         Validation.warnAboutZoneOffset( projectConfigPlus, source );
-        
+
         boolean sourceValid = Validation.isURIDefinedInSourceWhenExpected( projectConfigPlus, source );
 
         if ( source.getInterface() != null
              && source.getInterface()
                       .equals( InterfaceShortHand.WRDS_AHPS ) )
         {
-            sourceValid = sourceValid && Validation.isWRDSSourceValid( projectConfigPlus,
-                                                                       dataSourceConfig,
-                                                                       source );
+            sourceValid = Validation.isWRDSSourceValid( projectConfigPlus,
+                                                        dataSourceConfig,
+                                                        source )
+                          && sourceValid;
         }
 
         return sourceValid;
@@ -3483,13 +3477,13 @@ public class Validation
         if ( Objects.nonNull( baseline.getTransformation() ) && Objects.equals( left.getSource(), baseline.getSource() )
              && !Objects.equals( left.getExistingTimeScale(), baseline.getExistingTimeScale() ) )
         {
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE +
-                         " The baseline source is the same as the left source, but the existing time scales do not "
-                         + "match. Fix or remove the existing time scale of one or both of the left and baseline "
-                         + "sources so that they are consistent.",
-                         projectConfigPlus,
-                         baseline.sourceLocation().getLineNumber(),
-                         baseline.sourceLocation().getColumnNumber() );
+            LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE +
+                          " The baseline source is the same as the left source, but the existing time scales do not "
+                          + "match. Fix or remove the existing time scale of one or both of the left and baseline "
+                          + "sources so that they are consistent.",
+                          projectConfigPlus,
+                          baseline.sourceLocation().getLineNumber(),
+                          baseline.sourceLocation().getColumnNumber() );
 
             valid = false;
         }
@@ -3517,16 +3511,16 @@ public class Validation
         if ( dataSourceConfig.getType() != DatasourceType.ENSEMBLE_FORECASTS
              && !dataSourceConfig.getEnsemble().isEmpty() )
         {
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE +
-                         " The {} dataset declares ensemble filters using <ensemble> but the data source <type> is "
-                         + "{}, which is inconsistent with the filters. Remove the <ensemble> or correct the <type> to "
-                         + "{} and then try again.",
-                         projectConfigPlus,
-                         dataSourceConfig.sourceLocation().getLineNumber(),
-                         dataSourceConfig.sourceLocation().getColumnNumber(),
-                         side,
-                         dataSourceConfig.getType(),
-                         DatasourceType.ENSEMBLE_FORECASTS );
+            LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE +
+                          " The {} dataset declares ensemble filters using <ensemble> but the data source <type> is "
+                          + "{}, which is inconsistent with the filters. Remove the <ensemble> or correct the <type> to "
+                          + "{} and then try again.",
+                          projectConfigPlus,
+                          dataSourceConfig.sourceLocation().getLineNumber(),
+                          dataSourceConfig.sourceLocation().getColumnNumber(),
+                          side,
+                          dataSourceConfig.getType(),
+                          DatasourceType.ENSEMBLE_FORECASTS );
 
             valid = false;
         }
@@ -3554,11 +3548,11 @@ public class Validation
         if ( Objects.isNull( source.getValue() )
              || source.getValue().toString().isBlank() )
         {
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE +
-                         " A source has an invalid URI: please add a valid URI, which cannot be empty.",
-                         projectConfigPlus,
-                         source.sourceLocation().getLineNumber(),
-                         source.sourceLocation().getColumnNumber() );
+            LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE +
+                          " A source has an invalid URI: please add a valid URI, which cannot be empty.",
+                          projectConfigPlus,
+                          source.sourceLocation().getLineNumber(),
+                          source.sourceLocation().getColumnNumber() );
 
             result = false;
         }
@@ -3577,41 +3571,41 @@ public class Validation
                                                        .getLeft() ) )
         {
             DateCondition dates = projectConfigPlus.getProjectConfig()
-                                                     .getPair()
-                                                     .getDates();
+                                                   .getPair()
+                                                   .getDates();
             if ( dates == null )
             {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE + " "
-                             + API_SOURCE_MISSING_DATES_ERROR_MESSAGE,
-                             projectConfigPlus,
-                             projectConfigPlus.getProjectConfig()
-                                              .getPair()
-                                              .sourceLocation()
-                                              .getLineNumber(),
-                             projectConfigPlus.getProjectConfig()
-                                              .getPair()
-                                              .sourceLocation()
-                                              .getColumnNumber(),
-                             source.sourceLocation()
-                                   .getLineNumber(),
-                             source.sourceLocation()
-                                   .getColumnNumber() );
+                LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE + " "
+                              + API_SOURCE_MISSING_DATES_ERROR_MESSAGE,
+                              projectConfigPlus,
+                              projectConfigPlus.getProjectConfig()
+                                               .getPair()
+                                               .sourceLocation()
+                                               .getLineNumber(),
+                              projectConfigPlus.getProjectConfig()
+                                               .getPair()
+                                               .sourceLocation()
+                                               .getColumnNumber(),
+                              source.sourceLocation()
+                                    .getLineNumber(),
+                              source.sourceLocation()
+                                    .getColumnNumber() );
                 wrdsSourceValid = false;
             }
             else if ( dates.getEarliest() == null
                       || dates.getLatest() == null )
             {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE + " "
-                             + API_SOURCE_MISSING_DATES_ERROR_MESSAGE,
-                             projectConfigPlus,
-                             dates.sourceLocation()
-                                        .getLineNumber(),
-                             dates.sourceLocation()
-                                        .getColumnNumber(),
-                             source.sourceLocation()
+                LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE + " "
+                              + API_SOURCE_MISSING_DATES_ERROR_MESSAGE,
+                              projectConfigPlus,
+                              dates.sourceLocation()
                                    .getLineNumber(),
-                             source.sourceLocation()
-                                   .getColumnNumber() );
+                              dates.sourceLocation()
+                                   .getColumnNumber(),
+                              source.sourceLocation()
+                                    .getLineNumber(),
+                              source.sourceLocation()
+                                    .getColumnNumber() );
                 wrdsSourceValid = false;
             }
 
@@ -3620,44 +3614,44 @@ public class Validation
         {
 
             DateCondition issuedDates = projectConfigPlus.getProjectConfig()
-                                                     .getPair()
-                                                     .getIssuedDates();
+                                                         .getPair()
+                                                         .getIssuedDates();
             if ( issuedDates == null )
             {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE + " "
-                             + API_SOURCE_MISSING_ISSUED_DATES_ERROR_MESSAGE,
-                             projectConfigPlus,
-                             projectConfigPlus.getProjectConfig()
-                                              .getPair()
-                                              .sourceLocation()
-                                              .getLineNumber(),
-                             projectConfigPlus.getProjectConfig()
-                                              .getPair()
-                                              .sourceLocation()
-                                              .getColumnNumber(),
-                             source.sourceLocation()
-                                   .getLineNumber(),
-                             source.sourceLocation()
-                                   .getColumnNumber() );
+                LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE + " "
+                              + API_SOURCE_MISSING_ISSUED_DATES_ERROR_MESSAGE,
+                              projectConfigPlus,
+                              projectConfigPlus.getProjectConfig()
+                                               .getPair()
+                                               .sourceLocation()
+                                               .getLineNumber(),
+                              projectConfigPlus.getProjectConfig()
+                                               .getPair()
+                                               .sourceLocation()
+                                               .getColumnNumber(),
+                              source.sourceLocation()
+                                    .getLineNumber(),
+                              source.sourceLocation()
+                                    .getColumnNumber() );
                 wrdsSourceValid = false;
             }
             else if ( issuedDates.getEarliest() == null
                       || issuedDates.getLatest() == null )
             {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE + " "
-                             + API_SOURCE_MISSING_ISSUED_DATES_ERROR_MESSAGE,
-                             projectConfigPlus,
-                             issuedDates.sourceLocation()
-                                        .getLineNumber(),
-                             issuedDates.sourceLocation()
-                                        .getColumnNumber(),
-                             source.sourceLocation()
-                                   .getLineNumber(),
-                             source.sourceLocation()
-                                   .getColumnNumber() );
+                LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE + " "
+                              + API_SOURCE_MISSING_ISSUED_DATES_ERROR_MESSAGE,
+                              projectConfigPlus,
+                              issuedDates.sourceLocation()
+                                         .getLineNumber(),
+                              issuedDates.sourceLocation()
+                                         .getColumnNumber(),
+                              source.sourceLocation()
+                                    .getLineNumber(),
+                              source.sourceLocation()
+                                    .getColumnNumber() );
                 wrdsSourceValid = false;
             }
-        
+
         }
 
         return wrdsSourceValid;
@@ -3665,13 +3659,10 @@ public class Validation
 
 
     /**
-     * Checks validity of date and time declaration such as zone and offset.
-     * 
-     * TODO: If this method needs to assert something more, add it return the status.
+     * Warns about the zone offset.
      * 
      * @param projectConfigPlus the config
      * @param source the particular source element to check
-     * @return true if valid, false otherwise
      * @throws NullPointerException when any arg is null
      */
 
