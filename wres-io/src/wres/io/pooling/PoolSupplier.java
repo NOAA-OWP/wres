@@ -803,7 +803,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         List<TimeSeries<Pair<L, R>>> returnMe = new ArrayList<>();
         List<EvaluationStatusMessage> validation = new ArrayList<>();
 
-        // Iterate through each combination of left/right series 
+        // Iterate through each combination of left/right series
         for ( TimeSeries<L> nextLeft : left )
         {
             for ( TimeSeries<R> nextRight : rightOrBaseline )
@@ -1014,10 +1014,10 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                           + " which contained {} values: "
                           + "created {} pairs at the desired time scale of {}.",
                           LeftOrRightOrBaseline.LEFT,
-                          orientation,
-                          scaledAndTransformedLeft.hashCode(),
+                          scaledAndTransformedLeft.getMetadata(),
                           scaledAndTransformedLeft.getEvents().size(),
-                          scaledAndTransformedRight.hashCode(),
+                          orientation,
+                          scaledAndTransformedRight.getMetadata(),
                           scaledAndTransformedRight.getEvents().size(),
                           snippedPairs.getEvents().size(),
                           desiredTimeScale );
