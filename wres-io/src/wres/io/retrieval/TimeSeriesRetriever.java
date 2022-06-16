@@ -178,14 +178,39 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         Objects.requireNonNull( scripter );
         Objects.requireNonNull( mapper );
 
-        LOGGER.debug( "Retrieving time-series data from an underlying data store." );
+        LOGGER.debug( "Submitting a script to obtain time-series data from an underlying data store." );
+
+        // JFR monitoring
+        RetrievalEvent retrievalEvent = RetrievalEvent.of( this.getLeftOrRightOrBaseline(),
+                                                           this.getTimeWindow(),
+                                                           this.getFeatures(),
+                                                           this.getVariableName() );
+
+        Instant startTime = Instant.now();
+
+        retrievalEvent.begin();
+
+        // This connection remains open for the duration that the time-series data stream remains open and is closed on 
+        // exception or when the retrieval completes. Another option would be to implement Closeable.
+        Connection connection = null;
 
         try
         {
             // To remain open until all series have been read
-            Connection connection = this.getDatabase()
-                                        .getConnection();
+            connection = this.getDatabase()
+                             .getConnection();
+
             DataProvider provider = scripter.buffer( connection );
+
+            retrievalEvent.commit();
+
+            if ( LOGGER.isDebugEnabled() )
+            {
+                Duration duration = Duration.between( startTime, Instant.now() );
+                LOGGER.debug( "Finished executing a script to obtain time-series data. The time-series data is now "
+                              + "available for streaming. The script completed in {}.",
+                              duration );
+            }
 
             Supplier<TimeSeries<S>> supplier = this.getTimeSeriesSupplier( mapper,
                                                                            connection,
@@ -195,8 +220,20 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             return Stream.generate( supplier )
                          .takeWhile( Objects::nonNull ); // Finite stream, proceeds while a time-series is returned
         }
-        catch ( SQLException e )
+        catch ( DataAccessException | SQLException e )
         {
+            try
+            {
+                if ( Objects.nonNull( connection ) )
+                {
+                    connection.close();
+                }
+            }
+            catch ( SQLException f )
+            {
+                LOGGER.warn( "Failed to close a database connection.", f );
+            }
+
             throw new DataAccessException( "Failed to access the time-series data.", e );
         }
     }
