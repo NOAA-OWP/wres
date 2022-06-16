@@ -30,6 +30,11 @@ public class DataScripter extends ScriptBuilder
         this.database = database;
     }
 
+    /**
+     * @param database the database
+     * @param beginning the beginning of the script
+     */
+    
     public DataScripter( Database database, final String beginning )
     {
         super(beginning);
@@ -354,7 +359,7 @@ public class DataScripter extends ScriptBuilder
      */
     private Query formQuery()
     {
-        Query query = new Query( database.getSystemSettings(), this.toString() )
+        Query query = new Query( this.database.getSystemSettings(), this.toString() )
                 .inTransaction( this.useTransaction );
 
         if (!this.arguments.isEmpty())

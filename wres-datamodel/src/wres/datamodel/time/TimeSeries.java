@@ -29,23 +29,13 @@ import wres.datamodel.scale.TimeScaleOuter;
 @Immutable
 public class TimeSeries<T>
 {
-
-    /**
-     * Logger.
-     */
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeries.class );
 
-    /**
-     * Any non-event-related metadata that apply to the time-series as a whole.
-     */
-
+    /** Any non-event-related metadata that apply to the time-series as a whole. */
     private final TimeSeriesMetadata metadata;
 
-    /**
-     * The events.
-     */
-
+    /** The events. */
     private final SortedSet<Event<T>> events;
 
     /**
@@ -333,6 +323,20 @@ public class TimeSeries<T>
         {
             // Explicit comparator set on the event map that checks time
             return this.events.contains( validTime );
+        }
+
+        /**
+         * Clears all state from the builder, returning it to its new/original state.
+         * 
+         * @return the builder
+         */
+
+        public Builder<T> clear()
+        {
+            this.events.clear();
+            this.metadata = null;
+
+            return this;
         }
 
         /**
