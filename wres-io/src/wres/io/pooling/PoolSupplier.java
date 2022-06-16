@@ -124,7 +124,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     /** An optional cross-pairer to ensure that the main pairs and baseline pairs are coincident in time. */
     private final TimeSeriesCrossPairer<L, R> crossPairer;
 
-    /** Upscaler for left-type data. Optional on construction, but may be exceptional if later required. */
+    /** Upscaler for left-type data. Optional on construction, but may be exceptional if absent and later required. */
     private final TimeSeriesUpscaler<L> leftUpscaler;
 
     /** Upscaler for right-type data. Optional on construction, but may be exceptional if later required. */
@@ -212,6 +212,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
         leftEvent.commit();
 
+        LOGGER.debug( "Preparing to retrieve time-series data." );
+        
         List<TimeSeries<L>> leftData = cStream.collect( Collectors.toList() );
 
         RetrievalEvent rightEvent = RetrievalEvent.of( LeftOrRightOrBaseline.RIGHT, this.metadata ); // Monitor
@@ -231,7 +233,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                                         .collect( Collectors.toList() );
             baselineEvent.commit();
         }
-
+        
         Pool<TimeSeries<Pair<L, R>>> returnMe = this.createPool( leftData, rightData, baselineData );
 
         poolMonitor.commit();
@@ -657,7 +659,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         // For now, only apply to the left side, as this is most likely to contain observation-like data that extends
         // far beyond the bounds of the right data
         leftData = this.snip( leftData, rightData );
-
+        
         // Consolidate any observation-like time-series as these values can be shared/combined (e.g., when rescaling)
         leftData = this.consolidateTimeSeriesWithZeroReferenceTimes( leftData );
         rightData = this.consolidateTimeSeriesWithZeroReferenceTimes( rightData );
@@ -806,10 +808,10 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         // Iterate through each combination of left/right series
         for ( TimeSeries<L> nextLeft : left )
         {
-            for ( TimeSeries<R> nextRight : rightOrBaseline )
+            for ( TimeSeries<R> nextRightOrBaseline : rightOrBaseline )
             {
                 TimeSeriesPlusValidation<L, R> pairsPlus = this.createSeriesPairs( nextLeft,
-                                                                                   nextRight,
+                                                                                   nextRightOrBaseline,
                                                                                    rightOrBaselineTransformer,
                                                                                    desiredTimeScale,
                                                                                    frequency,
@@ -831,7 +833,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                 {
                     LOGGER.trace( "Found zero pairs while intersecting time-series {} with time-series {}.",
                                   left.hashCode(),
-                                  nextRight.hashCode() );
+                                  nextRightOrBaseline.hashCode() );
                 }
             }
         }

@@ -3,7 +3,6 @@ package wres.datamodel.scale;
 import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.MonthDay;
 import java.time.ZoneId;
 import java.util.Iterator;
@@ -55,9 +54,6 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
 
     /** The canonical representation of a time scale. */
     private final TimeScale timeScale;
-
-    /** Static string, re-used. */
-    private static final String UTC = "UTC";
 
     /**
      * Constructs a {@link TimeScaleOuter} whose {@link TimeScaleOuter#isInstantaneous()} returns 

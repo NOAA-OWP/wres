@@ -10,15 +10,18 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
-import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -49,15 +52,13 @@ import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 {
+    // Re-used strings
     static final String REFERENCE_TIME = "reference_time";
-
+    private static final String OCCURRENCES = "occurrences";
     private static final String AND = " = ? AND ";
-
     private static final String WHILE_BUILDING_THE_RETRIEVER = "While building the retriever for project_id '{}' "
                                                                + "and data type {}, ";
-
     private static final String INTERVAL_1_MINUTE = " + INTERVAL '1' MINUTE * ";
-
     private static final String LESS_EQUAL = " <= ?";
 
     /** Logger. */
@@ -161,14 +162,15 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
-     * Creates one or more {@link TimeSeries} from a script that retrieves time-series data.
+     * Creates one or more {@link TimeSeries} from a script that retrieves time-series data. Assumes that the script
+     * returns time-series events that are ordered by time-series id.
      * 
      * @param <S> the time-series data type
      * @param scripter the scripter
      * @param mapper a function that retrieves a time-series value from a prescribed column in a {@link DataProvider}
      * @return the time-series
      * @throws NullPointerException if either input is null
-     * @throws DataAccessException if data could not be accessed for whatever reason
+     * @throws DataAccessException if the data could not be accessed for any reason
      */
 
     <S> Stream<TimeSeries<S>> getTimeSeriesFromScript( DataScripter scripter, Function<DataProvider, S> mapper )
@@ -176,106 +178,278 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         Objects.requireNonNull( scripter );
         Objects.requireNonNull( mapper );
 
-        try ( Connection connection = this.getDatabase().getConnection();
-              DataProvider provider = scripter.buffer( connection ) )
+        LOGGER.debug( "Retrieving time-series data from an underlying data store." );
+
+        try
         {
-            Map<Long, TimeSeries.Builder<S>> builders = new TreeMap<>();
+            // To remain open until all series have been read
+            Connection connection = this.getDatabase()
+                                        .getConnection();
+            DataProvider provider = scripter.buffer( connection );
 
-            // Time-series are duplicated per common source in wres.ProjectSource, 
-            // so re-duplicate here. See #56214-272
-            Map<Long, Integer> seriesCounts = new HashMap<>();
+            Supplier<TimeSeries<S>> supplier = this.getTimeSeriesSupplier( mapper,
+                                                                           connection,
+                                                                           provider );
 
-            TimeScaleOuter lastScale = null; // Record of last scale
-            long lastSeriesId = -1;
-
-            while ( provider.next() )
-            {
-                long seriesId = provider.getLong( "series_id" );
-
-                // Reset the last time scale
-                if ( seriesId != lastSeriesId )
-                {
-                    lastScale = null;
-                }
-
-                int seriesCount = 1;
-
-                // Records occurrences?
-                if ( provider.hasColumn( "occurrences" ) )
-                {
-                    seriesCount = provider.getInt( "occurrences" );
-                }
-                seriesCounts.put( seriesId, seriesCount );
-
-                TimeSeries.Builder<S> builder = builders.get( seriesId );
-
-                // Start a new series when required                 
-                if ( Objects.isNull( builder ) )
-                {
-                    builder = new TimeSeries.Builder<>();
-                    builders.put( seriesId, builder );
-                }
-
-                // Get the valid time
-                Instant validTime = provider.getInstant( "valid_time" );
-
-                Map<ReferenceTimeType, Instant> referenceTimes = Collections.emptyMap();
-
-                // Add the explicit reference time
-                if ( provider.hasColumn( REFERENCE_TIME ) && !provider.isNull( REFERENCE_TIME ) )
-                {
-                    Instant referenceTime = provider.getInstant( REFERENCE_TIME );
-                    referenceTimes = new EnumMap<>( ReferenceTimeType.class );
-                    referenceTimes.put( this.getReferenceTimeType(), referenceTime );
-                    referenceTimes = Collections.unmodifiableMap( referenceTimes );
-                }
-
-                // Add the event     
-                S value = mapper.apply( provider );
-                Event<S> event = Event.of( validTime, value );
-                this.addEventToTimeSeries( event, builder );
-
-                // Add the time-scale info
-                String functionString = provider.getString( "scale_function" );
-                long periodInMs = provider.getLong( "scale_period" );
-                Duration period = null;
-
-                // In getLong() above, the underlying getLong is primitive, not
-                // boxed, so a null value in the db will be 0 rather than null.
-                // Because the function name must be present (non-null) for a
-                // scale row to be present, test the function name nullity
-                // before creating a scale duration/period.
-                if ( functionString != null )
-                {
-                    period = Duration.ofMillis( periodInMs );
-                }
-
-                TimeScaleOuter latestScale = this.checkAndGetLatestTimeScale( lastScale,
-                                                                              period,
-                                                                              functionString,
-                                                                              validTime );
-
-                long featureId = provider.getLong( "feature_id" );
-                FeatureKey featureKey = this.featuresCache.getFeatureKey( featureId );
-
-                TimeSeriesMetadata metadata =
-                        TimeSeriesMetadata.of( referenceTimes,
-                                               latestScale,
-                                               this.getVariableName(),
-                                               featureKey,
-                                               this.unitMapper.getDesiredMeasurementUnitName() );
-                builder.setMetadata( metadata );
-                lastScale = latestScale;
-                lastSeriesId = seriesId;
-            }
-
-            return this.composeWithDuplicates( Collections.unmodifiableMap( builders ),
-                                               Collections.unmodifiableMap( seriesCounts ) );
+            // Generate a stream of time-series
+            return Stream.generate( supplier )
+                         .takeWhile( Objects::nonNull ); // Finite stream, proceeds while a time-series is returned
         }
         catch ( SQLException e )
         {
             throw new DataAccessException( "Failed to access the time-series data.", e );
         }
+    }
+
+    /**
+     * Returns a time-series supplier from the inputs.
+     * 
+     * @param <S> the time-series event value type
+     * @param mapper a function that retrieves a time-series value from a prescribed column in a {@link DataProvider}
+     * @param connection the connection
+     * @param provider the data provider
+     * @return a time-series supplier
+     * @throws DataAccessException if the data could not be accessed for any reason
+     */
+
+    private <S> Supplier<TimeSeries<S>> getTimeSeriesSupplier( Function<DataProvider, S> mapper,
+                                                               Connection connection,
+                                                               DataProvider provider )
+    {
+        // Last series, builder, scale and id
+        TimeSeries.Builder<S> lastBuilder = new TimeSeries.Builder<>();
+        AtomicReference<TimeScaleOuter> lastScale = new AtomicReference<>(); // Record of last scale
+        AtomicLong lastSeriesId = new AtomicLong( -1 ); // Last series id
+
+        // Number of replicates of the last time series
+        AtomicInteger replicateCount = new AtomicInteger();
+
+        // Was the final time-series returned already?
+        AtomicBoolean returnedFinal = new AtomicBoolean();
+
+        // Was the retrieval completely empty?
+        AtomicBoolean emptyRetrieval = new AtomicBoolean( true );
+
+        // Store of duplicates that remain to be returned, at most one fewer than the number of replicates
+        List<TimeSeries<S>> duplicates = new ArrayList<>();
+
+        // Create a supplier that returns a time-series once complete
+        return () -> {
+
+            // Clean up before sending the null sentinel, which terminates the stream
+            try
+            {
+                // Remaining duplicates? Then return them before incrementing any more rows
+                if ( !duplicates.isEmpty() )
+                {
+                    return duplicates.remove( 0 );
+                }
+
+                // New rows to increment
+                while ( provider.next() )
+                {
+                    // Some data was retrieved
+                    emptyRetrieval.set( false );
+
+                    // Increment the current series or return a completed one
+                    // The series may contain up to N replicates
+                    List<TimeSeries<S>> series = this.incrementOrCompleteSeries( mapper,
+                                                                                 provider,
+                                                                                 lastBuilder,
+                                                                                 lastSeriesId,
+                                                                                 replicateCount,
+                                                                                 lastScale );
+
+                    // Complete? If so, return it
+                    if ( !series.isEmpty() )
+                    {
+                        // Take one and add the rest to the list of duplicates, to be returned on future iterations
+                        duplicates.addAll( series );
+                        return duplicates.remove( 0 );
+                    }
+                }
+
+                // If there was a final series (of which there may be replicates), build and return it 
+                if ( !emptyRetrieval.get() && !returnedFinal.getAndSet( true ) )
+                {
+                    TimeSeries<S> finalSeries = lastBuilder.build();
+                    List<TimeSeries<S>> replicates = this.getReplicates( finalSeries, replicateCount.get() );
+                    duplicates.addAll( replicates );
+                    return duplicates.remove( 0 );
+                }
+
+                // No more data, so clean up: do not close before this point because the supplier is called up to N
+                // times, one for each time-series retrieved, and uses a single result set across all N calls
+                provider.close();
+                connection.close();
+            }
+            catch ( SQLException | DataAccessException e )
+            {
+                throw new DataAccessException( "Encountered an exception while retrieving time-series data.", e );
+            }
+
+            return null;
+        };
+    }
+
+    /**
+     * Increments an existing series by reading the current row or completes a series and returns it.
+     * 
+     * @param <S> the time-series event value type
+     * @param mapper a function that retrieves a time-series value from a prescribed column in a {@link DataProvider}
+     * @param provider the data provider
+     * @param lastBuilder the builder for the last time-series
+     * @param nextBuilder the builder for the next time-series
+     * @param lastSeriesId the last time-series id
+     * @param replicateCount the number of replicates of the last series
+     * @param lastScale the last time scale to use in validation
+     * @return a completed series or null when incrementing a series
+     * @throws DataAccessException if the data could not be accessed for any reason
+     */
+
+    private <S> List<TimeSeries<S>> incrementOrCompleteSeries( Function<DataProvider, S> mapper,
+                                                               DataProvider provider,
+                                                               TimeSeries.Builder<S> lastBuilder,
+                                                               AtomicLong lastSeriesId,
+                                                               AtomicInteger replicateCount,
+                                                               AtomicReference<TimeScaleOuter> lastScale )
+    {
+        long seriesId = provider.getLong( "series_id" ); // Current series
+        long lastSeriesIdInner = lastSeriesId.get(); // Last series
+
+        List<TimeSeries<S>> returnMe = new ArrayList<>();
+
+        // New series id encountered: reset and return the time-series
+        if ( lastSeriesIdInner != -1 && lastSeriesIdInner != seriesId )
+        {
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "Completing time-series {}.", seriesId );
+            }
+
+            // Reset the scale
+            lastScale.set( null );
+            lastSeriesId.set( -1 );
+
+            TimeSeries<S> replicate = lastBuilder.build();
+            List<TimeSeries<S>> replicates = this.getReplicates( replicate, replicateCount.get() );
+            returnMe.addAll( replicates );
+
+            // Clean the builder for re-use
+            lastBuilder.clear();
+        }
+
+        // New series continues
+        if ( LOGGER.isTraceEnabled() )
+        {
+            LOGGER.trace( "Continuing to build a new time-series, {}.", seriesId );
+        }
+
+        // Records occurrences?
+        if ( provider.hasColumn( OCCURRENCES ) )
+        {
+            int seriesCount = provider.getInt( OCCURRENCES );
+            replicateCount.getAndSet( seriesCount ); // Record the number of replicates
+        }
+        else
+        {
+            throw new DataAccessException( "Could not find the \"occurrences\" column in the time-series results." );
+        }
+
+        // Get the valid time
+        Instant validTime = provider.getInstant( "valid_time" );
+
+        Map<ReferenceTimeType, Instant> referenceTimes = Collections.emptyMap();
+
+        // Add the explicit reference time
+        if ( provider.hasColumn( REFERENCE_TIME ) && !provider.isNull( REFERENCE_TIME ) )
+        {
+            Instant referenceTime = provider.getInstant( REFERENCE_TIME );
+            referenceTimes = new EnumMap<>( ReferenceTimeType.class );
+            referenceTimes.put( this.getReferenceTimeType(), referenceTime );
+            referenceTimes = Collections.unmodifiableMap( referenceTimes );
+        }
+
+        // Add the event     
+        S value = mapper.apply( provider );
+        Event<S> event = Event.of( validTime, value );
+        this.addEventToTimeSeries( event, lastBuilder );
+
+        // Add the time-scale info
+        String functionString = provider.getString( "scale_function" );
+        long periodInMs = provider.getLong( "scale_period" );
+        Duration period = null;
+
+        // In getLong() above, the underlying getLong is primitive, not
+        // boxed, so a null value in the db will be 0 rather than null.
+        // Because the function name must be present (non-null) for a
+        // scale row to be present, test the function name nullity
+        // before creating a scale duration/period.
+        if ( functionString != null )
+        {
+            period = Duration.ofMillis( periodInMs );
+        }
+
+        TimeScaleOuter latestScale = this.checkAndGetLatestTimeScale( lastScale.get(),
+                                                                      period,
+                                                                      functionString,
+                                                                      validTime );
+
+        long featureId = provider.getLong( "feature_id" );
+
+        FeatureKey featureKey;
+        try
+        {
+            featureKey = this.getFeaturesCache()
+                             .getFeatureKey( featureId );
+        }
+        catch ( SQLException e )
+        {
+            throw new DataAccessException( "While reading a time-series, failed to acquire a feature from "
+                                           + "the cache.",
+                                           e );
+        }
+
+        TimeSeriesMetadata metadata =
+                TimeSeriesMetadata.of( referenceTimes,
+                                       latestScale,
+                                       this.getVariableName(),
+                                       featureKey,
+                                       this.getMeasurementUnitMapper()
+                                           .getDesiredMeasurementUnitName() );
+        lastBuilder.setMetadata( metadata );
+
+        lastScale.set( latestScale );
+        lastSeriesId.set( seriesId );
+
+        return Collections.unmodifiableList( returnMe );
+    }
+
+    /**
+     * Returns as many replicates of the time-series as required. 
+     * @param <S> the time-series event value type
+     * @param replicate the time-series to replicate
+     * @param replicateCount the number of replicates
+     * @return a list of replicates
+     */
+
+    private <S> List<TimeSeries<S>> getReplicates( TimeSeries<S> replicate, int replicateCount )
+    {
+        if ( replicateCount < 1 )
+        {
+            throw new IllegalArgumentException( "Cannot replicate a time-series fewer than 1 times: "
+                                                + replicateCount
+                                                + "." );
+        }
+
+        List<TimeSeries<S>> replicates = new ArrayList<>();
+
+        for ( int i = 0; i < replicateCount; i++ )
+        {
+            replicates.add( replicate );
+        }
+
+        return Collections.unmodifiableList( replicates );
     }
 
     /**
@@ -788,33 +962,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                                            + "', encountered an error: ",
                                            e );
         }
-    }
-
-    /**
-     * Returns a stream of time-series from the inputs. For each builder in the map of builders, create as many series 
-     * as indicated in the map of series counts.
-     * 
-     * @param <S> the event value type
-     * @param builders the builders
-     * @param seriesCounts the sreies counts
-     * @return a stream of time-series
-     */
-
-    private <S> Stream<TimeSeries<S>> composeWithDuplicates( Map<Long, TimeSeries.Builder<S>> builders,
-                                                             Map<Long, Integer> seriesCounts )
-    {
-        List<TimeSeries<S>> streamMe = new ArrayList<>();
-
-        for ( Map.Entry<Long, TimeSeries.Builder<S>> nextSeries : builders.entrySet() )
-        {
-            int count = seriesCounts.get( nextSeries.getKey() );
-            for ( int i = 0; i < count; i++ )
-            {
-                streamMe.add( nextSeries.getValue().build() );
-            }
-        }
-
-        return streamMe.stream();
     }
 
     /**

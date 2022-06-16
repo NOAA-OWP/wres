@@ -200,6 +200,12 @@ public class GriddedReader
             Event<T> nextEvent = nextPair.getRight();
 
             Instant referenceTime = nextPair.getLeft();
+            
+            // Use a dummy reference time for non-forecasts so that the values are composed as a single series
+            if( ! isForecast )
+            {
+                referenceTime = Instant.MIN;
+            }
 
             // Existing series
             if ( eventsByReferenceTime.containsKey( referenceTime ) )
@@ -307,16 +313,6 @@ public class GriddedReader
         private final Instant validTime;
     }
 
-    /**
-     * Parse a point from a point WKT, ignoring srid.
-     *
-     * TODO: do an affine transform, not just parse a point.
-     */
-    private static FeatureKey.GeoPoint getLatLonCoordFromSridWkt( int srid, String wkt )
-    {
-        return FeatureKey.getLonLatFromPointWkt( wkt );
-    }
-
     private static class GridFileReader
     {
         GridFileReader( final String path, final boolean isForecast )
@@ -336,7 +332,7 @@ public class GriddedReader
 
             this.readLock.lock();
 
-            FeatureKey.GeoPoint point = getLatLonCoordFromSridWkt( srid, wkt );
+            FeatureKey.GeoPoint point = getLatLonCoordFromSridWkt( wkt );
 
             // This is underlying THREDDS code. It generally expects some semi-remote location for its data, but we're local, so we're using
             DatasetUrl url = new DatasetUrl( ServiceType.File, this.path );
@@ -377,6 +373,16 @@ public class GriddedReader
         boolean isLocked()
         {
             return this.readLock.isLocked();
+        }
+        
+        /**
+         * Parse a point from a point WKT, ignoring srid.
+         *
+         * TODO: do an affine transform, not just parse a point.
+         */
+        private static FeatureKey.GeoPoint getLatLonCoordFromSridWkt( String wkt )
+        {
+            return FeatureKey.getLonLatFromPointWkt( wkt );
         }
 
         private Instant getValidTime() throws IOException

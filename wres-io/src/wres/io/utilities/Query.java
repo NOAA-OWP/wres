@@ -3,10 +3,8 @@ package wres.io.utilities;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -65,7 +63,6 @@ public class Query
      * A list of parameters to use for batch execution
      */
     private List<Object[]> batchParameters;
-
 
     /**
      * A set of SQLStates that should cause indefinite retry.
@@ -196,7 +193,7 @@ public class Query
         this.forceTransaction = forceTransaction;
         return this;
     }
-
+    
     Query useCursor( boolean useCursor )
     {
         this.useCursor = useCursor;
@@ -798,8 +795,8 @@ public class Query
      */
     private PreparedStatement prepareStatement(final Connection connection) throws SQLException
     {
-        PreparedStatement statement = connection.prepareStatement( this.script,
-                                                                   RETURN_GENERATED_KEYS );
+        PreparedStatement statement = connection.prepareStatement( this.script, RETURN_GENERATED_KEYS );
+        
         // In versions prior to 5.12, a timeout was set here, but now it is set
         // on the session/connection. See DatabaseSettings and issue #94484.
 
