@@ -198,9 +198,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         // Left data provided or is climatology the left data?
         Stream<TimeSeries<L>> cStream;
 
-        RetrievalEvent leftEvent = RetrievalEvent.of( LeftOrRightOrBaseline.LEFT, this.metadata ); // Monitor
-        leftEvent.begin();
-
         if ( Objects.nonNull( this.left ) )
         {
             cStream = this.left.get();
@@ -210,30 +207,20 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             cStream = this.climatology.get();
         }
 
-        leftEvent.commit();
-
-        LOGGER.debug( "Preparing to retrieve time-series data." );
-        
         List<TimeSeries<L>> leftData = cStream.collect( Collectors.toList() );
 
-        RetrievalEvent rightEvent = RetrievalEvent.of( LeftOrRightOrBaseline.RIGHT, this.metadata ); // Monitor
-        rightEvent.begin();
         List<TimeSeries<R>> rightData = this.right.get()
                                                   .collect( Collectors.toList() );
-        rightEvent.commit();
 
         List<TimeSeries<R>> baselineData = new ArrayList<>();
 
         // Baseline that is not generated?
         if ( this.hasBaseline() && Objects.isNull( this.baselineGenerator ) )
         {
-            RetrievalEvent baselineEvent = RetrievalEvent.of( LeftOrRightOrBaseline.BASELINE, // Monitor
-                                                              this.baselineMetadata );
             baselineData = this.baseline.get()
                                         .collect( Collectors.toList() );
-            baselineEvent.commit();
         }
-        
+
         Pool<TimeSeries<Pair<L, R>>> returnMe = this.createPool( leftData, rightData, baselineData );
 
         poolMonitor.commit();
@@ -659,7 +646,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         // For now, only apply to the left side, as this is most likely to contain observation-like data that extends
         // far beyond the bounds of the right data
         leftData = this.snip( leftData, rightData );
-        
+
         // Consolidate any observation-like time-series as these values can be shared/combined (e.g., when rescaling)
         leftData = this.consolidateTimeSeriesWithZeroReferenceTimes( leftData );
         rightData = this.consolidateTimeSeriesWithZeroReferenceTimes( rightData );
