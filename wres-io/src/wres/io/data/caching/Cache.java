@@ -15,96 +15,99 @@ import wres.util.LRUMap;
  * @param <T> The type of detail within the database
  * @param <U> The key for the type within the database
  */
-abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
+abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>>
+{
 
-	Map<U, Long> keyIndex;
-	private ConcurrentMap<Long, T> details;
+    Map<U, Long> keyIndex;
+    private ConcurrentMap<Long, T> details;
 
-	protected abstract Database getDatabase();
-	protected abstract Object getDetailLock();
-	protected abstract Object getKeyLock();
+    protected abstract Database getDatabase();
 
-	Map<U, Long> getKeyIndex()
+    protected abstract Object getDetailLock();
+
+    protected abstract Object getKeyLock();
+
+    Map<U, Long> getKeyIndex()
     {
-    	synchronized ( this.getKeyLock() )
-		{
-			if ( keyIndex == null )
-			{
-				keyIndex = new LRUMap<>( this.getMaxDetails(), eldest -> {
-					if ( this.details != null )
-					{
-						details.remove( eldest.getValue() );
-					}
-				} );
-			}
+        synchronized ( this.getKeyLock() )
+        {
+            if ( keyIndex == null )
+            {
+                keyIndex = new LRUMap<>( this.getMaxDetails(), eldest -> {
+                    if ( this.details != null )
+                    {
+                        details.remove( eldest.getValue() );
+                    }
+                } );
+            }
 
             return this.keyIndex;
-		}
+        }
     }
 
-	final ConcurrentMap<Long, T> getDetails()
-	{
-	    synchronized ( this.getDetailLock() )
+    final ConcurrentMap<Long, T> getDetails()
+    {
+        synchronized ( this.getDetailLock() )
         {
             this.initializeDetails();
             return this.details;
         }
-	}
+    }
 
-	void initializeDetails()
-	{
-		synchronized ( this.getDetailLock() )
-		{
-			if (this.details == null)
-			{
-				this.details = new ConcurrentHashMap<>( this.getMaxDetails() );
-			}
-		}
-	}
-	
-	/**
-	 * <p>Invalidates the cache.
-	 * 
-	 * <p>See #61206.
-	 */
-	
-	public void invalidate()
-	{
-	    synchronized ( this.getDetailLock() )
+    void initializeDetails()
+    {
+        synchronized ( this.getDetailLock() )
+        {
+            if ( this.details == null )
+            {
+                this.details = new ConcurrentHashMap<>( this.getMaxDetails() );
+            }
+        }
+    }
+
+    /**
+     * <p>Invalidates the cache.
+     * 
+     * <p>See #61206.
+     */
+
+    public void invalidate()
+    {
+        synchronized ( this.getDetailLock() )
         {
             this.details = null;
-            
+
             synchronized ( this.getKeyLock() )
             {
                 this.keyIndex = null;
             }
         }
-	}
-	
-	/**
-	 * @return The maximum number of details that may be cached at any given time
-	 */
-	protected abstract int getMaxDetails();
+    }
 
-	/**
-	 * @param <T> the type of detail
-	 * @param id the identifier key
-	 * @return the mapped value
-	 */
-	T get ( long id )
-	{
-		return this.getDetails().get(id);
-	}
-	
-	/**
-	 * Returns the ID of the set of details in the database. If the ID for the details is not
-	 * present in the instance cache, it is added.
-	 * @param detail The definition of the object in the database to get information for
-	 * @return The ID for the details in the database
-	 * @throws SQLException Thrown if the ID could not be retrieved from the database
-	 */
-	Long getID( T detail ) throws SQLException
-	{
+    /**
+     * @return The maximum number of details that may be cached at any given time
+     */
+    protected abstract int getMaxDetails();
+
+    /**
+     * @param <T> the type of detail
+     * @param id the identifier key
+     * @return the mapped value
+     */
+    T get( long id )
+    {
+        return this.getDetails().get( id );
+    }
+
+    /**
+     * Returns the ID of the set of details in the database. If the ID for the details is not
+     * present in the instance cache, it is added.
+     * @param detail The definition of the object in the database to get information for
+     * @return The ID for the details in the database
+     * @throws SQLException Thrown if the ID could not be retrieved from the database
+     */
+    Long getID( T detail ) throws SQLException
+    {
         U key = detail.getKey();
 
         // See #73876 for why this may need synchronization
@@ -117,70 +120,70 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 
             return getID( key );
         }
-	}
+    }
 
     /**
-	 * Adds the details to the instance cache. If the details don't exist in the database, they are added.
-	 * <br><br>
-	 * Since only a limited amount of data is stored within the instanced cache, the least recently used item from the
-	 * instanced cache is removed if the amount surpasses the maximum allowable number of stored details
-	 * @param element The details to add to the instanced cache
-	 * @throws SQLException Thrown if the ID of the element could not be retrieved or the cache could not be
-	 * updated
-	 */
-	void addElement( T element ) throws SQLException
-	{
-		element.save( getDatabase() );
-		add(element);
-	}
-	
-	/**
-	 * Returns the ID of the cached details based on its key
-	 * @param key A key used to index details
-	 * @return The ID of a specific set of details
-	 * @throws SQLException Thrown if the ID could not be retrieved
-	 */
-	Long getID( U key ) throws SQLException
+     * Adds the details to the instance cache. If the details don't exist in the database, they are added.
+     * <br><br>
+     * Since only a limited amount of data is stored within the instanced cache, the least recently used item from the
+     * instanced cache is removed if the amount surpasses the maximum allowable number of stored details
+     * @param element The details to add to the instanced cache
+     * @throws SQLException Thrown if the ID of the element could not be retrieved or the cache could not be
+     * updated
+     */
+    void addElement( T element ) throws SQLException
     {
-		Long id = null;
-		
-		synchronized (this.getKeyLock())
-		{
-    		if (this.getKeyIndex().containsKey(key))
-    		{
-    			id = this.getKeyIndex().get(key);
-    		}
-		}
+        element.save( getDatabase() );
+        add( element );
+    }
 
-		return id;
-	}
-	
-	public boolean hasID (U key)
-	{
-	    boolean hasIt;
-	    
-	    synchronized (this.getKeyLock())
-	    {
-	        hasIt = this.getKeyIndex().containsKey(key);
-	    }
-	    
-	    return hasIt;
-	}
-
-	void add( T element )
+    /**
+     * Returns the ID of the cached details based on its key
+     * @param key A key used to index details
+     * @return The ID of a specific set of details
+     * @throws SQLException Thrown if the ID could not be retrieved
+     */
+    Long getID( U key ) throws SQLException
     {
-        synchronized (this.getKeyLock())
+        Long id = null;
+
+        synchronized ( this.getKeyLock() )
         {
-            this.getKeyIndex().put(element.getKey(), element.getId());
-
-            if (this.details != null && !this.details.containsKey(element.getId()))
+            if ( this.getKeyIndex().containsKey( key ) )
             {
-                this.getDetails().put(element.getId(), element);
+                id = this.getKeyIndex().get( key );
+            }
+        }
+
+        return id;
+    }
+
+    public boolean hasID( U key )
+    {
+        boolean hasIt;
+
+        synchronized ( this.getKeyLock() )
+        {
+            hasIt = this.getKeyIndex().containsKey( key );
+        }
+
+        return hasIt;
+    }
+
+    void add( T element )
+    {
+        synchronized ( this.getKeyLock() )
+        {
+            this.getKeyIndex().put( element.getKey(), element.getId() );
+
+            if ( this.details != null && !this.details.containsKey( element.getId() ) )
+            {
+                this.getDetails().put( element.getId(), element );
             }
         }
     }
 
-	public boolean isEmpty()
+    public boolean isEmpty()
     {
         return this.getKeyIndex().isEmpty();
     }

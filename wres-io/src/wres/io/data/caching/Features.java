@@ -30,18 +30,18 @@ import wres.statistics.generated.Geometry;
 public class Features
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( Features.class );
-    
+
     private static final int MAX_DETAILS = 5000;
 
     private final Database database;
 
     private volatile boolean onlyReadFromDatabase = false;
-    private final Cache<Long,FeatureKey> keyToValue = Caffeine.newBuilder()
-                                                              .maximumSize( MAX_DETAILS )
-                                                              .build();
-    private final Cache<FeatureKey,Long> valueToKey = Caffeine.newBuilder()
-                                                              .maximumSize( MAX_DETAILS )
-                                                              .build();
+    private final Cache<Long, FeatureKey> keyToValue = Caffeine.newBuilder()
+                                                               .maximumSize( MAX_DETAILS )
+                                                               .build();
+    private final Cache<FeatureKey, Long> valueToKey = Caffeine.newBuilder()
+                                                               .maximumSize( MAX_DETAILS )
+                                                               .build();
     /** Gridded features.*/
     private final GriddedFeatures.Builder griddedFeatures;
 
@@ -59,9 +59,9 @@ public class Features
     {
         Objects.requireNonNull( database );
         Objects.requireNonNull( gridFilters );
-        
+
         this.database = database;
-        if( ! gridFilters.isEmpty() )
+        if ( !gridFilters.isEmpty() )
         {
             LOGGER.debug( "Instantiating features for non-gridded features." );
             this.griddedFeatures = new GriddedFeatures.Builder( gridFilters );
@@ -90,7 +90,7 @@ public class Features
     }
 
 
-	public Long getOrCreateFeatureId( FeatureKey key ) throws SQLException
+    public Long getOrCreateFeatureId( FeatureKey key ) throws SQLException
     {
         if ( this.onlyReadFromDatabase )
         {
@@ -219,12 +219,12 @@ public class Features
         {
             throw new UnsupportedOperationException( "This cache has not been initialized with gridded features." );
         }
-        
+
         Objects.requireNonNull( source );
-        
+
         this.griddedFeatures.addFeatures( source );
     }
-    
+
     /**
      * @return the gridded features
      * @throws UnsupportedOperationException if the cache was not initialized with gridded features

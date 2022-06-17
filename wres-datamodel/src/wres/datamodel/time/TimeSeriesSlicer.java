@@ -1167,65 +1167,6 @@ public final class TimeSeriesSlicer
     }
 
     /**
-     * Consolidates the input collection of time-series into as few time-series as necessary, such that events with 
-     * duplicate valid times belong to different time-series. Only accepts time-series that do not have reference
-     * times.
-     * 
-     * @param <T> the time-series event value type
-     * @param collectedSeries the collected series
-     * @return the consolidated series
-     * @throws NullPointerException if the consolidatedSeries is null
-     * @throws IllegalArgumentException if any of the input series contains one or more reference times
-     */
-
-    public static <T> Collection<TimeSeries<T>>
-            consolidateTimeSeriesWithZeroReferenceTimes( Collection<TimeSeries<T>> collectedSeries )
-    {
-        Objects.requireNonNull( collectedSeries );
-
-        // Validate metadata
-        TimeSeriesSlicer.validateForZeroReferenceTimesAndCommonMetadata( collectedSeries );
-
-        // The time-series builders
-        Collection<TimeSeries.Builder<T>> builders = new ArrayList<>();
-
-        // Iterate through the series and their events. Add the events to the first builder that does not contain an
-        // event at the same valid datetime. If all builders are exhausted, add a new one and place the event in that 
-        for ( TimeSeries<T> nextSeries : collectedSeries )
-        {
-            for ( Event<T> nextEvent : nextSeries.getEvents() )
-            {
-                boolean added = false;
-
-                for ( TimeSeries.Builder<T> nextBuilder : builders )
-                {
-                    // Does this builder already contain this valid time? No, so add it
-                    if ( !nextBuilder.hasEventAtThisTime( nextEvent ) )
-                    {
-                        nextBuilder.addEvent( nextEvent );
-                        added = true;
-                        // Only add to one builder
-                        break;
-                    }
-                }
-
-                // Event not added to any existing builders, so create a new one and add the event to that
-                if ( !added )
-                {
-                    TimeSeries.Builder<T> newBuilder = new TimeSeries.Builder<>();
-                    newBuilder.addEvent( nextEvent );
-                    newBuilder.setMetadata( nextSeries.getMetadata() );
-                    builders.add( newBuilder );
-                }
-            }
-        }
-
-        return builders.stream()
-                       .map( TimeSeries.Builder::build )
-                       .collect( Collectors.toUnmodifiableList() );
-    }
-
-    /**
      * Returns the mid-point on the UTC timeline between the two inputs
      * 
      * @param earliest the earliest time
@@ -1241,44 +1182,6 @@ public final class TimeSeriesSlicer
 
         return earliest.plus( Duration.between( earliest, latest )
                                       .dividedBy( 2 ) );
-    }
-
-    /**
-     * Throws an exception if any time-series has one or more reference times or metadata that is inconsistent with 
-     * another time-series
-     * 
-     * @param <T> the time-series event value type
-     * @param collectedSeries the collected series
-     * @throws IllegalArgumentException if one or more time-series have reference times or inconsistent metadata
-     */
-
-    private static <T> void validateForZeroReferenceTimesAndCommonMetadata( Collection<TimeSeries<T>> collectedSeries )
-    {
-        TimeSeriesMetadata first = null;
-
-        for ( TimeSeries<T> next : collectedSeries )
-        {
-            if ( Objects.isNull( first ) )
-            {
-                first = next.getMetadata();
-            }
-            // Compare to last
-            else if ( !next.getMetadata().equals( first ) )
-            {
-                throw new IllegalArgumentException( "Cannot consolidate time-series that contain unequal metadata. "
-                                                    + "The unequal metadata instances are "
-                                                    + first
-                                                    + " and "
-                                                    + next.getMetadata()
-                                                    + "." );
-            }
-
-            // Zero reference times of current
-            if ( !next.getReferenceTimes().isEmpty() )
-            {
-                throw new IllegalArgumentException( "Cannot consolidate time-series that contain reference times." );
-            }
-        }
     }
 
     /**
@@ -1422,9 +1325,12 @@ public final class TimeSeriesSlicer
         snippedSeries.setMetadata( toSnip.getMetadata() );
 
         // Iterate the tailset of events that starts with a valid time at the lower bound
-        Event<S> lowerBound = Event.of( lower, toSnip.getEvents().first().getValue() );
-        SortedSet<Event<S>> tailSet = toSnip.getEvents()
-                                            .tailSet( lowerBound );
+        SortedSet<Event<S>> toSnipEvents = toSnip.getEvents();
+        Event<S> lowerBound = Event.of( lower,
+                                        toSnipEvents.first()
+                                                    .getValue() );
+        
+        SortedSet<Event<S>> tailSet = toSnipEvents.tailSet( lowerBound ); // #92522-109
         for ( Event<S> next : tailSet )
         {
             Instant nextTime = next.getTime();
@@ -1435,7 +1341,7 @@ public final class TimeSeriesSlicer
                 {
                     snippedSeries.addEvent( next );
                 }
-                // Events are sorted, exploit this: #92522
+                // Events are sorted, exploit this: #92522-74
                 else
                 {
                     break;
@@ -1445,7 +1351,9 @@ public final class TimeSeriesSlicer
 
         TimeSeries<S> snipped = snippedSeries.build();
 
-        if ( snipped.getEvents().isEmpty() && LOGGER.isTraceEnabled() )
+        if ( snipped.getEvents()
+                    .isEmpty()
+             && LOGGER.isTraceEnabled() )
         {
             LOGGER.trace( "While snipping series {} to series {} with lower buffer {} and upper buffer {}, no events "
                           + "were discovered within the series to snip that were within the bounds of the series to "
