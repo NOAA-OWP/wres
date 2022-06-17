@@ -12,7 +12,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
-import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
@@ -633,12 +632,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         {
             newMetadataBuilder.setTimeScale( desiredTimeScaleToUse.getTimeScale() );
         }
-
-        // The left data is most likely to contain a large set of observations, such as climatology
-        // Snipping a large observation-like dataset helps with performance and does not affect accuracy
-        // For now, only apply to the left side, as this is most likely to contain observation-like data that extends
-        // far beyond the bounds of the right data
-        leftData = this.snip( leftData, rightData );
 
         // Get the paired frequency
         Duration pairedFrequency = this.getPairedFrequency();
@@ -1419,40 +1412,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     }
 
     /**
-     * Snips the first list of time-series to the bounds of the second list. This is an optimization that works when 
-     * the time-series in the first list extend far beyond the bounds of the union of times in the second list. For 
-     * example, the first list may contains observations that are also used to form a climatological dataset, which is 
-     * shared across pools. This method should (must) not affect accuracy.
-     * 
-     * <S> the type of time-series values to snip
-     * <T> the type of time-series values to use when snipping
-     * @param toSnip the list of time-series to snip
-     * @param snipTo the list of time-series whose bounds will be used for snipping
-     * @return the snipped and possibly consolidated data
-     */
-
-    private <S, T> List<TimeSeries<S>> snip( List<TimeSeries<S>> toSnip,
-                                             List<TimeSeries<T>> snipTo )
-    {
-        TimeWindowOuter timeWindow = this.getTimeWindowFromSeries( snipTo );
-
-        List<TimeSeries<S>> returnMe = new ArrayList<>();
-
-        for ( TimeSeries<S> next : toSnip )
-        {
-            TimeSeries<S> filtered = TimeSeriesSlicer.filter( next, timeWindow );
-
-            // Any events left?
-            if ( !filtered.getEvents().isEmpty() )
-            {
-                returnMe.add( filtered );
-            }
-        }
-
-        return Collections.unmodifiableList( returnMe );
-    }
-
-    /**
      * Snips the input pairs to the pool boundary. Only filters lead durations with respect to reference times with 
      * the type {@link ReferenceTimeType#T0}.
      * 
@@ -1504,56 +1463,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         }
 
         return returnMe;
-    }
-
-    /**
-     * Returns a time-window whose valid times span the input series. The lower bound is adjusted for the time-scale of
-     * the input series and one instant/nanosecond is added to the lower bound to make it inclusive.
-     * 
-     * @param <T> the time-series event type
-     * @param bounds the time-series whose bounds must be determined
-     * @return the time window
-     */
-
-    private <T> TimeWindowOuter getTimeWindowFromSeries( List<TimeSeries<T>> bounds )
-    {
-        SortedSet<Instant> validTimes = new TreeSet<>();
-
-        TimeScaleOuter timeScale = null;
-        for ( TimeSeries<T> next : bounds )
-        {
-            // Add both reference times and valid times
-            validTimes.addAll( next.getReferenceTimes().values() );
-
-            // #73227-40
-            if ( !next.getEvents().isEmpty() )
-            {
-                validTimes.add( next.getEvents().first().getTime() );
-                validTimes.add( next.getEvents().last().getTime() );
-            }
-            timeScale = next.getTimeScale();
-        }
-
-        Instant lowerBound = Instant.MIN;
-        Instant upperBound = Instant.MAX;
-
-        if ( !validTimes.isEmpty() )
-        {
-            // Lower bound inclusive
-            lowerBound = validTimes.first()
-                                   .minus( Duration.ofNanos( 1 ) );
-            upperBound = validTimes.last();
-        }
-
-        if ( Objects.nonNull( timeScale ) && !timeScale.isInstantaneous() )
-        {
-            Duration period = TimeScaleOuter.getOrInferPeriodFromTimeScale( timeScale );
-            lowerBound = lowerBound.minus( period );
-        }
-
-        TimeWindow inner = MessageFactory.getTimeWindow( lowerBound, upperBound );
-
-        return TimeWindowOuter.of( inner );
     }
 
     /**
