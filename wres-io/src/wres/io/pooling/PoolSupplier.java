@@ -609,12 +609,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
         Pool.Builder<TimeSeries<Pair<L, R>>> builder = new Pool.Builder<>();
 
-        // Apply any time offsets immediately, in order to simplify further evaluation,
-        // which is then in the target time system
-        leftData = this.applyValidTimeOffset( leftData, this.leftOffset, LeftOrRightOrBaseline.LEFT );
-        rightData = this.applyValidTimeOffset( rightData, this.rightOffset, LeftOrRightOrBaseline.RIGHT );
-        baselineData = this.applyValidTimeOffset( baselineData, this.baselineOffset, LeftOrRightOrBaseline.BASELINE );
-
         // Obtain the desired time scale. If this is unavailable, use the Least Common Scale.
         TimeScaleOuter desiredTimeScaleToUse =
                 this.getDesiredTimeScale( leftData, rightData, baselineData, this.getInputs() );
@@ -638,7 +632,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
         TimeSeriesPlusValidation<L, R> mainPairsPlus = this.createPairs( leftData,
                                                                          rightData,
-                                                                         this.getRightTransformer(),
                                                                          desiredTimeScaleToUse,
                                                                          pairedFrequency,
                                                                          LeftOrRightOrBaseline.RIGHT,
@@ -676,7 +669,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
             TimeSeriesPlusValidation<L, R> basePairsPlus = this.createPairs( leftData,
                                                                              baselineData,
-                                                                             this.getBaselineTransformer(),
                                                                              desiredTimeScaleToUse,
                                                                              pairedFrequency,
                                                                              LeftOrRightOrBaseline.BASELINE,
@@ -745,11 +737,10 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      * 
      * @param left the left data
      * @param rightOrBaseline the right or baseline data
-     * @param rightOrBaselineTransformer the transformer for right or baseline-ish data
      * @param desiredTimeScale the desired time scale
      * @param frequency the frequency with which to create pairs at the desired time scale
-     * @param orientation the orientation of the non-left data, one of {@link LeftOrRightOrBaseline#RIGHT} or 
-     *            {@link LeftOrRightOrBaseline#BASELINE}
+     * @param rightOrBaselineOrientation the orientation of the non-left data, one of 
+     *            {@link LeftOrRightOrBaseline#RIGHT} or {@link LeftOrRightOrBaseline#BASELINE}
      * @param timeWindow the time window to snip the pairs
      * @return the pairs
      * @throws RescalingException if the pool data could not be rescaled
@@ -760,15 +751,19 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
     private TimeSeriesPlusValidation<L, R> createPairs( List<TimeSeries<L>> left,
                                                         List<TimeSeries<R>> rightOrBaseline,
-                                                        UnaryOperator<Event<R>> rightOrBaselineTransformer,
                                                         TimeScaleOuter desiredTimeScale,
                                                         Duration frequency,
-                                                        LeftOrRightOrBaseline orientation,
+                                                        LeftOrRightOrBaseline rightOrBaselineOrientation,
                                                         TimeWindowOuter timeWindow )
     {
         Objects.requireNonNull( left );
-
         Objects.requireNonNull( rightOrBaseline );
+        Objects.requireNonNull( rightOrBaselineOrientation );
+
+        UnaryOperator<Event<R>> rightOrBaselineTransformer =
+                this.getRightOrBaselineTransformer( rightOrBaselineOrientation );
+        Duration leftValidOffset = this.getValidTimeOffset( LeftOrRightOrBaseline.LEFT );
+        Duration rightOrBaselineValidOffset = this.getValidTimeOffset( rightOrBaselineOrientation );
 
         List<TimeSeries<Pair<L, R>>> returnMe = new ArrayList<>();
         List<EvaluationStatusMessage> validation = new ArrayList<>();
@@ -776,15 +771,25 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         // Iterate through each combination of left/right series
         for ( TimeSeries<L> nextLeft : left )
         {
+            // Apply any time offsets immediately, in order to simplify further evaluation,
+            // which is then in the target time system
+            TimeSeries<L> transformedLeft = this.applyValidTimeOffset( nextLeft,
+                                                                       leftValidOffset,
+                                                                       LeftOrRightOrBaseline.LEFT );
+
             for ( TimeSeries<R> nextRightOrBaseline : rightOrBaseline )
             {
-                TimeSeriesPlusValidation<L, R> pairsPlus = this.createSeriesPairs( nextLeft,
-                                                                                   nextRightOrBaseline,
+                TimeSeries<R> transformedRightOrBaseline = this.applyValidTimeOffset( nextRightOrBaseline,
+                                                                                      rightOrBaselineValidOffset,
+                                                                                      rightOrBaselineOrientation );
+
+                TimeSeriesPlusValidation<L, R> pairsPlus = this.createSeriesPairs( transformedLeft,
+                                                                                   transformedRightOrBaseline,
                                                                                    rightOrBaselineTransformer,
                                                                                    desiredTimeScale,
                                                                                    frequency,
                                                                                    timeWindow,
-                                                                                   orientation );
+                                                                                   rightOrBaselineOrientation );
 
                 // One time-series of pairs
                 TimeSeries<Pair<L, R>> pairs = pairsPlus.getTimeSeries()
@@ -800,8 +805,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                 else if ( LOGGER.isTraceEnabled() )
                 {
                     LOGGER.trace( "Found zero pairs while intersecting time-series {} with time-series {}.",
-                                  left.hashCode(),
-                                  nextRightOrBaseline.hashCode() );
+                                  transformedLeft.getMetadata(),
+                                  transformedRightOrBaseline.getMetadata() );
                 }
             }
         }
@@ -811,7 +816,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         {
             PoolMetadata metaToReport = this.metadata;
 
-            if ( orientation == LeftOrRightOrBaseline.BASELINE )
+            if ( rightOrBaselineOrientation == LeftOrRightOrBaseline.BASELINE )
             {
                 metaToReport = this.baselineMetadata;
             }
@@ -822,11 +827,66 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                           left.size(),
                           LeftOrRightOrBaseline.LEFT,
                           rightOrBaseline.size(),
-                          orientation,
+                          rightOrBaselineOrientation,
                           returnMe.size() );
         }
 
         return new TimeSeriesPlusValidation<>( returnMe, validation );
+    }
+
+    /**
+     * @param lrb the orientation of the required transformer
+     * @return the transformer
+     * @throws NullPointerException if the orientation is null
+     * @throws IllegalArgumentException if the orientation is unexpected
+     */
+
+    private UnaryOperator<Event<R>> getRightOrBaselineTransformer( LeftOrRightOrBaseline lrb )
+    {
+        Objects.requireNonNull( lrb );
+
+        switch ( lrb )
+        {
+            case RIGHT:
+                return this.getRightTransformer();
+            case BASELINE:
+                return this.getBaselineTransformer();
+            default:
+                throw new IllegalArgumentException( "Unexpected orientation for transformer: " + lrb
+                                                    + ". "
+                                                    + "Expected "
+                                                    + LeftOrRightOrBaseline.RIGHT
+                                                    + " or "
+                                                    + LeftOrRightOrBaseline.BASELINE
+                                                    + "." );
+        }
+    }
+
+    /**
+     * @param lrb the orientation of the required valid time offset
+     * @return the offset
+     * @throws NullPointerException if the orientation is null
+     * @throws IllegalArgumentException if the orientation is unexpected
+     */
+
+    private Duration getValidTimeOffset( LeftOrRightOrBaseline lrb )
+    {
+        switch ( lrb )
+        {
+            case LEFT:
+                return this.leftOffset;
+            case RIGHT:
+                return this.rightOffset;
+            case BASELINE:
+                return this.baselineOffset;
+            default:
+                throw new IllegalArgumentException( "Unexpected orientation for transformer: " + lrb
+                                                    + ". "
+                                                    + "Expected one of "
+                                                    + Set.of( LeftOrRightOrBaseline.LEFT,
+                                                              LeftOrRightOrBaseline.RIGHT,
+                                                              LeftOrRightOrBaseline.BASELINE ) );
+        }
     }
 
     /**
@@ -1466,25 +1526,26 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     }
 
     /**
-     * Adds a prescribed offset to the valid time of each time-series in the list.
+     * Adds a prescribed offset to the valid time of the prescribed time-series.
      * 
      * @param <T> the time-series event value type
-     * @param toTransform the list of time-series to transform
+     * @param toTransform the time-series to transform
      * @param offset the offset to add
      * @param lrb the side of data to help with logging
      * @return the adjusted time-series
+     * @throws NullPointerException if the input is time-series is null
      */
 
-    private <T> List<TimeSeries<T>> applyValidTimeOffset( List<TimeSeries<T>> toTransform,
-                                                          Duration offset,
-                                                          LeftOrRightOrBaseline lrb )
+    private <T> TimeSeries<T> applyValidTimeOffset( TimeSeries<T> toTransform,
+                                                    Duration offset,
+                                                    LeftOrRightOrBaseline lrb )
     {
+        Objects.requireNonNull( toTransform );
 
-        List<TimeSeries<T>> transformed = toTransform;
+        TimeSeries<T> transformed = toTransform;
 
         // Transform valid times?
-        if ( Objects.nonNull( toTransform )
-             && Objects.nonNull( offset )
+        if ( Objects.nonNull( offset )
              && !Duration.ZERO.equals( offset ) )
         {
             // Log the time shift
@@ -1493,16 +1554,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                 LOGGER.debug( "Applying a valid time offset of {} to {} time-series.", offset, lrb );
             }
 
-            transformed = new ArrayList<>();
-
-            for ( TimeSeries<T> nextSeries : toTransform )
-            {
-                TimeSeries<T> nextTransformed = TimeSeriesSlicer.applyOffsetToValidTimes( nextSeries, offset );
-                transformed.add( nextTransformed );
-            }
-
-            // Render immutable
-            transformed = Collections.unmodifiableList( transformed );
+            transformed = TimeSeriesSlicer.applyOffsetToValidTimes( transformed, offset );
         }
 
         return transformed;
