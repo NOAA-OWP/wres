@@ -133,7 +133,7 @@ final class MeanAbsoluteErrorSkillScoreTest
                                                   MeanAbsoluteErrorSkillScore.MAIN.getMinimum(),
                                                   0.0 ),
                               () -> assertEquals( 1.0, MeanAbsoluteErrorSkillScore.MAIN.getMaximum(), 0.0 ),
-                              () -> assertEquals( 0.0, MeanAbsoluteErrorSkillScore.MAIN.getOptimum(), 0.0 ) );
+                              () -> assertEquals( 1.0, MeanAbsoluteErrorSkillScore.MAIN.getOptimum(), 0.0 ) );
     }
 
     @Test
