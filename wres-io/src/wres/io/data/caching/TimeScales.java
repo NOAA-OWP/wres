@@ -25,12 +25,12 @@ public class TimeScales
     private final Database database;
 
     private volatile boolean onlyReadFromDatabase = false;
-    private final Cache<Long,TimeScaleOuter> keyToValue = Caffeine.newBuilder()
-                                                                  .maximumSize( MAX_DETAILS )
-                                                                  .build();
-    private final Cache<TimeScaleOuter,Long> valueToKey = Caffeine.newBuilder()
-                                                                  .maximumSize( MAX_DETAILS )
-                                                                  .build();
+    private final Cache<Long, TimeScaleOuter> keyToValue = Caffeine.newBuilder()
+                                                                   .maximumSize( MAX_DETAILS )
+                                                                   .build();
+    private final Cache<TimeScaleOuter, Long> valueToKey = Caffeine.newBuilder()
+                                                                   .maximumSize( MAX_DETAILS )
+                                                                   .build();
 
     public TimeScales( Database database )
     {

@@ -19,15 +19,16 @@ import wres.io.utilities.Database;
  * Cached details about Ensembles from the database
  * @author Christopher Tubbs
  */
-public class Ensembles extends Cache<EnsembleDetails, String> {
+public class Ensembles extends Cache<EnsembleDetails, String>
+{
 
     private static final int MAX_DETAILS = 500;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Ensembles.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger( Ensembles.class );
 
     private final Database database;
-	private final Object detailLock = new Object();
-	private final Object keyLock = new Object();
+    private final Object detailLock = new Object();
+    private final Object keyLock = new Object();
 
     public Ensembles( Database database )
     {
@@ -41,25 +42,26 @@ public class Ensembles extends Cache<EnsembleDetails, String> {
         return this.database;
     }
 
-	@Override
-	protected Object getDetailLock()
-	{
-		return this.detailLock;
-	}
+    @Override
+    protected Object getDetailLock()
+    {
+        return this.detailLock;
+    }
 
-	@Override
-	protected Object getKeyLock()
-	{
-		return this.keyLock;
-	}
+    @Override
+    protected Object getKeyLock()
+    {
+        return this.keyLock;
+    }
 
-	private void populate(DataProvider data)
+    private void populate( DataProvider data )
     {
         EnsembleDetails detail;
 
-        while (data.next()) {
+        while ( data.next() )
+        {
             detail = new EnsembleDetails();
-            detail.setEnsembleName(data.getString("ensemble_name"));
+            detail.setEnsembleName( data.getString( "ensemble_name" ) );
             detail.setID( data.getLong( "ensemble_id" ) );
             this.add( detail );
         }
@@ -75,24 +77,24 @@ public class Ensembles extends Cache<EnsembleDetails, String> {
      * @param ensemble An ensemble condition from the project configuration
      * @return All ensemble Ids that match the ensemble conditions
      */
-	public List<Long> getEnsembleIDs( EnsembleCondition ensemble )
-	{
-	    return this.getKeyIndex()
+    public List<Long> getEnsembleIDs( EnsembleCondition ensemble )
+    {
+        return this.getKeyIndex()
                    .entrySet()
                    .stream()
                    .filter( kv -> kv.getKey()
                                     .equals( ensemble.getName() ) )
                    .map( Entry::getValue )
                    .collect( Collectors.toList() );
-	}
+    }
 
-	/**
-	 * Returns the ID of an Ensemble trace from the global cache based on its name
-	 * @param name The name of the Ensemble trace to retrieve
-	 * @return The surrogate key, database ID of the Ensemble
-	 * @throws SQLException Thrown if the ID could not be retrieved from the database
-	 */
-	public Long getEnsembleID( String name ) throws SQLException
+    /**
+     * Returns the ID of an Ensemble trace from the global cache based on its name
+     * @param name The name of the Ensemble trace to retrieve
+     * @return The surrogate key, database ID of the Ensemble
+     * @throws SQLException Thrown if the ID could not be retrieved from the database
+     */
+    public Long getEnsembleID( String name ) throws SQLException
     {
         // If there are no identifiers...
         if ( Objects.isNull( name ) )
@@ -101,10 +103,10 @@ public class Ensembles extends Cache<EnsembleDetails, String> {
             return this.getDefaultEnsembleID();
         }
 
-		return this.getID( new EnsembleDetails( name ) );
-	}
+        return this.getID( new EnsembleDetails( name ) );
+    }
 
-	/**
+    /**
      * Returns the name of an ensemble trace from the global cache based on its identifier
      * @param ensembleId The ensemble identifier
      * @return The name
@@ -112,25 +114,26 @@ public class Ensembles extends Cache<EnsembleDetails, String> {
      */
     public String getEnsembleName( long ensembleId ) throws SQLException
     {
-        EnsembleDetails details = super.get( ensembleId );       
+        EnsembleDetails details = super.get( ensembleId );
         return details.getKey();
     }
-	
-	public Long getDefaultEnsembleID() throws SQLException
+
+    public Long getDefaultEnsembleID() throws SQLException
     {
         return this.getEnsembleID( "default" );
     }
 
-	@Override
-	protected int getMaxDetails() {
-		return Ensembles.MAX_DETAILS;
-	}
-	
-	/**
-	 * Loads all pre-existing Ensembles into the instanced cache
-	 */
+    @Override
+    protected int getMaxDetails()
+    {
+        return Ensembles.MAX_DETAILS;
+    }
+
+    /**
+     * Loads all pre-existing Ensembles into the instanced cache
+     */
     private synchronized void initialize()
-	{
+    {
         try
         {
             this.initializeDetails();
@@ -143,17 +146,17 @@ public class Ensembles extends Cache<EnsembleDetails, String> {
             script.addLine( "FROM wres.Ensemble" );
             script.setMaxRows( MAX_DETAILS );
 
-            try (DataProvider data = script.getData())
+            try ( DataProvider data = script.getData() )
             {
                 this.populate( data );
             }
 
             LOGGER.debug( "Finished populating the Ensembles details." );
         }
-        catch (SQLException error)
+        catch ( SQLException error )
         {
             // Failure to pre-populate cache should not affect primary outputs.
-            LOGGER.warn( "An error was encountered when trying to populate the Ensemble cache.", error);
+            LOGGER.warn( "An error was encountered when trying to populate the Ensemble cache.", error );
         }
-	}
+    }
 }

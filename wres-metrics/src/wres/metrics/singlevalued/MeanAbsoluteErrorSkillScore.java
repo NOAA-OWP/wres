@@ -39,7 +39,7 @@ public class MeanAbsoluteErrorSkillScore extends DoubleErrorScore<Pool<Pair<Doub
     public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
                                                                                     .setMinimum( Double.NEGATIVE_INFINITY )
                                                                                     .setMaximum( 1 )
-                                                                                    .setOptimum( 0 )
+                                                                                    .setOptimum( 1 )
                                                                                     .setName( ComponentName.MAIN )
                                                                                     .setUnits( MeasurementUnit.DIMENSIONLESS )
                                                                                     .build();

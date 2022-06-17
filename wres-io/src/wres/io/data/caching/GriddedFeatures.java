@@ -248,7 +248,7 @@ class GriddedFeatures implements Supplier<Set<FeatureTuple>>
                                                         wkt );
 
         GeometryTuple geometryTuple = MessageFactory.getGeometryTuple( geometry, geometry, geometry );
-        
+
         return FeatureTuple.of( geometryTuple );
     }
 
@@ -437,7 +437,7 @@ class GriddedFeatures implements Supplier<Set<FeatureTuple>>
                                                      + file );
                 }
             }
-            
+
             this.srText = coordinateSystem.findAttributeString( "esri_pe_string", "" );
             this.proj4 = coordinateSystem.findAttributeString( "proj4", "" );
             this.projectionMapping =

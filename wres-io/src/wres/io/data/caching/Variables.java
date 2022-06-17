@@ -49,27 +49,27 @@ public class Variables
         script.addTab().addLine( "AND PS.member = ?" );
         script.addArgument( projectMember );
 
-        return script.interpret( resultSet -> resultSet.getString("variable_name") );
+        return script.interpret( resultSet -> resultSet.getString( "variable_name" ) );
     }
 
-	/**
-	 * Checks to see if there are any forecasted values for a named variable
-	 * tied to the project
-	 * @param projectID The ID of the project to check
-	 * @param projectMember The evaluation member of the project ("left", "right", or "baseline")
-	 * @param variableName The variable
-	 * @return Whether or not there is any forecast data for the variable within the project
-	 * @throws SQLException Thrown if a database operation fails
-	 * @throws NullPointerException If any nullable input is null
-	 */
+    /**
+     * Checks to see if there are any forecasted values for a named variable
+     * tied to the project
+     * @param projectID The ID of the project to check
+     * @param projectMember The evaluation member of the project ("left", "right", or "baseline")
+     * @param variableName The variable
+     * @return Whether or not there is any forecast data for the variable within the project
+     * @throws SQLException Thrown if a database operation fails
+     * @throws NullPointerException If any nullable input is null
+     */
     public boolean isValid( final long projectID,
                             final String projectMember,
                             final String variableName )
             throws SQLException
-	{
+    {
         Objects.requireNonNull( projectMember );
         Objects.requireNonNull( variableName );
-        
+
         Database database = this.getDatabase();
         DataScripter script = new DataScripter( database );
         script.addLine( "SELECT 1" );
@@ -89,5 +89,5 @@ public class Variables
             // When a row exists, next returns true. Otherwise false.
             return provider.next();
         }
-	}
+    }
 }

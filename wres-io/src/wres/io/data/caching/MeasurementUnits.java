@@ -21,12 +21,12 @@ public class MeasurementUnits
     private final Database database;
 
     private volatile boolean onlyReadFromDatabase = false;
-    private final Cache<Long,String> keyToValue = Caffeine.newBuilder()
-                                                          .maximumSize( MAX_DETAILS )
-                                                          .build();
-    private final Cache<String,Long> valueToKey = Caffeine.newBuilder()
-                                                          .maximumSize( MAX_DETAILS )
-                                                          .build();
+    private final Cache<Long, String> keyToValue = Caffeine.newBuilder()
+                                                           .maximumSize( MAX_DETAILS )
+                                                           .build();
+    private final Cache<String, Long> valueToKey = Caffeine.newBuilder()
+                                                           .maximumSize( MAX_DETAILS )
+                                                           .build();
 
     public MeasurementUnits( Database database )
     {

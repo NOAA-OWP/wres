@@ -3,10 +3,8 @@ package wres.io.pooling;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +45,6 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.RescaledTimeSeriesPlusValidation;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesCrossPairer;
-import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
@@ -95,10 +92,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
     /** Message re-used several times. */
     private static final String WHILE_CONSTRUCTING_A_POOL_SUPPLIER_FOR = "While constructing a pool supplier for {}, ";
-
-    /** Set of reference times for observation-like time-series. */
-    private static final Set<ReferenceTimeType> OBSERVATION_REFERENCE_TIME_TYPE =
-            Set.of( ReferenceTimeType.LATEST_OBSERVATION );
 
     /** Climatological data source at the desired time scale. */
     private final Supplier<Stream<TimeSeries<L>>> climatology;
@@ -646,11 +639,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         // For now, only apply to the left side, as this is most likely to contain observation-like data that extends
         // far beyond the bounds of the right data
         leftData = this.snip( leftData, rightData );
-
-        // Consolidate any observation-like time-series as these values can be shared/combined (e.g., when rescaling)
-        leftData = this.consolidateTimeSeriesWithZeroReferenceTimes( leftData );
-        rightData = this.consolidateTimeSeriesWithZeroReferenceTimes( rightData );
-        baselineData = this.consolidateTimeSeriesWithZeroReferenceTimes( baselineData );
 
         // Get the paired frequency
         Duration pairedFrequency = this.getPairedFrequency();
@@ -1516,81 +1504,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         }
 
         return returnMe;
-    }
-
-    /**
-     * Looks for time-series without reference times and consolidates them. Values within observation-like time-series
-     * may be combined when rescaling. Thus, it is convenient to place them into one time-series. Values within 
-     * forecast-like time-series cannot be combined across time-series.
-     * 
-     * @param <T> the type of event values
-     * @param timeSeries the time-series to consolidate, if possible
-     * @return any time-series that were consolidated plus any time-series that were not consolidated
-     */
-
-    private <T> List<TimeSeries<T>> consolidateTimeSeriesWithZeroReferenceTimes( List<TimeSeries<T>> timeSeries )
-    {
-        List<TimeSeries<T>> returnMe = new ArrayList<>();
-
-        // Tolerate null input (e.g., for a baseline)
-        if ( Objects.nonNull( timeSeries ) )
-        {
-            // Separate into time-series that have reference times and those that do not. Those with reference times
-            // are not consolidated. Those without should be index by their common metadata.
-            Map<TimeSeriesMetadata, List<TimeSeries<T>>> withoutReferenceTimes = new HashMap<>();
-            for ( TimeSeries<T> next : timeSeries )
-            {
-                Set<ReferenceTimeType> referenceTimes = next.getReferenceTimes()
-                                                            .keySet();
-
-                // One or more reference times that are not observation-like
-                if ( !referenceTimes.isEmpty()
-                     && !referenceTimes.equals( PoolSupplier.OBSERVATION_REFERENCE_TIME_TYPE ) )
-                {
-                    returnMe.add( next );
-                }
-                else
-                {
-                    // Remove any observation-like reference times
-                    TimeSeriesMetadata meta =
-                            new TimeSeriesMetadata.Builder( next.getMetadata() ).setReferenceTimes( Collections.emptyMap() )
-                                                                                .build();
-
-                    TimeSeries<T> series = TimeSeries.of( meta, next.getEvents() );
-
-                    if ( withoutReferenceTimes.containsKey( meta ) )
-                    {
-                        List<TimeSeries<T>> seriesList = withoutReferenceTimes.get( meta );
-                        seriesList.add( series );
-                    }
-                    else
-                    {
-                        List<TimeSeries<T>> newList = new ArrayList<>();
-                        newList.add( series );
-                        withoutReferenceTimes.put( meta, newList );
-                    }
-                }
-            }
-
-            LOGGER.debug( "Discovered {} collections of observation-like time-series to consolidate, one for each of "
-                          + "these metadatas: {}.",
-                          withoutReferenceTimes.size(),
-                          withoutReferenceTimes.keySet() );
-
-            // Consolidate the time-series without reference times
-            for ( List<TimeSeries<T>> nextList : withoutReferenceTimes.values() )
-            {
-                List<TimeSeries<T>> withoutReferenceTimesUnmodifiable =
-                        Collections.unmodifiableList( nextList );
-
-                Collection<TimeSeries<T>> consolidated =
-                        TimeSeriesSlicer.consolidateTimeSeriesWithZeroReferenceTimes( withoutReferenceTimesUnmodifiable );
-
-                returnMe.addAll( consolidated );
-            }
-        }
-
-        return Collections.unmodifiableList( returnMe );
     }
 
     /**
