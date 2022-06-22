@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8/ubi:8.6-754
+FROM registry.access.redhat.com/ubi8/ubi:8.6-754.1655117782
 
 RUN dnf install -y \
     java-11-openjdk-headless-1:11.0.15.0.10-2.el8_6 \
