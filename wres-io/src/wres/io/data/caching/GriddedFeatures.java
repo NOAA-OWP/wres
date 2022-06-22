@@ -31,9 +31,8 @@ import wres.config.generated.Polygon;
 import wres.config.generated.Polygon.Point;
 import wres.config.generated.UnnamedFeature;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.space.FeatureTuple;
+import wres.datamodel.space.FeatureKey;
 import wres.statistics.generated.Geometry;
-import wres.statistics.generated.GeometryTuple;
 import wres.util.NetCDF;
 
 /**
@@ -42,10 +41,10 @@ import wres.util.NetCDF;
  * @author James Brown
  */
 @Immutable
-class GriddedFeatures implements Supplier<Set<FeatureTuple>>
+class GriddedFeatures implements Supplier<Set<FeatureKey>>
 {
     /** The features.*/
-    private final Set<FeatureTuple> features;
+    private final Set<FeatureKey> features;
 
     /** The logger.*/
     private static final Logger LOGGER = LoggerFactory.getLogger( GriddedFeatures.class );
@@ -54,7 +53,7 @@ class GriddedFeatures implements Supplier<Set<FeatureTuple>>
     private static final String POINT = "POINT(";
 
     @Override
-    public Set<FeatureTuple> get()
+    public Set<FeatureKey> get()
     {
         return this.features; // Immutable on construction
     }
@@ -66,7 +65,7 @@ class GriddedFeatures implements Supplier<Set<FeatureTuple>>
 
     private GriddedFeatures( Builder builder )
     {
-        Set<FeatureTuple> innerFeatures = new HashSet<>();
+        Set<FeatureKey> innerFeatures = new HashSet<>();
         innerFeatures.addAll( builder.features );
         this.features = Collections.unmodifiableSet( innerFeatures );
 
@@ -87,7 +86,7 @@ class GriddedFeatures implements Supplier<Set<FeatureTuple>>
          * The features.
          */
 
-        private final Set<FeatureTuple> features = ConcurrentHashMap.newKeySet();
+        private final Set<FeatureKey> features = ConcurrentHashMap.newKeySet();
 
         /**
          * The filters.
@@ -143,7 +142,7 @@ class GriddedFeatures implements Supplier<Set<FeatureTuple>>
                 }
             }
 
-            Set<FeatureTuple> innerFeatures = GriddedFeatures.readFeaturesAndFilterThem( source, this.filters );
+            Set<FeatureKey> innerFeatures = GriddedFeatures.readFeaturesAndFilterThem( source, this.filters );
             this.features.addAll( innerFeatures );
 
             return this;
@@ -179,13 +178,13 @@ class GriddedFeatures implements Supplier<Set<FeatureTuple>>
      * @throws NullPointerException if any input is null
      */
 
-    private static Set<FeatureTuple> readFeaturesAndFilterThem( NetcdfFile source, List<UnnamedFeature> filters )
+    private static Set<FeatureKey> readFeaturesAndFilterThem( NetcdfFile source, List<UnnamedFeature> filters )
             throws IOException
     {
         Objects.requireNonNull( source );
         Objects.requireNonNull( filters );
 
-        Set<FeatureTuple> innerFeatures = new HashSet<>();
+        Set<FeatureKey> innerFeatures = new HashSet<>();
 
         try ( NetcdfDataset ncd = NetcdfDatasets.openDataset( source.getLocation() );
               GridDataset grid = new GridDataset( ncd ) )
@@ -204,7 +203,7 @@ class GriddedFeatures implements Supplier<Set<FeatureTuple>>
                     // Within the filter boundaries?
                     if ( GriddedFeatures.isContained( point, filters ) )
                     {
-                        FeatureTuple tuple = GriddedFeatures.getFeatureFromCoordinate( point );
+                        FeatureKey tuple = GriddedFeatures.getFeatureFromCoordinate( point );
                         innerFeatures.add( tuple );
                     }
 
@@ -222,11 +221,11 @@ class GriddedFeatures implements Supplier<Set<FeatureTuple>>
 
     /**
      * @param point the point
-     * @return the feature tuple
+     * @return the feature
      * @throws IllegalArgumentException if the longitude or latitude are invalid
      */
 
-    private static FeatureTuple getFeatureFromCoordinate( LatLonPoint point )
+    private static FeatureKey getFeatureFromCoordinate( LatLonPoint point )
     {
         double x = point.getLongitude();
         double y = point.getLatitude();
@@ -247,9 +246,7 @@ class GriddedFeatures implements Supplier<Set<FeatureTuple>>
                                                         4326,
                                                         wkt );
 
-        GeometryTuple geometryTuple = MessageFactory.getGeometryTuple( geometry, geometry, geometry );
-
-        return FeatureTuple.of( geometryTuple );
+        return FeatureKey.of( geometry );
     }
 
     /**

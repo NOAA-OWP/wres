@@ -245,9 +245,14 @@ public abstract class PairsWriter<L, R>
     {
         Objects.requireNonNull( pairs, "Cannot write null pairs." );
 
-        if ( pairs.getMetadata().getPool().getGeometryGroup().getGeometryTuplesCount() == 0 )
+        if ( pairs.getMetadata()
+                  .getPool()
+                  .getGeometryGroup()
+                  .getGeometryTuplesCount() == 0 )
         {
-            throw new WriteException( "Cannot write pairs with an empty list of geometries." );
+            throw new WriteException( "Cannot write pairs with an empty list of geometries. The pair metadata was: "
+                                      + pairs.getMetadata()
+                                      + "." );
         }
 
         try

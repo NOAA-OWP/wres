@@ -217,9 +217,25 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                                                                            provider );
 
             // Generate a stream of time-series
+            Connection finalConnection = connection;
             return Stream.generate( supplier )
-                         .takeWhile( Objects::nonNull ); // Finite stream, proceeds while a time-series is returned
+                         // Finite stream, proceeds while a time-series is returned
+                         .takeWhile( Objects::nonNull )
+                         // Close the connection when the stream is closed
+                         .onClose( () -> {
+                             try
+                             {
+                                 LOGGER.debug( "Detected a stream close event, closing an underlying database "
+                                               + "connection." );
+                                 finalConnection.close();
+                             }
+                             catch ( SQLException e )
+                             {
+                                 LOGGER.warn( "Failed to close a database connection." );
+                             }
+                         } );
         }
+        // Close early for known exceptions in this context
         catch ( DataAccessException | SQLException e )
         {
             try

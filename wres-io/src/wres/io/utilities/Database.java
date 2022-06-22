@@ -319,7 +319,7 @@ public class Database {
      */
     public Connection getConnection() throws SQLException
 	{
-        return connectionPool.getConnection();
+        return this.connectionPool.getConnection();
 	}
 
     /**

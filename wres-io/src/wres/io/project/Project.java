@@ -33,8 +33,11 @@ import wres.config.generated.FeaturePool;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.ProjectConfig.Inputs;
+import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.io.concurrency.Executor;
@@ -42,12 +45,15 @@ import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.Variables;
+import wres.io.retrieval.DataAccessException;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
+import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
+import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.system.SystemSettings;
 import wres.util.CalculationException;
 
@@ -86,6 +92,14 @@ public class Project
      */
     private final Object featureLock = new Object();
 
+    private final ProjectConfig projectConfig;
+    private final SystemSettings systemSettings;
+    private final Database database;
+    private final Executor executor;
+    private final Variables variablesCache;
+    private final Features featuresCache;
+    private final Ensembles ensemblesCache;
+
     private long projectId;
 
     /**
@@ -95,14 +109,6 @@ public class Project
      */
 
     private String measurementUnit = null;
-
-    private final ProjectConfig projectConfig;
-    private final SystemSettings systemSettings;
-    private final Database database;
-    private final Executor executor;
-    private final Variables variablesCache;
-    private final Features featuresCache;
-    private final Ensembles ensemblesCache;
 
     /**
      * The set of all features pertaining to the project
@@ -138,6 +144,9 @@ public class Project
 
     /** The baseline-ish variable to evaluate. */
     private String baselineVariable;
+
+    /** The desired time scale. */
+    private TimeScaleOuter desiredTimeScale;
 
     public Project( SystemSettings systemSettings,
                     Database database,
@@ -255,6 +264,129 @@ public class Project
         }
 
         return this.measurementUnit;
+    }
+
+    /**
+     * Returns the desired time scale. In order of availability, this is:
+     * 
+     * <ol>
+     * <li>The desired time scale provided on construction;</li>
+     * <li>The Least Common Scale (LCS) computed from the input data; or</li>
+     * <li>The LCS computed from the <code>existingTimeScale</code> provided in the input declaration.</li>
+     * </ol>
+     * 
+     * The LCS is the smallest common multiple of the time scales associated with every ingested dataset for a given 
+     * project, variable and feature. The LCS is computed from all sides of a pairing (left, right and baseline) 
+     * collectively. 
+     * 
+     * @return the desired time scale or null if unknown
+     * @throws DataAccessException if the existing time scales could not be obtained from the database
+     */
+
+    public TimeScaleOuter getDesiredTimeScale()
+    {
+        if ( Objects.nonNull( this.desiredTimeScale ) )
+        {
+            LOGGER.trace( "Discovered a desired time scale of {}.",
+                          this.desiredTimeScale );
+
+            return this.desiredTimeScale;
+        }
+
+        // Use the declared time scale
+        TimeScaleOuter declaredScale = ConfigHelper.getDesiredTimeScale( this.getProjectConfig()
+                                                                             .getPair() );
+        if ( Objects.nonNull( declaredScale ) )
+        {
+            LOGGER.trace( "Discovered that the desired time scale was declared explicitly as {}.",
+                          this.desiredTimeScale );
+
+            this.desiredTimeScale = declaredScale;
+
+            return this.desiredTimeScale;
+        }
+
+        // Find the Least Common Scale
+        Set<TimeScaleOuter> existingTimeScales = new HashSet<>();
+        DataScripter script = ProjectScriptGenerator.createTimeScalesScript( this.getDatabase(),
+                                                                             this.getProjectId() );
+
+        try ( Connection connection = this.getDatabase()
+                                          .getConnection();
+              DataProvider dataProvider = script.buffer( connection ) )
+        {
+            while ( dataProvider.next() )
+            {
+                long durationMillis = dataProvider.getLong( "duration_ms" );
+                String functionName = dataProvider.getString( "function_name" );
+
+                Duration duration = Duration.ofMillis( durationMillis );
+                TimeScaleFunction function = TimeScaleFunction.valueOf( functionName );
+                TimeScaleOuter scale = TimeScaleOuter.of( duration, function );
+                existingTimeScales.add( scale );
+            }
+        }
+        catch ( SQLException e )
+        {
+            throw new DataAccessException( "Unable to obtain the existing time scales of ingested time-series.", e );
+        }
+
+        // Look for the LCS among the ingested sources
+        if ( !existingTimeScales.isEmpty() )
+        {
+            TimeScaleOuter leastCommonScale = TimeScaleOuter.getLeastCommonTimeScale( existingTimeScales );
+
+            this.desiredTimeScale = leastCommonScale;
+
+            LOGGER.trace( "Discovered that the desired time scale was not supplied on construction of the project. "
+                          + "Instead, determined the desired time scale from the Least Common Scale of the ingested "
+                          + "inputs, which was {}.",
+                          leastCommonScale );
+
+            return this.desiredTimeScale;
+        }
+
+        Inputs inputDeclaration = this.getProjectConfig()
+                                      .getInputs();
+
+        // Look for the LCS among the declared inputs
+        if ( Objects.nonNull( inputDeclaration ) )
+        {
+            Set<TimeScaleOuter> declaredExistingTimeScales = new HashSet<>();
+            TimeScaleConfig leftScaleConfig = inputDeclaration.getLeft().getExistingTimeScale();
+            TimeScaleConfig rightScaleConfig = inputDeclaration.getLeft().getExistingTimeScale();
+
+            if ( Objects.nonNull( leftScaleConfig ) )
+            {
+                declaredExistingTimeScales.add( TimeScaleOuter.of( leftScaleConfig ) );
+            }
+            if ( Objects.nonNull( rightScaleConfig ) )
+            {
+                declaredExistingTimeScales.add( TimeScaleOuter.of( rightScaleConfig ) );
+            }
+            if ( Objects.nonNull( inputDeclaration.getBaseline() )
+                 && Objects.nonNull( inputDeclaration.getBaseline().getExistingTimeScale() ) )
+            {
+                declaredExistingTimeScales.add( TimeScaleOuter.of( inputDeclaration.getBaseline()
+                                                                                   .getExistingTimeScale() ) );
+            }
+
+            if ( !declaredExistingTimeScales.isEmpty() )
+            {
+                TimeScaleOuter leastCommonScale = TimeScaleOuter.getLeastCommonTimeScale( declaredExistingTimeScales );
+
+                this.desiredTimeScale = leastCommonScale;
+
+                LOGGER.trace( "Discovered that the desired time scale was not supplied on construction of the project."
+                              + " Instead, determined the desired time scale from the Least Common Scale of the "
+                              + "declared inputs, which  was {}.",
+                              leastCommonScale );
+
+                return this.desiredTimeScale;
+            }
+        }
+
+        return this.desiredTimeScale;
     }
 
     /**
@@ -640,6 +772,15 @@ public class Project
     }
 
     /**
+     * @return the project identifier
+     */
+
+    private long getProjectId()
+    {
+        return this.projectId;
+    }
+
+    /**
      * Checks for any invalid ensemble conditions and returns a string representation of the invalid conditions.
      * 
      * @param lrb the orientation of the source
@@ -709,20 +850,18 @@ public class Project
         Set<FeatureTuple> singletons = new HashSet<>(); // Singleton feature tuples
         Set<FeatureTuple> grouped = new HashSet<>(); // Multi-tuple groups
 
-        Features fCache = this.getFeaturesCache();
-
         // Gridded features? #74266
         // Yes
         if ( this.usesGriddedData( this.getRight() ) )
         {
-            // Feature grouping not currently supported for gridded evaluations
-
-            LOGGER.debug( "Getting details of intersecting features for gridded data." );
-            singletons.addAll( fCache.getGriddedFeatures() );
+            Set<FeatureTuple> griddedTuples = this.getGriddedFeatureTuples();
+            singletons.addAll( griddedTuples );
         }
         // No
         else
         {
+            Features fCache = this.getFeaturesCache();
+
             // At this point, features should already have been correlated by
             // the declaration or by a location service. In the latter case, the
             // WRES will have generated the List<Feature> and replaced them in
@@ -787,6 +926,40 @@ public class Project
     }
 
     /**
+     * Builds a set of gridded feature tuples. Assumes that all dimensions have the same tuple (i.e., cannot currently
+     * pair grids with different features. Feature groupings are also not supported.
+     * 
+     * @return a set of gridded feature tuples
+     */
+
+    private Set<FeatureTuple> getGriddedFeatureTuples()
+    {
+        LOGGER.debug( "Getting details of intersecting features for gridded data." );
+        Features fCache = this.getFeaturesCache();
+        Set<FeatureKey> griddedFeatures = fCache.getGriddedFeatures();
+        Set<FeatureTuple> features = new HashSet<>();
+
+        for ( FeatureKey nextFeature : griddedFeatures )
+        {
+            Geometry geometry = MessageFactory.parse( nextFeature );
+            GeometryTuple geoTuple = null;
+            if ( this.hasBaseline() )
+            {
+                geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, geometry );
+            }
+            else
+            {
+                geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, null );
+            }
+
+            FeatureTuple featureTuple = FeatureTuple.of( geoTuple );
+            features.add( featureTuple );
+        }
+
+        return Collections.unmodifiableSet( features );
+    }
+
+    /**
      * Reads a set of feature tuples from a feature selection script.
      * @param script the script to read
      * @param fCache the features cache
@@ -798,7 +971,7 @@ public class Project
     {
         Set<FeatureTuple> featureTuples = new HashSet<>();
 
-        try ( Connection connection = database.getConnection();
+        try ( Connection connection = this.database.getConnection();
               DataProvider dataProvider = script.buffer( connection ) )
         {
             while ( dataProvider.next() )

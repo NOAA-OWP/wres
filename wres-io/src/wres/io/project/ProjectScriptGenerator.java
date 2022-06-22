@@ -14,11 +14,14 @@ import wres.io.utilities.Database;
 /**
  * Houses the logic used to create SQL scripts based on a project
  * @author Christopher Tubbs
+ * @author James Brown
  */
 final class ProjectScriptGenerator
 {
     // Since this class is only used for helper functions, we don't want anything to instantiate it
-    private ProjectScriptGenerator(){}
+    private ProjectScriptGenerator()
+    {
+    }
 
     /**
      * Creates a script that retrieves a mapping between forecasted and observed features.
@@ -86,7 +89,7 @@ final class ProjectScriptGenerator
             // When no features are specified, default to matching names in both
             // the left and right datasets. This assumes that a name is used
             // consistently within a dataset ingested for an evaluation.
-            script.addLine( "FROM wres.Feature L");
+            script.addLine( "FROM wres.Feature L" );
             script.addLine( "INNER JOIN wres.Feature R ON" );
             script.addTab().addLine( "L.name = R.name" );
         }
@@ -118,7 +121,7 @@ final class ProjectScriptGenerator
         script.addTab( 2 ).addLine( "AND PS.member = 'right'" );
         script.addTab( 2 ).addLine( "AND S.feature_id = R.feature_id" );
 
-        script.addLine(")");
+        script.addLine( ")" );
 
         if ( hasBaseline )
         {
@@ -205,16 +208,16 @@ final class ProjectScriptGenerator
      * @return the script
      * @throws NullPointerException if any nullable input is null
      */
-    
+
     static DataScripter createVariablesScript( Database database,
                                                long projectId,
                                                LeftOrRightOrBaseline lrb )
     {
         Objects.requireNonNull( database );
         Objects.requireNonNull( lrb );
-        
+
         DataScripter script = new DataScripter( database );
-        
+
         script.addLine( "SELECT DISTINCT S.variable_name" );
         script.addLine( "FROM wres.Source S" );
         script.addLine( "INNER JOIN wres.ProjectSource PS ON" );
@@ -224,9 +227,9 @@ final class ProjectScriptGenerator
         script.addTab().addLine( "AND PS.member = ?" );
         script.addArgument( lrb.toString().toLowerCase() );
         script.setMaxRows( 2 ); // Adds jdbc limit plus sql LIMIT if supported
-        
+
         return script;
-    }  
+    }
 
     /**
      * Returns a script that checks whether the condition on the ensemble name is valid.
@@ -273,6 +276,30 @@ final class ProjectScriptGenerator
         return script;
     }
 
+    /**
+     * Returns the set of existing time scales for the ingested time-series data for a specified side of data.
+     * 
+     * @param database the database
+     * @param projectId the project identifier
+     * @return the set of time scales
+     */
+
+    static DataScripter createTimeScalesScript( Database database,
+                                                long projectId )
+    {
+        DataScripter script = new DataScripter( database );
+
+        script.addLine( "SELECT DISTINCT TS.duration_ms, TS.function_name" );
+        script.addLine( "FROM wres.projectSource PS" );
+        script.addTab().addLine( "INNER JOIN wres.Source S" );
+        script.addTab( 2 ).addLine( "ON PS.source_id = S.source_id" );
+        script.addTab().addLine( "INNER JOIN wres.TimeScale TS" );
+        script.addTab( 2 ).addLine( "ON TS.timescale_id = S.timescale_id" );
+        script.addTab().addLine( "WHERE PS.project_id = ?" );
+        script.addArgument( projectId );
+
+        return script;
+    }
 
     /**
      * Returns a temporary table name. Can't use the current time in millis as
@@ -294,11 +321,11 @@ final class ProjectScriptGenerator
                                                  boolean isGrouped )
     {
         int qualifier = 0;
-        if( isGrouped )
+        if ( isGrouped )
         {
             qualifier = new Random().nextInt();
         }
-        
+
         Random random = new Random( Instant.now()
                                            .getNano()
                                     + features.hashCode()
@@ -310,7 +337,8 @@ final class ProjectScriptGenerator
             someNumber = random.nextLong();
         }
 
-        return "wres_project_" + projectId + "_feature_correlation_"
+        return "wres_project_" + projectId
+               + "_feature_correlation_"
                + someNumber;
     }
 
@@ -358,8 +386,11 @@ final class ProjectScriptGenerator
             if ( Objects.nonNull( leftName )
                  && Objects.nonNull( rightName ) )
             {
-                toAdd = "'" + validateStringForSql( leftName ) + "', "
-                        + "'" + validateStringForSql( rightName ) + "'";
+                toAdd = "'" + validateStringForSql( leftName )
+                        + "', "
+                        + "'"
+                        + validateStringForSql( rightName )
+                        + "'";
 
                 if ( hasBaseline )
                 {

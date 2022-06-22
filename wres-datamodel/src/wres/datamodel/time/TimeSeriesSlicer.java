@@ -1147,7 +1147,7 @@ public final class TimeSeriesSlicer
             // TODO: restore empty timeseries capability after weeding out spots
             // where some kind of metadata can be put in. Then return an empty 
             // time-series with metadata.
-            throw new IllegalStateException( "Cannot consolidate an empty timeseries" );
+            throw new IllegalStateException( "Cannot consolidate an empty collection of timeseries." );
         }
         // Singleton series
         else if ( collectedSeries.size() == 1 )
