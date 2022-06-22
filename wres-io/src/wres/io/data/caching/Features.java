@@ -230,7 +230,7 @@ public class Features
      * @throws UnsupportedOperationException if the cache was not initialized with gridded features
      */
 
-    public Set<FeatureTuple> getGriddedFeatures()
+    public Set<FeatureKey> getGriddedFeatures()
     {
         if ( Objects.isNull( this.griddedFeatures ) )
         {

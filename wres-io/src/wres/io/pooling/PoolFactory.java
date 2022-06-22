@@ -343,13 +343,13 @@ public class PoolFactory
 
         // Create a cross pairer, in case this is required by the declaration
         TimeSeriesCrossPairer<Double, Double> crossPairer = PoolFactory.getCrossPairerOrNull( pairConfig );
-        
+
         // Lenient upscaling?
         DesiredTimeScaleConfig desiredTimeScale = pairConfig.getDesiredTimeScale();
         boolean lenient = Objects.nonNull( desiredTimeScale ) && desiredTimeScale.isLenient();
-        
+
         LOGGER.debug( "While creating pool suppliers, discovered a rescaling leniency of: {}.", lenient );
-        
+
         // Create a default upscaler
         TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleUpscaler.of( lenient );
 
@@ -448,9 +448,9 @@ public class PoolFactory
         // Lenient upscaling?
         DesiredTimeScaleConfig desiredTimeScale = pairConfig.getDesiredTimeScale();
         boolean lenient = Objects.nonNull( desiredTimeScale ) && desiredTimeScale.isLenient();
-        
+
         LOGGER.debug( "While creating pool suppliers, discovered a rescaling leniency of: {}.", lenient );
-        
+
         // Create a default upscaler for left-ish data
         TimeSeriesUpscaler<Double> leftUpscaler = TimeSeriesOfDoubleUpscaler.of( lenient );
         TimeSeriesUpscaler<Ensemble> rightUpscaler = TimeSeriesOfEnsembleUpscaler.of( lenient );
@@ -786,7 +786,11 @@ public class PoolFactory
     }
 
     /**
-     * Creates a feature-specific baseline generator, if required.
+     * Creates a feature-specific baseline generator, if required. Pay close attention to the sided-ness of the feature
+     * names in this context because there are two different sources of data: 1) the source data from which the 
+     * baseline is generated; and 2) the template time-series data that is mimicked. For example, when generating a 
+     * persistence baseline, the former is a source of observation-like data and the latter may be a source of forecast-
+     * like data, each of which has a different feature name.
      * 
      * @param baselineConfig the baseline declaration
      * @param retrieverFactory the factory to acquire a data source for a generated baseline
@@ -821,6 +825,9 @@ public class PoolFactory
 
             // Map from the input data type to the required type
             int finalLag = lag;
+
+            // Here the feature names supplied must be consistent with the source data from which the baseline is 
+            // generated, not the template time-series that is mimicked
             return features -> {
                 Supplier<Stream<TimeSeries<R>>> persistenceSource =
                         () -> retrieverFactory.getBaselineRetriever( features ).get();
@@ -1208,15 +1215,16 @@ public class PoolFactory
                     if ( !decomposedMap.containsKey( nextTuple ) )
                     {
                         LOGGER.debug( "While decomposing the pools for feature group {}, found no pools associated "
-                                      + "with feature tuple {}.",
+                                      + "with feature tuple {} among a map with these keys: {}.",
                                       nextGroup,
-                                      nextTuple );
+                                      nextTuple,
+                                      decomposedMap.keySet() );
 
                         // Empty pool
-                        return Pool.of( List.of(), PoolMetadata.of() );
+                        return Pool.of( List.of(), nextDecomposedRequest.getMetadata() );
                     }
 
-                    // Update the metadata with the new feature group
+                    // Extract the pool for the current feature
                     Pool<TimeSeries<Pair<L, R>>> pool = decomposedMap.get( nextTuple );
                     PoolMetadata nextMain = nextDecomposedRequest.getMetadata();
 

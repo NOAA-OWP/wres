@@ -488,9 +488,29 @@ public class PoolSlicer
         // Use a sorted map implementation to preserve order
         Map<S, Pool<T>> returnMe = new TreeMap<>();
 
+        LOGGER.debug( "Encountered a pool with {} mini-pools.", pool.getMiniPools().size() );
+
         for ( Pool<T> nextPool : pool.getMiniPools() )
         {
-            S key = metaMapper.apply( nextPool.getMetadata() );
+            S key = null;
+
+            try
+            {
+                key = metaMapper.apply( nextPool.getMetadata() );
+            }
+            catch ( PoolException e )
+            {
+                throw new PoolException( "Encountered an error while attempting to extract the metadata for a "
+                                         + "mini pool. This is one of "
+                                         + pool.getMiniPools().size()
+                                         + " mini pools that compose the overall pool. The metadata for the mini pool "
+                                         + "is: "
+                                         + nextPool.getMetadata()
+                                         + ". The overall pool metadata is: "
+                                         + pool.getMetadata()
+                                         + ".",
+                                         e );
+            }
 
             if ( returnMe.containsKey( key ) )
             {
@@ -534,12 +554,13 @@ public class PoolSlicer
             if ( features.size() != 1 )
             {
                 throw new PoolException( "Could not obtain the expected feature tuple from the pool metadata because "
-                                         + "the pool composes more than one feature where a single feature was "
-                                         + "expected. This may occur when a pool contains several features but the "
-                                         + "pool was not built to preserve the feature-specific 'mini-pools' using the "
-                                         + "appropriate builder option for the outer pool or some other transformation "
-                                         + "of the outer pool resulted in a loss of the 'mini-pool' context. The "
-                                         + "features encountered are: "
+                                         + "the pool composes more than one feature ("
+                                         + features.size()
+                                         + ") where a single feature was expected. This may occur when a pool contains "
+                                         + "several features but the pool was not built to preserve the "
+                                         + "feature-specific 'mini-pools' using the appropriate builder option for the "
+                                         + "outer pool or some other transformation of the outer pool resulted in a "
+                                         + "loss of the 'mini-pool' context. The features encountered are: "
                                          + features
                                          + ". The pool metadata is: "
                                          + metadata
@@ -620,7 +641,7 @@ public class PoolSlicer
             unionFeatures.addAll( next.getFeatureTuples() );
 
             PoolSlicer.addRegionName( unionRegionNames, next );
-            
+
             wres.statistics.generated.Pool pool = next.getPool();
             ensembleAverageType.add( pool.getEnsembleAverageType() );
         }

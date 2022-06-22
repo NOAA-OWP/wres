@@ -481,8 +481,13 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                .setRightTransformer( this.getRightTransformer() )
                .setBaselineTransformer( this.getBaselineTransformer() );
 
-        // Obtain and set the desired time scale. 
-        TimeScaleOuter desiredTimeScale = this.setAndGetDesiredTimeScale( pairConfig, builder );
+        // Obtain the desired time scale and set it
+        TimeScaleOuter desiredTimeScale = this.getProject()
+                                              .getDesiredTimeScale();
+        builder.setDesiredTimeScale( desiredTimeScale );
+
+        // Set the frequency associated with the pairs, if declared
+        this.setFrequency( pairConfig, builder );
 
         // Get a left-ish retriever for every pool in order to promote re-use across pools via caching. May consider
         // doing this for other sides of data in future, but left-ish data is the priority because this is very 
@@ -840,38 +845,29 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
     }
 
     /**
-     * Sets and gets the desired time scale associated with the pair declaration.
+     * Sets the frequency of the pairs, if declared.
      * 
      * @param pairConfig the pair declaration
-     * @param builder the builder
+     * @param builder the builder whose frequency should be set
      */
 
-    private TimeScaleOuter setAndGetDesiredTimeScale( PairConfig pairConfig,
-                                                      PoolSupplier.Builder<L, R> builder )
+    private void setFrequency( PairConfig pairConfig,
+                               PoolSupplier.Builder<L, R> builder )
     {
-
-        TimeScaleOuter desiredTimeScale = null;
         // Obtain from the declaration if available
         if ( Objects.nonNull( pairConfig )
-             && Objects.nonNull( pairConfig.getDesiredTimeScale() ) )
+             && Objects.nonNull( pairConfig.getDesiredTimeScale() )
+             && Objects.nonNull( pairConfig.getDesiredTimeScale().getFrequency() ) )
         {
-            desiredTimeScale = TimeScaleOuter.of( pairConfig.getDesiredTimeScale() );
-            builder.setDesiredTimeScale( desiredTimeScale );
+            ChronoUnit unit = ChronoUnit.valueOf( pairConfig.getDesiredTimeScale()
+                                                            .getUnit()
+                                                            .value()
+                                                            .toUpperCase() );
 
-            if ( Objects.nonNull( pairConfig.getDesiredTimeScale().getFrequency() ) )
-            {
-                ChronoUnit unit = ChronoUnit.valueOf( pairConfig.getDesiredTimeScale()
-                                                                .getUnit()
-                                                                .value()
-                                                                .toUpperCase() );
+            Duration frequency = Duration.of( pairConfig.getDesiredTimeScale().getFrequency(), unit );
 
-                Duration frequency = Duration.of( pairConfig.getDesiredTimeScale().getFrequency(), unit );
-
-                builder.setFrequencyOfPairs( frequency );
-            }
+            builder.setFrequencyOfPairs( frequency );
         }
-
-        return desiredTimeScale;
     }
 
     /**
