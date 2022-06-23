@@ -694,7 +694,7 @@ public class PersistenceGeneratorTest
     }
 
     @Test
-    public void testApplyToSimulationsWithUpscalingToFixedMonthDays()
+    public void testApplyToSimulationsWithUpscalingToFixedMonthDaysAndEventBeforeEndMonthDay()
     {
         TimeSeriesMetadata fooMetadata = TimeSeriesMetadata.of( Map.of(),
                                                                 TimeScaleOuter.of(),
@@ -718,6 +718,8 @@ public class PersistenceGeneratorTest
                                                              FAKE2,
                                                              CMS );
 
+        // Event month-day falls before the end month-day of the time scale, so the correct lag 1 value is 
+        // one year prior, in year 1988
         TimeSeries<Double> fooTemplateSeries =
                 new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1989-01-01T00:00:00Z" ),
                                                                      1.0 ) )
@@ -732,6 +734,157 @@ public class PersistenceGeneratorTest
 
         TimeSeries<Double> expected =
                 new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1989-01-01T00:00:00Z" ),
+                                                                     1.5 ) )
+                                                .setMetadata( metadata )
+                                                .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    public void testApplyToSimulationsWithUpscalingToFixedMonthDaysAndEventAfterEndMonthDay()
+    {
+        TimeSeriesMetadata fooMetadata = TimeSeriesMetadata.of( Map.of(),
+                                                                TimeScaleOuter.of(),
+                                                                STREAMFLOW,
+                                                                FAKE2,
+                                                                CMS );
+
+        TimeSeries<Double> fooSeries =
+                new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1988-04-01T00:00:00Z" ),
+                                                                     1.0 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-04-02T00:00:00Z" ),
+                                                                     2.0 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-04-03T00:00:00Z" ),
+                                                                     3.0 ) )
+                                                .setMetadata( fooMetadata )
+                                                .build();
+
+        TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of(),
+                                                             MONTHDAY_TIMESCALE,
+                                                             STREAMFLOW,
+                                                             FAKE2,
+                                                             CMS );
+
+        // Event month-day falls after the end month-day of the time scale, so the correct lag 1 value is within the
+        // current year, 1988
+        TimeSeries<Double> fooTemplateSeries =
+                new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1988-12-01T00:00:00Z" ),
+                                                                     1.0 ) )
+                                                .setMetadata( metadata )
+                                                .build();
+
+        PersistenceGenerator<Double> generator = PersistenceGenerator.of( () -> Stream.of( fooSeries ),
+                                                                          TimeSeriesOfDoubleUpscaler.of(),
+                                                                          Double::isFinite );
+
+        TimeSeries<Double> actual = generator.apply( fooTemplateSeries );
+
+        TimeSeries<Double> expected =
+                new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1988-12-01T00:00:00Z" ),
+                                                                     1.5 ) )
+                                                .setMetadata( metadata )
+                                                .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    public void testApplyToSimulationsWithUpscalingToFixedMonthDaysAndEventFallsWithinMonthDayInterval()
+    {
+        TimeSeriesMetadata fooMetadata = TimeSeriesMetadata.of( Map.of(),
+                                                                TimeScaleOuter.of(),
+                                                                STREAMFLOW,
+                                                                FAKE2,
+                                                                CMS );
+
+        TimeSeries<Double> fooSeries =
+                new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1987-04-01T00:00:00Z" ),
+                                                                     1.0 ) )
+                                                .addEvent( Event.of( Instant.parse( "1987-04-02T00:00:00Z" ),
+                                                                     2.0 ) )
+                                                .addEvent( Event.of( Instant.parse( "1987-04-03T00:00:00Z" ),
+                                                                     3.0 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-04-01T00:00:00Z" ),
+                                                                     1.0 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-04-02T00:00:00Z" ),
+                                                                     2.0 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-04-03T00:00:00Z" ),
+                                                                     3.0 ) )
+                                                .setMetadata( fooMetadata )
+                                                .build();
+
+        TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of(),
+                                                             MONTHDAY_TIMESCALE,
+                                                             STREAMFLOW,
+                                                             FAKE2,
+                                                             CMS );
+
+        // Event month-day falls within the time scale interval, so the correct lag 1 value is within the prior
+        // year, 1987
+        TimeSeries<Double> fooTemplateSeries =
+                new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1988-04-02T00:00:00Z" ),
+                                                                     1.0 ) )
+                                                .setMetadata( metadata )
+                                                .build();
+
+        PersistenceGenerator<Double> generator = PersistenceGenerator.of( () -> Stream.of( fooSeries ),
+                                                                          TimeSeriesOfDoubleUpscaler.of(),
+                                                                          Double::isFinite );
+
+        TimeSeries<Double> actual = generator.apply( fooTemplateSeries );
+
+        TimeSeries<Double> expected =
+                new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1988-04-02T00:00:00Z" ),
+                                                                     1.5 ) )
+                                                .setMetadata( metadata )
+                                                .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    public void testApplyToSimulationsWithUpscalingToFixedMonthDaysAndEventAfterEndMonthDayAndLagTwo()
+    {
+        TimeSeriesMetadata fooMetadata = TimeSeriesMetadata.of( Map.of(),
+                                                                TimeScaleOuter.of(),
+                                                                STREAMFLOW,
+                                                                FAKE2,
+                                                                CMS );
+
+        TimeSeries<Double> fooSeries =
+                new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1987-04-01T00:00:00Z" ),
+                                                                     1.0 ) )
+                                                .addEvent( Event.of( Instant.parse( "1987-04-02T00:00:00Z" ),
+                                                                     2.0 ) )
+                                                .addEvent( Event.of( Instant.parse( "1987-04-03T00:00:00Z" ),
+                                                                     3.0 ) )
+                                                .setMetadata( fooMetadata )
+                                                .build();
+
+        TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of(),
+                                                             MONTHDAY_TIMESCALE,
+                                                             STREAMFLOW,
+                                                             FAKE2,
+                                                             CMS );
+
+        // Event month-day falls after the end month-day of the time scale, so the correct lag 2 value is within the
+        // prior year, 1987
+        TimeSeries<Double> fooTemplateSeries =
+                new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1988-12-01T00:00:00Z" ),
+                                                                     1.0 ) )
+                                                .setMetadata( metadata )
+                                                .build();
+
+        PersistenceGenerator<Double> generator = PersistenceGenerator.of( () -> Stream.of( fooSeries ),
+                                                                          TimeSeriesOfDoubleUpscaler.of(),
+                                                                          Double::isFinite,
+                                                                          2 );
+
+        TimeSeries<Double> actual = generator.apply( fooTemplateSeries );
+
+        TimeSeries<Double> expected =
+                new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1988-12-01T00:00:00Z" ),
                                                                      1.5 ) )
                                                 .setMetadata( metadata )
                                                 .build();

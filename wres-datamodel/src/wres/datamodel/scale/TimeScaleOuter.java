@@ -556,7 +556,7 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
             else
             {
                 MonthDay earliest = timeScale.getStartMonthDay();
-                MonthDay latest = timeScale.getStartMonthDay();
+                MonthDay latest = timeScale.getEndMonthDay();
 
                 if ( Objects.isNull( earliest ) || Objects.isNull( latest ) )
                 {

@@ -974,6 +974,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         Duration period = this.getPeriodFromTimeScale( desiredTimeScale );
 
         TimeSeries<L> scaledLeft = TimeSeriesSlicer.snip( left, rightOrBaseline, period, Duration.ZERO );
+        
         TimeSeries<R> scaledRight = rightOrBaseline;
         boolean upscaleLeft = Objects.nonNull( desiredTimeScale ) && !desiredTimeScale.equals( left.getTimeScale() );
         boolean upscaleRight = Objects.nonNull( desiredTimeScale )
@@ -1080,7 +1081,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         // Transform the rescaled values, if required
         TimeSeries<L> scaledAndTransformedLeft = this.transform( scaledLeft, this.getLeftTransformer() );
         TimeSeries<R> scaledAndTransformedRight = this.transformByEvent( scaledRight, rightOrBaselineTransformer );
-
+        
         // Create the pairs, if any
         TimeSeries<Pair<L, R>> pairs = this.getPairer()
                                            .pair( scaledAndTransformedLeft, scaledAndTransformedRight );

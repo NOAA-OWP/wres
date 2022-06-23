@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import wres.config.generated.DurationUnit;
 import wres.config.generated.TimeScaleConfig;
+import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 /**
@@ -490,6 +491,37 @@ final class TimeScaleOuterTest
         Duration expected = Duration.ofHours( 504 );
 
         assertEquals( expected, TimeScaleOuter.getLeastCommonDuration( durations ) );
+    }
+
+    @Test
+    void testGetOrInferPeriodFromTimeScaleIsInstantaneous()
+    {
+        TimeScaleOuter outer = TimeScaleOuter.of( TimeScaleOuter.INSTANTANEOUS_DURATION );
+
+        assertEquals( TimeScaleOuter.INSTANTANEOUS_DURATION, TimeScaleOuter.getOrInferPeriodFromTimeScale( outer ) );
+    }
+
+    @Test
+    void testGetOrInferPeriodFromTimeScaleIsEqualToPeriod()
+    {
+        TimeScaleOuter outer = TimeScaleOuter.of( Duration.ofDays( 2 ) );
+
+        assertEquals( Duration.ofDays( 2 ), TimeScaleOuter.getOrInferPeriodFromTimeScale( outer ) );
+    }
+
+    @Test
+    void testGetOrInferPeriodFromTimeScaleIsEqualToLeapYearPeriod()
+    {
+        // #40178-135
+        TimeScale timeScale = TimeScale.newBuilder()
+                                       .setStartDay( 1 )
+                                       .setStartMonth( 1 )
+                                       .setEndDay( 31 )
+                                       .setEndMonth( 3 )
+                                       .build();
+        TimeScaleOuter outer = TimeScaleOuter.of( timeScale );
+
+        assertEquals( Duration.ofDays( 91 ), TimeScaleOuter.getOrInferPeriodFromTimeScale( outer ) );
     }
 
 }
