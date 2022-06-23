@@ -1175,16 +1175,16 @@ project(':wres-tasker')
         implementation 'commons-codec:commons-codec:1.15'
 
         // Server library to run a web server:
-        implementation 'org.eclipse.jetty:jetty-server:11.0.10'
+        implementation 'org.eclipse.jetty:jetty-server:11.0.11'
 
         // Support HTTP/2
-        implementation 'org.eclipse.jetty.http2:http2-server:11.0.10'
+        implementation 'org.eclipse.jetty.http2:http2-server:11.0.11'
 
         // Support ALPN
-        implementation 'org.eclipse.jetty:jetty-alpn-java-server:11.0.10'
+        implementation 'org.eclipse.jetty:jetty-alpn-java-server:11.0.11'
 
         // Servlet container library to run a web application with:
-        implementation 'org.eclipse.jetty:jetty-webapp:11.0.10'
+        implementation 'org.eclipse.jetty:jetty-webapp:11.0.11'
 
         // Needed at compile-time to reference ServletContainer.class and
         // DefaultServlet.class
@@ -1761,8 +1761,8 @@ dependencies
     // For Java 9+ compatibility:
     implementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
 
-    implementation 'org.eclipse.jetty:jetty-server:11.0.10'
-    implementation 'org.eclipse.jetty:jetty-webapp:11.0.10'
+    implementation 'org.eclipse.jetty:jetty-server:11.0.11'
+    implementation 'org.eclipse.jetty:jetty-webapp:11.0.11'
     implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.1.0-M3'
 
     implementation( 'com.github.ben-manes.caffeine:caffeine:3.1.1' )
