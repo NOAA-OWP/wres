@@ -18,6 +18,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -483,25 +484,20 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
             // Find the upscaled period whose valid time is N prior to each template valid time. Since a month-day 
             // range can occur only once per year, this is effectively N years prior to the template valid time
             TimeSeries.Builder<T> builder = new TimeSeries.Builder<T>().setMetadata( upscaled.getMetadata() );
-            ZoneId zoneId = ZoneId.of( "UTC" );
 
-            // Search the template events and find a corresponding upscaled event that is between N years and N-1 years
-            // earlier than each valid time of interest, inclusive
+            // Search the template events and find a corresponding upscaled event that is the Nth corresponding event
+            // that is earlier than the template time
             for ( Event<T> next : template.getEvents() )
             {
-                Instant nextTime = next.getTime();
-                ZonedDateTime time = nextTime.atZone( zoneId );
-                int yearsToSubtract = this.order;
-                time = time.minusYears( yearsToSubtract );
-                Instant targetLower = time.toInstant();
-                Instant targetUpper = time.plusYears( 1 )
-                                          .toInstant();
+                Pair<Instant, Instant> interval = this.getLaggedMonthDayInterval( next.getTime(),
+                                                                                  this.order );
+                Instant targetLower = interval.getLeft();
+                Instant targetUpper = interval.getRight();
 
                 // Find an upscaled event that is between the target times
                 Optional<Event<T>> event = upscaled.getEvents()
                                                    .stream()
-                                                   // The upscaled event time is between the lower and upper bounds, 
-                                                   // inclusive
+                                                   // The upscaled event time is between the lower and upper inclusive
                                                    .filter( nextEvent -> nextEvent.getTime().equals( targetLower )
                                                                          || nextEvent.getTime().equals( targetUpper )
                                                                          || ( nextEvent.getTime().isAfter( targetLower )
@@ -556,6 +552,29 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
             return this.mapUpscaledEventsToValidTimes( validTimes, persistenceEventTimes, upscaled );
         }
+    }
+
+    /**
+     * Returns the interval within which a lagged month-day event must fall based on the prescribed lag and event time.
+     * 
+     * @param eventTime the event time
+     * @param lag the order of persistence
+     * @return the interval
+     */
+
+    private Pair<Instant, Instant> getLaggedMonthDayInterval( Instant eventTime, int lag )
+    {
+        // The event must fall within the interval that begins N years before the event time, inclusive, and ends
+        // up to N-1 years before the event time, exclusive
+        ZonedDateTime time = eventTime.atZone( ZONE_ID );
+        int yearsToSubtract = lag;
+        Instant targetLower = time.minusYears( yearsToSubtract )
+                                  .toInstant();
+        Instant targetUpper = time.minusYears( yearsToSubtract - 1 )
+                                  .minusNanos( 1 ) // Do not include the event time
+                                  .toInstant();
+
+        return Pair.of( targetLower, targetUpper );
     }
 
     /**
