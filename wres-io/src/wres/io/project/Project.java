@@ -937,7 +937,7 @@ public class Project
         LOGGER.debug( "Getting details of intersecting features for gridded data." );
         Features fCache = this.getFeaturesCache();
         Set<FeatureKey> griddedFeatures = fCache.getGriddedFeatures();
-        Set<FeatureTuple> features = new HashSet<>();
+        Set<FeatureTuple> featureTuples = new HashSet<>();
 
         for ( FeatureKey nextFeature : griddedFeatures )
         {
@@ -953,10 +953,10 @@ public class Project
             }
 
             FeatureTuple featureTuple = FeatureTuple.of( geoTuple );
-            features.add( featureTuple );
+            featureTuples.add( featureTuple );
         }
 
-        return Collections.unmodifiableSet( features );
+        return Collections.unmodifiableSet( featureTuples );
     }
 
     /**
@@ -1363,22 +1363,7 @@ public class Project
         LOGGER.debug( "Added {} singleton feature groups to project {}.", innerGroups.size(), this.getId() );
 
         // Add the multi-feature groups
-        List<FeaturePool> declaredGroups = pairConfig.getFeatureGroup();
-
-        // Some groups declared, but no fully qualified features available to correlate with the declared features
-        if ( !declaredGroups.isEmpty() && featuresForGroups.isEmpty() )
-        {
-            throw new ProjectConfigException( pairConfig,
-                                              "Discovered "
-                                                          + declaredGroups.size()
-                                                          + " feature group in the project declaration, but could not "
-                                                          + "find any features with time-series data to correlate with "
-                                                          + "the declared features in these groups. If the feature "
-                                                          + "names are missing for some sides of data, it may help to "
-                                                          + "qualify them, else to use an explicit "
-                                                          + "\"featureDimension\" for all sides of data, in order to "
-                                                          + "aid interpolation of the feature names." );
-        }
+        List<FeaturePool> declaredGroups = this.getAndValidateDeclaredFeatureGroups( featuresForGroups, pairConfig );
 
         AtomicInteger groupNumber = new AtomicInteger( 1 ); // For naming when no name is present        
         for ( FeaturePool nextGroup : declaredGroups )
@@ -1436,6 +1421,37 @@ public class Project
 
 
         return Collections.unmodifiableSet( innerGroups );
+    }
+
+    /**
+     * Returns the declared feature groups.
+     * @param featuresForGroups the fully qualified features available to correlate with the declared groups
+     * @param pairConfig the pair configuration
+     * @return the declared groups
+     * @throws ProjectConfigException if some groups were declared but no features are available to correlate with them
+     */
+
+    private List<FeaturePool> getAndValidateDeclaredFeatureGroups( Set<FeatureTuple> featuresForGroups,
+                                                                   PairConfig pairConfig )
+    {
+        List<FeaturePool> declaredGroups = pairConfig.getFeatureGroup();
+
+        // Some groups declared, but no fully qualified features available to correlate with the declared features
+        if ( !declaredGroups.isEmpty() && featuresForGroups.isEmpty() )
+        {
+            throw new ProjectConfigException( pairConfig,
+                                              "Discovered "
+                                                          + declaredGroups.size()
+                                                          + " feature group in the project declaration, but could not "
+                                                          + "find any features with time-series data to correlate with "
+                                                          + "the declared features in these groups. If the feature "
+                                                          + "names are missing for some sides of data, it may help to "
+                                                          + "qualify them, else to use an explicit "
+                                                          + "\"featureDimension\" for all sides of data, in order to "
+                                                          + "aid interpolation of the feature names." );
+        }
+
+        return declaredGroups;
     }
 
     /**

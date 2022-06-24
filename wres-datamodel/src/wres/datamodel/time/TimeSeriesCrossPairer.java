@@ -33,11 +33,7 @@ import wres.datamodel.time.TimeSeries.Builder;
 public class TimeSeriesCrossPairer<L, R>
         implements BiFunction<List<TimeSeries<Pair<L, R>>>, List<TimeSeries<Pair<L, R>>>, CrossPairs<L, R>>
 {
-
-    /**
-     * An enumeration of techniques for matching by reference time.
-     */
-
+    /** An enumeration of techniques for matching by reference time. */
     public enum MatchMode
     {
         /**
@@ -54,16 +50,10 @@ public class TimeSeriesCrossPairer<L, R>
         FUZZY;
     }
 
-    /**
-     * Logger.
-     */
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesCrossPairer.class );
 
-    /**
-     * Match mode.
-     */
-
+    /** Match mode. */
     private final MatchMode matchMode;
 
     /**
