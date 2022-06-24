@@ -535,10 +535,20 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         // Get the paired frequency
         Duration pairedFrequency = this.getPairedFrequency();
 
+        // Pooling is organized to minimize memory usage for right-ish datasets, which tend to be larger (e.g., 
+        // forecasts). Thus, each right-ish series is transformed per series in a later loop. However, the left-ish 
+        // series are brought into memory, so transform them now. See #95488.        
+        // Apply any valid time offset to the left-ish data upfront.
+        Duration leftValidOffset = this.getValidTimeOffset( LeftOrRightOrBaseline.LEFT );
+        List<TimeSeries<L>> transformedLeft = leftData.map( nextSeries -> this.applyValidTimeOffset( nextSeries,
+                                                                                                     leftValidOffset,
+                                                                                                     LeftOrRightOrBaseline.LEFT ) )
+                                                      .collect( Collectors.toList() );
+
         List<EvaluationStatusMessage> validationEvents = new ArrayList<>();
 
         // Calculate the main pairs
-        TimeSeriesPlusValidation<L, R> mainPairsPlus = this.createPairsPerFeature( leftData,
+        TimeSeriesPlusValidation<L, R> mainPairsPlus = this.createPairsPerFeature( transformedLeft.stream(),
                                                                                    rightData,
                                                                                    desiredTimeScaleToUse,
                                                                                    pairedFrequency,
@@ -565,9 +575,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                 baselineDataInner = this.createBaseline( this.baselineGenerator, mainPairs );
             }
 
-            // Get the cached left-ish data
-            Stream<TimeSeries<L>> existingLeftData = mainPairsPlus.getLeftSeriesAsStream();
-            TimeSeriesPlusValidation<L, R> basePairsPlus = this.createPairsPerFeature( existingLeftData,
+            TimeSeriesPlusValidation<L, R> basePairsPlus = this.createPairsPerFeature( transformedLeft.stream(),
                                                                                        baselineDataInner,
                                                                                        desiredTimeScaleToUse,
                                                                                        pairedFrequency,
@@ -759,7 +767,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
         UnaryOperator<Event<R>> rightOrBaselineTransformer =
                 this.getRightOrBaselineTransformer( rightOrBaselineOrientation );
-        Duration leftValidOffset = this.getValidTimeOffset( LeftOrRightOrBaseline.LEFT );
         Duration rightOrBaselineValidOffset = this.getValidTimeOffset( rightOrBaselineOrientation );
 
         List<EvaluationStatusMessage> validation = new ArrayList<>();
@@ -771,12 +778,9 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
         // Unscaled left-ish series for re-use across right-ish series, mapped by feature key. Apply any valid time
         // offset here
-        Map<FeatureKey, List<TimeSeries<L>>> leftSeries = left.map( nextSeries -> this.applyValidTimeOffset( nextSeries,
-                                                                                                             leftValidOffset,
-                                                                                                             LeftOrRightOrBaseline.LEFT ) )
-                                                              // Group by feature
-                                                              .collect( Collectors.groupingBy( next -> next.getMetadata()
-                                                                                                           .getFeature() ) );
+        Map<FeatureKey, List<TimeSeries<L>>> leftSeries =
+                left.collect( Collectors.groupingBy( next -> next.getMetadata()
+                                                                 .getFeature() ) );
 
         int rightOrBaselineSeriesCount = 0;
 
@@ -863,8 +867,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                           pairsPerFeature.size() );
         }
 
-        // Return the pairs and the cached left-ish data for re-use (e.g., for both main and baseline pairs)
-        return new TimeSeriesPlusValidation<>( pairsPerFeature, leftSeries, validation );
+        return new TimeSeriesPlusValidation<>( pairsPerFeature, validation );
     }
 
     /**
@@ -974,7 +977,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         Duration period = this.getPeriodFromTimeScale( desiredTimeScale );
 
         TimeSeries<L> scaledLeft = TimeSeriesSlicer.snip( left, rightOrBaseline, period, Duration.ZERO );
-        
+
         TimeSeries<R> scaledRight = rightOrBaseline;
         boolean upscaleLeft = Objects.nonNull( desiredTimeScale ) && !desiredTimeScale.equals( left.getTimeScale() );
         boolean upscaleRight = Objects.nonNull( desiredTimeScale )
@@ -1081,7 +1084,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         // Transform the rescaled values, if required
         TimeSeries<L> scaledAndTransformedLeft = this.transform( scaledLeft, this.getLeftTransformer() );
         TimeSeries<R> scaledAndTransformedRight = this.transformByEvent( scaledRight, rightOrBaselineTransformer );
-        
+
         // Create the pairs, if any
         TimeSeries<Pair<L, R>> pairs = this.getPairer()
                                            .pair( scaledAndTransformedLeft, scaledAndTransformedRight );
@@ -1138,11 +1141,20 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             FeatureTuple nextBaselineTuple = FeatureTuple.of( nextBaselineGeometry );
 
             List<TimeSeries<Pair<L, R>>> nextMainPairs = nextEntry.getValue();
-            List<TimeSeries<Pair<L, R>>> nextBasePairs = basePairs.get( nextBaselineTuple );
-
-            CrossPairs<L, R> crossPairs = this.crossPairer.apply( nextMainPairs, nextBasePairs );
-            mainPairsCrossed.put( leftRightFeature, crossPairs.getMainPairs() );
-            basePairsCrossed.put( nextBaselineTuple, crossPairs.getBaselinePairs() );
+            if ( basePairs.containsKey( nextBaselineTuple ) )
+            {
+                List<TimeSeries<Pair<L, R>>> nextBasePairs = basePairs.get( nextBaselineTuple );
+                CrossPairs<L, R> crossPairs = this.crossPairer.apply( nextMainPairs, nextBasePairs );
+                mainPairsCrossed.put( leftRightFeature, crossPairs.getMainPairs() );
+                basePairsCrossed.put( nextBaselineTuple, crossPairs.getBaselinePairs() );
+            }
+            else if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "When conducting cross-pairing, unable to locate baseline pairs for feature {} among "
+                              + "these features: {}.",
+                              nextBaselineTuple,
+                              basePairs.keySet() );
+            }
         }
 
         if ( LOGGER.isDebugEnabled() )
@@ -1918,8 +1930,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     {
         /** The paired time-series. */
         private final Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> series;
-        /** A map of left-ish time-series than may be re-used, having been streamed once. */
-        private final Map<FeatureKey, List<TimeSeries<L>>> leftSeries;
         /** The status events. */
         private List<EvaluationStatusMessage> statusEvents;
 
@@ -1932,16 +1942,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         }
 
         /**
-         * @return the left-ish time-series for re-use
-         */
-        private Stream<TimeSeries<L>> getLeftSeriesAsStream()
-        {
-            return this.leftSeries.values()
-                                  .stream()
-                                  .flatMap( List::stream );
-        }
-
-        /**
          * @return the evaluation status events
          */
         private List<EvaluationStatusMessage> getEvaluationStatusMessages()
@@ -1951,15 +1951,12 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
         /**
          * @param series the time series
-         * @param leftSeries the left-ish series for re-use in other contexts
          * @param validation the validation events
          */
         private TimeSeriesPlusValidation( Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> series,
-                                          Map<FeatureKey, List<TimeSeries<L>>> leftSeries,
                                           List<EvaluationStatusMessage> statusEvents )
         {
             this.series = Collections.unmodifiableMap( series );
-            this.leftSeries = Collections.unmodifiableMap( leftSeries );
             this.statusEvents = Collections.unmodifiableList( statusEvents );
         }
 
@@ -1976,7 +1973,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             Objects.requireNonNull( series );
 
             this.series = Map.of( feature, List.of( series ) );
-            this.leftSeries = null;
             this.statusEvents = Collections.unmodifiableList( statusEvents );
         }
     }
