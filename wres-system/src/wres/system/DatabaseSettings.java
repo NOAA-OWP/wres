@@ -689,41 +689,41 @@ final class DatabaseSettings
                             setDatabaseType( type );
                             break;
                         case "port":
-                            setPort( Integer.parseInt( value ) );
+                            this.setPort( Integer.parseInt( value ) );
                             break;
                         case "name":
-                            setDatabaseName( value );
+                            this.setDatabaseName( value );
                             break;
                         case "password":
-                            setPassword( value );
+                            this.setPassword( value );
                             break;
                         case "url":
                             LOGGER.warn( "Deprecated 'url' tag found, use 'host' for a hostname or 'jdbcUrl' for a jdbc url instead." );
                             setHost( value );
                             break;
                         case "host":
-                            setHost( value );
+                            this.setHost( value );
                             break;
                         case "jdbcUrl":
-                            setJdbcUrl( value );
+                            this.setJdbcUrl( value );
                             break;
                         case "username":
-                            setUsername( value );
+                            this.setUsername( value );
                             break;
                         case "max_pool_size":
-                            maxPoolSize = Integer.parseInt( value );
+                            this.maxPoolSize = Integer.parseInt( value );
                             break;
                         case "max_idle_time":
-                            maxIdleTime = Integer.parseInt( value );
+                            this.maxIdleTime = Integer.parseInt( value );
                             break;
                         case "query_timeout":
-                            queryTimeout = Integer.parseInt( value );
+                            this.queryTimeout = Integer.parseInt( value );
                             break;
                         case "connectionTimeoutMs":
-                            connectionTimeoutMs = Integer.parseInt( value );
+                            this.connectionTimeoutMs = Integer.parseInt( value );
                             break;
                         case "use_ssl":
-                            setUseSSL( Boolean.parseBoolean( value ) );
+                            this.setUseSSL( Boolean.parseBoolean( value ) );
                             break;
                         case "validate_ssl":
                             this.setValidateSSL(Boolean.parseBoolean( value ));
