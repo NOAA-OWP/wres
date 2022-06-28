@@ -187,7 +187,7 @@ public class UnitMapper
             existingUnit = Units.getUnit( unitName );
             this.indriyaUnits.put( unitName, existingUnit );
         }
-
+        
         UnitConverter converter;
 
         try
@@ -219,7 +219,8 @@ public class UnitMapper
     {
         String unitName = this.measurementUnitsCache.getUnit( measurementUnitId );
 
-        return UnitMapper.getNonFiniteFriendlyUnitMapper( this.getUnitMapper( unitName ),
+        DoubleUnaryOperator unitMapper = this.getUnitMapper( unitName );
+        return UnitMapper.getNonFiniteFriendlyUnitMapper( unitMapper,
                                                           unitName,
                                                           this.getDesiredMeasurementUnitName() );
     }
