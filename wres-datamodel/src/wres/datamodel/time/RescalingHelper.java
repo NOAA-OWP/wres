@@ -391,8 +391,9 @@ class RescalingHelper
         }
 
         // Create the intervals
-        SortedSet<Pair<Instant, Instant>> intervals = TimeSeriesSlicer.getIntervalsFromTimeScaleWithMonthDays( desiredTimeScale,
-                                                                                                  timeSeries );
+        SortedSet<Pair<Instant, Instant>> intervals =
+                TimeSeriesSlicer.getIntervalsFromTimeScaleWithMonthDays( desiredTimeScale,
+                                                                         timeSeries );
 
         // Group the events by interval
         return TimeSeriesSlicer.groupEventsByInterval( timeSeries.getEvents(), intervals );
@@ -518,13 +519,8 @@ class RescalingHelper
                       .map( Event::getTime )
                       .collect( Collectors.toCollection( TreeSet::new ) );
 
-        // If the desired time scale does not use fixed month-days, add the lower bound as the gap between this bound 
-        // and the first time should be considered too
-        if ( !desiredTimeScale.hasMonthDays() )
-        {
-            Duration period = desiredTimeScale.getPeriod();
-            times.add( endsAt.minus( period ) );
-        }
+        // Add bookends to the list of times to check for even spacing
+        RescalingHelper.addBookendsToCheckForEvenSpacing( times, desiredTimeScale, endsAt );
 
         // Check for even spacing if there are two or more gaps
         if ( times.size() > 2 )
@@ -537,12 +533,7 @@ class RescalingHelper
                              + DISCOVERED_THAT_THE_VALUES_WERE_NOT_EVENLY_SPACED_WITHIN_THE_PERIOD_IDENTIFIED
                              + THESE_INTERVALS_BEFORE_STOPPING;
 
-            String leniencyStatus = THE_LENIENCY_STATUS_WAS + lenient + ".";
-
-            if ( !lenient )
-            {
-                leniencyStatus += DESIRED_TIME_SCALE_LENIENT;
-            }
+            String leniencyStatus = RescalingHelper.getLeniencyStatusString( lenient );
 
             Instant last = null;
             Duration lastPeriod = null;
@@ -576,6 +567,74 @@ class RescalingHelper
         }
 
         return DEFAULT_GROUP_RESCALING_STATUS;
+    }
+
+    /**
+     * Mutates the input set of times, adding the bookends in order to consider them along with all other values when
+     * determining if the values are evenly spaced for upscaling.
+     * @param times the times to mutate
+     * @param desiredTimeScale the desired time scale
+     * @param endsAt the time at which the rescaled value ends
+     */
+
+    private static void addBookendsToCheckForEvenSpacing( SortedSet<Instant> times,
+                                                          TimeScaleOuter desiredTimeScale,
+                                                          Instant endsAt )
+    {
+        // Add the bookend times
+        Duration period = desiredTimeScale.getPeriod();
+        if ( !desiredTimeScale.hasMonthDays() )
+        {
+            Instant startsAt = endsAt.minus( period );
+            times.add( startsAt );
+            times.add( endsAt );
+
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "When checking for evenly spaced values, added a lower bookend of {} and an upper "
+                              + "bookend of {}.",
+                              startsAt,
+                              endsAt );
+            }
+        }
+        else
+        {
+            // Because the bookend for month-days is one instant before the end of the day
+            Instant endTime = endsAt.plusNanos( 1 );
+            times.add( endTime );
+            Instant startsAt = null;
+
+            if ( desiredTimeScale.hasPeriod() )
+            {
+                startsAt = endTime.minus( period );
+                times.add( startsAt );
+            }
+
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "When checking for evenly spaced values, added a lower bookend of {} and an upper "
+                              + "bookend of {}.",
+                              startsAt,
+                              endTime );
+            }
+        }
+    }
+
+    /**
+     * @param lenient the rescaling is lenient if true, otherwise not lenient
+     * @return a status string for messaging regarding the leniency status
+     */
+
+    private static String getLeniencyStatusString( boolean lenient )
+    {
+        String leniencyStatus = THE_LENIENCY_STATUS_WAS + lenient + ".";
+
+        if ( !lenient )
+        {
+            leniencyStatus += DESIRED_TIME_SCALE_LENIENT;
+        }
+
+        return leniencyStatus;
     }
 
     /**
