@@ -22,6 +22,7 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.RescalingException;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.statistics.generated.TimeScale;
+import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLevel;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.TimeSeries.Builder;
@@ -757,6 +758,54 @@ public class TimeSeriesOfDoubleUpscalerTest
                                                            .build();
 
         assertEquals( expected, actual );
+    }
+
+    @Test
+    public void testUpscaleObservationsBoundedByOneMonthDayFailsIfValuesAreUnevenlySpaced()
+    {
+        // Three event times, one day apart
+        Instant first = Instant.parse( "2080-01-01T00:00:00Z" );
+        Instant second = Instant.parse( "2080-01-02T00:00:00Z" );
+        Instant third = Instant.parse( "2080-01-03T00:00:00Z" );
+
+        // Three events
+        Event<Double> one = Event.of( first, 12.0 );
+        Event<Double> two = Event.of( second, 15.0 );
+        Event<Double> three = Event.of( third, 3.0 );
+
+        // Time scale of the event values: instantaneous
+        TimeScaleOuter existingScale = TimeScaleOuter.of();
+        TimeSeriesMetadata existingMetadata =
+                getBoilerplateMetadataWithTimeScale( existingScale );
+
+        // Time-series to upscale
+        TimeSeries<Double> timeSeries = new Builder<Double>().addEvent( one )
+                                                             .addEvent( two )
+                                                             .addEvent( three )
+                                                             .setMetadata( existingMetadata )
+                                                             .build();
+
+        // The desired scale, which ends 48 hours after the last value and the values are separated by 24 hours
+        TimeScale timeScale = TimeScale.newBuilder()
+                                       .setFunction( TimeScaleFunction.MEAN )
+                                       .setStartDay( 1 )
+                                       .setStartMonth( 1 )
+                                       .setPeriod( com.google.protobuf.Duration.newBuilder()
+                                                                               .setSeconds( 60 * 60 * 24 * 4 ) )
+                                       .build();
+
+        TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( timeScale );
+
+        RescaledTimeSeriesPlusValidation<Double> actual = this.upscaler.upscale( timeSeries, desiredTimeScale );
+
+        boolean match = actual.getValidationEvents()
+                              .stream()
+                              .filter( next -> next.getStatusLevel() == StatusLevel.DEBUG )
+                              .anyMatch( nextMessage -> nextMessage.getMessage()
+                                                                   .contains( "discovered that the values were not "
+                                                                              + "evenly spaced within the period" ) );
+
+        assertTrue( match );
     }
 
 }
