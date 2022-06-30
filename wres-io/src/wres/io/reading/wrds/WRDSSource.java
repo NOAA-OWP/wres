@@ -16,6 +16,7 @@ import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.TimeScales;
 import wres.io.reading.BasicSource;
 import wres.io.reading.DataSource;
+import wres.io.reading.DataSource.DataDisposition;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.WrdsNwmReader;
@@ -116,8 +117,11 @@ public class WRDSSource extends BasicSource
         InterfaceShortHand interfaceShortHand = this.getDataSource()
                                                     .getSource()
                                                     .getInterface();
-        if ( Objects.nonNull( interfaceShortHand )
-             && interfaceShortHand.equals( InterfaceShortHand.WRDS_NWM ) )
+
+        // Allow detected content or declared interface: #106060
+        if ( this.getDataSource().getDisposition() == DataDisposition.JSON_WRDS_NWM
+             || ( Objects.nonNull( interfaceShortHand )
+                  && interfaceShortHand.equals( InterfaceShortHand.WRDS_NWM ) ) )
         {
             WrdsNwmReader reader = new WrdsNwmReader( this.getSystemSettings(),
                                                       this.getDatabase(),

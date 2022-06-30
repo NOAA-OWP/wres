@@ -1,7 +1,12 @@
 package wres.io.reading;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -79,10 +84,10 @@ import wres.system.SystemSettings;
 public class WrdsNwmReader implements Callable<List<IngestResult>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WrdsNwmReader.class );
-    private static Pair<SSLContext, X509TrustManager> SSL_CONTEXT
+    private static Pair<SSLContext, X509TrustManager> sslContext
             = ReadValueManager.getSslContextTrustingDodSigner();
     private static final boolean TRACK_TIMINGS = false;
-    private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT,
+    private static final WebClient WEB_CLIENT = new WebClient( sslContext,
                                                                TRACK_TIMINGS );
     private static final ObjectMapper JSON_OBJECT_MAPPER =
             new ObjectMapper().registerModule( new JavaTimeModule() )
@@ -160,21 +165,19 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         else if ( this.getUri()
                       .getPath()
                       .toLowerCase()
-                      .contains( "medium_range" ) )
+                      .contains( "medium_range" )
+                  && !type.equals( DatasourceType.ENSEMBLE_FORECASTS )
+                  && !type.equals( DatasourceType.SINGLE_VALUED_FORECASTS ) )
         {
-            if ( !type.equals( DatasourceType.ENSEMBLE_FORECASTS )
-                 && !type.equals( DatasourceType.SINGLE_VALUED_FORECASTS ) )
-            {
-                throw new UnsupportedOperationException(
-                        ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(),
-                                                               this.getDataSource()
-                                                                   .getContext() )
-                        + " source specified type '"
-                        + type.value()
-                        + "' but the word 'medium_range' appeared in the URI. "
-                        + "You probably want 'ensemble forecasts' type or to "
-                        + "change the source URI to point to another type." );
-            }
+            throw new UnsupportedOperationException(
+                                                     ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(),
+                                                                                            this.getDataSource()
+                                                                                                .getContext() )
+                                                     + " source specified type '"
+                                                     + type.value()
+                                                     + "' but the word 'medium_range' appeared in the URI. "
+                                                     + "You probably want 'ensemble forecasts' type or to "
+                                                     + "change the source URI to point to another type." );
         }
         
         // Could be an NPE, but the data source is not null and the nullity of the variable is an effect, not a cause
@@ -270,42 +273,27 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
     }
 
     @Override
-    public List<IngestResult> call() throws IngestException
+    public List<IngestResult> call()
     {
         List<IngestResult> ingested = new ArrayList<>();
         NwmRootDocument document;
         URI uri = this.getUri();
-
-        try (WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( uri ))
+        
+        if ( uri.getScheme().startsWith( "file" ) )
         {
-            if ( response.getStatusCode() >= 400 && response.getStatusCode() < 500 )
-            {
-                LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}",
-                             response.getStatusCode(),
-                             uri );
-
-                String possibleError = this.tryToReadErrorMessage( response );
-
-                if ( possibleError != null )
-                {
-                    LOGGER.warn( "Found this WRDS error message from URI {}: {}",
-                                 uri, possibleError );
-                }
-
-                return Collections.emptyList();
-            }
-
-            document = this.getJsonObjectMapper().readValue( response.getResponse(), NwmRootDocument.class );
-            LOGGER.debug( "Parsed this document: {}", document );
+            document = this.readNwmRootDocumentFromFile( uri );
         }
-        catch ( IOException ioe )
+        else
         {
-            this.shutdownNow();
-            throw new PreIngestException( "Failed to read NWM data from "
-                                          + uri,
-                                          ioe );
+            document = this.readNwmRootDocumentFromWebSource( uri );
         }
-
+        
+        if ( Objects.isNull( document ) )
+        {
+            LOGGER.debug( "Failed to read a root document from {}.", uri );
+            return Collections.emptyList();
+        }
+        
         List<String> wrdsWarnings = document.getWarnings();
 
         if ( wrdsWarnings != null && !wrdsWarnings.isEmpty() )
@@ -429,8 +417,8 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         }
         catch ( InterruptedException ie )
         {
-            LOGGER.warn( "Interrupted while ingesting NWM data from "
-                         + uri, ie );
+            String message = "Interrupted while ingesting NWM data from " + uri;
+            LOGGER.warn( message, ie );
             Thread.currentThread().interrupt();
         }
         catch ( ExecutionException ee )
@@ -445,6 +433,76 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
 
         return Collections.unmodifiableList( ingested );
     }
+    
+    /**
+     * Reads the root document from a URI file scheme source.
+     * @param uri the uri
+     * @return the root document
+     */
+    private NwmRootDocument readNwmRootDocumentFromFile( URI uri )
+    {
+        LOGGER.debug( "Reading a WRDS NWM source from a file, {}.", uri );
+
+        Path forecastPath = Paths.get( uri );
+        File forecastFile = forecastPath.toFile();
+
+        try ( InputStream stream = new FileInputStream( forecastFile ) )
+        {
+            NwmRootDocument document = this.getJsonObjectMapper().readValue( stream, NwmRootDocument.class );
+            LOGGER.debug( "Parsed this document: {}", document );
+            return document;
+        }
+        catch ( IOException ioe )
+        {
+            this.shutdownNow();
+            throw new PreIngestException( "Failed to read NWM data from "
+                                          + uri,
+                                          ioe );
+        }
+    }
+    
+    /**
+     * Reads the root document from a web source.
+     * @param uri the uri
+     * @return the root document or null if the document could not be read but no exception was thrown
+     */
+    private NwmRootDocument readNwmRootDocumentFromWebSource( URI uri )
+    {
+        LOGGER.debug( "Reading a WRDS NWM source from a web source, {}.", uri );
+
+        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( uri ) )
+        {
+            if ( response.getStatusCode() >= 400 && response.getStatusCode() < 500 )
+            {
+                LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}",
+                             response.getStatusCode(),
+                             uri );
+
+                String possibleError = this.tryToReadErrorMessage( response );
+
+                if ( possibleError != null )
+                {
+                    LOGGER.warn( "Found this WRDS error message from URI {}: {}",
+                                 uri,
+                                 possibleError );
+                }
+
+                return null;
+            }
+
+            NwmRootDocument document = this.getJsonObjectMapper()
+                                           .readValue( response.getResponse(), NwmRootDocument.class );
+            LOGGER.debug( "Parsed this document: {}", document );
+            return document;
+        }
+        catch ( IOException ioe )
+        {
+            this.shutdownNow();
+            throw new PreIngestException( "Failed to read NWM data from "
+                                          + uri,
+                                          ioe );
+        }
+    }  
 
     /**
      * Transform deserialized JSON document (now a POJO tree) to TimeSeries.
