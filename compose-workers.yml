@@ -16,7 +16,7 @@ volumes:
             device: "${NFS_HOME_DIR_DEVICE}"
 services:
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20220622-c4b73ee"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20220630-0f4cc8e"
         restart: always
         depends_on:
             eventsbroker:
@@ -60,7 +60,7 @@ services:
          - 5673
         ports:
          - 15673:15673
-        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20220622-c4b73ee"
+        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20220628-dc35e81"
         restart: always
         volumes:
          # For heap-dump files
@@ -82,7 +82,7 @@ services:
         depends_on:
             eventsbroker:
                 condition: service_started
-        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20220622-c4b73ee"
+        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20220629-98b2410"
         restart: always
         volumes:
          # To write graphics outputs
