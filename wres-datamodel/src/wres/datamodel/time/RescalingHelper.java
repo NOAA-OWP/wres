@@ -107,10 +107,8 @@ class RescalingHelper
     private static final String DISCOVERED_THAT_THE_VALUES_WERE_NOT_EVENLY_SPACED_WITHIN_THE_PERIOD_IDENTIFIED =
             ", discovered that the values were not evenly spaced within the period. Identified ";
 
-    private static final String UPSCALING = "upscaling.";
-
-    private static final String DISCOVERED_FEWER_THAN_TWO_EVENTS_IN_THE_COLLECTION_WHICH_IS_INSUFFICIENT_FOR =
-            ", discovered fewer than two events in the collection, which is insufficient for ";
+    private static final String DISCOVERED_FEWER_THAN_TWO_EVENTS_IN_THE_COLLECTION =
+            ", discovered fewer than two events in the collection";
 
     private static final String ENDING_AT = " ending at ";
 
@@ -128,8 +126,8 @@ class RescalingHelper
     private static final String THE_LENIENCY_STATUS_WAS = ". The leniency status was: ";
 
     private static final String DESIRED_TIME_SCALE_LENIENT = " Consider setting the option <desiredTimeScale "
-                                                             + "lenient=\"true\"> to ignore missing data or to allow "
-                                                             + "for unequally spaced values.";
+                                                             + "lenient=\"true\"> to ignore missing data, accept "
+                                                             + "limited data and allow for unequally spaced values.";
 
     /** Default group rescaling status. */
     private static final GroupRescalingStatus DEFAULT_GROUP_RESCALING_STATUS =
@@ -498,6 +496,8 @@ class RescalingHelper
         Objects.requireNonNull( endsAt );
         Objects.requireNonNull( desiredTimeScale );
 
+        String leniencyStatus = RescalingHelper.getLeniencyStatusString( lenient );
+
         if ( events.size() < 2 )
         {
             String message = WHILE_ATTEMPING_TO_UPSCALE_A_COLLECTION_OF + events.size()
@@ -505,12 +505,11 @@ class RescalingHelper
                              + desiredTimeScale
                              + ENDING_AT
                              + endsAt
-                             + DISCOVERED_FEWER_THAN_TWO_EVENTS_IN_THE_COLLECTION_WHICH_IS_INSUFFICIENT_FOR
-                             + UPSCALING;
+                             + DISCOVERED_FEWER_THAN_TWO_EVENTS_IN_THE_COLLECTION;
 
             List<EvaluationStatusMessage> validationEvents =
                     List.of( EvaluationStatusMessage.debug( EvaluationStage.RESCALING, message ) );
-            return new GroupRescalingStatus( false, validationEvents );
+            return new GroupRescalingStatus( lenient, validationEvents );
         }
 
         // Unpack the event times
@@ -532,8 +531,6 @@ class RescalingHelper
                              + endsAt
                              + DISCOVERED_THAT_THE_VALUES_WERE_NOT_EVENLY_SPACED_WITHIN_THE_PERIOD_IDENTIFIED
                              + THESE_INTERVALS_BEFORE_STOPPING;
-
-            String leniencyStatus = RescalingHelper.getLeniencyStatusString( lenient );
 
             Instant last = null;
             Duration lastPeriod = null;

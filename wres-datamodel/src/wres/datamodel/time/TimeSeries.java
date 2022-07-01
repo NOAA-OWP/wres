@@ -260,9 +260,10 @@ public class TimeSeries<T>
 
             if ( duplicates > 0 )
             {
-                throw new IllegalArgumentException( "The events contained " + duplicates
-                                                    + " duplicates by valid time, "
-                                                    + "which is not allowed." );
+                throw new IllegalArgumentException( "While building a time-series from a set of events, discovered "
+                                                    + duplicates
+                                                    + " duplicate events by valid time. A time-series cannot contain "
+                                                    + "duplicate events." );
             }
 
             this.events = events;
@@ -287,9 +288,9 @@ public class TimeSeries<T>
 
             if ( !successfullyAdded )
             {
-                throw new IllegalArgumentException( "Attempted to add an event at the same valid datetime as an "
-                                                    + "existing event, which is not allowed. The duplicate event "
-                                                    + "by time is '"
+                throw new IllegalArgumentException( "While building a time-series, attempted to add an event at the "
+                                                    + "same valid datetime as an existing event, which is not allowed. "
+                                                    + "The duplicate event by time is '"
                                                     + event
                                                     + "'." );
             }
