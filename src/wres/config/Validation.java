@@ -2201,7 +2201,7 @@ public class Validation
         valid = Validation.isDesiredTimeScaleFunctionValid( projectConfigPlus, pairConfig ) && valid;
 
         // Check that the period is valid 
-        valid = Validation.isDesiredTimeScalePeriodValid( projectConfigPlus, pairConfig ) && valid;
+        valid = Validation.isDesiredTimeScaleConsistentWithExistingTimeScales( projectConfigPlus, pairConfig ) && valid;
 
         // Check that the monthdays are valid
         valid = Validation.areDesiredTimeScaleMonthDaysValid( projectConfigPlus, pairConfig ) && valid;
@@ -2729,65 +2729,101 @@ public class Validation
      * @return true if the time aggregation period associated with the desiredTimeScale is valid
      */
 
-    private static boolean isDesiredTimeScalePeriodValid( ProjectConfigPlus projectConfigPlus,
-                                                          PairConfig pairConfig )
+    private static boolean isDesiredTimeScaleConsistentWithExistingTimeScales( ProjectConfigPlus projectConfigPlus,
+                                                                               PairConfig pairConfig )
     {
         // Only proceed if the desiredTimeScale is non-null and one or more existingTimeScale
         // are non-null
-        TimeScaleConfig timeAgg = pairConfig.getDesiredTimeScale();
+        TimeScaleConfig desiredTimeScaleDeclaration = pairConfig.getDesiredTimeScale();
         Inputs input = projectConfigPlus.getProjectConfig().getInputs();
         TimeScaleConfig left = input.getLeft().getExistingTimeScale();
         TimeScaleConfig right = input.getRight().getExistingTimeScale();
         TimeScaleConfig baseline = null;
+        
         if ( input.getBaseline() != null )
         {
             baseline = input.getBaseline().getExistingTimeScale();
         }
-        if ( timeAgg == null )
+
+        if ( desiredTimeScaleDeclaration == null )
         {
+            LOGGER.debug( "A desired time scale was not discovered, so it cannot be inconsistent with any existing "
+                          + "time scale." );
+            
             return true;
         }
+
         if ( left == null && right == null && baseline == null )
         {
+            LOGGER.debug( "An existing time scale was not discovered, so it cannot be inconsistent with any desired "
+                    + "time scale." );
+            
+            return true;
+        }
+        
+        TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( desiredTimeScaleDeclaration );
+
+        // Currently checks the period only. If/when an existing time scale can include month-days, then update this
+        // validation to consider the month-days
+        if ( !desiredTimeScale.hasPeriod() )
+        {
+            LOGGER.debug( "The desired time scale does not have a declared period, so the period cannot be "
+                          + "inconsistent with the period associated with any existing time scale." );
+
             return true;
         }
 
-        // Assume fine
+        boolean returnMe = Validation.isDesiredTimeScaleConsistentWithExistingTimeScales( left,
+                                                                                          desiredTimeScale,
+                                                                                          LeftOrRightOrBaseline.LEFT,
+                                                                                          projectConfigPlus );
+
+        returnMe = Validation.isDesiredTimeScaleConsistentWithExistingTimeScales( right,
+                                                                                  desiredTimeScale,
+                                                                                  LeftOrRightOrBaseline.RIGHT,
+                                                                                  projectConfigPlus )
+                   && returnMe;
+
+        return Validation.isDesiredTimeScaleConsistentWithExistingTimeScales( baseline,
+                                                                              desiredTimeScale,
+                                                                              LeftOrRightOrBaseline.BASELINE,
+                                                                              projectConfigPlus )
+               && returnMe;
+    }
+    
+    /**
+     * Returns true if the desired time scale is consistent with the existing time scale.
+     * @param existingConfig the existing time scale configuration
+     * @param desired the desired time scale
+     * @param lrb the data orientation
+     * @param projectConfigPlus the project configuration
+     * @return true if the time scales are consistent, false otherwise
+     */
+    
+    private static boolean isDesiredTimeScaleConsistentWithExistingTimeScales( TimeScaleConfig existingConfig,
+                                                                               TimeScaleOuter desired,
+                                                                               LeftOrRightOrBaseline lrb,
+                                                                               ProjectConfigPlus projectConfigPlus )
+    {
         boolean returnMe = true;
 
-        Duration desired = Duration.of( timeAgg.getPeriod(),
-                                        ChronoUnit.valueOf( timeAgg.getUnit().toString().toUpperCase() ) );
-        if ( left != null && !TimeScaleOuter.of( left ).isInstantaneous() )
+        if ( Objects.nonNull( existingConfig ) )
         {
-            Duration leftExists = Duration.of( left.getPeriod(),
-                                               ChronoUnit.valueOf( left.getUnit().toString().toUpperCase() ) );
-            returnMe = isDesiredTimeScalePeriodConsistent( projectConfigPlus, desired, leftExists, left, "left" );
+            TimeScaleOuter existing = TimeScaleOuter.of( existingConfig );
+
+            if ( !existing.isInstantaneous() )
+            {
+                returnMe = Validation.isDesiredTimeScalePeriodConsistent( projectConfigPlus,
+                                                                          desired.getPeriod(),
+                                                                          existing.getPeriod(),
+                                                                          existingConfig,
+                                                                          lrb.toString() );
+            }
         }
-        if ( right != null && !TimeScaleOuter.of( right ).isInstantaneous() )
-        {
-            Duration rightExists = Duration.of( right.getPeriod(),
-                                                ChronoUnit.valueOf( right.getUnit().toString().toUpperCase() ) );
-            returnMe = isDesiredTimeScalePeriodConsistent( projectConfigPlus,
-                                                           desired,
-                                                           rightExists,
-                                                           right,
-                                                           "right" )
-                       && returnMe;
-        }
-        if ( baseline != null && !TimeScaleOuter.of( baseline ).isInstantaneous() )
-        {
-            Duration baselineExists = Duration.of( baseline.getPeriod(),
-                                                   ChronoUnit.valueOf( baseline.getUnit().toString().toUpperCase() ) );
-            returnMe = isDesiredTimeScalePeriodConsistent( projectConfigPlus,
-                                                           desired,
-                                                           baselineExists,
-                                                           baseline,
-                                                           "baseline" )
-                       && returnMe;
-        }
+        
         return returnMe;
     }
-
+    
     /**
      * Returns true if the desired aggregation period is consistent with the existing aggregation period, false 
      * otherwise. A time aggregation may be valid in principle without being supported by the system in practice.
