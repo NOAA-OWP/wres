@@ -68,8 +68,20 @@ import wres.system.SystemSettings;
 public class ReadValueManager
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ReadValueManager.class );
-    private static final Pair<SSLContext,X509TrustManager> SSL_CONTEXT
-            = ReadValueManager.getSslContextTrustingDodSignerForWrds();
+    private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT;
+
+    static
+    {
+        try
+        {
+            SSL_CONTEXT = ReadValueManager.getSslContextTrustingDodSignerForWrds();
+        }
+        catch ( PreIngestException e )
+        {
+            throw new ExceptionInInitializerError( "Failed to acquire the TLS context for connecting to WRDS: "
+                    + e.getMessage() );
+        }
+    }
 
     private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT );
 
@@ -465,6 +477,7 @@ public class ReadValueManager
      * (WRDS) services.
      * Looks for a system property first, then a pem on the classpath, then a default trust manager.
      * @return the resulting SSLContext or the default SSLContext if not found.
+     * @throws PreIngestException if the context and trust manager cannot be built for any reason
      */
     public static Pair<SSLContext,X509TrustManager> getSslContextTrustingDodSignerForWrds()
     {

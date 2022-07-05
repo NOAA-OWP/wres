@@ -16,6 +16,7 @@ import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.io.geography.wrds.version.WrdsLocationRootVersionDocument;
+import wres.io.reading.PreIngestException;
 import wres.io.reading.wrds.ReadValueManager;
 import wres.io.thresholds.ThresholdReadingException;
 import wres.io.thresholds.exceptions.StreamIOException;
@@ -47,7 +48,20 @@ import java.util.stream.Collectors;
 public final class GeneralWRDSReader
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( GeneralWRDSReader.class );
-    private static Pair<SSLContext, X509TrustManager> SSL_CONTEXT = ReadValueManager.getSslContextTrustingDodSignerForWrds();
+    private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT;
+    static
+    {
+        try
+        {
+            SSL_CONTEXT = ReadValueManager.getSslContextTrustingDodSignerForWrds();
+        }
+        catch ( PreIngestException e )
+        {
+            throw new ExceptionInInitializerError( "Failed to acquire the TLS context for connecting to WRDS: "
+                    + e.getMessage() );
+        }
+    }
+    
     private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT, true );
     private static final ObjectMapper JSON_OBJECT_MAPPER =
             new ObjectMapper().registerModule( new JavaTimeModule() )
