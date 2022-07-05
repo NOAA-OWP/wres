@@ -54,7 +54,7 @@ import wres.io.utilities.WebClient;
 class WrdsFeatureService
 {
     private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT =
-            ReadValueManager.getSslContextTrustingDodSigner();
+            ReadValueManager.getSslContextTrustingDodSignerForWrds();
     private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT );
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     

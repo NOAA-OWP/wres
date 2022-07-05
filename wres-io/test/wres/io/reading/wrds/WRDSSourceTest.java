@@ -37,7 +37,6 @@ import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.TimeScales;
-import wres.io.data.caching.Variables;
 import wres.io.reading.DataSource;
 import wres.io.reading.IngestResult;
 import wres.io.reading.PreIngestException;
@@ -3428,7 +3427,6 @@ public class WRDSSourceTest
         ReadValueManager readValueManager = Mockito.spy(
                 new ReadValueManager( this.mockSystemSettings,
                                       this.mockDatabase,
-                                      this.mockDataSourcesCache,
                                       this.mockFeaturesCache,
                                       this.mockTimeScalesCache,
                                       this.mockEnsemblesCache,
@@ -3567,7 +3565,6 @@ public class WRDSSourceTest
         ReadValueManager readValueManager = Mockito.spy(
                 new ReadValueManager( this.mockSystemSettings,
                                       this.mockDatabase,
-                                      this.mockDataSourcesCache,
                                       this.mockFeaturesCache,
                                       this.mockTimeScalesCache,
                                       this.mockEnsemblesCache,
@@ -3693,7 +3690,6 @@ public class WRDSSourceTest
         ReadValueManager readValueManager = Mockito.spy(
                 new ReadValueManager( this.mockSystemSettings,
                                       this.mockDatabase,
-                                      this.mockDataSourcesCache,
                                       this.mockFeaturesCache,
                                       this.mockTimeScalesCache,
                                       this.mockEnsemblesCache,
@@ -3800,7 +3796,6 @@ public class WRDSSourceTest
         ReadValueManager readValueManager = Mockito.spy(
                 new ReadValueManager( this.mockSystemSettings,
                                       this.mockDatabase,
-                                      this.mockDataSourcesCache,
                                       this.mockFeaturesCache,
                                       this.mockTimeScalesCache,
                                       this.mockEnsemblesCache,
