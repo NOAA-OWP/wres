@@ -29,7 +29,17 @@ test
 {
     // Don't forget the magic word for JUnit 5:
     useJUnitPlatform()
-    maxHeapSize = "128m"
+    maxHeapSize = "128m" 
+
+    // Pass through the expected path to the WRDS CA cert
+    if( project.hasProperty( 'wres.wrdsCertificateFileToTrust') )
+    {
+        systemProperty "wres.wrdsCertificateFileToTrust", project.getProperty( 'wres.wrdsCertificateFileToTrust' );
+    }
+    else
+    {
+        println( "WARNING: failed to discover the gradle system property wres.wrdsCertificateFileToTrust." )
+    }
 
     testLogging
     {
