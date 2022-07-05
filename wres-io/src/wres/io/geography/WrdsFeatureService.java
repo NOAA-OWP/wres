@@ -53,8 +53,21 @@ import wres.io.utilities.WebClient;
 
 class WrdsFeatureService
 {
-    private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT =
-            ReadValueManager.getSslContextTrustingDodSignerForWrds();
+    private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT;
+
+    static
+    {
+        try
+        {
+            SSL_CONTEXT = ReadValueManager.getSslContextTrustingDodSignerForWrds();
+        }
+        catch ( PreIngestException e )
+        {
+            throw new ExceptionInInitializerError( "Failed to acquire the TLS context for connecting to WRDS: "
+                                                   + e.getMessage() );
+        }
+    }
+    
     private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT );
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     

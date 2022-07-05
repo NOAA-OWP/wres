@@ -83,8 +83,20 @@ import wres.system.SystemSettings;
 public class WrdsNwmReader implements Callable<List<IngestResult>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WrdsNwmReader.class );
-    private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT
-            = ReadValueManager.getSslContextTrustingDodSignerForWrds();
+    private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT;
+    
+    static
+    {
+        try
+        {
+            SSL_CONTEXT = ReadValueManager.getSslContextTrustingDodSignerForWrds();
+        }
+        catch ( PreIngestException e )
+        {
+            throw new ExceptionInInitializerError( "Failed to acquire a trust manager for WRDS: " + e );
+        }
+    }
+    
     private static final boolean TRACK_TIMINGS = false;
     private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT,
                                                                TRACK_TIMINGS );

@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import wres.io.reading.PreIngestException;
 import wres.io.reading.wrds.ReadValueManager;
 import wres.io.reading.wrds.nwm.NwmRootDocument;
 import wres.io.utilities.WebClient;
@@ -43,8 +44,21 @@ public class WrdsNwmTest
     private static final ObjectMapper JSON_OBJECT_MAPPER =
             new ObjectMapper().registerModule( new JavaTimeModule() )
                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
-    private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT =
-            ReadValueManager.getSslContextTrustingDodSignerForWrds();
+    private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT;
+    
+    static
+    {
+        try
+        {
+            SSL_CONTEXT = ReadValueManager.getSslContextTrustingDodSignerForWrds();
+        }
+        catch ( PreIngestException e )
+        {
+            throw new ExceptionInInitializerError( "Failed to acquire the TLS context for connecting to WRDS: "
+                    + e.getMessage() );
+        }
+    }
+    
     private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT, true );
     private static final URI WRDS_NWM_URI_ONE =
             URI.create( "https://" + WRDS_HOSTNAME
