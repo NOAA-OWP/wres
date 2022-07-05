@@ -757,7 +757,7 @@ public class PoolSlicer
             EnsembleAverageType type = filtered.iterator()
                                                .next();
             builder.setEnsembleAverageType( type );
-            LOGGER.debug( "While finding the union of pool metadatas, sety the ensemble average type to {}.",
+            LOGGER.debug( "While finding the union of pool metadatas, set the ensemble average type to {}.",
                           type );
         }
     }

@@ -848,7 +848,9 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                       expectedWindow,
                                                                       null,
                                                                       null,
-                                                                      false );
+                                                                      false,
+                                                                      0L,
+                                                                      wres.statistics.generated.Pool.EnsembleAverageType.MEAN );
 
         PoolMetadata expectedSampleMeta = PoolMetadata.of( evaluation, pool );
 
