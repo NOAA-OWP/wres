@@ -44,7 +44,7 @@ public class WrdsNwmTest
             new ObjectMapper().registerModule( new JavaTimeModule() )
                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
     private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT =
-            ReadValueManager.getSslContextTrustingDodSigner();
+            ReadValueManager.getSslContextTrustingDodSignerForWrds();
     private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT, true );
     private static final URI WRDS_NWM_URI_ONE =
             URI.create( "https://" + WRDS_HOSTNAME
