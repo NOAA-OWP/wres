@@ -191,7 +191,7 @@ public class ReadValueManagerTest
     @Test
     public void testReplaceMissingValues() throws StreamReadException, DatabindException, IOException
     {
-        ReadValueManager manager = new ReadValueManager( null, null, null, null, null, null, null, null, null, null );
+        ReadValueManager manager = new ReadValueManager( null, null, null, null, null, null, null, null, null );
         ObjectMapper mapper = new ObjectMapper();
 
         byte[] rawForecast = VALID_AHPS_v2_BODY_WITH_MISSINGS.getBytes();
@@ -373,7 +373,7 @@ public class ReadValueManagerTest
                                                         LeftOrRightOrBaseline.RIGHT ),
                                                fakeAhpsUri );
 
-        ReadValueManager manager = new ReadValueManager( null, null, null, null, null, null, null, null, dataSource, null );
+        ReadValueManager manager = new ReadValueManager( null, null, null, null, null, null, null, dataSource, null );
         ObjectMapper mapper = new ObjectMapper();
 
         byte[] rawData = VALID_WRDS_OBS_BODY_WITH_MISSINGS.getBytes();

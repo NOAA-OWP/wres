@@ -10,7 +10,6 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.net.http.HttpTimeoutException;
-import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -21,8 +20,6 @@ import java.util.logging.Level;
 import java.util.zip.GZIPInputStream;
 
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
 import okhttp3.HttpUrl;
@@ -33,8 +30,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wres.io.reading.IngestException;
-import wres.io.reading.PreIngestException;
-import wres.system.SSLStuffThatTrustsOneCertificate;
 
 /**
  * Allows caller to get an InputStream from a URI with retry with exponential
@@ -108,60 +103,6 @@ public class WebClient
     public WebClient( Pair<SSLContext,X509TrustManager> sslGoo )
     {
         this( sslGoo, false );
-    }
-
-    public static Pair<SSLContext,X509TrustManager> createSSLContext(String trustFileOnClassPath)
-    {
-        try ( InputStream inputStream = WebClient.class
-                .getClassLoader()
-                .getResourceAsStream( trustFileOnClassPath ) )
-        {
-            // Avoid sending null, log a warning instead, use default.
-            if ( inputStream == null )
-            {
-                LOGGER.warn( "Failed to load {} from classpath. Using default SSLContext.",
-                        trustFileOnClassPath );
-
-                X509TrustManager theTrustManager = null;
-                for ( TrustManager manager : TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() )
-                        .getTrustManagers() )
-                {
-                    if ( manager instanceof X509TrustManager )
-                    {
-                        LOGGER.warn( "Failed to load {} from classpath. Using this X509TrustManager: {}",
-                                trustFileOnClassPath, manager );
-                        theTrustManager = (X509TrustManager) manager;
-                    }
-                }
-                if ( Objects.isNull( theTrustManager) )
-                {
-                    throw new UnsupportedOperationException( "Could not find a default X509TrustManager" );
-                }
-                return Pair.of( SSLContext.getDefault(), theTrustManager );
-            }
-            SSLStuffThatTrustsOneCertificate sslGoo =
-                    new SSLStuffThatTrustsOneCertificate( inputStream );
-            return Pair.of( sslGoo.getSSLContext(), sslGoo.getTrustManager() );
-        }
-        catch ( IOException ioe )
-        {
-            throw new PreIngestException( "Unable to read "
-                    + trustFileOnClassPath
-                    + " from classpath in order to add it"
-                    + " to trusted certificate list for "
-                    + "requests made to WRDS services.",
-                    ioe );
-        }
-        catch ( NoSuchAlgorithmException nsae )
-        {
-            throw new PreIngestException( "Unable to find "
-                    + trustFileOnClassPath
-                    + " on classpath in order to add it"
-                    + " to trusted certificate list for "
-                    + "requests made to WRDS services "
-                    + "and furthermore could not get the "
-                    + "default SSLContext.", nsae );
-        }
     }
 
     private OkHttpClient getHttpClient()

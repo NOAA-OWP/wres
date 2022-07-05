@@ -162,7 +162,6 @@ public class WRDSSource extends BasicSource
     {
         return new ReadValueManager( this.getSystemSettings(),
                                      this.getDatabase(),
-                                     this.getDataSourcesCache(),
                                      this.getFeaturesCache(),
                                      this.getTimeScalesCache(),
                                      this.getEnsemblesCache(),

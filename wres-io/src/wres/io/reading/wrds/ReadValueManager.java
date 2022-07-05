@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
@@ -49,7 +50,6 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.concurrency.TimeSeriesIngester;
-import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
@@ -69,13 +69,12 @@ public class ReadValueManager
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ReadValueManager.class );
     private static Pair<SSLContext,X509TrustManager> SSL_CONTEXT
-            = ReadValueManager.getSslContextTrustingDodSigner();
+            = ReadValueManager.getSslContextTrustingDodSignerForWrds();
 
     private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT );
 
     private final SystemSettings systemSettings;
     private final Database database;
-    private final DataSources dataSourcesCache;
     private final Features featuresCache;
     private final TimeScales timeScalesCache;
     private final Ensembles ensemblesCache;
@@ -86,7 +85,6 @@ public class ReadValueManager
 
     ReadValueManager( SystemSettings systemSettings,
                       Database database,
-                      DataSources dataSourcesCache,
                       Features featuresCache,
                       TimeScales timeScalesCache,
                       Ensembles ensemblesCache,
@@ -97,7 +95,6 @@ public class ReadValueManager
     {
         this.systemSettings = systemSettings;
         this.database = database;
-        this.dataSourcesCache = dataSourcesCache;
         this.featuresCache = featuresCache;
         this.timeScalesCache = timeScalesCache;
         this.ensemblesCache = ensemblesCache;
@@ -115,11 +112,6 @@ public class ReadValueManager
     private Database getDatabase()
     {
         return this.database;
-    }
-
-    private DataSources getDataSourcesCache()
-    {
-        return this.dataSourcesCache;
     }
 
     private Features getFeaturesCache()
@@ -469,13 +461,40 @@ public class ReadValueManager
 
 
     /**
-     * Get an SSLContext that has a dod intermediate certificate trusted.
-     * Uses a pem on the classpath.
+     * Get an SSLContext that has a dod intermediate certificate trusted for use with Water Resources Data Service 
+     * (WRDS) services.
+     * Looks for a system property first, then a pem on the classpath, then a default trust manager.
      * @return the resulting SSLContext or the default SSLContext if not found.
      */
-    public static Pair<SSLContext,X509TrustManager> getSslContextTrustingDodSigner()
+    public static Pair<SSLContext,X509TrustManager> getSslContextTrustingDodSignerForWrds()
     {
-        String trustFileOnClassPath = "dod_sw_ca-54_expires_2022-11.pem";
+        // Look for a system property first: #106160
+        String pathToTrustFile = System.getProperty( "wres.wrdsCertificateFileToTrust" );
+        if ( Objects.nonNull( pathToTrustFile ) )
+        {
+            LOGGER.debug( "Discovered the system property wres.wrdsCertificateFileToTrust with value {}.",
+                          pathToTrustFile );
+
+            Path path = Paths.get( pathToTrustFile );
+            try ( InputStream trustStream = Files.newInputStream( path ) )
+            {
+                SSLStuffThatTrustsOneCertificate sslGoo =
+                        new SSLStuffThatTrustsOneCertificate( trustStream );
+                return Pair.of( sslGoo.getSSLContext(), sslGoo.getTrustManager() );
+            }
+            catch ( IOException e )
+            {
+                throw new PreIngestException( "Unable to read "
+                                              + pathToTrustFile
+                                              + " from the supplied system property, wres.wrdsCertificateFileToTrust, "
+                                              + "in order to add it to trusted certificate list for requests made to "
+                                              + "WRDS services.",
+                                              e );
+            }
+        }
+
+        // Try classpath
+        String trustFileOnClassPath = "DODSWCA_60.pem";
         try ( InputStream inputStream = ReadValueManager.class
                 .getClassLoader()
                 .getResourceAsStream( trustFileOnClassPath ) )

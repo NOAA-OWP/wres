@@ -1,10 +1,9 @@
 package wres.io.reading;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -85,7 +84,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WrdsNwmReader.class );
     private static Pair<SSLContext, X509TrustManager> sslContext
-            = ReadValueManager.getSslContextTrustingDodSigner();
+            = ReadValueManager.getSslContextTrustingDodSignerForWrds();
     private static final boolean TRACK_TIMINGS = false;
     private static final WebClient WEB_CLIENT = new WebClient( sslContext,
                                                                TRACK_TIMINGS );
@@ -444,9 +443,8 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         LOGGER.debug( "Reading a WRDS NWM source from a file, {}.", uri );
 
         Path forecastPath = Paths.get( uri );
-        File forecastFile = forecastPath.toFile();
 
-        try ( InputStream stream = new FileInputStream( forecastFile ) )
+        try ( InputStream stream = Files.newInputStream( forecastPath ) )
         {
             NwmRootDocument document = this.getJsonObjectMapper().readValue( stream, NwmRootDocument.class );
             LOGGER.debug( "Parsed this document: {}", document );
