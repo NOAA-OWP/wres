@@ -42,7 +42,7 @@ plugins
     //id 'org.uulib.gradle.markdown' version '0.0.1'
 
     // To generate de/serialization classes for message bodies
-    id 'com.google.protobuf' version '0.8.18'
+    id 'com.google.protobuf' version '0.8.19'
 
     // To create trusted certificate files (.jks aka cacerts) from dir of .pem
     // (Not working: not friendly to our directory structure nor submodules)
@@ -370,12 +370,12 @@ project(':wres-datamodel')
         testImplementation 'org.mockito:mockito-core:4.6.1'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-M1'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-M1'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-RC1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-RC1'
 
         // Backwards compatibility for JUnit 4 tests
         testCompileOnly 'junit:junit:4.13.2'
-        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.9.0-M1'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.9.0-RC1'
     }
     // Facilitate unit tests with JUnit
     test {
@@ -480,12 +480,12 @@ project(':wres-io')
         testImplementation 'org.mock-server:mockserver-netty:5.13.2'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-M1'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-M1'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-RC1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-RC1'
 
         // Backwards compatibility for JUnit 4 tests
         testImplementation 'junit:junit:4.13.2'
-        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.9.0-M1'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.9.0-RC1'
 
         // In-memory implementation of a java.nio.file abstract file system api
         // to test writing of files without actually writing files on the host machine
@@ -548,12 +548,12 @@ project(':wres-metrics')
         testImplementation 'org.mockito:mockito-core:4.6.1'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-M1'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-M1'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-RC1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-RC1'
 
         // Backwards compatibility for JUnit 4 tests
         testCompileOnly 'junit:junit:4.13.2'
-        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.9.0-M1'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.9.0-RC1'
     }
 
     test
@@ -676,8 +676,8 @@ project(':wres-statistics')
         api 'com.google.protobuf:protobuf-java:3.20.1'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-M1'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-M1'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-RC1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-RC1'
     }
 
     // Facilitate unit tests with JUnit
@@ -803,12 +803,12 @@ project(':wres-vis')
         runtimeOnly group: 'org.slf4j', name: 'log4j-over-slf4j', version: '2.0.0-alpha7'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-M1'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-M1'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-RC1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-RC1'
 
         // Backwards compatibility for JUnit 4 tests
         testImplementation 'junit:junit:4.13.2'
-        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.9.0-M1'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.9.0-RC1'
 
         // Mocking help
         testImplementation 'org.mockito:mockito-core:4.6.1'
@@ -850,8 +850,8 @@ project(':wres-config')
         // Trying json-values based on vavr, potential replacement for xjc/jaxb.
         testImplementation 'com.github.imrafaelmerino:json-values:10.0.0'
 
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-M1'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-M1'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-RC1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-RC1'
 
         // May help in future with #37380, may need to modify sources
         // available at https://git.apache.org/cxf-xjc-utils.git in dv dir:
@@ -1459,8 +1459,8 @@ project(':wres-eventsbroker')
         }
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-M1'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-M1'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-RC1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-RC1'
     }
 
     // Facilitate unit tests with JUnit
@@ -1507,8 +1507,8 @@ project(':wres-events')
         }
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-M1'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-M1'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-RC1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-RC1'
 
         // Mocking help
         testImplementation 'org.mockito:mockito-core:4.6.1'
@@ -1800,12 +1800,12 @@ dependencies
     implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
     // JUnit 5 API and runtime
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-M1'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-M1'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0-RC1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0-RC1'
 
     // Backwards compatibility for JUnit 4 tests
     testCompileOnly 'junit:junit:4.13.2'
-    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.9.0-M1'
+    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.9.0-RC1'
 
     testImplementation 'org.mockito:mockito-core:4.6.1'
 
