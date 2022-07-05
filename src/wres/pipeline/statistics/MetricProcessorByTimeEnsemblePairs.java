@@ -148,6 +148,19 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         Pool<Pair<Double, Ensemble>> inputNoMissing =
                 PoolSlicer.transform( unpacked, Slicer.leftAndEachOfRight( MetricProcessor.ADMISSABLE_DATA ) );
 
+        // Add the ensemble average type used by this processor to the pool metadata. It is convenient to use a pool
+        // transformer with a metadata mapper. The pool transformation itself is an identity transformation, only the
+        // metadata is changed
+        String typeName = this.getMetrics()
+                              .getEnsembleAverageType()
+                              .name();
+        wres.statistics.generated.Pool.EnsembleAverageType ensembleAverageType =
+                wres.statistics.generated.Pool.EnsembleAverageType.valueOf( typeName );
+        // Do the metadata transformation        
+        inputNoMissing = PoolSlicer.transform( inputNoMissing, 
+                                               Function.identity(), 
+                                               unadjusted -> PoolMetadata.of( unadjusted, ensembleAverageType ) );
+        
         // Process the metrics that consume ensemble pairs
         if ( this.hasMetrics( SampleDataGroup.ENSEMBLE ) )
         {
@@ -156,40 +169,26 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
 
         // Process the metrics that consume single-valued pairs
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED ) )
-        {
-            // Clarify the mapping used in the pool metadata
-            String typeName = this.getMetrics()
-                                  .getEnsembleAverageType()
-                                  .name();
-
-            wres.statistics.generated.Pool.EnsembleAverageType ensembleAverageType =
-                    wres.statistics.generated.Pool.EnsembleAverageType.valueOf( typeName );
-
-            // Adjust the metadata to include the transformation type
-            UnaryOperator<PoolMetadata> metaTransformer =
-                    unadjusted -> PoolMetadata.of( unadjusted, ensembleAverageType );
-
-            // Derive the single-valued pairs from the ensemble pairs using the configured mapper and metadata 
-            // transformer
+        {            
+            // Derive the single-valued pairs from the ensemble pairs using the configured mapper
             Pool<Pair<Double, Double>> singleValued =
-                    PoolSlicer.transform( inputNoMissing, this.toSingleValues, metaTransformer );
+                    PoolSlicer.transform( inputNoMissing, this.toSingleValues );
 
             super.processSingleValuedPairs( singleValued, futures );
         }
 
-        //Process the metrics that consume discrete probability pairs
+        // Process the metrics that consume discrete probability pairs
         if ( this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY ) )
         {
             this.processDiscreteProbabilityPairs( inputNoMissing, futures );
         }
 
-        //Process the metrics that consume dichotomous pairs
+        // Process the metrics that consume dichotomous pairs
         if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS ) )
         {
             this.processDichotomousPairs( inputNoMissing, futures );
         }
 
-        // Log
         LOGGER.debug( PROCESSING_COMPLETE_MESSAGE,
                       pool.getMetadata().getFeatureGroup(),
                       pool.getMetadata().getTimeWindow() );

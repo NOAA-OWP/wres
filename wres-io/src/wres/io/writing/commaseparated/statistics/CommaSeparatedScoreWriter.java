@@ -95,7 +95,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
     @Override
     public Set<Path> apply( final List<T> output )
     {
-        Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
+        Objects.requireNonNull( output );
 
         // Write output
         // In principle, each destination could have a different formatter, so 
