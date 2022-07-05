@@ -68,7 +68,7 @@ import wres.system.SystemSettings;
 public class ReadValueManager
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ReadValueManager.class );
-    private static Pair<SSLContext,X509TrustManager> SSL_CONTEXT
+    private static final Pair<SSLContext,X509TrustManager> SSL_CONTEXT
             = ReadValueManager.getSslContextTrustingDodSignerForWrds();
 
     private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT );
