@@ -39,7 +39,7 @@ class ThresholdsByMetricAndFeatureTest
     private FeatureTuple featureTuple;
 
     @BeforeEach
-    private void runBeforeEachTest()
+    void runBeforeEachTest()
     {
         // Value thresholds
         Map<MetricConstants, Set<ThresholdOuter>> values = new EnumMap<>( MetricConstants.class );

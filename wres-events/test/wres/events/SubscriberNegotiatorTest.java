@@ -28,7 +28,7 @@ class SubscriberNegotiatorTest
     private Evaluation fakeEvaluation;
 
     @BeforeEach
-    private void runBeforeEachTest()
+    void runBeforeEachTest()
     {
         // Create a fake evaluation for testing
         this.fakeEvaluation = Mockito.mock( Evaluation.class );
