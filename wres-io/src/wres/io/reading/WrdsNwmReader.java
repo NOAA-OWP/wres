@@ -83,10 +83,10 @@ import wres.system.SystemSettings;
 public class WrdsNwmReader implements Callable<List<IngestResult>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WrdsNwmReader.class );
-    private static Pair<SSLContext, X509TrustManager> sslContext
+    private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT
             = ReadValueManager.getSslContextTrustingDodSignerForWrds();
     private static final boolean TRACK_TIMINGS = false;
-    private static final WebClient WEB_CLIENT = new WebClient( sslContext,
+    private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT,
                                                                TRACK_TIMINGS );
     private static final ObjectMapper JSON_OBJECT_MAPPER =
             new ObjectMapper().registerModule( new JavaTimeModule() )
