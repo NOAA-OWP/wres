@@ -27,14 +27,16 @@ import static systems.uom.ucum.format.UCUMFormat.Variant.CASE_SENSITIVE;
 
 public class Units
 {
+    public static final String OFFICIAL_CUBIC_METERS_PER_SECOND = "m3/s";
+    public static final String OFFICIAL_CUBIC_FEET_PER_SECOND = "[ft_i]3/s";
+    public static final String OFFICIAL_KILO_CUBIC_FEET_PER_SECOND = "1000.[ft_i]3/s";
+    public static final String OFFICIAL_DEGREES_CELSIUS = "Cel";
+    public static final String OFFICIAL_DEGREES_FAHRENHEIT = "[degF]";
+    public static final String OFFICIAL_INCHES = "[in_i]";
+    public static final String OFFICIAL_INCHES_PER_HOUR = OFFICIAL_INCHES + "/h";
+    public static final String OFFICIAL_MILLIMETERS = "mm";
     private static final Logger LOGGER = LoggerFactory.getLogger( Units.class );
     private static final UnitFormat UNIT_FORMAT = UCUMFormat.getInstance( CASE_SENSITIVE );
-    private static final String OFFICIAL_CUBIC_METERS_PER_SECOND = "m3/s";
-    private static final String OFFICIAL_CUBIC_FEET_PER_SECOND = "[ft_i]3/s";
-    private static final String OFFICIAL_KILO_CUBIC_FEET_PER_SECOND = "1000.[ft_i]3/s";
-    private static final String OFFICIAL_DEGREES_CELSIUS = "Cel";
-    private static final String OFFICIAL_DEGREES_FAHRENHEIT = "[degF]";
-    private static final String OFFICIAL_INCHES_PER_HOUR = "[in_i]/h";
 
     /**
      * For backward compatibility, a map from weird unit names to official ones,
@@ -117,7 +119,7 @@ public class Units
      * (66 rows)
      */
 
-    private static final Map<String,String> CONVENIENCE_ALIASES = new HashMap<>( 116 );
+    private static final Map<String, String> CONVENIENCE_ALIASES = new HashMap<>( 116 );
 
     static
     {
@@ -152,14 +154,14 @@ public class Units
         CONVENIENCE_ALIASES.put( "degf", OFFICIAL_DEGREES_FAHRENHEIT );
         CONVENIENCE_ALIASES.put( "FT", "[ft_i]" );
         CONVENIENCE_ALIASES.put( "ft", "[ft_i]" );
-        CONVENIENCE_ALIASES.put( "IN", "[in_i]" );
-        CONVENIENCE_ALIASES.put( "in", "[in_i]" );
+        CONVENIENCE_ALIASES.put( "IN", OFFICIAL_INCHES );
+        CONVENIENCE_ALIASES.put( "in", OFFICIAL_INCHES );
         CONVENIENCE_ALIASES.put( "M", "m" );
         CONVENIENCE_ALIASES.put( "MS", "ms" );
         CONVENIENCE_ALIASES.put( "HR", "h" );
         CONVENIENCE_ALIASES.put( "hr", "h" );
         CONVENIENCE_ALIASES.put( "S", "s" );
-        CONVENIENCE_ALIASES.put( "MM", "mm" );
+        CONVENIENCE_ALIASES.put( "MM", OFFICIAL_MILLIMETERS );
         CONVENIENCE_ALIASES.put( "CM", "cm" );
         CONVENIENCE_ALIASES.put( "kg m{-2}", "kg/m2" );
         CONVENIENCE_ALIASES.put( "KG M{-2}", "kg/m2" );
@@ -177,22 +179,22 @@ public class Units
         CONVENIENCE_ALIASES.put( "AC-FT", "[acr_us].[ft_i]" );
         CONVENIENCE_ALIASES.put( "MPH", "[mi_i]/h" );
         CONVENIENCE_ALIASES.put( "mph", "[mi_i]/h" );
-        CONVENIENCE_ALIASES.put( "l/sec", "l/s");
-        CONVENIENCE_ALIASES.put( "L/SEC", "l/s");
-        CONVENIENCE_ALIASES.put( "MM/S", "mm/s");
-        CONVENIENCE_ALIASES.put( "mm s^-1", "mm/s");
-        CONVENIENCE_ALIASES.put( "MM S^-1", "mm/s");
-        CONVENIENCE_ALIASES.put( "mm s{-1}", "mm/s");
-        CONVENIENCE_ALIASES.put( "MM S{-1}", "mm/s");
-        CONVENIENCE_ALIASES.put( "mm s-1", "mm/s");
-        CONVENIENCE_ALIASES.put( "MM S-1", "mm/s");
-        CONVENIENCE_ALIASES.put( "mm h^-1", "mm/h");
-        CONVENIENCE_ALIASES.put( "MM H^-1", "mm/h");
-        CONVENIENCE_ALIASES.put( "MM/H", "mm/h");
-        CONVENIENCE_ALIASES.put( "mm h-1", "mm/h");
-        CONVENIENCE_ALIASES.put( "MM H-1", "mm/h");
-        CONVENIENCE_ALIASES.put( "mm h{-1}", "mm/h");
-        CONVENIENCE_ALIASES.put( "MM H{-1}", "mm/h");
+        CONVENIENCE_ALIASES.put( "l/sec", "l/s" );
+        CONVENIENCE_ALIASES.put( "L/SEC", "l/s" );
+        CONVENIENCE_ALIASES.put( "MM/S", "mm/s" );
+        CONVENIENCE_ALIASES.put( "mm s^-1", "mm/s" );
+        CONVENIENCE_ALIASES.put( "MM S^-1", "mm/s" );
+        CONVENIENCE_ALIASES.put( "mm s{-1}", "mm/s" );
+        CONVENIENCE_ALIASES.put( "MM S{-1}", "mm/s" );
+        CONVENIENCE_ALIASES.put( "mm s-1", "mm/s" );
+        CONVENIENCE_ALIASES.put( "MM S-1", "mm/s" );
+        CONVENIENCE_ALIASES.put( "mm h^-1", "mm/h" );
+        CONVENIENCE_ALIASES.put( "MM H^-1", "mm/h" );
+        CONVENIENCE_ALIASES.put( "MM/H", "mm/h" );
+        CONVENIENCE_ALIASES.put( "mm h-1", "mm/h" );
+        CONVENIENCE_ALIASES.put( "MM H-1", "mm/h" );
+        CONVENIENCE_ALIASES.put( "mm h{-1}", "mm/h" );
+        CONVENIENCE_ALIASES.put( "MM H{-1}", "mm/h" );
         CONVENIENCE_ALIASES.put( "KG/M^2", "kg/m2" );
         CONVENIENCE_ALIASES.put( "kg/m^2h", "kg/m2.h" );
         CONVENIENCE_ALIASES.put( "KG/M^2H", "kg/m2.h" );
@@ -261,6 +263,23 @@ public class Units
     }
 
     /**
+     * Given a unit name, return the official UCUM unit name.
+     * 
+     * @param unitName the unit name
+     * @param overrideAliases a map of override aliases, possibly empty
+     */
+
+    public static String getOfficialUnitName( String unitName, Map<String, String> overrideAliases )
+    {
+        Objects.requireNonNull( unitName );
+        Objects.requireNonNull( overrideAliases );
+
+        String officialName = CONVENIENCE_ALIASES.getOrDefault( unitName, unitName );
+
+        return overrideAliases.getOrDefault( unitName, officialName );
+    }
+
+    /**
      * Given a unit name, return the formal javax.measure Unit of Measure.
      *
      * Look in overrides and use the value found (when found).
@@ -274,15 +293,13 @@ public class Units
      */
 
     public static Unit<?> getUnit( String unitName,
-                                   Map<String,String> overrideAliases )
+                                   Map<String, String> overrideAliases )
     {
         Objects.requireNonNull( unitName );
         Objects.requireNonNull( overrideAliases );
 
-        String officialName = CONVENIENCE_ALIASES.getOrDefault( unitName, unitName );
+        String officialName = Units.getOfficialUnitName( unitName, overrideAliases );
 
-        // Priority is given to override aliases.
-        officialName = overrideAliases.getOrDefault( unitName, officialName );
         Unit<?> unit;
 
         try
@@ -310,7 +327,9 @@ public class Units
         {
             LOGGER.info( "Treating measurement unit name '{}' as UCUM "
                          + "unit '{}' along dimension '{}'",
-                         unitName, officialName, unit.getDimension() );
+                         unitName,
+                         officialName,
+                         unit.getDimension() );
         }
 
         return unit;
@@ -346,22 +365,31 @@ public class Units
         {
             super( "Unable to find the measurement unit '" + unitNameGiven
                    + "' among the default unit aliases and/or '"
-                   + failedToParseUnitName + "' was not recognized as a UCUM "
-                   + "unit and/or the UCUM unit declared for '" + unitNameGiven
+                   + failedToParseUnitName
+                   + "' was not recognized as a UCUM "
+                   + "unit and/or the UCUM unit declared for '"
+                   + unitNameGiven
                    + "' in a unitAlias declaration was not recognized (look "
                    + "for an earlier WARN message). You may need to add a unit "
                    + "alias to the project declaration (or replace an existing "
-                   + "one) to tell WRES which UCUM unit '" + unitNameGiven + "'"
-                   + " represents. For example, if '" + unitNameGiven + "' "
+                   + "one) to tell WRES which UCUM unit '"
+                   + unitNameGiven
+                   + "'"
+                   + " represents. For example, if '"
+                   + unitNameGiven
+                   + "' "
                    + "represents cubic meters per second then use this: "
-                   + "<unitAlias><alias>" + unitNameGiven + "</alias><unit>"
+                   + "<unitAlias><alias>"
+                   + unitNameGiven
+                   + "</alias><unit>"
                    + "m3/s</unit></unitAlias>. WRES expects UCUM case-sensitive"
                    + " unit format. To learn the UCUM format for your "
                    + "particular unit(s), try the demo at "
                    + "https://ucum.nlm.nih.gov/ucum-lhc/demo.html and/or review"
                    + " the UCUM documentation at https://ucum.org/ucum.html"
                    + " and/or look at the following UCUM string examples that "
-                   + "can be successfully recognized by WRES: " + actualUnits
+                   + "can be successfully recognized by WRES: "
+                   + actualUnits
                    + ". Here are the default unit aliases in this version of "
                    + "WRES that have educated guesses for UCUM units already "
                    + "assigned for convenience (the following are not UCUM "

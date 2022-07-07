@@ -20,12 +20,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -96,6 +100,12 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     /** Mapper for changing measurement units. */
     private final UnitMapper unitMapper;
 
+    /** Cache of unit mappers associated with this retriever. This should NOT be shared across instances. **/
+    private final Cache<Long, DoubleUnaryOperator> converterCache =
+            Caffeine.newBuilder()
+                    .maximumSize( 10 )
+                    .build();
+
     /** A declared existing time-scale, which can be used to augment a source, but not override it. */
     private final TimeScaleOuter declaredExistingTimeScale;
 
@@ -160,7 +170,26 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     {
         return this.variableName;
     }
+    
+    /**
+     * Looks in the cache for a unit converter, else creates one.
+     * @param unitId the measurement unit id
+     * @return a unit converter
+     */
 
+    DoubleUnaryOperator getMeasurementUnitMapper( long unitId )
+    {
+        DoubleUnaryOperator converter = this.converterCache.getIfPresent( unitId );
+
+        if ( Objects.isNull( converter ) )
+        {
+            converter = this.unitMapper.getUnitMapper( unitId );
+            this.converterCache.put( unitId, converter );
+        }
+
+        return converter;
+    }
+    
     /**
      * Creates one or more {@link TimeSeries} from a script that retrieves time-series data. Assumes that the script
      * returns time-series events that are ordered by time-series id.
@@ -746,7 +775,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     {
         return this.unitMapper;
     }
-
 
     /**
      * Returns <code>true</code> if a seasonal constraint is defined, otherwise <code>false</code>.
