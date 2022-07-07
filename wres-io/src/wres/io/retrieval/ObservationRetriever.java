@@ -157,8 +157,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
             long measurementUnitId = provider.getLong( "measurementunit_id" );
 
             // Units mapper
-            DoubleUnaryOperator mapper = this.getMeasurementUnitMapper()
-                                             .getUnitMapper( measurementUnitId );
+            DoubleUnaryOperator mapper = this.getMeasurementUnitMapper( measurementUnitId );
 
             // Convert
             return mapper.applyAsDouble( unmapped );

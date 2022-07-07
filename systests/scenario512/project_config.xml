@@ -34,7 +34,7 @@
     </metrics>
 
     <outputs>
-        <destination type="pairs" />
+        <destination type="pairs" decimalFormat="0.0" />
         <destination type="csv" />
         <destination type="csv2" />
         <destination type="svg" />

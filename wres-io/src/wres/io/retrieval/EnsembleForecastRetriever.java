@@ -260,8 +260,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
             long measurementUnitId = provider.getLong( "measurementunit_id" );
 
             // Units mapper
-            DoubleUnaryOperator mapper = this.getMeasurementUnitMapper()
-                                             .getUnitMapper( measurementUnitId );
+            DoubleUnaryOperator mapper = this.getMeasurementUnitMapper( measurementUnitId );
 
             Double[] members = provider.getDoubleArray( "ensemble_members" );
             Integer[] ids = provider.getIntegerArray( "ensemble_ids" );

@@ -13,6 +13,7 @@ import javax.measure.UnconvertibleException;
 import javax.measure.Unit;
 import javax.measure.UnitConverter;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +32,9 @@ public class UnitMapper
     private static final Logger LOGGER = LoggerFactory.getLogger( UnitMapper.class );
     private final MeasurementUnits measurementUnitsCache;
     private final String desiredMeasurementUnitName;
-    private final ConcurrentMap<String,Unit<?>> indriyaUnits;
+    private final ConcurrentMap<String, Unit<?>> indriyaUnits;
+    private final Map<String, String> aliases;
+    private final Map<Pair<String, String>, DoubleUnaryOperator> internalMappers;
 
     private UnitMapper( MeasurementUnits measurementUnitsCache,
                         String desiredMeasurementUnitName,
@@ -52,7 +55,7 @@ public class UnitMapper
         this.desiredMeasurementUnitName = desiredMeasurementUnitName;
         this.indriyaUnits = new ConcurrentHashMap<>( 4 );
 
-        Map<String,String> aliasToUnitStrings = new HashMap<>( aliases.size() );
+        Map<String, String> aliasToUnitStrings = new HashMap<>( aliases.size() );
 
         for ( UnitAlias alias : aliases )
         {
@@ -63,13 +66,15 @@ public class UnitMapper
             {
                 throw new ProjectConfigException( alias,
                                                   "Multiple declarations for a "
-                                                  + "single unit alias are not "
-                                                  + "supported. Found repeated "
-                                                  + "'" + alias.getAlias()
-                                                  + "' alias. Remove all but "
-                                                  + "one declaration for alias "
-                                                  + "'" + alias.getAlias()
-                                                  + "'." );
+                                                         + "single unit alias are not "
+                                                         + "supported. Found repeated "
+                                                         + "'"
+                                                         + alias.getAlias()
+                                                         + "' alias. Remove all but "
+                                                         + "one declaration for alias "
+                                                         + "'"
+                                                         + alias.getAlias()
+                                                         + "'." );
             }
         }
 
@@ -124,6 +129,9 @@ public class UnitMapper
                 }
             }
         }
+
+        this.aliases = aliasToUnitStrings;
+        this.internalMappers = this.getInternalMappers();
     }
 
     public static UnitMapper of( MeasurementUnits measurementUnitsCache,
@@ -171,6 +179,37 @@ public class UnitMapper
             return identity -> identity;
         }
 
+        // Return one of the in-built converters or default to an Indriya converter. As of Indriya 2.1.3, some 
+        // converters are not performant, so in-built converters are used instead. See #105929.
+
+        String desiredUnits = Units.getOfficialUnitName( this.getDesiredMeasurementUnitName(), this.aliases );
+        String currentUnits = Units.getOfficialUnitName( unitName, this.aliases );
+
+        Pair<String, String> key = Pair.of( currentUnits, desiredUnits );
+
+        if ( LOGGER.isTraceEnabled() )
+        {
+            LOGGER.trace( "Discovered an internal unit mapper to convert between {} and {}. Using this preferentially.",
+                          currentUnits,
+                          desiredUnits );
+        }
+
+        return this.internalMappers.getOrDefault( key, this.getUnitMapperInner( unitName ) );
+    }
+
+    /**
+     * Returns a unit mapper to this UnitMapper's unit from the given unit name.
+     * @param unitName The name of an existing measurement unit.
+     * @return A unit mapper for the prescribed existing units to this unit.
+     * @throws NoSuchUnitConversionException When unable to create a converter.
+     * @throws Units.UnrecognizedUnitException When unable to support given unitName.
+     */
+
+    private DoubleUnaryOperator getUnitMapperInner( String unitName )
+    {
+        // Return one of the in-built converters or default to an Indriya converter. As of Indriya 2.1.3, some 
+        // converters are not performant, so in-built converters are used instead. See #105929.
+
         // Avoid redundant unit parsing with local map of found units.
         Unit<?> desiredUnit = this.indriyaUnits.get( this.getDesiredMeasurementUnitName() );
 
@@ -187,17 +226,18 @@ public class UnitMapper
             existingUnit = Units.getUnit( unitName );
             this.indriyaUnits.put( unitName, existingUnit );
         }
-        
+
         UnitConverter converter;
 
         try
         {
             converter = existingUnit.getConverterToAny( desiredUnit );
         }
-        catch( IncommensurableException | UnconvertibleException e )
+        catch ( IncommensurableException | UnconvertibleException e )
         {
             throw new NoSuchUnitConversionException( "Could not create a conversion from "
-                                                     + unitName + " to "
+                                                     + unitName
+                                                     + " to "
                                                      + this.getDesiredMeasurementUnitName(),
                                                      e );
         }
@@ -257,5 +297,31 @@ public class UnitMapper
             return input;
         };
     }
-    
+
+    /**
+     * Returns a map of internal unit converters to use before library converters for improved performance. See #105929.
+     * 
+     * @return internal converters
+     */
+
+    private Map<Pair<String, String>, DoubleUnaryOperator> getInternalMappers()
+    {
+        Map<Pair<String, String>, DoubleUnaryOperator> returnMe = new HashMap<>( 6 );
+
+        returnMe.put( Pair.of( Units.OFFICIAL_DEGREES_FAHRENHEIT, Units.OFFICIAL_DEGREES_CELSIUS ),
+                      f -> ( f - 32.0 ) / 1.8 );
+        returnMe.put( Pair.of( Units.OFFICIAL_DEGREES_CELSIUS, Units.OFFICIAL_DEGREES_FAHRENHEIT ),
+                      c -> c * 1.8 + 32.0 );
+        returnMe.put( Pair.of( Units.OFFICIAL_CUBIC_FEET_PER_SECOND, Units.OFFICIAL_CUBIC_METERS_PER_SECOND ),
+                      cfs -> cfs * 0.028316846592 );
+        returnMe.put( Pair.of( Units.OFFICIAL_CUBIC_METERS_PER_SECOND, Units.OFFICIAL_CUBIC_FEET_PER_SECOND ),
+                      cms -> cms / 0.028316846592 );
+        returnMe.put( Pair.of( Units.OFFICIAL_INCHES, Units.OFFICIAL_MILLIMETERS ),
+                      inch -> inch * 25.4 );
+        returnMe.put( Pair.of( Units.OFFICIAL_MILLIMETERS, Units.OFFICIAL_INCHES ),
+                      mm -> mm / 25.4 );
+
+        return Collections.unmodifiableMap( returnMe );
+    }
+
 }

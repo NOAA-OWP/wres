@@ -87,7 +87,7 @@ public class UnitMapperTestWithNoDatabase
         String toUnit = "C";
         UnitMapper mapper = UnitMapper.of( this.measurementUnitsCache, toUnit );
         DoubleUnaryOperator converter = mapper.getUnitMapper( fromUnit );
-        assertEquals( -30.5555555555555555, converter.applyAsDouble( -23.0 ), EPSILON );
+        assertEquals( -30.555555555555554, converter.applyAsDouble( -23.0 ), EPSILON );
     }
 
     /**
@@ -118,7 +118,6 @@ public class UnitMapperTestWithNoDatabase
         DoubleUnaryOperator converter = mapper.getUnitMapper( fromUnit );
         assertEquals( 73425.583, converter.applyAsDouble( 2593.0 ), 0.001 );
     }
-
 
     /**
      * Going from dimensions x/y to z should fail: NoSuchUnitConversionException
