@@ -3862,7 +3862,6 @@ public class Validation
             case NWM_SHORT_RANGE_NO_DA_CHANNEL_RT_HAWAII:
             case NWM_SHORT_RANGE_NO_DA_CHANNEL_RT_PUERTORICO:
             case WRDS_AHPS:
-            case WRDS_NWM:
                 return DatasourceType.SINGLE_VALUED_FORECASTS;
             case NWM_MEDIUM_RANGE_ENSEMBLE_CHANNEL_RT_CONUS:
             case NWM_MEDIUM_RANGE_ENSEMBLE_CHANNEL_RT_CONUS_HOURLY:
@@ -3870,6 +3869,11 @@ public class Validation
             case USGS_NWIS:
             case WRDS_OBS:
                 return DatasourceType.OBSERVATIONS;
+            case WRDS_NWM: // Could be any of several types
+                LOGGER.debug( "Discovered an interface shorthand {} that represents any of several data source types. "
+                              + "This will not be validated against the declared type.",
+                              InterfaceShortHand.WRDS_NWM );
+                return null;
             default:
                 LOGGER.warn( "When attempting to identify a data source type for the interface {}, failed to "
                              + "recognize the interface shorthand {}.",
