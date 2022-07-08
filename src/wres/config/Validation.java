@@ -38,6 +38,7 @@ import org.xml.sax.Locator;
 
 import wres.config.generated.DataSourceBaselineConfig;
 import wres.config.generated.DataSourceConfig;
+import wres.config.generated.DataSourceConfig.Source;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DateCondition;
 import wres.config.generated.DesiredTimeScaleConfig;
@@ -222,6 +223,139 @@ public class Validation
 
         return result;
     }
+
+    /**
+     * Checks that there is no more than one <code>destination</code> of a given <code>type</code>, otherwise the
+     * declaration is invalid. See #58737.
+     * 
+     * @param projectConfigPlus the project to validate
+     * @return true when valid, false otherwise
+     */
+    static boolean hasUpToOneDestinationPerDestinationType( ProjectConfigPlus projectConfigPlus )
+    {
+        Objects.requireNonNull( projectConfigPlus );
+        Objects.requireNonNull( projectConfigPlus.getProjectConfig() );
+
+        Outputs outputs = projectConfigPlus.getProjectConfig()
+                                           .getOutputs();
+
+        Objects.requireNonNull( outputs );
+
+        List<DestinationConfig> destinations = projectConfigPlus.getProjectConfig()
+                                                                .getOutputs()
+                                                                .getDestination();
+
+        Objects.requireNonNull( destinations );
+
+        boolean isValid = true;
+
+        // Create a map of destination types and counts
+        Map<DestinationType, Integer> destinationsByType = new EnumMap<>( DestinationType.class );
+        for ( DestinationConfig destination : destinations )
+        {
+            DestinationType nextType = destination.getType();
+
+            // Normalize synonyms
+            if ( nextType == DestinationType.PNG )
+            {
+                nextType = DestinationType.GRAPHIC;
+            }
+            else if ( nextType == DestinationType.CSV )
+            {
+                nextType = DestinationType.NUMERIC;
+            }
+
+            // Map the type
+            if ( destinationsByType.containsKey( nextType ) )
+            {
+                int currentCount = destinationsByType.get( nextType );
+                int newCount = currentCount + 1;
+                destinationsByType.put( nextType, newCount );
+                isValid = false;
+            }
+            else
+            {
+                destinationsByType.put( nextType, 1 );
+            }
+
+            // Warn about deprecated types
+            if ( LOGGER.isWarnEnabled() && ( nextType == DestinationType.CSV || nextType == DestinationType.NUMERIC ) )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " The declaration requests {} outputs. This output format has been marked deprecated, "
+                             + "for removal. We recommend that you choose {} instead. Format {} will be removed in a "
+                             + "future version of the software.",
+                             projectConfigPlus.getOrigin(),
+                             outputs.sourceLocation().getLineNumber(),
+                             outputs.sourceLocation().getColumnNumber(),
+                             nextType,
+                             DestinationType.CSV2,
+                             nextType );
+            }
+
+            // Warn about incubating types
+            if ( LOGGER.isWarnEnabled() && nextType == DestinationType.CSV2 )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " The declaration requests {} outputs. This output format has been marked incubating. "
+                             + "Incubating features are under active development. As such, they are more likely to "
+                             + "change in the near future and some of these changes may be breaking changes.",
+                             projectConfigPlus.getOrigin(),
+                             outputs.sourceLocation().getLineNumber(),
+                             outputs.sourceLocation().getColumnNumber(),
+                             nextType );
+            }
+        }
+
+        if ( !isValid && LOGGER.isErrorEnabled() )
+        {
+            // Make the synonyms intelligible
+            String mapString = destinationsByType.toString();
+
+            mapString = mapString.replaceAll( DestinationType.GRAPHIC.name(), "GRAPHIC/PNG" );
+            mapString = mapString.replaceAll( DestinationType.NUMERIC.name(), "NUMERIC/CSV" );
+
+            LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                          + " The declaration contains more than one destination of a given type, which is not allowed. "
+                          + "Please declare only one destination per destination type. The number of destinations by "
+                          + "type is: {}.",
+                          projectConfigPlus.getOrigin(),
+                          outputs.sourceLocation().getLineNumber(),
+                          outputs.sourceLocation().getColumnNumber(),
+                          mapString );
+        }
+
+        return isValid;
+    }
+
+    /**
+     * Warns about the zone offset.
+     * 
+     * @param projectConfigPlus the config
+     * @param source the particular source element to check
+     * @throws NullPointerException when any arg is null
+     */
+
+    static void warnAboutZoneOffset( ProjectConfigPlus projectConfigPlus,
+                                     DataSourceConfig.Source source )
+    {
+        Objects.requireNonNull( projectConfigPlus, NON_NULL );
+        Objects.requireNonNull( source, NON_NULL );
+
+        if ( source.getZoneOffset() != null && LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                         + "The zoneOffset attribute is only applied to "
+                         + "datacard data. If there are no datacard data "
+                         + "in this evaluation the time zone offset will "
+                         + "come from the data itself and the value in the "
+                         + "attribute will be ignored.",
+                         projectConfigPlus.getOrigin(),
+                         source.sourceLocation().getLineNumber(),
+                         source.sourceLocation().getColumnNumber() );
+
+        }
+    }    
 
     /**
      * Checks to see if there are input declarations requiring other declaration
@@ -517,110 +651,6 @@ public class Validation
                  && result;
 
         return Validation.areNetcdfOutputsValid( projectConfigPlus ) && result;
-    }
-
-    /**
-     * Checks that there is no more than one <code>destination</code> of a given <code>type</code>, otherwise the
-     * declaration is invalid. See #58737.
-     * 
-     * @param projectConfigPlus the project to validate
-     * @return true when valid, false otherwise
-     */
-    static boolean hasUpToOneDestinationPerDestinationType( ProjectConfigPlus projectConfigPlus )
-    {
-        Objects.requireNonNull( projectConfigPlus );
-        Objects.requireNonNull( projectConfigPlus.getProjectConfig() );
-
-        Outputs outputs = projectConfigPlus.getProjectConfig()
-                                           .getOutputs();
-
-        Objects.requireNonNull( outputs );
-
-        List<DestinationConfig> destinations = projectConfigPlus.getProjectConfig()
-                                                                .getOutputs()
-                                                                .getDestination();
-
-        Objects.requireNonNull( destinations );
-
-        boolean isValid = true;
-
-        // Create a map of destination types and counts
-        Map<DestinationType, Integer> destinationsByType = new EnumMap<>( DestinationType.class );
-        for ( DestinationConfig destination : destinations )
-        {
-            DestinationType nextType = destination.getType();
-
-            // Normalize synonyms
-            if ( nextType == DestinationType.PNG )
-            {
-                nextType = DestinationType.GRAPHIC;
-            }
-            else if ( nextType == DestinationType.CSV )
-            {
-                nextType = DestinationType.NUMERIC;
-            }
-
-            // Map the type
-            if ( destinationsByType.containsKey( nextType ) )
-            {
-                int currentCount = destinationsByType.get( nextType );
-                int newCount = currentCount + 1;
-                destinationsByType.put( nextType, newCount );
-                isValid = false;
-            }
-            else
-            {
-                destinationsByType.put( nextType, 1 );
-            }
-
-            // Warn about deprecated types
-            if ( LOGGER.isWarnEnabled() && ( nextType == DestinationType.CSV || nextType == DestinationType.NUMERIC ) )
-            {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " The declaration requests {} outputs. This output format has been marked deprecated, "
-                             + "for removal. We recommend that you choose {} instead. Format {} will be removed in a "
-                             + "future version of the software.",
-                             projectConfigPlus.getOrigin(),
-                             outputs.sourceLocation().getLineNumber(),
-                             outputs.sourceLocation().getColumnNumber(),
-                             nextType,
-                             DestinationType.CSV2,
-                             nextType );
-            }
-
-            // Warn about incubating types
-            if ( LOGGER.isWarnEnabled() && nextType == DestinationType.CSV2 )
-            {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " The declaration requests {} outputs. This output format has been marked incubating. "
-                             + "Incubating features are under active development. As such, they are more likely to "
-                             + "change in the near future and some of these changes may be breaking changes.",
-                             projectConfigPlus.getOrigin(),
-                             outputs.sourceLocation().getLineNumber(),
-                             outputs.sourceLocation().getColumnNumber(),
-                             nextType );
-            }
-        }
-
-        if ( !isValid && LOGGER.isErrorEnabled() )
-        {
-            // Make the synonyms intelligible
-            String mapString = destinationsByType.toString();
-
-            mapString = mapString.replaceAll( DestinationType.GRAPHIC.name(), "GRAPHIC/PNG" );
-            mapString = mapString.replaceAll( DestinationType.NUMERIC.name(), "NUMERIC/CSV" );
-
-            LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
-                          + " The declaration contains more than one destination of a given type, which is not allowed. "
-                          + "Please declare only one destination per destination type. The number of destinations by "
-                          + "type is: {}.",
-                          projectConfigPlus.getOrigin(),
-                          outputs.sourceLocation().getLineNumber(),
-                          outputs.sourceLocation().getColumnNumber(),
-                          mapString );
-        }
-
-        return isValid;
     }
 
     /**
@@ -3560,8 +3590,9 @@ public class Validation
 
             valid = false;
         }
-
-        return valid;
+        
+        // Type and interface shorthands consistent with each other?
+        return Validation.isTypeConsistentWithEachSourceInterface( projectConfigPlus, dataSourceConfig ) && valid;
     }
 
     /**
@@ -3693,32 +3724,177 @@ public class Validation
         return wrdsSourceValid;
     }
 
-
     /**
-     * Warns about the zone offset.
+     * Checks for consistency between the declared type of the data source and the type implied by each data source 
+     * interface shorthand.
      * 
-     * @param projectConfigPlus the config
-     * @param source the particular source element to check
-     * @throws NullPointerException when any arg is null
+     * @param projectConfigPlus the project declaration
+     * @param dataSourceConfig the data source declaration, including the type
+     * @return true if the information is consistent, false otherwise
      */
 
-    static void warnAboutZoneOffset( ProjectConfigPlus projectConfigPlus,
-                                     DataSourceConfig.Source source )
+    private static boolean isTypeConsistentWithEachSourceInterface( ProjectConfigPlus projectConfigPlus,
+                                                                    DataSourceConfig dataSourceConfig )
     {
-        Objects.requireNonNull( projectConfigPlus, NON_NULL );
-        Objects.requireNonNull( source, NON_NULL );
+        Objects.requireNonNull( projectConfigPlus );
+        Objects.requireNonNull( dataSourceConfig );
 
-        if ( source.getZoneOffset() != null && LOGGER.isWarnEnabled() )
+        Set<InterfaceShortHand> interfaces = dataSourceConfig.getSource()
+                                                             .stream()
+                                                             .map( Source::getInterface )
+                                                             .collect( Collectors.toSet() );
+
+        boolean isValid = true;
+
+        for ( InterfaceShortHand nextInterface : interfaces )
         {
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                         + "The zoneOffset attribute is only applied to "
-                         + "datacard data. If there are no datacard data "
-                         + "in this evaluation the time zone offset will "
-                         + "come from the data itself and the value in the "
-                         + "attribute will be ignored.",
-                         projectConfigPlus.getOrigin(),
-                         source.sourceLocation().getLineNumber(),
-                         source.sourceLocation().getColumnNumber() );
+            isValid = Validation.isTypeConsistentWithSourceInterface( projectConfigPlus,
+                                                                      dataSourceConfig,
+                                                                      nextInterface )
+                      && isValid;
+        }
+
+        return isValid;
+    }
+
+    /**
+     * Checks for consistency between the declared type of a data source and the type implied by the data source 
+     * interface shorthand.
+     * 
+     * @param projectConfigPlus the project declaration
+     * @param dataSourceConfig the data source declaration, including the type
+     * @param anInterface the interface
+     * @return true if the information is consistent, false otherwise
+     */
+
+    private static boolean isTypeConsistentWithSourceInterface( ProjectConfigPlus projectConfigPlus,
+                                                                DataSourceConfig dataSourceConfig,
+                                                                InterfaceShortHand anInterface )
+    {
+        Objects.requireNonNull( projectConfigPlus );
+        Objects.requireNonNull( dataSourceConfig );
+
+        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+        DatasourceType type = dataSourceConfig.getType();
+
+        LeftOrRightOrBaseline lrb = ConfigHelper.getLeftOrRightOrBaseline( projectConfig, dataSourceConfig );
+
+        DatasourceType interfaceType = Validation.getDatasourceTypeFromInterfaceShortHand( anInterface );
+
+        boolean isValid = true;
+
+        if ( Objects.nonNull( interfaceType ) && interfaceType != type )
+        {
+            if ( Validation.isDataSourceTypeObservationLike( type ) &&
+                 Validation.isDataSourceTypeObservationLike( interfaceType ) )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE +
+                             " A source on the {} has an interface of {}, which is allowed but is not strictly "
+                             + "consistent with the data source type of {}. The interface of {} would normally have a "
+                             + "data source type of {}. If this represents an error in the declaration, it should be "
+                             + "fixed.",
+                             projectConfigPlus,
+                             dataSourceConfig.sourceLocation().getLineNumber(),
+                             dataSourceConfig.sourceLocation().getColumnNumber(),
+                             lrb,
+                             anInterface,
+                             type,
+                             anInterface,
+                             interfaceType,
+                             interfaceType,
+                             type );
+            }
+            else
+            {
+                isValid = false;
+
+                LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE +
+                              " A source on the {} has an interface of {}, which is inconsistent with the data source "
+                              + "type of {}. The interface of {} should have a data source type of {}. Please change "
+                              + "the data source type to {} or change the interface for consistency with the type {}.",
+                              projectConfigPlus,
+                              dataSourceConfig.sourceLocation().getLineNumber(),
+                              dataSourceConfig.sourceLocation().getColumnNumber(),
+                              lrb,
+                              anInterface,
+                              type,
+                              anInterface,
+                              interfaceType,
+                              interfaceType,
+                              type );
+            }
+        }
+
+        return isValid;
+    }
+
+    /**
+     * Returns the data source type for the specified interface.
+     * @param anInterface the interface
+     * @return the data source type or null if unknown
+     */
+
+    private static DatasourceType getDatasourceTypeFromInterfaceShortHand( InterfaceShortHand anInterface )
+    {
+        if ( Objects.isNull( anInterface ) )
+        {
+            LOGGER.debug( "No interface shorthand declared from which to obtain a corresponding data source type." );
+            return null;
+        }
+        switch ( anInterface )
+        {
+            case NWM_ANALYSIS_ASSIM_CHANNEL_RT_CONUS:
+            case NWM_ANALYSIS_ASSIM_CHANNEL_RT_HAWAII:
+            case NWM_ANALYSIS_ASSIM_CHANNEL_RT_PUERTORICO:
+            case NWM_ANALYSIS_ASSIM_EXTEND_CHANNEL_RT_CONUS:
+            case NWM_ANALYSIS_ASSIM_EXTEND_NO_DA_CHANNEL_RT_CONUS:
+            case NWM_ANALYSIS_ASSIM_NO_DA_CHANNEL_RT_CONUS:
+            case NWM_ANALYSIS_ASSIM_NO_DA_CHANNEL_RT_HAWAII:
+            case NWM_ANALYSIS_ASSIM_NO_DA_CHANNEL_RT_PUERTORICO:
+                return DatasourceType.ANALYSES;
+            case NWM_LONG_RANGE_CHANNEL_RT_CONUS:
+            case NWM_MEDIUM_RANGE_DETERMINISTIC_CHANNEL_RT_CONUS:
+            case NWM_MEDIUM_RANGE_DETERMINISTIC_CHANNEL_RT_CONUS_HOURLY:
+            case NWM_MEDIUM_RANGE_NO_DA_DETERMINISTIC_CHANNEL_RT_CONUS:
+            case NWM_SHORT_RANGE_CHANNEL_RT_CONUS:
+            case NWM_SHORT_RANGE_CHANNEL_RT_HAWAII:
+            case NWM_SHORT_RANGE_CHANNEL_RT_PUERTORICO:
+            case NWM_SHORT_RANGE_NO_DA_CHANNEL_RT_HAWAII:
+            case NWM_SHORT_RANGE_NO_DA_CHANNEL_RT_PUERTORICO:
+            case WRDS_AHPS:
+            case WRDS_NWM:
+                return DatasourceType.SINGLE_VALUED_FORECASTS;
+            case NWM_MEDIUM_RANGE_ENSEMBLE_CHANNEL_RT_CONUS:
+            case NWM_MEDIUM_RANGE_ENSEMBLE_CHANNEL_RT_CONUS_HOURLY:
+                return DatasourceType.ENSEMBLE_FORECASTS;
+            case USGS_NWIS:
+            case WRDS_OBS:
+                return DatasourceType.OBSERVATIONS;
+            default:
+                LOGGER.warn( "When attempting to identify a data source type for the interface {}, failed to "
+                             + "recognize the interface shorthand {}.",
+                             anInterface,
+                             anInterface );
+                return null;
+
+        }
+    }
+
+    /**
+     * @param datasourceType the data source type
+     * @return true if the type is observation-like, false otherwise
+     */
+
+    private static boolean isDataSourceTypeObservationLike( DatasourceType datasourceType )
+    {
+        switch ( datasourceType )
+        {
+            case ANALYSES:
+            case OBSERVATIONS:
+            case SIMULATIONS:
+                return true;
+            default:
+                return false;
 
         }
     }
