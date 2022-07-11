@@ -7,10 +7,10 @@ import java.util.Objects;
 import java.util.TreeMap;
 
 import wres.config.generated.EnsembleAverageType;
+import wres.datamodel.DataFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.util.TimeHelper;
 
 class MetricVariable
 {
@@ -49,11 +49,8 @@ class MetricVariable
 
     private final OneOrTwoThresholds thresholds;
 
-    // TODO: make these longs
-    // Chris Tubbs: We can only write Netcdf-3, and Netcdf-3 doesn't support longs. Keeping them
-    // as 'int's here helps us avoid potential value conversion issues down the line
-    private final int earliestLead;
-    private final int latestLead;
+    private final Number earliestLead;
+    private final Number latestLead;
 
     private final EnsembleAverageType ensembleAverageType;
 
@@ -196,21 +193,33 @@ class MetricVariable
 
         // We only add timing information until we get a lead variable in
         // Use the default duration units
-        int leadLow = Integer.MIN_VALUE;
-        int leadHigh = Integer.MAX_VALUE;
+        Number leadLow = Integer.MIN_VALUE;
+        Number leadHigh = Integer.MAX_VALUE;
 
         TimeWindowOuter localWindow = builder.timeWindow;
 
         if ( !localWindow.getEarliestLeadDuration().equals( TimeWindowOuter.DURATION_MIN ) )
         {
-            leadLow = (int) TimeHelper.durationToLongUnits( localWindow.getEarliestLeadDuration(),
-                                                            this.getDurationUnits() );
+            leadLow = DataFactory.durationToNumericUnits( localWindow.getEarliestLeadDuration(),
+                                                          this.getDurationUnits() );
         }
         if ( !localWindow.getLatestLeadDuration().equals( TimeWindowOuter.DURATION_MAX ) )
         {
-            leadHigh = (int) TimeHelper.durationToLongUnits( localWindow.getLatestLeadDuration(),
-                                                             this.getDurationUnits() );
+            leadHigh = DataFactory.durationToNumericUnits( localWindow.getLatestLeadDuration(),
+                                                           this.getDurationUnits() );
         }
+        
+        // Long is not supported by netcdf3
+        if( leadLow instanceof Long )
+        {
+            leadLow = leadLow.intValue();
+        }
+        
+        if( leadHigh instanceof Long )
+        {
+            leadHigh = leadHigh.intValue();
+        }
+        
         this.earliestLead = leadLow;
         this.latestLead = leadHigh;
 
@@ -239,8 +248,9 @@ class MetricVariable
             if ( timeScale.hasPeriod() )
             {
                 // Use the default duration units
-                return Long.toString( TimeHelper.durationToLongUnits( timeScale.getPeriod(),
-                                                                      this.getDurationUnits() ) );
+                return DataFactory.durationToNumericUnits( timeScale.getPeriod(),
+                                                           this.getDurationUnits() )
+                                  .toString();
             }
             else
             {

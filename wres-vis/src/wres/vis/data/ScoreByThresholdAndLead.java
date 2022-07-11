@@ -13,10 +13,10 @@ import org.jfree.data.xy.AbstractIntervalXYDataset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.datamodel.DataFactory;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.vis.charts.GraphicsUtils;
 
 /**
  * Creates an XY dataset for plotting a verification score component by threshold (X axis) and score value (Y axis) with 
@@ -142,9 +142,9 @@ class ScoreByThresholdAndLead extends AbstractXYDataset
                                                                                     .isAllDataThreshold() );
 
 
-            long leadDuration = GraphicsUtils.durationToLongUnits( key.getLatestLeadDuration(),
-                                                                   this.durationUnits );
-            String name = Long.toString( leadDuration );
+            Number leadDuration = DataFactory.durationToNumericUnits( key.getLatestLeadDuration(),
+                                                                      this.durationUnits );
+            String name = leadDuration.toString();
             Pair<String, List<DoubleScoreComponentOuter>> pair = Pair.of( name, sliced );
             innerStatistics.add( pair );
         }

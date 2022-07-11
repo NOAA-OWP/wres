@@ -1,6 +1,8 @@
 package wres.datamodel;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -473,6 +475,65 @@ public final class DataFactory
     }
 
     /**
+     * Retrieves the specified number of fractional time units from the input duration. Accepted units include:
+     * 
+     * <ol>
+     * <li>{@link ChronoUnit#DAYS}</li>
+     * <li>{@link ChronoUnit#HOURS}</li>
+     * <li>{@link ChronoUnit#MINUTES}</li>
+     * <li>{@link ChronoUnit#SECONDS}</li>
+     * <li>{@link ChronoUnit#MILLIS}</li>
+     * </ol>
+     *  
+     * @param duration the duration
+     * @param durationUnits the duration units required
+     * @return the duration in the prescribed units
+     * @throws IllegalArgumentException if the durationUnits is not one of the accepted units
+     */
+    public static Number durationToNumericUnits( Duration duration, ChronoUnit durationUnits )
+    {
+        // Get the duration in seconds plus nanos
+        BigDecimal durationSeconds = BigDecimal.valueOf( duration.toSeconds() )
+                                               .add( BigDecimal.valueOf( duration.get( ChronoUnit.NANOS ), 9 ) );
+
+        // Divisor
+        BigDecimal divisor = null;
+        switch ( durationUnits )
+        {
+            case DAYS:
+                divisor = BigDecimal.valueOf( 60.0 * 60.0 * 24.0 );
+                break;
+            case HOURS:
+                divisor = BigDecimal.valueOf( 60.0 * 60.0 );
+                break;
+            case MINUTES:
+                divisor = BigDecimal.valueOf( 60.0 );
+                break;
+            case SECONDS:
+                divisor = BigDecimal.valueOf( 1.0 );
+                break;
+            case MILLIS:
+                divisor = BigDecimal.valueOf( 1000.0 );
+                break;
+            default:
+                throw new IllegalArgumentException( "The input time units '" + durationUnits
+                                                    + "' are not supported "
+                                                    + "in this context." );
+        }
+
+        double durationDouble = durationSeconds.divide( divisor, RoundingMode.HALF_UP )
+                                               .doubleValue();
+
+        // Use a long for a whole number
+        if ( ( durationDouble == Math.floor( durationDouble ) ) && !Double.isInfinite( durationDouble ) )
+        {
+            return (long) durationDouble;
+        }
+
+        return durationDouble;
+    }
+
+    /**
      * Helper that checks for the equality of two double values using a prescribed number of significant digits.
      * 
      * @param first the first double
@@ -560,8 +621,8 @@ public final class DataFactory
         Objects.requireNonNull( leadUnits,
                                 "Enter a non-null time unit for the lead durations to establish a path for writing." );
 
-        String appendString = DataFactory.durationToLongUnits( timeWindow.getLatestLeadDuration(),
-                                                               leadUnits )
+        String appendString = DataFactory.durationToNumericUnits( timeWindow.getLatestLeadDuration(),
+                                                                  leadUnits )
                               + "_"
                               + leadUnits.name().toUpperCase();
 
@@ -1013,43 +1074,6 @@ public final class DataFactory
                      .stream()
                      .anyMatch( testType -> testType.getType() == type
                                             || ( Objects.isNull( testType.getType() ) && type == defaultType ) );
-    }
-
-    /**
-     * Retrieves the specified number of time units from the input duration. Accepted units include:
-     * 
-     * <ol>
-     * <li>{@link ChronoUnit#DAYS}</li>
-     * <li>{@link ChronoUnit#HOURS}</li>
-     * <li>{@link ChronoUnit#MINUTES}</li>
-     * <li>{@link ChronoUnit#SECONDS}</li>
-     * <li>{@link ChronoUnit#MILLIS}</li>
-     * </ol>
-     * 
-     * @param duration Retrieves the duration
-     * @param durationUnits the time units required
-     * @return The length of the duration in terms of the project's lead resolution
-     * @throws IllegalArgumentException if the durationUnits is not one of the accepted units
-     */
-    private static long durationToLongUnits( Duration duration, ChronoUnit durationUnits )
-    {
-        switch ( durationUnits )
-        {
-            case DAYS:
-                return duration.toDays();
-            case HOURS:
-                return duration.toHours();
-            case MINUTES:
-                return duration.toMinutes();
-            case SECONDS:
-                return duration.getSeconds();
-            case MILLIS:
-                return duration.toMillis();
-            default:
-                throw new IllegalArgumentException( "The input time units '" + durationUnits
-                                                    + "' are not supported "
-                                                    + "in this context." );
-        }
     }
 
     /**

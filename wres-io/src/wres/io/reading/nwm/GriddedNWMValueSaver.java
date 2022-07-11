@@ -22,13 +22,13 @@ import ucar.nc2.NetcdfFiles;
 import ucar.nc2.Variable;
 
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.DataFactory;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.io.concurrency.Downloader;
 import wres.io.concurrency.WRESCallable;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.TimeScales;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.reading.DataSource;
@@ -46,7 +46,7 @@ import wres.util.TimeHelper;
  */
 public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GriddedNWMValueSaver.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger( GriddedNWMValueSaver.class );
     private static final FeatureKey GRIDDED_FEATURES_PLACEHOLDER =
             FeatureKey.of( Geometry.newBuilder()
                                    .setName( "PLACEHOLDER" )
@@ -55,7 +55,6 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
 
     private SystemSettings systemSettings;
     private Features featuresCache;
-    private TimeScales timeScalesCache;
     private MeasurementUnits measurementUnitsCache;
     private Database database;
     private ProjectConfig projectConfig;
@@ -64,10 +63,9 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
     private NetcdfFile source;
     private final String hash;
 
-	GriddedNWMValueSaver( SystemSettings systemSettings,
+    GriddedNWMValueSaver( SystemSettings systemSettings,
                           Database database,
                           Features featuresCache,
-                          TimeScales timeScalesCache,
                           MeasurementUnits measurementUnitsCache,
                           ProjectConfig projectConfig,
                           DataSource dataSource,
@@ -76,7 +74,6 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( database );
         Objects.requireNonNull( featuresCache );
-        Objects.requireNonNull( timeScalesCache );
         Objects.requireNonNull( measurementUnitsCache );
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( dataSource );
@@ -84,7 +81,6 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
         this.systemSettings = systemSettings;
         this.database = database;
         this.featuresCache = featuresCache;
-        this.timeScalesCache = timeScalesCache;
         this.measurementUnitsCache = measurementUnitsCache;
         this.projectConfig = projectConfig;
         this.dataSource = dataSource;
@@ -112,15 +108,15 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
         return this.measurementUnitsCache;
     }
 
-	@Override
+    @Override
     public List<IngestResult> execute() throws IOException, SQLException
     {
         this.ensureFileIsLocal();
 
-		try
+        try
         {
             Instant referenceTime = NetCDF.getReferenceTime( this.getFile() );
-			Duration lead = NetCDF.getLeadTime( this.getFile() );
+            Duration lead = NetCDF.getLeadTime( this.getFile() );
             String variable = this.dataSource.getContext()
                                              .getVariable()
                                              .getValue();
@@ -133,7 +129,7 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
                                                  .getVariables()
                                                  .stream()
                                                  .map( Variable::getShortName )
-                                                 .collect( Collectors.toList());
+                                                 .collect( Collectors.toList() );
                 throw new PreIngestException( "Could not find variable '"
                                               + variable
                                               + "' in gridded netCDF resource '"
@@ -151,23 +147,25 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
             Long featureId = this.getFeaturesCache()
                                  .getOrCreateFeatureId( GRIDDED_FEATURES_PLACEHOLDER );
 
-            SourceDetails griddedSource = new SourceDetails(  );
-			griddedSource.setSourcePath( this.fileName );
+            SourceDetails griddedSource = new SourceDetails();
+            griddedSource.setSourcePath( this.fileName );
 
-			griddedSource.setLead( TimeHelper.durationToLead(lead) );
-			griddedSource.setHash( this.hash );
-			griddedSource.setIsPointData( false );
+            Number leadNumeric = DataFactory.durationToNumericUnits( lead, TimeHelper.LEAD_RESOLUTION );
+            griddedSource.setLead( leadNumeric.intValue() );
+            griddedSource.setHash( this.hash );
+            griddedSource.setIsPointData( false );
             griddedSource.setMeasurementUnitId( measurementUnitId );
             griddedSource.setVariableName( variable );
             griddedSource.setFeatureId( featureId );
 
-			Database database = this.getDatabase();
-			griddedSource.save( database );
+            Database database = this.getDatabase();
+            griddedSource.save( database );
 
-			if ( griddedSource.getId() == null)
+            if ( griddedSource.getId() == null )
             {
                 throw new IOException( "Information about the gridded data source at " +
-                                       this.fileName + " could not be ingested." );
+                                       this.fileName
+                                       + " could not be ingested." );
             }
 
             // Save the reference datetime to wres.TimeSeriesReferenceTime as T0
@@ -190,26 +188,26 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
             SourceCompletedDetails completedDetails =
                     new SourceCompletedDetails( this.getDatabase(),
                                                 griddedSource );
-			boolean complete;
+            boolean complete;
 
-			if ( griddedSource.performedInsert() )
+            if ( griddedSource.performedInsert() )
             {
                 completedDetails.markCompleted();
                 complete = true;
             }
-			else
+            else
             {
                 complete = completedDetails.wasCompleted();
             }
 
-			return IngestResult.singleItemListFrom( this.projectConfig,
+            return IngestResult.singleItemListFrom( this.projectConfig,
                                                     this.dataSource,
                                                     griddedSource.getId(),
                                                     !griddedSource.performedInsert(),
                                                     !complete );
-		}
+        }
         finally
-		{
+        {
             try
             {
                 this.closeFile();
@@ -220,42 +218,42 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
                 LOGGER.warn( "Failed to close file {}.", this.fileName, e );
             }
         }
-	}
+    }
 
-	private void ensureFileIsLocal() throws IOException
+    private void ensureFileIsLocal() throws IOException
     {
-        Path path = Paths.get( this.fileName);
+        Path path = Paths.get( this.fileName );
 
         if ( this.fileName.getScheme() != null &&
              this.fileName.getScheme().startsWith( "http" ) )
         {
             URL url = this.fileName.toURL();
-            HttpURLConnection huc = (HttpURLConnection)url.openConnection();
+            HttpURLConnection huc = (HttpURLConnection) url.openConnection();
             huc.setRequestMethod( "HEAD" );
             huc.setInstanceFollowRedirects( false );
 
-            if (huc.getResponseCode() == HttpURLConnection.HTTP_OK)
+            if ( huc.getResponseCode() == HttpURLConnection.HTTP_OK )
             {
                 this.retrieveFile( path );
             }
         }
         else
         {
-            LOGGER.trace("It was determined that {} is not remote data.", this.fileName);
+            LOGGER.trace( "It was determined that {} is not remote data.", this.fileName );
 
-            if(!Files.exists( path ))
+            if ( !Files.exists( path ) )
             {
                 throw new IOException( "Gridded data could not be found at: '" + this.fileName + "'" );
             }
         }
     }
 
-    private void retrieveFile(final Path path) throws IOException
+    private void retrieveFile( final Path path ) throws IOException
     {
         Integer nameCount = path.getNameCount();
         Integer firstNameIndex = 0;
 
-        if (nameCount > 4)
+        if ( nameCount > 4 )
         {
             firstNameIndex = nameCount - 4;
         }
@@ -264,36 +262,37 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
 
         SystemSettings systemSettings = this.getSystemSettings();
         this.fileName = Paths.get(
-                systemSettings.getNetCDFStorePath(),
-                path.subpath( firstNameIndex, nameCount ).toString()
-        ).toUri();
+                                   systemSettings.getNetCDFStorePath(),
+                                   path.subpath( firstNameIndex, nameCount ).toString() )
+                             .toUri();
 
-        if ( !Paths.get( this.fileName.toString(), path.getFileName().toString() ).toFile().exists())
+        if ( !Paths.get( this.fileName.toString(), path.getFileName().toString() ).toFile().exists() )
         {
             Downloader downloader = new Downloader( Paths.get( this.fileName ), originalPath );
             downloader.setDisplayOutput( false );
             downloader.execute();
 
-            if (!downloader.fileHasBeenDownloaded())
+            if ( !downloader.fileHasBeenDownloaded() )
             {
                 throw new IOException( "The file at '" + originalPath + "' could not be downloaded." );
             }
         }
     }
 
-	private NetcdfFile getFile() throws IOException
+    private NetcdfFile getFile() throws IOException
     {
-        if (this.source == null) {
-            this.getLogger().trace("Now opening '{}'...", this.fileName);
+        if ( this.source == null )
+        {
+            this.getLogger().trace( "Now opening '{}'...", this.fileName );
             this.source = NetcdfFiles.open( this.fileName.toString() );
-            this.getLogger().trace("'{}' has been opened for parsing.", this.fileName);
+            this.getLogger().trace( "'{}' has been opened for parsing.", this.fileName );
         }
         return this.source;
     }
 
     private void closeFile() throws IOException
     {
-        if (this.source != null)
+        if ( this.source != null )
         {
             this.source.close();
             this.source = null;
@@ -301,7 +300,8 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
     }
 
     @Override
-    protected Logger getLogger () {
+    protected Logger getLogger()
+    {
         return GriddedNWMValueSaver.LOGGER;
     }
 }

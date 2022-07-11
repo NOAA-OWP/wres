@@ -13,12 +13,12 @@ import org.jfree.data.xy.AbstractIntervalXYDataset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.datamodel.DataFactory;
 import wres.datamodel.Slicer;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.MetricDimension;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
-import wres.vis.charts.GraphicsUtils;
 
 /**
  * Creates an {@link XYDataset} for plotting a verification diagram.
@@ -243,10 +243,11 @@ class Diagram extends AbstractXYDataset
         // One threshold and one or more lead durations: label by lead duration
         else
         {
-            label = Long.toString( GraphicsUtils.durationToLongUnits( diagram.getMetadata()
-                                                                             .getTimeWindow()
-                                                                             .getLatestLeadDuration(),
-                                                                      durationUnits ) );
+            Number numericDuration = DataFactory.durationToNumericUnits( diagram.getMetadata()
+                                                                                .getTimeWindow()
+                                                                                .getLatestLeadDuration(),
+                                                                         durationUnits );
+            label = numericDuration.toString();
         }
 
         return label;

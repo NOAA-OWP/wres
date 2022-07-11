@@ -5,9 +5,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.StringJoiner;
 
+import wres.datamodel.DataFactory;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.util.TimeHelper;
 
 /**
  * Utility class that helps to write Comma Separated Values (CSV).
@@ -124,8 +124,8 @@ public class CommaSeparatedUtilities
                                 + HEADER_DELIMITER
                                 + "OVER PAST"
                                 + HEADER_DELIMITER
-                                + Long.toString( TimeHelper.durationToLongUnits( timeScaleOuter.getPeriod(),
-                                                                                 timeResolution ) )
+                                + DataFactory.durationToNumericUnits( timeScaleOuter.getPeriod(),
+                                                                      timeResolution )
                                 + HEADER_DELIMITER
                                 + timeResolution.toString().toUpperCase();
 
