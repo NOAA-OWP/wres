@@ -60,6 +60,7 @@ import wres.config.generated.OutputTypeSelection;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.DataFactory;
 import wres.datamodel.Slicer;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.MetricDimension;
@@ -1470,11 +1471,10 @@ public class ChartFactory
 
                 if ( timeScaleOuter.hasPeriod() )
                 {
-
-                    String period =
-                            Long.toString( GraphicsUtils.durationToLongUnits( metadata.getTimeScale()
+                    Number periodNumber = DataFactory.durationToNumericUnits( metadata.getTimeScale()
                                                                                       .getPeriod(),
-                                                                              durationUnits ) )
+                                                                              durationUnits );
+                    String period = periodNumber
                                     + " "
                                     + durationUnits.name().toUpperCase();
 
@@ -1667,20 +1667,24 @@ public class ChartFactory
             }
 
             String middle = "";
-            long earliest = GraphicsUtils.durationToLongUnits( timeWindow.getEarliestLeadDuration(),
-                                                               durationUnits );
-            if ( timeWindow.getEarliestLeadDuration().equals( timeWindow.getLatestLeadDuration() ) )
+
+            Number earliestNumber = DataFactory.durationToNumericUnits( timeWindow.getEarliestLeadDuration(),
+                                                                        durationUnits );
+
+            if ( timeWindow.getEarliestLeadDuration()
+                           .equals( timeWindow.getLatestLeadDuration() ) )
             {
-                middle = "a lead duration of " + earliest + " ";
+                middle = "a lead duration of " + earliestNumber + " ";
             }
             else
             {
-                long latest = GraphicsUtils.durationToLongUnits( timeWindow.getLatestLeadDuration(),
-                                                                 durationUnits );
+                Number latestNumber = DataFactory.durationToNumericUnits( timeWindow.getLatestLeadDuration(),
+                                                                          durationUnits );
+
                 middle = "lead durations in ["
-                         + earliest
+                         + earliestNumber
                          + ", "
-                         + latest
+                         + latestNumber
                          + "] ";
             }
 

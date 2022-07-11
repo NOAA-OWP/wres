@@ -55,6 +55,7 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.pools.PoolMetadata;
+import wres.datamodel.DataFactory;
 import wres.datamodel.MissingValues;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metrics.MetricConstants;
@@ -78,7 +79,6 @@ import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Pool;
 import wres.system.SystemSettings;
 import wres.util.Strings;
-import wres.util.TimeHelper;
 
 /**
  * A writer is instantiated in two stages. First, the writer is built. Second, the blobs are initialized for writing. 
@@ -487,8 +487,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         }
 
         // Format the duration with the default format
-        filename.add( Long.toString( TimeHelper.durationToLongUnits( timeWindow.getLatestLeadDuration(),
-                                                                     leadUnits ) ) );
+        Number numericDuration = DataFactory.durationToNumericUnits( timeWindow.getLatestLeadDuration(),
+                                                                     leadUnits );
+        filename.add( numericDuration.toString() );
         filename.add( leadUnits.name().toUpperCase() );
 
         String extension = "";

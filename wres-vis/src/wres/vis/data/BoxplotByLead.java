@@ -7,8 +7,8 @@ import java.util.Objects;
 import org.jfree.data.xy.AbstractIntervalXYDataset;
 import org.jfree.data.xy.XYDataset;
 
+import wres.datamodel.DataFactory;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
-import wres.vis.charts.GraphicsUtils;
 
 /**
  * Creates an {@link XYDataset} for building a box plot.
@@ -24,7 +24,7 @@ class BoxplotByLead extends AbstractIntervalXYDataset
     private final Boxplot data;
 
     /** The lead duration associated with each box. */
-    private final long[] leadDurations;
+    private final Number[] leadDurations;
 
     /**
      * @param statistics the statistics
@@ -107,8 +107,9 @@ class BoxplotByLead extends AbstractIntervalXYDataset
         this.data = Boxplot.of( statistics );
         this.leadDurations = statistics.stream()
                                        .map( next -> next.getMetadata().getTimeWindow().getLatestLeadDuration() )
-                                       .mapToLong( next -> GraphicsUtils.durationToLongUnits( next, durationUnits ) )
-                                       .toArray();
+                                       .map( next -> DataFactory.durationToNumericUnits( next,
+                                                                                         durationUnits ) )
+                                       .toArray( Number[]::new );
     }
 
 }

@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.DataFactory;
 import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
@@ -30,7 +31,6 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Pool;
-import wres.util.TimeHelper;
 
 /**
  * Helps write statistics as Comma Separated Values (CSV).
@@ -264,11 +264,13 @@ abstract class CommaSeparatedStatisticsWriter
             // #57932
             String featureName = CommaSeparatedStatisticsWriter.getFeatureNameFromMetadata( sampleMetadata );
             String earliestLeadDuration =
-                    Long.toString( TimeHelper.durationToLongUnits( timeWindow.getEarliestLeadDuration(),
-                                                                   durationUnits ) );
+                    DataFactory.durationToNumericUnits( timeWindow.getEarliestLeadDuration(),
+                                                        durationUnits )
+                               .toString();
             String latestLeadDuration =
-                    Long.toString( TimeHelper.durationToLongUnits( timeWindow.getLatestLeadDuration(),
-                                                                   durationUnits ) );
+                    DataFactory.durationToNumericUnits( timeWindow.getLatestLeadDuration(),
+                                                        durationUnits )
+                               .toString();
             // Add the space/time metadata
             row.add( featureName )
                .add( timeWindow.getEarliestReferenceTime().toString() )

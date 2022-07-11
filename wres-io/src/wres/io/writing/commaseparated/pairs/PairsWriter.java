@@ -26,6 +26,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.datamodel.DataFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -39,7 +40,6 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.io.writing.WriteException;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
 import wres.statistics.generated.GeometryGroup;
-import wres.util.TimeHelper;
 
 /**
  * <p>Abstract base class for writing a time-series of pairs as comma separated values (CSV). There is one 
@@ -317,10 +317,12 @@ public abstract class PairsWriter<L, R>
                                 joiner.add( timeWindow.getLatestReferenceTime().toString() );
                                 joiner.add( timeWindow.getEarliestValidTime().toString() );
                                 joiner.add( timeWindow.getLatestValidTime().toString() );
-                                joiner.add( Long.toString( TimeHelper.durationToLongUnits( timeWindow.getEarliestLeadDuration(),
-                                                                                           this.getTimeResolution() ) ) );
-                                joiner.add( Long.toString( TimeHelper.durationToLongUnits( timeWindow.getLatestLeadDuration(),
-                                                                                           this.getTimeResolution() ) ) );
+                                joiner.add( DataFactory.durationToNumericUnits( timeWindow.getEarliestLeadDuration(),
+                                                                                this.getTimeResolution() )
+                                                       .toString() );
+                                joiner.add( DataFactory.durationToNumericUnits( timeWindow.getLatestLeadDuration(),
+                                                                                this.getTimeResolution() )
+                                                       .toString() );
                             }
 
                             // ISO8601 datetime string
@@ -331,8 +333,9 @@ public abstract class PairsWriter<L, R>
                             Instant referenceTime = this.getFirstReferenceTime( nextSeries );
                             // Lead duration in standard units
                             Duration leadDuration = this.getLeadDuration( referenceTime, nextPair.getTime() );
-                            joiner.add( Long.toString( TimeHelper.durationToLongUnits( leadDuration,
-                                                                                       this.getTimeResolution() ) ) );
+                            joiner.add( DataFactory.durationToNumericUnits( leadDuration,
+                                                                            this.getTimeResolution() )
+                                                   .toString() );
 
                             // Write the values
                             joiner.add( this.getPairFormatter().apply( nextPair.getValue() ) );

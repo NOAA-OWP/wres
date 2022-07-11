@@ -189,7 +189,6 @@ public class NWMSource extends BasicSource
                 saver = new GriddedNWMValueSaver( this.getSystemSettings(),
                                                   this.getDatabase(),
                                                   this.getFeaturesCache(),
-                                                  this.getTimeScalesCache(),
                                                   this.getMeasurementUnitsCache(),
                                                   this.getProjectConfig(),
                                                   this.getDataSource(),

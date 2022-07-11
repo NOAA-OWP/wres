@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.OutputTypeSelection;
+import wres.datamodel.DataFactory;
 import wres.datamodel.Slicer;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.MetricConstants;
@@ -42,7 +43,6 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
-import wres.vis.charts.GraphicsUtils;
 
 /**
  * Used to create datasets for constructing charts.
@@ -581,15 +581,15 @@ public class ChartDataFactory
             // Zero-width interval
             if ( earliest.equals( latest ) )
             {
-                long duration = GraphicsUtils.durationToLongUnits( latest, durationUnits );
-                key = key + Long.toString( duration ) + ", ";
+                Number duration = DataFactory.durationToNumericUnits( latest, durationUnits );
+                key = key + duration + ", ";
             }
             else
             {
                 key = key + "("
-                      + GraphicsUtils.durationToLongUnits( earliest, durationUnits )
+                      + DataFactory.durationToNumericUnits( earliest, durationUnits )
                       + ","
-                      + GraphicsUtils.durationToLongUnits( latest, durationUnits )
+                      + DataFactory.durationToNumericUnits( latest, durationUnits )
                       + "], ";
             }
         }
