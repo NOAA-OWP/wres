@@ -434,7 +434,7 @@ public class SourceLoader
                                            source,
                                            this.getLockManager(),
                                            source.getTimeSeries() );
-            task = CompletableFuture.supplyAsync( ingester::call,
+            task = CompletableFuture.supplyAsync( ingester::ingest,
                                                   this.getExecutor() );
         }
         else

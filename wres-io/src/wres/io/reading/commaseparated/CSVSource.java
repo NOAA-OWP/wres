@@ -819,7 +819,7 @@ public class CSVSource extends BasicSource
 
         Future<List<IngestResult>> futureIngestResult =
                 this.ingestSaverExecutor.submit(
-                        timeSeriesIngester );
+                                                 timeSeriesIngester::ingest );
         this.ingests.add( futureIngestResult );
         this.startGettingIngestResults.countDown();
 

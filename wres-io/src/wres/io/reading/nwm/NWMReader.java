@@ -565,7 +565,7 @@ public class NWMReader implements Callable<List<IngestResult>>
                                                            this.getLockManager(),
                                                            entry.getValue() );
                             Future<List<IngestResult>> future =
-                                    this.getExecutor().submit( ingester );
+                                    this.getExecutor().submit( ingester::ingest );
                             this.ingests.add( future );
                             this.startGettingResults.countDown();
 

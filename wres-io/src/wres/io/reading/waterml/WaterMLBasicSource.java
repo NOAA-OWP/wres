@@ -216,7 +216,7 @@ public class WaterMLBasicSource extends BasicSource
                                                                      this.getDataSource(),
                                                                      this.getLockManager(),
                                                                      timeSeries );
-                List<IngestResult> result = ingester.call();
+                List<IngestResult> result = ingester.ingest();
                 ingestResults.addAll( result );
             }
 

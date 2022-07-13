@@ -190,7 +190,7 @@ public class SingleValuedRetrieverFactoryTest
         TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
         // Get the actual left series
-        List<TimeSeries<Double>> actualCollection = this.factoryToTest.getLeftRetriever( Set.of( FEATURE ), 
+        List<TimeSeries<Double>> actualCollection = this.factoryToTest.getLeftRetriever( Set.of( FEATURE ),
                                                                                          timeWindow )
                                                                       .get()
                                                                       .collect( Collectors.toList() );
@@ -232,7 +232,7 @@ public class SingleValuedRetrieverFactoryTest
         TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
         // Get the actual left series
-        List<TimeSeries<Double>> actualCollection = this.factoryToTest.getRightRetriever( Set.of( FEATURE ), 
+        List<TimeSeries<Double>> actualCollection = this.factoryToTest.getRightRetriever( Set.of( FEATURE ),
                                                                                           timeWindow )
                                                                       .get()
                                                                       .collect( Collectors.toList() );
@@ -273,7 +273,7 @@ public class SingleValuedRetrieverFactoryTest
         TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
         // Get the actual left series
-        List<TimeSeries<Double>> actualCollection = this.factoryToTest.getBaselineRetriever( Set.of( FEATURE ), 
+        List<TimeSeries<Double>> actualCollection = this.factoryToTest.getBaselineRetriever( Set.of( FEATURE ),
                                                                                              timeWindow )
                                                                       .get()
                                                                       .collect( Collectors.toList() );
@@ -400,7 +400,7 @@ public class SingleValuedRetrieverFactoryTest
 
         GeometryTuple geoTuple = MessageFactory.getGeometryTuple( FEATURE, FEATURE, null );
         FeatureTuple featureTuple = FeatureTuple.of( geoTuple );
-        
+
         Set<FeatureTuple> allFeatures = Set.of( featureTuple );
 
         // Mock the sufficient elements of Project
@@ -408,7 +408,8 @@ public class SingleValuedRetrieverFactoryTest
         Mockito.when( project.getProjectConfig() ).thenReturn( projectConfig );
         Mockito.when( project.getId() ).thenReturn( PROJECT_ID );
         Mockito.when( project.getFeatures() ).thenReturn( allFeatures );
-        Mockito.when( project.getVariableName( Mockito.any( LeftOrRightOrBaseline.class ) ) ).thenReturn( VARIABLE_NAME );
+        Mockito.when( project.getVariableName( Mockito.any( LeftOrRightOrBaseline.class ) ) )
+               .thenReturn( VARIABLE_NAME );
         Mockito.when( project.hasBaseline() ).thenReturn( true );
         Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
         Mockito.when( project.getDatabase() ).thenReturn( this.wresDatabase );
@@ -432,8 +433,9 @@ public class SingleValuedRetrieverFactoryTest
         DataSource leftData = RetrieverTestData.generateDataSource( DatasourceType.OBSERVATIONS );
         DataSource rightData = RetrieverTestData.generateDataSource( DatasourceType.SINGLE_VALUED_FORECASTS );
         LOGGER.info( "leftData: {}", leftData );
-        LOGGER.info( "rightData: {}" , rightData );
-        ProjectConfig.Inputs fakeInputs = new ProjectConfig.Inputs( leftData.getContext(), rightData.getContext(), null );
+        LOGGER.info( "rightData: {}", rightData );
+        ProjectConfig.Inputs fakeInputs =
+                new ProjectConfig.Inputs( leftData.getContext(), rightData.getContext(), null );
         ProjectConfig fakeConfig = new ProjectConfig( fakeInputs, null, null, null, null, null );
         TimeSeries<Double> timeSeriesOne = RetrieverTestData.generateTimeSeriesDoubleOne( T0 );
         TimeSeriesIngester ingesterOne = TimeSeriesIngester.of( this.mockSystemSettings,
@@ -446,7 +448,7 @@ public class SingleValuedRetrieverFactoryTest
                                                                 rightData,
                                                                 this.lockManager,
                                                                 timeSeriesOne );
-        IngestResult ingestResultOne = ingesterOne.call()
+        IngestResult ingestResultOne = ingesterOne.ingest()
                                                   .get( 0 );
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleFour( T0 );
 
@@ -460,7 +462,7 @@ public class SingleValuedRetrieverFactoryTest
                                                                 rightData,
                                                                 this.lockManager,
                                                                 timeSeriesTwo );
-        IngestResult ingestResultTwo = ingesterTwo.call()
+        IngestResult ingestResultTwo = ingesterTwo.ingest()
                                                   .get( 0 );
 
         TimeSeries<Double> timeSeriesThree = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
@@ -475,7 +477,7 @@ public class SingleValuedRetrieverFactoryTest
                                                                   leftData,
                                                                   this.lockManager,
                                                                   timeSeriesThree );
-        IngestResult ingestResultThree = ingesterThree.call()
+        IngestResult ingestResultThree = ingesterThree.ingest()
                                                       .get( 0 );
 
         List<IngestResult> results = List.of( ingestResultOne,
@@ -484,13 +486,14 @@ public class SingleValuedRetrieverFactoryTest
 
         try ( Statement statement = this.rawConnection.createStatement() )
         {
-            ResultSet sourceData = statement.executeQuery( "select source_id, hash, measurementunit_id, path from wres.source" );
+            ResultSet sourceData =
+                    statement.executeQuery( "select source_id, hash, measurementunit_id, path from wres.source" );
 
             while ( sourceData.next() )
             {
                 LOGGER.info( "source_id={} hash={} measurementunit_id={} path={}",
                              sourceData.getLong( "source_id" ),
-                             sourceData.getString( "hash"),
+                             sourceData.getString( "hash" ),
                              sourceData.getShort( "measurementunit_id" ),
                              sourceData.getString( "path" ) );
             }

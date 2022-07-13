@@ -500,8 +500,9 @@ public class AnalysisRetrieverTest
         DataSource leftData = RetrieverTestData.generateDataSource( DatasourceType.OBSERVATIONS );
         DataSource rightData = RetrieverTestData.generateDataSource( DatasourceType.ANALYSES );
         LOGGER.info( "leftData: {}", leftData );
-        LOGGER.info( "rightData: {}" , rightData );
-        ProjectConfig.Inputs fakeInputs = new ProjectConfig.Inputs( leftData.getContext(), rightData.getContext(), null );
+        LOGGER.info( "rightData: {}", rightData );
+        ProjectConfig.Inputs fakeInputs =
+                new ProjectConfig.Inputs( leftData.getContext(), rightData.getContext(), null );
         ProjectConfig fakeConfig = new ProjectConfig( fakeInputs, null, null, null, null, null );
         TimeSeries<Double> timeSeriesOne = RetrieverTestData.generateTimeSeriesDoubleOne( ANALYSIS_START_TIME );
         TimeSeriesIngester ingesterOne = TimeSeriesIngester.of( this.mockSystemSettings,
@@ -514,7 +515,7 @@ public class AnalysisRetrieverTest
                                                                 rightData,
                                                                 this.lockManager,
                                                                 timeSeriesOne );
-        IngestResult ingestResultOne = ingesterOne.call()
+        IngestResult ingestResultOne = ingesterOne.ingest()
                                                   .get( 0 );
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleTwo( ANALYSIS_START_TIME );
 
@@ -528,7 +529,7 @@ public class AnalysisRetrieverTest
                                                                 rightData,
                                                                 this.lockManager,
                                                                 timeSeriesTwo );
-        IngestResult ingestResultTwo = ingesterTwo.call()
+        IngestResult ingestResultTwo = ingesterTwo.ingest()
                                                   .get( 0 );
         TimeSeries<Double> timeSeriesThree = RetrieverTestData.generateTimeSeriesDoubleThree( ANALYSIS_START_TIME );
 
@@ -542,7 +543,7 @@ public class AnalysisRetrieverTest
                                                                   rightData,
                                                                   this.lockManager,
                                                                   timeSeriesThree );
-        IngestResult ingestResultThree = ingesterThree.call()
+        IngestResult ingestResultThree = ingesterThree.ingest()
                                                       .get( 0 );
 
         TimeSeries<Double> timeSeriesFour = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
@@ -557,7 +558,7 @@ public class AnalysisRetrieverTest
                                                                  leftData,
                                                                  this.lockManager,
                                                                  timeSeriesFour );
-        IngestResult ingestResultFour = ingesterFour.call()
+        IngestResult ingestResultFour = ingesterFour.ingest()
                                                     .get( 0 );
 
         List<IngestResult> results = List.of( ingestResultOne,
@@ -567,13 +568,14 @@ public class AnalysisRetrieverTest
 
         try ( Statement statement = this.rawConnection.createStatement() )
         {
-            ResultSet sourceData = statement.executeQuery( "select source_id, hash, measurementunit_id, path from wres.source" );
+            ResultSet sourceData =
+                    statement.executeQuery( "select source_id, hash, measurementunit_id, path from wres.source" );
 
             while ( sourceData.next() )
             {
                 LOGGER.info( "source_id={} hash={} measurementunit_id={} path={}",
                              sourceData.getLong( "source_id" ),
-                             sourceData.getString( "hash"),
+                             sourceData.getString( "hash" ),
                              sourceData.getShort( "measurementunit_id" ),
                              sourceData.getString( "path" ) );
             }

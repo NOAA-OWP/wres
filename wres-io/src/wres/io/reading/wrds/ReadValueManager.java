@@ -586,7 +586,7 @@ public class ReadValueManager
                                                              timeSeries );
         try
         {
-            return ingester.call();
+            return ingester.ingest();
         }
         catch ( IngestException ie )
         {
