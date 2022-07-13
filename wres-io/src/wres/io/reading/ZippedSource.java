@@ -39,7 +39,6 @@ import static wres.io.reading.DataSource.DataDisposition.XML_PI_TIMESERIES;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
-import wres.io.concurrency.IngestSaver;
 import wres.io.concurrency.WRESCallable;
 import wres.io.concurrency.ZippedPIXMLIngest;
 import wres.io.data.caching.DataSources;
@@ -47,6 +46,9 @@ import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.TimeScales;
+import wres.io.ingesting.IngestResult;
+import wres.io.ingesting.IngestSaver;
+import wres.io.ingesting.PreIngestException;
 import wres.io.reading.DataSource.DataDisposition;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;

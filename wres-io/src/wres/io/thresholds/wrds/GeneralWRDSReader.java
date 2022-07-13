@@ -16,7 +16,7 @@ import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.io.geography.wrds.version.WrdsLocationRootVersionDocument;
-import wres.io.reading.PreIngestException;
+import wres.io.ingesting.PreIngestException;
 import wres.io.reading.wrds.ReadValueManager;
 import wres.io.thresholds.ThresholdReadingException;
 import wres.io.thresholds.exceptions.StreamIOException;

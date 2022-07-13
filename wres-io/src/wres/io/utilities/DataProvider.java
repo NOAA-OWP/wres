@@ -539,7 +539,7 @@ public interface DataProvider extends AutoCloseable
      * TODO: implementations may not have/use a database, may want to not
      *       require the database as a param but as a member of implementations.
      * @param table Fully qualified table name to copy data into
-     * @throws wres.io.reading.IngestException When the copy fails.
+     * @throws wres.io.ingesting.IngestException When the copy fails.
      */
     default void copy( Database database, final String table )
     {
@@ -555,7 +555,7 @@ public interface DataProvider extends AutoCloseable
      *       require the database as a param but as a member of implementations.
      * @param table Fully qualified table name to copy data into
      * @param showProgress Whether or not to show progress during the copy operation
-     * @throws wres.io.reading.IngestException When the copy fails.
+     * @throws wres.io.ingesting.IngestException When the copy fails.
      */
     default void copy( Database database, final String table, final boolean showProgress )
     {

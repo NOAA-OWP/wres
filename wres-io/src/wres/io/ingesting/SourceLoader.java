@@ -1,4 +1,4 @@
-package wres.io.reading;
+package wres.io.ingesting;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -41,8 +41,6 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
-import wres.io.concurrency.IngestSaver;
-import wres.io.concurrency.TimeSeriesIngester;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
@@ -51,6 +49,7 @@ import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.TimeScales;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
+import wres.io.reading.DataSource;
 import wres.io.reading.DataSource.DataDisposition;
 import wres.io.reading.nwm.NWMReader;
 import wres.io.removal.IncompleteIngest;

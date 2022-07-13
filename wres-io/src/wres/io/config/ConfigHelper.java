@@ -34,7 +34,7 @@ import wres.config.generated.*;
 import wres.config.generated.ProjectConfig.Outputs;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.io.reading.PreIngestException;
+import wres.io.ingesting.PreIngestException;
 import wres.io.utilities.NoDataException;
 import wres.util.TimeHelper;
 

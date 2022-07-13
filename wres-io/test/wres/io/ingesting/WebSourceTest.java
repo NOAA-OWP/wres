@@ -1,4 +1,4 @@
-package wres.io.reading;
+package wres.io.ingesting;
 
 import java.net.URI;
 import java.time.Instant;
@@ -27,6 +27,8 @@ import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.TimeScales;
+import wres.io.ingesting.WebSource;
+import wres.io.reading.DataSource;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;

@@ -1,4 +1,4 @@
-package wres.io.reading;
+package wres.io.ingesting;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -6,6 +6,7 @@ import java.util.concurrent.CompletableFuture;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
+import wres.io.reading.DataSource;
 
 /**
  * High-level result for a single fragment of ingest, namely a timeseries.

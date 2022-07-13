@@ -51,7 +51,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.io.reading.PreIngestException;
+import wres.io.ingesting.PreIngestException;
 import wres.statistics.generated.Geometry;
 import wres.system.SystemSettings;
 

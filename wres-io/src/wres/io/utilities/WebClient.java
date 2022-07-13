@@ -26,10 +26,11 @@ import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import wres.io.ingesting.IngestException;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import wres.io.reading.IngestException;
 
 /**
  * Allows caller to get an InputStream from a URI with retry with exponential
