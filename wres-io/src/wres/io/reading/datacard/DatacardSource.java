@@ -404,9 +404,8 @@ public class DatacardSource extends BasicSource
                                        this.getMeasurementUnitsCache(),
                                        this.getProjectConfig(),
                                        this.getDataSource(),
-                                       this.getLockManager(),
-                                       timeSeries );
-        List<IngestResult> results = ingester.ingest();
+                                       this.getLockManager() );
+        List<IngestResult> results = ingester.ingest( timeSeries );
 
         if ( LOGGER.isDebugEnabled() )
         {

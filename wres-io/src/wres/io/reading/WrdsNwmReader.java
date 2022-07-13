@@ -394,7 +394,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
 
                         Future<List<IngestResult>> futureIngestResult =
                                 this.ingestSaverExecutor.submit(
-                                        timeSeriesIngester::ingest );
+                                        () -> timeSeriesIngester.ingest( timeSeries ) );
                         this.ingests.add( futureIngestResult );
                         this.startGettingIngestResults.countDown();
 
@@ -711,8 +711,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                        measurementUnitsCache,
                                        projectConfig,
                                        dataSource,
-                                       lockManager,
-                                       timeSeries );
+                                       lockManager );
     }
 
 

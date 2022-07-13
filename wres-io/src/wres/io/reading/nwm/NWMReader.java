@@ -562,10 +562,9 @@ public class NWMReader implements Callable<List<IngestResult>>
                                                            this.getMeasurementUnitsCache(),
                                                            this.getProjectConfig(),
                                                            innerDataSource,
-                                                           this.getLockManager(),
-                                                           entry.getValue() );
+                                                           this.getLockManager() );
                             Future<List<IngestResult>> future =
-                                    this.getExecutor().submit( ingester::ingest );
+                                    this.getExecutor().submit( () -> ingester.ingest( entry.getValue() ) );
                             this.ingests.add( future );
                             this.startGettingResults.countDown();
 

@@ -393,9 +393,8 @@ public class EnsembleForecastRetrieverTest
                                                                 this.measurementUnitsCache,
                                                                 fakeConfig,
                                                                 rightData,
-                                                                this.lockManager,
-                                                                timeSeriesOne );
-        IngestResult ingestResultOne = ingesterOne.ingest()
+                                                                this.lockManager );
+        IngestResult ingestResultOne = ingesterOne.ingest( timeSeriesOne )
                                                   .get( 0 );
 
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
@@ -408,9 +407,8 @@ public class EnsembleForecastRetrieverTest
                                                                 this.measurementUnitsCache,
                                                                 fakeConfig,
                                                                 leftData,
-                                                                this.lockManager,
-                                                                timeSeriesTwo );
-        IngestResult ingestResultTwo = ingesterTwo.ingest()
+                                                                this.lockManager );
+        IngestResult ingestResultTwo = ingesterTwo.ingest( timeSeriesTwo )
                                                   .get( 0 );
 
         List<IngestResult> results = List.of( ingestResultOne,

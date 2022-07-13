@@ -513,9 +513,8 @@ public class AnalysisRetrieverTest
                                                                 this.measurementUnitsCache,
                                                                 fakeConfig,
                                                                 rightData,
-                                                                this.lockManager,
-                                                                timeSeriesOne );
-        IngestResult ingestResultOne = ingesterOne.ingest()
+                                                                this.lockManager );
+        IngestResult ingestResultOne = ingesterOne.ingest( timeSeriesOne )
                                                   .get( 0 );
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleTwo( ANALYSIS_START_TIME );
 
@@ -527,9 +526,8 @@ public class AnalysisRetrieverTest
                                                                 this.measurementUnitsCache,
                                                                 fakeConfig,
                                                                 rightData,
-                                                                this.lockManager,
-                                                                timeSeriesTwo );
-        IngestResult ingestResultTwo = ingesterTwo.ingest()
+                                                                this.lockManager );
+        IngestResult ingestResultTwo = ingesterTwo.ingest( timeSeriesTwo )
                                                   .get( 0 );
         TimeSeries<Double> timeSeriesThree = RetrieverTestData.generateTimeSeriesDoubleThree( ANALYSIS_START_TIME );
 
@@ -541,9 +539,8 @@ public class AnalysisRetrieverTest
                                                                   this.measurementUnitsCache,
                                                                   fakeConfig,
                                                                   rightData,
-                                                                  this.lockManager,
-                                                                  timeSeriesThree );
-        IngestResult ingestResultThree = ingesterThree.ingest()
+                                                                  this.lockManager );
+        IngestResult ingestResultThree = ingesterThree.ingest( timeSeriesThree )
                                                       .get( 0 );
 
         TimeSeries<Double> timeSeriesFour = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
@@ -556,9 +553,8 @@ public class AnalysisRetrieverTest
                                                                  this.measurementUnitsCache,
                                                                  fakeConfig,
                                                                  leftData,
-                                                                 this.lockManager,
-                                                                 timeSeriesFour );
-        IngestResult ingestResultFour = ingesterFour.ingest()
+                                                                 this.lockManager );
+        IngestResult ingestResultFour = ingesterFour.ingest( timeSeriesFour )
                                                     .get( 0 );
 
         List<IngestResult> results = List.of( ingestResultOne,

@@ -138,6 +138,7 @@ public class WrdsNwmReaderTest
     public static void createFakeServer()
     {
         WrdsNwmReaderTest.mockServer = startClientAndServer( 0 );
+        System.setProperty( "user.timezone", "UTC" );
     }
 
     @Before
@@ -244,7 +245,7 @@ public class WrdsNwmReaderTest
                                           any( ProjectConfig.class ),
                                           any( DataSource.class ),
                                           any( DatabaseLockManager.class ),
-                                          any( TimeSeries.class ) );
+                                          this.timeSeries.capture() );
 
 
         // Exercise the reader by executing call method.
@@ -424,7 +425,7 @@ public class WrdsNwmReaderTest
                                           any( ProjectConfig.class ),
                                           any( DataSource.class ),
                                           any( DatabaseLockManager.class ),
-                                          any( TimeSeries.class ) );
+                                          this.timeSeries.capture() );
 
 
 

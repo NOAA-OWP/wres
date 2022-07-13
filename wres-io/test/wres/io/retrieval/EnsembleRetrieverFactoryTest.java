@@ -474,9 +474,8 @@ public class EnsembleRetrieverFactoryTest
                                                                 this.measurementUnitsCache,
                                                                 fakeConfig,
                                                                 rightData,
-                                                                this.lockManager,
-                                                                timeSeriesOne );
-        IngestResult ingestResultOne = ingesterOne.ingest()
+                                                                this.lockManager );
+        IngestResult ingestResultOne = ingesterOne.ingest( timeSeriesOne )
                                                   .get( 0 );
         TimeSeriesIngester ingesterTwo = TimeSeriesIngester.of( this.mockSystemSettings,
                                                                 this.wresDatabase,
@@ -486,10 +485,9 @@ public class EnsembleRetrieverFactoryTest
                                                                 this.measurementUnitsCache,
                                                                 fakeConfig,
                                                                 baselineData,
-                                                                this.lockManager,
-                                                                timeSeriesOne );
+                                                                this.lockManager );
 
-        IngestResult ingestResultTwo = ingesterTwo.ingest()
+        IngestResult ingestResultTwo = ingesterTwo.ingest( timeSeriesOne )
                                                   .get( 0 );
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
 
@@ -501,9 +499,8 @@ public class EnsembleRetrieverFactoryTest
                                                                   this.measurementUnitsCache,
                                                                   fakeConfig,
                                                                   leftData,
-                                                                  this.lockManager,
-                                                                  timeSeriesTwo );
-        IngestResult ingestResultThree = ingesterThree.ingest()
+                                                                  this.lockManager );
+        IngestResult ingestResultThree = ingesterThree.ingest( timeSeriesTwo )
                                                       .get( 0 );
 
         List<IngestResult> results = List.of( ingestResultOne,

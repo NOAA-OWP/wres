@@ -90,7 +90,6 @@ public class TimeSeriesIngester
     private final ProjectConfig projectConfig;
     private final DataSource dataSource;
     private final DatabaseLockManager lockManager;
-    private final TimeSeries<?> timeSeries;
 
     public static TimeSeriesIngester of( SystemSettings systemSettings,
                                          Database database,
@@ -100,19 +99,10 @@ public class TimeSeriesIngester
                                          MeasurementUnits measurementUnitsCache,
                                          ProjectConfig projectConfig,
                                          DataSource dataSource,
-                                         DatabaseLockManager databaseLockManager,
-                                         TimeSeries<?> timeSeries )
+                                         DatabaseLockManager databaseLockManager )
     {
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( database );
-        Objects.requireNonNull( timeSeries );
-        Objects.requireNonNull( timeSeries.getMetadata() );
-        Objects.requireNonNull( timeSeries.getMetadata()
-                                          .getFeature() );
-        Objects.requireNonNull( timeSeries.getMetadata()
-                                          .getVariableName() );
-        Objects.requireNonNull( timeSeries.getMetadata()
-                                          .getUnit() );
         Objects.requireNonNull( ensemblesCache );
         Objects.requireNonNull( featuresCache );
         Objects.requireNonNull( timeScalesCache );
@@ -126,8 +116,7 @@ public class TimeSeriesIngester
                                        measurementUnitsCache,
                                        projectConfig,
                                        dataSource,
-                                       databaseLockManager,
-                                       timeSeries );
+                                       databaseLockManager );
     }
 
     private TimeSeriesIngester( SystemSettings systemSettings,
@@ -138,8 +127,7 @@ public class TimeSeriesIngester
                                 MeasurementUnits measurementUnitsCache,
                                 ProjectConfig projectConfig,
                                 DataSource dataSource,
-                                DatabaseLockManager lockManager,
-                                TimeSeries<?> timeSeries )
+                                DatabaseLockManager lockManager )
     {
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( database );
@@ -150,8 +138,6 @@ public class TimeSeriesIngester
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( lockManager );
-        Objects.requireNonNull( timeSeries );
-        Objects.requireNonNull( timeSeries.getMetadata() );
 
         this.systemSettings = systemSettings;
         this.database = database;
@@ -162,15 +148,29 @@ public class TimeSeriesIngester
         this.projectConfig = projectConfig;
         this.dataSource = dataSource;
         this.lockManager = lockManager;
-        this.timeSeries = timeSeries;
     }
 
-    public List<IngestResult> ingest()
+    /**
+     * Ingests a time-series.
+     * @param timeSeries the time-series to ingest, not null
+     * @return the ingest results
+     */
+    
+    public List<IngestResult> ingest( TimeSeries<?> timeSeries )
     {
+        Objects.requireNonNull( timeSeries );
+        Objects.requireNonNull( timeSeries.getMetadata() );
+        Objects.requireNonNull( timeSeries.getMetadata()
+                                          .getFeature() );
+        Objects.requireNonNull( timeSeries.getMetadata()
+                                          .getVariableName() );
+        Objects.requireNonNull( timeSeries.getMetadata()
+                                          .getUnit() );
+        
         List<IngestResult> results;
         URI location = this.getLocation();
 
-        byte[] rawHash = this.identifyTimeSeries( this.getTimeSeries(), "" );
+        byte[] rawHash = this.identifyTimeSeries( timeSeries, "" );
         String hash = Hex.encodeHexString( rawHash, false );
 
         boolean foundAlready;
@@ -183,8 +183,7 @@ public class TimeSeriesIngester
         source.setLead( null );
         source.setIsPointData( true );
         source.setSourcePath( location );
-        TimeSeriesMetadata metadata = this.getTimeSeries()
-                                          .getMetadata();
+        TimeSeriesMetadata metadata = timeSeries.getMetadata();
         String measurementUnit = metadata.getUnit();
         FeatureKey feature = metadata.getFeature();
         TimeScaleOuter timeScale = metadata.getTimeScale();
@@ -238,7 +237,7 @@ public class TimeSeriesIngester
             Set<Pair<CountDownLatch, CountDownLatch>> latches = this.insertEverything( this.getSystemSettings(),
                                                                                        this.getDatabase(),
                                                                                        this.getEnsemblesCache(),
-                                                                                       this.getTimeSeries(),
+                                                                                       timeSeries,
                                                                                        source.getId() );
 
             // Mark complete
@@ -301,7 +300,7 @@ public class TimeSeriesIngester
                                        this.dataSource.getContext(),
                                        this.dataSource.getLinks(),
                                        this.dataSource.getUri(),
-                                       this.timeSeries );
+                                       timeSeries );
                 results = IngestResult.singleItemListFrom( this.projectConfig,
                                                            dataSourceWithTimeSeries,
                                                            source.getId(),
@@ -782,11 +781,6 @@ public class TimeSeriesIngester
     private MeasurementUnits getMeasurementUnitsCache()
     {
         return this.measurementUnitsCache;
-    }
-
-    private TimeSeries<?> getTimeSeries()
-    {
-        return this.timeSeries;
     }
 
     private URI getLocation()
