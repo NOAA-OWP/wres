@@ -49,15 +49,15 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.io.concurrency.TimeSeriesIngester;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.TimeScales;
+import wres.io.ingesting.IngestException;
+import wres.io.ingesting.IngestResult;
+import wres.io.ingesting.PreIngestException;
+import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.DataSource;
-import wres.io.reading.IngestException;
-import wres.io.reading.IngestResult;
-import wres.io.reading.PreIngestException;
 import wres.io.utilities.WebClient;
 import wres.statistics.generated.Geometry;
 import wres.io.utilities.Database;
@@ -410,7 +410,7 @@ public class ReadValueManager
      * invalid and will cause a PreIngestException.
      *
      * @param dataPointsList the WRDS-formatted timeseries data points
-     * @throws wres.io.reading.PreIngestException when invalid timeseries found
+     * @throws wres.io.ingesting.PreIngestException when invalid timeseries found
      */
 
     private void validateTimeseries( List<DataPoint> dataPointsList )

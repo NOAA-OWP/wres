@@ -28,9 +28,9 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.concurrency.Executor;
 import wres.io.data.caching.Features;
+import wres.io.ingesting.IngestResult;
 import wres.io.project.Project;
 import wres.io.reading.DataSource;
-import wres.io.reading.IngestResult;
 import wres.io.utilities.Database;
 import wres.system.SystemSettings;
 

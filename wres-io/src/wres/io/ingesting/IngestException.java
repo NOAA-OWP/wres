@@ -1,6 +1,4 @@
-package wres.io.reading;
-
-import java.io.IOException;
+package wres.io.ingesting;
 
 /**
  * Indicates an issue occurred during ingest

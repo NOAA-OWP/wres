@@ -32,6 +32,8 @@ import com.sun.xml.fastinfoset.stax.StAXDocumentParser; //NOSONAR
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.time.TimeSeries;
+import wres.io.ingesting.IngestResult;
+import wres.io.ingesting.PreIngestException;
 
 public class DataSource
 {
@@ -290,7 +292,7 @@ public class DataSource
      * @return true if the path is available, otherwise false
      */
 
-    boolean hasSourcePath()
+    public boolean hasSourcePath()
     {
         return Objects.nonNull( this.getUri() );
     }

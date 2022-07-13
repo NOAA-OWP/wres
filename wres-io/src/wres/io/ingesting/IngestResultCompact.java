@@ -1,4 +1,4 @@
-package wres.io.reading;
+package wres.io.ingesting;
 
 import java.util.Objects;
 
@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import static java.lang.Short.MAX_VALUE;
 
 import wres.config.generated.LeftOrRightOrBaseline;
+import wres.io.reading.DataSource;
 
 /**
  * A compact IngestResult exclusively for fully ingested data. If the data needs

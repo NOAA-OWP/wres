@@ -42,8 +42,8 @@ import static java.time.ZoneOffset.UTC;
 
 import wres.io.concurrency.WRESCallable;
 import wres.io.concurrency.WRESRunnable;
-import wres.io.reading.IngestException;
-import wres.io.reading.IngestResult;
+import wres.io.ingesting.IngestException;
+import wres.io.ingesting.IngestResult;
 import wres.system.DatabaseType;
 import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;

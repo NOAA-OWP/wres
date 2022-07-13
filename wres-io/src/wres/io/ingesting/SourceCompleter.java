@@ -1,4 +1,4 @@
-package wres.io.reading;
+package wres.io.ingesting;
 
 import java.sql.SQLException;
 import java.time.Duration;

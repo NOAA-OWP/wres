@@ -1,4 +1,4 @@
-package wres.io.reading;
+package wres.io.ingesting;
 
 /**
  * For when we cannot proceed with even starting the ingest due to catastrophic

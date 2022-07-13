@@ -1,4 +1,4 @@
-package wres.io.concurrency;
+package wres.io.ingesting;
 
 import java.io.IOException;
 import java.net.URI;
@@ -42,11 +42,6 @@ import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.caching.TimeScales;
 import wres.io.reading.DataSource;
-import wres.io.reading.IngestException;
-import wres.io.reading.IngestResult;
-import wres.io.reading.IngestedValues;
-import wres.io.reading.PreIngestException;
-import wres.io.reading.SourceCompleter;
 import wres.io.reading.ZippedSource;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;

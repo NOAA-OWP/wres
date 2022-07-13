@@ -1,4 +1,4 @@
- package wres.io.reading;
+ package wres.io.ingesting;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -49,13 +49,13 @@ import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.UrlParameter;
-import wres.io.concurrency.IngestSaver;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.TimeScales;
+import wres.io.reading.DataSource;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;

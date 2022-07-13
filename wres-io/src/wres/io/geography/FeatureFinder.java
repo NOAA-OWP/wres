@@ -28,7 +28,7 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.geography.wrds.WrdsLocation;
-import wres.io.reading.PreIngestException;
+import wres.io.ingesting.PreIngestException;
 
 /**
  * When sparse features are declared, this class helps build the features.

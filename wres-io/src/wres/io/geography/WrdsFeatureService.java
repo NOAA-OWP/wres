@@ -34,7 +34,7 @@ import wres.io.geography.wrds.WrdsLocation;
 import wres.io.geography.wrds.v2.WrdsLocationRootDocument;
 import wres.io.geography.wrds.v3.WrdsLocationRootDocumentV3;
 import wres.io.geography.wrds.version.WrdsLocationRootVersionDocument;
-import wres.io.reading.PreIngestException;
+import wres.io.ingesting.PreIngestException;
 import wres.io.reading.wrds.ReadValueManager;
 import wres.io.utilities.WebClient;
 

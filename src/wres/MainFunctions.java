@@ -26,7 +26,7 @@ import wres.events.broker.BrokerConnectionFactory;
 import wres.io.Operations;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
-import wres.io.reading.PreIngestException;
+import wres.io.ingesting.PreIngestException;
 import wres.io.utilities.Database;
 import wres.pipeline.Evaluator;
 import wres.pipeline.InternalWresException;

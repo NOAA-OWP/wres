@@ -1,4 +1,4 @@
-package wres.io.concurrency;
+package wres.io.ingesting;
 
 import java.io.IOException;
 import java.util.List;
@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.ProjectConfig;
+import wres.io.concurrency.WRESCallable;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
@@ -15,7 +16,6 @@ import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.TimeScales;
 import wres.io.reading.BasicSource;
 import wres.io.reading.DataSource;
-import wres.io.reading.IngestResult;
 import wres.io.reading.ReaderFactory;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;

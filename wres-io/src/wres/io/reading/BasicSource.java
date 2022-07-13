@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
+import wres.io.ingesting.IngestResult;
 
 /**
  * @author Christopher Tubbs

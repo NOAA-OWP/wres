@@ -1,5 +1,7 @@
 package wres.io.reading;
 
+import wres.io.ingesting.IngestException;
+
 /**
  * An issue was found with the structure or content of source data.
  *
