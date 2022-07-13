@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -91,7 +92,6 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
     private final DataSource dataSource;
     private final DatabaseLockManager lockManager;
     private final TimeSeries<?> timeSeries;
-    private final Set<Pair<CountDownLatch, CountDownLatch>> latches = new HashSet<>();
 
     public static TimeSeriesIngester of( SystemSettings systemSettings,
                                          Database database,
@@ -214,7 +214,8 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         }
         catch ( SQLException se )
         {
-            throw new IngestException( "Source metadata about '" + location +
+            throw new IngestException( "Source metadata about '" + location
+                                       +
                                        "' could not be stored or retrieved from the database.",
                                        se );
         }
@@ -232,20 +233,21 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
             catch ( SQLException se )
             {
                 throw new IngestException( "Failed to lock for source id "
-                                           + source.getId(), se );
+                                           + source.getId(),
+                                           se );
             }
 
             // Ready to ingest, source row was inserted and is (advisory) locked.
-            this.insertEverything( this.getSystemSettings(),
-                                   this.getDatabase(),
-                                   this.getEnsemblesCache(),
-                                   this.getTimeSeries(),
-                                   source.getId() );
+            Set<Pair<CountDownLatch, CountDownLatch>> latches = this.insertEverything( this.getSystemSettings(),
+                                                                                       this.getDatabase(),
+                                                                                       this.getEnsemblesCache(),
+                                                                                       this.getTimeSeries(),
+                                                                                       source.getId() );
 
             // Mark complete
             SourceCompleter completer = createSourceCompleter( source.getId(),
                                                                this.lockManager );
-            completer.complete( this.latches );
+            completer.complete( latches );
             results = IngestResult.singleItemListFrom( this.projectConfig,
                                                        this.dataSource,
                                                        source.getId(),
@@ -264,7 +266,8 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
             {
                 throw new PreIngestException( "Failed to determine if source "
                                               + source
-                                              + " was already ingested.", se );
+                                              + " was already ingested.",
+                                              se );
             }
 
             if ( completed )
@@ -313,11 +316,20 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         return results;
     }
 
-    private void insertEverything( SystemSettings systemSettings,
-                                   Database database,
-                                   Ensembles ensemblesCache,
-                                   TimeSeries<?> timeSeries,
-                                   long sourceId )
+    /**
+     * @param systemSettings the system settings
+     * @param database the database
+     * @param ensemblesCache the ensembles cache
+     * @param timeSeries the time-series to insert
+     * @param sourceId the source identifier
+     * @return a set of latch pairs, the left of which indicates "waiting" and the right indicates "completed"
+     */
+
+    private Set<Pair<CountDownLatch, CountDownLatch>> insertEverything( SystemSettings systemSettings,
+                                                                        Database database,
+                                                                        Ensembles ensemblesCache,
+                                                                        TimeSeries<?> timeSeries,
+                                                                        long sourceId )
     {
         SortedSet<? extends Event<?>> events = timeSeries.getEvents();
 
@@ -330,15 +342,16 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         Event<?> event = events.iterator()
                                .next();
 
+        Set<Pair<CountDownLatch, CountDownLatch>> latches = new HashSet<>();
+
         TimeSeriesMetadata metadata = timeSeries.getMetadata();
         this.insertReferenceTimeRows( database, sourceId, metadata.getReferenceTimes() );
 
         if ( event.getValue() instanceof Ensemble )
         {
             LOGGER.debug( "Found a TimeSeries<Ensemble>" );
-            for ( Map.Entry<Object,SortedSet<Event<Double>>> trace :
-                    TimeSeriesSlicer.decomposeWithLabels( (TimeSeries<Ensemble>) timeSeries )
-                                    .entrySet() )
+            for ( Map.Entry<Object, SortedSet<Event<Double>>> trace : TimeSeriesSlicer.decomposeWithLabels( (TimeSeries<Ensemble>) timeSeries )
+                                                                                      .entrySet() )
             {
                 LOGGER.debug( "TimeSeries trace: {}", trace );
                 String ensembleName = trace.getKey()
@@ -347,15 +360,17 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                 long ensembleId = this.insertOrGetEnsembleId( ensemblesCache,
                                                               ensembleName );
                 long timeSeriesId = this.insertTimeSeriesRowForEnsembleTrace(
-                        database,
-                        (TimeSeries<Ensemble>) timeSeries,
-                        ensembleId,
-                        sourceId );
-                this.insertEnsembleTrace( systemSettings,
-                                          database,
-                                          (TimeSeries<Ensemble>) timeSeries,
-                                          timeSeriesId,
-                                          trace.getValue() );
+                                                                              database,
+                                                                              (TimeSeries<Ensemble>) timeSeries,
+                                                                              ensembleId,
+                                                                              sourceId );
+                Set<Pair<CountDownLatch, CountDownLatch>> nextLatches = this.insertEnsembleTrace( systemSettings,
+                                                                                                  database,
+                                                                                                  (TimeSeries<Ensemble>) timeSeries,
+                                                                                                  timeSeriesId,
+                                                                                                  trace.getValue() );
+
+                latches.addAll( nextLatches );
             }
         }
         else if ( event.getValue() instanceof Double )
@@ -364,21 +379,25 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                                                           ensemblesCache,
                                                           (TimeSeries<Double>) timeSeries,
                                                           sourceId );
-            this.insertTimeSeriesValuesRows( systemSettings,
-                                             database,
-                                             timeSeriesId,
-                                             (TimeSeries<Double>) timeSeries );
+            Set<Pair<CountDownLatch, CountDownLatch>> innerLatches = this.insertTimeSeriesValuesRows( systemSettings,
+                                                                                                      database,
+                                                                                                      timeSeriesId,
+                                                                                                      (TimeSeries<Double>) timeSeries );
+
+            latches.addAll( innerLatches );
         }
         else
         {
             throw new UnsupportedOperationException( "Unable to ingest value "
                                                      + event.getValue() );
         }
+
+        return Collections.unmodifiableSet( latches );
     }
 
     private void insertReferenceTimeRows( Database database,
                                           long sourceId,
-                                          Map<ReferenceTimeType,Instant> referenceTimes )
+                                          Map<ReferenceTimeType, Instant> referenceTimes )
     {
         int rowCount = referenceTimes.size();
 
@@ -399,7 +418,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
 
         List<String[]> rows = new ArrayList<>( rowCount );
 
-        for ( Map.Entry<ReferenceTimeType,Instant> referenceTime : referenceTimes.entrySet() )
+        for ( Map.Entry<ReferenceTimeType, Instant> referenceTime : referenceTimes.entrySet() )
         {
             String[] row = new String[3];
             row[0] = Long.toString( sourceId );
@@ -443,56 +462,93 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         catch ( SQLException se )
         {
             throw new IngestException( "Failed to get Ensemble info for "
-                                       + ensembleName, se );
+                                       + ensembleName,
+                                       se );
         }
 
         return id;
     }
 
-    private void insertEnsembleTrace( SystemSettings systemSettings,
-                                      Database database,
-                                      TimeSeries<Ensemble> originalTimeSeries,
-                                      long timeSeriesIdForTrace,
-                                      SortedSet<Event<Double>> ensembleTrace )
+    /**
+     * @param systemSettings the system settings
+     * @param database the database
+     * @param originalTimeSeries the time-series to insert
+     * @param timeSeriesIdForTrace the trace identifier
+     * @param ensembleTrace the trace values
+     * @return a set of latch pairs, the left of which indicates "waiting" and the right indicates "completed"
+     */
+
+    private Set<Pair<CountDownLatch, CountDownLatch>> insertEnsembleTrace( SystemSettings systemSettings,
+                                                                           Database database,
+                                                                           TimeSeries<Ensemble> originalTimeSeries,
+                                                                           long timeSeriesIdForTrace,
+                                                                           SortedSet<Event<Double>> ensembleTrace )
             throws IngestException
     {
         Instant referenceDatetime = this.getReferenceDatetime( originalTimeSeries );
 
+        Set<Pair<CountDownLatch, CountDownLatch>> latches = new HashSet<>();
+
         for ( Event<Double> event : ensembleTrace )
         {
-            this.insertTimeSeriesValuesRow( systemSettings,
-                                            database,
-                                            timeSeriesIdForTrace,
-                                            referenceDatetime,
-                                            event );
+            Pair<CountDownLatch, CountDownLatch> nextLatch = this.insertTimeSeriesValuesRow( systemSettings,
+                                                                                             database,
+                                                                                             timeSeriesIdForTrace,
+                                                                                             referenceDatetime,
+                                                                                             event );
+            latches.add( nextLatch );
         }
+
+        return Collections.unmodifiableSet( latches );
     }
 
-    private void insertTimeSeriesValuesRows( SystemSettings systemSettings,
-                                             Database database,
-                                             long timeSeriesId,
-                                             TimeSeries<Double> timeSeries )
+    /**
+     * @param systemSettings the system settings
+     * @param database the database
+     * @param timeSeriesId the trace identifier
+     * @param timeSeries the time-series to ingest
+     * @return a set of latch pairs, the left of which indicates "waiting" and the right indicates "completed"
+     * @throws IngestException if ingest failed for any reason
+     */
+
+    private Set<Pair<CountDownLatch, CountDownLatch>> insertTimeSeriesValuesRows( SystemSettings systemSettings,
+                                                                                  Database database,
+                                                                                  long timeSeriesId,
+                                                                                  TimeSeries<Double> timeSeries )
             throws IngestException
     {
         Instant referenceDatetime = this.getReferenceDatetime( timeSeries );
 
+        Set<Pair<CountDownLatch, CountDownLatch>> latches = new HashSet<>();
+
         for ( Event<Double> event : timeSeries.getEvents() )
         {
-            this.insertTimeSeriesValuesRow( systemSettings,
-                                            database,
-                                            timeSeriesId,
-                                            referenceDatetime,
-                                            event );
+            Pair<CountDownLatch, CountDownLatch> nextLatch = this.insertTimeSeriesValuesRow( systemSettings,
+                                                                                             database,
+                                                                                             timeSeriesId,
+                                                                                             referenceDatetime,
+                                                                                             event );
+            latches.add( nextLatch );
         }
+
+        return Collections.unmodifiableSet( latches );
     }
 
-    private void insertTimeSeriesValuesRow( SystemSettings systemSettings,
-                                            Database database,
-                                            long timeSeriesId,
-                                            Instant referenceDatetime,
-                                            Event<Double> valueAndValidDateTime )
-    {
+    /**
+     * @param systemSettings the system settings
+     * @param database the database
+     * @param timeSeriesId the trace identifier
+     * @param referenceDateTime the reference time
+     * @param valueAndValidDateTime the event
+     * @return a pair of latches, the left of which indicates "waiting" and the right indicates "completed"
+     */
 
+    private Pair<CountDownLatch, CountDownLatch> insertTimeSeriesValuesRow( SystemSettings systemSettings,
+                                                                            Database database,
+                                                                            long timeSeriesId,
+                                                                            Instant referenceDatetime,
+                                                                            Event<Double> valueAndValidDateTime )
+    {
         Instant validDatetime = valueAndValidDateTime.getTime();
         Duration leadDuration = Duration.between( referenceDatetime, validDatetime );
         Double valueToAdd = valueAndValidDateTime.getValue();
@@ -509,7 +565,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                                                    timeSeriesId,
                                                    (int) leadDuration.toMinutes(),
                                                    valueToAdd );
-        this.latches.add( latchPair );
+        return latchPair;
     }
 
     private long insertTimeSeriesRow( Database database,
@@ -530,8 +586,10 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         catch ( SQLException se )
         {
             throw new IngestException( "Failed to get trace info for "
-                                       + "timeSeries=" + timeSeries
-                                       + " source=" + sourceId,
+                                       + "timeSeries="
+                                       + timeSeries
+                                       + " source="
+                                       + sourceId,
                                        se );
         }
     }
@@ -554,23 +612,26 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         catch ( SQLException se )
         {
             throw new IngestException( "Failed to get trace info for "
-                                       + "timeSeries=" + timeSeries
-                                       + " source=" + sourceId
-                                       + " ensembleId=" + ensembleId,
+                                       + "timeSeries="
+                                       + timeSeries
+                                       + " source="
+                                       + sourceId
+                                       + " ensembleId="
+                                       + ensembleId,
                                        se );
         }
     }
 
 
     private wres.io.data.details.TimeSeries getDbTimeSeriesForEnsembleTrace(
-            Database database,
-            long ensembleId,
-            long sourceId )
+                                                                             Database database,
+                                                                             long ensembleId,
+                                                                             long sourceId )
             throws SQLException
     {
         return new wres.io.data.details.TimeSeries( database,
-                                            ensembleId,
-                                            sourceId );
+                                                    ensembleId,
+                                                    sourceId );
     }
 
     private wres.io.data.details.TimeSeries getDbTimeSeries( Database database,
@@ -579,8 +640,8 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
             throws SQLException
     {
         return new wres.io.data.details.TimeSeries( database,
-                                            ensemblesCache.getDefaultEnsembleID(),
-                                            sourceId );
+                                                    ensemblesCache.getDefaultEnsembleID(),
+                                                    sourceId );
     }
 
     private Instant getReferenceDatetime( TimeSeries<?> timeSeries )
@@ -593,7 +654,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
 
         // Use the first reference datetime found until the database allows
         // storage of all the reference datetimes associated with a forecast.
-        Map.Entry<ReferenceTimeType,Instant> entry =
+        Map.Entry<ReferenceTimeType, Instant> entry =
                 timeSeries.getReferenceTimes()
                           .entrySet()
                           .iterator()
