@@ -17,7 +17,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.commons.codec.binary.Hex;
@@ -77,7 +76,7 @@ import wres.system.SystemSettings;
  * difficulty where a TimeSeries is not contained in a single bytestream: NWM.
  */
 
-public class TimeSeriesIngester implements Callable<List<IngestResult>>
+public class TimeSeriesIngester
 {
     private static final Logger LOGGER =
             LoggerFactory.getLogger( TimeSeriesIngester.class );
@@ -166,9 +165,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         this.timeSeries = timeSeries;
     }
 
-
-    @Override
-    public List<IngestResult> call()
+    public List<IngestResult> ingest()
     {
         List<IngestResult> results;
         URI location = this.getLocation();

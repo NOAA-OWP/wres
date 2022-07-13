@@ -424,7 +424,7 @@ public class EnsembleRetrieverFactoryTest
 
         GeometryTuple geoTuple = MessageFactory.getGeometryTuple( FEATURE, FEATURE, FEATURE );
         FeatureTuple featureTuple = FeatureTuple.of( geoTuple );
-        
+
         Set<FeatureTuple> allFeatures = Set.of( featureTuple );
         // Mock the sufficient elements of Project
         Project project = Mockito.mock( Project.class );
@@ -459,8 +459,8 @@ public class EnsembleRetrieverFactoryTest
         DataSource rightData = RetrieverTestData.generateDataSource( DatasourceType.ENSEMBLE_FORECASTS );
         DataSource baselineData = RetrieverTestData.generateBaselineDataSource( DatasourceType.ENSEMBLE_FORECASTS );
         LOGGER.info( "leftData: {}", leftData );
-        LOGGER.info( "rightData: {}" , rightData );
-        LOGGER.info( "baselineData: {}" , rightData );
+        LOGGER.info( "rightData: {}", rightData );
+        LOGGER.info( "baselineData: {}", rightData );
         ProjectConfig.Inputs fakeInputs = new ProjectConfig.Inputs( leftData.getContext(),
                                                                     rightData.getContext(),
                                                                     (DataSourceBaselineConfig) baselineData.getContext() );
@@ -476,7 +476,7 @@ public class EnsembleRetrieverFactoryTest
                                                                 rightData,
                                                                 this.lockManager,
                                                                 timeSeriesOne );
-        IngestResult ingestResultOne = ingesterOne.call()
+        IngestResult ingestResultOne = ingesterOne.ingest()
                                                   .get( 0 );
         TimeSeriesIngester ingesterTwo = TimeSeriesIngester.of( this.mockSystemSettings,
                                                                 this.wresDatabase,
@@ -489,7 +489,7 @@ public class EnsembleRetrieverFactoryTest
                                                                 this.lockManager,
                                                                 timeSeriesOne );
 
-        IngestResult ingestResultTwo = ingesterTwo.call()
+        IngestResult ingestResultTwo = ingesterTwo.ingest()
                                                   .get( 0 );
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
 
@@ -503,7 +503,7 @@ public class EnsembleRetrieverFactoryTest
                                                                   leftData,
                                                                   this.lockManager,
                                                                   timeSeriesTwo );
-        IngestResult ingestResultThree = ingesterThree.call()
+        IngestResult ingestResultThree = ingesterThree.ingest()
                                                       .get( 0 );
 
         List<IngestResult> results = List.of( ingestResultOne,
@@ -512,13 +512,14 @@ public class EnsembleRetrieverFactoryTest
 
         try ( Statement statement = this.rawConnection.createStatement() )
         {
-            ResultSet sourceData = statement.executeQuery( "select source_id, hash, measurementunit_id, path from wres.source" );
+            ResultSet sourceData =
+                    statement.executeQuery( "select source_id, hash, measurementunit_id, path from wres.source" );
 
             while ( sourceData.next() )
             {
                 LOGGER.info( "source_id={} hash={} measurementunit_id={} path={}",
                              sourceData.getLong( "source_id" ),
-                             sourceData.getString( "hash"),
+                             sourceData.getString( "hash" ),
                              sourceData.getShort( "measurementunit_id" ),
                              sourceData.getString( "path" ) );
             }

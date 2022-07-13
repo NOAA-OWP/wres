@@ -406,7 +406,7 @@ public class DatacardSource extends BasicSource
                                        this.getDataSource(),
                                        this.getLockManager(),
                                        timeSeries );
-        List<IngestResult> results = ingester.call();
+        List<IngestResult> results = ingester.ingest();
 
         if ( LOGGER.isDebugEnabled() )
         {

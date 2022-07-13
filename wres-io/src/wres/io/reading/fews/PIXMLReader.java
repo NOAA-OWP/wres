@@ -1111,7 +1111,7 @@ public final class PIXMLReader extends XMLReader
                                                timeSeries );
         try
         {
-            List<IngestResult> ingestResults = timeSeriesIngester.call();
+            List<IngestResult> ingestResults = timeSeriesIngester.ingest();
             this.ingested.addAll( ingestResults );
         }
         catch ( IngestException ie )
