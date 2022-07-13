@@ -814,12 +814,10 @@ public class CSVSource extends BasicSource
                                                this.getMeasurementUnitsCache(),
                                                this.getProjectConfig(),
                                                this.getDataSource(),
-                                               this.getLockManager(),
-                                               timeSeries );
+                                               this.getLockManager() );
 
         Future<List<IngestResult>> futureIngestResult =
-                this.ingestSaverExecutor.submit(
-                                                 timeSeriesIngester::ingest );
+                this.ingestSaverExecutor.submit( () -> timeSeriesIngester.ingest( timeSeries ) );
         this.ingests.add( futureIngestResult );
         this.startGettingIngestResults.countDown();
 
@@ -916,8 +914,7 @@ public class CSVSource extends BasicSource
                                                  MeasurementUnits measurementUnitsCache,
                                                  ProjectConfig projectConfig,
                                                  DataSource dataSource,
-                                                 DatabaseLockManager lockManager,
-                                                 wres.datamodel.time.TimeSeries<?> timeSeries )
+                                                 DatabaseLockManager lockManager )
     {
         return TimeSeriesIngester.of( systemSettings,
                                       database,
@@ -927,7 +924,6 @@ public class CSVSource extends BasicSource
                                       measurementUnitsCache,
                                       projectConfig,
                                       dataSource,
-                                      lockManager,
-                                      timeSeries );
+                                      lockManager );
     }
 }

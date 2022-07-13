@@ -1107,11 +1107,10 @@ public final class PIXMLReader extends XMLReader
                                                this.getMeasurementUnitsCache(),
                                                this.getProjectConfig(),
                                                this.getDataSource(),
-                                               this.getLockManager(),
-                                               timeSeries );
+                                               this.getLockManager() );
         try
         {
-            List<IngestResult> ingestResults = timeSeriesIngester.ingest();
+            List<IngestResult> ingestResults = timeSeriesIngester.ingest( timeSeries );
             this.ingested.addAll( ingestResults );
         }
         catch ( IngestException ie )
@@ -1182,8 +1181,7 @@ public final class PIXMLReader extends XMLReader
                                                  MeasurementUnits measurementUnitsCache,
                                                  ProjectConfig projectConfig,
                                                  DataSource dataSource,
-                                                 DatabaseLockManager lockManager,
-                                                 wres.datamodel.time.TimeSeries<?> timeSeries )
+                                                 DatabaseLockManager lockManager )
     {
         return TimeSeriesIngester.of( systemSettings,
                                       database,
@@ -1193,7 +1191,6 @@ public final class PIXMLReader extends XMLReader
                                       measurementUnitsCache,
                                       projectConfig,
                                       dataSource,
-                                      lockManager,
-                                      timeSeries );
+                                      lockManager );
     }
 }

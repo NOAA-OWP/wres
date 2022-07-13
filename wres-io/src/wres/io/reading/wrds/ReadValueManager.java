@@ -582,11 +582,10 @@ public class ReadValueManager
                                                              this.getMeasurementUnitsCache(),
                                                              this.projectConfig,
                                                              this.dataSource,
-                                                             this.lockManager,
-                                                             timeSeries );
+                                                             this.lockManager );
         try
         {
-            return ingester.ingest();
+            return ingester.ingest( timeSeries );
         }
         catch ( IngestException ie )
         {

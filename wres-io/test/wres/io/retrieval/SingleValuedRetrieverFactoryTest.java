@@ -446,9 +446,8 @@ public class SingleValuedRetrieverFactoryTest
                                                                 this.measurementUnitsCache,
                                                                 fakeConfig,
                                                                 rightData,
-                                                                this.lockManager,
-                                                                timeSeriesOne );
-        IngestResult ingestResultOne = ingesterOne.ingest()
+                                                                this.lockManager );
+        IngestResult ingestResultOne = ingesterOne.ingest( timeSeriesOne )
                                                   .get( 0 );
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleFour( T0 );
 
@@ -460,9 +459,8 @@ public class SingleValuedRetrieverFactoryTest
                                                                 this.measurementUnitsCache,
                                                                 fakeConfig,
                                                                 rightData,
-                                                                this.lockManager,
-                                                                timeSeriesTwo );
-        IngestResult ingestResultTwo = ingesterTwo.ingest()
+                                                                this.lockManager );
+        IngestResult ingestResultTwo = ingesterTwo.ingest( timeSeriesTwo )
                                                   .get( 0 );
 
         TimeSeries<Double> timeSeriesThree = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
@@ -475,9 +473,8 @@ public class SingleValuedRetrieverFactoryTest
                                                                   this.measurementUnitsCache,
                                                                   fakeConfig,
                                                                   leftData,
-                                                                  this.lockManager,
-                                                                  timeSeriesThree );
-        IngestResult ingestResultThree = ingesterThree.ingest()
+                                                                  this.lockManager );
+        IngestResult ingestResultThree = ingesterThree.ingest( timeSeriesThree )
                                                       .get( 0 );
 
         List<IngestResult> results = List.of( ingestResultOne,

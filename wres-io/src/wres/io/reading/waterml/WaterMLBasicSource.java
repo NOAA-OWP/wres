@@ -9,8 +9,6 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets ;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.SQLException;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -56,7 +54,6 @@ public class WaterMLBasicSource extends BasicSource
             new ObjectMapper().registerModule( new JavaTimeModule() )
                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
 
-    private static final String MD5SUM_OF_EMPTY_STRING = "68b329da9893e34099c7d8ad5cb9c940";
     private final SystemSettings systemSettings;
     private final Database database;
     private final Features featuresCache;
@@ -214,9 +211,8 @@ public class WaterMLBasicSource extends BasicSource
                                                                      this.getMeasurementUnitsCache(),
                                                                      this.getProjectConfig(),
                                                                      this.getDataSource(),
-                                                                     this.getLockManager(),
-                                                                     timeSeries );
-                List<IngestResult> result = ingester.ingest();
+                                                                     this.getLockManager() );
+                List<IngestResult> result = ingester.ingest( timeSeries );
                 ingestResults.addAll( result );
             }
 

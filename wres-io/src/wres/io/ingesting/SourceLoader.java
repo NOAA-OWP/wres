@@ -432,9 +432,8 @@ public class SourceLoader
                                            this.getMeasurementUnitsCache(),
                                            this.getProjectConfig(),
                                            source,
-                                           this.getLockManager(),
-                                           source.getTimeSeries() );
-            task = CompletableFuture.supplyAsync( ingester::ingest,
+                                           this.getLockManager() );
+            task = CompletableFuture.supplyAsync( () -> ingester.ingest( source.getTimeSeries() ),
                                                   this.getExecutor() );
         }
         else
