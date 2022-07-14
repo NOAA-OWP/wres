@@ -41,6 +41,7 @@ import ucar.ma2.DataType;
 import ucar.ma2.InvalidRangeException;
 import ucar.nc2.Attribute;
 import ucar.nc2.NetcdfFile;
+import ucar.nc2.NetcdfFiles;
 import ucar.nc2.Variable;
 
 import wres.datamodel.Ensemble;
@@ -147,11 +148,13 @@ class NWMTimeSeries implements Closeable
                                                            this.baseUri );
         this.netcdfFiles = new HashSet<>( netcdfUris.size() );
         LOGGER.debug( "Attempting to open NWM TimeSeries with reference datetime {} and profile {} from baseUri {}.",
-                      referenceDatetime, profile, this.baseUri );
+                      referenceDatetime,
+                      profile,
+                      this.baseUri );
 
         ThreadFactory nwmReaderThreadFactory = new BasicThreadFactory.Builder()
-                .namingPattern( "NWMTimeSeries Reader %d" )
-                .build();
+                                                                               .namingPattern( "NWMTimeSeries Reader %d" )
+                                                                               .build();
 
         // See comments in WebSource class regarding the setup of the executor,
         // queue, and latch.
@@ -251,17 +254,23 @@ class NWMTimeSeries implements Closeable
         if ( netcdfUris.size() == this.netcdfFiles.size() )
         {
             LOGGER.debug( "Successfully opened NWM TimeSeries with reference datetime {} and profile {} from baseUri {}.",
-                          referenceDatetime, profile, this.baseUri );
+                          referenceDatetime,
+                          profile,
+                          this.baseUri );
         }
         else if ( this.netcdfFiles.size() == 0 )
         {
             LOGGER.warn( "Skipping NWM TimeSeries (not found) with reference datetime {} and profile {} from baseUri {}.",
-                         referenceDatetime, profile, this.baseUri );
+                         referenceDatetime,
+                         profile,
+                         this.baseUri );
         }
         else
         {
             LOGGER.warn( "Found a partial NWM TimeSeries with reference datetime {} and profile {} from baseUri {}.",
-                         referenceDatetime, profile, this.baseUri );
+                         referenceDatetime,
+                         profile,
+                         this.baseUri );
         }
     }
 
@@ -285,8 +294,10 @@ class NWMTimeSeries implements Closeable
                                    Instant referenceDatetime,
                                    URI baseUri )
     {
-        LOGGER.debug( "Called getNetcdfUris with {}, {}, {}", profile,
-                      referenceDatetime, baseUri );
+        LOGGER.debug( "Called getNetcdfUris with {}, {}, {}",
+                      profile,
+                      referenceDatetime,
+                      baseUri );
         Set<URI> uris = new TreeSet<>();
         final String NWM_DOT = "nwm.";
 
@@ -304,7 +315,7 @@ class NWMTimeSeries implements Closeable
 
             if ( profile.isEnsembleLike() )
             {
-                directoryName += "_mem" + i ;
+                directoryName += "_mem" + i;
             }
 
             URI uriWithDirectory = uriWithDate.resolve( directoryName + "/" );
@@ -313,8 +324,10 @@ class NWMTimeSeries implements Closeable
             {
                 String ncFilePartOne = NWM_DOT + "t"
                                        + NWM_HOUR_FORMATTER.format( referenceOffsetDateTime )
-                                       + "z." + profile.getNwmConfiguration()
-                                       + "." + profile.getNwmOutputType();
+                                       + "z."
+                                       + profile.getNwmConfiguration()
+                                       + "."
+                                       + profile.getNwmOutputType();
 
                 // Ensemble number appended if greater than one member present.
                 if ( profile.isEnsembleLike() )
@@ -351,7 +364,7 @@ class NWMTimeSeries implements Closeable
                     }
                 }
                 else if ( profile.getTimeLabel()
-                                 .equals( NWMProfile.TimeLabel.tm ))
+                                 .equals( NWMProfile.TimeLabel.tm ) )
                 {
                     if ( !subHourly )
                     {
@@ -374,7 +387,7 @@ class NWMTimeSeries implements Closeable
                     }
                 }
 
-                String ncFilePartThree = "." + profile .getNwmLocationLabel()
+                String ncFilePartThree = "." + profile.getNwmLocationLabel()
                                          + ".nc";
                 String ncFile = ncFilePartOne + ncFilePartTwo + ncFilePartThree;
                 LOGGER.trace( "Built a netCDF filename: {}", ncFile );
@@ -426,9 +439,9 @@ class NWMTimeSeries implements Closeable
     }
 
 
-    Map<Integer,TimeSeries<?>> readEnsembleTimeSerieses( int[] featureIds,
-                                                         String variableName,
-                                                         String unitName )
+    Map<Integer, TimeSeries<Ensemble>> readEnsembleTimeSerieses( int[] featureIds,
+                                                                 String variableName,
+                                                                 String unitName )
             throws InterruptedException, ExecutionException
     {
 
@@ -436,12 +449,12 @@ class NWMTimeSeries implements Closeable
         int validDatetimeCount = this.getProfile().getBlobCount();
 
         // Map of nwm feature id to a map of each timestep with member values.
-        Map<Integer,Map<Instant,double[]>> ensembleValues = new HashMap<>( featureIds.length );
+        Map<Integer, Map<Instant, double[]>> ensembleValues = new HashMap<>( featureIds.length );
 
         BlockingQueue<Future<NWMDoubleReadOutcome>> reads =
                 new ArrayBlockingQueue<>( CONCURRENT_READS );
         CountDownLatch startGettingResults = new CountDownLatch(
-                CONCURRENT_READS );
+                                                                 CONCURRENT_READS );
 
         for ( NetcdfFile netcdfFile : this.getNetcdfFiles() )
         {
@@ -483,9 +496,9 @@ class NWMTimeSeries implements Closeable
                                        validDatetimeCount );
         }
 
-        for ( Map.Entry<Integer,Map<Instant,double[]>> oneEnsemble : ensembleValues.entrySet() )
+        for ( Map.Entry<Integer, Map<Instant, double[]>> oneEnsemble : ensembleValues.entrySet() )
         {
-            Map<Instant,double[]> map = oneEnsemble.getValue();
+            Map<Instant, double[]> map = oneEnsemble.getValue();
             if ( map.size() != validDatetimeCount )
             {
                 throw new PreIngestException( "Expected "
@@ -499,11 +512,11 @@ class NWMTimeSeries implements Closeable
             }
         }
 
-        Map<Integer,TimeSeries<?>> byFeatureId = new HashMap<>( featureIds.length
-                                                                - this.featuresNotFound.size() );
+        Map<Integer, TimeSeries<Ensemble>> byFeatureId = new HashMap<>( featureIds.length
+                                                                        - this.featuresNotFound.size() );
 
         // For each feature, create a TimeSeries.
-        for ( Map.Entry<Integer,Map<Instant,double[]>> entriesForOne : ensembleValues.entrySet() )
+        for ( Map.Entry<Integer, Map<Instant, double[]>> entriesForOne : ensembleValues.entrySet() )
         {
             SortedSet<Event<Ensemble>> sortedEvents = new TreeSet<>();
 
@@ -522,14 +535,15 @@ class NWMTimeSeries implements Closeable
                                                                          .toString() );
             FeatureKey feature = FeatureKey.of( geometry );
 
-            TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, this.getReferenceDatetime() ),
-                                                                 null,
-                                                                 variableName,
-                                                                 feature,
-                                                                 unitName );
+            TimeSeriesMetadata metadata =
+                    TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, this.getReferenceDatetime() ),
+                                           null,
+                                           variableName,
+                                           feature,
+                                           unitName );
             // Create the TimeSeries for the current Feature
-            TimeSeries<?> timeSeries = TimeSeries.of( metadata,
-                                                      sortedEvents );
+            TimeSeries<Ensemble> timeSeries = TimeSeries.of( metadata,
+                                                             sortedEvents );
 
             // Store this TimeSeries in the collection to be returned.
             byFeatureId.put( entriesForOne.getKey(), timeSeries );
@@ -547,7 +561,7 @@ class NWMTimeSeries implements Closeable
      * @param validDatetimeCount The count of validDatetimes.
      */
     private void putEnsembleDataInMap( List<EventForNWMFeature<Double>> events,
-                                       Map<Integer,Map<Instant,double[]>> ensembleValues,
+                                       Map<Integer, Map<Instant, double[]>> ensembleValues,
                                        int memberCount,
                                        int validDatetimeCount )
     {
@@ -557,9 +571,9 @@ class NWMTimeSeries implements Closeable
             Instant eventDatetime = event.getEvent()
                                          .getTime();
             Integer featureId = event.getFeatureId();
-            Map<Instant,double[]> fullEnsemble = ensembleValues.get( featureId );
+            Map<Instant, double[]> fullEnsemble = ensembleValues.get( featureId );
 
-            if ( Objects.isNull( fullEnsemble )  )
+            if ( Objects.isNull( fullEnsemble ) )
             {
                 fullEnsemble = new HashMap<>( validDatetimeCount );
                 ensembleValues.put( featureId, fullEnsemble );
@@ -635,7 +649,8 @@ class NWMTimeSeries implements Closeable
 
         throw new IllegalStateException( "No '" + attributeName
                                          + "' attribute found for variable '"
-                                         + ncVariable + " in netCDF data." );
+                                         + ncVariable
+                                         + " in netCDF data." );
     }
 
     /**
@@ -661,7 +676,8 @@ class NWMTimeSeries implements Closeable
 
         throw new IllegalStateException( "No '" + attributeName
                                          + "' attribute found for variable '"
-                                         + ncVariable + " in netCDF data." );
+                                         + ncVariable
+                                         + " in netCDF data." );
     }
 
 
@@ -694,17 +710,18 @@ class NWMTimeSeries implements Closeable
                 else
                 {
                     throw new CastMayCauseBadConversionException(
-                            "Unable to convert attribute '"
-                            + attributeName
-                            + "' to double because it is type "
-                            + type );
+                                                                  "Unable to convert attribute '"
+                                                                  + attributeName
+                                                                  + "' to double because it is type "
+                                                                  + type );
                 }
             }
         }
 
         throw new IllegalArgumentException( "No '" + attributeName
                                             + "' attribute found for variable '"
-                                            + ncVariable + " in netCDF data." );
+                                            + ncVariable
+                                            + " in netCDF data." );
     }
 
     /**
@@ -736,17 +753,18 @@ class NWMTimeSeries implements Closeable
                 else
                 {
                     throw new CastMayCauseBadConversionException(
-                            "Unable to convert attribute '"
-                            + attributeName
-                            + "' to float because it is type "
-                            + type );
+                                                                  "Unable to convert attribute '"
+                                                                  + attributeName
+                                                                  + "' to float because it is type "
+                                                                  + type );
                 }
             }
         }
 
         throw new IllegalArgumentException( "No '" + attributeName
                                             + "' attribute found for variable '"
-                                            + ncVariable + " in netCDF data." );
+                                            + ncVariable
+                                            + " in netCDF data." );
     }
 
 
@@ -785,19 +803,19 @@ class NWMTimeSeries implements Closeable
                 else
                 {
                     throw new CastMayCauseBadConversionException(
-                            "Unable to convert attribute '"
-                            + attributeName
-                            + "' to integer because it is type "
-                            + type );
+                                                                  "Unable to convert attribute '"
+                                                                  + attributeName
+                                                                  + "' to integer because it is type "
+                                                                  + type );
                 }
             }
         }
 
         throw new IllegalArgumentException( "No '" + attributeName
                                             + "' attribute found for variable '"
-                                            + ncVariable + " in netCDF data." );
+                                            + ncVariable
+                                            + " in netCDF data." );
     }
-
 
 
     /**
@@ -809,16 +827,16 @@ class NWMTimeSeries implements Closeable
      * empty when no feature ids given were found in the NWM Data.
      */
 
-    Map<Integer,TimeSeries<?>> readTimeSerieses( int[] featureIds,
-                                                 String variableName,
-                                                 String unitName )
+    Map<Integer, TimeSeries<Double>> readSingleValuedTimeSerieses( int[] featureIds,
+                                                                   String variableName,
+                                                                   String unitName )
             throws InterruptedException, ExecutionException
     {
         BlockingQueue<Future<NWMDoubleReadOutcome>> reads =
                 new ArrayBlockingQueue<>( CONCURRENT_READS );
         CountDownLatch startGettingResults = new CountDownLatch(
-                CONCURRENT_READS );
-        Map<Integer,SortedSet<Event<Double>>> events = new HashMap<>( featureIds.length );
+                                                                 CONCURRENT_READS );
+        Map<Integer, SortedSet<Event<Double>>> events = new HashMap<>( featureIds.length );
 
         for ( int featureId : featureIds )
         {
@@ -877,7 +895,7 @@ class NWMTimeSeries implements Closeable
             events.remove( notFoundFeature );
         }
 
-        Map<Integer,TimeSeries<Double>> allTimeSerieses = new HashMap<>( featureIds.length );
+        Map<Integer, TimeSeries<Double>> allTimeSerieses = new HashMap<>( featureIds.length );
 
         // Create each TimeSeries
         for ( Map.Entry<Integer, SortedSet<Event<Double>>> series : events.entrySet() )
@@ -950,7 +968,8 @@ class NWMTimeSeries implements Closeable
                                                      + " for attributes '"
                                                      + SCALE_FACTOR_NAME
                                                      + "' and '"
-                                                     + OFFSET_NAME + "': '"
+                                                     + OFFSET_NAME
+                                                     + "': '"
                                                      + multiplierType.toString()
                                                      + "' and '"
                                                      + offsetType.toString()
@@ -1034,7 +1053,7 @@ class NWMTimeSeries implements Closeable
             throw new IllegalArgumentException( "maxIndex must be >= minIndex." );
         }
 
-        int[] result = new int[ indices.length ];
+        int[] result = new int[indices.length];
         int countOfRawValuesToRead = maxIndex - minIndex + 1;
         int[] rawValues;
         int[] origin = { minIndex };
@@ -1043,7 +1062,7 @@ class NWMTimeSeries implements Closeable
         try
         {
             Array array = variable.read( origin, shape );
-            int[] unsafeValues = ( int[] ) array.get1DJavaArray( DataType.INT );
+            int[] unsafeValues = (int[]) array.get1DJavaArray( DataType.INT );
             rawValues = unsafeValues.clone();
         }
         catch ( IOException | InvalidRangeException e )
@@ -1060,11 +1079,12 @@ class NWMTimeSeries implements Closeable
         if ( rawValues.length != countOfRawValuesToRead )
         {
             throw new PreIngestException(
-                    "Expected to read exactly " + countOfRawValuesToRead + ""
-                    + " values from variable "
-                    + variableName
-                    + " instead got "
-                    + rawValues.length );
+                                          "Expected to read exactly " + countOfRawValuesToRead
+                                          + ""
+                                          + " values from variable "
+                                          + variableName
+                                          + " instead got "
+                                          + rawValues.length );
         }
 
         // Write the values to the result array. Skip past unrequested values.
@@ -1079,7 +1099,7 @@ class NWMTimeSeries implements Closeable
             {
                 // The distance between the indices passed implies the spot
                 // in the (superset) of rawValues array returned.
-                int rawIndexHop = indices[i] - indices[i-1];
+                int rawIndexHop = indices[i] - indices[i - 1];
                 int currentRawIndex = lastRawIndex + rawIndexHop;
                 result[i] = rawValues[currentRawIndex];
                 lastRawIndex = currentRawIndex;
@@ -1087,7 +1107,12 @@ class NWMTimeSeries implements Closeable
         }
 
         LOGGER.debug( "Asked variable {} for range {} through {} to get values at indices {}, got raw count {}, distilled to {}",
-                      variableName, minIndex, maxIndex, indices, rawValues.length, result );
+                      variableName,
+                      minIndex,
+                      maxIndex,
+                      indices,
+                      rawValues.length,
+                      result );
         return result;
     }
 
@@ -1146,11 +1171,11 @@ class NWMTimeSeries implements Closeable
     public String toString()
     {
         return "NWM Time Series with reference datetime "
-                + this.getReferenceDatetime()
-                + " and configuration "
-                + this.getProfile().getNwmConfiguration()
-                + " from base URI "
-                + this.getBaseUri();
+               + this.getReferenceDatetime()
+               + " and configuration "
+               + this.getProfile().getNwmConfiguration()
+               + " from base URI "
+               + this.getBaseUri();
     }
 
     @Override
@@ -1197,7 +1222,8 @@ class NWMTimeSeries implements Closeable
         {
             List<Runnable> abandoned = this.readExecutor.shutdownNow();
             LOGGER.warn( "{} did not shut down quickly, abandoned tasks: {}",
-                         this.readExecutor, abandoned );
+                         this.readExecutor,
+                         abandoned );
         }
     }
 
@@ -1309,7 +1335,7 @@ class NWMTimeSeries implements Closeable
         @Override
         public NetcdfFile call() throws IOException
         {
-            return NetcdfFile.open( this.uri.toString() );
+            return NetcdfFiles.open( this.uri.toString() );
         }
     }
 
@@ -1510,9 +1536,9 @@ class NWMTimeSeries implements Closeable
                 if ( LOGGER.isDebugEnabled() )
                 {
                     LOGGER.debug( "No features found, minIndex==MAX? {}, maxIndex==MIN? {}, features requested: {}",
-                            minIndex == Integer.MAX_VALUE,
-                            maxIndex == Integer.MIN_VALUE,
-                            featureIds );
+                                  minIndex == Integer.MAX_VALUE,
+                                  maxIndex == Integer.MIN_VALUE,
+                                  featureIds );
                 }
 
                 return new NWMDoubleReadOutcome( Collections.emptyList(),
@@ -1529,7 +1555,7 @@ class NWMTimeSeries implements Closeable
                                               .mapToInt( FeatureIdWithItsIndex::getFeatureId )
                                               .toArray();
 
-            Variable variableVariable =  netcdfFile.findVariable( variableName );
+            Variable variableVariable = netcdfFile.findVariable( variableName );
             int[] rawVariableValues;
 
 
@@ -1542,12 +1568,16 @@ class NWMTimeSeries implements Closeable
                                                                minIndex,
                                                                maxIndex );
                 LOGGER.debug( "Read integer values {} corresponding to feature ids {} at indices {} from {}",
-                              rawVariableValues, companionFeatures, indicesOfFeatures, netcdfFile.getLocation() );
+                              rawVariableValues,
+                              companionFeatures,
+                              indicesOfFeatures,
+                              netcdfFile.getLocation() );
             }
             catch ( PreIngestException pie )
             {
                 throw new PreIngestException( "While reading netCDF data at "
-                                              + netcdfFile.getLocation(), pie );
+                                              + netcdfFile.getLocation(),
+                                              pie );
             }
 
             VariableAttributes attributes = NWMTimeSeries.readVariableAttributes( variableVariable );
@@ -1565,7 +1595,13 @@ class NWMTimeSeries implements Closeable
                      || rawVariableValues[i] == fillValue )
                 {
                     LOGGER.debug( "Found missing value {} (one of {}, {}) at index {} for feature {} in variable {} of netCDF {}",
-                                  rawVariableValues[i], missingValue, fillValue, i, companionFeatures[i], variableName, netcdfFile.getLocation() );
+                                  rawVariableValues[i],
+                                  missingValue,
+                                  fillValue,
+                                  i,
+                                  companionFeatures[i],
+                                  variableName,
+                                  netcdfFile.getLocation() );
                     variableValue = MissingValues.DOUBLE;
                 }
                 else
@@ -1595,7 +1631,11 @@ class NWMTimeSeries implements Closeable
             }
 
             LOGGER.trace( "Read raw values {} for variable {} at {} returning as values {} from {}",
-                          rawVariableValues, variableName, validDatetime, list, netcdfFile );
+                          rawVariableValues,
+                          variableName,
+                          validDatetime,
+                          list,
+                          netcdfFile );
 
             return new NWMDoubleReadOutcome( Collections.unmodifiableList( list ),
                                              Collections.unmodifiableSet( this.featuresNotFound ) );
@@ -1640,7 +1680,8 @@ class NWMTimeSeries implements Closeable
             if ( ncEnsembleNumber == NOT_FOUND )
             {
                 throw new PreIngestException( "Could not find ensemble member attribute "
-                                              + memberNumberAttributeName +
+                                              + memberNumberAttributeName
+                                              +
                                               " in netCDF file "
                                               + netcdfFile );
             }
@@ -1663,10 +1704,6 @@ class NWMTimeSeries implements Closeable
             return ncEnsembleNumber;
         }
 
-        Set<Integer> getFeaturesNotFound()
-        {
-            return Collections.unmodifiableSet( this.featuresNotFound );
-        }
     }
 
 
@@ -1706,8 +1743,7 @@ class NWMTimeSeries implements Closeable
          * First Thread to set to true wins
          * and gets to write to the featureCache. Everyone else reads.
          */
-        private final AtomicBoolean
-                featureCacheRaceResolver = new AtomicBoolean( false );
+        private final AtomicBoolean featureCacheRaceResolver = new AtomicBoolean( false );
 
         /**
          * Guards featureCache variable.
@@ -1717,7 +1753,7 @@ class NWMTimeSeries implements Closeable
         /**
          * Tracks which netCDF resoruces have had their features validated.
          */
-        private final Map<NetcdfFile,AtomicBoolean> validatedFeatures;
+        private final Map<NetcdfFile, AtomicBoolean> validatedFeatures;
 
 
         NWMFeatureCache( Set<NetcdfFile> netcdfUris )
@@ -1802,12 +1838,11 @@ class NWMTimeSeries implements Closeable
                     if ( timedOut )
                     {
                         throw new PreIngestException(
-                                "While reading "
-                                + netcdfFileName,
-                                new TimeoutException(
-                                        "Timed out waiting for feature cache after "
-                                        + timeout )
-                        );
+                                                      "While reading "
+                                                      + netcdfFileName,
+                                                      new TimeoutException(
+                                                                            "Timed out waiting for feature cache after "
+                                                                            + timeout ) );
                     }
                 }
                 catch ( InterruptedException ie )
@@ -1883,12 +1918,11 @@ class NWMTimeSeries implements Closeable
                         if ( timedOut )
                         {
                             throw new PreIngestException(
-                                    "While reading "
-                                    + netcdfFileName,
-                                    new TimeoutException(
-                                            "Timed out waiting for feature cache after "
-                                            + timeout )
-                            );
+                                                          "While reading "
+                                                          + netcdfFileName,
+                                                          new TimeoutException(
+                                                                                "Timed out waiting for feature cache after "
+                                                                                + timeout ) );
                         }
                     }
                     catch ( InterruptedException ie )
@@ -1904,10 +1938,10 @@ class NWMTimeSeries implements Closeable
                     if ( !Arrays.equals( features, existingFeatures ) )
                     {
                         throw new PreIngestException(
-                                "Non-homogeneous NWM data found. The features from "
-                                + netcdfFile.getLocation()
-                                + " do not match those found in a previously read "
-                                + "netCDF resource in the same NWM timeseries." );
+                                                      "Non-homogeneous NWM data found. The features from "
+                                                      + netcdfFile.getLocation()
+                                                      + " do not match those found in a previously read "
+                                                      + "netCDF resource in the same NWM timeseries." );
                     }
                     LOGGER.debug( "Finished comparing {} to the features cache",
                                   netcdfFileName );
@@ -1921,7 +1955,8 @@ class NWMTimeSeries implements Closeable
             catch ( IOException ioe )
             {
                 throw new PreIngestException( "Failed to read features from "
-                                              + netcdfFileName, ioe );
+                                              + netcdfFileName,
+                                              ioe );
             }
         }
     }

@@ -388,7 +388,7 @@ public class SingleValuedForecastRetrieverTest
                                                                 fakeConfig,
                                                                 rightData,
                                                                 this.lockManager );
-        IngestResult ingestResultOne = ingesterOne.ingest( timeSeriesOne )
+        IngestResult ingestResultOne = ingesterOne.ingestSingleValuedTimeSeries( timeSeriesOne )
                                                   .get( 0 );
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleFour( T0 );
 
@@ -401,7 +401,7 @@ public class SingleValuedForecastRetrieverTest
                                                                 fakeConfig,
                                                                 rightData,
                                                                 this.lockManager );
-        IngestResult ingestResultTwo = ingesterTwo.ingest( timeSeriesTwo )
+        IngestResult ingestResultTwo = ingesterTwo.ingestSingleValuedTimeSeries( timeSeriesTwo )
                                                   .get( 0 );
 
         TimeSeries<Double> timeSeriesThree = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
@@ -415,7 +415,7 @@ public class SingleValuedForecastRetrieverTest
                                                                   fakeConfig,
                                                                   leftData,
                                                                   this.lockManager );
-        IngestResult ingestResultThree = ingesterThree.ingest( timeSeriesThree )
+        IngestResult ingestResultThree = ingesterThree.ingestSingleValuedTimeSeries( timeSeriesThree )
                                                       .get( 0 );
 
         List<IngestResult> results = List.of( ingestResultOne,

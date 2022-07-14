@@ -370,47 +370,15 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
             {
                 for ( NwmFeature nwmFeature : forecast.getFeatures() )
                 {
-                    TimeSeries<?> timeSeries =
-                            this.transform( forecast.getReferenceDatetime(),
-                                            nwmFeature,
-                                            timeScale,
-                                            variableName,
-                                            measurementUnit );
+                    List<IngestResult> results = this.ingestTimeSeries( forecast,
+                                                                        nwmFeature,
+                                                                        timeScale,
+                                                                        variableName,
+                                                                        measurementUnit );
+                    ingested.addAll( results );
 
-                    if ( !timeSeries.getEvents()
-                                    .isEmpty() )
+                    if ( ingested.isEmpty() )
                     {
-                        TimeSeriesIngester timeSeriesIngester =
-                                this.createTimeSeriesIngester( this.getSystemSettings(),
-                                                               this.getDatabase(),
-                                                               this.getFeaturesCache(),
-                                                               this.getTimeScalesCache(),
-                                                               this.getEnsemblesCache(),
-                                                               this.getMeasurementUnitsCache(),
-                                                               this.getProjectConfig(),
-                                                               this.getDataSource(),
-                                                               this.getLockManager(),
-                                                               timeSeries );
-
-                        Future<List<IngestResult>> futureIngestResult =
-                                this.ingestSaverExecutor.submit(
-                                        () -> timeSeriesIngester.ingest( timeSeries ) );
-                        this.ingests.add( futureIngestResult );
-                        this.startGettingIngestResults.countDown();
-
-                        // See WebSource for comments on this approach.
-                        if ( this.startGettingIngestResults.getCount() <= 0 )
-                        {
-                            Future<List<IngestResult>> future =
-                                    this.ingests.take();
-                            List<IngestResult> ingestResults = future.get();
-                            ingested.addAll( ingestResults );
-                        }
-                    }
-                    else
-                    {
-                        // Keep track of how many empty timeseries there were
-                        // to avoid spamming the log.
                         emptyTimeseriesCount++;
                     }
                 }
@@ -446,6 +414,110 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         }
 
         return Collections.unmodifiableList( ingested );
+    }
+
+    /**
+     * Ingests a WRDS NWM time-series.
+     * @param forecast the forecast
+     * @param nwmFeature the NWM feature
+     * @param timeScale the time scale
+     * @param variableName the variable name
+     * @param measurementUnit the measurement unit name
+     * @return the ingest results
+     * @throws InterruptedException if interrupted while obtaining ingest results
+     * @throws PreIngestException if there were no members available to ingest
+     * @throws ExecutionException if ingest failed for any reason
+     */
+
+    private List<IngestResult> ingestTimeSeries( NwmForecast forecast,
+                                                 NwmFeature nwmFeature,
+                                                 TimeScaleOuter timeScale,
+                                                 String variableName,
+                                                 String measurementUnit )
+            throws InterruptedException, ExecutionException
+    {
+        Future<List<IngestResult>> futureIngestResult = null;
+
+        // Single-valued
+        if ( nwmFeature.getMembers().length == 1 )
+        {
+            TimeSeries<Double> timeSeries =
+                    this.createSingleValuedTimeSeries( forecast.getReferenceDatetime(),
+                                                       nwmFeature,
+                                                       timeScale,
+                                                       variableName,
+                                                       measurementUnit );
+
+            TimeSeriesIngester timeSeriesIngester = this.getTimeSeriesIngester( timeSeries );
+
+            if ( !timeSeries.getEvents().isEmpty() )
+            {
+                futureIngestResult =
+                        this.ingestSaverExecutor.submit( () -> timeSeriesIngester.ingestSingleValuedTimeSeries( timeSeries ) );
+            }
+        }
+        // Ensemble
+        else if ( nwmFeature.getMembers().length > 1 )
+        {
+            TimeSeries<Ensemble> timeSeries =
+                    this.createEnsembleTimeSeries( forecast.getReferenceDatetime(),
+                                                   nwmFeature,
+                                                   timeScale,
+                                                   variableName,
+                                                   measurementUnit );
+
+            TimeSeriesIngester timeSeriesIngester = this.getTimeSeriesIngester( timeSeries );
+
+            if ( !timeSeries.getEvents().isEmpty() )
+            {
+                futureIngestResult =
+                        this.ingestSaverExecutor.submit( () -> timeSeriesIngester.ingestEnsembleTimeSeries( timeSeries ) );
+            }
+        }
+        // No members
+        else
+        {
+            throw new PreIngestException( "No members found in WRDS NWM data" );
+        }
+
+        List<IngestResult> ingested = new ArrayList<>();
+
+        if ( Objects.nonNull( futureIngestResult ) )
+        {
+            this.ingests.add( futureIngestResult );
+            this.startGettingIngestResults.countDown();
+
+            // See WebSource for comments on this approach.
+            if ( this.startGettingIngestResults.getCount() <= 0 )
+            {
+                Future<List<IngestResult>> future =
+                        this.ingests.take();
+                List<IngestResult> ingestResults = future.get();
+                ingested.addAll( ingestResults );
+            }
+        }
+
+        return Collections.unmodifiableList( ingested );
+    }
+
+    /**
+     * @param <T> the type of time-series event value
+     * @param timeSeries the time-series
+     * @return the ingester
+     */
+
+    private <T> TimeSeriesIngester getTimeSeriesIngester( TimeSeries<T> timeSeries )
+    {
+        return this.createTimeSeriesIngester( this.getSystemSettings(),
+                                              this.getDatabase(),
+                                              this.getFeaturesCache(),
+                                              this.getTimeScalesCache(),
+                                              this.getEnsemblesCache(),
+                                              this.getMeasurementUnitsCache(),
+                                              this.getProjectConfig(),
+                                              this.getDataSource(),
+                                              this.getLockManager(),
+                                              timeSeries );
     }
     
     /**
@@ -515,7 +587,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                           + uri,
                                           ioe );
         }
-    }  
+    }
 
     /**
      * Transform deserialized JSON document (now a POJO tree) to TimeSeries.
@@ -527,11 +599,11 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
      * @return The NWM location name (akd nwm feature id, comid) and TimeSeries.
      */
 
-    private TimeSeries<?> transform( Instant referenceDatetime,
-                                     NwmFeature nwmFeature,
-                                     TimeScaleOuter timeScale,
-                                     String variableName,
-                                     String measurementUnit )
+    private TimeSeries<Double> createSingleValuedTimeSeries( Instant referenceDatetime,
+                                                             NwmFeature nwmFeature,
+                                                             TimeScaleOuter timeScale,
+                                                             String variableName,
+                                                             String measurementUnit )
     {
         Objects.requireNonNull( nwmFeature );
         Objects.requireNonNull( nwmFeature.getLocation() );
@@ -543,147 +615,176 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                       .getNwmLocationNames()
                                       .getNwmFeatureId();
         NwmMember[] members = nwmFeature.getMembers();
-        TimeSeries<?> timeSeries;
 
-        if ( members.length == 1 )
+        if ( members.length == 0 )
         {
-            // Infer that these are single-valued data.
-            SortedSet<Event<Double>> events = new TreeSet<>();
-
-            for ( NwmDataPoint dataPoint : members[0].getDataPoints() )
-            {
-                if ( Objects.isNull( dataPoint ) )
-                {
-                    LOGGER.debug( "Found null datapoint in sole trace at referenceDatetime={} for nwm feature={}",
-                                 referenceDatetime, rawLocationId );
-                    continue;
-                }
-
-                Event<Double> event = Event.of( dataPoint.getTime(),
-                                                dataPoint.getValue() );
-                events.add( event );
-            }
-
-            ReferenceTimeType referenceTimeType = ReferenceTimeType.T0;
-
-            // Special rule: when analysis data is found, reference time not T0.
-            if ( this.getUri()
-                     .getPath()
-                     .toLowerCase()
-                     .contains( "analysis" ) )
-            {
-                referenceTimeType = ReferenceTimeType.ANALYSIS_START_TIME;
-
-                if ( LOGGER.isDebugEnabled() )
-                {
-                    LOGGER.debug( "Analysis data found labeled in URI {}",
-                                  this.getUri() );
-                }
-            }
-
-            Geometry geometry = MessageFactory.getGeometry(
-                                                            Integer.toString( rawLocationId ) );
-            FeatureKey feature = FeatureKey.of( geometry );
-            TimeSeriesMetadata metadata = TimeSeriesMetadata.of( 
-                                                                 Map.of( referenceTimeType, referenceDatetime ),
-                                                                 timeScale,
-                                                                 variableName,
-                                                                 feature,
-                                                                 measurementUnit );
-            timeSeries = new Builder<Double>().addEvents( Collections.unmodifiableSortedSet( events ) )
-                                                        .setMetadata( metadata )
-                                                        .build();
+            throw new PreIngestException( "No members found in WRDS NWM data" );
         }
-        else if ( members.length > 1 )
+        // Infer that these are single-valued data.
+        SortedSet<Event<Double>> events = new TreeSet<>();
+
+        for ( NwmDataPoint dataPoint : members[0].getDataPoints() )
         {
-            // Infer that this is ensemble data.
-            SortedMap<Instant,double[]> primitiveData = new TreeMap<>();
-
-            // TODO: avoid reading into multiple intermediate containers. Instead, create a
-            // TimeSeriesBuilder<Ensemble> and then add each Event<Ensemble> to the builder.
-            
-            for ( int i = 0; i < members.length; i++ )
+            if ( Objects.isNull( dataPoint ) )
             {
-                int valueCountInTrace = members[i].getDataPoints().size();
-
-                for ( NwmDataPoint dataPoint : members[i].getDataPoints() )
-                {
-                    if ( Objects.isNull( dataPoint ) )
-                    {
-                        LOGGER.debug( "Found null datapoint in member trace={} at referenceDatetime={} for nwm feature={}",
-                                      i, referenceDatetime, rawLocationId );
-                        continue;
-                    }
-
-                    Instant validDatetime = dataPoint.getTime();
-
-                    if ( !primitiveData.containsKey( validDatetime ) )
-                    {
-                        double[] rawEnsemble = new double[members.length];
-                        primitiveData.put( validDatetime, rawEnsemble );
-                    }
-
-                    double[] rawEnsemble = primitiveData.get( validDatetime );
-                    rawEnsemble[i] = dataPoint.getValue();
-                }
-
-                // Special case of zero data in the trace means skip the others.
-                if ( primitiveData.keySet().isEmpty() )
-                {
-                    LOGGER.warn( "Empty ensemble trace found in member trace index={} at reference datetime={} for NWM feature={}, skipping the remaining traces.",
-                                 i, referenceDatetime, rawLocationId );
-                    break;
-                }
-                else if ( primitiveData.keySet().size() != valueCountInTrace )
-                {
-                    throw new PreIngestException( "Data from "
-                                                  + this.getUri()
-                                                  + " in forecast member "
-                                                  + members[i].getIdentifier()
-                                                  + " had value count "
-                                                  + valueCountInTrace
-                                                  + " but the cumulative count "
-                                                  + "of datetimes so far was "
-                                                  + primitiveData.keySet().size()
-                                                  + ". Therefore one member is "
-                                                  + "of different length than "
-                                                  + "another, different valid "
-                                                  + "datetimes were found, or "
-                                                  + "duplicate datetimes were "
-                                                  + "found. Any of these cases "
-                                                  + "means an invalid ensemble "
-                                                  + "was found." );
-                }
+                LOGGER.debug( "Found null datapoint in sole trace at referenceDatetime={} for nwm feature={}",
+                              referenceDatetime,
+                              rawLocationId );
+                continue;
             }
 
-            // Re-shape the data to match the WRES metrics/datamodel expectation
-            Geometry geometry = MessageFactory.getGeometry(
-                                                            Integer.toString( rawLocationId ) );
-            FeatureKey feature = FeatureKey.of( geometry );
-            TimeSeriesMetadata metadata = TimeSeriesMetadata.of(
-                                                                 Map.of( ReferenceTimeType.T0, referenceDatetime ),
-                                                                 timeScale,
-                                                                 variableName,
-                                                                 feature,
-                                                                 measurementUnit );
-            Builder<Ensemble> builder = new Builder<Ensemble>().setMetadata( metadata );
-
-            for ( Map.Entry<Instant, double[]> row : primitiveData.entrySet() )
-            {
-                Ensemble ensemble = Ensemble.of( row.getValue() );
-                Event<Ensemble> ensembleEvent = Event.of( row.getKey(), ensemble );
-                builder.addEvent( ensembleEvent );
-            }
-
-            timeSeries = builder.build();
+            Event<Double> event = Event.of( dataPoint.getTime(),
+                                            dataPoint.getValue() );
+            events.add( event );
         }
-        else
+
+        ReferenceTimeType referenceTimeType = ReferenceTimeType.T0;
+
+        // Special rule: when analysis data is found, reference time not T0.
+        if ( this.getUri()
+                 .getPath()
+                 .toLowerCase()
+                 .contains( "analysis" ) )
         {
-            // There are fewer than 1 members.
+            referenceTimeType = ReferenceTimeType.ANALYSIS_START_TIME;
+
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Analysis data found labeled in URI {}",
+                              this.getUri() );
+            }
+        }
+
+        Geometry geometry = MessageFactory.getGeometry(
+                                                        Integer.toString( rawLocationId ) );
+        FeatureKey feature = FeatureKey.of( geometry );
+        TimeSeriesMetadata metadata = TimeSeriesMetadata.of(
+                                                             Map.of( referenceTimeType, referenceDatetime ),
+                                                             timeScale,
+                                                             variableName,
+                                                             feature,
+                                                             measurementUnit );
+        return new Builder<Double>().addEvents( Collections.unmodifiableSortedSet( events ) )
+                                    .setMetadata( metadata )
+                                    .build();
+    }
+
+    /**
+     * Transform deserialized JSON document (now a POJO tree) to TimeSeries.
+     * @param referenceDatetime The reference datetime.
+     * @param nwmFeature The POJO with a TimeSeries in it.
+     * @param timeScale the time scale associated with the time series.
+     * @param variableName The name of the variable.
+     * @param measurementUnit The unit of the variable value.
+     * @return The NWM location name (akd nwm feature id, comid) and TimeSeries.
+     */
+
+    private TimeSeries<Ensemble> createEnsembleTimeSeries( Instant referenceDatetime,
+                                                           NwmFeature nwmFeature,
+                                                           TimeScaleOuter timeScale,
+                                                           String variableName,
+                                                           String measurementUnit )
+    {
+        Objects.requireNonNull( nwmFeature );
+        Objects.requireNonNull( nwmFeature.getLocation() );
+        Objects.requireNonNull( nwmFeature.getLocation().getNwmLocationNames() );
+        Objects.requireNonNull( variableName );
+        Objects.requireNonNull( measurementUnit );
+
+        int rawLocationId = nwmFeature.getLocation()
+                                      .getNwmLocationNames()
+                                      .getNwmFeatureId();
+        NwmMember[] members = nwmFeature.getMembers();
+
+        if ( members.length == 0 )
+        {
             throw new PreIngestException( "No members found in WRDS NWM data" );
         }
 
-        return timeSeries;
+        // Infer that this is ensemble data.
+        SortedMap<Instant, double[]> primitiveData = new TreeMap<>();
+
+        // TODO: avoid reading into multiple intermediate containers. Instead, create a
+        // TimeSeriesBuilder<Ensemble> and then add each Event<Ensemble> to the builder.
+
+        for ( int i = 0; i < members.length; i++ )
+        {
+            int valueCountInTrace = members[i].getDataPoints().size();
+
+            for ( NwmDataPoint dataPoint : members[i].getDataPoints() )
+            {
+                if ( Objects.isNull( dataPoint ) )
+                {
+                    LOGGER.debug( "Found null datapoint in member trace={} at referenceDatetime={} for nwm feature={}",
+                                  i,
+                                  referenceDatetime,
+                                  rawLocationId );
+                    continue;
+                }
+
+                Instant validDatetime = dataPoint.getTime();
+
+                if ( !primitiveData.containsKey( validDatetime ) )
+                {
+                    double[] rawEnsemble = new double[members.length];
+                    primitiveData.put( validDatetime, rawEnsemble );
+                }
+
+                double[] rawEnsemble = primitiveData.get( validDatetime );
+                rawEnsemble[i] = dataPoint.getValue();
+            }
+
+            // Special case of zero data in the trace means skip the others.
+            if ( primitiveData.keySet().isEmpty() )
+            {
+                LOGGER.warn( "Empty ensemble trace found in member trace index={} at reference datetime={} for NWM feature={}, skipping the remaining traces.",
+                             i,
+                             referenceDatetime,
+                             rawLocationId );
+                break;
+            }
+            else if ( primitiveData.keySet().size() != valueCountInTrace )
+            {
+                throw new PreIngestException( "Data from "
+                                              + this.getUri()
+                                              + " in forecast member "
+                                              + members[i].getIdentifier()
+                                              + " had value count "
+                                              + valueCountInTrace
+                                              + " but the cumulative count "
+                                              + "of datetimes so far was "
+                                              + primitiveData.keySet().size()
+                                              + ". Therefore one member is "
+                                              + "of different length than "
+                                              + "another, different valid "
+                                              + "datetimes were found, or "
+                                              + "duplicate datetimes were "
+                                              + "found. Any of these cases "
+                                              + "means an invalid ensemble "
+                                              + "was found." );
+            }
+        }
+
+        // Re-shape the data to match the WRES metrics/datamodel expectation
+        Geometry geometry = MessageFactory.getGeometry(
+                                                        Integer.toString( rawLocationId ) );
+        FeatureKey feature = FeatureKey.of( geometry );
+        TimeSeriesMetadata metadata = TimeSeriesMetadata.of(
+                                                             Map.of( ReferenceTimeType.T0, referenceDatetime ),
+                                                             timeScale,
+                                                             variableName,
+                                                             feature,
+                                                             measurementUnit );
+        Builder<Ensemble> builder = new Builder<Ensemble>().setMetadata( metadata );
+
+        for ( Map.Entry<Instant, double[]> row : primitiveData.entrySet() )
+        {
+            Ensemble ensemble = Ensemble.of( row.getValue() );
+            Event<Ensemble> ensembleEvent = Event.of( row.getKey(), ensemble );
+            builder.addEvent( ensembleEvent );
+        }
+
+        return builder.build();
     }
 
     /**

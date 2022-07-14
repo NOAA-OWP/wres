@@ -585,7 +585,7 @@ public class ReadValueManager
                                                              this.lockManager );
         try
         {
-            return ingester.ingest( timeSeries );
+            return ingester.ingestSingleValuedTimeSeries( timeSeries );
         }
         catch ( IngestException ie )
         {

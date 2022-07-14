@@ -421,7 +421,7 @@ public class SourceLoader
 
         // When the TimeSeries is present, bypass IngestSaver route, use a
         // TimeSeriesIngester instead.
-        if ( Objects.nonNull( source.getTimeSeries() ) )
+        if ( source.hasTimeSeries() )
         {
             TimeSeriesIngester ingester =
                     TimeSeriesIngester.of( this.getSystemSettings(),
@@ -433,8 +433,18 @@ public class SourceLoader
                                            this.getProjectConfig(),
                                            source,
                                            this.getLockManager() );
-            task = CompletableFuture.supplyAsync( () -> ingester.ingest( source.getTimeSeries() ),
-                                                  this.getExecutor() );
+            
+            // Ingest the appropriately typed time-series
+            if ( Objects.nonNull( source.getSingleValuedTimeSeries() ) )
+            {
+                task = CompletableFuture.supplyAsync( () -> ingester.ingestSingleValuedTimeSeries( source.getSingleValuedTimeSeries() ),
+                                                      this.getExecutor() );
+            }
+            else
+            {
+                task = CompletableFuture.supplyAsync( () -> ingester.ingestEnsembleTimeSeries( source.getEnsembleTimeSeries() ),
+                                                      this.getExecutor() );
+            }
         }
         else
         {

@@ -31,6 +31,7 @@ import com.sun.xml.fastinfoset.stax.StAXDocumentParser; //NOSONAR
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
+import wres.datamodel.Ensemble;
 import wres.datamodel.time.TimeSeries;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
@@ -122,10 +123,16 @@ public class DataSource
     private final URI uri;
 
     /**
-     * A raw TimeSeries when the source has already been read, null otherwise.
+     * A raw single-valued time-series when the source has already been read, null otherwise.
      */
 
-    private final TimeSeries<?> timeSeries;
+    private final TimeSeries<Double> singleValuedTimeSeries;
+
+    /**
+     * A raw ensemble time-series when the source has already been read, null otherwise.
+     */
+
+    private final TimeSeries<Ensemble> ensembleTimeSeries;
 
     /**
      * Create a data source to load into <code>wres.Source</code>, with optional links to
@@ -159,6 +166,7 @@ public class DataSource
                                context,
                                links,
                                uri,
+                               null,
                                null );
     }
 
@@ -179,17 +187,17 @@ public class DataSource
      * @param context the context in which the source appears
      * @param links the optional links to create
      * @param uri the uri for the source
-     * @param timeSeries The {@link TimeSeries} already-read from the source.
+     * @param singleValuedTimeSeries A single-valued {@link TimeSeries} already-read from the source, optional
      * @throws NullPointerException When source, context, links, or uri are null
      * @return The newly created DataSource.
      */
 
-    public static DataSource of( DataDisposition disposition,
-                                 DataSourceConfig.Source source,
-                                 DataSourceConfig context,
-                                 List<LeftOrRightOrBaseline> links,
-                                 URI uri,
-                                 TimeSeries<?> timeSeries )
+    public static DataSource ofSingleValuedDataSource( DataDisposition disposition,
+                                                   DataSourceConfig.Source source,
+                                                   DataSourceConfig context,
+                                                   List<LeftOrRightOrBaseline> links,
+                                                   URI uri,
+                                                   TimeSeries<Double> singleValuedTimeSeries )
     {
         Objects.requireNonNull( disposition );
         Objects.requireNonNull( uri );
@@ -199,8 +207,50 @@ public class DataSource
                                context,
                                links,
                                uri,
-                               timeSeries );
+                               singleValuedTimeSeries,
+                               null );
     }
+    
+    /**
+     * Create a data source to load into <code>wres.Source</code> with an
+     * already-read {@link TimeSeries}, with optional links to create in
+     * <code>wres.ProjectSource</code>. If the source is used only once in the
+     * declaration, there will be no additional links and the set of links
+     * should be empty. The evaluated path to the source may not match the URI
+     * within the source, because the path has been evaluated. For example,
+     * evaluation means to decompose a source directory into separate paths to
+     * each file that must be loaded. Each file has a separate
+     * {@link DataSource}. For each of those decomposed paths, there is only one
+     * {@link DataSourceConfig.Source}.
+     *
+     * @param disposition the disposition of the data source or data inside
+     * @param source the source to load
+     * @param context the context in which the source appears
+     * @param links the optional links to create
+     * @param uri the uri for the source
+     * @param ensembleTimeSeries An ensemble {@link TimeSeries} already-read from the source, optional
+     * @throws NullPointerException When source, context, links, or uri are null
+     * @return The newly created DataSource.
+     */
+
+    public static DataSource ofEnsembleDataSource( DataDisposition disposition,
+                                                   DataSourceConfig.Source source,
+                                                   DataSourceConfig context,
+                                                   List<LeftOrRightOrBaseline> links,
+                                                   URI uri,
+                                                   TimeSeries<Ensemble> ensembleTimeSeries )
+    {
+        Objects.requireNonNull( disposition );
+        Objects.requireNonNull( uri );
+        Objects.requireNonNull( source );
+        return new DataSource( disposition,
+                               source,
+                               context,
+                               links,
+                               uri,
+                               null,
+                               ensembleTimeSeries );
+    }    
 
     /**
      * Create a source.
@@ -209,6 +259,8 @@ public class DataSource
      * @param context the context in which the source appears
      * @param links the links
      * @param uri the uri
+     * @param singleValuedTimeSeries an optional single-valued time-series
+     * @param ensembleTimeSeries an optional ensemble time-series
      */
 
     private DataSource( DataDisposition disposition,
@@ -216,7 +268,8 @@ public class DataSource
                         DataSourceConfig context,
                         List<LeftOrRightOrBaseline> links,
                         URI uri,
-                        TimeSeries<?> timeSeries )
+                        TimeSeries<Double> singleValuedTimeSeries,
+                        TimeSeries<Ensemble> ensembleTimeSeries )
     {
         Objects.requireNonNull( disposition );
         Objects.requireNonNull( context );
@@ -236,7 +289,8 @@ public class DataSource
         }
 
         this.uri = uri;
-        this.timeSeries = timeSeries;
+        this.singleValuedTimeSeries = singleValuedTimeSeries;
+        this.ensembleTimeSeries = ensembleTimeSeries;
     }
 
     /**
@@ -283,7 +337,7 @@ public class DataSource
     {
         return this.uri;
     }
-    
+
     /**
      * Returns <code>true</code> if the data source path is not null, otherwise
      * <code>false</code>. The path may not be available for some services,
@@ -310,11 +364,28 @@ public class DataSource
 
     /**
      * Returns the {@link TimeSeries} that was already read from the source.
-     * @return The timeseries or null if none was provided on construction.
+     * @return The timeseries or null if none was provided on construction
      */
-    public TimeSeries<?> getTimeSeries()
+    public TimeSeries<Ensemble> getEnsembleTimeSeries()
     {
-        return this.timeSeries;
+        return this.ensembleTimeSeries;
+    }
+
+    /**
+     * Returns the {@link TimeSeries} that was already read from the source.
+     * @return The timeseries or null if none was provided on construction
+     */
+    public TimeSeries<Double> getSingleValuedTimeSeries()
+    {
+        return this.singleValuedTimeSeries;
+    }
+    
+    /**
+     * @return true if this data source has a time-series available in-band, false otherwise
+     */
+    public boolean hasTimeSeries()
+    {
+        return Objects.nonNull( this.singleValuedTimeSeries ) || Objects.nonNull( this.ensembleTimeSeries );
     }
 
     /**
@@ -339,25 +410,35 @@ public class DataSource
         {
             return false;
         }
-        DataSource that = ( DataSource ) o;
+        DataSource that = (DataSource) o;
         return source.equals( that.source ) &&
-               links.equals( that.links ) &&
-               Objects.equals( context, that.context ) &&
-               Objects.equals( uri, that.uri ) &&
-               Objects.equals( timeSeries, that.timeSeries );
+               links.equals( that.links )
+               &&
+               Objects.equals( context, that.context )
+               &&
+               Objects.equals( uri, that.uri )
+               &&
+               Objects.equals( this.singleValuedTimeSeries, that.singleValuedTimeSeries )
+               &&
+               Objects.equals( this.ensembleTimeSeries, that.ensembleTimeSeries );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( context, source, links, uri, timeSeries );
+        return Objects.hash( this.context,
+                             this.source,
+                             this.links,
+                             this.uri,
+                             this.ensembleTimeSeries,
+                             this.singleValuedTimeSeries );
     }
 
     @Override
     public String toString()
     {
         // Improved for #63493
-        
+
         StringJoiner joiner = new StringJoiner( ";", "(", ")" );
 
         joiner.add( "Disposition: " + this.getDisposition() );
@@ -369,15 +450,21 @@ public class DataSource
             joiner.add( " Links to other contexts: " + this.getLinks() );
         }
 
-        if ( Objects.nonNull( this.getTimeSeries() ) )
-        {
-            String timeseries =  " TimeSeries with ";
+        TimeSeries<?> series = this.singleValuedTimeSeries;
 
-            if ( Objects.nonNull( this.getTimeSeries().getEvents() ) )
+        if ( Objects.isNull( series ) )
+        {
+            series = this.getEnsembleTimeSeries();
+        }
+
+        if ( Objects.nonNull( series ) )
+        {
+            String timeseries = " TimeSeries with ";
+
+            if ( Objects.nonNull( series.getEvents() ) )
             {
-                timeseries += this.getTimeSeries()
-                                  .getEvents()
-                                  .size();
+                timeseries += series.getEvents()
+                                    .size();
             }
             else
             {
@@ -385,9 +472,8 @@ public class DataSource
             }
 
             timeseries += " events: ";
-            timeseries +=  this.getTimeSeries()
-                               .getMetadata()
-                               .toString();
+            timeseries += series.getMetadata()
+                                .toString();
 
             joiner.add( timeseries );
         }
@@ -470,7 +556,9 @@ public class DataSource
         catch ( TikaException | IOException e )
         {
             throw new PreIngestException( "Could not read from stream associated with '"
-                                          + uri + "':", e );
+                                          + uri
+                                          + "':",
+                                          e );
         }
 
         String mediaType = detectedMediaType.getType()
@@ -478,12 +566,15 @@ public class DataSource
         String subtype = detectedMediaType.getSubtype()
                                           .toLowerCase();
         LOGGER.debug( "For data labeled {}, mediaType={}, subtype={}",
-                      uri, mediaType, subtype );
+                      uri,
+                      mediaType,
+                      subtype );
 
         if ( firstBytes.length < 4 )
         {
             LOGGER.warn( "Found document with only {} bytes: '{}'",
-                         firstBytes.length, uri );
+                         firstBytes.length,
+                         uri );
         }
         else if ( subtype.equals( "xml" ) )
         {
@@ -550,7 +641,8 @@ public class DataSource
                 if ( !start.contains( requiredHeader ) )
                 {
                     LOGGER.warn( "Found CSV document but it did not contain required column '{}': '{}'",
-                                 requiredHeader, uri );
+                                 requiredHeader,
+                                 uri );
                     missingHeaders = true;
                 }
             }
@@ -759,7 +851,7 @@ public class DataSource
 
         return false;
     }
-    
+
     /**
      * Since tika sometimes reports tarballs as text/plain, do some more work
      * to detect.
@@ -798,11 +890,21 @@ public class DataSource
                           Character.getNumericValue( firstBytes[0] ) );
         }
 
-        byte[] byte124to135 = Arrays.copyOfRange( firstBytes, 124, 135  );
+        byte[] byte124to135 = Arrays.copyOfRange( firstBytes, 124, 135 );
 
         // These bytes can be padded with 0x0 or space or be ascii numerals:
-        Set<Integer> validBytesIn124to135 = Set.of( 0, 32, 48, 49, 50, 51, 52,
-                                                    53, 54, 55, 56, 57 );
+        Set<Integer> validBytesIn124to135 = Set.of( 0,
+                                                    32,
+                                                    48,
+                                                    49,
+                                                    50,
+                                                    51,
+                                                    52,
+                                                    53,
+                                                    54,
+                                                    55,
+                                                    56,
+                                                    57 );
         Set<Byte> invalidBytesFoundIn124to135 = new HashSet<>();
         for ( byte b : byte124to135 )
         {
@@ -841,11 +943,45 @@ public class DataSource
         }
 
         int byte156 = Byte.toUnsignedInt( firstBytes[156] );
-        Set<Integer> validBytesAt156 = Set.of( 0, 1, 2, 48, 49, 50, 51, 52, 53,
-                                               54, 55, 103, 12, 65, 66, 67, 68,
-                                               69,70, 71, 72, 73, 74, 75, 76,
-                                               77, 78, 79, 80, 81, 82, 83, 84,
-                                               85, 86, 87, 88, 89, 90 );
+        Set<Integer> validBytesAt156 = Set.of( 0,
+                                               1,
+                                               2,
+                                               48,
+                                               49,
+                                               50,
+                                               51,
+                                               52,
+                                               53,
+                                               54,
+                                               55,
+                                               103,
+                                               12,
+                                               65,
+                                               66,
+                                               67,
+                                               68,
+                                               69,
+                                               70,
+                                               71,
+                                               72,
+                                               73,
+                                               74,
+                                               75,
+                                               76,
+                                               77,
+                                               78,
+                                               79,
+                                               80,
+                                               81,
+                                               82,
+                                               83,
+                                               84,
+                                               85,
+                                               86,
+                                               87,
+                                               88,
+                                               89,
+                                               90 );
 
         if ( validBytesAt156.contains( byte156 ) )
         {

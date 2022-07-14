@@ -1,38 +1,22 @@
 package wres.io.retrieval;
 
-import java.net.URI;
-import java.sql.SQLException;
-import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static wres.io.retrieval.RetrieverTestConstants.*;
 
 import wres.config.generated.DataSourceBaselineConfig;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.io.concurrency.Executor;
-import wres.io.data.caching.Features;
-import wres.io.ingesting.IngestResult;
-import wres.io.project.Project;
 import wres.io.reading.DataSource;
-import wres.io.utilities.Database;
-import wres.system.SystemSettings;
 
 public class RetrieverTestData
 {

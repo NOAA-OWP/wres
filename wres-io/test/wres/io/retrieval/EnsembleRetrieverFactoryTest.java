@@ -475,7 +475,7 @@ public class EnsembleRetrieverFactoryTest
                                                                 fakeConfig,
                                                                 rightData,
                                                                 this.lockManager );
-        IngestResult ingestResultOne = ingesterOne.ingest( timeSeriesOne )
+        IngestResult ingestResultOne = ingesterOne.ingestEnsembleTimeSeries( timeSeriesOne )
                                                   .get( 0 );
         TimeSeriesIngester ingesterTwo = TimeSeriesIngester.of( this.mockSystemSettings,
                                                                 this.wresDatabase,
@@ -487,7 +487,7 @@ public class EnsembleRetrieverFactoryTest
                                                                 baselineData,
                                                                 this.lockManager );
 
-        IngestResult ingestResultTwo = ingesterTwo.ingest( timeSeriesOne )
+        IngestResult ingestResultTwo = ingesterTwo.ingestEnsembleTimeSeries( timeSeriesOne )
                                                   .get( 0 );
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
 
@@ -500,7 +500,7 @@ public class EnsembleRetrieverFactoryTest
                                                                   fakeConfig,
                                                                   leftData,
                                                                   this.lockManager );
-        IngestResult ingestResultThree = ingesterThree.ingest( timeSeriesTwo )
+        IngestResult ingestResultThree = ingesterThree.ingestSingleValuedTimeSeries( timeSeriesTwo )
                                                       .get( 0 );
 
         List<IngestResult> results = List.of( ingestResultOne,

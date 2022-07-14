@@ -393,7 +393,7 @@ public class ObservationRetrieverTest
                                                                 fakeConfig,
                                                                 leftData,
                                                                 this.lockManager );
-        IngestResult ingestResultOne = ingesterOne.ingest( timeSeriesOne )
+        IngestResult ingestResultOne = ingesterOne.ingestSingleValuedTimeSeries( timeSeriesOne )
                                                   .get( 0 );
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleOne( T0 );
 
@@ -406,7 +406,7 @@ public class ObservationRetrieverTest
                                                                 fakeConfig,
                                                                 rightData,
                                                                 this.lockManager );
-        IngestResult ingestResultTwo = ingesterTwo.ingest( timeSeriesTwo )
+        IngestResult ingestResultTwo = ingesterTwo.ingestSingleValuedTimeSeries( timeSeriesTwo )
                                                   .get( 0 );
 
         List<IngestResult> results = List.of( ingestResultOne,

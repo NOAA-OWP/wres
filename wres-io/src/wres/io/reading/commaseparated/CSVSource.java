@@ -8,17 +8,14 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
-import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -38,11 +35,9 @@ import static wres.datamodel.time.ReferenceTimeType.UNKNOWN;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
-import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
-import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.config.ConfigHelper;
@@ -56,6 +51,7 @@ import wres.io.ingesting.PreIngestException;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.BasicSource;
 import wres.io.reading.DataSource;
+import wres.io.reading.ReaderUtilities;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
 import wres.statistics.generated.Geometry;
@@ -332,11 +328,13 @@ public class CSVSource extends BasicSource
                 // New timeseries needed, but first initiate ingest of previous.
                 if ( Objects.nonNull( lastTimeSeriesMetadata ) )
                 {
-                    TimeSeries<?> timeSeries = this.buildTimeSeries( lastTimeSeriesMetadata,
-                                                                     ensembleValues,
-                                                                     lastEnsembleName,
-                                                                     data.getRowIndex() + 1 );
-                    this.ingest( timeSeries );
+                    TimeSeriesMetadata metadata = this.getTimeSeriesMetadata( lastTimeSeriesMetadata,
+                                                                              ensembleValues,
+                                                                              lastEnsembleName );
+                    this.createAndIngestTimeSeries( metadata,
+                                                    ensembleValues,
+                                                    lastEnsembleName,
+                                                    data.getRowIndex() + 1 );
                 }
 
                 // New timeseries.
@@ -395,12 +393,13 @@ public class CSVSource extends BasicSource
         if ( Objects.nonNull( lastTimeSeriesMetadata ) )
         {
             // After reading all data, save the last timeseries.
-            TimeSeries<?> timeSeries =
-                    this.buildTimeSeries( lastTimeSeriesMetadata,
-                                          ensembleValues,
-                                          lastEnsembleName,
-                                          data.getRowIndex() + 1 );
-            this.ingest( timeSeries );
+            TimeSeriesMetadata metadata = this.getTimeSeriesMetadata( lastTimeSeriesMetadata, 
+                                                                      ensembleValues, 
+                                                                      lastEnsembleName );
+            this.createAndIngestTimeSeries( metadata,
+                                            ensembleValues,
+                                            lastEnsembleName,
+                                            data.getRowIndex() + 1 );
         }
         else if ( LOGGER.isWarnEnabled() )
         {
@@ -412,35 +411,19 @@ public class CSVSource extends BasicSource
 
         this.completeIngest();
     }
-
-
+    
     /**
-     * Build a timeseries out of temporary data structures.
-     *
-     * When there is a placeholder reference datetime, replace it with the
-     * latest valid datetime found as "latest observation." This means there was
-     * no reference datetime found in the CSV, but until the WRES db schema is
-     * ready to store any kind of timeseries with 0, 1, or N reference datetimes
-     * we are required to specify something here.
-     *
-     * @param lastTimeSeriesMetadata The metadata for most-recently-parsed data.
-     * @param ensembleValues The most-recently-parsed data in sorted map form.
-     * @param lastEnsembleName The most-recently-parsed ensemble name.
-     * @param lineNumber The most-recently-parsed line number in the csv source.
-     * @return A TimeSeries either of Double or Ensemble, ready for ingest.
-     * @throws PreIngestException When something goes wrong.
+     * Creates the time-series metadata from the inputs.
+     * @param lastTimeSeriesMetadata the last metadata
+     * @param ensembleValues the ensemble values
+     * @param lastEnsembleName the last ensemble name
+     * @return the metadata
      */
-    private TimeSeries<?> buildTimeSeries( TimeSeriesMetadata lastTimeSeriesMetadata,
-                                           SortedMap<String,SortedMap<Instant,Double>> ensembleValues,
-                                           String lastEnsembleName,
-                                           int lineNumber )
+    
+    private TimeSeriesMetadata getTimeSeriesMetadata( TimeSeriesMetadata lastTimeSeriesMetadata,
+                                                      SortedMap<String,SortedMap<Instant,Double>> ensembleValues,
+                                                      String lastEnsembleName )
     {
-        LOGGER.debug( "buildTimeSeries called with {}, {}, {}, {}",
-                      lastTimeSeriesMetadata,
-                      ensembleValues,
-                      lastEnsembleName,
-                      lineNumber );
-        TimeSeries<?> timeSeries;
         TimeSeriesMetadata metadata;
         Collection<Instant> referenceDatetimes =
                 lastTimeSeriesMetadata.getReferenceTimes()
@@ -469,164 +452,59 @@ public class CSVSource extends BasicSource
                           lastTimeSeriesMetadata);
             metadata = lastTimeSeriesMetadata;
         }
+        
+        return metadata;
+    }
+
+    /**
+     * Build a timeseries out of temporary data structures and then ingests it.
+     *
+     * When there is a placeholder reference datetime, replace it with the
+     * latest valid datetime found as "latest observation." This means there was
+     * no reference datetime found in the CSV, but until the WRES db schema is
+     * ready to store any kind of timeseries with 0, 1, or N reference datetimes
+     * we are required to specify something here.
+     *
+     * @param lastTimeSeriesMetadata The metadata for most-recently-parsed data.
+     * @param ensembleValues The most-recently-parsed data in sorted map form.
+     * @param lastEnsembleName The most-recently-parsed ensemble name.
+     * @param lineNumber The most-recently-parsed line number in the csv source.
+     * @return A TimeSeries either of Double or Ensemble, ready for ingest.
+     * @throws PreIngestException When something goes wrong.
+     */
+    private void createAndIngestTimeSeries( TimeSeriesMetadata timeSeriesMetadata,
+                                            SortedMap<String, SortedMap<Instant, Double>> ensembleValues,
+                                            String lastEnsembleName,
+                                            int lineNumber )
+    {
+        LOGGER.debug( "Creating a time-series with {}, {}, {}, {}",
+                      timeSeriesMetadata,
+                      ensembleValues,
+                      lastEnsembleName,
+                      lineNumber );
 
         // Check if this is actually an ensemble or single trace
         if ( ensembleValues.size() == 1
              && ensembleValues.firstKey()
                               .equals( DEFAULT_ENSEMBLE_NAME ) )
         {
-            timeSeries = this.transform( metadata,
-                                         ensembleValues.get( DEFAULT_ENSEMBLE_NAME ),
-                                         lineNumber );
+            TimeSeries<Double> timeSeries = ReaderUtilities.transform( timeSeriesMetadata,
+                                                                       ensembleValues.get( DEFAULT_ENSEMBLE_NAME ),
+                                                                       lineNumber );
+
+            this.ingestSingleValuedTimeSeries( timeSeries );
         }
         else
         {
-            timeSeries = this.transformEnsemble( metadata,
-                                                 ensembleValues,
-                                                 lineNumber );
-        }
+            TimeSeries<Ensemble> timeSeries = ReaderUtilities.transformEnsemble( timeSeriesMetadata,
+                                                                                 ensembleValues,
+                                                                                 lineNumber,
+                                                                                 this.getDataSource()
+                                                                                     .getUri() );
 
-        LOGGER.debug( "transformed into {}", timeSeries );
-        return timeSeries;
+            this.ingestEnsembleTimeSeries( timeSeries );
+        }
     }
-
-    /**
-     * Transform a single trace into a TimeSeries of doubles.
-     * @param metadata The metadata of the timeseries.
-     * @param trace The raw data to build a TimeSeries.
-     * @param lineNumber The approximate location in the source.
-     * @return The complete TimeSeries
-     */
-
-    private TimeSeries<Double> transform( TimeSeriesMetadata metadata,
-                                          SortedMap<Instant,Double> trace,
-                                          int lineNumber )
-    {
-        if ( trace.isEmpty() )
-        {
-            throw new IllegalArgumentException( "Cannot transform fewer than "
-                                                + "one values into timeseries "
-                                                + "with metadata "
-                                                + metadata
-                                                + " from line number "
-                                                + lineNumber );
-        }
-
-        TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
-        builder.setMetadata( metadata );
-
-        for ( Map.Entry<Instant,Double> events : trace.entrySet() )
-        {
-            Event<Double> event = Event.of( events.getKey(), events.getValue() );
-            builder.addEvent( event );
-        }
-
-        return builder.build();
-    }
-
-    /**
-     * Transform a map of traces into a TimeSeries of ensembles (flip it) but
-     * also validate the density and valid datetimes of the ensemble prior.
-     * @param metadata The metadata of the timeseries.
-     * @param traces The raw data to build a TimeSeries.
-     * @param lineNumber The approximate location in the source.
-     * @return The complete TimeSeries
-     * @throws IllegalArgumentException When fewer than two traces given.
-     * @throws PreIngestException When ragged (non-dense) data given.
-     */
-
-    private TimeSeries<Ensemble> transformEnsemble( TimeSeriesMetadata metadata,
-                                                    SortedMap<String,SortedMap<Instant,Double>> traces,
-                                                    int lineNumber )
-    {
-        int traceCount = traces.size();
-
-        if ( traceCount < 2 )
-        {
-            throw new IllegalArgumentException( "Cannot transform fewer than "
-                                                + "two traces into ensemble: "
-                                                + traces );
-        }
-
-        Map<Instant,double[]> reshapedValues = null;
-        Map.Entry<String,SortedMap<Instant,Double>> previousTrace = null;
-        int i = 0;
-
-        for ( Map.Entry<String,SortedMap<Instant,Double>> trace : traces.entrySet() )
-        {
-            SortedSet<Instant> theseInstants = new TreeSet<>( trace.getValue()
-                                                                   .keySet() );
-
-            if ( Objects.nonNull( previousTrace ) )
-            {
-                SortedSet<Instant> previousInstants = new TreeSet<>( previousTrace.getValue()
-                                                                                  .keySet() );
-                if ( !theseInstants.equals( previousInstants ) )
-                {
-                    throw new PreIngestException( "Cannot build ensemble from "
-                                                  + this.getDataSource()
-                                                        .getUri()
-                                                  + " with data at or before "
-                                                  + "line number "
-                                                  + lineNumber
-                                                  + " because the trace named "
-                                                  + trace.getKey()
-                                                  + " had these valid datetimes"
-                                                  + ": " + theseInstants
-                                                  + " but previous trace named "
-                                                  + previousTrace.getKey()
-                                                  + " had different ones: "
-                                                  + previousInstants
-                                                  + " which is not allowed. All"
-                                                  + " traces must be dense and "
-                                                  + "match valid datetimes." );
-                }
-            }
-
-            if ( Objects.isNull( reshapedValues ) )
-            {
-                reshapedValues = new HashMap<>( theseInstants.size() );
-            }
-
-            for ( Map.Entry<Instant,Double> event : trace.getValue()
-                                                         .entrySet() )
-            {
-                Instant validDateTime = event.getKey();
-
-                if ( !reshapedValues.containsKey( validDateTime ) )
-                {
-                    reshapedValues.put( validDateTime, new double[traceCount] );
-                }
-
-                double[] values = reshapedValues.get( validDateTime );
-                values[i] = event.getValue();
-            }
-
-            previousTrace = trace;
-            i++;
-        }
-
-        wres.datamodel.time.TimeSeries.Builder<Ensemble> builder =
-                new wres.datamodel.time.TimeSeries.Builder<>();
-
-        // Because the iteration is over a sorted map, assuming same order here.
-        SortedSet<String> traceNamesSorted = new TreeSet<>( traces.keySet() );
-        String[] traceNames = new String[traceNamesSorted.size()];
-        traceNamesSorted.toArray( traceNames );
-        Labels labels = Labels.of( traceNames );
-
-        builder.setMetadata( metadata );
-
-        for ( Map.Entry<Instant, double[]> events : reshapedValues.entrySet() )
-        {
-            Ensemble ensembleSlice = Ensemble.of( events.getValue(), labels );
-            Event<Ensemble> ensembleEvent = Event.of( events.getKey(), ensembleSlice );
-            builder.addEvent( ensembleEvent );
-        }
-
-        return builder.build();
-    }
-
 
     private String getEnsembleName( final DataProvider data )
     {
@@ -802,7 +680,7 @@ public class CSVSource extends BasicSource
      * @throws IngestException When anything goes wrong related to ingest.
      */
 
-    private void ingest( wres.datamodel.time.TimeSeries<?> timeSeries )
+    private void ingestEnsembleTimeSeries( wres.datamodel.time.TimeSeries<Ensemble> timeSeries )
             throws IngestException
     {
         TimeSeriesIngester timeSeriesIngester =
@@ -817,7 +695,43 @@ public class CSVSource extends BasicSource
                                                this.getLockManager() );
 
         Future<List<IngestResult>> futureIngestResult =
-                this.ingestSaverExecutor.submit( () -> timeSeriesIngester.ingest( timeSeries ) );
+                this.ingestSaverExecutor.submit( () -> timeSeriesIngester.ingestEnsembleTimeSeries( timeSeries ) );
+        this.addIngestResults( futureIngestResult );
+    }
+    
+    /**
+     * Create an ingester for the given timeseries and begin ingest, add the
+     * future to this.ingests as a side-effect.
+     * @param timeSeries The timeSeries to ingest.
+     * @throws IngestException When anything goes wrong related to ingest.
+     */
+
+    private void ingestSingleValuedTimeSeries( wres.datamodel.time.TimeSeries<Double> timeSeries )
+            throws IngestException
+    {
+        TimeSeriesIngester timeSeriesIngester =
+                this.createTimeSeriesIngester( this.getSystemSettings(),
+                                               this.getDatabase(),
+                                               this.getFeaturesCache(),
+                                               this.getTimeScalesCache(),
+                                               this.getEnsemblesCache(),
+                                               this.getMeasurementUnitsCache(),
+                                               this.getProjectConfig(),
+                                               this.getDataSource(),
+                                               this.getLockManager() );
+
+        Future<List<IngestResult>> futureIngestResult =
+                this.ingestSaverExecutor.submit( () -> timeSeriesIngester.ingestSingleValuedTimeSeries( timeSeries ) );
+        this.addIngestResults( futureIngestResult );
+    }
+    
+    /**
+     * Adds the ingest results.
+     * @param futureIngestResult the ingest results
+     */
+    
+    private void addIngestResults( Future<List<IngestResult>> futureIngestResult )
+    {
         this.ingests.add( futureIngestResult );
         this.startGettingIngestResults.countDown();
 
