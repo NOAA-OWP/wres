@@ -20,10 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.SortedMap;
-import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -32,7 +30,6 @@ import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static wres.datamodel.time.ReferenceTimeType.LATEST_OBSERVATION;
 import static wres.datamodel.time.ReferenceTimeType.UNKNOWN;
 
 import wres.config.ProjectConfigException;
@@ -40,11 +37,9 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MissingValues;
-import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
-import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -60,6 +55,7 @@ import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.DataSource;
 import wres.io.reading.DataSource.DataDisposition;
 import wres.io.reading.InvalidInputDataException;
+import wres.io.reading.ReaderUtilities;
 import wres.io.utilities.Database;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
@@ -70,9 +66,10 @@ import wres.system.xml.XMLReader;
 import wres.util.Strings;
 
 /**
- * @author Christopher Tubbs
  * Loads a PIXML file, iterates through it, and saves all data to the database, whether it is
  * forecast or observation data
+ * @author Christopher Tubbs
+ * @author James Brown
  */
 public final class PIXMLReader extends XMLReader
 {
@@ -224,13 +221,12 @@ public final class PIXMLReader extends XMLReader
                 if ( !this.traceValues.isEmpty() )
                 {
                     LOGGER.debug( "Ingesting due to non-empty tracevalues" );
-                    TimeSeries<?> timeSeries =
-                            buildTimeSeries( this.currentTimeSeriesMetadata,
-                                             this.traceValues,
-                                             this.currentTraceName,
-                                             reader.getLocation()
-                                                   .getLineNumber() );
-                    this.ingest( timeSeries );
+
+                    this.createAndIngestTimeSeries( this.currentTimeSeriesMetadata,
+                                                    this.traceValues,
+                                                    this.currentTraceName,
+                                                    reader.getLocation()
+                                                          .getLineNumber() );
 
                     // Reset the temporary data structures for timeseries
                     this.currentTimeSeriesMetadata = null;
@@ -738,12 +734,12 @@ public final class PIXMLReader extends XMLReader
         {
             LOGGER.debug( "Saving a trace as a standalone timeseries because {} not equal to {}",
                           justParsed, this.currentTimeSeriesMetadata );
-            TimeSeries<?> timeSeries =
-                    buildTimeSeries( this.currentTimeSeriesMetadata,
-                                     this.traceValues,
-                                     this.currentTraceName,
-                                     this.highestLineNumber );
-            this.ingest( timeSeries );
+            
+            this.createAndIngestTimeSeries( this.currentTimeSeriesMetadata,
+                                            this.traceValues,
+                                            this.currentTraceName,
+                                            this.highestLineNumber );
+            
             this.traceValues = new TreeMap<>();
         }
 
@@ -863,49 +859,47 @@ public final class PIXMLReader extends XMLReader
         if ( !this.traceValues.isEmpty() )
         {
             LOGGER.debug( "Finished parsing, saving timeseries" );
-            TimeSeries<?> timeSeries =
-                    buildTimeSeries( this.currentTimeSeriesMetadata,
-                                     this.traceValues,
-                                     this.currentTraceName,
-                                     this.highestLineNumber );
-            this.ingest( timeSeries );
+
+            this.createAndIngestTimeSeries( this.currentTimeSeriesMetadata,
+                                            this.traceValues,
+                                            this.currentTraceName,
+                                            this.highestLineNumber );
         }
 
         this.completeIngest();
     }
 
-
     /**
-     * Build a timeseries out of temporary data structures.
+     * Build a timeseries out of temporary data structures and then ingests it.
      *
      * When there is a placeholder reference datetime, replace it with the
      * latest valid datetime found as "latest observation." This means there was
-     * no reference datetime found in the XML, but until the WRES db schema is
+     * no reference datetime found in the CSV, but until the WRES db schema is
      * ready to store any kind of timeseries with 0, 1, or N reference datetimes
      * we are required to specify something here.
      *
-     * @param lastTimeSeriesMetadata The metadata for most-recently-parsed data.
+     * @param timeSeriesMetadata The metadata for most-recently-parsed data.
      * @param ensembleValues The most-recently-parsed data in sorted map form.
      * @param lastEnsembleName The most-recently-parsed ensemble name.
      * @param lineNumber The most-recently-parsed line number in the csv source.
      * @return A TimeSeries either of Double or Ensemble, ready for ingest.
      * @throws PreIngestException When something goes wrong.
      */
-    private TimeSeries<?> buildTimeSeries( TimeSeriesMetadata lastTimeSeriesMetadata,
-                                           SortedMap<String,SortedMap<Instant,Double>> ensembleValues,
-                                           String lastEnsembleName,
-                                           int lineNumber )
+    private void createAndIngestTimeSeries( TimeSeriesMetadata timeSeriesMetadata,
+                                            SortedMap<String, SortedMap<Instant, Double>> ensembleValues,
+                                            String lastEnsembleName,
+                                            int lineNumber )
     {
-        LOGGER.debug( "buildTimeSeries called with {}, {}, {}, {}",
-                      lastTimeSeriesMetadata,
+        LOGGER.debug( "Creating a time-series with {}, {}, {}, {}",
+                      timeSeriesMetadata,
                       ensembleValues,
                       lastEnsembleName,
                       lineNumber );
-        TimeSeries<?> timeSeries;
+
         TimeSeriesMetadata metadata;
         Collection<Instant> referenceDatetimes =
-                lastTimeSeriesMetadata.getReferenceTimes()
-                                      .values();
+                timeSeriesMetadata.getReferenceTimes()
+                                  .values();
 
         // When there are no reference datetimes, use latest value
         // by valid datetime. (Eventually we should remove the
@@ -915,20 +909,20 @@ public final class PIXMLReader extends XMLReader
              && referenceDatetimes.contains( PLACEHOLDER_REFERENCE_DATETIME ) )
         {
             LOGGER.debug( "Found placeholder reference datetime in {}",
-                          lastTimeSeriesMetadata);
+                          timeSeriesMetadata );
             Instant latestDatetime = ensembleValues.get( lastEnsembleName )
                                                    .lastKey();
-            metadata = TimeSeriesMetadata.of( Map.of( LATEST_OBSERVATION, latestDatetime ),
-                                              lastTimeSeriesMetadata.getTimeScale(),
-                                              lastTimeSeriesMetadata.getVariableName(),
-                                              lastTimeSeriesMetadata.getFeature(),
-                                              lastTimeSeriesMetadata.getUnit() );
+            metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.LATEST_OBSERVATION, latestDatetime ),
+                                              timeSeriesMetadata.getTimeScale(),
+                                              timeSeriesMetadata.getVariableName(),
+                                              timeSeriesMetadata.getFeature(),
+                                              timeSeriesMetadata.getUnit() );
         }
         else
         {
             LOGGER.debug( "Found NO placeholder reference datetime in {}",
-                          lastTimeSeriesMetadata);
-            metadata = lastTimeSeriesMetadata;
+                          timeSeriesMetadata );
+            metadata = timeSeriesMetadata;
         }
 
         // Check if this is actually an ensemble or single trace
@@ -936,158 +930,23 @@ public final class PIXMLReader extends XMLReader
              && ensembleValues.firstKey()
                               .equals( DEFAULT_ENSEMBLE_NAME ) )
         {
-            timeSeries = this.transform( metadata,
-                                         ensembleValues.get( DEFAULT_ENSEMBLE_NAME ),
-                                         lineNumber );
+            TimeSeries<Double> timeSeries = ReaderUtilities.transform( metadata,
+                                                                       ensembleValues.get( DEFAULT_ENSEMBLE_NAME ),
+                                                                       lineNumber );
+
+            this.ingestSingleValuedTimeSeries( timeSeries );
         }
         else
         {
-            timeSeries = this.transformEnsemble( metadata,
-                                                 ensembleValues,
-                                                 lineNumber );
-        }
+            TimeSeries<Ensemble> timeSeries = ReaderUtilities.transformEnsemble( metadata,
+                                                                                 ensembleValues,
+                                                                                 lineNumber,
+                                                                                 this.getDataSource()
+                                                                                     .getUri() );
 
-        LOGGER.debug( "transformed into {}", timeSeries );
-        return timeSeries;
+            this.ingestEnsembleTimeSeries( timeSeries );
+        }
     }
-
-    /**
-     * Transform a single trace into a TimeSeries of doubles.
-     * @param metadata The metadata of the timeseries.
-     * @param trace The raw data to build a TimeSeries.
-     * @param lineNumber The approximate location in the source.
-     * @return The complete TimeSeries
-     */
-
-    private TimeSeries<Double> transform( TimeSeriesMetadata metadata,
-                                          SortedMap<Instant,Double> trace,
-                                          int lineNumber )
-    {
-        if ( trace.isEmpty() )
-        {
-            throw new IllegalArgumentException( "Cannot transform fewer than "
-                                                + "one values into timeseries "
-                                                + "with metadata "
-                                                + metadata
-                                                + " from line number "
-                                                + lineNumber );
-        }
-
-        TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
-        builder.setMetadata( metadata );
-
-        for ( Map.Entry<Instant,Double> events : trace.entrySet() )
-        {
-            Event<Double> event = Event.of( events.getKey(), events.getValue() );
-            builder.addEvent( event );
-        }
-
-        return builder.build();
-    }
-
-    /**
-     * Transform a map of traces into a TimeSeries of ensembles (flip it) but
-     * also validate the density and valid datetimes of the ensemble prior.
-     * @param metadata The metadata of the timeseries.
-     * @param traces The raw data to build a TimeSeries.
-     * @param lineNumber The approximate location in the source.
-     * @return The complete TimeSeries
-     * @throws IllegalArgumentException When fewer than two traces given.
-     * @throws PreIngestException When ragged (non-dense) data given.
-     */
-
-    private TimeSeries<Ensemble> transformEnsemble( TimeSeriesMetadata metadata,
-                                                    SortedMap<String,SortedMap<Instant,Double>> traces,
-                                                    int lineNumber )
-    {
-        int traceCount = traces.size();
-
-        if ( traceCount < 2 )
-        {
-            LOGGER.debug( "Found 'ensemble' data with fewer than two traces: {}",
-                          traces );
-        }
-
-        Map<Instant,double[]> reshapedValues = null;
-        Map.Entry<String,SortedMap<Instant,Double>> previousTrace = null;
-        int i = 0;
-
-        for ( Map.Entry<String,SortedMap<Instant,Double>> trace : traces.entrySet() )
-        {
-            SortedSet<Instant> theseInstants = new TreeSet<>( trace.getValue()
-                                                                   .keySet() );
-
-            if ( Objects.nonNull( previousTrace ) )
-            {
-                SortedSet<Instant> previousInstants = new TreeSet<>( previousTrace.getValue()
-                                                                                  .keySet() );
-                if ( !theseInstants.equals( previousInstants ) )
-                {
-                    throw new PreIngestException( "Cannot build ensemble from "
-                                                  + this.getDataSource()
-                                                        .getUri()
-                                                  + " with data at or before "
-                                                  + "line number "
-                                                  + lineNumber
-                                                  + " because the trace named "
-                                                  + trace.getKey()
-                                                  + " had these valid datetimes"
-                                                  + ": " + theseInstants
-                                                  + " but previous trace named "
-                                                  + previousTrace.getKey()
-                                                  + " had different ones: "
-                                                  + previousInstants
-                                                  + " which is not allowed. All"
-                                                  + " traces must be dense and "
-                                                  + "match valid datetimes." );
-                }
-            }
-
-            if ( Objects.isNull( reshapedValues ) )
-            {
-                reshapedValues = new HashMap<>( theseInstants.size() );
-            }
-
-            for ( Map.Entry<Instant,Double> event : trace.getValue()
-                                                         .entrySet() )
-            {
-                Instant validDateTime = event.getKey();
-
-                if ( !reshapedValues.containsKey( validDateTime ) )
-                {
-                    reshapedValues.put( validDateTime, new double[traceCount] );
-                }
-
-                double[] values = reshapedValues.get( validDateTime );
-                values[i] = event.getValue();
-            }
-
-            previousTrace = trace;
-            i++;
-        }
-
-        wres.datamodel.time.TimeSeries.Builder<Ensemble> builder =
-                new wres.datamodel.time.TimeSeries.Builder<>();
-
-        // Because the iteration is over a sorted map, assuming same order here.
-        SortedSet<String> traceNamesSorted = new TreeSet<>( traces.keySet() );
-        String[] traceNames = new String[traceNamesSorted.size()];
-        traceNamesSorted.toArray( traceNames );
-        Labels labels = Labels.of( traceNames );
-        
-        builder.setMetadata( metadata );
-
-        for ( Map.Entry<Instant,double[]> events : reshapedValues.entrySet() )
-        {
-            Ensemble ensembleSlice = Ensemble.of( events.getValue(), labels );
-            Event<Ensemble> ensembleEvent = Event.of( events.getKey(), ensembleSlice );
-            builder.addEvent( ensembleEvent );
-        }
-
-        return builder.build();
-    }
-
-
 
     /**
      * Create an ingester for the given timeseries and ingest in current Thread.
@@ -1095,7 +954,7 @@ public final class PIXMLReader extends XMLReader
      * @throws IngestException When anything goes wrong related to ingest.
      */
 
-    private void ingest( wres.datamodel.time.TimeSeries<?> timeSeries )
+    private void ingestEnsembleTimeSeries( wres.datamodel.time.TimeSeries<Ensemble> timeSeries )
             throws IngestException
     {
         TimeSeriesIngester timeSeriesIngester =
@@ -1110,7 +969,7 @@ public final class PIXMLReader extends XMLReader
                                                this.getLockManager() );
         try
         {
-            List<IngestResult> ingestResults = timeSeriesIngester.ingest( timeSeries );
+            List<IngestResult> ingestResults = timeSeriesIngester.ingestEnsembleTimeSeries( timeSeries );
             this.ingested.addAll( ingestResults );
         }
         catch ( IngestException ie )
@@ -1119,6 +978,39 @@ public final class PIXMLReader extends XMLReader
                                        + this.getFilename() + ":", ie );
         }
     }
+
+    /**
+     * Create an ingester for the given timeseries and ingest in current Thread.
+     * @param timeSeries The timeSeries to ingest.
+     * @throws IngestException When anything goes wrong related to ingest.
+     */
+
+    private void ingestSingleValuedTimeSeries( wres.datamodel.time.TimeSeries<Double> timeSeries )
+            throws IngestException
+    {
+        TimeSeriesIngester timeSeriesIngester =
+                this.createTimeSeriesIngester( this.getSystemSettings(),
+                                               this.getDatabase(),
+                                               this.getFeaturesCache(),
+                                               this.getTimeScalesCache(),
+                                               this.getEnsemblesCache(),
+                                               this.getMeasurementUnitsCache(),
+                                               this.getProjectConfig(),
+                                               this.getDataSource(),
+                                               this.getLockManager() );
+        try
+        {
+            List<IngestResult> ingestResults = timeSeriesIngester.ingestSingleValuedTimeSeries( timeSeries );
+            this.ingested.addAll( ingestResults );
+        }
+        catch ( IngestException ie )
+        {
+            throw new IngestException( "Failed to ingest data from "
+                                       + this.getFilename()
+                                       + ":",
+                                       ie );
+        }
+    }   
 
     private void completeIngest()
     {

@@ -18,6 +18,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
 import wres.config.generated.InterfaceShortHand;
+import wres.datamodel.Ensemble;
 import wres.datamodel.time.TimeSeries;
 import wres.system.SystemSettings;
 
@@ -335,7 +336,7 @@ public class NWMTimeSeriesTest
         {
             LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
             int featureId = 18384141;
-            TimeSeries<?> timeSeries = nwmTimeSeries.readTimeSerieses( new int[] { featureId }, STREAMFLOW, CMS )
+            TimeSeries<?> timeSeries = nwmTimeSeries.readSingleValuedTimeSerieses( new int[] { featureId }, STREAMFLOW, CMS )
                                                     .get( featureId );
             LOGGER.info( HERE_IS_THE_TIMESERIES, timeSeries );
             assertNotNull( timeSeries );
@@ -373,7 +374,7 @@ public class NWMTimeSeriesTest
         {
             LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
             int featureId = 18384141;
-            TimeSeries<?> timeSeries = nwmTimeSeries.readTimeSerieses( new int[] { featureId }, STREAMFLOW, CMS )
+            TimeSeries<?> timeSeries = nwmTimeSeries.readSingleValuedTimeSerieses( new int[] { featureId }, STREAMFLOW, CMS )
                                                     .get( featureId );
             LOGGER.info( HERE_IS_THE_TIMESERIES, timeSeries );
             assertNotNull( timeSeries );
@@ -410,7 +411,7 @@ public class NWMTimeSeriesTest
         {
             LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
             int featureId = 18384141;
-            TimeSeries<?> timeSeries = nwmTimeSeries.readTimeSerieses( new int[] { featureId }, STREAMFLOW, CMS )
+            TimeSeries<?> timeSeries = nwmTimeSeries.readSingleValuedTimeSerieses( new int[] { featureId }, STREAMFLOW, CMS )
                                                     .get( featureId );
             LOGGER.info( HERE_IS_THE_TIMESERIES, timeSeries );
             assertNotNull( timeSeries );
@@ -447,7 +448,7 @@ public class NWMTimeSeriesTest
         {
             LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
             int featureId = 18384141;
-            TimeSeries<?> timeSeries = nwmTimeSeries.readTimeSerieses( new int[] { featureId }, STREAMFLOW, CMS )
+            TimeSeries<?> timeSeries = nwmTimeSeries.readSingleValuedTimeSerieses( new int[] { featureId }, STREAMFLOW, CMS )
                                                     .get( featureId );
             assertNotNull( timeSeries );
             assertNotEquals( 0, timeSeries.getEvents().size() );
@@ -483,7 +484,7 @@ public class NWMTimeSeriesTest
         {
             LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
             int featureId = 18384141;
-            TimeSeries<?> timeSeries = nwmTimeSeries.readTimeSerieses( new int[] { featureId }, STREAMFLOW, CMS )
+            TimeSeries<?> timeSeries = nwmTimeSeries.readSingleValuedTimeSerieses( new int[] { featureId }, STREAMFLOW, CMS )
                                                     .get( featureId );
             LOGGER.info( HERE_IS_THE_TIMESERIES, timeSeries );
             assertNotNull( timeSeries );
@@ -518,7 +519,7 @@ public class NWMTimeSeriesTest
         {
             LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
             int featureId = 18384141;
-            TimeSeries<?> timeSeries = nwmTimeSeries.readTimeSerieses( new int[] { featureId }, STREAMFLOW, CMS )
+            TimeSeries<?> timeSeries = nwmTimeSeries.readSingleValuedTimeSerieses( new int[] { featureId }, STREAMFLOW, CMS )
                                                     .get( featureId );
             LOGGER.info( HERE_IS_THE_TIMESERIES, timeSeries );
             assertNotNull( timeSeries );
@@ -557,12 +558,14 @@ public class NWMTimeSeriesTest
         {
             LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
             int[] featureIds = new int[] { 18384141, 18696047, 942030011 };
-            Map<Integer,TimeSeries<?>> timeSerieses = nwmTimeSeries.readEnsembleTimeSerieses( featureIds, STREAMFLOW, CMS );
-            TimeSeries<?> timeSeries1 = timeSerieses.get( featureIds[0] );
+            Map<Integer,TimeSeries<Ensemble>> timeSerieses = nwmTimeSeries.readEnsembleTimeSerieses( featureIds, 
+                                                                                                     STREAMFLOW, 
+                                                                                                     CMS );
+            TimeSeries<Ensemble> timeSeries1 = timeSerieses.get( featureIds[0] );
             LOGGER.info( "Here is timeSeries 1: {}", timeSeries1 );
-            TimeSeries<?> timeSeries2 = timeSerieses.get( featureIds[1] );
+            TimeSeries<Ensemble> timeSeries2 = timeSerieses.get( featureIds[1] );
             LOGGER.info( "Here is timeseries 2: {}", timeSeries2 );
-            TimeSeries<?> timeSeries3 = timeSerieses.get( featureIds[3] );
+            TimeSeries<Ensemble> timeSeries3 = timeSerieses.get( featureIds[3] );
             LOGGER.info( "Here is timeseries 3: {}", timeSeries3 );
             assertNotNull( timeSeries1 );
             assertNotNull( timeSeries2 );
@@ -604,12 +607,14 @@ public class NWMTimeSeriesTest
         {
             LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
             int[] featureIds = new int[] { 18384141, 18696047, 942030011 };
-            Map<Integer,TimeSeries<?>> timeSerieses = nwmTimeSeries.readEnsembleTimeSerieses( featureIds, STREAMFLOW, CMS );
-            TimeSeries<?> timeSeries1 = timeSerieses.get( featureIds[0] );
+            Map<Integer, TimeSeries<Ensemble>> timeSerieses = nwmTimeSeries.readEnsembleTimeSerieses( featureIds,
+                                                                                                      STREAMFLOW,
+                                                                                                      CMS );
+            TimeSeries<Ensemble> timeSeries1 = timeSerieses.get( featureIds[0] );
             LOGGER.info( "Here is timeSeries 1: {}", timeSeries1 );
-            TimeSeries<?> timeSeries2 = timeSerieses.get( featureIds[1] );
+            TimeSeries<Ensemble> timeSeries2 = timeSerieses.get( featureIds[1] );
             LOGGER.info( "Here is timeseries 2: {}", timeSeries2 );
-            TimeSeries<?> timeSeries3 = timeSerieses.get( featureIds[3] );
+            TimeSeries<Ensemble> timeSeries3 = timeSerieses.get( featureIds[3] );
             LOGGER.info( "Here is timeseries 3: {}", timeSeries3 );
             assertNotNull( timeSeries1 );
             assertNotNull( timeSeries2 );

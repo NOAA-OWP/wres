@@ -31,6 +31,7 @@ import static wres.io.reading.DataSource.DataDisposition.COMPLEX;
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.Ensemble;
 import wres.datamodel.time.TimeSeries;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
@@ -89,16 +90,16 @@ public class NWMReader implements Callable<List<IngestResult>>
     private static final Logger LOGGER = LoggerFactory.getLogger( NWMReader.class );
     private static final String DATES_ERROR_MESSAGE =
             "One must specify issued datetimes with both earliest and latest "
-            + "(e.g. <issuedDates earliest=\"2019-10-25T00:00:00Z\" "
-            + "latest=\"2019-11-25T00:00:00Z\" />) when using NWM forecast data"
-            + " as a source, which will be interpreted as reference datetimes. "
-            + "The earliest datetime specified must be a valid reference time "
-            + "for the NWM data specified, or no data will be found. One must "
-            + "specify valid datetimes with both earliest and latest "
-            + "(e.g. <dates earliest=\"2019-12-11T00:00:00Z\" "
-            + "latest=\"2019-12-12T00:00:00Z\" />) when using NWM analysis data"
-            + " as a source, which will be used to find data falling within "
-            +"those valid datetimes.";
+                                                      + "(e.g. <issuedDates earliest=\"2019-10-25T00:00:00Z\" "
+                                                      + "latest=\"2019-11-25T00:00:00Z\" />) when using NWM forecast data"
+                                                      + " as a source, which will be interpreted as reference datetimes. "
+                                                      + "The earliest datetime specified must be a valid reference time "
+                                                      + "for the NWM data specified, or no data will be found. One must "
+                                                      + "specify valid datetimes with both earliest and latest "
+                                                      + "(e.g. <dates earliest=\"2019-12-11T00:00:00Z\" "
+                                                      + "latest=\"2019-12-12T00:00:00Z\" />) when using NWM analysis data"
+                                                      + " as a source, which will be used to find data falling within "
+                                                      + "those valid datetimes.";
 
     private final SystemSettings systemSettings;
     private final Database database;
@@ -140,13 +141,13 @@ public class NWMReader implements Callable<List<IngestResult>>
         Objects.requireNonNull( dataSource.getSource().getInterface() );
         Objects.requireNonNull( dataSource.getSource().getValue() );
         Objects.requireNonNull( dataSource.getContext() );
-        
+
         // Could be an NPE, but the data source is not null and the nullity of the variable is an effect, not a cause
         if ( Objects.isNull( dataSource.getVariable() ) )
         {
             LeftOrRightOrBaseline lrb = ConfigHelper.getLeftOrRightOrBaseline( projectConfig,
                                                                                dataSource.getContext() );
-            
+
             throw new IllegalArgumentException( "A variable must be declared for an NWM source but no "
                                                 + "variable was found for the "
                                                 + lrb
@@ -241,7 +242,7 @@ public class NWMReader implements Callable<List<IngestResult>>
                     Instant.parse( projectConfig.getPair()
                                                 .getDates()
                                                 .getLatest() );
-            Pair<Instant,Instant> referenceBounds =
+            Pair<Instant, Instant> referenceBounds =
                     getReferenceBoundsByValidBounds( this.nwmProfile,
                                                      earliestValidDatetime,
                                                      latestValidDatetime );
@@ -271,13 +272,12 @@ public class NWMReader implements Callable<List<IngestResult>>
         this.lockManager = lockManager;
 
         ThreadFactory nwmReaderThreadFactory = new BasicThreadFactory.Builder()
-                .namingPattern( "NWMReader Ingest %d" )
-                .build();
+                                                                               .namingPattern( "NWMReader Ingest %d" )
+                                                                               .build();
 
         // See comments in WebSource class regarding the setup of the executor,
         // queue, and latch.
-        BlockingQueue<Runnable>
-                nwmReaderQueue = new ArrayBlockingQueue<>( systemSettings.getMaxiumNwmIngestThreads() );
+        BlockingQueue<Runnable> nwmReaderQueue = new ArrayBlockingQueue<>( systemSettings.getMaxiumNwmIngestThreads() );
         this.executor = new ThreadPoolExecutor( systemSettings.getMaxiumNwmIngestThreads(),
                                                 systemSettings.getMaxiumNwmIngestThreads(),
                                                 systemSettings.poolObjectLifespan(),
@@ -384,7 +384,8 @@ public class NWMReader implements Callable<List<IngestResult>>
             catch ( NumberFormatException nfe )
             {
                 LOGGER.warn( "Skipping non-integer NWM feature ID {} due to {}",
-                             feature, nfe.getMessage() );
+                             feature,
+                             nfe.getMessage() );
             }
         }
 
@@ -462,18 +463,19 @@ public class NWMReader implements Callable<List<IngestResult>>
                                                                       this.latest,
                                                                       this.getNwmProfile() );
         LOGGER.debug( "Reference datetimes used for NWMReader {}: {}",
-                      this, referenceDatetimes );
+                      this,
+                      referenceDatetimes );
 
         try
         {
             // For each reference datetime, get the dataset for all locations.
             for ( Instant referenceDatetime : referenceDatetimes )
             {
-                try( NWMTimeSeries nwmTimeSeries =
-                             new NWMTimeSeries( this.getSystemSettings(),
-                                                this.getNwmProfile(),
-                                                referenceDatetime,
-                                                this.getUri() ) )
+                try ( NWMTimeSeries nwmTimeSeries =
+                        new NWMTimeSeries( this.getSystemSettings(),
+                                           this.getNwmProfile(),
+                                           referenceDatetime,
+                                           this.getUri() ) )
                 {
                     if ( nwmTimeSeries.countOfNetcdfFiles() <= 0 )
                     {
@@ -489,23 +491,34 @@ public class NWMReader implements Callable<List<IngestResult>>
                                                   .getValue()
                                                   .strip();
                         String unitName = nwmTimeSeries.readAttributeAsString(
-                                variableName,
-                                "units" );
-                        Map<Integer,TimeSeries<?>> values;
+                                                                               variableName,
+                                                                               "units" );
 
                         if ( this.getNwmProfile()
                                  .getMemberCount() == 1 )
                         {
-                            values = nwmTimeSeries.readTimeSerieses( featureBlock,
-                                                                     variableName,
-                                                                     unitName );
+                            Map<Integer, TimeSeries<Double>> values =
+                                    nwmTimeSeries.readSingleValuedTimeSerieses( featureBlock,
+                                                                                variableName,
+                                                                                unitName );
+                            List<IngestResult> results = this.ingestSingleValuedTimeSeries( values,
+                                                                                            featureBlock,
+                                                                                            nwmTimeSeries,
+                                                                                            referenceDatetime );
+                            ingestResults.addAll( results );
                         }
                         else if ( this.getNwmProfile()
                                       .getMemberCount() > 1 )
                         {
-                            values = nwmTimeSeries.readEnsembleTimeSerieses( featureBlock,
-                                                                             variableName,
-                                                                             unitName );
+                            Map<Integer, TimeSeries<Ensemble>> values =
+                                    nwmTimeSeries.readEnsembleTimeSerieses( featureBlock,
+                                                                            variableName,
+                                                                            unitName );
+                            List<IngestResult> results = this.ingestEnsembleTimeSeries( values,
+                                                                                        featureBlock,
+                                                                                        nwmTimeSeries,
+                                                                                        referenceDatetime );
+                            ingestResults.addAll( results );
                         }
                         else
                         {
@@ -513,68 +526,6 @@ public class NWMReader implements Callable<List<IngestResult>>
                                                                      + this.getNwmProfile()
                                                                            .getMemberCount()
                                                                      + " members." );
-                        }
-
-                        // Skip ingest steps when resulting timeseries is empty.
-                        if ( values.isEmpty() )
-                        {
-                            LOGGER.debug( "Found an empty TimeSeries for NWM features {}, skipping {}",
-                                          featureBlock,
-                                          nwmTimeSeries );
-                            continue;
-                        }
-
-                        for ( Map.Entry<Integer,TimeSeries<?>> entry : values.entrySet() )
-                        {
-                            // Create a uri that reflects the origin of the data
-                            URI uri = this.getUri()
-                                          .resolve( this.getDataSource()
-                                                        .getSource()
-                                                        .getInterface()
-                                                        .toString()
-                                                    + "/"
-                                                    + entry.getKey()
-                                                    + "/"
-                                                    + this.getDataSource()
-                                                          .getVariable()
-                                                          .getValue()
-                                                    + "/"
-                                                    + referenceDatetime.toString() );
-                            DataSource innerDataSource =
-                                    DataSource.of( COMPLEX,
-                                                   this.getDataSource()
-                                                       .getSource(),
-                                                   this.getDataSource()
-                                                       .getContext(),
-                                                   this.getDataSource()
-                                                       .getLinks(),
-                                                   uri );
-
-                            // While wres.source table is used, it is the reader level code
-                            // that must deal with the wres.source table. Use the identifier
-                            // of the timeseries data as if it were a wres.source.
-                            TimeSeriesIngester ingester =
-                                    TimeSeriesIngester.of( this.getSystemSettings(),
-                                                           this.getDatabase(),
-                                                           this.getFeaturesCache(),
-                                                           this.getTimeScalesCache(),
-                                                           this.getEnsemblesCache(),
-                                                           this.getMeasurementUnitsCache(),
-                                                           this.getProjectConfig(),
-                                                           innerDataSource,
-                                                           this.getLockManager() );
-                            Future<List<IngestResult>> future =
-                                    this.getExecutor().submit( () -> ingester.ingest( entry.getValue() ) );
-                            this.ingests.add( future );
-                            this.startGettingResults.countDown();
-
-                            if ( this.startGettingResults.getCount() <= 0 )
-                            {
-                                List<IngestResult> ingested =
-                                        this.ingests.take()
-                                                    .get();
-                                ingestResults.addAll( ingested );
-                            }
                         }
                     }
                 }
@@ -599,6 +550,173 @@ public class NWMReader implements Callable<List<IngestResult>>
         return Collections.unmodifiableList( ingestResults );
     }
 
+    /**
+     * @param values the time-series to ingest
+     * @param featureBlock the feature block used to help with messaging
+     * @param nwmTimeSeries the NWM time-series, used to help with messaging
+     * @param referenceDateTime the reference time
+     * @return the ingest results
+     * @throws InterruptedException if the ingest is interrupted
+     * @throws ExecutionException if the ingest fails
+     */
+
+    private List<IngestResult> ingestSingleValuedTimeSeries( Map<Integer, TimeSeries<Double>> values,
+                                                             int[] featureBlock,
+                                                             NWMTimeSeries nwmTimeSeries,
+                                                             Instant referenceDateTime )
+            throws InterruptedException, ExecutionException
+    {
+        // Skip ingest steps when resulting timeseries is empty.
+        if ( values.isEmpty() )
+        {
+            LOGGER.debug( "Found an empty TimeSeries for NWM features {}, skipping {}",
+                          featureBlock,
+                          nwmTimeSeries );
+
+            return List.of();
+        }
+
+        List<IngestResult> ingestResults = new ArrayList<>();
+
+        for ( Map.Entry<Integer, TimeSeries<Double>> entry : values.entrySet() )
+        {
+            // Create a uri that reflects the origin of the data
+            URI uri = this.getUri()
+                          .resolve( this.getDataSource()
+                                        .getSource()
+                                        .getInterface()
+                                        .toString()
+                                    + "/"
+                                    + entry.getKey()
+                                    + "/"
+                                    + this.getDataSource()
+                                          .getVariable()
+                                          .getValue()
+                                    + "/"
+                                    + referenceDateTime.toString() );
+            DataSource innerDataSource =
+                    DataSource.of( COMPLEX,
+                                   this.getDataSource()
+                                       .getSource(),
+                                   this.getDataSource()
+                                       .getContext(),
+                                   this.getDataSource()
+                                       .getLinks(),
+                                   uri );
+
+            // While wres.source table is used, it is the reader level code
+            // that must deal with the wres.source table. Use the identifier
+            // of the timeseries data as if it were a wres.source.
+            TimeSeriesIngester ingester =
+                    TimeSeriesIngester.of( this.getSystemSettings(),
+                                           this.getDatabase(),
+                                           this.getFeaturesCache(),
+                                           this.getTimeScalesCache(),
+                                           this.getEnsemblesCache(),
+                                           this.getMeasurementUnitsCache(),
+                                           this.getProjectConfig(),
+                                           innerDataSource,
+                                           this.getLockManager() );
+            Future<List<IngestResult>> future =
+                    this.getExecutor().submit( () -> ingester.ingestSingleValuedTimeSeries( entry.getValue() ) );
+            this.ingests.add( future );
+            this.startGettingResults.countDown();
+
+            if ( this.startGettingResults.getCount() <= 0 )
+            {
+                List<IngestResult> ingested =
+                        this.ingests.take()
+                                    .get();
+                ingestResults.addAll( ingested );
+            }
+        }
+
+        return Collections.unmodifiableList( ingestResults );
+    }
+
+    /**
+     * @param values the time-series to ingest
+     * @param featureBlock the feature block used to help with messaging
+     * @param nwmTimeSeries the NWM time-series, used to help with messaging
+     * @param referenceDateTime the reference time
+     * @return the ingest results
+     * @throws InterruptedException if the ingest is interrupted
+     * @throws ExecutionException if the ingest fails
+     */
+
+    private List<IngestResult> ingestEnsembleTimeSeries( Map<Integer, TimeSeries<Ensemble>> values,
+                                                         int[] featureBlock,
+                                                         NWMTimeSeries nwmTimeSeries,
+                                                         Instant referenceDateTime )
+            throws InterruptedException, ExecutionException
+    {
+        // Skip ingest steps when resulting timeseries is empty.
+        if ( values.isEmpty() )
+        {
+            LOGGER.debug( "Found an empty TimeSeries for NWM features {}, skipping {}",
+                          featureBlock,
+                          nwmTimeSeries );
+
+            return List.of();
+        }
+
+        List<IngestResult> ingestResults = new ArrayList<>();
+
+        for ( Map.Entry<Integer, TimeSeries<Ensemble>> entry : values.entrySet() )
+        {
+            // Create a uri that reflects the origin of the data
+            URI uri = this.getUri()
+                          .resolve( this.getDataSource()
+                                        .getSource()
+                                        .getInterface()
+                                        .toString()
+                                    + "/"
+                                    + entry.getKey()
+                                    + "/"
+                                    + this.getDataSource()
+                                          .getVariable()
+                                          .getValue()
+                                    + "/"
+                                    + referenceDateTime.toString() );
+            DataSource innerDataSource =
+                    DataSource.of( COMPLEX,
+                                   this.getDataSource()
+                                       .getSource(),
+                                   this.getDataSource()
+                                       .getContext(),
+                                   this.getDataSource()
+                                       .getLinks(),
+                                   uri );
+
+            // While wres.source table is used, it is the reader level code
+            // that must deal with the wres.source table. Use the identifier
+            // of the timeseries data as if it were a wres.source.
+            TimeSeriesIngester ingester =
+                    TimeSeriesIngester.of( this.getSystemSettings(),
+                                           this.getDatabase(),
+                                           this.getFeaturesCache(),
+                                           this.getTimeScalesCache(),
+                                           this.getEnsemblesCache(),
+                                           this.getMeasurementUnitsCache(),
+                                           this.getProjectConfig(),
+                                           innerDataSource,
+                                           this.getLockManager() );
+            Future<List<IngestResult>> future =
+                    this.getExecutor().submit( () -> ingester.ingestEnsembleTimeSeries( entry.getValue() ) );
+            this.ingests.add( future );
+            this.startGettingResults.countDown();
+
+            if ( this.startGettingResults.getCount() <= 0 )
+            {
+                List<IngestResult> ingested =
+                        this.ingests.take()
+                                    .get();
+                ingestResults.addAll( ingested );
+            }
+        }
+
+        return Collections.unmodifiableList( ingestResults );
+    }
 
     /**
      * Get the reference datetimes for the given boundaries and NWMProfile.
@@ -617,10 +735,10 @@ public class NWMReader implements Callable<List<IngestResult>>
                                                 Instant latest,
                                                 NWMProfile nwmProfile )
     {
-        
+
         Set<Instant> datetimes = new HashSet<>();
         Duration issuedStep = nwmProfile.getDurationBetweenReferenceDatetimes();
-        
+
         //Simply truncate earliest to be at time 0 for the earliest
         //day, that should be a good starting point for finding the first 
         //NWM forecast reference strictly after the provided earliest Instant.
@@ -634,7 +752,8 @@ public class NWMReader implements Callable<List<IngestResult>>
         }
 
         LOGGER.debug( "Resolved earliest {} issued datetime given to first forecast at {}",
-                      earliest, forecastDatetime );
+                      earliest,
+                      forecastDatetime );
         datetimes.add( forecastDatetime );
         Instant additionalForecastDatetime = forecastDatetime.plus( issuedStep );
 
@@ -660,9 +779,9 @@ public class NWMReader implements Callable<List<IngestResult>>
      * @param latestValidDatetime The latest valid datetime to include.
      * @return The boundaries to be used to filter by reference datetimes.
      */
-    private Pair<Instant,Instant> getReferenceBoundsByValidBounds( NWMProfile nwmProfile,
-                                                                   Instant earliestValidDatetime,
-                                                                   Instant latestValidDatetime )
+    private Pair<Instant, Instant> getReferenceBoundsByValidBounds( NWMProfile nwmProfile,
+                                                                    Instant earliestValidDatetime,
+                                                                    Instant latestValidDatetime )
     {
         Instant earliestReferenceDatetime = earliestValidDatetime;
         Instant latestReferenceDatetime = latestValidDatetime;

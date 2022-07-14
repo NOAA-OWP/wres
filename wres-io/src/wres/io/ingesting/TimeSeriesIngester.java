@@ -151,12 +151,12 @@ public class TimeSeriesIngester
     }
 
     /**
-     * Ingests a time-series.
+     * Ingests a time-series whose events are {@link Double}.
      * @param timeSeries the time-series to ingest, not null
      * @return the ingest results
      */
-    
-    public List<IngestResult> ingest( TimeSeries<?> timeSeries )
+
+    public List<IngestResult> ingestSingleValuedTimeSeries( TimeSeries<Double> timeSeries )
     {
         Objects.requireNonNull( timeSeries );
         Objects.requireNonNull( timeSeries.getMetadata() );
@@ -166,17 +166,143 @@ public class TimeSeriesIngester
                                           .getVariableName() );
         Objects.requireNonNull( timeSeries.getMetadata()
                                           .getUnit() );
-        
+
         List<IngestResult> results;
+
+        SourceDetails source = this.saveSource( timeSeries );
+
+        // Not found 
+        if ( source.performedInsert() )
+        {
+            this.lockSource( source, timeSeries );
+
+            // Ready to ingest, source row was inserted and is (advisory) locked.
+            Set<Pair<CountDownLatch, CountDownLatch>> latches =
+                    this.insertSingleValuedTimeSeries( this.getSystemSettings(),
+                                                       this.getDatabase(),
+                                                       this.getEnsemblesCache(),
+                                                       timeSeries,
+                                                       source.getId() );
+
+            // Mark complete
+            results = this.completeSource( source, latches );
+        }
+        // Found
+        else
+        {
+            // Already started but not completed, include the TimeSeries.
+            DataSource dataSourceWithTimeSeries =
+                    DataSource.ofSingleValuedDataSource( this.dataSource.getDisposition(),
+                                                         this.dataSource.getSource(),
+                                                         this.dataSource.getContext(),
+                                                         this.dataSource.getLinks(),
+                                                         this.dataSource.getUri(),
+                                                         timeSeries );
+
+            results = this.completeSource( source, dataSourceWithTimeSeries );
+        }
+
+        return results;
+    }
+    
+    /**
+     * Ingests a time-series whose events are {@link Ensemble}.
+     * @param timeSeries the time-series to ingest, not null
+     * @return the ingest results
+     */
+
+    public List<IngestResult> ingestEnsembleTimeSeries( TimeSeries<Ensemble> timeSeries )
+    {
+        Objects.requireNonNull( timeSeries );
+        Objects.requireNonNull( timeSeries.getMetadata() );
+        Objects.requireNonNull( timeSeries.getMetadata()
+                                          .getFeature() );
+        Objects.requireNonNull( timeSeries.getMetadata()
+                                          .getVariableName() );
+        Objects.requireNonNull( timeSeries.getMetadata()
+                                          .getUnit() );
+
+        List<IngestResult> results;
+
+        SourceDetails source = this.saveSource( timeSeries );
+
+        // Not found
+        if ( source.performedInsert() )
+        {
+            this.lockSource( source, timeSeries );
+
+            // Ready to ingest, source row was inserted and is (advisory) locked.
+            Set<Pair<CountDownLatch, CountDownLatch>> latches =
+                    this.insertEnsembleTimeSeries( this.getSystemSettings(),
+                                                   this.getDatabase(),
+                                                   this.getEnsemblesCache(),
+                                                   timeSeries,
+                                                   source.getId() );
+
+            // Mark complete
+            results = this.completeSource( source, latches );
+        }
+        // Found
+        else
+        {
+            // Already started but not completed, include the time-series.
+            DataSource dataSourceWithTimeSeries =
+                    DataSource.ofEnsembleDataSource( this.dataSource.getDisposition(),
+                                                     this.dataSource.getSource(),
+                                                     this.dataSource.getContext(),
+                                                     this.dataSource.getLinks(),
+                                                     this.dataSource.getUri(),
+                                                     timeSeries );
+
+            results = this.completeSource( source, dataSourceWithTimeSeries );
+        }
+
+        return results;
+    }
+
+    /**
+     * Attempts to lock a source aka time-series.
+     * @param <T> the type of time-series event value
+     * @param source the source to lock
+     * @param timeSeries the time-series
+     */
+
+    private <T> void lockSource( SourceDetails source, TimeSeries<T> timeSeries )
+    {
+        if ( LOGGER.isDebugEnabled() )
+        {
+            byte[] rawHash = this.identifyTimeSeries( timeSeries, "" );
+            String hash = Hex.encodeHexString( rawHash, false );
+            LOGGER.debug( "{} is responsible for source {}", this, hash );
+        }
+
+        try
+        {
+            this.lockManager.lockSource( source.getId() );
+        }
+        catch ( SQLException se )
+        {
+            throw new IngestException( "Failed to lock for source id "
+                                       + source.getId(),
+                                       se );
+        }
+    }
+
+    /**
+     * Saves the source information associated with the time-series.
+     * @param <T> the type of time-series event value
+     * @param time-series whose source information should be saved
+     * @return the source details
+     */
+
+    private <T> SourceDetails saveSource( TimeSeries<T> timeSeries )
+    {
         URI location = this.getLocation();
 
         byte[] rawHash = this.identifyTimeSeries( timeSeries, "" );
         String hash = Hex.encodeHexString( rawHash, false );
 
-        boolean foundAlready;
-        boolean completed;
-        SourceCompletedDetails completedDetails;
-        Database database = this.getDatabase();
+        Database innerDatabase = this.getDatabase();
         SourceDetails source = this.createSourceDetails( hash );
 
         // Lead column is only for raster data as of 2022-01
@@ -205,8 +331,7 @@ public class TimeSeriesIngester
             source.setMeasurementUnitId( measurementUnitId );
             source.setFeatureId( featureId );
             source.setTimeScaleId( timeScaleId );
-            source.save( database );
-            foundAlready = !source.performedInsert();
+            source.save( innerDatabase );
         }
         catch ( SQLException se )
         {
@@ -216,99 +341,94 @@ public class TimeSeriesIngester
                                        se );
         }
 
-        LOGGER.debug( "Found {}? {}", source, foundAlready );
+        LOGGER.debug( "Found {}? {}", source, !source.performedInsert() );
 
-        if ( !foundAlready )
+        return source;
+    }
+
+    /**
+     * Completes a source.
+     * @param source the source details
+     * @param dataSourceWithTimeSeries a data source with time-series attached
+     * @return the ingest results
+     */
+
+    private List<IngestResult> completeSource( SourceDetails source,
+                                               DataSource dataSourceWithTimeSeries )
+    {
+        List<IngestResult> results;
+        SourceCompletedDetails completedDetails = this.createSourceCompletedDetails( source );
+        boolean completed;
+        try
         {
-            LOGGER.debug( "{} is responsible for source {}", this, hash );
+            completed = completedDetails.wasCompleted();
+        }
+        catch ( SQLException se )
+        {
+            throw new PreIngestException( "Failed to determine if source "
+                                          + source
+                                          + " was already ingested.",
+                                          se );
+        }
 
-            try
-            {
-                this.lockManager.lockSource( source.getId() );
-            }
-            catch ( SQLException se )
-            {
-                throw new IngestException( "Failed to lock for source id "
-                                           + source.getId(),
-                                           se );
-            }
-
-            // Ready to ingest, source row was inserted and is (advisory) locked.
-            Set<Pair<CountDownLatch, CountDownLatch>> latches = this.insertEverything( this.getSystemSettings(),
-                                                                                       this.getDatabase(),
-                                                                                       this.getEnsemblesCache(),
-                                                                                       timeSeries,
-                                                                                       source.getId() );
-
-            // Mark complete
-            SourceCompleter completer = createSourceCompleter( source.getId(),
-                                                               this.lockManager );
-            completer.complete( latches );
+        if ( completed )
+        {
+            // Already present and completed
             results = IngestResult.singleItemListFrom( this.projectConfig,
                                                        this.dataSource,
                                                        source.getId(),
-                                                       false,
+                                                       true,
                                                        false );
+
+            // When successfully completed, remove temp files associated.
+            URI uri = this.dataSource.getUri();
+
+            if ( uri.toString()
+                    .contains( ZippedSource.TEMP_FILE_PREFIX ) )
+            {
+                try
+                {
+                    Files.delete( Paths.get( uri ) );
+                }
+                catch ( IOException ioe )
+                {
+                    LOGGER.warn( "Could not remove temp file {}", uri );
+                }
+            }
         }
         else
         {
-            completedDetails = this.createSourceCompletedDetails( source );
-
-            try
-            {
-                completed = completedDetails.wasCompleted();
-            }
-            catch ( SQLException se )
-            {
-                throw new PreIngestException( "Failed to determine if source "
-                                              + source
-                                              + " was already ingested.",
-                                              se );
-            }
-
-            if ( completed )
-            {
-                // Already present and completed
-                results = IngestResult.singleItemListFrom( this.projectConfig,
-                                                           this.dataSource,
-                                                           source.getId(),
-                                                           true,
-                                                           false );
-
-                // When successfully completed, remove temp files associated.
-                URI uri = this.dataSource.getUri();
-
-                if ( uri.toString()
-                        .contains( ZippedSource.TEMP_FILE_PREFIX ) )
-                {
-                    try
-                    {
-                        Files.delete( Paths.get( uri ) );
-                    }
-                    catch ( IOException ioe )
-                    {
-                        LOGGER.warn( "Could not remove temp file {}", uri );
-                    }
-                }
-            }
-            else
-            {
-                // Already started but not completed, include the TimeSeries.
-                DataSource dataSourceWithTimeSeries =
-                        DataSource.of( this.dataSource.getDisposition(),
-                                       this.dataSource.getSource(),
-                                       this.dataSource.getContext(),
-                                       this.dataSource.getLinks(),
-                                       this.dataSource.getUri(),
-                                       timeSeries );
-                results = IngestResult.singleItemListFrom( this.projectConfig,
-                                                           dataSourceWithTimeSeries,
-                                                           source.getId(),
-                                                           true,
-                                                           true );
-            }
+            results = IngestResult.singleItemListFrom( this.projectConfig,
+                                                       dataSourceWithTimeSeries,
+                                                       source.getId(),
+                                                       true,
+                                                       true );
         }
 
+        return results;
+    }
+
+    /**
+     * Completes a source.
+     * @param source the source details
+     * @param latches the latches
+     * @return the ingest results
+     */
+
+    private List<IngestResult> completeSource( SourceDetails source,
+                                               Set<Pair<CountDownLatch, CountDownLatch>> latches )
+    {
+        List<IngestResult> results;
+
+        // Mark complete
+        SourceCompleter completer = createSourceCompleter( source.getId(),
+                                                           this.lockManager );
+        completer.complete( latches );
+        results = IngestResult.singleItemListFrom( this.projectConfig,
+                                                   this.dataSource,
+                                                   source.getId(),
+                                                   false,
+                                                   false );
         return results;
     }
 
@@ -321,71 +441,83 @@ public class TimeSeriesIngester
      * @return a set of latch pairs, the left of which indicates "waiting" and the right indicates "completed"
      */
 
-    private Set<Pair<CountDownLatch, CountDownLatch>> insertEverything( SystemSettings systemSettings,
-                                                                        Database database,
-                                                                        Ensembles ensemblesCache,
-                                                                        TimeSeries<?> timeSeries,
-                                                                        long sourceId )
+    private Set<Pair<CountDownLatch, CountDownLatch>> insertSingleValuedTimeSeries( SystemSettings systemSettings,
+                                                                                    Database database,
+                                                                                    Ensembles ensemblesCache,
+                                                                                    TimeSeries<Double> timeSeries,
+                                                                                    long sourceId )
     {
-        SortedSet<? extends Event<?>> events = timeSeries.getEvents();
-
         if ( timeSeries.getEvents()
                        .isEmpty() )
         {
             throw new IllegalArgumentException( "TimeSeries must not be empty." );
         }
 
-        Event<?> event = events.iterator()
-                               .next();
+        Set<Pair<CountDownLatch, CountDownLatch>> latches = new HashSet<>();
+
+        TimeSeriesMetadata metadata = timeSeries.getMetadata();
+        this.insertReferenceTimeRows( database, sourceId, metadata.getReferenceTimes() );
+
+        long timeSeriesId = this.insertTimeSeriesRow( database,
+                                                      ensemblesCache,
+                                                      timeSeries,
+                                                      sourceId );
+        Set<Pair<CountDownLatch, CountDownLatch>> innerLatches = this.insertTimeSeriesValuesRows( systemSettings,
+                                                                                                  database,
+                                                                                                  timeSeriesId,
+                                                                                                  timeSeries );
+
+        latches.addAll( innerLatches );
+
+        return Collections.unmodifiableSet( latches );
+    }
+
+    /**
+     * @param systemSettings the system settings
+     * @param database the database
+     * @param ensemblesCache the ensembles cache
+     * @param timeSeries the time-series to insert
+     * @param sourceId the source identifier
+     * @return a set of latch pairs, the left of which indicates "waiting" and the right indicates "completed"
+     */
+
+    private Set<Pair<CountDownLatch, CountDownLatch>> insertEnsembleTimeSeries( SystemSettings systemSettings,
+                                                                                Database database,
+                                                                                Ensembles ensemblesCache,
+                                                                                TimeSeries<Ensemble> timeSeries,
+                                                                                long sourceId )
+    {
+        if ( timeSeries.getEvents()
+                       .isEmpty() )
+        {
+            throw new IllegalArgumentException( "TimeSeries must not be empty." );
+        }
 
         Set<Pair<CountDownLatch, CountDownLatch>> latches = new HashSet<>();
 
         TimeSeriesMetadata metadata = timeSeries.getMetadata();
         this.insertReferenceTimeRows( database, sourceId, metadata.getReferenceTimes() );
 
-        if ( event.getValue() instanceof Ensemble )
+        for ( Map.Entry<Object, SortedSet<Event<Double>>> trace : TimeSeriesSlicer.decomposeWithLabels( timeSeries )
+                                                                                  .entrySet() )
         {
-            LOGGER.debug( "Found a TimeSeries<Ensemble>" );
-            for ( Map.Entry<Object, SortedSet<Event<Double>>> trace : TimeSeriesSlicer.decomposeWithLabels( (TimeSeries<Ensemble>) timeSeries )
-                                                                                      .entrySet() )
-            {
-                LOGGER.debug( "TimeSeries trace: {}", trace );
-                String ensembleName = trace.getKey()
-                                           .toString();
+            LOGGER.debug( "TimeSeries trace: {}", trace );
+            String ensembleName = trace.getKey()
+                                       .toString();
 
-                long ensembleId = this.insertOrGetEnsembleId( ensemblesCache,
-                                                              ensembleName );
-                long timeSeriesId = this.insertTimeSeriesRowForEnsembleTrace(
-                                                                              database,
-                                                                              (TimeSeries<Ensemble>) timeSeries,
-                                                                              ensembleId,
-                                                                              sourceId );
-                Set<Pair<CountDownLatch, CountDownLatch>> nextLatches = this.insertEnsembleTrace( systemSettings,
-                                                                                                  database,
-                                                                                                  (TimeSeries<Ensemble>) timeSeries,
-                                                                                                  timeSeriesId,
-                                                                                                  trace.getValue() );
+            long ensembleId = this.insertOrGetEnsembleId( ensemblesCache,
+                                                          ensembleName );
+            long timeSeriesId = this.insertTimeSeriesRowForEnsembleTrace( database,
+                                                                          timeSeries,
+                                                                          ensembleId,
+                                                                          sourceId );
+            Set<Pair<CountDownLatch, CountDownLatch>> nextLatches = this.insertEnsembleTrace( systemSettings,
+                                                                                              database,
+                                                                                              timeSeries,
+                                                                                              timeSeriesId,
+                                                                                              trace.getValue() );
 
-                latches.addAll( nextLatches );
-            }
-        }
-        else if ( event.getValue() instanceof Double )
-        {
-            long timeSeriesId = this.insertTimeSeriesRow( database,
-                                                          ensemblesCache,
-                                                          (TimeSeries<Double>) timeSeries,
-                                                          sourceId );
-            Set<Pair<CountDownLatch, CountDownLatch>> innerLatches = this.insertTimeSeriesValuesRows( systemSettings,
-                                                                                                      database,
-                                                                                                      timeSeriesId,
-                                                                                                      (TimeSeries<Double>) timeSeries );
-
-            latches.addAll( innerLatches );
-        }
-        else
-        {
-            throw new UnsupportedOperationException( "Unable to ingest value "
-                                                     + event.getValue() );
+            latches.addAll( nextLatches );
         }
 
         return Collections.unmodifiableSet( latches );
@@ -400,9 +532,6 @@ public class TimeSeriesIngester
         if ( rowCount == 0 )
         {
             throw new PreIngestException( "At least one reference datetime is required until we refactor TSV to permit zero." );
-
-            // TODO: refactor wres.TimeSeriesValue to use valid datetimes, then:
-            //return;
         }
 
         if ( rowCount != 1 )
@@ -447,7 +576,6 @@ public class TimeSeriesIngester
      */
     private long insertOrGetEnsembleId( Ensembles ensemblesCache,
                                         String ensembleName )
-            throws IngestException
     {
         long id;
 
@@ -479,7 +607,6 @@ public class TimeSeriesIngester
                                                                            TimeSeries<Ensemble> originalTimeSeries,
                                                                            long timeSeriesIdForTrace,
                                                                            SortedSet<Event<Double>> ensembleTrace )
-            throws IngestException
     {
         Instant referenceDatetime = this.getReferenceDatetime( originalTimeSeries );
 
@@ -511,7 +638,6 @@ public class TimeSeriesIngester
                                                                                   Database database,
                                                                                   long timeSeriesId,
                                                                                   TimeSeries<Double> timeSeries )
-            throws IngestException
     {
         Instant referenceDatetime = this.getReferenceDatetime( timeSeries );
 
@@ -555,13 +681,11 @@ public class TimeSeriesIngester
             valueToAdd = null;
         }
 
-        Pair<CountDownLatch, CountDownLatch> latchPair =
-                IngestedValues.addTimeSeriesValue( systemSettings,
-                                                   database,
-                                                   timeSeriesId,
-                                                   (int) leadDuration.toMinutes(),
-                                                   valueToAdd );
-        return latchPair;
+        return IngestedValues.addTimeSeriesValue( systemSettings,
+                                                  database,
+                                                  timeSeriesId,
+                                                  (int) leadDuration.toMinutes(),
+                                                  valueToAdd );
     }
 
     private long insertTimeSeriesRow( Database database,
@@ -619,11 +743,9 @@ public class TimeSeriesIngester
     }
 
 
-    private wres.io.data.details.TimeSeries getDbTimeSeriesForEnsembleTrace(
-                                                                             Database database,
+    private wres.io.data.details.TimeSeries getDbTimeSeriesForEnsembleTrace( Database database,
                                                                              long ensembleId,
                                                                              long sourceId )
-            throws SQLException
     {
         return new wres.io.data.details.TimeSeries( database,
                                                     ensembleId,
@@ -640,7 +762,7 @@ public class TimeSeriesIngester
                                                     sourceId );
     }
 
-    private Instant getReferenceDatetime( TimeSeries<?> timeSeries )
+    private <T> Instant getReferenceDatetime( TimeSeries<T> timeSeries )
     {
         if ( timeSeries.getReferenceTimes().isEmpty() )
         {
@@ -655,31 +777,30 @@ public class TimeSeriesIngester
                           .entrySet()
                           .iterator()
                           .next();
-        {
-            LOGGER.debug( "Using the first reference datetime type found: {}",
-                          entry );
-            return entry.getValue();
-        }
+
+        LOGGER.debug( "Using the first reference datetime type found: {}",
+                      entry );
+        return entry.getValue();
     }
 
 
     private long getMeasurementUnitId( String measurementUnit ) throws SQLException
     {
-        MeasurementUnits measurementUnitsCache = this.getMeasurementUnitsCache();
-        return measurementUnitsCache.getOrCreateMeasurementUnitId( measurementUnit );
+        MeasurementUnits innerMeasurementUnitsCache = this.getMeasurementUnitsCache();
+        return innerMeasurementUnitsCache.getOrCreateMeasurementUnitId( measurementUnit );
     }
 
 
     private long getFeatureId( FeatureKey featureKey ) throws SQLException
     {
-        Features featuresCache = this.getFeaturesCache();
-        return featuresCache.getOrCreateFeatureId( featureKey );
+        Features innerFeaturesCache = this.getFeaturesCache();
+        return innerFeaturesCache.getOrCreateFeatureId( featureKey );
     }
 
     private long getTimeScaleId( TimeScaleOuter timeScale ) throws SQLException
     {
-        TimeScales timeScalesCache = this.getTimeScalesCache();
-        return timeScalesCache.getOrCreateTimeScaleId( timeScale );
+        TimeScales innerTimeScalesCache = this.getTimeScalesCache();
+        return innerTimeScalesCache.getOrCreateTimeScaleId( timeScale );
     }
 
     private byte[] identifyTimeSeries( TimeSeries<?> timeSeries,

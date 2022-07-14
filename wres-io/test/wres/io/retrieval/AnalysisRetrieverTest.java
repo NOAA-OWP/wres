@@ -514,7 +514,7 @@ public class AnalysisRetrieverTest
                                                                 fakeConfig,
                                                                 rightData,
                                                                 this.lockManager );
-        IngestResult ingestResultOne = ingesterOne.ingest( timeSeriesOne )
+        IngestResult ingestResultOne = ingesterOne.ingestSingleValuedTimeSeries( timeSeriesOne )
                                                   .get( 0 );
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleTwo( ANALYSIS_START_TIME );
 
@@ -527,7 +527,7 @@ public class AnalysisRetrieverTest
                                                                 fakeConfig,
                                                                 rightData,
                                                                 this.lockManager );
-        IngestResult ingestResultTwo = ingesterTwo.ingest( timeSeriesTwo )
+        IngestResult ingestResultTwo = ingesterTwo.ingestSingleValuedTimeSeries( timeSeriesTwo )
                                                   .get( 0 );
         TimeSeries<Double> timeSeriesThree = RetrieverTestData.generateTimeSeriesDoubleThree( ANALYSIS_START_TIME );
 
@@ -540,7 +540,7 @@ public class AnalysisRetrieverTest
                                                                   fakeConfig,
                                                                   rightData,
                                                                   this.lockManager );
-        IngestResult ingestResultThree = ingesterThree.ingest( timeSeriesThree )
+        IngestResult ingestResultThree = ingesterThree.ingestSingleValuedTimeSeries( timeSeriesThree )
                                                       .get( 0 );
 
         TimeSeries<Double> timeSeriesFour = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
@@ -554,7 +554,7 @@ public class AnalysisRetrieverTest
                                                                  fakeConfig,
                                                                  leftData,
                                                                  this.lockManager );
-        IngestResult ingestResultFour = ingesterFour.ingest( timeSeriesFour )
+        IngestResult ingestResultFour = ingesterFour.ingestSingleValuedTimeSeries( timeSeriesFour )
                                                     .get( 0 );
 
         List<IngestResult> results = List.of( ingestResultOne,
