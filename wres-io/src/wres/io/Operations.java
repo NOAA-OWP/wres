@@ -25,16 +25,13 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.Pipelines;
-import wres.io.data.caching.DataSources;
-import wres.io.data.caching.Ensembles;
-import wres.io.data.caching.Features;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.TimeScales;
+import wres.io.data.caching.Caches;
 import wres.io.data.caching.Variables;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
 import wres.io.ingesting.SourceLoader;
+import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.project.Projects;
 import wres.io.removal.IncompleteIngest;
 import wres.io.project.Project;
@@ -320,41 +317,66 @@ public final class Operations {
 
     /**
      * Ingests for an evaluation project and returns state regarding the same.
-     * @param systemSettings The system settings to use.
-     * @param database The database to use.
-     * @param executor The executor to use.
+     * @param timeSeriesIngester The time-series ingester
+     * @param systemSettings The system settings
+     * @param database The database
+     * @param executor The executor
      * @param projectConfig the projectConfig for the evaluation
      * @param lockManager The lock manager to use.
+     * @param caches the database caches/ORMs
      * @return the {@link Project} (state about this evaluation)
-     * @throws IllegalStateException when another process already holds lock.
+     * @throws NullPointerException if any input is null
+     * @throws IllegalStateException when another process already holds lock
+     * @throws IngestException when anything else goes wrong
      */
 
-    public static Project ingest( SystemSettings systemSettings,
+    public static Project ingest( TimeSeriesIngester timeSeriesIngester,
+                                  SystemSettings systemSettings,
                                   Database database,
                                   Executor executor,
                                   ProjectConfig projectConfig,
-                                  DatabaseLockManager lockManager )
+                                  DatabaseLockManager lockManager,
+                                  Caches caches )
     {
-        return Operations.doIngestWork( systemSettings, database, executor, projectConfig, lockManager );
+        return Operations.doIngestWork( timeSeriesIngester,
+                                        systemSettings,
+                                        database,
+                                        executor,
+                                        projectConfig,
+                                        lockManager,
+                                        caches );
     }
 
     /**
      * Ingests and returns the hashes of source files involved in this project.
      * TODO: Find a more appropriate location; this should call the ingest logic, not implement it
-     * @param systemSettings The system settings to use.
-     * @param database The database to use.
+     * @param timeSeriesIngester The time-series ingester
+     * @param systemSettings The system settings
+     * @param database The database to use
      * @param executor The executor to use
      * @param projectConfig the projectConfig to ingest
      * @param lockManager The lock manager to use.
+     * @param caches the database caches/ORMs
      * @return the projectdetails object from ingesting this project
-     * @throws IngestException when anything goes wrong
+     * @throws IllegalStateException when another process already holds lock
+     * @throws NullPointerException if any input is null
+     * @throws IngestException when anything else goes wrong
      */
-    private static Project doIngestWork( SystemSettings systemSettings,
+    private static Project doIngestWork( TimeSeriesIngester timeSeriesIngester,
+                                         SystemSettings systemSettings,
                                          Database database,
                                          Executor executor,
                                          ProjectConfig projectConfig,
-                                         DatabaseLockManager lockManager )
+                                         DatabaseLockManager lockManager,
+                                         Caches caches )
     {
+        Objects.requireNonNull( systemSettings );
+        Objects.requireNonNull( database );
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( lockManager );
+        Objects.requireNonNull( caches );
+        Objects.requireNonNull( timeSeriesIngester );
+        
         ThreadFactory threadFactoryWithNaming = new BasicThreadFactory.Builder()
                 .namingPattern( "Outer Reading/Ingest Thread %d" )
                 .build();
@@ -372,20 +394,12 @@ public final class Operations {
         ingestExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         Project result = null;
         List<IngestResult> projectSources = new ArrayList<>();
-        DataSources dataSourcesCache = new DataSources( database );
-        Features featuresCache = new Features( database, projectConfig.getPair().getGridSelection() );
-        TimeScales timeScalesCache = new TimeScales( database );
-        Ensembles ensemblesCache = new Ensembles( database );
-        MeasurementUnits measurementUnitsCache = new MeasurementUnits( database );
-
-        SourceLoader loader = new SourceLoader( systemSettings,
+        
+        SourceLoader loader = new SourceLoader( timeSeriesIngester,
+                                                systemSettings,
                                                 ingestExecutor,
                                                 database,
-                                                dataSourcesCache,
-                                                featuresCache,
-                                                timeScalesCache,
-                                                ensemblesCache,
-                                                measurementUnitsCache,
+                                                caches,
                                                 projectConfig,
                                                 lockManager );
 
@@ -545,7 +559,7 @@ public final class Operations {
         {
             result = Projects.getProjectFromIngest( systemSettings,
                                                     database,
-                                                    featuresCache,
+                                                    caches.getFeaturesCache(),
                                                     executor,
                                                     projectConfig,
                                                     safeToShareResults );

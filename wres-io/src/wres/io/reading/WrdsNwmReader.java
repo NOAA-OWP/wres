@@ -50,10 +50,6 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.Builder;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Ensembles;
-import wres.io.data.caching.Features;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.TimeScales;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
@@ -66,10 +62,8 @@ import wres.io.reading.wrds.nwm.NwmForecast;
 import wres.io.reading.wrds.nwm.NwmMember;
 import wres.io.reading.wrds.nwm.NwmRootDocument;
 import wres.io.reading.wrds.nwm.NwmRootDocumentWithError;
-import wres.io.utilities.Database;
 import wres.io.utilities.WebClient;
 import wres.statistics.generated.Geometry;
-import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 
 /**
@@ -107,49 +101,29 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
             new ObjectMapper().registerModule( new JavaTimeModule() )
                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
 
-    private final SystemSettings systemSettings;
-    private final Database database;
-    private final Features featuresCache;
-    private final TimeScales timeScalesCache;
-    private final Ensembles ensemblesCache;
-    private final MeasurementUnits measurementUnitsCache;
     private final ProjectConfig projectConfig;
     private final DataSource dataSource;
-    private final DatabaseLockManager lockManager;
+    private final URI uri;
 
     private final ThreadPoolExecutor ingestSaverExecutor;
     private final BlockingQueue<Future<List<IngestResult>>> ingests;
     private final CountDownLatch startGettingIngestResults;
+    private final TimeSeriesIngester timeSeriesIngester;
 
-    public WrdsNwmReader( SystemSettings systemSettings,
-                          Database database,
-                          Features featuresCache,
-                          TimeScales timeScalesCache,
-                          Ensembles ensemblesCache,
-                          MeasurementUnits measurementUnitsCache,
+    public WrdsNwmReader( TimeSeriesIngester timeSeriesIngester,
                           ProjectConfig projectConfig,
                           DataSource dataSource,
-                          DatabaseLockManager lockManager )
+                          SystemSettings systemSettings )
     {
-        Objects.requireNonNull( systemSettings );
-        Objects.requireNonNull( database );
-        Objects.requireNonNull( featuresCache );
-        Objects.requireNonNull( timeScalesCache );
-        Objects.requireNonNull( ensemblesCache );
-        Objects.requireNonNull( measurementUnitsCache );
-        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( timeSeriesIngester );
         Objects.requireNonNull( dataSource );
-        Objects.requireNonNull( lockManager );
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( systemSettings );
 
-        this.systemSettings = systemSettings;
-        this.database = database;
-        this.featuresCache = featuresCache;
-        this.timeScalesCache = timeScalesCache;
-        this.ensemblesCache = ensemblesCache;
-        this.measurementUnitsCache = measurementUnitsCache;
-        this.projectConfig = projectConfig;
         this.dataSource = dataSource;
-        this.lockManager = lockManager;
+        this.uri = dataSource.getUri();
+        this.timeSeriesIngester = timeSeriesIngester;
+        this.projectConfig = projectConfig;
 
         DatasourceType type = dataSource.getContext()
                                         .getType();
@@ -166,14 +140,13 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                  && !type.equals( DatasourceType.OBSERVATIONS ) )
             {
                 throw new UnsupportedOperationException(
-                        ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(),
-                                                               this.getDataSource()
-                                                                   .getContext() )
-                        + " source specified type '"
-                        + type.value()
-                        + "' but the word 'short_range' appeared in the URI. "
-                        + "You probably want 'single valued forecasts' type or "
-                        + "to change the source URI to point to medium_range." );
+                                                         ConfigHelper.getLeftOrRightOrBaseline( this.projectConfig,
+                                                                                                this.dataSource.getContext() )
+                                                         + " source specified type '"
+                                                         + type.value()
+                                                         + "' but the word 'short_range' appeared in the URI. "
+                                                         + "You probably want 'single valued forecasts' type or "
+                                                         + "to change the source URI to point to medium_range." );
             }
         }
         else if ( this.getUri()
@@ -184,22 +157,21 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                   && !type.equals( DatasourceType.SINGLE_VALUED_FORECASTS ) )
         {
             throw new UnsupportedOperationException(
-                                                     ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(),
-                                                                                            this.getDataSource()
-                                                                                                .getContext() )
+                                                     ConfigHelper.getLeftOrRightOrBaseline( this.projectConfig,
+                                                                                            this.dataSource.getContext() )
                                                      + " source specified type '"
                                                      + type.value()
                                                      + "' but the word 'medium_range' appeared in the URI. "
                                                      + "You probably want 'ensemble forecasts' type or to "
                                                      + "change the source URI to point to another type." );
         }
-        
+
         // Could be an NPE, but the data source is not null and the nullity of the variable is an effect, not a cause
         if ( Objects.isNull( this.dataSource.getVariable() ) )
         {
-            LeftOrRightOrBaseline lrb = ConfigHelper.getLeftOrRightOrBaseline( this.projectConfig, 
+            LeftOrRightOrBaseline lrb = ConfigHelper.getLeftOrRightOrBaseline( this.projectConfig,
                                                                                this.dataSource.getContext() );
-            
+
             throw new IllegalArgumentException( "A variable must be declared for a WRDS NWM source but no "
                                                 + "variable was found for the "
                                                 + lrb
@@ -212,8 +184,8 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
 
         // See comments in wres.io.reading.WebSource for info on below approach.
         ThreadFactory wrdsNwmReaderIngest = new BasicThreadFactory.Builder()
-                .namingPattern( "WrdsNwmReader Ingest %d" )
-                .build();
+                                                                            .namingPattern( "WrdsNwmReader Ingest %d" )
+                                                                            .build();
 
         // As of 2.1, the SystemSetting is used in two different NWM readers:
         int concurrentCount = systemSettings.getMaxiumNwmIngestThreads();
@@ -230,51 +202,6 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         LOGGER.debug( "Created WrdsNwmReader for {}", this.dataSource );
     }
 
-    private SystemSettings getSystemSettings()
-    {
-        return this.systemSettings;
-    }
-
-    private Database getDatabase()
-    {
-        return this.database;
-    }
-
-    private TimeScales getTimeScalesCache()
-    {
-        return this.timeScalesCache;
-    }
-
-    private Features getFeaturesCache()
-    {
-        return this.featuresCache;
-    }
-
-    private Ensembles getEnsemblesCache()
-    {
-        return this.ensemblesCache;
-    }
-
-    private MeasurementUnits getMeasurementUnitsCache()
-    {
-        return this.measurementUnitsCache;
-    }
-
-    private ProjectConfig getProjectConfig()
-    {
-        return this.projectConfig;
-    }
-
-    private DataSource getDataSource()
-    {
-        return this.dataSource;
-    }
-
-    private DatabaseLockManager getLockManager()
-    {
-        return this.lockManager;
-    }
-
     private ObjectMapper getJsonObjectMapper()
     {
         return WrdsNwmReader.JSON_OBJECT_MAPPER;
@@ -282,8 +209,12 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
 
     private URI getUri()
     {
-        return this.getDataSource()
-                   .getUri();
+        return this.uri;
+    }
+    
+    private TimeSeriesIngester getTimeSeriesIngester()
+    {
+        return this.timeSeriesIngester;
     }
 
     @Override
@@ -448,12 +379,13 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                                        variableName,
                                                        measurementUnit );
 
-            TimeSeriesIngester timeSeriesIngester = this.getTimeSeriesIngester( timeSeries );
+            TimeSeriesIngester timeSeriesIngester = this.createTimeSeriesIngester( timeSeries );
 
             if ( !timeSeries.getEvents().isEmpty() )
             {
                 futureIngestResult =
-                        this.ingestSaverExecutor.submit( () -> timeSeriesIngester.ingestSingleValuedTimeSeries( timeSeries ) );
+                        this.ingestSaverExecutor.submit( () -> timeSeriesIngester.ingestSingleValuedTimeSeries( timeSeries,
+                                                                                                                this.dataSource ) );
             }
         }
         // Ensemble
@@ -466,12 +398,13 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                                    variableName,
                                                    measurementUnit );
 
-            TimeSeriesIngester timeSeriesIngester = this.getTimeSeriesIngester( timeSeries );
+            TimeSeriesIngester timeSeriesIngester = this.createTimeSeriesIngester( timeSeries );
 
             if ( !timeSeries.getEvents().isEmpty() )
             {
                 futureIngestResult =
-                        this.ingestSaverExecutor.submit( () -> timeSeriesIngester.ingestEnsembleTimeSeries( timeSeries ) );
+                        this.ingestSaverExecutor.submit( () -> timeSeriesIngester.ingestEnsembleTimeSeries( timeSeries,
+                                                                                                            this.dataSource ) );
             }
         }
         // No members
@@ -498,26 +431,6 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         }
 
         return Collections.unmodifiableList( ingested );
-    }
-
-    /**
-     * @param <T> the type of time-series event value
-     * @param timeSeries the time-series
-     * @return the ingester
-     */
-
-    private <T> TimeSeriesIngester getTimeSeriesIngester( TimeSeries<T> timeSeries )
-    {
-        return this.createTimeSeriesIngester( this.getSystemSettings(),
-                                              this.getDatabase(),
-                                              this.getFeaturesCache(),
-                                              this.getTimeScalesCache(),
-                                              this.getEnsemblesCache(),
-                                              this.getMeasurementUnitsCache(),
-                                              this.getProjectConfig(),
-                                              this.getDataSource(),
-                                              this.getLockManager(),
-                                              timeSeries );
     }
     
     /**
@@ -793,26 +706,9 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
      * @return a TimeSeriesIngester
      */
 
-    TimeSeriesIngester createTimeSeriesIngester( SystemSettings systemSettings,
-                                                 Database database,
-                                                 Features featuresCache,
-                                                 TimeScales timeScalesCache,
-                                                 Ensembles ensemblesCache,
-                                                 MeasurementUnits measurementUnitsCache,
-                                                 ProjectConfig projectConfig,
-                                                 DataSource dataSource,
-                                                 DatabaseLockManager lockManager,
-                                                 TimeSeries<?> timeSeries )
+    TimeSeriesIngester createTimeSeriesIngester( TimeSeries<?> timeSeries )
     {
-        return TimeSeriesIngester.of( systemSettings,
-                                       database,
-                                       featuresCache,
-                                       timeScalesCache,
-                                       ensemblesCache,
-                                       measurementUnitsCache,
-                                       projectConfig,
-                                       dataSource,
-                                       lockManager );
+        return this.getTimeSeriesIngester();
     }
 
 

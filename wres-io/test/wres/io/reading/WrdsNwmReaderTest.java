@@ -27,7 +27,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
 import static wres.io.reading.DataSource.DataDisposition.COMPLEX;
@@ -42,13 +41,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
-import wres.io.data.caching.Ensembles;
-import wres.io.data.caching.Features;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.TimeScales;
 import wres.io.ingesting.TimeSeriesIngester;
-import wres.io.utilities.Database;
-import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 
 public class WrdsNwmReaderTest
@@ -121,12 +114,7 @@ public class WrdsNwmReaderTest
             + "}";
 
     private SystemSettings systemSettings;
-    @Mock private Database mockDatabase;
-    @Mock private Features mockFeaturesCache;
-    @Mock private TimeScales mockTimeScalesCache;
-    @Mock private Ensembles mockEnsemblesCache;
-    @Mock private MeasurementUnits mockMeasurementUnitsCache;
-    @Mock private DatabaseLockManager fakeLockManager;
+    @Mock private TimeSeriesIngester mockTimeSeriesIngester;
 
     @Mock
     private TimeSeriesIngester fakeTimeSeriesIngester;
@@ -224,28 +212,14 @@ public class WrdsNwmReaderTest
                                                         LeftOrRightOrBaseline.RIGHT ),
                                                fakeWrdsUri );
 
-        WrdsNwmReader reader = Mockito.spy( new WrdsNwmReader( this.systemSettings,
-                                                               this.mockDatabase,
-                                                               this.mockFeaturesCache,
-                                                               this.mockTimeScalesCache,
-                                                               this.mockEnsemblesCache,
-                                                               this.mockMeasurementUnitsCache,
+        WrdsNwmReader reader = Mockito.spy( new WrdsNwmReader( this.mockTimeSeriesIngester,
                                                                projectConfig,
                                                                dataSource,
-                                                               this.fakeLockManager ) );
+                                                               this.systemSettings ) );
 
         Mockito.doReturn( this.fakeTimeSeriesIngester )
                .when( reader )
-               .createTimeSeriesIngester( any( SystemSettings.class ),
-                                          any( Database.class ),
-                                          any( Features.class ),
-                                          any( TimeScales.class ),
-                                          any( Ensembles.class ),
-                                          any( MeasurementUnits.class ),
-                                          any( ProjectConfig.class ),
-                                          any( DataSource.class ),
-                                          any( DatabaseLockManager.class ),
-                                          this.timeSeries.capture() );
+               .createTimeSeriesIngester( this.timeSeries.capture() );
 
 
         // Exercise the reader by executing call method.
@@ -259,16 +233,7 @@ public class WrdsNwmReaderTest
         // Capture the argument to TimeSeriesIngester.
         // Probably should refactor WrdsNwmReader to avoid having to do this.
         Mockito.verify( reader )
-               .createTimeSeriesIngester( any( SystemSettings.class ),
-                                          any( Database.class ),
-                                          any( Features.class ),
-                                          any( TimeScales.class ),
-                                          any( Ensembles.class ),
-                                          any( MeasurementUnits.class ),
-                                          any( ProjectConfig.class ),
-                                          any( DataSource.class ),
-                                          any( DatabaseLockManager.class ),
-                                          this.timeSeries.capture() );
+               .createTimeSeriesIngester( this.timeSeries.capture() );
 
         // Verify that the reader requested analysis data path given to it once.
         WrdsNwmReaderTest.mockServer.verify( request().withMethod( "GET" )
@@ -404,28 +369,14 @@ public class WrdsNwmReaderTest
                                                         LeftOrRightOrBaseline.RIGHT ),
                                                fakeWrdsUri );
 
-        WrdsNwmReader reader = Mockito.spy( new WrdsNwmReader( this.systemSettings,
-                                                               this.mockDatabase,
-                                                               this.mockFeaturesCache,
-                                                               this.mockTimeScalesCache,
-                                                               this.mockEnsemblesCache,
-                                                               this.mockMeasurementUnitsCache,
+        WrdsNwmReader reader = Mockito.spy( new WrdsNwmReader( this.mockTimeSeriesIngester,
                                                                projectConfig,
                                                                dataSource,
-                                                               this.fakeLockManager ) );
+                                                               this.systemSettings ) );
 
         Mockito.doReturn( this.fakeTimeSeriesIngester )
                .when( reader )
-               .createTimeSeriesIngester( any( SystemSettings.class ),
-                                          any( Database.class ),
-                                          any( Features.class ),
-                                          any( TimeScales.class ),
-                                          any( Ensembles.class ),
-                                          any( MeasurementUnits.class ),
-                                          any( ProjectConfig.class ),
-                                          any( DataSource.class ),
-                                          any( DatabaseLockManager.class ),
-                                          this.timeSeries.capture() );
+               .createTimeSeriesIngester( this.timeSeries.capture() );
 
 
 
@@ -439,16 +390,7 @@ public class WrdsNwmReaderTest
         // Capture the argument to TimeSeriesIngester.
         // Probably should refactor WrdsNwmReader to avoid having to do this.
         Mockito.verify( reader )
-               .createTimeSeriesIngester( any( SystemSettings.class ),
-                                          any( Database.class ),
-                                          any( Features.class ),
-                                          any( TimeScales.class ),
-                                          any( Ensembles.class ),
-                                          any( MeasurementUnits.class ),
-                                          any( ProjectConfig.class ),
-                                          any( DataSource.class ),
-                                          any( DatabaseLockManager.class ),
-                                          this.timeSeries.capture() );
+               .createTimeSeriesIngester( this.timeSeries.capture() );
 
         // Verify that the reader requested thrice (2 times failed).
         WrdsNwmReaderTest.mockServer.verify( request().withMethod( "GET" )

@@ -16,10 +16,8 @@ import ucar.nc2.Variable;
 
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.WRESCallable;
+import wres.io.data.caching.Caches;
 import wres.io.data.caching.DataSources;
-import wres.io.data.caching.Features;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.TimeScales;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.ingesting.IngestResult;
@@ -43,39 +41,27 @@ public class NWMSource extends BasicSource
     private final SystemSettings systemSettings;
     private final Database database;
 
-    private final Features featuresCache;
-    private final TimeScales timeScalesCache;
-    private final MeasurementUnits measurementUnitsCache;
-    private final DataSources dataSourcesCache;
+    private final Caches caches;
     private boolean alreadyFound;
 
 	/**
      *
-     * @param systemSettings The system settings to use.
-     * @param database The database to use.
-     * @param dataSourcesCache The data sources cache to use.
+     * @param systemSettings The system settings
+     * @param database The database
+     * @param caches The database caches/ORMs
      * @param projectConfig The ProjectConfig causing ingest
 	 * @param dataSource The data source information
-	 * @param featuresCache The features cache
-	 * @param timeScalesCache The time scales cache
-	 * @param measurementUnitsCache The measurement unis cache
 	 */
 	public NWMSource( SystemSettings systemSettings,
                       Database database,
-                      DataSources dataSourcesCache,
-                      Features featuresCache,
-                      TimeScales timeScalesCache,
-                      MeasurementUnits measurementUnitsCache,
+                      Caches caches,
                       ProjectConfig projectConfig,
                       DataSource dataSource )
     {
         super( projectConfig, dataSource );
         this.systemSettings = systemSettings;
         this.database = database;
-        this.dataSourcesCache = dataSourcesCache;
-        this.featuresCache = featuresCache;
-        this.timeScalesCache = timeScalesCache;
-        this.measurementUnitsCache = measurementUnitsCache;
+        this.caches = caches;
 	}
 
 	private SystemSettings getSystemSettings()
@@ -88,24 +74,9 @@ public class NWMSource extends BasicSource
         return this.database;
     }
 
-    private DataSources getDataSourcesCache()
+    private Caches getCaches()
     {
-        return this.dataSourcesCache;
-    }
-
-    private Features getFeaturesCache()
-    {
-        return this.featuresCache;
-    }
-
-    private TimeScales getTimeScalesCache()
-    {
-        return this.timeScalesCache;
-    }
-
-    private MeasurementUnits getMeasurementUnitsCache()
-    {
-        return this.measurementUnitsCache;
+        return this.caches;
     }
 
     @Override
@@ -138,12 +109,6 @@ public class NWMSource extends BasicSource
 
 		return saved;
 	}
-
-	@Override
-	protected Logger getLogger()
-	{
-		return NWMSource.LOGGER;
-	}
 	
     private List<IngestResult> saveNetCDF( NetcdfFile source ) throws IOException
 	{
@@ -162,7 +127,8 @@ public class NWMSource extends BasicSource
 
                 try
                 {
-                    DataSources dataSources = this.getDataSourcesCache();
+                    DataSources dataSources = this.getCaches()
+                                                  .getDataSourcesCache();
                     SourceDetails sourceDetails = dataSources.getExistingSource( hash );
 
                     if(sourceDetails != null && Files.exists( Paths.get( sourceDetails.getSourcePath()) ))
@@ -188,8 +154,10 @@ public class NWMSource extends BasicSource
 
                 saver = new GriddedNWMValueSaver( this.getSystemSettings(),
                                                   this.getDatabase(),
-                                                  this.getFeaturesCache(),
-                                                  this.getMeasurementUnitsCache(),
+                                                  this.getCaches()
+                                                      .getFeaturesCache(),
+                                                  this.getCaches()
+                                                      .getMeasurementUnitsCache(),
                                                   this.getProjectConfig(),
                                                   this.getDataSource(),
                                                   hash );

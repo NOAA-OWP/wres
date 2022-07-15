@@ -4,24 +4,14 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.ProjectConfig;
-import wres.io.data.caching.DataSources;
-import wres.io.data.caching.Ensembles;
-import wres.io.data.caching.Features;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.TimeScales;
-import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
+import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.BasicSource;
 import wres.io.reading.DataSource;
 import wres.io.reading.DataSource.DataDisposition;
 import wres.io.reading.WrdsNwmReader;
-import wres.io.utilities.Database;
-import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 
 /**
@@ -38,77 +28,17 @@ import wres.system.SystemSettings;
  */
 public class WRDSSource extends BasicSource
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( WRDSSource.class );
-
+    private final TimeSeriesIngester timeSeriesIngester;
     private final SystemSettings systemSettings;
-    private final Database database;
-    private final DataSources dataSourcesCache;
-    private final Features featuresCache;
-    private final TimeScales timeScalesCache;
-    private final Ensembles ensemblesCache;
-    private final MeasurementUnits measurementUnitsCache;
-    private final DatabaseLockManager lockManager;
 
-    public WRDSSource( SystemSettings systemSettings,
-                       Database database,
-                       DataSources dataSourcesCache,
-                       Features featuresCache,
-                       TimeScales timeScalesCache,
-                       Ensembles ensemblesCache,
-                       MeasurementUnits measurementUnitsCache,
+    public WRDSSource( TimeSeriesIngester timeSeriesIngester,
                        ProjectConfig projectConfig,
                        DataSource dataSource,
-                       DatabaseLockManager lockManager )
+                       SystemSettings systemSettings )
     {
         super( projectConfig, dataSource );
+        this.timeSeriesIngester = timeSeriesIngester;
         this.systemSettings = systemSettings;
-        this.database = database;
-        this.dataSourcesCache = dataSourcesCache;
-        this.featuresCache = featuresCache;
-        this.timeScalesCache = timeScalesCache;
-        this.ensemblesCache = ensemblesCache;
-        this.measurementUnitsCache = measurementUnitsCache;
-        this.lockManager = lockManager;
-    }
-
-    private SystemSettings getSystemSettings()
-    {
-        return this.systemSettings;
-    }
-
-    private Database getDatabase()
-    {
-        return this.database;
-    }
-
-    private DataSources getDataSourcesCache()
-    {
-        return this.dataSourcesCache;
-    }
-
-    private Features getFeaturesCache()
-    {
-        return this.featuresCache;
-    }
-
-    private TimeScales getTimeScalesCache()
-    {
-        return this.timeScalesCache;
-    }
-
-    private Ensembles getEnsemblesCache()
-    {
-        return this.ensemblesCache;
-    }
-
-    private MeasurementUnits getMeasurementUnitsCache()
-    {
-        return this.measurementUnitsCache;
-    }
-
-    private DatabaseLockManager getLockManager()
-    {
-        return this.lockManager;
     }
 
     @Override
@@ -123,51 +53,36 @@ public class WRDSSource extends BasicSource
              || ( Objects.nonNull( interfaceShortHand )
                   && interfaceShortHand.equals( InterfaceShortHand.WRDS_NWM ) ) )
         {
-            WrdsNwmReader reader = new WrdsNwmReader( this.getSystemSettings(),
-                                                      this.getDatabase(),
-                                                      this.getFeaturesCache(),
-                                                      this.getTimeScalesCache(),
-                                                      this.getEnsemblesCache(),
-                                                      this.getMeasurementUnitsCache(),
+            WrdsNwmReader reader = new WrdsNwmReader( this.getTimeSeriesIngester(),
                                                       this.getProjectConfig(),
                                                       this.getDataSource(),
-                                                      this.getLockManager() );
+                                                      this.getSystemSettings() );
             return reader.call();
         }
         else
         {
             ReadValueManager reader =
-                    createReadValueManager( this.getProjectConfig(),
-                                            this.getDataSource(),
-                                            this.lockManager );
+                    this.createReadValueManager( this.getTimeSeriesIngester(),
+                                                 this.getDataSource() );
             return reader.save();
         }
     }
 
-    @Override
-    protected List<IngestResult> saveObservation() throws IOException
+    ReadValueManager createReadValueManager( TimeSeriesIngester timeSeriesIngester,
+                                             DataSource dataSource )
     {
-        throw new IngestException( "WRDS does not currently support observations." );
+        return new ReadValueManager( timeSeriesIngester,
+                                     dataSource );
     }
-
-    @Override
-    protected Logger getLogger()
+    
+    private TimeSeriesIngester getTimeSeriesIngester()
     {
-        return WRDSSource.LOGGER;
+        return this.timeSeriesIngester;
     }
-
-    ReadValueManager createReadValueManager( ProjectConfig projectConfig,
-                                             DataSource dataSource,
-                                             DatabaseLockManager lockManager )
+    
+    private SystemSettings getSystemSettings()
     {
-        return new ReadValueManager( this.getSystemSettings(),
-                                     this.getDatabase(),
-                                     this.getFeaturesCache(),
-                                     this.getTimeScalesCache(),
-                                     this.getEnsemblesCache(),
-                                     this.getMeasurementUnitsCache(),
-                                     projectConfig,
-                                     dataSource,
-                                     lockManager );
+        return this.systemSettings;
     }
+    
 }

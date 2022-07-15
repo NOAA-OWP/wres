@@ -42,11 +42,8 @@ import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.Caches;
 import wres.io.data.caching.DataSources;
-import wres.io.data.caching.Ensembles;
-import wres.io.data.caching.Features;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.TimeScales;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.reading.DataSource;
@@ -66,17 +63,14 @@ import wres.util.NetCDF;
  */
 public class SourceLoader
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SourceLoader.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger( SourceLoader.class );
     private static final long KEY_NOT_FOUND = Long.MIN_VALUE;
 
     private final SystemSettings systemSettings;
     private final ExecutorService executor;
     private final Database database;
-    private final DataSources dataSourcesCache;
-    private final Features featuresCache;
-    private final TimeScales timeScalesCache;
-    private final Ensembles ensemblesCache;
-    private final MeasurementUnits measurementUnitsCache;
+    private final Caches caches;
+    private final TimeSeriesIngester timeSeriesIngester;
 
     /**
      * The project configuration indicating what data to use
@@ -101,98 +95,36 @@ public class SourceLoader
     }
 
     /**
-     * @param systemSettings The system settings to use.
-     * @param executor The executor to use.
-     * @param database The database to use.
-     * @param dataSourcesCache The data sources cache to use.
-     * @param featuresCache The features cache to use.
-     * @param timeScalesCache The timeScales cache to use.
-     * @param ensemblesCache The ensembles cache to use.
-     * @param measurementUnitsCache The measurement units cache to use.
+     * @param timeSeriesIngester the time-series ingester
+     * @param systemSettings The system settings
+     * @param executor The executor
+     * @param database The database
+     * @param caches The caches
      * @param projectConfig the project configuration
      * @param lockManager the tool to manage ingest locks, shared per ingest
      */
-    public SourceLoader( SystemSettings systemSettings,
+    public SourceLoader( TimeSeriesIngester timeSeriesIngester,
+                         SystemSettings systemSettings,
                          ExecutorService executor,
                          Database database,
-                         DataSources dataSourcesCache,
-                         Features featuresCache,
-                         TimeScales timeScalesCache,
-                         Ensembles ensemblesCache,
-                         MeasurementUnits measurementUnitsCache,
+                         Caches caches,
                          ProjectConfig projectConfig,
                          DatabaseLockManager lockManager )
     {
+        Objects.requireNonNull( timeSeriesIngester );
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( executor );
         Objects.requireNonNull( database );
-        Objects.requireNonNull( dataSourcesCache );
-        Objects.requireNonNull( featuresCache );
-        Objects.requireNonNull( timeScalesCache );
-        Objects.requireNonNull( ensemblesCache );
-        Objects.requireNonNull( measurementUnitsCache );
+        Objects.requireNonNull( caches );
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( lockManager );
         this.systemSettings = systemSettings;
         this.executor = executor;
         this.database = database;
-        this.dataSourcesCache = dataSourcesCache;
-        this.featuresCache = featuresCache;
-        this.timeScalesCache = timeScalesCache;
-        this.ensemblesCache = ensemblesCache;
-        this.measurementUnitsCache = measurementUnitsCache;
+        this.caches = caches;
         this.projectConfig = projectConfig;
         this.lockManager = lockManager;
-    }
-
-    private SystemSettings getSystemSettings()
-    {
-        return this.systemSettings;
-    }
-
-    private ExecutorService getExecutor()
-    {
-        return this.executor;
-    }
-
-    private Database getDatabase()
-    {
-        return this.database;
-    }
-
-    private DataSources getDataSourcesCache()
-    {
-        return this.dataSourcesCache;
-    }
-
-    private Features getFeaturesCache()
-    {
-        return this.featuresCache;
-    }
-
-    private TimeScales getTimeScalesCache()
-    {
-        return this.timeScalesCache;
-    }
-
-    private Ensembles getEnsemblesCache()
-    {
-        return this.ensemblesCache;
-    }
-
-    private MeasurementUnits getMeasurementUnitsCache()
-    {
-        return this.measurementUnitsCache;
-    }
-
-    private ProjectConfig getProjectConfig()
-    {
-        return this.projectConfig;
-    }
-
-    private DatabaseLockManager getLockManager()
-    {
-        return this.lockManager;
+        this.timeSeriesIngester = timeSeriesIngester;
     }
 
     /**
@@ -222,12 +154,91 @@ public class SourceLoader
         LOGGER.debug( "Created these sources to load and link: {}", sources );
 
         // Load each source and create any additional links required
-        for( DataSource source : sources )
+        for ( DataSource source : sources )
         {
             savingSources.addAll( this.loadSource( source ) );
         }
 
         return Collections.unmodifiableList( savingSources );
+    }
+
+    /**
+     * Attempt to retry a source that either failed or another task was doing.
+     *
+     * If the source has fully completed, return with "no retry needed, done."
+     * If the source was abandoned, delete the old data, return the result of
+     * a new attempt to ingest.
+     * If the source was neither complete nor abandoned, return that another
+     * retry is required.
+     * @param ingestResult the old result
+     * @return a new list of future results of the retried source
+     */
+
+    public List<CompletableFuture<List<IngestResult>>> retry( IngestResult ingestResult )
+    {
+        if ( !ingestResult.requiresRetry() )
+        {
+            throw new IllegalArgumentException( "Only IngestResult instances claiming to need retry should be passed." );
+        }
+
+        LOGGER.info( "Attempting retry of {}.", ingestResult );
+        // Admittedly not optimal to alternate between hash and key, but other
+        // places are using querySourceStatus with the hash.
+        long surrogateKey = ingestResult.getSurrogateKey();
+        DataSources dataSources = this.getCaches()
+                                      .getDataSourcesCache();
+        String hash = SourceLoader.getHashFromSurrogateKey( dataSources, surrogateKey );
+        SourceStatus sourceStatus = querySourceStatus( hash,
+                                                       this.lockManager );
+
+        if ( sourceStatus.equals( SourceStatus.COMPLETED ) )
+        {
+            LOGGER.debug( "Already finished source {}, changing to say requiresRetry=false",
+                          ingestResult );
+            CompletableFuture<List<IngestResult>> futureResult =
+                    IngestResult.fakeFutureSingleItemListFrom( this.projectConfig,
+                                                               ingestResult.getDataSource(),
+                                                               ingestResult.getSurrogateKey(),
+                                                               false );
+            return List.of( futureResult );
+        }
+        else if ( sourceStatus.equals( SourceStatus.INCOMPLETE_WITH_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING ) )
+        {
+            LOGGER.debug(
+                          "Source {} with status {} not fully ingested, attempting to remove data.",
+                          ingestResult,
+                          sourceStatus );
+
+            // Need the hash but we only have a surrogate key. Get the hash.
+
+            // First, try to safely remove it:
+            boolean removed = IncompleteIngest.removeSourceDataSafely( this.getDatabase(),
+                                                                       this.getCaches()
+                                                                           .getDataSourcesCache(),
+                                                                       ingestResult.getSurrogateKey(),
+                                                                       this.lockManager );
+            if ( removed )
+            {
+                LOGGER.debug( "Successfully removed abandoned data source {}, creating new ingest task.",
+                              ingestResult );
+                return this.ingestData( ingestResult.getDataSource(),
+                                        this.projectConfig,
+                                        this.lockManager );
+            }
+            else
+            {
+                LOGGER.debug( "Failed to remove source {}, will examine again next retry.",
+                              ingestResult );
+            }
+        }
+
+        // For whatever reason, retry is required.
+        CompletableFuture<List<IngestResult>> futureResult =
+                IngestResult.fakeFutureSingleItemListFrom( this.projectConfig,
+                                                           ingestResult.getDataSource(),
+                                                           ingestResult.getSurrogateKey(),
+                                                           true );
+        return List.of( futureResult );
     }
 
     /**
@@ -323,13 +334,10 @@ public class SourceLoader
                  || interfaceShortHand.equals( InterfaceShortHand.USGS_NWIS )
                  || interfaceShortHand.equals( InterfaceShortHand.WRDS_NWM ) )
             {
-                WebSource webSource = WebSource.of( this.getSystemSettings(),
+                WebSource webSource = WebSource.of( this.getTimeSeriesIngester(),
+                                                    this.getSystemSettings(),
                                                     this.getDatabase(),
-                                                    this.getDataSourcesCache(),
-                                                    this.getFeaturesCache(),
-                                                    this.getTimeScalesCache(),
-                                                    this.getEnsemblesCache(),
-                                                    this.getMeasurementUnitsCache(),
+                                                    this.getCaches(),
                                                     this.getProjectConfig(),
                                                     source,
                                                     this.getLockManager() );
@@ -341,10 +349,7 @@ public class SourceLoader
                 // Must be NWM, right?
                 NWMReader nwmReader = new NWMReader( this.getSystemSettings(),
                                                      this.getDatabase(),
-                                                     this.getFeaturesCache(),
-                                                     this.getTimeScalesCache(),
-                                                     this.getEnsemblesCache(),
-                                                     this.getMeasurementUnitsCache(),
+                                                     this.getCaches(),
                                                      this.getProjectConfig(),
                                                      source,
                                                      this.getLockManager() );
@@ -369,13 +374,10 @@ public class SourceLoader
              && sourceUri.getScheme() != null
              && sourceUri.getHost() != null )
         {
-            WebSource webSource = WebSource.of( this.getSystemSettings(),
+            WebSource webSource = WebSource.of( this.getTimeSeriesIngester(),
+                                                this.getSystemSettings(),
                                                 this.getDatabase(),
-                                                this.getDataSourcesCache(),
-                                                this.getFeaturesCache(),
-                                                this.getTimeScalesCache(),
-                                                this.getEnsemblesCache(),
-                                                this.getMeasurementUnitsCache(),
+                                                this.getCaches(),
                                                 this.getProjectConfig(),
                                                 source,
                                                 this.getLockManager() );
@@ -389,8 +391,8 @@ public class SourceLoader
             {
                 throw new ProjectConfigException( source.getSource(),
                                                   "Unable to use the source "
-                                                  + "because no URI was "
-                                                  + "specified." );
+                                                                      + "because no URI was "
+                                                                      + "specified." );
             }
 
             // Null signifies the source was a file-ish source.
@@ -419,53 +421,19 @@ public class SourceLoader
         List<CompletableFuture<List<IngestResult>>> tasks = new ArrayList<>();
         CompletableFuture<List<IngestResult>> task;
 
-        // When the TimeSeries is present, bypass IngestSaver route, use a
-        // TimeSeriesIngester instead.
-        if ( source.hasTimeSeries() )
-        {
-            TimeSeriesIngester ingester =
-                    TimeSeriesIngester.of( this.getSystemSettings(),
-                                           this.getDatabase(),
-                                           this.getFeaturesCache(),
-                                           this.getTimeScalesCache(),
-                                           this.getEnsemblesCache(),
-                                           this.getMeasurementUnitsCache(),
-                                           this.getProjectConfig(),
-                                           source,
-                                           this.getLockManager() );
-            
-            // Ingest the appropriately typed time-series
-            if ( Objects.nonNull( source.getSingleValuedTimeSeries() ) )
-            {
-                task = CompletableFuture.supplyAsync( () -> ingester.ingestSingleValuedTimeSeries( source.getSingleValuedTimeSeries() ),
-                                                      this.getExecutor() );
-            }
-            else
-            {
-                task = CompletableFuture.supplyAsync( () -> ingester.ingestEnsembleTimeSeries( source.getEnsembleTimeSeries() ),
-                                                      this.getExecutor() );
-            }
-        }
-        else
-        {
-            IngestSaver ingestSaver =
-                    IngestSaver.createTask()
-                               .withSystemSettings( this.getSystemSettings() )
-                               .withDatabase( this.getDatabase() )
-                               .withDataSourcesCache( this.getDataSourcesCache() )
-                               .withFeaturesCache( this.getFeaturesCache() )
-                               .withTimeScalesCache( this.getTimeScalesCache() )
-                               .withEnsemblesCache( this.getEnsemblesCache() )
-                               .withMeasurementUnitsCache( this.getMeasurementUnitsCache() )
-                               .withProject( projectConfig )
-                               .withDataSource( source )
-                               .withoutHash()
-                               .withProgressMonitoring()
-                               .withLockManager( lockManager )
-                               .build();
-            task = CompletableFuture.supplyAsync( ingestSaver::call,
-                                                  this.getExecutor() );
-        }
+        IngestSaver ingestSaver =
+                new IngestSaver.Builder().withSystemSettings( this.getSystemSettings() )
+                                         .withDatabase( this.getDatabase() )
+                                         .withCaches( this.getCaches() )
+                                         .withProject( projectConfig )
+                                         .withDataSource( source )
+                                         .withoutHash()
+                                         .withProgressMonitoring()
+                                         .withLockManager( lockManager )
+                                         .withTimeSeriesIngester( this.getTimeSeriesIngester() )
+                                         .build();
+        task = CompletableFuture.supplyAsync( ingestSaver::call,
+                                              this.getExecutor() );
 
         tasks.add( task );
         return Collections.unmodifiableList( tasks );
@@ -483,7 +451,8 @@ public class SourceLoader
      */
     private List<CompletableFuture<List<IngestResult>>> ingestFile( DataSource source,
                                                                     ProjectConfig projectConfig,
-                                                                    DatabaseLockManager lockManager ) throws IOException
+                                                                    DatabaseLockManager lockManager )
+            throws IOException
     {
         Objects.requireNonNull( source );
         Objects.requireNonNull( projectConfig );
@@ -503,20 +472,16 @@ public class SourceLoader
             // the hash will not yet have been computed, because the inner
             // source identities are what is important, and those inner sources
             // will be hashed later in the process.
-            IngestSaver ingestSaver = IngestSaver.createTask()
-                                                 .withSystemSettings( this.getSystemSettings() )
-                                                 .withDatabase( this.getDatabase() )
-                                                 .withDataSourcesCache( this.getDataSourcesCache() )
-                                                 .withFeaturesCache( this.getFeaturesCache() )
-                                                 .withTimeScalesCache( this.getTimeScalesCache() )
-                                                 .withEnsemblesCache( this.getEnsemblesCache() )
-                                                 .withMeasurementUnitsCache( this.getMeasurementUnitsCache() )
-                                                 .withProject( projectConfig )
-                                                 .withDataSource( source )
-                                                 .withoutHash()
-                                                 .withProgressMonitoring()
-                                                 .withLockManager( lockManager )
-                                                 .build();
+            IngestSaver ingestSaver = new IngestSaver.Builder().withSystemSettings( this.getSystemSettings() )
+                                                               .withDatabase( this.getDatabase() )
+                                                               .withCaches( this.getCaches() )
+                                                               .withProject( projectConfig )
+                                                               .withDataSource( source )
+                                                               .withoutHash()
+                                                               .withProgressMonitoring()
+                                                               .withLockManager( lockManager )
+                                                               .withTimeSeriesIngester( this.getTimeSeriesIngester() )
+                                                               .build();
             CompletableFuture<List<IngestResult>> future =
                     CompletableFuture.supplyAsync( ingestSaver::call,
                                                    this.getExecutor() );
@@ -525,11 +490,11 @@ public class SourceLoader
         else if ( sourceStatus.equals( SourceStatus.INCOMPLETE_WITH_NO_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING )
                   || sourceStatus.equals( SourceStatus.INCOMPLETE_WITH_TASK_CLAIMING_AND_TASK_CURRENTLY_INGESTING ) )
         {
-                List<CompletableFuture<List<IngestResult>>> futureList =
-                        this.ingestData( source,
-                                         projectConfig,
-                                         lockManager );
-                tasks.addAll( futureList );
+            List<CompletableFuture<List<IngestResult>>> futureList =
+                    this.ingestData( source,
+                                     projectConfig,
+                                     lockManager );
+            tasks.addAll( futureList );
         }
         else if ( sourceStatus.equals( SourceStatus.INCOMPLETE_WITH_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING ) )
         {
@@ -538,11 +503,12 @@ public class SourceLoader
             // died during ingest and data needs to be cleaned out.
             long surrogateKey = checkIngest.getSurrogateKey();
             LOGGER.info(
-                    "Another WRES instance started to ingest a source like '{}' identified by '{}' but did not finish, cleaning up...",
-                    sourceUri,
-                    surrogateKey );
+                         "Another WRES instance started to ingest a source like '{}' identified by '{}' but did not finish, cleaning up...",
+                         sourceUri,
+                         surrogateKey );
             IncompleteIngest.removeSourceDataSafely( this.getDatabase(),
-                                                     this.getDataSourcesCache(),
+                                                     this.getCaches()
+                                                         .getDataSourcesCache(),
                                                      surrogateKey,
                                                      lockManager );
             List<CompletableFuture<List<IngestResult>>> futureList =
@@ -554,15 +520,14 @@ public class SourceLoader
         else if ( sourceStatus.equals( SourceStatus.COMPLETED ) )
         {
             LOGGER.debug(
-                    "Data will not be loaded from '{}'. That data is already in the database",
-                    sourceUri );
+                          "Data will not be loaded from '{}'. That data is already in the database",
+                          sourceUri );
 
             // Fake a future, return result immediately.
-            tasks.add( IngestResult.fakeFutureSingleItemListFrom(
-                    projectConfig,
-                    source,
-                    checkIngest.getSurrogateKey(),
-                    !checkIngest.ingestMarkedComplete() ) );
+            tasks.add( IngestResult.fakeFutureSingleItemListFrom( projectConfig,
+                                                                  source,
+                                                                  checkIngest.getSurrogateKey(),
+                                                                  !checkIngest.ingestMarkedComplete() ) );
         }
         else if ( sourceStatus.equals( SourceStatus.INVALID ) )
         {
@@ -593,7 +558,7 @@ public class SourceLoader
                                                    this.getExecutor() );
             tasks.add( future );
         }
-        
+
         return Collections.unmodifiableList( tasks );
     }
 
@@ -606,7 +571,8 @@ public class SourceLoader
         return () -> {
             try ( NetcdfFile ncf = NetcdfFiles.open( source.getUri().toString() ) )
             {
-                this.getFeaturesCache()
+                this.getCaches()
+                    .getFeaturesCache()
                     .addGriddedFeatures( ncf );
             }
             catch ( IOException e )
@@ -619,7 +585,7 @@ public class SourceLoader
             return List.of();
         };
     }
-    
+
     /**
      * Determines whether or not data at an indicated path should be ingested.
      * archived data will always be further evaluated to determine whether its
@@ -643,11 +609,12 @@ public class SourceLoader
         if ( disposition == GZIP )
         {
             LOGGER.debug(
-                    "The data at '{}' will be ingested because it has been "
-                    +
-                    "determined that it is an archive that will need to " +
-                    "be further evaluated.",
-                    dataSource.getUri() );
+                          "The data at '{}' will be ingested because it has been "
+                          +
+                          "determined that it is an archive that will need to "
+                          +
+                          "be further evaluated.",
+                          dataSource.getUri() );
             return new FileEvaluation( SourceStatus.REQUIRES_DECOMPOSITION,
                                        KEY_NOT_FOUND );
         }
@@ -692,9 +659,10 @@ public class SourceLoader
             catch ( IOException ioe )
             {
                 throw new PreIngestException(
-                        "Could not determine whether to ingest '"
-                        + dataSource.getUri() + "'",
-                        ioe );
+                                              "Could not determine whether to ingest '"
+                                              + dataSource.getUri()
+                                              + "'",
+                                              ioe );
             }
         }
         else
@@ -710,13 +678,14 @@ public class SourceLoader
         if ( sourceStatus == null )
         {
             throw new IllegalStateException(
-                    "Expected sourceStatus to always be set by now." );
+                                             "Expected sourceStatus to always be set by now." );
         }
 
         // Get the surrogate key if it exists
         final long surrogateKey;
         Long dataSourceKey = null;
-        DataSources dataSources = this.getDataSourcesCache();
+        DataSources dataSources = this.getCaches()
+                                      .getDataSourcesCache();
 
         if ( Objects.nonNull( hash ) )
         {
@@ -730,7 +699,8 @@ public class SourceLoader
                                               + dataSource.getUri()
                                               + "' should be ingested, "
                                               + "failed to translate natural key '"
-                                              + hash + "' to surrogate key.",
+                                              + hash
+                                              + "' to surrogate key.",
                                               se );
             }
         }
@@ -759,7 +729,8 @@ public class SourceLoader
                                       DatabaseLockManager lockManager )
             throws SQLException
     {
-        DataSources dataSources = this.getDataSourcesCache();
+        DataSources dataSources = this.getCaches()
+                                      .getDataSourcesCache();
         SourceDetails sourceDetails = dataSources.getExistingSource( hash );
         Long sourceId = sourceDetails.getId();
         return lockManager.isSourceLocked( sourceId );
@@ -775,7 +746,8 @@ public class SourceLoader
     private boolean anotherTaskIsResponsibleForSource( String hash )
             throws SQLException
     {
-        DataSources dataSources = this.getDataSourcesCache();
+        DataSources dataSources = this.getCaches()
+                                      .getDataSourcesCache();
         return dataSources.hasSource( hash );
     }
 
@@ -792,90 +764,13 @@ public class SourceLoader
     private boolean wasSourceCompleted( String hash )
             throws SQLException
     {
-        DataSources dataSources = this.getDataSourcesCache();
+        DataSources dataSources = this.getCaches()
+                                      .getDataSourcesCache();
         SourceDetails details = dataSources.getExistingSource( hash );
         Database db = this.getDatabase();
         SourceCompletedDetails completedDetails = new SourceCompletedDetails( db,
                                                                               details );
         return completedDetails.wasCompleted();
-    }
-
-
-    /**
-     * Attempt to retry a source that either failed or another task was doing.
-     *
-     * If the source has fully completed, return with "no retry needed, done."
-     * If the source was abandoned, delete the old data, return the result of
-     * a new attempt to ingest.
-     * If the source was neither complete nor abandoned, return that another
-     * retry is required.
-     * @param ingestResult the old result
-     * @return a new list of future results of the retried source
-     */
-
-    public List<CompletableFuture<List<IngestResult>>> retry( IngestResult ingestResult )
-    {
-        if ( !ingestResult.requiresRetry() )
-        {
-            throw new IllegalArgumentException( "Only IngestResult instances claiming to need retry should be passed." );
-        }
-
-        LOGGER.info( "Attempting retry of {}.", ingestResult );
-        // Admittedly not optimal to alternate between hash and key, but other
-        // places are using querySourceStatus with the hash.
-        long surrogateKey = ingestResult.getSurrogateKey();
-        DataSources dataSources = this.getDataSourcesCache();
-        String hash = SourceLoader.getHashFromSurrogateKey( dataSources, surrogateKey );
-        SourceStatus sourceStatus = querySourceStatus( hash,
-                                                       this.lockManager );
-
-        if ( sourceStatus.equals( SourceStatus.COMPLETED ) )
-        {
-            LOGGER.debug( "Already finished source {}, changing to say requiresRetry=false",
-                          ingestResult );
-            CompletableFuture<List<IngestResult>> futureResult =
-                    IngestResult.fakeFutureSingleItemListFrom( this.projectConfig,
-                                                               ingestResult.getDataSource(),
-                                                               ingestResult.getSurrogateKey(),
-                                                               false );
-            return List.of( futureResult );
-        }
-        else if ( sourceStatus.equals( SourceStatus.INCOMPLETE_WITH_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING ) )
-        {
-            LOGGER.debug(
-                    "Source {} with status {} not fully ingested, attempting to remove data.",
-                    ingestResult,
-                    sourceStatus );
-
-            // Need the hash but we only have a surrogate key. Get the hash.
-
-            // First, try to safely remove it:
-            boolean removed = IncompleteIngest.removeSourceDataSafely( this.getDatabase(),
-                                                                       this.getDataSourcesCache(),
-                                                                       ingestResult.getSurrogateKey(),
-                                                                       this.lockManager );
-            if ( removed )
-            {
-                LOGGER.debug( "Successfully removed abandoned data source {}, creating new ingest task.",
-                              ingestResult );
-                return this.ingestData( ingestResult.getDataSource(),
-                                        this.projectConfig,
-                                        this.lockManager );
-            }
-            else
-            {
-                LOGGER.debug( "Failed to remove source {}, will examine again next retry.",
-                              ingestResult );
-            }
-        }
-
-        // For whatever reason, retry is required.
-        CompletableFuture<List<IngestResult>> futureResult =
-                IngestResult.fakeFutureSingleItemListFrom( this.projectConfig,
-                                                           ingestResult.getDataSource(),
-                                                           ingestResult.getSurrogateKey(),
-                                                           true );
-        return List.of( futureResult );
     }
 
     /**
@@ -1006,41 +901,41 @@ public class SourceLoader
      * @param dataSource the source to decompose
      * @return the set of decomposed sources
      */
-    
+
     private static Set<DataSource> decomposeFileSource( DataSource dataSource )
     {
         Objects.requireNonNull( dataSource );
-        
+
         // Look at the path to see whether it maps to a directory
         Path sourcePath = Paths.get( dataSource.getUri() );
 
         File file = sourcePath.toFile();
-        
+
         Set<DataSource> returnMe = new HashSet<>();
-        
+
         // Directory: must decompose into sources
-        if( file.isDirectory() )
+        if ( file.isDirectory() )
         {
 
             DataSourceConfig.Source source = dataSource.getSource();
-            
+
             //Define path matcher based on the source's pattern, if provided.
             final PathMatcher matcher;
-            
+
             String pattern = source.getPattern();
-                    
+
             if ( ! ( pattern == null || pattern.isEmpty() ) )
             {
-                matcher = FileSystems.getDefault().getPathMatcher("glob:" + pattern );
+                matcher = FileSystems.getDefault().getPathMatcher( "glob:" + pattern );
             }
             else
             {
                 matcher = null;
             }
-            
+
             // Walk the tree and find sources that match a pattern or none
             try ( Stream<Path> files = Files.walk( sourcePath ) )
-            {            
+            {
                 files.forEach( path -> {
 
                     File testFile = path.toFile();
@@ -1076,7 +971,9 @@ public class SourceLoader
             catch ( IOException e )
             {
                 throw new PreIngestException( "Failed to walk the directory tree '"
-                                              + sourcePath + "':", e );
+                                              + sourcePath
+                                              + "':",
+                                              e );
             }
 
             //If the results are empty, then there were either no files in the specified source or pattern matched 
@@ -1087,7 +984,7 @@ public class SourceLoader
                                               + "\" does not yield any files within the provided "
                                               + "source path and is therefore not a valid source." );
             }
-            
+
         }
         else
         {
@@ -1099,17 +996,17 @@ public class SourceLoader
                                                         dataSource.getUri() );
             returnMe.add( withDisposition );
         }
-        
+
         return Collections.unmodifiableSet( returnMe );
-        
+
     }
-    
+
     /**
      * Evaluate a path from a {@link DataSourceConfig.Source}.
      * @param source the source
      * @return the path of a file-like source or null
      */
-    
+
     private static Path evaluatePath( SystemSettings systemSettings,
                                       DataSourceConfig.Source source )
     {
@@ -1124,10 +1021,10 @@ public class SourceLoader
         }
 
         // Is there a source path to evaluate? Only if the source is file-like
-        if( uri.toString().isEmpty() )
+        if ( uri.toString().isEmpty() )
         {
             LOGGER.debug( "The source value was empty from source {}", source );
-            return null;           
+            return null;
         }
 
         String scheme = uri.getScheme();
@@ -1157,10 +1054,11 @@ public class SourceLoader
         }
 
         LOGGER.debug( "Returning source path {} from source {}",
-                      sourcePath, source.getValue() );
+                      sourcePath,
+                      source.getValue() );
         return sourcePath;
     }
- 
+
     /**
      * Mutates the input map of sources, adding additional sources to load or link
      * from the input {@link DataSourceConfig}.
@@ -1215,7 +1113,7 @@ public class SourceLoader
      * @throws PreIngestException When communication with the database fails.
      */
 
-    SourceStatus querySourceStatus( String hash, DatabaseLockManager lockManager )
+    private SourceStatus querySourceStatus( String hash, DatabaseLockManager lockManager )
     {
         boolean anotherTaskStartedIngest = false;
         boolean ingestMarkedComplete = false;
@@ -1247,7 +1145,8 @@ public class SourceLoader
                                   hash );
                     ingestInProgress = ingestInProgress( hash, lockManager );
                     LOGGER.debug( "Is another task currently ingesting {}? {}",
-                                  hash, ingestInProgress );
+                                  hash,
+                                  ingestInProgress );
                     if ( ingestInProgress )
                     {
                         return SourceStatus.INCOMPLETE_WITH_TASK_CLAIMING_AND_TASK_CURRENTLY_INGESTING;
@@ -1267,7 +1166,8 @@ public class SourceLoader
         catch ( SQLException se )
         {
             throw new PreIngestException( "Unable to query status of the source identified by "
-                                          + hash, se );
+                                          + hash,
+                                          se );
         }
     }
 
@@ -1291,7 +1191,8 @@ public class SourceLoader
         catch ( SQLException se )
         {
             throw new PreIngestException( "While looking for natural id of source_id '"
-                                          + surrogateKey, se );
+                                          + surrogateKey,
+                                          se );
         }
 
         if ( Objects.nonNull( details ) )
@@ -1315,4 +1216,40 @@ public class SourceLoader
                                           + surrogateKey );
         }
     }
+
+    private SystemSettings getSystemSettings()
+    {
+        return this.systemSettings;
+    }
+
+    private ExecutorService getExecutor()
+    {
+        return this.executor;
+    }
+
+    private Database getDatabase()
+    {
+        return this.database;
+    }
+
+    private Caches getCaches()
+    {
+        return this.caches;
+    }
+
+    private ProjectConfig getProjectConfig()
+    {
+        return this.projectConfig;
+    }
+
+    private DatabaseLockManager getLockManager()
+    {
+        return this.lockManager;
+    }
+
+    private TimeSeriesIngester getTimeSeriesIngester()
+    {
+        return this.timeSeriesIngester;
+    }
+    
 }

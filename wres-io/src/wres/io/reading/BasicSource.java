@@ -4,41 +4,40 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.List;
-
-import org.slf4j.Logger;
+import java.util.Objects;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
-import wres.io.config.ConfigHelper;
 import wres.io.ingesting.IngestResult;
 
 /**
+ * TODO: extract an immutable API from this class, probably called Source (and ditch the mutability in this abstract 
+ * class).
+ * 
  * @author Christopher Tubbs
  * Serves as the base class for all classes that are expected to save
  * observations or forecasts from a source file
  */
 public abstract class BasicSource
 {
-    protected final ProjectConfig projectConfig;
-    protected final DataSource dataSource;
+    private final ProjectConfig projectConfig;
+    private final DataSource dataSource;
 
-    protected BasicSource( ProjectConfig projectConfig,
-                           DataSource dataSource )
-    {
-        this.projectConfig = projectConfig;
-        this.dataSource = dataSource;
-    }
+    /**
+     * The MD5 hash of the given file
+     */
+    private String hash;
 
-    public List<IngestResult> save() throws IOException
+    /**
+     * The absolute path to the file containing the given source data
+     */
+    private String absoluteFilename;
+
+    public abstract List<IngestResult> save() throws IOException;
+    
+    public void setHash(String hash)
     {
-        if ( ConfigHelper.isForecast( this.dataSource.getContext() ))
-        {
-            return this.saveForecast();
-        }
-        else
-        {
-            return this.saveObservation();
-        }
+        this.hash = hash;
     }
 
     /**
@@ -107,17 +106,6 @@ public abstract class BasicSource
     }
 
     /**
-     * The MD5 hash of the given file
-     */
-	private String hash;
-
-    /**
-     * The absolute path to the file containing the given source data
-     */
-	private String absoluteFilename;
-
-
-    /**
      * @return The name of the variable to ingest
      */
 	protected String getSpecifiedVariableName()
@@ -170,11 +158,15 @@ public abstract class BasicSource
     {
         return this.hash;
     }
-
-    public void setHash(String hash)
+    
+    protected BasicSource( ProjectConfig projectConfig,
+                           DataSource dataSource )
     {
-        this.hash = hash;
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( dataSource );
+        
+        this.projectConfig = projectConfig;
+        this.dataSource = dataSource;
     }
-
-	protected abstract Logger getLogger();
+    
 }
