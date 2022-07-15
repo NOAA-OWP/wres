@@ -50,8 +50,10 @@ import wres.events.subscribe.EvaluationSubscriber;
 import wres.events.subscribe.SubscriberApprover;
 import wres.io.Operations;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.Caches;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.geography.FeatureFinder;
+import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.pooling.PoolFactory;
 import wres.io.pooling.PoolParameters;
 import wres.io.project.Project;
@@ -377,12 +379,25 @@ class ProcessorHelper
 
             LOGGER.debug( "Beginning ingest for project {}...", projectConfigPlus );
 
+            // Build the database caches/ORMs
+            Caches caches = Caches.of( databaseServices.getDatabase(), projectConfig );
+
+            TimeSeriesIngester timeSeriesIngester =
+                    new TimeSeriesIngester.Builder().setSystemSettings( evaluationDetails.getSystemSettings() )
+                                                    .setDatabase( databaseServices.getDatabase() )
+                                                    .setCaches( caches )
+                                                    .setProjectConfig( projectConfig )
+                                                    .setLockManager( databaseServices.getDatabaseLockManager() )
+                                                    .build();
+
             // Need to ingest first
-            Project project = Operations.ingest( evaluationDetails.getSystemSettings(),
+            Project project = Operations.ingest( timeSeriesIngester,
+                                                 evaluationDetails.getSystemSettings(),
                                                  databaseServices.getDatabase(),
                                                  executors.getIoExecutor(),
                                                  featurefulProjectConfig,
-                                                 databaseServices.getDatabaseLockManager() );
+                                                 databaseServices.getDatabaseLockManager(),
+                                                 caches );
 
             LOGGER.debug( "Finished ingest for project {}...", projectConfigPlus );
 

@@ -6,6 +6,7 @@ import java.net.URI;
 import java.util.List;
 
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.junit.Assert;
 
 import com.fasterxml.jackson.core.exc.StreamReadException;
@@ -15,11 +16,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.MissingValues;
-
+import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.DataSource;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
+
 import static wres.io.reading.DataSource.DataDisposition.JSON_WRDS_AHPS;
 
 public class ReadValueManagerTest
@@ -191,7 +193,11 @@ public class ReadValueManagerTest
     @Test
     public void testReplaceMissingValues() throws StreamReadException, DatabindException, IOException
     {
-        ReadValueManager manager = new ReadValueManager( null, null, null, null, null, null, null, null, null );
+        TimeSeriesIngester timeSeriesIngester = Mockito.mock( TimeSeriesIngester.class );
+        DataSource dataSource = Mockito.mock( DataSource.class );
+
+        ReadValueManager manager = new ReadValueManager( timeSeriesIngester,
+                                                         dataSource );
         ObjectMapper mapper = new ObjectMapper();
 
         byte[] rawForecast = VALID_AHPS_v2_BODY_WITH_MISSINGS.getBytes();
@@ -372,8 +378,10 @@ public class ReadValueManagerTest
                                                List.of( LeftOrRightOrBaseline.LEFT,
                                                         LeftOrRightOrBaseline.RIGHT ),
                                                fakeAhpsUri );
+        TimeSeriesIngester timeSeriesIngester = Mockito.mock( TimeSeriesIngester.class );
 
-        ReadValueManager manager = new ReadValueManager( null, null, null, null, null, null, null, dataSource, null );
+        ReadValueManager manager = new ReadValueManager( timeSeriesIngester,
+                                                         dataSource );
         ObjectMapper mapper = new ObjectMapper();
 
         byte[] rawData = VALID_WRDS_OBS_BODY_WITH_MISSINGS.getBytes();

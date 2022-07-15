@@ -22,12 +22,7 @@ import wres.config.generated.DatasourceType;
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.UrlParameter;
-import wres.io.data.caching.DataSources;
-import wres.io.data.caching.Ensembles;
-import wres.io.data.caching.Features;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.TimeScales;
-import wres.io.ingesting.WebSource;
+import wres.io.data.caching.Caches;
 import wres.io.reading.DataSource;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
@@ -47,13 +42,10 @@ public class WebSourceTest
     private static final String URL_PARAM_VALUE_TWO = "ValueTwo";
     @Mock private SystemSettings mockSystemSettings;
     @Mock private Database mockDatabase;
-    @Mock private DataSources mockDataSourcesCache;
-    @Mock private Features mockFeaturesCache;
-    @Mock private TimeScales timeScalesCache;
-    @Mock private Ensembles ensemblesCache;
-    @Mock private MeasurementUnits measurementUnitsCache;
+    @Mock private Caches mockCaches;
     private ProjectConfig fakeProjectConfig;
     @Mock private DatabaseLockManager lockManager;
+    @Mock TimeSeriesIngester timeSeriesIngester;
 
     @Before
     public void setup()
@@ -90,16 +82,13 @@ public class WebSourceTest
                                                sourceConfig,
                                                Collections.emptyList(),
                                                BASE_URI );
-        WebSource webSource = WebSource.of( mockSystemSettings,
-                                            mockDatabase,
-                                            mockDataSourcesCache,
-                                            mockFeaturesCache,
-                                            timeScalesCache,
-                                            ensemblesCache,
-                                            measurementUnitsCache,
-                                            fakeProjectConfig,
+        WebSource webSource = WebSource.of( this.timeSeriesIngester,
+                                            this.mockSystemSettings,
+                                            this.mockDatabase,
+                                            this.mockCaches,
+                                            this.fakeProjectConfig,
                                             dataSource,
-                                            lockManager );
+                                            this.lockManager );
         URI generatedUri = webSource.createUri( source.getValue(),
                                                 dataSource,
                                                 Pair.of( START_INSTANT, END_INSTANT ),
@@ -144,16 +133,13 @@ public class WebSourceTest
                                                sourceConfig,
                                                Collections.emptyList(),
                                                BASE_URI );
-        WebSource webSource = WebSource.of( mockSystemSettings,
-                                            mockDatabase,
-                                            mockDataSourcesCache,
-                                            mockFeaturesCache,
-                                            timeScalesCache,
-                                            ensemblesCache,
-                                            measurementUnitsCache,
-                                            fakeProjectConfig,
+        WebSource webSource = WebSource.of( this.timeSeriesIngester,
+                                            this.mockSystemSettings,
+                                            this.mockDatabase,
+                                            this.mockCaches,
+                                            this.fakeProjectConfig,
                                             dataSource,
-                                            lockManager );
+                                            this.lockManager );
         URI generatedUri = webSource.createUri( source.getValue(),
                                                 dataSource,
                                                 Pair.of( START_INSTANT, END_INSTANT ),
@@ -197,14 +183,11 @@ public class WebSourceTest
                                                sourceConfig,
                                                Collections.emptyList(),
                                                BASE_URI );
-        WebSource webSource = WebSource.of( mockSystemSettings,
-                                            mockDatabase,
-                                            mockDataSourcesCache,
-                                            mockFeaturesCache,
-                                            timeScalesCache,
-                                            ensemblesCache,
-                                            measurementUnitsCache,
-                                            fakeProjectConfig,
+        WebSource webSource = WebSource.of( this.timeSeriesIngester,
+                                            this.mockSystemSettings,
+                                            this.mockDatabase,
+                                            this.mockCaches,
+                                            this.fakeProjectConfig,
                                             dataSource,
                                             lockManager );
         URI generatedUri = webSource.createUri( source.getValue(),

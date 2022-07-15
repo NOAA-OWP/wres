@@ -26,7 +26,9 @@ import wres.events.broker.BrokerConnectionFactory;
 import wres.io.Operations;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.Caches;
 import wres.io.ingesting.PreIngestException;
+import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.utilities.Database;
 import wres.pipeline.Evaluator;
 import wres.pipeline.InternalWresException;
@@ -290,11 +292,24 @@ final class MainFunctions
             try
             {
                 lockManager.lockShared( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
-                Operations.ingest( sharedResources.getSystemSettings(),
+
+                // Build the database caches/ORMs
+                Caches caches = Caches.of( sharedResources.getDatabase(), projectConfig );
+                TimeSeriesIngester timeSeriesIngester =
+                        new TimeSeriesIngester.Builder().setSystemSettings( sharedResources.getSystemSettings() )
+                                                        .setDatabase( sharedResources.getDatabase() )
+                                                        .setCaches( caches )
+                                                        .setProjectConfig( projectConfig )
+                                                        .setLockManager( lockManager )
+                                                        .build();
+                
+                Operations.ingest( timeSeriesIngester,
+                                   sharedResources.getSystemSettings(),
                                    sharedResources.getDatabase(),
                                    sharedResources.getExecutor(),
                                    projectConfig,
-                                   lockManager );
+                                   lockManager,
+                                   caches );
                 lockManager.unlockShared( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
                 return ExecutionResult.success( projectConfig.getName() );
             }

@@ -34,7 +34,6 @@ import static wres.datamodel.time.ReferenceTimeType.UNKNOWN;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;
@@ -44,10 +43,6 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Ensembles;
-import wres.io.data.caching.Features;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.TimeScales;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
@@ -56,11 +51,8 @@ import wres.io.reading.DataSource;
 import wres.io.reading.DataSource.DataDisposition;
 import wres.io.reading.InvalidInputDataException;
 import wres.io.reading.ReaderUtilities;
-import wres.io.utilities.Database;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
-import wres.system.DatabaseLockManager;
-import wres.system.SystemSettings;
 import wres.system.xml.XMLHelper;
 import wres.system.xml.XMLReader;
 import wres.util.Strings;
@@ -86,15 +78,8 @@ public final class PIXMLReader extends XMLReader
      */
     private static final double PIXML_DEFAULT_MISSING_VALUE = Double.NaN;
 
-    private final SystemSettings systemSettings;
-    private final Database database;
-    private final Features featuresCache;
-    private final TimeScales timeScalesCache;
-    private final Ensembles ensemblesCache;
-    private final MeasurementUnits measurementUnitsCache;
-    private final ProjectConfig projectConfig;
     private final DataSource dataSource;
-    private final DatabaseLockManager lockManager;
+    private final TimeSeriesIngester timeSeriesIngester;
 
     private final List<IngestResult> ingested;
 
@@ -106,98 +91,40 @@ public final class PIXMLReader extends XMLReader
 
     /**
      * Constructor for a reader that may be for forecasts or observations
+     * @param timeSeriesIngester the time-series ingester
+     * @param dataSource the data source
      * @throws IOException when an attempt to get the file from classpath fails.
+     * @throws NullPointerException is any input is null
      */
-    PIXMLReader( SystemSettings systemSettings,
-                 Database database,
-                 Features featuresCache,
-                 TimeScales timeScalesCache,
-                 Ensembles ensemblesCache,
-                 MeasurementUnits measurementUnitsCache,
-                 ProjectConfig projectConfig,
-                 DataSource dataSource,
-                 DatabaseLockManager lockManager )
+    PIXMLReader( TimeSeriesIngester timeSeriesIngester,
+                 DataSource dataSource )
             throws IOException
     {
         super( dataSource.getUri(),
                dataSource.getDisposition() == DataDisposition.XML_FI_TIMESERIES );
-        this.systemSettings = systemSettings;
-        this.database = database;
-        this.featuresCache = featuresCache;
-        this.timeScalesCache = timeScalesCache;
-        this.ensemblesCache = ensemblesCache;
-        this.measurementUnitsCache = measurementUnitsCache;
-        this.projectConfig = projectConfig;
-        this.dataSource = dataSource;
-        this.lockManager = lockManager;
-        this.ingested = new ArrayList<>();
-	}
 
-    public PIXMLReader( SystemSettings systemSettings,
-                        Database database,
-                        Features featuresCache,
-                        TimeScales timeScalesCache,
-                        Ensembles ensemblesCache,
-                        MeasurementUnits measurementUnitsCache,
-                        ProjectConfig projectConfig,
+        Objects.requireNonNull( timeSeriesIngester );
+        Objects.requireNonNull( dataSource );
+
+        this.dataSource = dataSource;
+        this.ingested = new ArrayList<>();
+        this.timeSeriesIngester = timeSeriesIngester;
+    }
+
+    public PIXMLReader( TimeSeriesIngester timeSeriesIngester,
                         DataSource dataSource,
-                        InputStream inputStream,
-                        DatabaseLockManager lockManager )
+                        InputStream inputStream )
             throws IOException
-	{
+    {
         super( dataSource.getUri(),
                inputStream,
                dataSource.getDisposition() == DataDisposition.XML_FI_TIMESERIES );
-		this.systemSettings = systemSettings;
-        this.database = database;
-        this.featuresCache = featuresCache;
-        this.timeScalesCache = timeScalesCache;
-        this.ensemblesCache = ensemblesCache;
-        this.measurementUnitsCache = measurementUnitsCache;
-        this.projectConfig = projectConfig;
+
+        Objects.requireNonNull( timeSeriesIngester );
+        
         this.dataSource = dataSource;
-        this.lockManager = lockManager;
         this.ingested = new ArrayList<>();
-	}
-
-	private SystemSettings getSystemSettings()
-    {
-        return this.systemSettings;
-    }
-
-    private Database getDatabase()
-    {
-        return this.database;
-    }
-
-    private Features getFeaturesCache()
-    {
-        return this.featuresCache;
-    }
-
-    private TimeScales getTimeScalesCache()
-    {
-        return this.timeScalesCache;
-    }
-
-    private Ensembles getEnsemblesCache()
-    {
-        return this.ensemblesCache;
-    }
-
-    private MeasurementUnits getMeasurementUnitsCache()
-    {
-        return this.measurementUnitsCache;
-    }
-
-    private ProjectConfig getProjectConfig()
-    {
-        return this.projectConfig;
-    }
-
-    private DatabaseLockManager getLockManager()
-    {
-        return this.lockManager;
+        this.timeSeriesIngester = timeSeriesIngester;
     }
 
     private DataSource getDataSource()
@@ -205,6 +132,11 @@ public final class PIXMLReader extends XMLReader
         return this.dataSource;
     }
 
+    private TimeSeriesIngester getTimeSeriesIngester()
+    {
+        return this.timeSeriesIngester;
+    }
+    
     @Override
     protected void parseElement( XMLStreamReader reader )
             throws IOException
@@ -957,19 +889,12 @@ public final class PIXMLReader extends XMLReader
     private void ingestEnsembleTimeSeries( wres.datamodel.time.TimeSeries<Ensemble> timeSeries )
             throws IngestException
     {
-        TimeSeriesIngester timeSeriesIngester =
-                this.createTimeSeriesIngester( this.getSystemSettings(),
-                                               this.getDatabase(),
-                                               this.getFeaturesCache(),
-                                               this.getTimeScalesCache(),
-                                               this.getEnsemblesCache(),
-                                               this.getMeasurementUnitsCache(),
-                                               this.getProjectConfig(),
-                                               this.getDataSource(),
-                                               this.getLockManager() );
+        TimeSeriesIngester timeSeriesIngester = this.getTimeSeriesIngester();
+        
         try
         {
-            List<IngestResult> ingestResults = timeSeriesIngester.ingestEnsembleTimeSeries( timeSeries );
+            List<IngestResult> ingestResults = timeSeriesIngester.ingestEnsembleTimeSeries( timeSeries,
+                                                                                            this.getDataSource() );
             this.ingested.addAll( ingestResults );
         }
         catch ( IngestException ie )
@@ -988,19 +913,11 @@ public final class PIXMLReader extends XMLReader
     private void ingestSingleValuedTimeSeries( wres.datamodel.time.TimeSeries<Double> timeSeries )
             throws IngestException
     {
-        TimeSeriesIngester timeSeriesIngester =
-                this.createTimeSeriesIngester( this.getSystemSettings(),
-                                               this.getDatabase(),
-                                               this.getFeaturesCache(),
-                                               this.getTimeScalesCache(),
-                                               this.getEnsemblesCache(),
-                                               this.getMeasurementUnitsCache(),
-                                               this.getProjectConfig(),
-                                               this.getDataSource(),
-                                               this.getLockManager() );
+        TimeSeriesIngester timeSeriesIngester = this.getTimeSeriesIngester();
         try
         {
-            List<IngestResult> ingestResults = timeSeriesIngester.ingestSingleValuedTimeSeries( timeSeries );
+            List<IngestResult> ingestResults = timeSeriesIngester.ingestSingleValuedTimeSeries( timeSeries,
+                                                                                                this.getDataSource() );
             this.ingested.addAll( ingestResults );
         }
         catch ( IngestException ie )
@@ -1055,34 +972,5 @@ public final class PIXMLReader extends XMLReader
     private DataSourceConfig.Source getSourceConfig()
     {
         return this.dataSource.getSource();
-    }
-
-
-
-    /**
-     * This method facilitates testing, Pattern 1 at
-     * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
-     * @return a TimeSeriesIngester
-     */
-
-    TimeSeriesIngester createTimeSeriesIngester( SystemSettings systemSettings,
-                                                 Database database,
-                                                 Features featuresCache,
-                                                 TimeScales timeScalesCache,
-                                                 Ensembles ensemblesCache,
-                                                 MeasurementUnits measurementUnitsCache,
-                                                 ProjectConfig projectConfig,
-                                                 DataSource dataSource,
-                                                 DatabaseLockManager lockManager )
-    {
-        return TimeSeriesIngester.of( systemSettings,
-                                      database,
-                                      featuresCache,
-                                      timeScalesCache,
-                                      ensemblesCache,
-                                      measurementUnitsCache,
-                                      projectConfig,
-                                      dataSource,
-                                      lockManager );
     }
 }

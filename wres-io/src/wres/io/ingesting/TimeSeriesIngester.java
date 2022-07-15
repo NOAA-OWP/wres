@@ -35,6 +35,7 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesSlicer;
+import wres.io.data.caching.Caches;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
@@ -77,86 +78,116 @@ import wres.system.SystemSettings;
  */
 
 public class TimeSeriesIngester
-{
+{  
     private static final Logger LOGGER =
             LoggerFactory.getLogger( TimeSeriesIngester.class );
 
     private final SystemSettings systemSettings;
     private final Database database;
-    private final Features featuresCache;
-    private final TimeScales timeScalesCache;
-    private final Ensembles ensemblesCache;
-    private final MeasurementUnits measurementUnitsCache;
+    private final Caches caches;
     private final ProjectConfig projectConfig;
-    private final DataSource dataSource;
     private final DatabaseLockManager lockManager;
-
-    public static TimeSeriesIngester of( SystemSettings systemSettings,
-                                         Database database,
-                                         Features featuresCache,
-                                         TimeScales timeScalesCache,
-                                         Ensembles ensemblesCache,
-                                         MeasurementUnits measurementUnitsCache,
-                                         ProjectConfig projectConfig,
-                                         DataSource dataSource,
-                                         DatabaseLockManager databaseLockManager )
+    
+    /**
+     * Creates an instance.
+     */
+    
+    public static class Builder
     {
-        Objects.requireNonNull( systemSettings );
-        Objects.requireNonNull( database );
-        Objects.requireNonNull( ensemblesCache );
-        Objects.requireNonNull( featuresCache );
-        Objects.requireNonNull( timeScalesCache );
-        Objects.requireNonNull( measurementUnitsCache );
+        private SystemSettings systemSettings;
+        private Database database;
+        private Caches caches;
+        private ProjectConfig projectConfig;
+        private DatabaseLockManager lockManager;
+        
+        /**
+         * @param systemSettings the system settings to set
+         * @return the builder
+         */
+        public Builder setSystemSettings( SystemSettings systemSettings )
+        {
+            this.systemSettings = systemSettings;
+            return this;
+        }
 
-        return new TimeSeriesIngester( systemSettings,
-                                       database,
-                                       featuresCache,
-                                       timeScalesCache,
-                                       ensemblesCache,
-                                       measurementUnitsCache,
-                                       projectConfig,
-                                       dataSource,
-                                       databaseLockManager );
+        /**
+         * @param database the database to set
+         * @return the builder
+         */
+        public Builder setDatabase( Database database )
+        {
+            this.database = database;
+            return this;
+        }
+
+        /**
+         * @param caches the caches to set
+         * @return the builder
+         */
+        public Builder setCaches( Caches caches )
+        {
+            this.caches = caches;
+            return this;
+        }
+
+        /**
+         * @param projectConfig the project declaration to set
+         * @return the builder
+         */
+        public Builder setProjectConfig( ProjectConfig projectConfig )
+        {
+            this.projectConfig = projectConfig;
+            return this;
+        }
+
+        /**
+         * @param lockManager the lock manager to set
+         * @return the builder
+         */
+        public Builder setLockManager( DatabaseLockManager lockManager )
+        {
+            this.lockManager = lockManager;
+            return this;
+        }
+        
+        /**
+         * @return a time-series ingester instance
+         */
+        public TimeSeriesIngester build()
+        {
+            return new TimeSeriesIngester( this );
+        }
+    }
+    
+    /**
+     * Creates an instance.
+     * @param builder the builder
+     */
+    
+    private TimeSeriesIngester( Builder builder )
+    {
+        this.systemSettings = builder.systemSettings;
+        this.database = builder.database;
+        this.caches = builder.caches;
+        this.projectConfig = builder.projectConfig;
+        this.lockManager = builder.lockManager;
+        
+        Objects.requireNonNull( this.systemSettings );
+        Objects.requireNonNull( this.database );
+        Objects.requireNonNull( this.caches );
+        Objects.requireNonNull( this.projectConfig );
+        Objects.requireNonNull( this.lockManager );
     }
 
-    private TimeSeriesIngester( SystemSettings systemSettings,
-                                Database database,
-                                Features featuresCache,
-                                TimeScales timeScalesCache,
-                                Ensembles ensemblesCache,
-                                MeasurementUnits measurementUnitsCache,
-                                ProjectConfig projectConfig,
-                                DataSource dataSource,
-                                DatabaseLockManager lockManager )
-    {
-        Objects.requireNonNull( systemSettings );
-        Objects.requireNonNull( database );
-        Objects.requireNonNull( featuresCache );
-        Objects.requireNonNull( timeScalesCache );
-        Objects.requireNonNull( measurementUnitsCache );
-        Objects.requireNonNull( ensemblesCache );
-        Objects.requireNonNull( projectConfig );
-        Objects.requireNonNull( dataSource );
-        Objects.requireNonNull( lockManager );
-
-        this.systemSettings = systemSettings;
-        this.database = database;
-        this.featuresCache = featuresCache;
-        this.timeScalesCache = timeScalesCache;
-        this.ensemblesCache = ensemblesCache;
-        this.measurementUnitsCache = measurementUnitsCache;
-        this.projectConfig = projectConfig;
-        this.dataSource = dataSource;
-        this.lockManager = lockManager;
-    }
 
     /**
      * Ingests a time-series whose events are {@link Double}.
      * @param timeSeries the time-series to ingest, not null
+     * @param dataSource the data source
      * @return the ingest results
      */
 
-    public List<IngestResult> ingestSingleValuedTimeSeries( TimeSeries<Double> timeSeries )
+    public List<IngestResult> ingestSingleValuedTimeSeries( TimeSeries<Double> timeSeries, DataSource dataSource )
     {
         Objects.requireNonNull( timeSeries );
         Objects.requireNonNull( timeSeries.getMetadata() );
@@ -169,7 +200,7 @@ public class TimeSeriesIngester
 
         List<IngestResult> results;
 
-        SourceDetails source = this.saveSource( timeSeries );
+        SourceDetails source = this.saveSource( timeSeries, dataSource.getUri() );
 
         // Not found 
         if ( source.performedInsert() )
@@ -180,26 +211,18 @@ public class TimeSeriesIngester
             Set<Pair<CountDownLatch, CountDownLatch>> latches =
                     this.insertSingleValuedTimeSeries( this.getSystemSettings(),
                                                        this.getDatabase(),
-                                                       this.getEnsemblesCache(),
+                                                       this.getCaches()
+                                                           .getEnsemblesCache(),
                                                        timeSeries,
                                                        source.getId() );
 
             // Mark complete
-            results = this.completeSource( source, latches );
+            results = this.completeSource( source, latches, dataSource );
         }
         // Found
         else
         {
-            // Already started but not completed, include the TimeSeries.
-            DataSource dataSourceWithTimeSeries =
-                    DataSource.ofSingleValuedDataSource( this.dataSource.getDisposition(),
-                                                         this.dataSource.getSource(),
-                                                         this.dataSource.getContext(),
-                                                         this.dataSource.getLinks(),
-                                                         this.dataSource.getUri(),
-                                                         timeSeries );
-
-            results = this.completeSource( source, dataSourceWithTimeSeries );
+            results = this.completeSource( source, dataSource );
         }
 
         return results;
@@ -208,10 +231,11 @@ public class TimeSeriesIngester
     /**
      * Ingests a time-series whose events are {@link Ensemble}.
      * @param timeSeries the time-series to ingest, not null
+     * @param dataSource the data source
      * @return the ingest results
      */
 
-    public List<IngestResult> ingestEnsembleTimeSeries( TimeSeries<Ensemble> timeSeries )
+    public List<IngestResult> ingestEnsembleTimeSeries( TimeSeries<Ensemble> timeSeries, DataSource dataSource )
     {
         Objects.requireNonNull( timeSeries );
         Objects.requireNonNull( timeSeries.getMetadata() );
@@ -224,7 +248,7 @@ public class TimeSeriesIngester
 
         List<IngestResult> results;
 
-        SourceDetails source = this.saveSource( timeSeries );
+        SourceDetails source = this.saveSource( timeSeries, dataSource.getUri() );
 
         // Not found
         if ( source.performedInsert() )
@@ -235,26 +259,18 @@ public class TimeSeriesIngester
             Set<Pair<CountDownLatch, CountDownLatch>> latches =
                     this.insertEnsembleTimeSeries( this.getSystemSettings(),
                                                    this.getDatabase(),
-                                                   this.getEnsemblesCache(),
+                                                   this.getCaches()
+                                                       .getEnsemblesCache(),
                                                    timeSeries,
                                                    source.getId() );
 
             // Mark complete
-            results = this.completeSource( source, latches );
+            results = this.completeSource( source, latches, dataSource );
         }
         // Found
         else
         {
-            // Already started but not completed, include the time-series.
-            DataSource dataSourceWithTimeSeries =
-                    DataSource.ofEnsembleDataSource( this.dataSource.getDisposition(),
-                                                     this.dataSource.getSource(),
-                                                     this.dataSource.getContext(),
-                                                     this.dataSource.getLinks(),
-                                                     this.dataSource.getUri(),
-                                                     timeSeries );
-
-            results = this.completeSource( source, dataSourceWithTimeSeries );
+            results = this.completeSource( source, dataSource );
         }
 
         return results;
@@ -292,13 +308,12 @@ public class TimeSeriesIngester
      * Saves the source information associated with the time-series.
      * @param <T> the type of time-series event value
      * @param time-series whose source information should be saved
+     * @param uri the data source uri
      * @return the source details
      */
 
-    private <T> SourceDetails saveSource( TimeSeries<T> timeSeries )
+    private <T> SourceDetails saveSource( TimeSeries<T> timeSeries, URI uri )
     {
-        URI location = this.getLocation();
-
         byte[] rawHash = this.identifyTimeSeries( timeSeries, "" );
         String hash = Hex.encodeHexString( rawHash, false );
 
@@ -308,7 +323,7 @@ public class TimeSeriesIngester
         // Lead column is only for raster data as of 2022-01
         source.setLead( null );
         source.setIsPointData( true );
-        source.setSourcePath( location );
+        source.setSourcePath( uri );
         TimeSeriesMetadata metadata = timeSeries.getMetadata();
         String measurementUnit = metadata.getUnit();
         FeatureKey feature = metadata.getFeature();
@@ -335,7 +350,7 @@ public class TimeSeriesIngester
         }
         catch ( SQLException se )
         {
-            throw new IngestException( "Source metadata about '" + location
+            throw new IngestException( "Source metadata about '" + uri
                                        +
                                        "' could not be stored or retrieved from the database.",
                                        se );
@@ -349,12 +364,12 @@ public class TimeSeriesIngester
     /**
      * Completes a source.
      * @param source the source details
-     * @param dataSourceWithTimeSeries a data source with time-series attached
+     * @param dataSource the data source
      * @return the ingest results
      */
 
     private List<IngestResult> completeSource( SourceDetails source,
-                                               DataSource dataSourceWithTimeSeries )
+                                               DataSource dataSource )
     {
         List<IngestResult> results;
         SourceCompletedDetails completedDetails = this.createSourceCompletedDetails( source );
@@ -375,13 +390,13 @@ public class TimeSeriesIngester
         {
             // Already present and completed
             results = IngestResult.singleItemListFrom( this.projectConfig,
-                                                       this.dataSource,
+                                                       dataSource,
                                                        source.getId(),
                                                        true,
                                                        false );
 
             // When successfully completed, remove temp files associated.
-            URI uri = this.dataSource.getUri();
+            URI uri = dataSource.getUri();
 
             if ( uri.toString()
                     .contains( ZippedSource.TEMP_FILE_PREFIX ) )
@@ -399,7 +414,7 @@ public class TimeSeriesIngester
         else
         {
             results = IngestResult.singleItemListFrom( this.projectConfig,
-                                                       dataSourceWithTimeSeries,
+                                                       dataSource,
                                                        source.getId(),
                                                        true,
                                                        true );
@@ -412,11 +427,13 @@ public class TimeSeriesIngester
      * Completes a source.
      * @param source the source details
      * @param latches the latches
+     * @param dataSource the data source
      * @return the ingest results
      */
 
     private List<IngestResult> completeSource( SourceDetails source,
-                                               Set<Pair<CountDownLatch, CountDownLatch>> latches )
+                                               Set<Pair<CountDownLatch, CountDownLatch>> latches,
+                                               DataSource dataSource )
     {
         List<IngestResult> results;
 
@@ -425,7 +442,7 @@ public class TimeSeriesIngester
                                                            this.lockManager );
         completer.complete( latches );
         results = IngestResult.singleItemListFrom( this.projectConfig,
-                                                   this.dataSource,
+                                                   dataSource,
                                                    source.getId(),
                                                    false,
                                                    false );
@@ -786,20 +803,23 @@ public class TimeSeriesIngester
 
     private long getMeasurementUnitId( String measurementUnit ) throws SQLException
     {
-        MeasurementUnits innerMeasurementUnitsCache = this.getMeasurementUnitsCache();
+        MeasurementUnits innerMeasurementUnitsCache = this.getCaches()
+                                                          .getMeasurementUnitsCache();
         return innerMeasurementUnitsCache.getOrCreateMeasurementUnitId( measurementUnit );
     }
 
 
     private long getFeatureId( FeatureKey featureKey ) throws SQLException
     {
-        Features innerFeaturesCache = this.getFeaturesCache();
+        Features innerFeaturesCache = this.getCaches()
+                                          .getFeaturesCache();
         return innerFeaturesCache.getOrCreateFeatureId( featureKey );
     }
 
     private long getTimeScaleId( TimeScaleOuter timeScale ) throws SQLException
     {
-        TimeScales innerTimeScalesCache = this.getTimeScalesCache();
+        TimeScales innerTimeScalesCache = this.getCaches()
+                                              .getTimeScalesCache();
         return innerTimeScalesCache.getOrCreateTimeScaleId( timeScale );
     }
 
@@ -884,28 +904,8 @@ public class TimeSeriesIngester
         return this.systemSettings;
     }
 
-    private Ensembles getEnsemblesCache()
+    private Caches getCaches()
     {
-        return this.ensemblesCache;
-    }
-
-    private Features getFeaturesCache()
-    {
-        return this.featuresCache;
-    }
-
-    private TimeScales getTimeScalesCache()
-    {
-        return this.timeScalesCache;
-    }
-
-    private MeasurementUnits getMeasurementUnitsCache()
-    {
-        return this.measurementUnitsCache;
-    }
-
-    private URI getLocation()
-    {
-        return this.dataSource.getUri();
+        return this.caches;
     }
 }

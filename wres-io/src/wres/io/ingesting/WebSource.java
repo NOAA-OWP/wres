@@ -50,11 +50,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.UrlParameter;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.DataSources;
-import wres.io.data.caching.Ensembles;
-import wres.io.data.caching.Features;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.TimeScales;
+import wres.io.data.caching.Caches;
 import wres.io.reading.DataSource;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
@@ -97,11 +93,7 @@ class WebSource implements Callable<List<IngestResult>>
 
     private final SystemSettings systemSettings;
     private final Database database;
-    private final DataSources dataSourcesCache;
-    private final Features featuresCache;
-    private final TimeScales timeScalesCache;
-    private final Ensembles ensemblesCache;
-    private final MeasurementUnits measurementUnitsCache;
+    private final Caches caches;
     private final ProjectConfig projectConfig;
     private final DataSource dataSource;
     private final DatabaseLockManager lockManager;
@@ -111,38 +103,30 @@ class WebSource implements Callable<List<IngestResult>>
     private final ThreadPoolExecutor ingestSaverExecutor;
     private final BlockingQueue<Future<List<IngestResult>>> ingests;
     private final CountDownLatch startGettingResults;
+    private final TimeSeriesIngester timeSeriesIngester;
 
-    static WebSource of( SystemSettings systemSettings,
+    static WebSource of( TimeSeriesIngester timeSeriesIngester,
+                         SystemSettings systemSettings,
                          Database database,
-                         DataSources dataSourcesCache,
-                         Features featuresCache,
-                         TimeScales timeScalesCache,
-                         Ensembles ensemblesCache,
-                         MeasurementUnits measurementUnitsCache,
+                         Caches caches,
                          ProjectConfig projectConfig,
                          DataSource dataSource,
                          DatabaseLockManager lockManager )
     {
-        return new WebSource( systemSettings,
+        return new WebSource( timeSeriesIngester,
+                              systemSettings,
                               database,
-                              dataSourcesCache,
-                              featuresCache,
-                              timeScalesCache,
-                              ensemblesCache,
-                              measurementUnitsCache,
+                              caches,
                               projectConfig,
                               dataSource,
                               lockManager,
                               OffsetDateTime.now() );
     }
 
-    WebSource( SystemSettings systemSettings,
+    WebSource( TimeSeriesIngester timeSeriesIngester,
+               SystemSettings systemSettings,
                Database database,
-               DataSources dataSourcesCache,
-               Features featuresCache,
-               TimeScales timeScalesCache,
-               Ensembles ensemblesCache,
-               MeasurementUnits measurementUnitsCache,
+               Caches caches,
                ProjectConfig projectConfig,
                DataSource dataSource,
                DatabaseLockManager lockManager,
@@ -150,16 +134,13 @@ class WebSource implements Callable<List<IngestResult>>
     {
         this.systemSettings = systemSettings;
         this.database = database;
-        this.dataSourcesCache = dataSourcesCache;
-        this.featuresCache = featuresCache;
-        this.timeScalesCache = timeScalesCache;
-        this.ensemblesCache = ensemblesCache;
-        this.measurementUnitsCache = measurementUnitsCache;
+        this.caches = caches;
         this.projectConfig = projectConfig;
         this.dataSource = dataSource;
         this.baseUri = dataSource.getSource()
                                  .getValue();
         this.lockManager = lockManager;
+        this.timeSeriesIngester = timeSeriesIngester;
 
         if ( this.baseUri.getScheme() == null
              || !this.baseUri.getScheme().startsWith( "http" ) )
@@ -223,30 +204,10 @@ class WebSource implements Callable<List<IngestResult>>
     {
         return this.database;
     }
-
-    private DataSources getDataSourcesCache()
+    
+    private Caches getCaches()
     {
-        return this.dataSourcesCache;
-    }
-
-    private Features getFeaturesCache()
-    {
-        return this.featuresCache;
-    }
-
-    private TimeScales getTimeScalesCache()
-    {
-        return this.timeScalesCache;
-    }
-
-    private Ensembles getEnsemblesCache()
-    {
-        return this.ensemblesCache;
-    }
-
-    private MeasurementUnits getMeasurementUnitsCache()
-    {
-        return this.measurementUnitsCache;
+        return this.caches;
     }
 
     private ProjectConfig getProjectConfig()
@@ -289,6 +250,11 @@ class WebSource implements Callable<List<IngestResult>>
         return this.now;
     }
 
+    private TimeSeriesIngester getTimeSeriesIngester()
+    {
+        return this.timeSeriesIngester;
+    }
+    
     @Override
     public List<IngestResult> call()
     {
@@ -353,19 +319,15 @@ class WebSource implements Callable<List<IngestResult>>
                         LOGGER.debug( "Created datasource {}", dSource );
 
                         IngestSaver ingestSaver =
-                                IngestSaver.createTask()
-                                           .withSystemSettings( this.getSystemSettings() )
-                                           .withDatabase( this.getDatabase() )
-                                           .withDataSourcesCache( this.getDataSourcesCache() )
-                                           .withFeaturesCache( this.getFeaturesCache() )
-                                           .withTimeScalesCache( this.getTimeScalesCache() )
-                                           .withEnsemblesCache( this.getEnsemblesCache() )
-                                           .withMeasurementUnitsCache( this.getMeasurementUnitsCache() )
-                                           .withDataSource( dSource )
-                                           .withProject( this.getProjectConfig() )
-                                           .withoutHash()
-                                           .withLockManager( this.getLockManager() )
-                                           .build();
+                                new IngestSaver.Builder().withSystemSettings( this.getSystemSettings() )
+                                                         .withDatabase( this.getDatabase() )
+                                                         .withCaches( this.getCaches() )
+                                                         .withDataSource( dSource )
+                                                         .withProject( this.getProjectConfig() )
+                                                         .withoutHash()
+                                                         .withLockManager( this.getLockManager() )
+                                                         .withTimeSeriesIngester( this.getTimeSeriesIngester() )
+                                                         .build();
 
                         Future<List<IngestResult>> future =
                                 this.getIngestSaverExecutor()
@@ -448,19 +410,15 @@ class WebSource implements Callable<List<IngestResult>>
                     LOGGER.debug( "Created datasource {}", dSource);
 
                     IngestSaver ingestSaver =
-                            IngestSaver.createTask()
-                                       .withSystemSettings( this.getSystemSettings() )
-                                       .withDatabase( this.getDatabase() )
-                                       .withDataSourcesCache( this.getDataSourcesCache() )
-                                       .withFeaturesCache( this.getFeaturesCache() )
-                                       .withTimeScalesCache( this.getTimeScalesCache() )
-                                       .withEnsemblesCache( this.getEnsemblesCache() )
-                                       .withMeasurementUnitsCache( this.getMeasurementUnitsCache() )
-                                       .withDataSource( dSource )
-                                       .withProject( this.getProjectConfig() )
-                                       .withoutHash()
-                                       .withLockManager( this.getLockManager() )
-                                       .build();
+                            new IngestSaver.Builder().withSystemSettings( this.getSystemSettings() )
+                                                     .withDatabase( this.getDatabase() )
+                                                     .withCaches( this.getCaches() )
+                                                     .withDataSource( dSource )
+                                                     .withProject( this.getProjectConfig() )
+                                                     .withoutHash()
+                                                     .withLockManager( this.getLockManager() )
+                                                     .withTimeSeriesIngester( this.getTimeSeriesIngester() )
+                                                     .build();
 
                     Future<List<IngestResult>> future =
                             this.getIngestSaverExecutor()

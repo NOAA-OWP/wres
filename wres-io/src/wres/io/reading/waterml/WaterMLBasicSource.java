@@ -25,10 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.TimeSeries;
-import wres.io.data.caching.Ensembles;
-import wres.io.data.caching.Features;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.TimeScales;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.ingesting.IngestException;
@@ -39,8 +35,6 @@ import wres.io.reading.BasicSource;
 import wres.io.reading.DataSource;
 import wres.io.utilities.WebClient;
 import wres.io.utilities.Database;
-import wres.system.DatabaseLockManager;
-import wres.system.SystemSettings;
 
 /**
  * Adapter from BasicSource to WaterMLSource (to fit pattern in ReaderFactory).
@@ -54,82 +48,29 @@ public class WaterMLBasicSource extends BasicSource
             new ObjectMapper().registerModule( new JavaTimeModule() )
                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
 
-    private final SystemSettings systemSettings;
-    private final Database database;
-    private final Features featuresCache;
-    private final TimeScales timeScalesCache;
-    private final Ensembles ensemblesCache;
-    private final MeasurementUnits measurementUnitsCache;
-    private final DatabaseLockManager lockManager;
+    private final TimeSeriesIngester timeSeriesIngester;
 
-    public WaterMLBasicSource( SystemSettings systemSettings,
-                               Database database,
-                               Features featuresCache,
-                               TimeScales timeScalesCache,
-                               Ensembles ensemblesCache,
-                               MeasurementUnits measurementUnitsCache,
+    public WaterMLBasicSource( TimeSeriesIngester timeSeriesIngester,
                                ProjectConfig projectConfig,
-                               DataSource dataSource,
-                               DatabaseLockManager lockManager )
+                               DataSource dataSource )
     {
         super( projectConfig, dataSource );
-        Objects.requireNonNull( systemSettings );
-        Objects.requireNonNull( database );
-        Objects.requireNonNull( featuresCache );
-        Objects.requireNonNull( timeScalesCache );
-        Objects.requireNonNull( ensemblesCache );
-        Objects.requireNonNull( measurementUnitsCache );
-        Objects.requireNonNull( lockManager );
-        this.systemSettings = systemSettings;
-        this.database = database;
-        this.featuresCache = featuresCache;
-        this.timeScalesCache = timeScalesCache;
-        this.ensemblesCache = ensemblesCache;
-        this.measurementUnitsCache = measurementUnitsCache;
-        this.lockManager = lockManager;
+        
+        Objects.requireNonNull( timeSeriesIngester );
+
+        this.timeSeriesIngester = timeSeriesIngester;
     }
 
-    private SystemSettings getSystemSettings()
+    private TimeSeriesIngester getTimeSeriesIngester()
     {
-        return this.systemSettings;
+        return this.timeSeriesIngester;
     }
-
-    private Database getDatabase()
-    {
-        return this.database;
-    }
-
-    private Features getFeaturesCache()
-    {
-        return this.featuresCache;
-    }
-
-    private TimeScales getTimeScalesCache()
-    {
-        return this.timeScalesCache;
-    }
-
-    private Ensembles getEnsemblesCache()
-    {
-        return this.ensemblesCache;
-    }
-
-    private MeasurementUnits getMeasurementUnitsCache()
-    {
-        return this.measurementUnitsCache;
-    }
-
-    private DatabaseLockManager getLockManager()
-    {
-        return this.lockManager;
-    }
-
+    
     @Override
-    protected List<IngestResult> saveObservation() throws IOException
+    public List<IngestResult> save() throws IOException
     {
         return this.ingest();
     }
-
 
     private Pair<Response, SourceDetails> deserializeInput(URI location) throws IOException {
         try {
@@ -194,25 +135,18 @@ public class WaterMLBasicSource extends BasicSource
 
         Response response = responsePair.getLeft();
 
+        TimeSeriesIngester ingester = this.getTimeSeriesIngester();
+        
         try
         {
-            WaterMLSource waterMLSource = new WaterMLSource( this.dataSource, response );
+            WaterMLSource waterMLSource = new WaterMLSource( this.getDataSource(), response );
 
             List<TimeSeries<Double>> transformed = waterMLSource.call();
             List<IngestResult> ingestResults = new ArrayList<>( transformed.size() );
 
             for ( TimeSeries<Double> timeSeries : transformed )
             {
-                TimeSeriesIngester ingester = TimeSeriesIngester.of( this.getSystemSettings(),
-                                                                     this.getDatabase(),
-                                                                     this.getFeaturesCache(),
-                                                                     this.getTimeScalesCache(),
-                                                                     this.getEnsemblesCache(),
-                                                                     this.getMeasurementUnitsCache(),
-                                                                     this.getProjectConfig(),
-                                                                     this.getDataSource(),
-                                                                     this.getLockManager() );
-                List<IngestResult> result = ingester.ingestSingleValuedTimeSeries( timeSeries );
+                List<IngestResult> result = ingester.ingestSingleValuedTimeSeries( timeSeries, this.getDataSource() );
                 ingestResults.addAll( result );
             }
 
@@ -222,7 +156,8 @@ public class WaterMLBasicSource extends BasicSource
                                                   .filter( f -> !f.requiresRetry() )
                                                   .count();
                 LOGGER.debug( "{} USGS time series ingested from URL {}",
-                              countIngested, dataSource.getUri() );
+                              countIngested, this.getDataSource()
+                                                 .getUri() );
             }
 
             return Collections.unmodifiableList( ingestResults );
@@ -273,11 +208,5 @@ public class WaterMLBasicSource extends BasicSource
                                                          SourceDetails sourceDetails )
     {
         return new SourceCompletedDetails( database, sourceDetails );
-    }
-
-    @Override
-    protected Logger getLogger()
-    {
-        return null;
     }
 }

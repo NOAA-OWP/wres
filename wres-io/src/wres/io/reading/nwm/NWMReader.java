@@ -34,10 +34,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.time.TimeSeries;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Ensembles;
-import wres.io.data.caching.Features;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.TimeScales;
+import wres.io.data.caching.Caches;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.TimeSeriesIngester;
@@ -103,10 +100,7 @@ public class NWMReader implements Callable<List<IngestResult>>
 
     private final SystemSettings systemSettings;
     private final Database database;
-    private final Features featuresCache;
-    private final TimeScales timeScalesCache;
-    private final Ensembles ensemblesCache;
-    private final MeasurementUnits measurementUnitsCache;
+    private final Caches caches;
     private final ProjectConfig projectConfig;
     private final DataSource dataSource;
     private final DatabaseLockManager lockManager;
@@ -117,23 +111,18 @@ public class NWMReader implements Callable<List<IngestResult>>
     private final BlockingQueue<Future<List<IngestResult>>> ingests;
     private final CountDownLatch startGettingResults;
     private final URI baseUri;
-
+    private final TimeSeriesIngester timeSeriesIngester;
+    
     public NWMReader( SystemSettings systemSettings,
                       Database database,
-                      Features featuresCache,
-                      TimeScales timeScalesCache,
-                      Ensembles ensemblesCache,
-                      MeasurementUnits measurementUnitsCache,
+                      Caches caches,
                       ProjectConfig projectConfig,
                       DataSource dataSource,
                       DatabaseLockManager lockManager )
     {
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( database );
-        Objects.requireNonNull( featuresCache );
-        Objects.requireNonNull( timeScalesCache );
-        Objects.requireNonNull( ensemblesCache );
-        Objects.requireNonNull( measurementUnitsCache );
+        Objects.requireNonNull( caches );
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( lockManager );
@@ -160,10 +149,7 @@ public class NWMReader implements Callable<List<IngestResult>>
 
         this.systemSettings = systemSettings;
         this.database = database;
-        this.featuresCache = featuresCache;
-        this.timeScalesCache = timeScalesCache;
-        this.ensemblesCache = ensemblesCache;
-        this.measurementUnitsCache = measurementUnitsCache;
+        this.caches = caches;
 
         URI literalUri = dataSource.getSource()
                                    .getValue();
@@ -288,6 +274,12 @@ public class NWMReader implements Callable<List<IngestResult>>
         this.executor.setRejectedExecutionHandler( new ThreadPoolExecutor.AbortPolicy() );
         this.ingests = new ArrayBlockingQueue<>( systemSettings.getMaxiumNwmIngestThreads() );
         this.startGettingResults = new CountDownLatch( systemSettings.getMaxiumNwmIngestThreads() );
+        this.timeSeriesIngester = new TimeSeriesIngester.Builder().setSystemSettings( this.getSystemSettings() )
+                                                                  .setDatabase( this.getDatabase() )
+                                                                  .setCaches( this.getCaches() )
+                                                                  .setProjectConfig( this.getProjectConfig() )
+                                                                  .setLockManager( this.getLockManager() )
+                                                                  .build();
     }
 
     private SystemSettings getSystemSettings()
@@ -300,24 +292,9 @@ public class NWMReader implements Callable<List<IngestResult>>
         return this.database;
     }
 
-    private Features getFeaturesCache()
+    private Caches getCaches()
     {
-        return this.featuresCache;
-    }
-
-    private TimeScales getTimeScalesCache()
-    {
-        return this.timeScalesCache;
-    }
-
-    private Ensembles getEnsemblesCache()
-    {
-        return this.ensemblesCache;
-    }
-
-    private MeasurementUnits getMeasurementUnitsCache()
-    {
-        return this.measurementUnitsCache;
+        return this.caches;
     }
 
     private ProjectConfig getProjectConfig()
@@ -349,7 +326,12 @@ public class NWMReader implements Callable<List<IngestResult>>
     {
         return this.executor;
     }
-
+    
+    private TimeSeriesIngester getTimeSeriesIngester()
+    {
+        return this.timeSeriesIngester;
+    }
+    
     @Override
     public List<IngestResult> call()
     {
@@ -607,18 +589,10 @@ public class NWMReader implements Callable<List<IngestResult>>
             // While wres.source table is used, it is the reader level code
             // that must deal with the wres.source table. Use the identifier
             // of the timeseries data as if it were a wres.source.
-            TimeSeriesIngester ingester =
-                    TimeSeriesIngester.of( this.getSystemSettings(),
-                                           this.getDatabase(),
-                                           this.getFeaturesCache(),
-                                           this.getTimeScalesCache(),
-                                           this.getEnsemblesCache(),
-                                           this.getMeasurementUnitsCache(),
-                                           this.getProjectConfig(),
-                                           innerDataSource,
-                                           this.getLockManager() );
+            TimeSeriesIngester ingester = this.getTimeSeriesIngester();
             Future<List<IngestResult>> future =
-                    this.getExecutor().submit( () -> ingester.ingestSingleValuedTimeSeries( entry.getValue() ) );
+                    this.getExecutor().submit( () -> ingester.ingestSingleValuedTimeSeries( entry.getValue(),
+                                                                                            innerDataSource ) );
             this.ingests.add( future );
             this.startGettingResults.countDown();
 
@@ -691,18 +665,10 @@ public class NWMReader implements Callable<List<IngestResult>>
             // While wres.source table is used, it is the reader level code
             // that must deal with the wres.source table. Use the identifier
             // of the timeseries data as if it were a wres.source.
-            TimeSeriesIngester ingester =
-                    TimeSeriesIngester.of( this.getSystemSettings(),
-                                           this.getDatabase(),
-                                           this.getFeaturesCache(),
-                                           this.getTimeScalesCache(),
-                                           this.getEnsemblesCache(),
-                                           this.getMeasurementUnitsCache(),
-                                           this.getProjectConfig(),
-                                           innerDataSource,
-                                           this.getLockManager() );
+            TimeSeriesIngester ingester = this.getTimeSeriesIngester();
             Future<List<IngestResult>> future =
-                    this.getExecutor().submit( () -> ingester.ingestEnsembleTimeSeries( entry.getValue() ) );
+                    this.getExecutor().submit( () -> ingester.ingestEnsembleTimeSeries( entry.getValue(), 
+                                                                                        innerDataSource ) );
             this.ingests.add( future );
             this.startGettingResults.countDown();
 

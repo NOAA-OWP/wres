@@ -39,6 +39,7 @@ import wres.config.generated.DatasourceType;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
@@ -46,10 +47,7 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
-import wres.io.data.caching.Ensembles;
-import wres.io.data.caching.Features;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.TimeScales;
+import wres.io.data.caching.Caches;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.project.Project;
@@ -74,14 +72,13 @@ public class EnsembleForecastRetrieverTest
     private wres.io.utilities.Database wresDatabase;
     @Mock
     private Executor mockExecutor;
-    private Features featuresCache;
-    private MeasurementUnits measurementUnitsCache;
-    private TimeScales timeScalesCache;
-    private Ensembles ensemblesCache;
+    @Mock
+    private ProjectConfig mockProjectConfig;
     private DatabaseLockManager lockManager;
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
     private Connection rawConnection;
+    private Caches caches;
 
 
     /**
@@ -129,7 +126,12 @@ public class EnsembleForecastRetrieverTest
                .thenReturn( DatabaseType.H2 );
         Mockito.when( this.mockSystemSettings.getMaximumPoolSize() )
                .thenReturn( 10 );
-
+        PairConfig pairConfig = Mockito.mock( PairConfig.class );
+        Mockito.when( pairConfig.getGridSelection() )
+               .thenReturn( List.of() );
+        Mockito.when( this.mockProjectConfig.getPair() )
+               .thenReturn( pairConfig );
+        
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
 
         // Create a connection and schema
@@ -141,17 +143,14 @@ public class EnsembleForecastRetrieverTest
         // Create the tables
         this.addTheDatabaseAndTables();
 
-        this.featuresCache = new Features( this.wresDatabase );
-        this.measurementUnitsCache = new MeasurementUnits( this.wresDatabase );
-        this.timeScalesCache = new TimeScales( this.wresDatabase );
-        this.ensemblesCache = new Ensembles( this.wresDatabase );
+        this.caches = Caches.of( this.wresDatabase, this.mockProjectConfig );
         this.lockManager = new DatabaseLockManagerNoop();
 
         // Add some data for testing
         this.addOneForecastTimeSeriesWithFiveEventsAndThreeMembersToTheDatabase();
 
         // Create the unit mapper
-        this.unitMapper = UnitMapper.of( this.measurementUnitsCache, UNIT );
+        this.unitMapper = UnitMapper.of( this.caches.getMeasurementUnitsCache(), UNIT );
     }
 
     @Test
@@ -159,9 +158,9 @@ public class EnsembleForecastRetrieverTest
     {
         // Build the retriever
         Retriever<TimeSeries<Ensemble>> forecastRetriever =
-                new EnsembleForecastRetriever.Builder().setEnsemblesCache( this.ensemblesCache )
+                new EnsembleForecastRetriever.Builder().setEnsemblesCache( this.caches.getEnsemblesCache() )
                                                        .setDatabase( this.wresDatabase )
-                                                       .setFeaturesCache( this.featuresCache )
+                                                       .setFeaturesCache( this.caches.getFeaturesCache() )
                                                        .setProjectId( PROJECT_ID )
                                                        .setVariableName( VARIABLE_NAME )
                                                        .setFeatures( Set.of( FEATURE ) )
@@ -213,17 +212,17 @@ public class EnsembleForecastRetrieverTest
     public void testRetrievalOfOneTimeSeriesWithFiveEventsAndOneMemberUsingEnsembleConstraints()
             throws SQLException
     {
-        long include = this.ensemblesCache.getEnsembleID( "567" );
-        long excludeOne = this.ensemblesCache.getEnsembleID( "123" );
-        long excludeTwo = this.ensemblesCache.getEnsembleID( "456" );
+        long include = this.caches.getEnsemblesCache().getEnsembleID( "567" );
+        long excludeOne = this.caches.getEnsemblesCache().getEnsembleID( "123" );
+        long excludeTwo = this.caches.getEnsemblesCache().getEnsembleID( "456" );
 
         // Build the retriever with ensemble constraints
         Retriever<TimeSeries<Ensemble>> forecastRetriever =
-                new EnsembleForecastRetriever.Builder().setEnsemblesCache( this.ensemblesCache )
+                new EnsembleForecastRetriever.Builder().setEnsemblesCache( this.caches.getEnsemblesCache() )
                                                        .setEnsembleIdsToInclude( Set.of( include ) )
                                                        .setEnsembleIdsToExclude( Set.of( excludeOne, excludeTwo ) )
                                                        .setDatabase( this.wresDatabase )
-                                                       .setFeaturesCache( this.featuresCache )
+                                                       .setFeaturesCache( this.caches.getFeaturesCache() )
                                                        .setProjectId( PROJECT_ID )
                                                        .setVariableName( VARIABLE_NAME )
                                                        .setFeatures( Set.of( FEATURE ) )
@@ -276,7 +275,7 @@ public class EnsembleForecastRetrieverTest
     {
         // Build the retriever
         Retriever<TimeSeries<Ensemble>> forecastRetriever =
-                new EnsembleForecastRetriever.Builder().setEnsemblesCache( this.ensemblesCache )
+                new EnsembleForecastRetriever.Builder().setEnsemblesCache( this.caches.getEnsemblesCache() )
                                                        .setDatabase( this.wresDatabase )
                                                        .setProjectId( PROJECT_ID )
                                                        .setVariableName( VARIABLE_NAME )
@@ -296,7 +295,7 @@ public class EnsembleForecastRetrieverTest
     {
         // Build the retriever
         Retriever<TimeSeries<Ensemble>> forecastRetriever =
-                new EnsembleForecastRetriever.Builder().setEnsemblesCache( this.ensemblesCache )
+                new EnsembleForecastRetriever.Builder().setEnsemblesCache( this.caches.getEnsemblesCache() )
                                                        .setDatabase( this.wresDatabase )
                                                        .setProjectId( PROJECT_ID )
                                                        .setVariableName( VARIABLE_NAME )
@@ -316,7 +315,7 @@ public class EnsembleForecastRetrieverTest
     {
         // Build the retriever
         Retriever<TimeSeries<Ensemble>> forecastRetriever =
-                new EnsembleForecastRetriever.Builder().setEnsemblesCache( this.ensemblesCache )
+                new EnsembleForecastRetriever.Builder().setEnsemblesCache( this.caches.getEnsemblesCache() )
                                                        .setDatabase( this.wresDatabase )
                                                        .setProjectId( PROJECT_ID )
                                                        .setVariableName( VARIABLE_NAME )
@@ -385,30 +384,24 @@ public class EnsembleForecastRetrieverTest
                 new ProjectConfig.Inputs( leftData.getContext(), rightData.getContext(), null );
         ProjectConfig fakeConfig = new ProjectConfig( fakeInputs, null, null, null, null, null );
         TimeSeries<Ensemble> timeSeriesOne = RetrieverTestData.generateTimeSeriesEnsembleOne( T0 );
-        TimeSeriesIngester ingesterOne = TimeSeriesIngester.of( this.mockSystemSettings,
-                                                                this.wresDatabase,
-                                                                this.featuresCache,
-                                                                this.timeScalesCache,
-                                                                this.ensemblesCache,
-                                                                this.measurementUnitsCache,
-                                                                fakeConfig,
-                                                                rightData,
-                                                                this.lockManager );
-        IngestResult ingestResultOne = ingesterOne.ingestEnsembleTimeSeries( timeSeriesOne )
+        TimeSeriesIngester ingesterOne = new TimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+                                                                         .setDatabase( this.wresDatabase )
+                                                                         .setCaches( this.caches )
+                                                                         .setProjectConfig( fakeConfig )
+                                                                         .setLockManager( this.lockManager )
+                                                                         .build();
+        IngestResult ingestResultOne = ingesterOne.ingestEnsembleTimeSeries( timeSeriesOne, rightData )
                                                   .get( 0 );
 
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
 
-        TimeSeriesIngester ingesterTwo = TimeSeriesIngester.of( this.mockSystemSettings,
-                                                                this.wresDatabase,
-                                                                this.featuresCache,
-                                                                this.timeScalesCache,
-                                                                this.ensemblesCache,
-                                                                this.measurementUnitsCache,
-                                                                fakeConfig,
-                                                                leftData,
-                                                                this.lockManager );
-        IngestResult ingestResultTwo = ingesterTwo.ingestSingleValuedTimeSeries( timeSeriesTwo )
+        TimeSeriesIngester ingesterTwo = new TimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+                                                                         .setDatabase( this.wresDatabase )
+                                                                         .setCaches( this.caches )
+                                                                         .setProjectConfig( fakeConfig )
+                                                                         .setLockManager( this.lockManager )
+                                                                         .build();
+        IngestResult ingestResultTwo = ingesterTwo.ingestSingleValuedTimeSeries( timeSeriesTwo, leftData )
                                                   .get( 0 );
 
         List<IngestResult> results = List.of( ingestResultOne,
@@ -433,7 +426,7 @@ public class EnsembleForecastRetrieverTest
         LOGGER.info( "ingestResultTwo: {}", ingestResultTwo );
         Project project = Projects.getProjectFromIngest( this.mockSystemSettings,
                                                          this.wresDatabase,
-                                                         this.featuresCache,
+                                                         this.caches.getFeaturesCache(),
                                                          this.mockExecutor,
                                                          fakeConfig,
                                                          results );

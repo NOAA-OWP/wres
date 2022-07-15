@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import wres.config.generated.ProjectConfig;
 import wres.config.generated.DatasourceType;
 import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;
@@ -49,10 +48,6 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.io.data.caching.Ensembles;
-import wres.io.data.caching.Features;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.TimeScales;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
@@ -60,16 +55,10 @@ import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.DataSource;
 import wres.io.utilities.WebClient;
 import wres.statistics.generated.Geometry;
-import wres.io.utilities.Database;
-import wres.system.DatabaseLockManager;
 import wres.system.SSLStuffThatTrustsOneCertificate;
-import wres.system.SystemSettings;
 
 public class ReadValueManager
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( ReadValueManager.class );
-    private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT;
-
     static
     {
         try
@@ -82,70 +71,27 @@ public class ReadValueManager
                     + e.getMessage() );
         }
     }
-
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger( ReadValueManager.class );
+    private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT;
     private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT );
-
-    private final SystemSettings systemSettings;
-    private final Database database;
-    private final Features featuresCache;
-    private final TimeScales timeScalesCache;
-    private final Ensembles ensemblesCache;
-    private final MeasurementUnits measurementUnitsCache;
-    private final ProjectConfig projectConfig;
+    private final TimeSeriesIngester timeSeriesIngester;
     private final DataSource dataSource;
-    private final DatabaseLockManager lockManager;
 
-    ReadValueManager( SystemSettings systemSettings,
-                      Database database,
-                      Features featuresCache,
-                      TimeScales timeScalesCache,
-                      Ensembles ensemblesCache,
-                      MeasurementUnits measurementUnitsCache,
-                      final ProjectConfig projectConfig,
-                      final DataSource datasource,
-                      DatabaseLockManager lockManager )
+    ReadValueManager( TimeSeriesIngester timeSeriesIngester,
+                      DataSource dataSource )
     {
-        this.systemSettings = systemSettings;
-        this.database = database;
-        this.featuresCache = featuresCache;
-        this.timeScalesCache = timeScalesCache;
-        this.ensemblesCache = ensemblesCache;
-        this.measurementUnitsCache = measurementUnitsCache;
-        this.projectConfig = projectConfig;
-        this.dataSource = datasource;
-        this.lockManager = lockManager;
+        Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( timeSeriesIngester );
+
+        this.timeSeriesIngester = timeSeriesIngester;
+        this.dataSource = dataSource;
     }
 
-    private SystemSettings getSystemSettings()
+    private TimeSeriesIngester getTimeSeriesIngester()
     {
-        return this.systemSettings;
+        return this.timeSeriesIngester;
     }
-
-    private Database getDatabase()
-    {
-        return this.database;
-    }
-
-    private Features getFeaturesCache()
-    {
-        return this.featuresCache;
-    }
-
-    private TimeScales getTimeScalesCache()
-    {
-        return this.timeScalesCache;
-    }
-
-    private Ensembles getEnsemblesCache()
-    {
-        return this.ensemblesCache;
-    }
-
-    private MeasurementUnits getMeasurementUnitsCache()
-    {
-        return this.measurementUnitsCache;
-    }
-
 
     private byte[] getInputBytes() throws IOException {
         URI location = this.getLocation();
@@ -574,18 +520,10 @@ public class ReadValueManager
     List<IngestResult> ingest( TimeSeries<Double> timeSeries )
             throws IngestException
     {
-        TimeSeriesIngester ingester = TimeSeriesIngester.of( this.getSystemSettings(),
-                                                             this.getDatabase(),
-                                                             this.getFeaturesCache(),
-                                                             this.getTimeScalesCache(),
-                                                             this.getEnsemblesCache(),
-                                                             this.getMeasurementUnitsCache(),
-                                                             this.projectConfig,
-                                                             this.dataSource,
-                                                             this.lockManager );
+        TimeSeriesIngester ingester = this.getTimeSeriesIngester();
         try
         {
-            return ingester.ingestSingleValuedTimeSeries( timeSeries );
+            return ingester.ingestSingleValuedTimeSeries( timeSeries, this.dataSource );
         }
         catch ( IngestException ie )
         {

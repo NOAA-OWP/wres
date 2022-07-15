@@ -49,10 +49,7 @@ import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.io.data.caching.Ensembles;
-import wres.io.data.caching.Features;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.TimeScales;
+import wres.io.data.caching.Caches;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.project.Project;
@@ -74,15 +71,11 @@ import wres.system.SystemSettings;
 public class EnsembleRetrieverFactoryTest
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( EnsembleRetrieverFactoryTest.class );
-    @Mock
-    private SystemSettings mockSystemSettings;
+    @Mock private SystemSettings mockSystemSettings;
     private wres.io.utilities.Database wresDatabase;
-    @Mock
-    private Executor mockExecutor;
-    private Features featuresCache;
-    private MeasurementUnits measurementUnitsCache;
-    private TimeScales timeScalesCache;
-    private Ensembles ensemblesCache;
+    @Mock private Executor mockExecutor;
+    @Mock private ProjectConfig mockProjectConfig;
+    private Caches caches;
     private DatabaseLockManager lockManager;
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
@@ -119,6 +112,11 @@ public class EnsembleRetrieverFactoryTest
                .thenReturn( DatabaseType.H2 );
         Mockito.when( this.mockSystemSettings.getMaximumPoolSize() )
                .thenReturn( 10 );
+        PairConfig pairConfig = Mockito.mock( PairConfig.class );
+        Mockito.when( pairConfig.getGridSelection() )
+               .thenReturn( List.of() );
+        Mockito.when( this.mockProjectConfig.getPair() )
+               .thenReturn( pairConfig );
 
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
 
@@ -127,11 +125,7 @@ public class EnsembleRetrieverFactoryTest
 
         // Create the tables
         this.addTheDatabaseAndTables();
-
-        this.featuresCache = new Features( this.wresDatabase );
-        this.measurementUnitsCache = new MeasurementUnits( this.wresDatabase );
-        this.timeScalesCache = new TimeScales( this.wresDatabase );
-        this.ensemblesCache = new Ensembles( this.wresDatabase );
+        this.caches = Caches.of( this.wresDatabase, this.mockProjectConfig );
         this.lockManager = new DatabaseLockManagerNoop();
 
         // Add some data for testing
@@ -438,11 +432,11 @@ public class EnsembleRetrieverFactoryTest
         Mockito.when( project.hasBaseline() ).thenReturn( true );
         Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
         Mockito.when( project.getDatabase() ).thenReturn( this.wresDatabase );
-        Mockito.when( project.getFeaturesCache() ).thenReturn( this.featuresCache );
-        Mockito.when( project.getEnsemblesCache() ).thenReturn( this.ensemblesCache );
+        Mockito.when( project.getFeaturesCache() ).thenReturn( this.caches.getFeaturesCache() );
+        Mockito.when( project.getEnsemblesCache() ).thenReturn( this.caches.getEnsemblesCache() );
 
         // Create the factory instance
-        UnitMapper unitMapper = UnitMapper.of( this.measurementUnitsCache, UNIT );
+        UnitMapper unitMapper = UnitMapper.of( this.caches.getMeasurementUnitsCache(), UNIT );
         this.factoryToTest = EnsembleRetrieverFactory.of( project, unitMapper );
     }
 
@@ -466,41 +460,32 @@ public class EnsembleRetrieverFactoryTest
                                                                     (DataSourceBaselineConfig) baselineData.getContext() );
         ProjectConfig fakeConfig = new ProjectConfig( fakeInputs, null, null, null, null, null );
         TimeSeries<Ensemble> timeSeriesOne = RetrieverTestData.generateTimeSeriesEnsembleOne( T0 );
-        TimeSeriesIngester ingesterOne = TimeSeriesIngester.of( this.mockSystemSettings,
-                                                                this.wresDatabase,
-                                                                this.featuresCache,
-                                                                this.timeScalesCache,
-                                                                this.ensemblesCache,
-                                                                this.measurementUnitsCache,
-                                                                fakeConfig,
-                                                                rightData,
-                                                                this.lockManager );
-        IngestResult ingestResultOne = ingesterOne.ingestEnsembleTimeSeries( timeSeriesOne )
+        TimeSeriesIngester ingesterOne = new TimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+                                                                         .setDatabase( this.wresDatabase )
+                                                                         .setCaches( this.caches )
+                                                                         .setProjectConfig( fakeConfig )
+                                                                         .setLockManager( this.lockManager )
+                                                                         .build();
+        IngestResult ingestResultOne = ingesterOne.ingestEnsembleTimeSeries( timeSeriesOne, rightData )
                                                   .get( 0 );
-        TimeSeriesIngester ingesterTwo = TimeSeriesIngester.of( this.mockSystemSettings,
-                                                                this.wresDatabase,
-                                                                this.featuresCache,
-                                                                this.timeScalesCache,
-                                                                this.ensemblesCache,
-                                                                this.measurementUnitsCache,
-                                                                fakeConfig,
-                                                                baselineData,
-                                                                this.lockManager );
+        TimeSeriesIngester ingesterTwo = new TimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+                                                                         .setDatabase( this.wresDatabase )
+                                                                         .setCaches( this.caches )
+                                                                         .setProjectConfig( fakeConfig )
+                                                                         .setLockManager( this.lockManager )
+                                                                         .build();
 
-        IngestResult ingestResultTwo = ingesterTwo.ingestEnsembleTimeSeries( timeSeriesOne )
+        IngestResult ingestResultTwo = ingesterTwo.ingestEnsembleTimeSeries( timeSeriesOne, baselineData )
                                                   .get( 0 );
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
 
-        TimeSeriesIngester ingesterThree = TimeSeriesIngester.of( this.mockSystemSettings,
-                                                                  this.wresDatabase,
-                                                                  this.featuresCache,
-                                                                  this.timeScalesCache,
-                                                                  this.ensemblesCache,
-                                                                  this.measurementUnitsCache,
-                                                                  fakeConfig,
-                                                                  leftData,
-                                                                  this.lockManager );
-        IngestResult ingestResultThree = ingesterThree.ingestSingleValuedTimeSeries( timeSeriesTwo )
+        TimeSeriesIngester ingesterThree = new TimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+                                                                           .setDatabase( this.wresDatabase )
+                                                                           .setCaches( this.caches )
+                                                                           .setProjectConfig( fakeConfig )
+                                                                           .setLockManager( this.lockManager )
+                                                                           .build();
+        IngestResult ingestResultThree = ingesterThree.ingestSingleValuedTimeSeries( timeSeriesTwo, leftData )
                                                       .get( 0 );
 
         List<IngestResult> results = List.of( ingestResultOne,
@@ -527,7 +512,7 @@ public class EnsembleRetrieverFactoryTest
         LOGGER.info( "ingestResultThree: {}", ingestResultThree );
         Project project = Projects.getProjectFromIngest( this.mockSystemSettings,
                                                          this.wresDatabase,
-                                                         this.featuresCache,
+                                                         this.caches.getFeaturesCache(),
                                                          this.mockExecutor,
                                                          fakeConfig,
                                                          results );

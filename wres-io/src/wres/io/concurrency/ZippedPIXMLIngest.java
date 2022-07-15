@@ -5,22 +5,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.ProjectConfig;
-import wres.io.data.caching.DataSources;
-import wres.io.data.caching.Ensembles;
-import wres.io.data.caching.Features;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.TimeScales;
 import wres.io.ingesting.IngestResult;
+import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.DataSource;
 import wres.io.reading.fews.PIXMLReader;
-import wres.io.utilities.Database;
-import wres.system.DatabaseLockManager;
-import wres.system.SystemSettings;
 
 /**
  * Created by ctubbs on 7/19/17.
@@ -29,76 +22,31 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ZippedPIXMLIngest.class);
 
-    private final SystemSettings systemSettings;
-    private final Database database;
-    private final DataSources dataSourcesCache;
-    private final Features featuresCache;
-    private final TimeScales timeScalesCache;
-    private final Ensembles ensemblesCache;
-    private final MeasurementUnits measurementUnitsCache;
-    private final ProjectConfig projectConfig;
     private final DataSource dataSource;
     private final byte[] content;
-    private final DatabaseLockManager lockManager;
+    private final TimeSeriesIngester timeSeriesIngester;
 
-    public ZippedPIXMLIngest ( SystemSettings systemSettings,
-                               Database database,
-                               DataSources dataSourcesCache,
-                               Features featuresCache,
-                               TimeScales timeScalesCache,
-                               Ensembles ensemblesCache,
-                               MeasurementUnits measurementUnitsCache,
-                               ProjectConfig projectConfig,
+    public ZippedPIXMLIngest ( TimeSeriesIngester timeSeriesIngester,
                                DataSource dataSource,
-                               byte[] content,
-                               DatabaseLockManager lockManager )
+                               byte[] content )
     {
-        this.systemSettings = systemSettings;
-        this.database = database;
-        this.dataSourcesCache = dataSourcesCache;
-        this.featuresCache = featuresCache;
-        this.timeScalesCache = timeScalesCache;
-        this.ensemblesCache = ensemblesCache;
-        this.measurementUnitsCache = measurementUnitsCache;
-        this.projectConfig = projectConfig;
+        Objects.requireNonNull( timeSeriesIngester );
+        Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( content );
+        
         this.dataSource = dataSource;
         this.content = Arrays.copyOf( content, content.length );
-        this.lockManager = lockManager;
+        this.timeSeriesIngester = timeSeriesIngester;
     }
 
-    private SystemSettings getSystemSettings()
+    private DataSource getDataSource()
     {
-        return this.systemSettings;
+        return this.dataSource;
     }
 
-    private Database getDatabase()
+    private TimeSeriesIngester getTimeSeriesIngester()
     {
-        return this.database;
-    }
-
-    private DataSources getDataSourcesCache()
-    {
-        return this.dataSourcesCache;
-    }
-
-    private Features getFeaturesCache()
-    {
-        return this.featuresCache;
-    }
-
-    private TimeScales getTimeScalesCache()
-    {
-        return this.timeScalesCache;
-    }
-
-    private Ensembles getEnsemblesCache()
-    {
-        return this.ensemblesCache;
-    }
-
-    private MeasurementUnits getMeasurementUnitsCache()
-    {
-        return this.measurementUnitsCache;
+        return this.timeSeriesIngester;
     }
 
     @Override
@@ -106,16 +54,9 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
     {
         try ( InputStream input = new ByteArrayInputStream( this.content ) )
         {
-            PIXMLReader reader = new PIXMLReader( this.getSystemSettings(),
-                                                  this.getDatabase(),
-                                                  this.getFeaturesCache(),
-                                                  this.getTimeScalesCache(),
-                                                  this.getEnsemblesCache(),
-                                                  this.getMeasurementUnitsCache(),
-                                                  this.projectConfig,
-                                                  this.dataSource,
-                                                  input,
-                                                  this.lockManager );
+            PIXMLReader reader = new PIXMLReader( this.getTimeSeriesIngester(),
+                                                  this.getDataSource(),
+                                                  input );
             reader.parse();
             return reader.getIngestResults();
         }

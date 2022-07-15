@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -31,103 +32,45 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Ensembles;
-import wres.io.data.caching.Features;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.TimeScales;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.BasicSource;
 import wres.io.reading.DataSource;
 import wres.io.reading.InvalidInputDataException;
-import wres.io.utilities.Database;
 import wres.statistics.generated.Geometry;
-import wres.system.DatabaseLockManager;
-import wres.system.SystemSettings;
 import wres.util.Strings;
 
 public class DatacardSource extends BasicSource
 {
     private static final Set<Double> IGNORABLE_VALUES = Set.of( -998.0, -999.0, -9999.0 );
 
-	private final SystemSettings systemSettings;
-	private final Database database;
-	private final Features featuresCache;
-	private final TimeScales timeScalesCache;
-    private final Ensembles ensemblesCache;
-	private final MeasurementUnits measurementUnitsCache;
-	private final DatabaseLockManager lockManager;
+    private final TimeSeriesIngester timeSeriesIngester;
 
-
-	/**
-	 * @param systemSettings The system settings to use.
-	 * @param database The database to use.
-	 * @param featuresCache The features cache to use.
-	 * @param timeScalesCache The time scales cache to use.
-	 * @param ensemblesCache The ensembles cache to use.
-	 * @param measurementUnitsCache The measurement units cache to use.
+    /**
+     * @param timeSeriesIngester the time-series ingester
      * @param projectConfig the ProjectConfig causing ingest
      * @param dataSource the data source information
-	 * @param lockManager The lock manager to use.
-	 */
-    public DatacardSource( SystemSettings systemSettings,
-						   Database database,
-						   Features featuresCache,
-						   TimeScales timeScalesCache,
-                           Ensembles ensemblesCache,
-						   MeasurementUnits measurementUnitsCache,
-						   ProjectConfig projectConfig,
-                           DataSource dataSource,
-                           DatabaseLockManager lockManager )
+     * @throws NullPointerException if any input is null
+     */
+    public DatacardSource( TimeSeriesIngester timeSeriesIngester,
+                           ProjectConfig projectConfig,
+                           DataSource dataSource )
     {
         super( projectConfig, dataSource );
-        this.systemSettings = systemSettings;
-		this.database = database;
-		this.featuresCache = featuresCache;
-        this.ensemblesCache = ensemblesCache;
-		this.timeScalesCache = timeScalesCache;
-		this.measurementUnitsCache = measurementUnitsCache;
-        this.lockManager = lockManager;
-	}
-
-	private SystemSettings getSystemSettings()
-	{
-		return this.systemSettings;
-	}
-
-	private Database getDatabase()
-	{
-		return this.database;
-	}
-
-	private Features getFeaturesCache()
-	{
-		return this.featuresCache;
-	}
-
-	private TimeScales getTimeScalesCache()
-	{
-		return this.timeScalesCache;
-	}
-
-	private MeasurementUnits getMeasurementUnitsCache()
-	{
-		return this.measurementUnitsCache;
-	}
-
-    private Ensembles getEnsemblesCache()
-    {
-        return this.ensemblesCache;
-    }
-
-    private DatabaseLockManager getLockManager()
-    {
-        return this.lockManager;
+        
+        Objects.requireNonNull( timeSeriesIngester );
+        
+        this.timeSeriesIngester = timeSeriesIngester;
     }
 
     private Duration getTimeStep()
     {
         return this.timeStep;
+    }
+
+    private TimeSeriesIngester getTimeSeriesIngester()
+    {
+        return this.timeSeriesIngester;
     }
 
     /**
@@ -141,70 +84,70 @@ public class DatacardSource extends BasicSource
     }
 
     private int getFirstMonth()
-	{
-		return firstMonth;
-	}
+    {
+        return firstMonth;
+    }
 
-    private void setFirstMonth(int month)
-	{
-		firstMonth = month;
-	}
+    private void setFirstMonth( int month )
+    {
+        firstMonth = month;
+    }
 
-    private void setFirstMonth(String monthNumber)
-	{
-	    setFirstMonth(Integer.parseInt(monthNumber.trim()));
-	}
+    private void setFirstMonth( String monthNumber )
+    {
+        setFirstMonth( Integer.parseInt( monthNumber.trim() ) );
+    }
 
     private int getFirstYear()
-	{
-		return firstYear;
-	}
-
-    private void setFirstYear(int year)
-	{
-		firstYear = year;
-	}
-
-    private void setFirstYear(String year)
-	{
-		year = year.trim();
-		setFirstYear(Integer.parseInt(year));
-	}
-
-    private void setValuesPerRecord(String amount)
-	{
-		valuesPerRecord = Integer.parseInt(amount.trim());
-	}
-
-	@Override
-    protected List<IngestResult> saveObservation() throws IOException
     {
-		Path path = Paths.get(getFilename());
+        return firstYear;
+    }
+
+    private void setFirstYear( int year )
+    {
+        firstYear = year;
+    }
+
+    private void setFirstYear( String year )
+    {
+        year = year.trim();
+        setFirstYear( Integer.parseInt( year ) );
+    }
+
+    private void setValuesPerRecord( String amount )
+    {
+        valuesPerRecord = Integer.parseInt( amount.trim() );
+    }
+
+    @Override
+    public List<IngestResult> save() throws IOException
+    {
+        Path path = Paths.get( getFilename() );
         String variableName = null;
         String unit = null;
         String featureName = null;
         String featureDescription = null;
-        SortedMap<Instant,Double> values = new TreeMap<>();
+        SortedMap<Instant, Double> values = new TreeMap<>();
         int lineNumber = 1;
 
-		//Datacard reader.
-		try (BufferedReader reader = Files.newBufferedReader(path))
-		{
-			String line;
-			int obsValColWidth = 0;
-			int lastColIdx;
+        //Datacard reader.
+        try ( BufferedReader reader = Files.newBufferedReader( path ) )
+        {
+            String line;
+            int obsValColWidth = 0;
+            int lastColIdx;
 
-			//Skip comment lines.  It is assumed that comments only exist at the beginning of the file, which
-			//I believe is consistent with format requirements.
-		    while ((line = reader.readLine()) != null && line.startsWith("$"))
-			{
-				lineNumber++;
-				LOGGER.debug( "Line {} was skipped because it was a comment line.",
+            //Skip comment lines.  It is assumed that comments only exist at the beginning of the file, which
+            //I believe is consistent with format requirements.
+            while ( ( line = reader.readLine() ) != null && line.startsWith( "$" ) )
+            {
+                lineNumber++;
+                LOGGER.debug( "Line {} was skipped because it was a comment line.",
                               lineNumber );
-			}
+            }
 
             //Process the first non-comment line if found, which is one of two header lines.
-            if (line != null)
+            if ( line != null )
             {
                 // Variable name
                 variableName = line.substring( 14, 18 )
@@ -214,17 +157,17 @@ public class DatacardSource extends BasicSource
                            .strip();
 
                 //Process time interval.
-                setTimeStep( line.substring( 29, 31) );
+                setTimeStep( line.substring( 29, 31 ) );
                 // #91908
                 if ( line.length() >= 34 )
                 {
                     // Read up to character 45 or the EOL, whichever comes first: #91908
-                    int stop = 45;                    
-                    if( line.length() < 45 )
+                    int stop = 45;
+                    if ( line.length() < 45 )
                     {
                         stop = line.length();
                     }
-                    
+
                     // Location id. As of 5.0, use location name verbatim.
                     featureName = line.substring( 34, stop )
                                       .strip();
@@ -258,39 +201,41 @@ public class DatacardSource extends BasicSource
                 throw new InvalidInputDataException( message );
             }
 
-			//Process the second non-comment header line.
-			if ((line = reader.readLine()) != null)
-			{
-			    lineNumber++;
-				setFirstMonth(line.substring(0, 2));
-				setFirstYear(line.substring(4, 8));
-				setValuesPerRecord(line.substring(19, 21));
-				lastColIdx = Math.min(32, line.length() - 1);
-				
-				if(lastColIdx > 24)
-				{
-					obsValColWidth = getValColWidth(line.substring(24, lastColIdx));
-				}
-			}
-			else
+            //Process the second non-comment header line.
+            if ( ( line = reader.readLine() ) != null )
+            {
+                lineNumber++;
+                setFirstMonth( line.substring( 0, 2 ) );
+                setFirstYear( line.substring( 4, 8 ) );
+                setValuesPerRecord( line.substring( 19, 21 ) );
+                lastColIdx = Math.min( 32, line.length() - 1 );
+
+                if ( lastColIdx > 24 )
+                {
+                    obsValColWidth = getValColWidth( line.substring( 24, lastColIdx ) );
+                }
+            }
+            else
             {
                 String message = "The NWS Datacard file '" + this.getFilename()
-                                 +"' had unexpected syntax on line "
-                                 + lineNumber + 1 + " therefore it could not be"
+                                 + "' had unexpected syntax on line "
+                                 + lineNumber
+                                 + 1
+                                 + " therefore it could not be"
                                  + " successfully read by WRES.";
                 throw new InvalidInputDataException( message );
             }
 
-			//Onto the rest of the file...
-            LocalDateTime  localDateTime  = LocalDateTime.of( getFirstYear(),
-                                                              getFirstMonth(),
-                                                              1,
-                                                              0,
-                                                              0,
-                                                              0 );
+            //Onto the rest of the file...
+            LocalDateTime localDateTime = LocalDateTime.of( getFirstYear(),
+                                                            getFirstMonth(),
+                                                            1,
+                                                            0,
+                                                            0,
+                                                            0 );
             int valIdxInRecord;
-			int startIdx;
-			int endIdx;
+            int startIdx;
+            int endIdx;
 
             DataSourceConfig.Source source = this.getSourceConfig();
 
@@ -316,32 +261,32 @@ public class DatacardSource extends BasicSource
             Instant validDatetime = localDateTime.atOffset( offset )
                                                  .toInstant();
 
-			//Process the data lines one at a time.
-			while ((line = reader.readLine()) != null)
-			{
-			    lineNumber++;
-				line = Strings.rightTrim( line);
-				
-				// loop through all values in one line
-				for (valIdxInRecord = 0; valIdxInRecord < valuesPerRecord; valIdxInRecord++)
-				{
+            //Process the data lines one at a time.
+            while ( ( line = reader.readLine() ) != null )
+            {
+                lineNumber++;
+                line = Strings.rightTrim( line );
+
+                // loop through all values in one line
+                for ( valIdxInRecord = 0; valIdxInRecord < valuesPerRecord; valIdxInRecord++ )
+                {
                     String value;
-					startIdx = FIRST_OBS_VALUE_START_POS + valIdxInRecord * obsValColWidth;
-					
-					//Have all values in the line been processed?
-					if (line.length() > startIdx)
-					{
-						//last value in the row/record?
-						if(valIdxInRecord == valuesPerRecord - 1 || 
-						  (FIRST_OBS_VALUE_START_POS + (valIdxInRecord + 1) * obsValColWidth >= line.length()))
-						{
-							value = line.substring(startIdx);
-					    }
-						else
-						{
-							endIdx = Math.min(startIdx + obsValColWidth + 1, line.length());
-							value = line.substring(startIdx, endIdx);
-						}
+                    startIdx = FIRST_OBS_VALUE_START_POS + valIdxInRecord * obsValColWidth;
+
+                    //Have all values in the line been processed?
+                    if ( line.length() > startIdx )
+                    {
+                        //last value in the row/record?
+                        if ( valIdxInRecord == valuesPerRecord - 1 ||
+                             ( FIRST_OBS_VALUE_START_POS + ( valIdxInRecord + 1 ) * obsValColWidth >= line.length() ) )
+                        {
+                            value = line.substring( startIdx );
+                        }
+                        else
+                        {
+                            endIdx = Math.min( startIdx + obsValColWidth + 1, line.length() );
+                            value = line.substring( startIdx, endIdx );
+                        }
 
                         Double actualValue;
 
@@ -349,7 +294,7 @@ public class DatacardSource extends BasicSource
                         {
                             actualValue = Double.parseDouble( value );
 
-                            if (this.valueIsIgnorable( actualValue ) || this.valueIsMissing( actualValue ))
+                            if ( this.valueIsIgnorable( actualValue ) || this.valueIsMissing( actualValue ) )
                             {
                                 actualValue = MissingValues.DOUBLE;
                             }
@@ -359,8 +304,11 @@ public class DatacardSource extends BasicSource
                             String message = "While reading datacard file "
                                              + this.getFilename()
                                              + ", could not parse the value at "
-                                             + "position " + valIdxInRecord
-                                             + " on this line (" + lineNumber + "): "
+                                             + "position "
+                                             + valIdxInRecord
+                                             + " on this line ("
+                                             + lineNumber
+                                             + "): "
                                              + line;
                             throw new InvalidInputDataException( message, nfe );
                         }
@@ -370,13 +318,13 @@ public class DatacardSource extends BasicSource
                         values.put( validDatetime, actualValue );
                     }
                     else
-					{
-						//This line has less values. The last value of the line has been processed.
-						break;
-					}
-				} //end of loop for one value line 
-			} //end of loop for all value lines
-		}
+                    {
+                        //This line has less values. The last value of the line has been processed.
+                        break;
+                    }
+                } //end of loop for one value line 
+            } //end of loop for all value lines
+        }
 
         if ( LOGGER.isDebugEnabled() )
         {
@@ -395,80 +343,66 @@ public class DatacardSource extends BasicSource
         TimeSeries<Double> timeSeries = this.transform( metadata,
                                                         values,
                                                         lineNumber );
-        TimeSeriesIngester ingester =
-                TimeSeriesIngester.of( this.getSystemSettings(),
-                                       this.getDatabase(),
-                                       this.getFeaturesCache(),
-                                       this.getTimeScalesCache(),
-                                       this.getEnsemblesCache(),
-                                       this.getMeasurementUnitsCache(),
-                                       this.getProjectConfig(),
-                                       this.getDataSource(),
-                                       this.getLockManager() );
-        List<IngestResult> results = ingester.ingestSingleValuedTimeSeries( timeSeries );
+        TimeSeriesIngester ingester = this.getTimeSeriesIngester();
+        List<IngestResult> results = ingester.ingestSingleValuedTimeSeries( timeSeries, this.getDataSource() );
 
         if ( LOGGER.isDebugEnabled() )
         {
             LOGGER.debug( "Ingested {} timeseries from '{}'",
-						  results.size(), this.getFilename() );
+                          results.size(),
+                          this.getFilename() );
         }
 
         return results;
     }
 
-	/**
-	 * Return the number of columns of allocated for an observation value. In general, it is smaller than 
-	 * the number of columns actually used by an observation value
-	 * @param formatStr The float output format in FORTRAN 
-	 * @return Number of columns 
-	 */
-	private int getValColWidth(String formatStr)
-	{
-		int width = 0;
-		int idxF;
-		int idxPeriod;
-		
-		if(formatStr != null && formatStr.length() > 3)
-		{
-			idxF = formatStr.toUpperCase().indexOf('F');
-			idxPeriod = formatStr.indexOf('.');
-			
-			if(idxPeriod > idxF)
-			{
-				width = Integer.parseInt(formatStr.substring(idxF + 1, idxPeriod));
-			}
-		}
-				
-		return width;
-	}
+    /**
+     * Return the number of columns of allocated for an observation value. In general, it is smaller than 
+     * the number of columns actually used by an observation value
+     * @param formatStr The float output format in FORTRAN 
+     * @return Number of columns 
+     */
+    private int getValColWidth( String formatStr )
+    {
+        int width = 0;
+        int idxF;
+        int idxPeriod;
 
-	@Override
-	protected Logger getLogger()
-	{
-		return DatacardSource.LOGGER;
-	}
+        if ( formatStr != null && formatStr.length() > 3 )
+        {
+            idxF = formatStr.toUpperCase().indexOf( 'F' );
+            idxPeriod = formatStr.indexOf( '.' );
 
-	private boolean valueIsIgnorable(final double value)
+            if ( idxPeriod > idxF )
+            {
+                width = Integer.parseInt( formatStr.substring( idxF + 1, idxPeriod ) );
+            }
+        }
+
+        return width;
+    }
+
+    private boolean valueIsIgnorable( final double value )
     {
         return DatacardSource.IGNORABLE_VALUES.contains( value );
     }
 
-    private boolean valueIsMissing(final double value)
+    private boolean valueIsMissing( final double value )
     {
         return this.getSpecifiedMissingValue() != null &&
-               Precision.equals( Double.parseDouble( this.getSpecifiedMissingValue()), value );
+               Precision.equals( Double.parseDouble( this.getSpecifiedMissingValue() ), value );
     }
 
 
-	private int firstMonth = 0;
-	private int firstYear = 0;
-	private int valuesPerRecord = 0;
+    private int firstMonth = 0;
+    private int firstYear = 0;
+    private int valuesPerRecord = 0;
 
-	private static final int FIRST_OBS_VALUE_START_POS = 20;
+    private static final int FIRST_OBS_VALUE_START_POS = 20;
     private Duration timeStep = Duration.ZERO;
 
-	
-	private static final Logger LOGGER = LoggerFactory.getLogger(DatacardSource.class);
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( DatacardSource.class );
 
 
     /**
@@ -480,7 +414,7 @@ public class DatacardSource extends BasicSource
      */
 
     private TimeSeries<Double> transform( TimeSeriesMetadata metadata,
-                                          SortedMap<Instant,Double> trace,
+                                          SortedMap<Instant, Double> trace,
                                           int lineNumber )
     {
         if ( trace.isEmpty() )
@@ -496,7 +430,7 @@ public class DatacardSource extends BasicSource
         TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
         builder.setMetadata( metadata );
 
-        for ( Map.Entry<Instant,Double> events : trace.entrySet() )
+        for ( Map.Entry<Instant, Double> events : trace.entrySet() )
         {
             Event<Double> event = Event.of( events.getKey(), events.getValue() );
             builder.addEvent( event );

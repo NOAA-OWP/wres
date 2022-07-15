@@ -35,20 +35,16 @@ import org.slf4j.LoggerFactory;
 
 import static wres.io.reading.DataSource.DataDisposition.TARBALL;
 import static wres.io.reading.DataSource.DataDisposition.UNKNOWN;
-import static wres.io.reading.DataSource.DataDisposition.XML_PI_TIMESERIES;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.WRESCallable;
 import wres.io.concurrency.ZippedPIXMLIngest;
-import wres.io.data.caching.DataSources;
-import wres.io.data.caching.Ensembles;
-import wres.io.data.caching.Features;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.TimeScales;
+import wres.io.data.caching.Caches;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.IngestSaver;
 import wres.io.ingesting.PreIngestException;
+import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.DataSource.DataDisposition;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
@@ -70,17 +66,14 @@ public class ZippedSource extends BasicSource {
 
     private final SystemSettings systemSettings;
     private final Database database;
-    private final DataSources dataSourcesCache;
-    private final Features featuresCache;
-    private final TimeScales timeScalesCache;
-    private final Ensembles ensemblesCache;
-    private final MeasurementUnits measurementUnitsCache;
+    private final Caches caches;
     private final ThreadPoolExecutor readerService;
     private final Queue<Future<List<IngestResult>>> tasks = new LinkedList<>();
     // After submitting N tasks, call get() on one task prior to next submission
     private final CountDownLatch startGettingOnTasks;
     private final Queue<URI> savedFiles = new LinkedList<>();
     private final DatabaseLockManager lockManager;
+    private final TimeSeriesIngester timeSeriesIngester;
 
     private ThreadPoolExecutor createReaderService( SystemSettings systemSettings )
     {
@@ -106,7 +99,7 @@ public class ZippedSource extends BasicSource {
 
     private void addIngestTask ( Callable<List<IngestResult>> task )
     {
-        this.addIngestTask(readerService.submit(task));
+        this.addIngestTask( this.readerService.submit(task) );
     }
 
     private void addIngestTask( Future<List<IngestResult>> result )
@@ -131,31 +124,26 @@ public class ZippedSource extends BasicSource {
         }
     }
 
-    @Override
-    protected Logger getLogger()
-    {
-        return ZippedSource.LOGGER;
-    }
-
     private Future<List<IngestResult>> getIngestTask()
     {
         return tasks.poll();
     }
 
 	/**
-	 * Constructor that sets the filename
-     * @param projectConfig the project config causing this ingest
-     * @param dataSource details of the data source
-     * @param lockManager The lock manager to use.
+	 * Constructor.
+	 * @param timeSeriesIngester the time-series ingester
+	 * @param systemSettings the system settings
+	 * @param database the database
+	 * @param caches the caches/ORMs
+	 * @param projectConfig the project declaration
+	 * @param dataSource the data source
+	 * @param lockManager the lock manager
 	 */
 
-    ZippedSource( SystemSettings systemSettings,
+    ZippedSource( TimeSeriesIngester timeSeriesIngester,
+                  SystemSettings systemSettings,
                   Database database,
-                  DataSources dataSourcesCache,
-                  Features featuresCache,
-                  TimeScales timeScalesCache,
-                  Ensembles ensemblesCache,
-                  MeasurementUnits measurementUnitsCache,
+                  Caches caches,
                   ProjectConfig projectConfig,
                   DataSource dataSource,
                   DatabaseLockManager lockManager )
@@ -164,14 +152,16 @@ public class ZippedSource extends BasicSource {
                dataSource );
         this.systemSettings = systemSettings;
         this.database = database;
-        this.dataSourcesCache = dataSourcesCache;
-        this.featuresCache = featuresCache;
-        this.timeScalesCache = timeScalesCache;
-        this.ensemblesCache = ensemblesCache;
-        this.measurementUnitsCache = measurementUnitsCache;
+        this.caches = caches;
         this.lockManager = lockManager;
         this.readerService = createReaderService( systemSettings );
         this.startGettingOnTasks = new CountDownLatch( systemSettings.maximumArchiveThreads() );
+        this.timeSeriesIngester = timeSeriesIngester;
+    }
+
+    private TimeSeriesIngester getTimeSeriesIngester()
+    {
+        return this.timeSeriesIngester;
     }
 
     private SystemSettings getSystemSettings()
@@ -183,32 +173,17 @@ public class ZippedSource extends BasicSource {
     {
         return this.database;
     }
-
-    private DataSources getDataSourcesCache()
+    
+    private Caches getCaches()
     {
-        return this.dataSourcesCache;
+        return this.caches;
     }
 
-    private Features getFeaturesCache()
+    private DatabaseLockManager getLockManager()
     {
-        return this.featuresCache;
+        return this.lockManager;
     }
-
-    private TimeScales getTimeScalesCache()
-    {
-        return this.timeScalesCache;
-    }
-
-    private Ensembles getEnsemblesCache()
-    {
-        return this.ensemblesCache;
-    }
-
-    private MeasurementUnits getMeasurementUnitsCache()
-    {
-        return this.measurementUnitsCache;
-    }
-
+    
     private List<IngestResult> issue( DataSource dataSource )
     {
         List<IngestResult> result;
@@ -248,20 +223,16 @@ public class ZippedSource extends BasicSource {
                                                                dataSource.getLinks(),
                                                                tempFileLocation );
                 IngestSaver ingestSaver =
-                        IngestSaver.createTask()
-                                   .withSystemSettings( this.getSystemSettings() )
-                                   .withDatabase( this.getDatabase() )
-                                   .withDataSourcesCache( this.getDataSourcesCache() )
-                                   .withFeaturesCache( this.getFeaturesCache() )
-                                   .withTimeScalesCache( this.getTimeScalesCache() )
-                                   .withEnsemblesCache( this.getEnsemblesCache() )
-                                   .withMeasurementUnitsCache( this.getMeasurementUnitsCache() )
-                                   .withProject( this.getProjectConfig() )
-                                   .withDataSource( decompressedSource )
-                                   .withoutHash()
-                                   .withProgressMonitoring()
-                                   .withLockManager( this.getLockManager() )
-                                   .build();
+                        new IngestSaver.Builder().withSystemSettings( this.getSystemSettings() )
+                                                 .withDatabase( this.getDatabase() )
+                                                 .withCaches( this.getCaches() )
+                                                 .withProject( this.getProjectConfig() )
+                                                 .withDataSource( decompressedSource )
+                                                 .withoutHash()
+                                                 .withProgressMonitoring()
+                                                 .withLockManager( this.getLockManager() )
+                                                 .withTimeSeriesIngester( this.getTimeSeriesIngester() )
+                                                 .build();
                 result = ingestSaver.call();
             }
         }
@@ -385,7 +356,8 @@ public class ZippedSource extends BasicSource {
             return DataSource.DETECTION_BYTES;
         }
 
-        DataSourceConfig.Source originalSource = this.dataSource.getSource();
+        DataSourceConfig.Source originalSource = this.getDataSource()
+                                                     .getSource();
 
         byte[] content = new byte[expectedByteCount];
 
@@ -430,21 +402,16 @@ public class ZippedSource extends BasicSource {
         if ( disposition == DataDisposition.XML_PI_TIMESERIES || disposition == DataDisposition.XML_FI_TIMESERIES )
         {
             DataSource innerDataSource = DataSource.of( disposition,
-                                                        dataSource.getSource(),
-                                                        dataSource.getContext(),
-                                                        dataSource.getLinks(),
+                                                        this.getDataSource()
+                                                            .getSource(),
+                                                        this.getDataSource()
+                                                            .getContext(),
+                                                        this.getDataSource()
+                                                            .getLinks(),
                                                         archivedFileName );
-            ingest = new ZippedPIXMLIngest( this.getSystemSettings(),
-                                            this.getDatabase(),
-                                            this.getDataSourcesCache(),
-                                            this.getFeaturesCache(),
-                                            this.getTimeScalesCache(),
-                                            this.getEnsemblesCache(),
-                                            this.getMeasurementUnitsCache(),
-                                            this.getProjectConfig(),
+            ingest = new ZippedPIXMLIngest( this.getTimeSeriesIngester(),
                                             innerDataSource,
-                                            content,
-                                            this.getLockManager() );
+                                            content );
             ingest.setOnComplete( ProgressMonitor.onThreadCompleteHandler());
             ProgressMonitor.increment();
             this.addIngestTask(ingest);
@@ -455,26 +422,25 @@ public class ZippedSource extends BasicSource {
                                                        content );
             this.savedFiles.add( tempFileLocation );
             DataSource innerDataSource = DataSource.of( disposition,
-                                                        dataSource.getSource(),
-                                                        dataSource.getContext(),
-                                                        dataSource.getLinks(),
+                                                        this.getDataSource()
+                                                            .getSource(),
+                                                        this.getDataSource()
+                                                            .getContext(),
+                                                        this.getDataSource()
+                                                            .getLinks(),
                                                         tempFileLocation );
             ProgressMonitor.increment();
             Callable<List<IngestResult>> task =
-                    IngestSaver.createTask()
-                               .withSystemSettings( this.getSystemSettings() )
-                               .withDatabase( this.getDatabase() )
-                               .withDataSourcesCache( this.getDataSourcesCache() )
-                               .withFeaturesCache( this.getFeaturesCache() )
-                               .withTimeScalesCache( this.getTimeScalesCache() )
-                               .withEnsemblesCache( this.getEnsemblesCache() )
-                               .withMeasurementUnitsCache( this.getMeasurementUnitsCache() )
-                               .withProject( this.getProjectConfig() )
-                               .withDataSource( innerDataSource )
-                               .withoutHash()
-                               .withProgressMonitoring()
-                               .withLockManager( this.getLockManager() )
-                               .build();
+                    new IngestSaver.Builder().withSystemSettings( this.getSystemSettings() )
+                                             .withDatabase( this.getDatabase() )
+                                             .withCaches( this.getCaches() )
+                                             .withProject( this.getProjectConfig() )
+                                             .withDataSource( innerDataSource )
+                                             .withoutHash()
+                                             .withProgressMonitoring()
+                                             .withLockManager( this.getLockManager() )
+                                             .withTimeSeriesIngester( this.getTimeSeriesIngester() )
+                                             .build();
             this.addIngestTask(task);
         }
 
@@ -519,11 +485,6 @@ public class ZippedSource extends BasicSource {
         }
 
         return tempFile.toURI();
-    }
-
-    private DatabaseLockManager getLockManager()
-    {
-        return this.lockManager;
     }
 
     private void shutdownNow()
