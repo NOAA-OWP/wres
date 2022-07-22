@@ -21,7 +21,6 @@ import ucar.nc2.NetcdfFile;
 import ucar.nc2.NetcdfFiles;
 import ucar.nc2.Variable;
 
-import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.ReferenceTimeType;
@@ -41,7 +40,8 @@ import wres.util.NetCDF;
 import wres.util.TimeHelper;
 
 /**
- * Executes the database copy operation for every value in the passed in string
+ * Executes the database copy operation for every value in the passed in string. TODO: remove this class when we have a
+ * unified approach to ingest. See #51232.
  * @author Christopher Tubbs
  */
 public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
@@ -57,7 +57,6 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
     private Features featuresCache;
     private MeasurementUnits measurementUnitsCache;
     private Database database;
-    private ProjectConfig projectConfig;
     private DataSource dataSource;
     private URI fileName;
     private NetcdfFile source;
@@ -67,7 +66,6 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
                           Database database,
                           Features featuresCache,
                           MeasurementUnits measurementUnitsCache,
-                          ProjectConfig projectConfig,
                           DataSource dataSource,
                           final String hash )
     {
@@ -75,14 +73,12 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
         Objects.requireNonNull( database );
         Objects.requireNonNull( featuresCache );
         Objects.requireNonNull( measurementUnitsCache );
-        Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( hash );
         this.systemSettings = systemSettings;
         this.database = database;
         this.featuresCache = featuresCache;
         this.measurementUnitsCache = measurementUnitsCache;
-        this.projectConfig = projectConfig;
         this.dataSource = dataSource;
         this.fileName = dataSource.getUri();
         this.hash = hash;
@@ -200,8 +196,7 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
                 complete = completedDetails.wasCompleted();
             }
 
-            return IngestResult.singleItemListFrom( this.projectConfig,
-                                                    this.dataSource,
+            return IngestResult.singleItemListFrom( this.dataSource,
                                                     griddedSource.getId(),
                                                     !griddedSource.performedInsert(),
                                                     !complete );

@@ -10,6 +10,7 @@ import java.text.DecimalFormat;
 import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.MonthDay;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -33,6 +34,7 @@ import wres.config.ProjectConfigPlus;
 import wres.config.generated.*;
 import wres.config.generated.ProjectConfig.Outputs;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.ingesting.PreIngestException;
 import wres.io.utilities.NoDataException;
@@ -496,7 +498,7 @@ public class ConfigHelper
                                                         DataSourceConfig sourceDeclaration )
     {
         SortedSet<String> featureNames = new TreeSet<>();
-        
+
         // Collect the features from the singleton groups and multi-feature groups
         PairConfig pairConfig = projectDeclaration.getPair();
         List<Feature> featuresConfigured = new ArrayList<>( pairConfig.getFeature() );
@@ -637,7 +639,8 @@ public class ConfigHelper
                                                          + FeatureDimension.USGS_SITE_CODE );
                     }
                 }
-                else if ( sourceInterface.contains( "ahps" ) || sourceInterface.equalsIgnoreCase( InterfaceShortHand.WRDS_OBS.name() ) )
+                else if ( sourceInterface.contains( "ahps" )
+                          || sourceInterface.equalsIgnoreCase( InterfaceShortHand.WRDS_OBS.name() ) )
                 {
                     if ( foundDimension == null || foundDimension == FeatureDimension.NWS_LID )
                     {
@@ -659,5 +662,160 @@ public class ConfigHelper
         }
 
         return dimension;
+    }
+
+    /**
+     * Makes a best guess at the type of reference time from the data source type.
+     * @param dataSourceType the data source type
+     * @return the reference time type
+     */
+
+    public static ReferenceTimeType getReferenceTimeType( DatasourceType dataSourceType )
+    {
+        switch ( dataSourceType )
+        {
+            case ANALYSES:
+            case SIMULATIONS:
+                return ReferenceTimeType.ANALYSIS_START_TIME;
+            case ENSEMBLE_FORECASTS:
+                return ReferenceTimeType.T0;
+            case OBSERVATIONS:
+                return ReferenceTimeType.ANALYSIS_START_TIME;
+            case SINGLE_VALUED_FORECASTS:
+                return ReferenceTimeType.T0;
+            default:
+                throw new IllegalArgumentException( "Unrecognized data source type " + dataSourceType + "." );
+        }
+    }
+
+    /**
+     * Returns the earliest analysis duration associated with the project.
+     * 
+     * @param projectConfig the project declaration
+     * @return the earliest analysis duration
+     * @throws NullPointerException if the projectConfig is null
+     */
+
+    public static Duration getEarliestAnalysisDuration( ProjectConfig projectConfig )
+    {
+        Objects.requireNonNull( projectConfig );
+
+        Duration returnMe = null;
+
+        if ( Objects.nonNull( projectConfig.getPair()
+                                           .getAnalysisDurations() ) )
+        {
+            DurationBoundsType analysisDurations = projectConfig.getPair()
+                                                                .getAnalysisDurations();
+
+            returnMe = ConfigHelper.getDurationOrNull( analysisDurations.getGreaterThan(),
+                                                       analysisDurations.getUnit() );
+        }
+
+        if ( Objects.isNull( returnMe ) )
+        {
+            returnMe = TimeWindowOuter.DURATION_MIN;
+        }
+
+        return returnMe;
+    }
+
+    /**
+     * Returns the latest analysis duration associated with the project.
+     * 
+     * @param projectConfig the project declaration
+     * @return the latest analysis duration
+     * @throws NullPointerException if the projectConfig is null
+     */
+
+    public static Duration getLatestAnalysisDuration( ProjectConfig projectConfig )
+    {
+        Objects.requireNonNull( projectConfig );
+        
+        Duration returnMe = null;
+
+        if ( Objects.nonNull( projectConfig.getPair()
+                                           .getAnalysisDurations() ) )
+        {
+            DurationBoundsType analysisDurations = projectConfig.getPair()
+                                                                .getAnalysisDurations();
+
+            returnMe = ConfigHelper.getDurationOrNull( analysisDurations.getLessThanOrEqualTo(),
+                                                       analysisDurations.getUnit() );
+        }
+
+        if ( Objects.isNull( returnMe ) )
+        {
+            returnMe = TimeWindowOuter.DURATION_MAX;
+        }
+
+        return returnMe;
+    }
+
+    /**
+     * @param projectConfig the project declaration
+     * @return The earliest possible day in a season. NULL unless specified in the configuration
+     * @throws NullPointerException if the projectConfig is null
+     */
+
+    public static MonthDay getEarliestDayInSeason( ProjectConfig projectConfig )
+    {
+        Objects.requireNonNull( projectConfig );
+        
+        MonthDay earliest = null;
+
+        PairConfig.Season season = projectConfig.getPair()
+                .getSeason();
+
+        if ( season != null )
+        {
+            earliest = MonthDay.of( season.getEarliestMonth(), season.getEarliestDay() );
+        }
+
+        return earliest;
+    }
+
+    /**
+     * @param projectConfig the project declaration
+     * @return The latest possible day in a season. NULL unless specified in the configuration
+     * @throws NullPointerException if the projectConfig is null
+     */
+
+    public static MonthDay getLatestDayInSeason( ProjectConfig projectConfig )
+    {
+        Objects.requireNonNull( projectConfig );
+        
+        MonthDay latest = null;
+
+        PairConfig.Season season = projectConfig.getPair()
+                .getSeason();
+
+        if ( season != null )
+        {
+            latest = MonthDay.of( season.getLatestMonth(), season.getLatestDay() );
+        }
+
+        return latest;
+    }
+
+    /**
+     * Returns a duration from an integer amount and a string unit, else <code>null</null>.
+     * 
+     * @return a duration or null
+     */
+
+    private static Duration getDurationOrNull( Integer duration, DurationUnit durationUnit )
+    {
+        Duration returnMe = null;
+
+        if ( Objects.nonNull( duration ) && Objects.nonNull( durationUnit ) )
+        {
+            ChronoUnit unit = ChronoUnit.valueOf( durationUnit.toString()
+                                                              .toUpperCase() );
+
+            returnMe = Duration.of( duration, unit );
+        }
+
+        return returnMe;
     }
 }

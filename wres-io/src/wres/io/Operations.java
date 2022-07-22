@@ -12,21 +12,20 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.time.TimeSeriesStore;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.Pipelines;
 import wres.io.data.caching.Caches;
-import wres.io.data.caching.Variables;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
@@ -34,6 +33,8 @@ import wres.io.ingesting.SourceLoader;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.project.Projects;
 import wres.io.removal.IncompleteIngest;
+import wres.io.retrieval.DataAccessException;
+import wres.io.project.InMemoryProject;
 import wres.io.project.Project;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
@@ -41,279 +42,41 @@ import wres.system.DatabaseLockManager;
 import wres.io.utilities.NoDataException;
 import wres.io.writing.netcdf.NetCDFCopier;
 import wres.system.SystemSettings;
-import wres.util.CalculationException;
+
+/**
+ * Helpers to conduct ingest and prepare for operations on time-series data.
+ */
 
 public final class Operations {
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Operations.class);
-
-    private Operations ()
-    {
-    }
-
-
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger(Operations.class);
+    
     /**
      * Prepares IO operations for evaluation execution checks if evaluations
      * are valid/possible
      * @param project The project to evaluate
-     * @throws IOException Thrown if the project itself could not be prepared
-     * @throws IOException Thrown if the process for determining whether or not
-     * variables are valid fails
-     * @throws NoDataException Thrown if a variable to evaluate is not
-     * accessible to the evaluation
+     * @throws IOException if the preparation fails for any reason
      */
 
     public static void prepareForExecution( Project project ) throws IOException
     {
-        LOGGER.info("Loading preliminary metadata...");
+        Objects.requireNonNull( project );
 
-        final String INTERRUPTED_VARIABLE_VALIDATION_MESSAGE =
-                "The process for determining if '{}' is a valid variable was interrupted.";
-
-        boolean isVector;
-        Variables variables = project.getVariablesCache();
-        Executor executor = project.getExecutor();
-        Future<Boolean> leftTimeSeriesValid= null;
-        Future<Boolean> rightTimeSeriesValid = null;
-        Future<Boolean> baselineTimeSeriesValid = null;
-
-        try
-        {
-            isVector = !( project.usesGriddedData( project.getLeft() ) ||
-                          project.usesGriddedData( project.getRight() ));
-        }
-        catch ( SQLException e )
-        {
-            throw new IOException("Could not determine if this project uses "
-                                  + "gridded data or not.", e);
-        }
-
-        // Validate the variable declaration against the data, when the declaration is present
-        if ( isVector )
-        {
-            leftTimeSeriesValid = executor.submit(
-                                                   () -> Objects.isNull( project.getDeclaredLeftVariableName() )
-                                                         || variables.isValid( project.getId(),
-                                                                               LeftOrRightOrBaseline.LEFT.value(),
-                                                                               project.getDeclaredLeftVariableName() ) );
-        }
-
-        if ( isVector )
-        {
-            rightTimeSeriesValid = executor.submit(
-                                                    () -> Objects.isNull( project.getDeclaredRightVariableName() )
-                                                          || variables.isValid( project.getId(),
-                                                                                LeftOrRightOrBaseline.RIGHT.value(),
-                                                                                project.getDeclaredRightVariableName() ) );
-        }
-
-        if ( isVector && project.getBaseline() != null )
-        {
-            baselineTimeSeriesValid = executor.submit(
-                                                       () -> Objects.isNull( project.getDeclaredBaselineVariableName() )
-                                                             || variables.isValid( project.getId(),
-                                                                                   LeftOrRightOrBaseline.BASELINE.value(),
-                                                                                   project.getDeclaredBaselineVariableName() ) );
-        }
+        LOGGER.info( "Loading preliminary metadata..." );
 
         try
         {
             project.prepareForExecution();
         }
-        catch (CalculationException | SQLException exception)
+        catch ( DataAccessException | NoDataException exception )
         {
-            throw new IOException("This project could not be prepared for "
-                                  + "execution.", exception);
+            throw new IOException( "This project could not be prepared for "
+                                   + "execution.",
+                                   exception );
         }
 
-        // If we're performing gridded evaluation, we can't check if our
-        // variables are valid via normal means, so just return
-        if (!isVector)
-        {
-            LOGGER.info("Preliminary metadata loading is complete.");
-            return;
-        }
-
-        // TODO: Split logic out into separate functions
-        try
-        {
-            boolean leftIsValid = leftTimeSeriesValid.get();
-
-            if (!leftIsValid)
-            {
-                List<String> availableVariables = variables.getAvailableVariables(
-                        project.getId(),
-                        LeftOrRightOrBaseline.LEFT.value()
-                );
-
-                StringBuilder message = new StringBuilder(  );
-                message.append( "There is no '")
-                       .append( project.getLeft().getVariable().getValue())
-                       .append("' data available for the left hand data ")
-                       .append("evaluation dataset.");
-
-                if (!availableVariables.isEmpty())
-                {
-
-                    message.append(" Available variable(s):");
-                    for (String variable : availableVariables)
-                    {
-                        message.append(System.lineSeparator())
-                               .append("    ").append(variable);
-                    }
-                }
-                else
-                {
-                    message.append(" There are no other variables available for use.");
-                }
-
-                throw new NoDataException( message.toString() );
-            }
-        }
-        catch ( InterruptedException e )
-        {
-            LOGGER.warn( INTERRUPTED_VARIABLE_VALIDATION_MESSAGE,
-                         project.getLeft().getVariable().getValue(), e );
-            Thread.currentThread().interrupt();
-        }
-        catch ( ExecutionException e )
-        {
-            String value = null;
-            if( Objects.nonNull( project.getLeft().getVariable() ) )
-            {
-                value = project.getLeft().getVariable().getValue();
-            }
-            
-            throw new IOException( "An error occurred while determining whether '"
-                                   + value
-                                   + "' is a valid variable for left side evaluation.",
-                                   e );
-        }
-        catch ( SQLException e )
-        {
-            throw new IOException( "'"
-                                   + project.getLeft().getVariable().getValue()
-                                   + "' is not a valid variable for right hand "
-                                   + "evaluation. Possible alternatives could "
-                                   + "not be found.", e);
-        }
-
-        try
-        {
-            boolean rightIsValid = rightTimeSeriesValid.get();
-
-            if (!rightIsValid)
-            {
-                List<String> availableVariables = variables.getAvailableVariables(
-                        project.getId(),
-                        LeftOrRightOrBaseline.RIGHT.value()
-                );
-
-                String message = "There is no '"
-                                 + project.getRightVariableName()
-                                 + "' data available for the right hand data "
-                                 + "evaluation dataset.";
-
-                if (availableVariables.size() > 0)
-                {
-                    message += " Available variable(s):";
-                    for (String variable : availableVariables)
-                    {
-                        message += System.lineSeparator() + "    " + variable;
-                    }
-                }
-                else
-                {
-                    message += " There are no other available variables for use.";
-                }
-
-                throw new NoDataException( message );
-            }
-        }
-        catch ( InterruptedException e )
-        {
-            LOGGER.warn( INTERRUPTED_VARIABLE_VALIDATION_MESSAGE,
-                         project.getRightVariableName(), e );
-            Thread.currentThread().interrupt();
-        }
-        catch ( ExecutionException e )
-        {
-            throw new IOException( "An error occurred while determining whether '"
-                                   + project.getRightVariableName()
-                                   + "' is a valid variable for right side evaluation.",
-                                   e );
-        }
-        catch ( SQLException e )
-        {
-            throw new IOException( "'"
-                                   + project.getRightVariableName()
-                                   + "' is not a valid variable for right hand "
-                                   + "evaluation. Possible alternatives could "
-                                   + "not be found.", e);
-        }
-
-        // If baselineValid is null, then we have no baseline variable to
-        // evaluate; it is safe to exit.
-        if ( baselineTimeSeriesValid == null )
-        {
-            LOGGER.info("Preliminary metadata loading is complete.");
-            return;
-        }
-
-        try
-        {
-            boolean baselineIsValid = baselineTimeSeriesValid.get();
-
-            if (!baselineIsValid)
-            {
-                List<String> availableVariables = variables.getAvailableVariables(
-                        project.getId(),
-                        LeftOrRightOrBaseline.BASELINE.value()
-                );
-                String message = "There is no '"
-                                 + project.getBaseline().getVariable().getValue()
-                                 + "' data available for the baseline "
-                                 + "evaluation dataset.";
-
-                if (availableVariables.size() > 0)
-                {
-                    message += " Available variable(s):";
-                    for (String variable : availableVariables)
-                    {
-                        message += System.lineSeparator() + "    " + variable;
-                    }
-                }
-                else
-                {
-                    message += " There are no other available variables for use.";
-                }
-
-                throw new NoDataException( message );
-            }
-        }
-        catch ( InterruptedException e )
-        {
-            LOGGER.warn( INTERRUPTED_VARIABLE_VALIDATION_MESSAGE,
-                         project.getBaseline().getVariable().getValue(), e );
-            Thread.currentThread().interrupt();
-        }
-        catch ( ExecutionException e )
-        {
-            throw new IOException( "An error occurred while determining whether '"
-                                   + project.getBaseline().getVariable().getValue()
-                                   + "' is a valid variable for baseline evaluation.",
-                                   e );
-        }
-        catch ( SQLException e )
-        {
-            throw new IOException( "'"
-                                   + project.getBaseline().getVariable().getValue()
-                                   + "' is not a valid variable for right hand "
-                                   + "evaluation. Possible alternatives could "
-                                   + "not be found.", e);
-        }
-        LOGGER.info("Preliminary metadata loading is complete.");
+        LOGGER.info( "Preliminary metadata loading is complete." );
     }
-
 
     /**
      * Ingests for an evaluation project and returns state regarding the same.
@@ -324,19 +87,19 @@ public final class Operations {
      * @param projectConfig the projectConfig for the evaluation
      * @param lockManager The lock manager to use.
      * @param caches the database caches/ORMs
-     * @return the {@link Project} (state about this evaluation)
+     * @return the ingest results
      * @throws NullPointerException if any input is null
      * @throws IllegalStateException when another process already holds lock
      * @throws IngestException when anything else goes wrong
      */
 
-    public static Project ingest( TimeSeriesIngester timeSeriesIngester,
-                                  SystemSettings systemSettings,
-                                  Database database,
-                                  Executor executor,
-                                  ProjectConfig projectConfig,
-                                  DatabaseLockManager lockManager,
-                                  Caches caches )
+    public static List<IngestResult> ingest( TimeSeriesIngester timeSeriesIngester,
+                                             SystemSettings systemSettings,
+                                             Database database,
+                                             Executor executor,
+                                             ProjectConfig projectConfig,
+                                             DatabaseLockManager lockManager,
+                                             Caches caches )
     {
         return Operations.doIngestWork( timeSeriesIngester,
                                         systemSettings,
@@ -348,6 +111,63 @@ public final class Operations {
     }
 
     /**
+     * Creates an {@link Project} backed by a database.
+     * @param database The database to use
+     * @param projectConfig the projectConfig to ingest
+     * @param caches the database caches/ORMs
+     * @param ingestResults the ingest results
+     * @return the project
+     * @throws IllegalStateException when another process already holds lock
+     * @throws NullPointerException if any input is null
+     * @throws IngestException when anything else goes wrong
+     */
+    public static Project getProject( Database database,
+                                      ProjectConfig projectConfig,
+                                      Caches caches,
+                                      List<IngestResult> ingestResults )
+    {
+        Objects.requireNonNull( database );
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( caches );
+        Objects.requireNonNull( ingestResults );
+
+        try
+        {
+            if ( Operations.shouldAnalyze( ingestResults ) )
+            {
+                database.refreshStatistics( false );
+            }
+
+            return Projects.getProjectFromIngest( database,
+                                                  caches,
+                                                  projectConfig,
+                                                  ingestResults );
+        }
+        catch ( SQLException | IngestException | PreIngestException e )
+        {
+            throw new IngestException( "Failed to finalize ingest.", e );
+        }
+    }
+
+    /**
+     * Creates an {@link Project} backed by a {@link TimeSeriesStore}.
+     * @param projectConfig the projectConfig
+     * @param timeSeriesStore the store of time-series data
+     * @param ingestResults the ingest results
+     * @return the project
+     */
+    public static Project getProject( ProjectConfig projectConfig,
+                                      TimeSeriesStore timeSeriesStore,
+                                      List<IngestResult> ingestResults )
+    {
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( timeSeriesStore );
+        Objects.requireNonNull( ingestResults );
+
+        return new InMemoryProject( projectConfig, timeSeriesStore, ingestResults );
+    }
+    
+    /**
      * Ingests and returns the hashes of source files involved in this project.
      * TODO: Find a more appropriate location; this should call the ingest logic, not implement it
      * @param timeSeriesIngester The time-series ingester
@@ -357,29 +177,34 @@ public final class Operations {
      * @param projectConfig the projectConfig to ingest
      * @param lockManager The lock manager to use.
      * @param caches the database caches/ORMs
-     * @return the projectdetails object from ingesting this project
+     * @return the ingest results
      * @throws IllegalStateException when another process already holds lock
-     * @throws NullPointerException if any input is null
+     * @throws NullPointerException if any required input is null
      * @throws IngestException when anything else goes wrong
      */
-    private static Project doIngestWork( TimeSeriesIngester timeSeriesIngester,
-                                         SystemSettings systemSettings,
-                                         Database database,
-                                         Executor executor,
-                                         ProjectConfig projectConfig,
-                                         DatabaseLockManager lockManager,
-                                         Caches caches )
+    private static List<IngestResult> doIngestWork( TimeSeriesIngester timeSeriesIngester,
+                                                    SystemSettings systemSettings,
+                                                    Database database,
+                                                    Executor executor,
+                                                    ProjectConfig projectConfig,
+                                                    DatabaseLockManager lockManager,
+                                                    Caches caches )
     {
         Objects.requireNonNull( systemSettings );
-        Objects.requireNonNull( database );
         Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( executor );
         Objects.requireNonNull( lockManager );
-        Objects.requireNonNull( caches );
         Objects.requireNonNull( timeSeriesIngester );
+
+        if ( !systemSettings.isInMemory() )
+        {
+            Objects.requireNonNull( database );
+            Objects.requireNonNull( caches );
+        }
         
         ThreadFactory threadFactoryWithNaming = new BasicThreadFactory.Builder()
-                .namingPattern( "Outer Reading/Ingest Thread %d" )
-                .build();
+                                                                                .namingPattern( "Outer Reading/Ingest Thread %d" )
+                                                                                .build();
         ThreadPoolExecutor ingestExecutor =
                 new ThreadPoolExecutor( systemSettings.maximumThreadCount(),
                                         systemSettings.maximumThreadCount(),
@@ -392,9 +217,8 @@ public final class Operations {
                                         new ArrayBlockingQueue<>( 100_000 ),
                                         threadFactoryWithNaming );
         ingestExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
-        Project result = null;
         List<IngestResult> projectSources = new ArrayList<>();
-        
+
         SourceLoader loader = new SourceLoader( timeSeriesIngester,
                                                 systemSettings,
                                                 ingestExecutor,
@@ -441,12 +265,15 @@ public final class Operations {
         }
         finally
         {
-            List<IngestResult> leftovers = database.completeAllIngestTasks();
-            if ( LOGGER.isDebugEnabled() )
+            if ( !systemSettings.isInMemory() )
             {
-                LOGGER.debug( leftovers.size() + " indirect ingest results" );
+                List<IngestResult> leftovers = database.completeAllIngestTasks();
+                if ( LOGGER.isDebugEnabled() )
+                {
+                    LOGGER.debug( leftovers.size() + " indirect ingest results" );
+                }
+                projectSources.addAll( leftovers );
             }
-            projectSources.addAll( leftovers );
         }
 
         LOGGER.debug( "Here are the files ingested: {}", projectSources );
@@ -477,7 +304,8 @@ public final class Operations {
                 doRetryOnThese.addAll( retriesNeeded );
 
                 LOGGER.debug( "Iteration {}, retries needed: {}",
-                              retriesAttempted,retriesNeeded );
+                              retriesAttempted,
+                              retriesNeeded );
 
                 List<CompletableFuture<List<IngestResult>>> retriedIngests =
                         new ArrayList<>( retriesNeeded.size() );
@@ -502,7 +330,8 @@ public final class Operations {
                 }
 
                 LOGGER.debug( "Iteration {}, retries finished this iteration: {}",
-                              retriesAttempted, retriesFinishedThisIteration );
+                              retriesAttempted,
+                              retriesFinishedThisIteration );
 
                 retriesAttempted++;
                 retriesNeeded = retriesFinishedThisIteration.stream()
@@ -535,9 +364,11 @@ public final class Operations {
         {
             throw new IngestException( "Could not finish ingest because the "
                                        + "following sources required retries "
-                                       + "but the retry limit of " + RETRY_LIMIT
+                                       + "but the retry limit of "
+                                       + RETRY_LIMIT
                                        + " attempts was reached: "
-                                       + retriesNeeded + ". Another WRES "
+                                       + retriesNeeded
+                                       + ". Another WRES "
                                        + "instance may still be ingesting this "
                                        + "data. Please contact the WRES team." );
         }
@@ -555,26 +386,7 @@ public final class Operations {
             throw new IngestException( "No data were ingested." );
         }
 
-        try
-        {
-            result = Projects.getProjectFromIngest( systemSettings,
-                                                    database,
-                                                    caches.getFeaturesCache(),
-                                                    executor,
-                                                    projectConfig,
-                                                    safeToShareResults );
-
-            if ( Operations.shouldAnalyze( safeToShareResults ) )
-            {
-                database.refreshStatistics( false );
-            }
-        }
-        catch ( SQLException | IngestException | PreIngestException e )
-        {
-            throw new IngestException( "Failed to finalize ingest.", e );
-        }
-
-        return result;
+        return safeToShareResults;
     }
 
     /**
@@ -692,5 +504,9 @@ public final class Operations {
         {
             writer.write();
         }
+    }
+    
+    private Operations ()
+    {
     }
 }

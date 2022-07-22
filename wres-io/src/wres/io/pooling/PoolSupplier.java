@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
 import java.util.function.UnaryOperator;
@@ -144,6 +145,15 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     /** A function that transforms baseline-ish data and may consider the encapsulating event. */
     private final UnaryOperator<Event<R>> baselineTransformer;
 
+    /** A function that filters left-ish time-series. */
+    private final Predicate<TimeSeries<L>> leftFilter;
+
+    /** A function that filters right-ish time-series. */
+    private final Predicate<TimeSeries<R>> rightFilter;
+
+    /** A function that filters baseline-ish time-series. */
+    private final Predicate<TimeSeries<R>> baselineFilter;
+
     /** An offset to apply to the valid times of the left data. */
     private final Duration leftOffset;
 
@@ -212,9 +222,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         LOGGER.debug( "Preparing to retrieve time-series data." );
 
         Stream<TimeSeries<R>> rightData = this.right.get();
-
         Stream<TimeSeries<R>> baselineData = null;
-
+        
         // Baseline that is not generated?
         if ( this.hasBaseline() && !this.hasBaselineGenerator() )
         {
@@ -304,6 +313,15 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
         /** A function that transforms baseline-ish data and may consider the encapsulating event. */
         private UnaryOperator<Event<R>> baselineTransformer;
+
+        /** A function that filters left-ish time-series. */
+        private Predicate<TimeSeries<L>> leftFilter;
+
+        /** A function that filters right-ish time-series. */
+        private Predicate<TimeSeries<R>> rightFilter;
+
+        /** A function that filters baseline-ish time-series. */
+        private Predicate<TimeSeries<R>> baselineFilter;
 
         /** The frequency at which pairs should be produced. */
         private Duration frequency;
@@ -486,6 +504,39 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         Builder<L, R> setBaselineTransformer( UnaryOperator<Event<R>> baselineTransformer )
         {
             this.baselineTransformer = baselineTransformer;
+
+            return this;
+        }
+
+        /**
+         * @param leftFilter the filter for left-style data
+         * @return the builder
+         */
+        Builder<L, R> setLeftFilter( Predicate<TimeSeries<L>> leftFilter )
+        {
+            this.leftFilter = leftFilter;
+
+            return this;
+        }
+
+        /**
+         * @param rightFilter the filter for right-style data
+         * @return the builder
+         */
+        Builder<L, R> setRightFilter( Predicate<TimeSeries<R>> rightFilter )
+        {
+            this.rightFilter = rightFilter;
+
+            return this;
+        }
+
+        /**
+         * @param baselineFilter the filter for baseline-style data
+         * @return the builder
+         */
+        Builder<L, R> setBaselineFilter( Predicate<TimeSeries<R>> baselineFilter )
+        {
+            this.baselineFilter = baselineFilter;
 
             return this;
         }
@@ -764,10 +815,13 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         Objects.requireNonNull( left );
         Objects.requireNonNull( rightOrBaseline );
         Objects.requireNonNull( rightOrBaselineOrientation );
-
+        
         UnaryOperator<Event<R>> rightOrBaselineTransformer =
                 this.getRightOrBaselineTransformer( rightOrBaselineOrientation );
         Duration rightOrBaselineValidOffset = this.getValidTimeOffset( rightOrBaselineOrientation );
+
+        Predicate<TimeSeries<L>> leftFilterInner = this.getLeftFilter();
+        Predicate<TimeSeries<R>> rightOrBaselineFilter = this.getRightOrBaselineFilter( rightOrBaselineOrientation );
 
         List<EvaluationStatusMessage> validation = new ArrayList<>();
 
@@ -779,7 +833,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         // Unscaled left-ish series for re-use across right-ish series, mapped by feature key. Apply any valid time
         // offset here
         Map<FeatureKey, List<TimeSeries<L>>> leftSeries =
-                left.collect( Collectors.groupingBy( next -> next.getMetadata()
+                left.filter( leftFilterInner )
+                    .collect( Collectors.groupingBy( next -> next.getMetadata()
                                                                  .getFeature() ) );
 
         int rightOrBaselineSeriesCount = 0;
@@ -791,6 +846,15 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         while ( rightOrBaselineIterator.hasNext() )
         {
             TimeSeries<R> nextRightOrBaselineSeries = rightOrBaselineIterator.next();
+
+            // Meets the filter?
+            if ( !rightOrBaselineFilter.test( nextRightOrBaselineSeries ) )
+            {
+                LOGGER.debug( "Ignoring time-series {} because it was not selected by a filter.",
+                              nextRightOrBaselineSeries.getMetadata() );
+                continue;
+            }
+
             TimeSeries<R> transformedRightOrBaseline = this.applyValidTimeOffset( nextRightOrBaselineSeries,
                                                                                   rightOrBaselineValidOffset,
                                                                                   rightOrBaselineOrientation );
@@ -1208,34 +1272,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     }
 
     /**
-     * @param lrb the orientation of the required transformer
-     * @return the transformer
-     * @throws NullPointerException if the orientation is null
-     * @throws IllegalArgumentException if the orientation is unexpected
-     */
-
-    private UnaryOperator<Event<R>> getRightOrBaselineTransformer( LeftOrRightOrBaseline lrb )
-    {
-        Objects.requireNonNull( lrb );
-
-        switch ( lrb )
-        {
-            case RIGHT:
-                return this.getRightTransformer();
-            case BASELINE:
-                return this.getBaselineTransformer();
-            default:
-                throw new IllegalArgumentException( "Unexpected orientation for transformer: " + lrb
-                                                    + ". "
-                                                    + "Expected "
-                                                    + LeftOrRightOrBaseline.RIGHT
-                                                    + " or "
-                                                    + LeftOrRightOrBaseline.BASELINE
-                                                    + "." );
-        }
-    }
-
-    /**
      * @param lrb the orientation of the required valid time offset
      * @return the offset
      * @throws NullPointerException if the orientation is null
@@ -1491,6 +1527,89 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     }
 
     /**
+     * @return the filter for left-ish data
+     */
+
+    private Predicate<TimeSeries<L>> getLeftFilter()
+    {
+        return this.leftFilter;
+    }
+
+    /**
+     * @return the filter for right-ish data
+     */
+
+    private Predicate<TimeSeries<R>> getRightFilter()
+    {
+        return this.rightFilter;
+    }
+
+    /**
+     * @return the filter for baseline-ish data
+     */
+
+    private Predicate<TimeSeries<R>> getBaselineFilter()
+    {
+        return this.baselineFilter;
+    }
+
+    /**
+     * @param lrb the orientation of the required transformer
+     * @return the transformer
+     * @throws NullPointerException if the orientation is null
+     * @throws IllegalArgumentException if the orientation is unexpected
+     */
+
+    private UnaryOperator<Event<R>> getRightOrBaselineTransformer( LeftOrRightOrBaseline lrb )
+    {
+        Objects.requireNonNull( lrb );
+
+        switch ( lrb )
+        {
+            case RIGHT:
+                return this.getRightTransformer();
+            case BASELINE:
+                return this.getBaselineTransformer();
+            default:
+                throw new IllegalArgumentException( "Unexpected orientation for transformer: " + lrb
+                                                    + ". "
+                                                    + "Expected "
+                                                    + LeftOrRightOrBaseline.RIGHT
+                                                    + " or "
+                                                    + LeftOrRightOrBaseline.BASELINE
+                                                    + "." );
+        }
+    }
+
+    /**
+     * @param lrb the orientation of the required filter
+     * @return the filter
+     * @throws NullPointerException if the orientation is null
+     * @throws IllegalArgumentException if the orientation is unexpected
+     */
+
+    private Predicate<TimeSeries<R>> getRightOrBaselineFilter( LeftOrRightOrBaseline lrb )
+    {
+        Objects.requireNonNull( lrb );
+
+        switch ( lrb )
+        {
+            case RIGHT:
+                return this.getRightFilter();
+            case BASELINE:
+                return this.getBaselineFilter();
+            default:
+                throw new IllegalArgumentException( "Unexpected orientation for filter: " + lrb
+                                                    + ". "
+                                                    + "Expected "
+                                                    + LeftOrRightOrBaseline.RIGHT
+                                                    + " or "
+                                                    + LeftOrRightOrBaseline.BASELINE
+                                                    + "." );
+        }
+    }
+
+    /**
      * Returns the pairer.
      * 
      * @return the pairer
@@ -1736,6 +1855,21 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         this.baselineTransformer = builder.baselineTransformer;
         this.frequency = builder.frequency;
         this.crossPairer = builder.crossPairer;
+
+        // Set null-friendly filters, i.e., no-op if the filter is null
+        Predicate<TimeSeries<L>> leftInner = builder.leftFilter;
+        Predicate<TimeSeries<L>> leftFinal = series -> Objects.nonNull( leftInner ) ? leftInner.test( series ) : true;
+        this.leftFilter = leftFinal;
+
+        Predicate<TimeSeries<R>> rightInner = builder.rightFilter;
+        Predicate<TimeSeries<R>> rightFinal =
+                series -> Objects.nonNull( rightInner ) ? rightInner.test( series ) : true;
+        this.rightFilter = rightFinal;
+
+        Predicate<TimeSeries<R>> baselineInner = builder.baselineFilter;
+        Predicate<TimeSeries<R>> baselineFinal =
+                series -> Objects.nonNull( baselineInner ) ? baselineInner.test( series ) : true;
+        this.baselineFilter = baselineFinal;
 
         // Set any time offsets required
         Map<LeftOrRightOrBaseline, Duration> offsets = this.getValidTimeOffsets( this.getInputs() );

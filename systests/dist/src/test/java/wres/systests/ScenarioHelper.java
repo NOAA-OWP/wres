@@ -56,7 +56,20 @@ public class ScenarioHelper
 
     private static final String USUAL_EVALUATION_FILE_NAME = "project_config.xml";
     private static final SystemSettings SYSTEM_SETTINGS = SystemSettings.fromDefaultClasspathXmlFile();
-    private static final Database DATABASE = new Database( SYSTEM_SETTINGS );
+    private static final Database DATABASE;
+    
+    static
+    {
+        if( !SYSTEM_SETTINGS.isInMemory() )
+        {
+            DATABASE = new Database( SYSTEM_SETTINGS );
+        }
+        else
+        {
+            DATABASE = null;
+        }
+    }
+    
     private static final Executor EXECUTOR = new Executor( SYSTEM_SETTINGS );
 
     private ScenarioHelper()

@@ -417,7 +417,8 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
         }
 
         // All time scales must have an explicit period
-        if ( timeScales.stream().anyMatch( next -> !next.hasPeriod() ) )
+        if ( timeScales.stream()
+                       .anyMatch( next -> !next.hasPeriod() ) )
         {
             throw new IllegalArgumentException( "Cannot compute the Least Common Scale from one or more individual "
                                                 + "time scales that do not have an explicit time scale period." );

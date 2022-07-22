@@ -1,11 +1,15 @@
 package wres.datamodel.time;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Stream;
 
@@ -19,7 +23,7 @@ import wres.datamodel.space.FeatureKey;
 
 /**
  * Store of {@link TimeSeries} that is built incrementally with a {@link Builder}.
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 @Immutable
@@ -48,79 +52,142 @@ public class TimeSeriesStore
 
     /**
      * Returns all single-valued series by feature.
-     * @param context the context
-     * @param feature the feature
+     * @param orientation the orientation
+     * @param features the features
      * @return the filtered series
      * @throws NullPointerException if any input is null
-     * @throws IllegalArgumentException if the context is unrecognized
+     * @throws IllegalArgumentException if the orientation is unrecognized
      */
 
-    public Stream<TimeSeries<Double>> getSingleValuedSeries( LeftOrRightOrBaseline context, FeatureKey feature )
+    public Stream<TimeSeries<Double>> getSingleValuedSeries( LeftOrRightOrBaseline orientation,
+                                                             Set<FeatureKey> features )
     {
-        Objects.requireNonNull( context );
-        Objects.requireNonNull( feature );
+        Objects.requireNonNull( orientation );
+        Objects.requireNonNull( features );
 
         return TimeSeriesStore.getSingleValuedStore( this.leftSingleValuedSeries,
                                                      this.rightSingleValuedSeries,
                                                      this.baselineSingleValuedSeries,
-                                                     context )
+                                                     orientation )
                               .stream()
-                              .filter( next -> feature.equals( next.getMetadata().getFeature() ) );
+                              .filter( next -> features.contains( next.getMetadata().getFeature() ) );
+    }
+
+    /**
+     * Returns all single-valued series for a given orientation.
+     * @param orientation the orientation
+     * @return the oriented time series
+     * @throws NullPointerException if the orientation is null
+     * @throws IllegalArgumentException if the orientation is unrecognized
+     */
+
+    public Stream<TimeSeries<Double>> getSingleValuedSeries( LeftOrRightOrBaseline orientation )
+    {
+        Objects.requireNonNull( orientation );
+
+        return TimeSeriesStore.getSingleValuedStore( this.leftSingleValuedSeries,
+                                                     this.rightSingleValuedSeries,
+                                                     this.baselineSingleValuedSeries,
+                                                     orientation )
+                              .stream();
+    }
+
+    /**
+     * Returns all single-valued series.
+     * @return the time series
+     */
+
+    public Stream<TimeSeries<Double>> getSingleValuedSeries()
+    {
+        return Stream.concat( Stream.concat( this.leftSingleValuedSeries.stream(),
+                                             this.rightSingleValuedSeries.stream() ),
+                              this.baselineSingleValuedSeries.stream() );
     }
 
     /**
      * Filters the single-valued series by time window and feature.
      * @param timeWindow the time window
-     * @param context the context
-     * @param feature the feature
+     * @param orientation the orientation
+     * @param features the features
      * @return the filtered series
      * @throws NullPointerException if any input is null
-     * @throws IllegalArgumentException if the context is unrecognized
+     * @throws IllegalArgumentException if the orientation is unrecognized
      */
 
     public Stream<TimeSeries<Double>> getSingleValuedSeries( TimeWindowOuter timeWindow,
-                                                             LeftOrRightOrBaseline context,
-                                                             FeatureKey feature )
+                                                             LeftOrRightOrBaseline orientation,
+                                                             Set<FeatureKey> features )
     {
         Objects.requireNonNull( timeWindow );
-        Objects.requireNonNull( context );
-        Objects.requireNonNull( feature );
-
+        Objects.requireNonNull( orientation );
+        Objects.requireNonNull( features );
+        
         return TimeSeriesStore.getSingleValuedStore( this.leftSingleValuedSeries,
                                                      this.rightSingleValuedSeries,
                                                      this.baselineSingleValuedSeries,
-                                                     context )
+                                                     orientation )
                               .stream()
-                              .filter( next -> feature.equals( next.getMetadata().getFeature() ) )
+                              .filter( next -> features.contains( next.getMetadata().getFeature() ) )
                               .map( next -> TimeSeriesSlicer.filter( next, timeWindow ) );
     }
 
     /**
      * Filters the ensemble series by time window and feature.
      * @param timeWindow the time window
-     * @param context the context
-     * @param feature the feature
+     * @param orientation the context
+     * @param features the features
      * @return the filtered series
      * @throws NullPointerException if any input is null
-     * @throws IllegalArgumentException if the context is unrecognized
+     * @throws IllegalArgumentException if the orientation is unrecognized
      */
 
     public Stream<TimeSeries<Ensemble>> getEnsembleSeries( TimeWindowOuter timeWindow,
-                                                           LeftOrRightOrBaseline context,
-                                                           FeatureKey feature )
+                                                           LeftOrRightOrBaseline orientation,
+                                                           Set<FeatureKey> features )
     {
         Objects.requireNonNull( timeWindow );
-        Objects.requireNonNull( context );
-        Objects.requireNonNull( feature );
+        Objects.requireNonNull( orientation );
+        Objects.requireNonNull( features );
 
         return TimeSeriesStore.getEnsembleStore( this.leftEnsembleSeries,
                                                  this.rightEnsembleSeries,
                                                  this.baselineEnsembleSeries,
-                                                 context )
+                                                 orientation )
                               .stream()
-                              .filter( next -> feature.equals( next.getMetadata().getFeature() ) )
+                              .filter( next -> features.contains( next.getMetadata().getFeature() ) )
                               .map( next -> TimeSeriesSlicer.filter( next,
                                                                      timeWindow ) );
+    }
+
+    /**
+     * Returns all ensemble time-series.
+     * @param orientation the orientation
+     * @return the time-series
+     * @throws NullPointerException if the orientation is null
+     * @throws IllegalArgumentException if the orientation is unrecognized
+     */
+
+    public Stream<TimeSeries<Ensemble>> getEnsembleSeries( LeftOrRightOrBaseline orientation )
+    {
+        Objects.requireNonNull( orientation );
+
+        return TimeSeriesStore.getEnsembleStore( this.leftEnsembleSeries,
+                                                 this.rightEnsembleSeries,
+                                                 this.baselineEnsembleSeries,
+                                                 orientation )
+                              .stream();
+    }
+
+    /**
+     * Returns all ensemble series.
+     * @return the time series
+     */
+
+    public Stream<TimeSeries<Ensemble>> getEnsembleSeries()
+    {
+        return Stream.concat( Stream.concat( this.leftEnsembleSeries.stream(),
+                                             this.rightEnsembleSeries.stream() ),
+                              this.baselineEnsembleSeries.stream() );
     }
 
     /**
@@ -161,11 +228,31 @@ public class TimeSeriesStore
             Objects.requireNonNull( series );
             Objects.requireNonNull( context );
 
+            // Strip any reference time type that is ReferenceTimeType.LATEST_OBSERVATION. As of 2022-07-19, this is
+            // an artifact of the readers to support ingest into a database schema that does not allow zero reference
+            // times. However, reference times of this type are fake (i.e., not part of the original time-series) and 
+            // the failure to strip them here will result in these time-series being treated as forecasts
+            TimeSeries<Double> adjustedSeries = series;
+            if ( series.getReferenceTimes().containsKey( ReferenceTimeType.LATEST_OBSERVATION ) )
+            {
+                Map<ReferenceTimeType, Instant> referenceTimes = new HashMap<>();
+                referenceTimes.putAll( series.getReferenceTimes() );
+                referenceTimes.remove( ReferenceTimeType.LATEST_OBSERVATION );
+
+                TimeSeriesMetadata newMetadata = series.getMetadata()
+                                                       .toBuilder()
+                                                       .setReferenceTimes( referenceTimes )
+                                                       .build();
+                adjustedSeries = TimeSeries.of( newMetadata, series.getEvents() );
+                LOGGER.debug( "Adjusted a left-ish time-series to remove a fake reference time type, {}.",
+                              ReferenceTimeType.LATEST_OBSERVATION );
+            }
+
             TimeSeriesStore.getSingleValuedStore( this.leftSingleValuedSeries,
                                                   this.rightSingleValuedSeries,
                                                   this.baselineSingleValuedSeries,
                                                   context )
-                           .add( series );
+                           .add( adjustedSeries );
 
             return this;
         }
@@ -208,7 +295,7 @@ public class TimeSeriesStore
      * @param leftSingleValuedSeries the store of left single-valued series
      * @param rightSingleValuedSeries the store of right single-valued series
      * @param baselineSingleValuedSeries the store of baseline single-valued series
-     * @param context the context
+     * @param orientation the orientation
      * @return a single-valued store with the prescribed context
      * @throws IllegalArgumentException if the context is unrecognized
      */
@@ -217,9 +304,9 @@ public class TimeSeriesStore
             getSingleValuedStore( Collection<TimeSeries<Double>> leftSingleValuedSeries,
                                   Collection<TimeSeries<Double>> rightSingleValuedSeries,
                                   Collection<TimeSeries<Double>> baselineSingleValuedSeries,
-                                  LeftOrRightOrBaseline context )
+                                  LeftOrRightOrBaseline orientation )
     {
-        switch ( context )
+        switch ( orientation )
         {
             case LEFT:
                 return leftSingleValuedSeries;
@@ -228,7 +315,7 @@ public class TimeSeriesStore
             case BASELINE:
                 return baselineSingleValuedSeries;
             default:
-                throw new IllegalArgumentException( "Unexpected context '" + context
+                throw new IllegalArgumentException( "Unexpected orientation '" + orientation
                                                     + "'. Expected LEFT or RIGHT or BASELINE." );
         }
     }
@@ -288,11 +375,13 @@ public class TimeSeriesStore
                        + this.rightEnsembleSeries.size()
                        + this.baselineEnsembleSeries.size();
 
-            LOGGER.info( "Created a time-series store that contains {} single-valued time-series with designation {}, "
-                         + "{} single-valued time-series with designation {}, {} single-valued time-series with "
-                         + "designation {}, {} ensemble time-series with designation {}, {} ensemble time-series with "
-                         + "designation {} and {} ensemble time-series with designation {}. There are {} time-series "
-                         + "in the store.",
+            LOGGER.info( "Created an in-memory time-series store that contains {} time-series. The {} time-series "
+                         + "include {} single-valued time-series with a {} orientation, {} single-valued time-series "
+                         + "with a {} orientation, {} single-valued time-series with a {} orientation, {} ensemble "
+                         + "time-series with a {} orientation, {} ensemble time-series with a {} orientation and {} "
+                         + "ensemble time-series with a {} orientation. ",
+                         size,
+                         size,
                          this.leftSingleValuedSeries.size(),
                          LeftOrRightOrBaseline.LEFT,
                          this.rightSingleValuedSeries.size(),
@@ -304,8 +393,7 @@ public class TimeSeriesStore
                          this.rightEnsembleSeries.size(),
                          LeftOrRightOrBaseline.RIGHT,
                          this.baselineEnsembleSeries.size(),
-                         LeftOrRightOrBaseline.BASELINE,
-                         size );
+                         LeftOrRightOrBaseline.BASELINE );
         }
     }
 

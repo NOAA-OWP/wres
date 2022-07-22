@@ -23,7 +23,6 @@ import wres.io.pooling.PoolsGenerator;
 
 public interface RetrieverFactory<L, R>
 {
-
     /**
      * Creates a retriever for all climatological data.
      * 

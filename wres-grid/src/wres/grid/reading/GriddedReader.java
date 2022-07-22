@@ -108,7 +108,7 @@ public class GriddedReader
         Map<FeatureKey, List<Pair<Instant, Event<Double>>>> eventsPerFeature = new HashMap<>();
 
         String measurementUnit = "UNKNOWN";
-
+        
         while ( !paths.isEmpty() )
         {
             String path = paths.remove();
@@ -137,8 +137,9 @@ public class GriddedReader
                                                 feature.getSrid(),
                                                 feature.getWkt() );
 
-                    events.add( Pair.of( griddedValue.getIssueTime(),
-                                         Event.of( griddedValue.getValidTime(), griddedValue.getValue() ) ) );
+                    Event<Double> event = Event.of( griddedValue.getValidTime(), griddedValue.getValue() );
+                    Pair<Instant,Event<Double>> eventPlusIssueTime = Pair.of( griddedValue.getIssueTime(), event );
+                    events.add( eventPlusIssueTime );
                     measurementUnit = griddedValue.getMeasurementUnit();
                 }
             }
@@ -269,7 +270,7 @@ public class GriddedReader
                                                                           feature,
                                                                           unit ) );
         }
-
+        
         return Collections.unmodifiableList( returnMe );
     }
 

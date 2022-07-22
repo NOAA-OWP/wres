@@ -43,6 +43,9 @@ public class ReaderUtilities
                                                 SortedMap<Instant, Double> trace,
                                                 int lineNumber )
     {
+        Objects.requireNonNull( metadata );
+        Objects.requireNonNull( trace );
+        
         if ( trace.isEmpty() )
         {
             throw new IllegalArgumentException( "Cannot transform fewer than "

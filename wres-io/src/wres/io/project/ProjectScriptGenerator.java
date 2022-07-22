@@ -277,7 +277,7 @@ final class ProjectScriptGenerator
     }
 
     /**
-     * Returns the set of existing time scales for the ingested time-series data for a specified side of data.
+     * Returns the set of existing time scales for the ingested time-series data.
      * 
      * @param database the database
      * @param projectId the project identifier

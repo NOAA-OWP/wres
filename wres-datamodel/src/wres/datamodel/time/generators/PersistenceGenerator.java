@@ -793,6 +793,12 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
         // Retrieve the time-series on construction
         List<TimeSeries<T>> source = persistenceSource.get()
                                                       .collect( Collectors.toList() );
+        
+        if ( source.isEmpty() )
+        {
+            throw new TimeSeriesGeneratorException( "Cannot generate a persistence baseline without a time-series. The "
+                                                    + "persistence source was empty." );
+        }
 
         // Consolidate into one series
         this.persistenceSource = TimeSeriesSlicer.consolidate( source );

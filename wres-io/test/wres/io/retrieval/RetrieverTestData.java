@@ -10,6 +10,7 @@ import static wres.io.retrieval.RetrieverTestConstants.*;
 import wres.config.generated.DataSourceBaselineConfig;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.Ensemble;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
@@ -145,7 +146,8 @@ public class RetrieverTestData
                 .build();
     }
 
-    static DataSource generateDataSource( DatasourceType type )
+    static DataSource generateDataSource( LeftOrRightOrBaseline lrb,
+                                          DatasourceType type )
     {
         DataSourceConfig.Source config1 = new DataSourceConfig.Source( FAKE_URI, null, null, null, null );
         DataSourceConfig config2 = new DataSourceConfig( type,
@@ -163,7 +165,8 @@ public class RetrieverTestData
                               config1,
                               config2,
                               Collections.emptyList(),
-                              FAKE_URI );
+                              FAKE_URI,
+                              lrb );
     }
 
     static DataSource generateBaselineDataSource( DatasourceType type )
@@ -185,6 +188,7 @@ public class RetrieverTestData
                               config1,
                               config2,
                               Collections.emptyList(),
-                              FAKE_URI );
+                              FAKE_URI,
+                              LeftOrRightOrBaseline.BASELINE  );
     }
 }

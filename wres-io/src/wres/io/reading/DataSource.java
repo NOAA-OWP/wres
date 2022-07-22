@@ -119,7 +119,13 @@ public class DataSource
      */
 
     private final URI uri;
+    
+    /**
+     * Whether the source originates from the left, right or baseline side of the evaluation.
+     */
 
+    private final LeftOrRightOrBaseline lrb;
+    
     /**
      * Create a data source to load into <code>wres.Source</code>, with optional links to
      * create in <code>wres.ProjectSource</code>. If the source is used only once in the
@@ -135,6 +141,7 @@ public class DataSource
      * @param context the context in which the source appears
      * @param links the optional links to create
      * @param uri the uri for the source
+     * @param lrb whether the data source originates from the left or right or baseline side of the evaluation
      * @throws NullPointerException if any input is null
      * @return The newly created DataSource.
      */
@@ -143,7 +150,8 @@ public class DataSource
                                  DataSourceConfig.Source source,
                                  DataSourceConfig context,
                                  List<LeftOrRightOrBaseline> links,
-                                 URI uri )
+                                 URI uri,
+                                 LeftOrRightOrBaseline lrb )
     {
         Objects.requireNonNull( disposition );
         Objects.requireNonNull( uri );
@@ -151,7 +159,8 @@ public class DataSource
                                source,
                                context,
                                links,
-                               uri );
+                               uri,
+                               lrb );
     }
 
     /**
@@ -161,13 +170,15 @@ public class DataSource
      * @param context the context in which the source appears
      * @param links the links
      * @param uri the uri
+     * @param lrb whether the data source originates from the left or right or baseline side of the evaluation
      */
 
     private DataSource( DataDisposition disposition,
                         DataSourceConfig.Source source,
                         DataSourceConfig context,
                         List<LeftOrRightOrBaseline> links,
-                        URI uri )
+                        URI uri,
+                        LeftOrRightOrBaseline lrb )
     {
         Objects.requireNonNull( disposition );
         Objects.requireNonNull( context );
@@ -187,6 +198,7 @@ public class DataSource
         }
 
         this.uri = uri;
+        this.lrb = lrb;
     }
 
     /**
@@ -257,6 +269,15 @@ public class DataSource
     {
         return this.context;
     }
+    
+    /**
+     * @return whether the data source originates from the left, right or baseline side of the evaluation
+     */
+    
+    public LeftOrRightOrBaseline getLeftOrRightOrBaseline()
+    {
+        return lrb;
+    }
 
     /**
      * Returns the variable specified for this source, null if unspecified
@@ -308,6 +329,7 @@ public class DataSource
         joiner.add( "Disposition: " + this.getDisposition() );
         joiner.add( " URI: " + this.getUri() );
         joiner.add( " Type: " + this.getContext().getType() );
+        joiner.add( " Orientation: " + this.getLeftOrRightOrBaseline() );
 
         if ( !this.getLinks().isEmpty() )
         {

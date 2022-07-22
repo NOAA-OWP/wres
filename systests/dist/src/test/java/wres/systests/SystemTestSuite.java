@@ -102,18 +102,21 @@ public class SystemTestSuite
     @BeforeClass
     public static void runBeforeAllTests() throws SQLException
     {
-        String dbName = System.getProperty( "wres.databaseName" );
-        LOGGER.info( "Cleaning the test database instance {}...", dbName );
         SystemSettings systemSettings = SystemSettings.fromDefaultClasspathXmlFile();
-        Database database = new Database( systemSettings );
-        Instant started = Instant.now();
-        Operations.cleanDatabase( database );
-        Instant stopped = Instant.now();
-        Duration duration = Duration.between( started, stopped );
-        database.shutdown();
+        if ( !systemSettings.isInMemory() )
+        {
+            String dbName = System.getProperty( "wres.databaseName" );
+            LOGGER.info( "Cleaning the test database instance {}...", dbName );
+            Database database = new Database( systemSettings );
+            Instant started = Instant.now();
+            Operations.cleanDatabase( database );
+            Instant stopped = Instant.now();
+            Duration duration = Duration.between( started, stopped );
+            database.shutdown();
 
-        LOGGER.info( "Finished cleaning the test database instance {}, which took {}.",
-                     dbName,
-                     duration );
+            LOGGER.info( "Finished cleaning the test database instance {}, which took {}.",
+                         dbName,
+                         duration );
+        }
     }
 }

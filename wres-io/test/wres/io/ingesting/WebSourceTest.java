@@ -20,6 +20,7 @@ import static wres.io.reading.DataSource.DataDisposition.COMPLEX;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.InterfaceShortHand;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.UrlParameter;
 import wres.io.data.caching.Caches;
@@ -81,7 +82,8 @@ public class WebSourceTest
                                                source,
                                                sourceConfig,
                                                Collections.emptyList(),
-                                               BASE_URI );
+                                               BASE_URI,
+                                               LeftOrRightOrBaseline.RIGHT );
         WebSource webSource = WebSource.of( this.timeSeriesIngester,
                                             this.mockSystemSettings,
                                             this.mockDatabase,
@@ -132,7 +134,8 @@ public class WebSourceTest
                                                source,
                                                sourceConfig,
                                                Collections.emptyList(),
-                                               BASE_URI );
+                                               BASE_URI,
+                                               LeftOrRightOrBaseline.RIGHT  );
         WebSource webSource = WebSource.of( this.timeSeriesIngester,
                                             this.mockSystemSettings,
                                             this.mockDatabase,
@@ -182,7 +185,8 @@ public class WebSourceTest
                                                source,
                                                sourceConfig,
                                                Collections.emptyList(),
-                                               BASE_URI );
+                                               BASE_URI,
+                                               LeftOrRightOrBaseline.LEFT  );
         WebSource webSource = WebSource.of( this.timeSeriesIngester,
                                             this.mockSystemSettings,
                                             this.mockDatabase,

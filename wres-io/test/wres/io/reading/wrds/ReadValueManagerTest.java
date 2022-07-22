@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.MissingValues;
+import wres.io.ingesting.DatabaseTimeSeriesIngester;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.DataSource;
 import wres.config.generated.DatasourceType;
@@ -377,7 +378,8 @@ public class ReadValueManagerTest
                                                config, //This is needed for the check that its observations.
                                                List.of( LeftOrRightOrBaseline.LEFT,
                                                         LeftOrRightOrBaseline.RIGHT ),
-                                               fakeAhpsUri );
+                                               fakeAhpsUri,
+                                               LeftOrRightOrBaseline.RIGHT );
         TimeSeriesIngester timeSeriesIngester = Mockito.mock( TimeSeriesIngester.class );
 
         ReadValueManager manager = new ReadValueManager( timeSeriesIngester,

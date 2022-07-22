@@ -29,11 +29,13 @@ import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Caches;
 import wres.io.ingesting.PreIngestException;
 import wres.io.ingesting.TimeSeriesIngester;
+import wres.io.ingesting.DatabaseTimeSeriesIngester;
 import wres.io.utilities.Database;
 import wres.pipeline.Evaluator;
 import wres.pipeline.InternalWresException;
 import wres.pipeline.UserInputException;
 import wres.system.DatabaseLockManager;
+import wres.system.DatabaseType;
 import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 
@@ -184,9 +186,9 @@ final class MainFunctions
 
         try
         {
-            lockManager.lockExclusive( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
+            lockManager.lockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
             Operations.cleanDatabase( sharedResources.getDatabase() );
-            lockManager.unlockExclusive( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
+            lockManager.unlockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
         }
         catch ( SQLException se )
         {
@@ -251,9 +253,9 @@ final class MainFunctions
 
         try
         {
-            lockManager.lockExclusive( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
+            lockManager.lockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
             Operations.refreshDatabase( sharedResources.getDatabase() );
-            lockManager.unlockExclusive( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
+            lockManager.unlockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
             return ExecutionResult.success();
         }
         catch ( SQLException | RuntimeException e )
@@ -291,12 +293,12 @@ final class MainFunctions
 
             try
             {
-                lockManager.lockShared( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
+                lockManager.lockShared( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
 
                 // Build the database caches/ORMs
                 Caches caches = Caches.of( sharedResources.getDatabase(), projectConfig );
                 TimeSeriesIngester timeSeriesIngester =
-                        new TimeSeriesIngester.Builder().setSystemSettings( sharedResources.getSystemSettings() )
+                        new DatabaseTimeSeriesIngester.Builder().setSystemSettings( sharedResources.getSystemSettings() )
                                                         .setDatabase( sharedResources.getDatabase() )
                                                         .setCaches( caches )
                                                         .setProjectConfig( projectConfig )
@@ -310,7 +312,7 @@ final class MainFunctions
                                    projectConfig,
                                    lockManager,
                                    caches );
-                lockManager.unlockShared( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
+                lockManager.unlockShared( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
                 return ExecutionResult.success( projectConfig.getName() );
             }
             catch ( RuntimeException | SQLException e )
@@ -452,6 +454,13 @@ final class MainFunctions
         private final BrokerConnectionFactory brokerConnectionFactory;
         private final String[] arguments;
 
+        /**
+         * @param systemSettings the system settings, not null
+         * @param database the database, optional if a database is not required
+         * @param executor the executor
+         * @param brokerConnectionFactory the broker connection factory
+         * @param arguments the arguments
+         */
         public SharedResources( SystemSettings systemSettings,
                                 Database database,
                                 Executor executor,
@@ -459,10 +468,14 @@ final class MainFunctions
                                 String[] arguments )
         {
             Objects.requireNonNull( systemSettings );
-            Objects.requireNonNull( database );
             Objects.requireNonNull( executor );
             Objects.requireNonNull( arguments );
             Objects.requireNonNull( brokerConnectionFactory );
+            
+            if( !systemSettings.isInMemory() )
+            {
+                Objects.requireNonNull( database );
+            }
             
             this.systemSettings = systemSettings;
             this.database = database;

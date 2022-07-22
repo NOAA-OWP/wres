@@ -85,6 +85,9 @@ class NWMTimeSeries implements Closeable
     /** The reference datetime of this NWM Forecast */
     private final Instant referenceDatetime;
 
+    /** The reference time type. */
+    private final ReferenceTimeType referenceTimeType;
+
     /** The base URI from where to find the members of this forecast */
     private final URI baseUri;
 
@@ -110,10 +113,10 @@ class NWMTimeSeries implements Closeable
     private final Set<Integer> featuresNotFound;
 
     /**
-     *
-     * @param profile
-     * @param referenceDatetime
-     * @param baseUri
+     * @param systemSettings the system settings
+     * @param profile the profile
+     * @param referenceDatetime the reference time
+     * @param baseUri the base uri
      * @throws NullPointerException When any argument is null.
      * @throws PreIngestException When any netCDF blob could not be opened.
      * @throws IllegalArgumentException When baseUri is not absolute.
@@ -122,14 +125,18 @@ class NWMTimeSeries implements Closeable
     NWMTimeSeries( SystemSettings systemSettings,
                    NWMProfile profile,
                    Instant referenceDatetime,
+                   ReferenceTimeType referenceTimeType,
                    URI baseUri )
     {
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( profile );
         Objects.requireNonNull( referenceDatetime );
         Objects.requireNonNull( baseUri );
+        Objects.requireNonNull( referenceTimeType );
+
         this.profile = profile;
         this.referenceDatetime = referenceDatetime;
+        this.referenceTimeType = referenceTimeType;
 
         // Require an absolute URI
         if ( baseUri.isAbsolute() )
@@ -406,12 +413,17 @@ class NWMTimeSeries implements Closeable
         return this.profile;
     }
 
-    Instant getReferenceDatetime()
+    private Instant getReferenceDatetime()
     {
         return this.referenceDatetime;
     }
 
-    URI getBaseUri()
+    private ReferenceTimeType getReferenceTimeType()
+    {
+        return this.referenceTimeType;
+    }
+
+    private URI getBaseUri()
     {
         return this.baseUri;
     }
@@ -536,7 +548,7 @@ class NWMTimeSeries implements Closeable
             FeatureKey feature = FeatureKey.of( geometry );
 
             TimeSeriesMetadata metadata =
-                    TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, this.getReferenceDatetime() ),
+                    TimeSeriesMetadata.of( Map.of( this.getReferenceTimeType(), this.getReferenceDatetime() ),
                                            null,
                                            variableName,
                                            feature,
@@ -909,7 +921,7 @@ class NWMTimeSeries implements Closeable
             FeatureKey feature = FeatureKey.of( geometry );
 
             TimeSeriesMetadata metadata =
-                    TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, this.getReferenceDatetime() ),
+                    TimeSeriesMetadata.of( Map.of( this.getReferenceTimeType(), this.getReferenceDatetime() ),
                                            null,
                                            variableName,
                                            feature,

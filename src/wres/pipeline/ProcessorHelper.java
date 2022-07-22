@@ -9,7 +9,6 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
-import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -30,6 +29,7 @@ import wres.config.ProjectConfigs;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
@@ -41,6 +41,7 @@ import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesStore;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.events.Evaluation;
 import wres.events.EvaluationEventUtilities;
@@ -53,15 +54,21 @@ import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Caches;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.geography.FeatureFinder;
+import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.TimeSeriesIngester;
+import wres.io.ingesting.DatabaseTimeSeriesIngester;
+import wres.io.ingesting.InMemoryTimeSeriesIngester;
 import wres.io.pooling.PoolFactory;
 import wres.io.pooling.PoolParameters;
 import wres.io.project.Project;
 import wres.io.retrieval.EnsembleRetrieverFactory;
+import wres.io.retrieval.EnsembleRetrieverFactoryInMemory;
 import wres.io.retrieval.RetrieverFactory;
 import wres.io.retrieval.SingleValuedRetrieverFactory;
+import wres.io.retrieval.SingleValuedRetrieverFactoryInMemory;
 import wres.io.retrieval.UnitMapper;
 import wres.io.thresholds.ThresholdReader;
+import wres.io.utilities.Database;
 import wres.io.writing.SharedSampleDataWriters;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
@@ -206,14 +213,15 @@ class ProcessorHelper
                                                                          evaluationDescription,
                                                                          evaluationId,
                                                                          subscriberApprover,
-                                                                         connections,
-                                                                         monitor );
+                                                                         monitor,
+                                                                         databaseServices.getDatabase() );
 
             // Open an evaluation, to be closed on completion or stopped on exception
             Pair<Evaluation, String> evaluationAndProjectHash =
                     ProcessorHelper.processProjectConfig( evaluationDetails,
                                                           databaseServices,
                                                           executors,
+                                                          connections,
                                                           sharedWriters,
                                                           netcdfWriters,
                                                           outputDirectory );
@@ -281,24 +289,7 @@ class ProcessorHelper
         finally
         {
             // Close the netCDF writers if not closed
-            for ( NetcdfOutputWriter writer : netcdfWriters )
-            {
-                try
-                {
-                    writer.close();
-                }
-                catch ( IOException we )
-                {
-                    if ( Objects.nonNull( evaluation ) )
-                    {
-                        LOGGER.debug( FORCIBLY_STOPPING_EVALUATION_UPON_ENCOUNTERING_AN_INTERNAL_ERROR,
-                                      evaluationId );
-
-                        evaluation.stop( we );
-                    }
-                    LOGGER.warn( "Failed to close a netcdf writer.", we );
-                }
-            }
+            ProcessorHelper.closeNetcdfWriters( netcdfWriters, evaluation, evaluationId );
 
             // Clean-up an empty output directory: #67088
             try ( Stream<Path> outputs = Files.list( outputDirectory ) )
@@ -339,6 +330,37 @@ class ProcessorHelper
     }
 
     /**
+     * Closes the netcdf writers.
+     * @param netcdfWriters the writers to close
+     * @param evaluation the evaluation
+     * @param evaluationId the evaluation identifier
+     */
+
+    private static void closeNetcdfWriters( List<NetcdfOutputWriter> netcdfWriters,
+                                            Evaluation evaluation,
+                                            String evaluationId )
+    {
+        for ( NetcdfOutputWriter writer : netcdfWriters )
+        {
+            try
+            {
+                writer.close();
+            }
+            catch ( IOException we )
+            {
+                if ( Objects.nonNull( evaluation ) )
+                {
+                    LOGGER.debug( FORCIBLY_STOPPING_EVALUATION_UPON_ENCOUNTERING_AN_INTERNAL_ERROR,
+                                  evaluationId );
+
+                    evaluation.stop( we );
+                }
+                LOGGER.warn( "Failed to close a netcdf writer.", we );
+            }
+        }
+    }
+
+    /**
      * Processes a {@link ProjectConfigPlus} using a prescribed {@link ExecutorService} for each of the pairs, 
      * thresholds and metrics.
      *
@@ -346,6 +368,7 @@ class ProcessorHelper
      * @param evaluationDetails the evaluation details
      * @param databaseServices the database services
      * @param executors the executors
+     * @param connections the broker connections
      * @param netcdfWriters netCDF writers
      * @param sharedWriters for writing
      * @param outputDirectory the output directory
@@ -357,6 +380,7 @@ class ProcessorHelper
     private static Pair<Evaluation, String> processProjectConfig( EvaluationDetails evaluationDetails,
                                                                   DatabaseServices databaseServices,
                                                                   Executors executors,
+                                                                  BrokerConnectionFactory connections,
                                                                   SharedWriters sharedWriters,
                                                                   List<NetcdfOutputWriter> netcdfWriters,
                                                                   Path outputDirectory )
@@ -379,25 +403,59 @@ class ProcessorHelper
 
             LOGGER.debug( "Beginning ingest for project {}...", projectConfigPlus );
 
-            // Build the database caches/ORMs
-            Caches caches = Caches.of( databaseServices.getDatabase(), projectConfig );
+            // Build the database caches/ORMs, if required
+            Caches caches = null;
+            TimeSeriesIngester timeSeriesIngester = null;
+            Project project = null;
+            SystemSettings systemSettings = evaluationDetails.getSystemSettings();
 
-            TimeSeriesIngester timeSeriesIngester =
-                    new TimeSeriesIngester.Builder().setSystemSettings( evaluationDetails.getSystemSettings() )
-                                                    .setDatabase( databaseServices.getDatabase() )
-                                                    .setCaches( caches )
-                                                    .setProjectConfig( projectConfig )
-                                                    .setLockManager( databaseServices.getDatabaseLockManager() )
-                                                    .build();
+            // Is the evaluation in in-memory? If no, use implementations that support a persistence store/database
+            if ( !systemSettings.isInMemory() )
+            {
+                caches = Caches.of( databaseServices.getDatabase(), projectConfig );
+                evaluationDetails.setCaches( caches );
+                timeSeriesIngester =
+                        new DatabaseTimeSeriesIngester.Builder().setSystemSettings( evaluationDetails.getSystemSettings() )
+                                                                .setDatabase( databaseServices.getDatabase() )
+                                                                .setCaches( caches )
+                                                                .setProjectConfig( projectConfig )
+                                                                .setLockManager( databaseServices.getDatabaseLockManager() )
+                                                                .build();
+                List<IngestResult> ingestResults = Operations.ingest( timeSeriesIngester,
+                                                                      evaluationDetails.getSystemSettings(),
+                                                                      databaseServices.getDatabase(),
+                                                                      executors.getIoExecutor(),
+                                                                      featurefulProjectConfig,
+                                                                      databaseServices.getDatabaseLockManager(),
+                                                                      caches );
 
-            // Need to ingest first
-            Project project = Operations.ingest( timeSeriesIngester,
-                                                 evaluationDetails.getSystemSettings(),
-                                                 databaseServices.getDatabase(),
-                                                 executors.getIoExecutor(),
+                // Get the project, which provides an interface to the underlying store of time-series data
+                project = Operations.getProject( databaseServices.getDatabase(),
                                                  featurefulProjectConfig,
-                                                 databaseServices.getDatabaseLockManager(),
-                                                 caches );
+                                                 caches,
+                                                 ingestResults );
+            }
+            // In memory evaluation
+            else
+            {
+                TimeSeriesStore.Builder timeSeriesStoreBuilder = new TimeSeriesStore.Builder();
+                // Ingest the time-series into the timeSeriesStoreBuilder
+                timeSeriesIngester = InMemoryTimeSeriesIngester.of( timeSeriesStoreBuilder );
+
+                List<IngestResult> ingestResults = Operations.ingest( timeSeriesIngester,
+                                                                      evaluationDetails.getSystemSettings(),
+                                                                      databaseServices.getDatabase(),
+                                                                      executors.getIoExecutor(),
+                                                                      featurefulProjectConfig,
+                                                                      databaseServices.getDatabaseLockManager(),
+                                                                      caches );
+
+                TimeSeriesStore timeSeriesStore = timeSeriesStoreBuilder.build();
+                evaluationDetails.setTimeSeriesStore( timeSeriesStore );
+                project = Operations.getProject( featurefulProjectConfig,
+                                                 timeSeriesStore,
+                                                 ingestResults );
+            }
 
             LOGGER.debug( "Finished ingest for project {}...", projectConfigPlus );
 
@@ -423,7 +481,7 @@ class ProcessorHelper
             // evaluation description that depend on the data would need to be part of the pool description instead 
             // (e.g., the measurement units). Indeed, the time scale is part of the pool description for this reason.
             evaluation = Evaluation.of( evaluationDescription,
-                                        evaluationDetails.getBrokerConnections(),
+                                        connections,
                                         ProcessorHelper.CLIENT_ID,
                                         evaluationDetails.getEvaluationId(),
                                         evaluationDetails.getSubscriberApprover() );
@@ -529,7 +587,7 @@ class ProcessorHelper
             // Return an evaluation that was opened
             return Pair.of( evaluation, projectHash );
         }
-        catch ( IOException | SQLException | RuntimeException internalError )
+        catch ( IOException | RuntimeException internalError )
         {
             if ( Objects.nonNull( evaluation ) )
             {
@@ -838,13 +896,11 @@ class ProcessorHelper
      * @param evaluation the evaluation description
      * @param project the project
      * @return an evaluation description with analyzed measurement units and variables, as needed
-     * @throws SQLException if the analyzed unit could not be obtained from the project
      */
 
     private static wres.statistics.generated.Evaluation
             setAnalyzedUnitsAndVariableNames( wres.statistics.generated.Evaluation evaluation,
                                               Project project )
-                    throws SQLException
     {
         String desiredMeasurementUnit = project.getMeasurementUnit();
         wres.statistics.generated.Evaluation.Builder builder = evaluation.toBuilder()
@@ -853,15 +909,15 @@ class ProcessorHelper
         // Only set the names with analyzed names if the existing names are empty
         if ( "".equals( evaluation.getLeftVariableName() ) )
         {
-            builder.setLeftVariableName( project.getLeftVariableName() );
+            builder.setLeftVariableName( project.getVariableName( LeftOrRightOrBaseline.LEFT ) );
         }
         if ( "".equals( evaluation.getRightVariableName() ) )
         {
-            builder.setLeftVariableName( project.getRightVariableName() );
+            builder.setRightVariableName( project.getVariableName( LeftOrRightOrBaseline.RIGHT ) );
         }
         if ( project.hasBaseline() && "".equals( evaluation.getBaselineVariableName() ) )
         {
-            builder.setBaselineVariableName( project.getBaselineVariableName() );
+            builder.setBaselineVariableName( project.getVariableName( LeftOrRightOrBaseline.BASELINE ) );
         }
 
         return builder.build();
@@ -936,7 +992,7 @@ class ProcessorHelper
         CompletableFuture<Object> poolTasks = null;
 
         DatasourceType type = evaluationDetails.getProject()
-                                               .getRight()
+                                               .getDeclaredDataSource( LeftOrRightOrBaseline.RIGHT )
                                                .getType();
 
         SystemSettings settings = evaluationDetails.getSystemSettings();
@@ -1011,8 +1067,22 @@ class ProcessorHelper
                                                            executors.getMetricExecutor() );
 
         // Create a retriever factory to support retrieval for this project
-        RetrieverFactory<Double, Double> retrieverFactory = SingleValuedRetrieverFactory.of( project,
-                                                                                             unitMapper );
+        RetrieverFactory<Double, Double> retrieverFactory = null;
+        if ( evaluationDetails.hasInMemoryStore() )
+        {
+            LOGGER.debug( "Performing retrieval with an in-memory retriever factory." );
+            retrieverFactory = SingleValuedRetrieverFactoryInMemory.of( evaluationDetails.getProject(),
+                                                                        evaluationDetails.getTimeSeriesStore(),
+                                                                        unitMapper );
+        }
+        else
+        {
+            LOGGER.debug( "Performing retrieval with a retriever factory backed by a persistent store." );
+            retrieverFactory = SingleValuedRetrieverFactory.of( project,
+                                                                evaluationDetails.getDatabase(),
+                                                                evaluationDetails.getCaches(),
+                                                                unitMapper );
+        }
 
         // Create the pool suppliers for all pools in this evaluation
         List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Double>>>>>> poolSuppliers =
@@ -1089,8 +1159,22 @@ class ProcessorHelper
                                                        executors.getMetricExecutor() );
 
         // Create a retriever factory to support retrieval for this project
-        RetrieverFactory<Double, Ensemble> retrieverFactory = EnsembleRetrieverFactory.of( project,
-                                                                                           unitMapper );
+        RetrieverFactory<Double, Ensemble> retrieverFactory = null;
+        if ( evaluationDetails.hasInMemoryStore() )
+        {
+            LOGGER.debug( "Performing retrieval with an in-memory retriever factory." );
+            retrieverFactory = EnsembleRetrieverFactoryInMemory.of( evaluationDetails.getProject(),
+                                                                    evaluationDetails.getTimeSeriesStore(),
+                                                                    unitMapper );
+        }
+        else
+        {
+            LOGGER.debug( "Performing retrieval with a retriever factory backed by a persistent store." );
+            retrieverFactory = EnsembleRetrieverFactory.of( project,
+                                                            evaluationDetails.getDatabase(),
+                                                            evaluationDetails.getCaches(),
+                                                            unitMapper );
+        }
 
         // Create the pool suppliers for all pools in this evaluation
         List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>>> poolSuppliers =
@@ -1279,16 +1363,20 @@ class ProcessorHelper
         private final String evaluationId;
         /** Approves format writer subscriptions that attempt to serve an evaluation. */
         private final SubscriberApprover subscriberApprover;
-        /** Broker connections. */
-        private final BrokerConnectionFactory connections;
         /** Monitor. */
         private final EvaluationEvent monitor;
+        /** The database. */
+        private final Database database;
+        /** The caches.*/
+        private Caches caches;
         /** The project, possibly null. */
         private Project project;
         /** The resolved project, possibly null. */
         private ResolvedProject resolvedProject;
         /** The messaging component of an evaluation, possibly null. */
         private Evaluation evaluation;
+        /** An in-memory store of time-series data, possibly null. */
+        private TimeSeriesStore timeSeriesStore;
 
         /**
          * @return the project configuration
@@ -1320,14 +1408,6 @@ class ProcessorHelper
         private SubscriberApprover getSubscriberApprover()
         {
             return subscriberApprover;
-        }
-
-        /**
-         * @return the broker connection factory
-         */
-        private BrokerConnectionFactory getBrokerConnections()
-        {
-            return connections;
         }
 
         /**
@@ -1376,6 +1456,33 @@ class ProcessorHelper
         }
 
         /**
+         * @return the database
+         */
+
+        private Database getDatabase()
+        {
+            return this.database;
+        }
+
+        /**
+         * @return the caches, possibly null
+         */
+
+        private Caches getCaches()
+        {
+            return this.caches;
+        }
+
+        /**
+         * @return the time-series store, possibly null
+         */
+
+        private TimeSeriesStore getTimeSeriesStore()
+        {
+            return this.timeSeriesStore;
+        }
+
+        /**
          * Set the project, not null.
          * @param project the project
          * @throws NullPointerException if the project is null
@@ -1402,6 +1509,15 @@ class ProcessorHelper
         }
 
         /**
+         * @param caches the caches
+         */
+
+        private void setCaches( Caches caches )
+        {
+            this.caches = caches;
+        }
+
+        /**
          * Set the evaluation, not null.
          * @param evaluation the evaluation
          * @throws NullPointerException if the evaluation is null
@@ -1415,6 +1531,28 @@ class ProcessorHelper
         }
 
         /**
+         * Set the time-series store, not null.
+         * @param timeSeriesStore the in-memory time-series store
+         * @throws NullPointerException if the timeSeriesStore is null
+         */
+
+        private void setTimeSeriesStore( TimeSeriesStore timeSeriesStore )
+        {
+            Objects.requireNonNull( timeSeriesStore );
+
+            this.timeSeriesStore = timeSeriesStore;
+        }
+
+        /**
+         * @return true if there is an in-memory store of time-series, false otherwise.
+         */
+
+        private boolean hasInMemoryStore()
+        {
+            return Objects.nonNull( this.timeSeriesStore );
+        }
+
+        /**
          * Builds an instance.
          * 
          * @param systemSettings the system settings
@@ -1422,8 +1560,8 @@ class ProcessorHelper
          * @param evaluationDescription the evaluation description
          * @param evaluationId the evaluation identifier
          * @param subscriberApprover the subscriber approver
-         * @param connections the broker connections
          * @param monitor the evaluation event monitor
+         * @param database the database
          */
 
         private EvaluationDetails( SystemSettings systemSettings,
@@ -1431,16 +1569,16 @@ class ProcessorHelper
                                    wres.statistics.generated.Evaluation evaluationDescription,
                                    String evaluationId,
                                    SubscriberApprover subscriberApprover,
-                                   BrokerConnectionFactory connections,
-                                   EvaluationEvent monitor )
+                                   EvaluationEvent monitor,
+                                   Database database )
         {
             this.systemSettings = systemSettings;
             this.projectConfigPlus = projectConfigPlus;
             this.evaluationDescription = evaluationDescription;
             this.evaluationId = evaluationId;
             this.subscriberApprover = subscriberApprover;
-            this.connections = connections;
             this.monitor = monitor;
+            this.database = database;
         }
     }
 

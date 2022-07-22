@@ -30,7 +30,7 @@ class DatabaseSchema implements Closeable
         {
             // The companion unlockExclusive is in the close() method which
             // must be called in a "finally" block when this succeeds.
-            this.lockManager.lockExclusive( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
+            this.lockManager.lockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
         }
         catch ( SQLException | DatabaseLockFailed e )
         {
@@ -98,12 +98,12 @@ class DatabaseSchema implements Closeable
     {
         try
         {
-            this.lockManager.unlockExclusive( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
+            this.lockManager.unlockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
         }
         catch ( SQLException se )
         {
             throw new IllegalStateException( "Unable to unlock using "
-                                             + DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
+                                             + DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
         }
     }
 }

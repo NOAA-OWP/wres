@@ -41,6 +41,7 @@ import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.io.concurrency.Executor;
+import wres.io.data.caching.Caches;
 import wres.io.data.caching.Features;
 import wres.io.data.details.EnsembleDetails;
 import wres.io.data.details.FeatureDetails;
@@ -56,12 +57,12 @@ import wres.system.DatabaseType;
 import wres.system.SystemSettings;
 
 /**
- * Tests the {@link Project}.
+ * Tests the {@link DatabaseProject}.
  * 
  * @author James Brown
  */
 
-class ProjectTest
+class DatabaseProjectTest
 {
     private static final FeatureKey FEATURE = FeatureKey.of(
                                                              MessageFactory.getGeometry( "F" ) );
@@ -77,7 +78,8 @@ class ProjectTest
     private Executor mockExecutor;
 
     private wres.io.utilities.Database wresDatabase;
-    private Features featuresCache;
+    @Mock
+    private Caches mockCaches;
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
     private Connection rawConnection;
@@ -114,7 +116,10 @@ class ProjectTest
                .thenReturn( 10 );
 
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
-        this.featuresCache = new Features( this.wresDatabase );
+        Features featuresCache = new Features( this.wresDatabase );
+
+        Mockito.when( this.mockCaches.getFeaturesCache() )
+               .thenReturn( featuresCache );
 
         // Create the tables
         this.addTheDatabaseAndTables();
@@ -297,15 +302,13 @@ class ProjectTest
 
         // Add a project
         Project project =
-                new Project( this.mockSystemSettings,
-                             this.wresDatabase,
-                             this.featuresCache,
-                             this.mockExecutor,
-                             projectConfig,
-                             PROJECT_HASH );
-        project.save();
+                new DatabaseProject( this.wresDatabase,
+                                     this.mockCaches,
+                                     projectConfig,
+                                     PROJECT_HASH );
+        boolean saved = project.save();
 
-        assertTrue( project.performedInsert() );
+        assertTrue( saved );
 
         assertEquals( PROJECT_HASH, project.getHash() );
 

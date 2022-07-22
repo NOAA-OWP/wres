@@ -7,16 +7,11 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.ProjectConfig;
 import wres.io.data.caching.Caches;
-import wres.io.data.caching.DataSources;
-import wres.io.data.caching.Ensembles;
-import wres.io.data.caching.Features;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.TimeScales;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.commaseparated.CSVSource;
 import wres.io.reading.datacard.DatacardSource;
 import wres.io.reading.fews.FEWSSource;
-import wres.io.reading.nwm.NWMSource;
+import wres.io.reading.nwm.GriddedNWMSource;
 import wres.io.reading.waterml.WaterMLBasicSource;
 import wres.io.reading.wrds.WRDSSource;
 import wres.io.utilities.Database;
@@ -85,7 +80,8 @@ public class ReaderFactory
                                            lockManager );
                 break;
             case NETCDF_GRIDDED:
-                source = new NWMSource( systemSettings,
+                source = new GriddedNWMSource( timeSeriesIngester,
+                                        systemSettings,
                                         database,
                                         caches,
                                         projectConfig,

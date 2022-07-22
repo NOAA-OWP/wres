@@ -65,7 +65,7 @@ import wres.util.Strings;
  */
 public final class PIXMLReader extends XMLReader
 {
-	private static final Logger LOGGER = LoggerFactory.getLogger(PIXMLReader.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger( PIXMLReader.class );
 
     /** A placeholder reference datetime for timeseries without one. */
     private static final Instant PLACEHOLDER_REFERENCE_DATETIME = Instant.MIN;
@@ -85,7 +85,7 @@ public final class PIXMLReader extends XMLReader
 
     private TimeSeriesMetadata currentTimeSeriesMetadata = null;
     private String currentTraceName = null;
-    private SortedMap<String, SortedMap<Instant,Double>> traceValues = new TreeMap<>();
+    private SortedMap<String, SortedMap<Instant, Double>> traceValues = new TreeMap<>();
     private int highestLineNumber = 0;
 
 
@@ -121,7 +121,7 @@ public final class PIXMLReader extends XMLReader
                dataSource.getDisposition() == DataDisposition.XML_FI_TIMESERIES );
 
         Objects.requireNonNull( timeSeriesIngester );
-        
+
         this.dataSource = dataSource;
         this.ingested = new ArrayList<>();
         this.timeSeriesIngester = timeSeriesIngester;
@@ -136,7 +136,7 @@ public final class PIXMLReader extends XMLReader
     {
         return this.timeSeriesIngester;
     }
-    
+
     @Override
     protected void parseElement( XMLStreamReader reader )
             throws IOException
@@ -226,7 +226,7 @@ public final class PIXMLReader extends XMLReader
             throws XMLStreamException
     {
         if ( reader.isStartElement()
-             && reader.getLocalName().equalsIgnoreCase("timeZone"))
+             && reader.getLocalName().equalsIgnoreCase( "timeZone" ) )
         {
             reader.next();
         }
@@ -239,10 +239,10 @@ public final class PIXMLReader extends XMLReader
 
 
     /**
-	 * Interprets information within PIXML "series" tags
-	 * @param reader The XML reader, positioned at a "series" tag
-	 */
-	private void parseSeries(XMLStreamReader reader)
+     * Interprets information within PIXML "series" tags
+     * @param reader The XML reader, positioned at a "series" tag
+     */
+    private void parseSeries( XMLStreamReader reader )
             throws XMLStreamException, SQLException
     {
         // If we get to this point without a zone offset, something is wrong.
@@ -253,7 +253,8 @@ public final class PIXMLReader extends XMLReader
                              + "find the zone offset. Have read up to line "
                              + reader.getLocation().getLineNumber()
                              + " and column "
-                             + reader.getLocation().getColumnNumber() + ". "
+                             + reader.getLocation().getColumnNumber()
+                             + ". "
                              + "In PI-XML data, a field named <timeZone> "
                              + "containing the number of hours to offset from "
                              + "UTC is required for reliable ingest. Please "
@@ -263,8 +264,7 @@ public final class PIXMLReader extends XMLReader
         }
         else
         {
-            ZoneOffset configuredOffset
-                = ConfigHelper.getZoneOffset( this.getSourceConfig() );
+            ZoneOffset configuredOffset = ConfigHelper.getZoneOffset( this.getSourceConfig() );
             if ( configuredOffset != null
                  && !configuredOffset.equals( this.getZoneOffset() ) )
             {
@@ -276,11 +276,11 @@ public final class PIXMLReader extends XMLReader
                              "). It is best to NOT specify the zone for PI-XML",
                              " sources in the project declaration because WRES ",
                              "ignores it and uses the zone offset found in-",
-                             "band in the data");
+                             "band in the data" );
             }
         }
-        
-		String localName;
+
+        String localName;
 
         //	Loop through every element in a series (header -> entry -> entry -> ... )
         while ( reader.hasNext() )
@@ -305,18 +305,18 @@ public final class PIXMLReader extends XMLReader
                 }
             }
         }
-	}
+    }
 
 
-	/**
-	 * Removes information about a measurement from an "event" tag. If a sufficient number of events have been
-	 * parsed, they are sent to the database to be saved.
-	 * @param reader The reader containing the current event tag
+    /**
+     * Removes information about a measurement from an "event" tag. If a sufficient number of events have been
+     * parsed, they are sent to the database to be saved.
+     * @param reader The reader containing the current event tag
      * @throws ProjectConfigException when a forecast is missing a forecast date
      * @throws PreIngestException When data is improperly formatted.
-	 */
+     */
 
-	private void parseEvent(XMLStreamReader reader)
+    private void parseEvent( XMLStreamReader reader )
     {
         // #102285
         if ( Objects.isNull( this.currentTraceName ) )
@@ -331,55 +331,59 @@ public final class PIXMLReader extends XMLReader
                                           + "continue." );
         }
 
-		String value = null;
-		String localName;
+        String value = null;
+        String localName;
         LocalDate localDate = null;
         LocalTime localTime = null;
         String dateText = "";
         String timeText = "";
 
-		for (int attributeIndex = 0; attributeIndex < reader.getAttributeCount(); ++attributeIndex)
-		{
-			localName = reader.getAttributeLocalName(attributeIndex);
-			
-			if (localName.equalsIgnoreCase("value"))
-			{
-				value = reader.getAttributeValue(attributeIndex);
-			}
-			else if (localName.equalsIgnoreCase("date"))
-			{
-                dateText = reader.getAttributeValue(attributeIndex);
-                localDate = LocalDate.parse( dateText );
-			}
-			else if (localName.equalsIgnoreCase("time"))
-			{
-                timeText = reader.getAttributeValue(attributeIndex);
-                localTime = LocalTime.parse( timeText );
-			}
-		}
+        for ( int attributeIndex = 0; attributeIndex < reader.getAttributeCount(); ++attributeIndex )
+        {
+            localName = reader.getAttributeLocalName( attributeIndex );
 
-		LOGGER.debug( "Parsed an event: date={}, time={}, value={}.", dateText, timeText, value );
-		
-		if ( Objects.isNull( value ) || value.isBlank() )
+            if ( localName.equalsIgnoreCase( "value" ) )
+            {
+                value = reader.getAttributeValue( attributeIndex );
+            }
+            else if ( localName.equalsIgnoreCase( "date" ) )
+            {
+                dateText = reader.getAttributeValue( attributeIndex );
+                localDate = LocalDate.parse( dateText );
+            }
+            else if ( localName.equalsIgnoreCase( "time" ) )
+            {
+                timeText = reader.getAttributeValue( attributeIndex );
+                localTime = LocalTime.parse( timeText );
+            }
+        }
+
+        LOGGER.debug( "Parsed an event: date={}, time={}, value={}.", dateText, timeText, value );
+
+        if ( Objects.isNull( value ) || value.isBlank() )
         {
             LOGGER.debug( "The event at {} {} in '{}' didn't have a value to save.",
-                          dateText, timeText, this.getFilename() );
+                          dateText,
+                          timeText,
+                          this.getFilename() );
             return;
         }
-        else if (localDate == null || localTime == null)
+        else if ( localDate == null || localTime == null )
         {
             throw new PreIngestException( "An event for " + this.currentTimeSeriesMetadata
-                                          + " in " + this.getFilename() + " didn't have "
+                                          + " in "
+                                          + this.getFilename()
+                                          + " didn't have "
                                           + "information about when the value was valid. "
                                           + "The source is not properly formed and parsing "
-                                          + "cannot continue.");
+                                          + "cannot continue." );
         }
 
         LocalDateTime dateTime = LocalDateTime.of( localDate, localTime );
         Instant fullDateTime = OffsetDateTime.of( dateTime, this.zoneOffset )
                                              .toInstant();
-        
-        SortedMap<Instant,Double> values = this.traceValues.get( this.currentTraceName );
+
+        SortedMap<Instant, Double> values = this.traceValues.get( this.currentTraceName );
 
         if ( Objects.isNull( values ) )
         {
@@ -391,31 +395,32 @@ public final class PIXMLReader extends XMLReader
 
         double numericValue = this.getValueToSave( value );
         LOGGER.trace( "About to save event at {} with value {} into values {}",
-                      fullDateTime, numericValue, values );
+                      fullDateTime,
+                      numericValue,
+                      values );
         values.put( fullDateTime, numericValue );
-	}
+    }
 
 
-
-	/**
-	 * Interprets the information within PIXML "header" tags
-	 * @param reader The XML reader, positioned at a "header" tag
-	 */
+    /**
+     * Interprets the information within PIXML "header" tags
+     * @param reader The XML reader, positioned at a "header" tag
+     */
 
     private void parseHeader( XMLStreamReader reader )
-			throws XMLStreamException,
-			IngestException
+            throws XMLStreamException,
+            IngestException
     {
-		//	If the current tag is the header tag itself, move on to the next tag
-		if (reader.isStartElement() && reader.getLocalName().equalsIgnoreCase("header"))
-		{
-			reader.next();
-		}
+        //	If the current tag is the header tag itself, move on to the next tag
+        if ( reader.isStartElement() && reader.getLocalName().equalsIgnoreCase( "header" ) )
+        {
+            reader.next();
+        }
 
         String localName;
-		Duration scalePeriod = null;
-		TimeScaleFunction scaleFunction = TimeScaleFunction.UNKNOWN;
-		Duration timeStep = null;
+        Duration scalePeriod = null;
+        TimeScaleFunction scaleFunction = TimeScaleFunction.UNKNOWN;
+        Duration timeStep = null;
         LocalDateTime forecastDate = null;
         String locationName = null;
         String variableName = null;
@@ -434,49 +439,49 @@ public final class PIXMLReader extends XMLReader
         Double z = null;
 
         //	Scrape all pertinent information from the header
-		while (reader.hasNext())
-		{
-			
-			if (reader.isEndElement() && reader.getLocalName().equalsIgnoreCase("header"))
-			{
-				//	Leave the loop when we arrive at the end tag
-				break;
-			}
-			else if (reader.isStartElement())
-			{
-				localName = reader.getLocalName();
+        while ( reader.hasNext() )
+        {
 
-				if (localName.equalsIgnoreCase("locationId"))
-				{
-				    // Change for 5.0: just store location verbatim. No magic.
-					locationName = XMLHelper.getXMLText( reader);
-				}
-				else if(localName.equalsIgnoreCase("units"))
-				{
-					unitName = XMLHelper.getXMLText( reader );
-				}
-				else if(localName.equalsIgnoreCase("missVal"))
-				{
-					// If we are at the tag for the missing value definition, record it
-					missingValue = Double.parseDouble( XMLHelper.getXMLText( reader ) );
-				}
-				else if (localName.equalsIgnoreCase("parameterId"))
-				{
-					variableName = XMLHelper.getXMLText( reader );
-				}
-				else if ( localName.equalsIgnoreCase("forecastDate") )
-				{
+            if ( reader.isEndElement() && reader.getLocalName().equalsIgnoreCase( "header" ) )
+            {
+                //	Leave the loop when we arrive at the end tag
+                break;
+            }
+            else if ( reader.isStartElement() )
+            {
+                localName = reader.getLocalName();
+
+                if ( localName.equalsIgnoreCase( "locationId" ) )
+                {
+                    // Change for 5.0: just store location verbatim. No magic.
+                    locationName = XMLHelper.getXMLText( reader );
+                }
+                else if ( localName.equalsIgnoreCase( "units" ) )
+                {
+                    unitName = XMLHelper.getXMLText( reader );
+                }
+                else if ( localName.equalsIgnoreCase( "missVal" ) )
+                {
+                    // If we are at the tag for the missing value definition, record it
+                    missingValue = Double.parseDouble( XMLHelper.getXMLText( reader ) );
+                }
+                else if ( localName.equalsIgnoreCase( "parameterId" ) )
+                {
+                    variableName = XMLHelper.getXMLText( reader );
+                }
+                else if ( localName.equalsIgnoreCase( "forecastDate" ) )
+                {
                     forecastDate = PIXMLReader.parseDateTime( reader );
                 }
-				else if ( localName.equalsIgnoreCase( "type" ))
+                else if ( localName.equalsIgnoreCase( "type" ) )
                 {
                     // See #59438
-				    if (XMLHelper.getXMLText( reader ).equalsIgnoreCase( "instantaneous" ))
+                    if ( XMLHelper.getXMLText( reader ).equalsIgnoreCase( "instantaneous" ) )
                     {
                         scalePeriod = Duration.ofMillis( 1 );
                     }
                 }
-                else if ( localName.equalsIgnoreCase( "timeStep" ))
+                else if ( localName.equalsIgnoreCase( "timeStep" ) )
                 {
                     String unit = XMLHelper.getAttributeValue( reader, "unit" ) + "s";
                     unit = unit.toUpperCase();
@@ -488,7 +493,7 @@ public final class PIXMLReader extends XMLReader
                 {
                     ensembleMemberId = XMLHelper.getXMLText( reader );
                 }
-                else if ( localName.equalsIgnoreCase("ensembleMemberIndex") )
+                else if ( localName.equalsIgnoreCase( "ensembleMemberIndex" ) )
                 {
                     ensembleMemberIndex = XMLHelper.getXMLText( reader );
                 }
@@ -526,22 +531,26 @@ public final class PIXMLReader extends XMLReader
                     String rawZ = XMLHelper.getXMLText( reader );
                     z = Double.parseDouble( rawZ );
                 }
-			}
+            }
 
-			reader.next();
-		}
+            reader.next();
+        }
 
         if ( Objects.nonNull( ensembleMemberId )
              && Objects.nonNull( ensembleMemberIndex ) )
         {
             throw new PreIngestException(
-                    "Invalid data in PI-XML source '"  + this.getFilename()
-                    + "' near line " + this.highestLineNumber
-                    + ": a trace may have either an ensembleMemberId OR an "
-                    + "ensembleMemberIndex but not both. Found ensembleMemberId"
-                    + " '" + ensembleMemberId + "' and ensembleMemberIndex of '"
-                    + ensembleMemberIndex + "'. For more details see "
-                    + "http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd" );
+                                          "Invalid data in PI-XML source '" + this.getFilename()
+                                          + "' near line "
+                                          + this.highestLineNumber
+                                          + ": a trace may have either an ensembleMemberId OR an "
+                                          + "ensembleMemberIndex but not both. Found ensembleMemberId"
+                                          + " '"
+                                          + ensembleMemberId
+                                          + "' and ensembleMemberIndex of '"
+                                          + ensembleMemberIndex
+                                          + "'. For more details see "
+                                          + "http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd" );
         }
 
         if ( Objects.nonNull( ensembleMemberId ) )
@@ -571,17 +580,17 @@ public final class PIXMLReader extends XMLReader
             }
         }
 
-		// See #59438
-		// For accumulative data, the scalePeriod has not been set, and this is equal
-		// to the timeStep
-		if( Objects.isNull( scalePeriod ) )
-		{
-		    scalePeriod = timeStep;
-		}
+        // See #59438
+        // For accumulative data, the scalePeriod has not been set, and this is equal
+        // to the timeStep
+        if ( Objects.isNull( scalePeriod ) )
+        {
+            scalePeriod = timeStep;
+        }
 
-		TimeScaleOuter scale = TimeScaleOuter.of( scalePeriod, scaleFunction );
+        TimeScaleOuter scale = TimeScaleOuter.of( scalePeriod, scaleFunction );
 
-        Map<ReferenceTimeType,Instant> basisDatetimes = new HashMap<>( 1 );
+        Map<ReferenceTimeType, Instant> basisDatetimes = new HashMap<>( 1 );
 
         if ( Objects.nonNull( forecastDate ) )
         {
@@ -601,7 +610,7 @@ public final class PIXMLReader extends XMLReader
         if ( Objects.nonNull( x ) && Objects.nonNull( y ) )
         {
             StringJoiner wktGeometry = new StringJoiner( " " );
-            wktGeometry.add( "POINT (");
+            wktGeometry.add( "POINT (" );
             wktGeometry.add( x.toString() );
             wktGeometry.add( y.toString() );
 
@@ -645,9 +654,9 @@ public final class PIXMLReader extends XMLReader
                       x,
                       y,
                       z );
-        
-        
-        Geometry geometry = MessageFactory.getGeometry( locationName, 
+
+
+        Geometry geometry = MessageFactory.getGeometry( locationName,
                                                         locationDescription,
                                                         null,
                                                         locationWkt );
@@ -665,13 +674,14 @@ public final class PIXMLReader extends XMLReader
              && !this.traceValues.isEmpty() )
         {
             LOGGER.debug( "Saving a trace as a standalone timeseries because {} not equal to {}",
-                          justParsed, this.currentTimeSeriesMetadata );
-            
+                          justParsed,
+                          this.currentTimeSeriesMetadata );
+
             this.createAndIngestTimeSeries( this.currentTimeSeriesMetadata,
                                             this.traceValues,
                                             this.currentTraceName,
                                             this.highestLineNumber );
-            
+
             this.traceValues = new TreeMap<>();
         }
 
@@ -682,9 +692,9 @@ public final class PIXMLReader extends XMLReader
         this.currentTimeSeriesMetadata = justParsed;
     }
 
-	/**
-	 * Reads the date and time from an XML reader that stores the date and time in separate attributes
-	 * @param reader The XML Reader positioned at a node containing date and time attributes
+    /**
+     * Reads the date and time from an XML reader that stores the date and time in separate attributes
+     * @param reader The XML Reader positioned at a node containing date and time attributes
      * @return a LocalDateTime representing the parsed value
      */
     private static LocalDateTime parseDateTime( XMLStreamReader reader )
@@ -692,34 +702,35 @@ public final class PIXMLReader extends XMLReader
     {
         LocalDate date = null;
         LocalTime time = null;
-		String localName;
-		
-		for (int attributeIndex = 0; attributeIndex < reader.getAttributeCount(); ++attributeIndex)
-		{
-			localName = reader.getAttributeLocalName(attributeIndex);
+        String localName;
 
-			if (localName.equalsIgnoreCase("date"))
-			{
-                String dateText = reader.getAttributeValue(attributeIndex);
+        for ( int attributeIndex = 0; attributeIndex < reader.getAttributeCount(); ++attributeIndex )
+        {
+            localName = reader.getAttributeLocalName( attributeIndex );
+
+            if ( localName.equalsIgnoreCase( "date" ) )
+            {
+                String dateText = reader.getAttributeValue( attributeIndex );
                 date = LocalDate.parse( dateText );
-			}
-			else if (localName.equalsIgnoreCase("time"))
-			{
-                String timeText = reader.getAttributeValue(attributeIndex);
+            }
+            else if ( localName.equalsIgnoreCase( "time" ) )
+            {
+                String timeText = reader.getAttributeValue( attributeIndex );
                 time = LocalTime.parse( timeText );
-			}
-		}
+            }
+        }
 
         if ( date == null || time == null )
         {
             throw new InvalidInputDataException(
-                    "Could not parse date and time at line "
-                    + reader.getLocation().getLineNumber()
-                    + " column " + reader.getLocation().getColumnNumber() );
+                                                 "Could not parse date and time at line "
+                                                 + reader.getLocation().getLineNumber()
+                                                 + " column "
+                                                 + reader.getLocation().getColumnNumber() );
         }
 
         return LocalDateTime.of( date, time );
-	}
+    }
 
     /**
      * @return The value specifying a value that is missing from the data set
@@ -728,7 +739,7 @@ public final class PIXMLReader extends XMLReader
     protected double getSpecifiedMissingValue()
     {
         if ( missingValue == PIXML_DEFAULT_MISSING_VALUE
-             && this.getDataSourceConfig() != null)
+             && this.getDataSourceConfig() != null )
         {
             DataSourceConfig.Source source = this.getSourceConfig();
 
@@ -736,7 +747,7 @@ public final class PIXMLReader extends XMLReader
                  && Objects.nonNull( source.getMissingValue() )
                  && !source.getMissingValue().isBlank() )
             {
-                missingValue = Double.parseDouble(source.getMissingValue());
+                missingValue = Double.parseDouble( source.getMissingValue() );
             }
         }
 
@@ -764,8 +775,8 @@ public final class PIXMLReader extends XMLReader
         value = value.strip();
         double val = MissingValues.DOUBLE;
 
-        if (Strings.hasValue(value) &&
-            !value.equalsIgnoreCase( "null" ) )
+        if ( Strings.hasValue( value ) &&
+             !value.equalsIgnoreCase( "null" ) )
         {
             val = Double.parseDouble( value );
 
@@ -857,13 +868,24 @@ public final class PIXMLReader extends XMLReader
             metadata = timeSeriesMetadata;
         }
 
-        // Check if this is actually an ensemble or single trace
+        // Check if this is actually an ensemble or a single trace
+        // Treat a one-member ensemble as single-valued and log
         if ( ensembleValues.size() == 1
-             && ensembleValues.firstKey()
-                              .equals( DEFAULT_ENSEMBLE_NAME ) )
+             && ( ensembleValues.firstKey()
+                                .equals( DEFAULT_ENSEMBLE_NAME )
+                  || ensembleValues.containsKey( lastEnsembleName ) ) )
         {
+            String name = DEFAULT_ENSEMBLE_NAME;
+            if ( ensembleValues.containsKey( lastEnsembleName ) )
+            {
+                LOGGER.debug( "While reading time-series data in PI-XML format discovered a single trace with an "
+                              + "ensemble member name of {}. Treating this as a single-valued time-series.",
+                              lastEnsembleName );
+                name = lastEnsembleName;
+            }
+
             TimeSeries<Double> timeSeries = ReaderUtilities.transform( metadata,
-                                                                       ensembleValues.get( DEFAULT_ENSEMBLE_NAME ),
+                                                                       ensembleValues.get( name ),
                                                                        lineNumber );
 
             this.ingestSingleValuedTimeSeries( timeSeries );
@@ -890,7 +912,7 @@ public final class PIXMLReader extends XMLReader
             throws IngestException
     {
         TimeSeriesIngester timeSeriesIngester = this.getTimeSeriesIngester();
-        
+
         try
         {
             List<IngestResult> ingestResults = timeSeriesIngester.ingestEnsembleTimeSeries( timeSeries,
@@ -900,7 +922,9 @@ public final class PIXMLReader extends XMLReader
         catch ( IngestException ie )
         {
             throw new IngestException( "Failed to ingest data from "
-                                       + this.getFilename() + ":", ie );
+                                       + this.getFilename()
+                                       + ":",
+                                       ie );
         }
     }
 
@@ -927,7 +951,7 @@ public final class PIXMLReader extends XMLReader
                                        + ":",
                                        ie );
         }
-    }   
+    }
 
     private void completeIngest()
     {
@@ -939,7 +963,6 @@ public final class PIXMLReader extends XMLReader
                               .getUri() );
         }
     }
-
 
 
     public List<IngestResult> getIngestResults()
@@ -957,16 +980,16 @@ public final class PIXMLReader extends XMLReader
      */
     private ZoneOffset zoneOffset = null;
 
-	/**
-	 * The value which indicates a null or invalid value from the source.
+    /**
+     * The value which indicates a null or invalid value from the source.
      * PI-XML xsd says NaN is missing value if unspecified.
      */
     private double missingValue = PIXML_DEFAULT_MISSING_VALUE;
 
-	private DataSourceConfig getDataSourceConfig()
-	{
-		return this.dataSource.getContext();
-	}
+    private DataSourceConfig getDataSourceConfig()
+    {
+        return this.dataSource.getContext();
+    }
 
 
     private DataSourceConfig.Source getSourceConfig()

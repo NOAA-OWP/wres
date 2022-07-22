@@ -35,6 +35,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
 import wres.io.ingesting.TimeSeriesIngester;
+import wres.io.ingesting.DatabaseTimeSeriesIngester;
 import wres.io.reading.DataSource;
 import wres.system.SystemSettings;
 
@@ -3396,7 +3397,8 @@ public class WRDSSourceTest
                                                config,
                                                List.of( LeftOrRightOrBaseline.LEFT,
                                                         LeftOrRightOrBaseline.RIGHT ),
-                                               fakeAhpsUri );
+                                               fakeAhpsUri,
+                                               LeftOrRightOrBaseline.RIGHT );
 
         // Spy seems needed to make new instances within the classes under test.
         // See https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
@@ -3520,7 +3522,8 @@ public class WRDSSourceTest
                                                config,
                                                List.of( LeftOrRightOrBaseline.LEFT,
                                                         LeftOrRightOrBaseline.RIGHT ),
-                                               fakeAhpsUri );
+                                               fakeAhpsUri,
+                                               LeftOrRightOrBaseline.RIGHT );
 
         // Spy seems needed to make new instances within the classes under test.
         // See https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
@@ -3634,7 +3637,8 @@ public class WRDSSourceTest
                                                config,
                                                List.of( LeftOrRightOrBaseline.LEFT,
                                                         LeftOrRightOrBaseline.RIGHT ),
-                                               fakeAhpsUri );
+                                               fakeAhpsUri,
+                                               LeftOrRightOrBaseline.RIGHT );
 
         WRDSSource wrdsSource = Mockito.spy( 
                                              new WRDSSource( this.mockTimeSeriesIngester,
@@ -3737,7 +3741,8 @@ public class WRDSSourceTest
                                                config,
                                                List.of( LeftOrRightOrBaseline.LEFT,
                                                         LeftOrRightOrBaseline.RIGHT ),
-                                               fakeAhpsUri );
+                                               fakeAhpsUri,
+                                               LeftOrRightOrBaseline.RIGHT );
 
         ReadValueManager readValueManager = Mockito.spy(
                 new ReadValueManager( this.mockTimeSeriesIngester,

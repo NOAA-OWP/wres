@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A nerfed/no-op DatabaseLockManager for H2 in-memory databases.
+ * A nerfed/no-op DatabaseLockManager for in-memory applications (e.g., H2 or no database).
  */
 
 public class DatabaseLockManagerNoop implements DatabaseLockManager
@@ -15,7 +15,7 @@ public class DatabaseLockManagerNoop implements DatabaseLockManager
 
     public DatabaseLockManagerNoop()
     {
-        LOGGER.warn( "Using no-op database lock manager, appropriate for in-memory H2 and testing only." );
+        LOGGER.warn( "Using no-op database lock manager, appropriate for in-memory evaluations only." );
     }
 
     @Override

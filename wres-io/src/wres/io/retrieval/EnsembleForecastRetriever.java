@@ -1,11 +1,9 @@
 package wres.io.retrieval;
 
 import java.sql.SQLException;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
@@ -24,7 +22,7 @@ import wres.io.utilities.ScriptBuilder;
 /**
  * Retrieves {@link TimeSeries} of ensemble forecasts from the WRES database.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
@@ -45,18 +43,6 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
             EnsembleForecastRetriever.getStartOfScriptForGetAllTimeSeries();
 
     /**
-     * A set of <code>ensemble_id</code> to include in the selection.
-     */
-
-    private final Set<Long> ensembleIdsToInclude;
-
-    /**
-     * A set of <code>ensemble_id</code> to exclude from the selection.
-     */
-
-    private final Set<Long> ensembleIdsToExclude;
-
-    /**
      * The ensemble cache.
      */
 
@@ -69,50 +55,10 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
     static class Builder extends TimeSeriesRetrieverBuilder<Ensemble>
     {
         /**
-         * A set of <code>ensemble_id</code> to include in the selection.
-         */
-
-        private Set<Long> ensembleIdsToInclude = new HashSet<>();
-
-        /**
-         * A set of <code>ensemble_id</code> to exclude from the selection.
-         */
-
-        private Set<Long> ensembleIdsToExclude = new HashSet<>();
-
-        /**
          * The ensemble cache.
          */
 
         private Ensembles ensemblesCache;
-
-        /**
-         * Adds a set of <code>ensemble_id</code> to include in the selection.
-         * 
-         * @param ensembleIdsToInclude the ensemble identifiers to include
-         * @return the builder
-         */
-
-        Builder setEnsembleIdsToInclude( Set<Long> ensembleIdsToInclude )
-        {
-            this.ensembleIdsToInclude.addAll( ensembleIdsToInclude );
-
-            return this;
-        }
-
-        /**
-         * Adds a set of <code>ensemble_id</code> to exclude from the selection.
-         * 
-         * @param ensembleIdsToExclude the ensemble identifiers to exclude
-         * @return the builder
-         */
-
-        Builder setEnsembleIdsToExclude( Set<Long> ensembleIdsToExclude )
-        {
-            this.ensembleIdsToExclude.addAll( ensembleIdsToExclude );
-
-            return this;
-        }
 
         /**
          * Sets the ensemble orm/cache.
@@ -271,25 +217,21 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
             // Iterate the members, map the units and discover the names and add to the map
             for ( int i = 0; i < members.length; i++ )
             {
-                // Use this member?
-                if ( this.getUseThisEnsembleId( ids[i] ) )
+                // Get the name from the cache
+                String name = null;
+                try
                 {
-                    // Get the name from the cache
-                    String name = null;
-                    try
-                    {
-                        name = this.getEnsemblesCache()
-                                   .getEnsembleName( ids[i] );
-                    }
-                    catch ( SQLException e )
-                    {
-                        throw new DataAccessException( "While attempting to map an ensemble identifier to a name.", e );
-                    }
-
-                    // Map the units
-                    double mapped = mapper.applyAsDouble( members[i] );
-                    ensemble.put( name, mapped );
+                    name = this.getEnsemblesCache()
+                               .getEnsembleName( ids[i] );
                 }
+                catch ( SQLException e )
+                {
+                    throw new DataAccessException( "While attempting to map an ensemble identifier to a name.", e );
+                }
+
+                // Map the units
+                double mapped = mapper.applyAsDouble( members[i] );
+                ensemble.put( name, mapped );
             }
 
             // Labels are cached centrally
@@ -303,60 +245,6 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
 
             return Ensemble.of( unboxed, labels );
         };
-    }
-
-    /**
-     * @param ensembleId the ensemble identifier to consider
-     * @return {@code true} if the ensemble identifier should be considered, otherwise false
-     */
-
-    private boolean getUseThisEnsembleId( long ensembleId )
-    {
-        // Empty means unconstrained
-        if ( !this.hasEnsembleConstraint() )
-        {
-            return true;
-        }
-
-        boolean include = true;
-        if ( !this.getEnsembleIdsToInclude().isEmpty() )
-        {
-            include = this.getEnsembleIdsToInclude().contains( ensembleId );
-        }
-
-        if ( !this.getEnsembleIdsToExclude().isEmpty() )
-        {
-            include = include && !this.getEnsembleIdsToExclude().contains( ensembleId );
-        }
-
-        return include;
-    }
-
-    /**
-     * @return {@code true} if one or more ensemble constraints are present, otherwise {@code false}.
-     */
-
-    private boolean hasEnsembleConstraint()
-    {
-        return !this.ensembleIdsToInclude.isEmpty() || !this.ensembleIdsToExclude.isEmpty();
-    }
-
-    /**
-     * @return ensemble identifiers to include
-     */
-
-    private Set<Long> getEnsembleIdsToInclude()
-    {
-        return this.ensembleIdsToInclude;
-    }
-
-    /**
-     * @return ensemble identifiers to exclude
-     */
-
-    private Set<Long> getEnsembleIdsToExclude()
-    {
-        return this.ensembleIdsToExclude;
     }
 
     /**
@@ -421,8 +309,6 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
     private EnsembleForecastRetriever( Builder builder )
     {
         super( builder, "metadata.reference_time", "TSV.lead" );
-        this.ensembleIdsToInclude = builder.ensembleIdsToInclude;
-        this.ensembleIdsToExclude = builder.ensembleIdsToExclude;
         this.ensemblesCache = builder.ensemblesCache;
 
         Objects.requireNonNull( this.ensemblesCache,

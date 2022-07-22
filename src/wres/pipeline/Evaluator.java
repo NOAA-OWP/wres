@@ -32,6 +32,7 @@ import wres.config.Validation;
 import wres.io.concurrency.Executor;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
+import wres.system.DatabaseType;
 import wres.system.SystemSettings;
 
 /**
@@ -57,10 +58,10 @@ public class Evaluator
     /**
      * Creates an instance.
      * @param systemSettings the system settings, not null
-     * @param database the database, not null
+     * @param database the database, if required
      * @param executor an executor, not null
      * @param brokerConnectionFactory a broker connection factory, not null
-     * @throws NullPointerException if any input is null
+     * @throws NullPointerException if any required input is null
      */
     public Evaluator( SystemSettings systemSettings,
                       Database database,
@@ -68,10 +69,14 @@ public class Evaluator
                       BrokerConnectionFactory brokerConnectionFactory )
     {
         Objects.requireNonNull( systemSettings );
-        Objects.requireNonNull( database );
         Objects.requireNonNull( executor );
         Objects.requireNonNull( brokerConnectionFactory );
 
+        if( ! systemSettings.isInMemory() )
+        {
+            Objects.requireNonNull( database );
+        }
+        
         this.systemSettings = systemSettings;
         this.database = database;
         this.executor = executor;
@@ -157,6 +162,11 @@ public class Evaluator
                      projectConfigPlus );
 
         SystemSettings innerSystemSettings = this.getSystemSettings();
+        
+        if( innerSystemSettings.isInMemory() )
+        {
+            LOGGER.info( "Running project {} in memory.", projectConfigPlus );
+        }
 
         // Validate unmarshalled configurations
         final boolean validated =
@@ -277,7 +287,7 @@ public class Evaluator
         try
         {
             // Mark the WRES as doing an evaluation.
-            lockManager.lockShared( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
+            lockManager.lockShared( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
 
             // Reduce our set of executors to one object
             Executors executors = new Executors( ioExecutor,
@@ -306,7 +316,7 @@ public class Evaluator
             monitor.setDataHash( projectHash );
             monitor.setResources( pathsWrittenTo );
 
-            lockManager.unlockShared( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
+            lockManager.unlockShared( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
         }
         catch ( ProjectConfigException userException )
         {
