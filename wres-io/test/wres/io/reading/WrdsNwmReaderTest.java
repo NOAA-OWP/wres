@@ -41,6 +41,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
+import wres.io.ingesting.DatabaseTimeSeriesIngester;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.system.SystemSettings;
 
@@ -210,7 +211,8 @@ public class WrdsNwmReaderTest
                                                config,
                                                List.of( LeftOrRightOrBaseline.LEFT,
                                                         LeftOrRightOrBaseline.RIGHT ),
-                                               fakeWrdsUri );
+                                               fakeWrdsUri,
+                                               LeftOrRightOrBaseline.RIGHT );
 
         WrdsNwmReader reader = Mockito.spy( new WrdsNwmReader( this.mockTimeSeriesIngester,
                                                                projectConfig,
@@ -367,7 +369,8 @@ public class WrdsNwmReaderTest
                                                config,
                                                List.of( LeftOrRightOrBaseline.LEFT,
                                                         LeftOrRightOrBaseline.RIGHT ),
-                                               fakeWrdsUri );
+                                               fakeWrdsUri,
+                                               LeftOrRightOrBaseline.RIGHT );
 
         WrdsNwmReader reader = Mockito.spy( new WrdsNwmReader( this.mockTimeSeriesIngester,
                                                                projectConfig,

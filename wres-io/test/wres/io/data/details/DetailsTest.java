@@ -20,7 +20,9 @@ import static org.junit.Assert.assertTrue;
 
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
+import wres.io.data.caching.Caches;
 import wres.io.data.caching.Features;
+import wres.io.project.DatabaseProject;
 import wres.io.project.Project;
 import wres.io.utilities.TestDatabase;
 import wres.system.DatabaseType;
@@ -33,8 +35,8 @@ public class DetailsTest
     private HikariDataSource dataSource;
     private @Mock SystemSettings mockSystemSettings;
     private wres.io.utilities.Database wresDatabase;
-    private Features featureCache;
     private @Mock Executor mockExecutor;
+    private @Mock Caches mockCaches;
     private Connection rawConnection;
     private Database liquibaseDatabase;
 
@@ -61,7 +63,10 @@ public class DetailsTest
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
         // Set up a liquibase database to run migrations against.
         this.liquibaseDatabase = this.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
-        this.featureCache = new Features( this.wresDatabase );
+        Features featuresCache = new Features( this.wresDatabase );
+
+        Mockito.when( this.mockCaches.getFeaturesCache() )
+               .thenReturn( featuresCache );
     }
 
     @Test
@@ -91,15 +96,12 @@ public class DetailsTest
         // Add the project table
         this.testDatabase.createProjectTable( this.liquibaseDatabase );
 
-        Project project = new Project( this.mockSystemSettings,
-                                       this.wresDatabase,
-                                       this.featureCache,
-                                       this.mockExecutor,
-                                       new ProjectConfig( null, null, null, null, null, null ),
-                                                     "321" );
-        project.save();
-        assertTrue( "Expected project details to have performed insert.",
-                    project.performedInsert() );
+        Project project = new DatabaseProject( this.wresDatabase,
+                                               this.mockCaches,
+                                               new ProjectConfig( null, null, null, null, null, null ),
+                                               "321" );
+        boolean saved = project.save();
+        assertTrue( "Expected project details to have performed insert.", saved );
         assertNotNull( "Expected the id of the source to be non-null",
                        project.getId() );
 

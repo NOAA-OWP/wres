@@ -102,6 +102,7 @@ public class SourceLoader
      * @param caches The caches
      * @param projectConfig the project configuration
      * @param lockManager the tool to manage ingest locks, shared per ingest
+     * @throws NullPointerException if any required input is null
      */
     public SourceLoader( TimeSeriesIngester timeSeriesIngester,
                          SystemSettings systemSettings,
@@ -114,10 +115,15 @@ public class SourceLoader
         Objects.requireNonNull( timeSeriesIngester );
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( executor );
-        Objects.requireNonNull( database );
-        Objects.requireNonNull( caches );
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( lockManager );
+
+        if ( !systemSettings.isInMemory() )
+        {
+            Objects.requireNonNull( database );
+            Objects.requireNonNull( caches );
+        }
+
         this.systemSettings = systemSettings;
         this.executor = executor;
         this.database = database;
@@ -196,8 +202,7 @@ public class SourceLoader
             LOGGER.debug( "Already finished source {}, changing to say requiresRetry=false",
                           ingestResult );
             CompletableFuture<List<IngestResult>> futureResult =
-                    IngestResult.fakeFutureSingleItemListFrom( this.projectConfig,
-                                                               ingestResult.getDataSource(),
+                    IngestResult.fakeFutureSingleItemListFrom( ingestResult.getDataSource(),
                                                                ingestResult.getSurrogateKey(),
                                                                false );
             return List.of( futureResult );
@@ -234,8 +239,7 @@ public class SourceLoader
 
         // For whatever reason, retry is required.
         CompletableFuture<List<IngestResult>> futureResult =
-                IngestResult.fakeFutureSingleItemListFrom( this.projectConfig,
-                                                           ingestResult.getDataSource(),
+                IngestResult.fakeFutureSingleItemListFrom( ingestResult.getDataSource(),
                                                            ingestResult.getSurrogateKey(),
                                                            true );
         return List.of( futureResult );
@@ -347,12 +351,10 @@ public class SourceLoader
             else
             {
                 // Must be NWM, right?
-                NWMReader nwmReader = new NWMReader( this.getSystemSettings(),
-                                                     this.getDatabase(),
-                                                     this.getCaches(),
+                NWMReader nwmReader = new NWMReader( this.getTimeSeriesIngester(),
+                                                     this.getSystemSettings(),
                                                      this.getProjectConfig(),
-                                                     source,
-                                                     this.getLockManager() );
+                                                     source );
                 return CompletableFuture.supplyAsync( nwmReader::call,
                                                       this.getExecutor() );
             }
@@ -462,8 +464,8 @@ public class SourceLoader
 
         URI sourceUri = source.getUri();
         List<CompletableFuture<List<IngestResult>>> tasks = new ArrayList<>();
-        FileEvaluation checkIngest = shouldIngest( source,
-                                                   lockManager );
+        FileEvaluation checkIngest = this.shouldIngest( source,
+                                                        lockManager );
         SourceStatus sourceStatus = checkIngest.getSourceStatus();
 
         if ( sourceStatus.equals( SourceStatus.REQUIRES_DECOMPOSITION ) )
@@ -524,8 +526,7 @@ public class SourceLoader
                           sourceUri );
 
             // Fake a future, return result immediately.
-            tasks.add( IngestResult.fakeFutureSingleItemListFrom( projectConfig,
-                                                                  source,
+            tasks.add( IngestResult.fakeFutureSingleItemListFrom( source,
                                                                   checkIngest.getSurrogateKey(),
                                                                   !checkIngest.ingestMarkedComplete() ) );
         }
@@ -546,11 +547,8 @@ public class SourceLoader
                       tasks,
                       sourceUri );
 
-        // Always ingest gridded coordinates. Could potentially reduce file opens/closes by additionally checking for
-        // SourceStatus.COMPLETED and only reading when ingest has not occurred. Then, piggy-back off the file open
-        // in the reader (NWMSource at the time of writing), adding the coordinates to the Features in that context. 
-        // However, when experimenting, this did not save anything and the current approach is simpler.
-        if ( source.getDisposition() == DataDisposition.NETCDF_GRIDDED )
+        // Ingest gridded metadata when required
+        if ( source.getDisposition() == DataDisposition.NETCDF_GRIDDED && ! this.systemSettings.isInMemory() )
         {
             Supplier<List<IngestResult>> fakeResult = this.ingestGriddedFeatures( source );
             CompletableFuture<List<IngestResult>> future =
@@ -601,7 +599,7 @@ public class SourceLoader
                                          DatabaseLockManager lockManager )
     {
         Objects.requireNonNull( dataSource );
-        Objects.requireNonNull( lockManager );
+        Objects.requireNonNull( lockManager );        
 
         DataSource.DataDisposition disposition = dataSource.getDisposition();
 
@@ -617,6 +615,12 @@ public class SourceLoader
                           dataSource.getUri() );
             return new FileEvaluation( SourceStatus.REQUIRES_DECOMPOSITION,
                                        KEY_NOT_FOUND );
+        }
+        
+        // Is this in-memory, i.e., no ingest required?
+        if( this.systemSettings.isInMemory() )
+        {
+            return new FileEvaluation( SourceStatus.INCOMPLETE_WITH_NO_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING, KEY_NOT_FOUND );
         }
 
         boolean ingest = ( disposition != UNKNOWN );
@@ -643,7 +647,7 @@ public class SourceLoader
                     hash = null;
                 }
 
-                sourceStatus = querySourceStatus( hash, lockManager );
+                sourceStatus = this.querySourceStatus( hash, lockManager );
 
                 // Added in debugging #58715-116
                 if ( LOGGER.isDebugEnabled() )
@@ -864,15 +868,20 @@ public class SourceLoader
                                   .getRight();
             }
 
+            DataSourceConfig dataSourceConfig = nextSource.getValue()
+                                                          .getLeft();
+
+            LeftOrRightOrBaseline lrb = ConfigHelper.getLeftOrRightOrBaseline( projectConfig, dataSourceConfig );
+
             // If there is a file-like source, test for a directory and decompose it as required
             if ( Objects.nonNull( path ) )
             {
                 DataSource source = DataSource.of( FILE_OR_DIRECTORY,
                                                    nextSource.getKey(),
-                                                   nextSource.getValue()
-                                                             .getLeft(),
+                                                   dataSourceConfig,
                                                    links,
-                                                   path.toUri() );
+                                                   path.toUri(),
+                                                   lrb );
 
                 returnMe.addAll( SourceLoader.decomposeFileSource( source ) );
             }
@@ -881,11 +890,11 @@ public class SourceLoader
             {
                 DataSource source = DataSource.of( COMPLEX,
                                                    nextSource.getKey(),
-                                                   nextSource.getValue()
-                                                             .getLeft(),
+                                                   dataSourceConfig,
                                                    links,
                                                    nextSource.getKey()
-                                                             .getValue() );
+                                                             .getValue(),
+                                                   lrb );
                 returnMe.add( source );
             }
         }
@@ -951,7 +960,8 @@ public class SourceLoader
                                                          dataSource.getSource(),
                                                          dataSource.getContext(),
                                                          dataSource.getLinks(),
-                                                         path.toUri() ) );
+                                                         path.toUri(),
+                                                         dataSource.getLeftOrRightOrBaseline() ) );
                         }
                         else
                         {
@@ -993,7 +1003,8 @@ public class SourceLoader
                                                         dataSource.getSource(),
                                                         dataSource.getContext(),
                                                         dataSource.getLinks(),
-                                                        dataSource.getUri() );
+                                                        dataSource.getUri(),
+                                                        dataSource.getLeftOrRightOrBaseline() );
             returnMe.add( withDisposition );
         }
 
@@ -1129,11 +1140,11 @@ public class SourceLoader
 
         try
         {
-            anotherTaskStartedIngest = anotherTaskIsResponsibleForSource( hash );
+            anotherTaskStartedIngest = this.anotherTaskIsResponsibleForSource( hash );
 
             if ( anotherTaskStartedIngest )
             {
-                ingestMarkedComplete = wasSourceCompleted( hash );
+                ingestMarkedComplete = this.wasSourceCompleted( hash );
 
                 if ( ingestMarkedComplete )
                 {
@@ -1143,7 +1154,7 @@ public class SourceLoader
                 {
                     LOGGER.debug( "Another task is responsible for {} but has not yet finished it.",
                                   hash );
-                    ingestInProgress = ingestInProgress( hash, lockManager );
+                    ingestInProgress = this.ingestInProgress( hash, lockManager );
                     LOGGER.debug( "Is another task currently ingesting {}? {}",
                                   hash,
                                   ingestInProgress );
@@ -1251,5 +1262,5 @@ public class SourceLoader
     {
         return this.timeSeriesIngester;
     }
-    
+
 }

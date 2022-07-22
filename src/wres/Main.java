@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -81,7 +82,12 @@ public class Main {
         Thread.setDefaultUncaughtExceptionHandler( handler );
         
         SystemSettings systemSettings = SystemSettings.fromDefaultClasspathXmlFile();
-        Database database = new Database( systemSettings );
+        Database database = null;
+        if ( !systemSettings.isInMemory() )
+        {
+            database = new Database( systemSettings );
+        }
+        
         Executor executor = new Executor( systemSettings );
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -135,15 +141,19 @@ public class Main {
                 exception = ExceptionUtils.getStackTrace( result.getException() );
             }
 
-            sharedResources.getDatabase()
-                           .logExecution(
-                                     args,
-                                     result.getName(),
-                                     result.getHash(),
-                                     Range.open( beganExecution, endedExecution ),
-                                     result.failed(),
-                                     exception,
-                                     Main.getVersion() );
+            // Log the execution to the database if a database is used
+            if( ! systemSettings.isInMemory() )
+            {
+                sharedResources.getDatabase()
+                .logExecution(
+                          args,
+                          result.getName(),
+                          result.getHash(),
+                          Range.open( beganExecution, endedExecution ),
+                          result.failed(),
+                          exception,
+                          Main.getVersion() );   
+            }
 
             if ( result.failed() )
             {
@@ -162,14 +172,17 @@ public class Main {
         }
         finally
         {
-            // #81660
-            if ( Objects.nonNull( result ) && result.succeeded() )
+            if ( !systemSettings.isInMemory() )
             {
-                MainFunctions.shutdown( database, executor );
-            }
-            else
-            {
-                MainFunctions.forceShutdown( database, executor, 6, TimeUnit.SECONDS );
+                // #81660
+                if ( Objects.nonNull( result ) && result.succeeded() )
+                {
+                    MainFunctions.shutdown( database, executor );
+                }
+                else
+                {
+                    MainFunctions.forceShutdown( database, executor, 6, TimeUnit.SECONDS );
+                }
             }
 
             if ( Objects.nonNull( broker ) )

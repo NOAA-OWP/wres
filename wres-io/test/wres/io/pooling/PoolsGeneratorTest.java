@@ -21,6 +21,7 @@ import wres.config.generated.DatasourceType;
 import wres.config.generated.DateCondition;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.IntBoundsType;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
@@ -31,8 +32,7 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.time.TimeSeries;
-import wres.io.data.caching.Ensembles;
-import wres.io.data.caching.Features;
+import wres.io.data.caching.Caches;
 import wres.io.project.Project;
 import wres.io.retrieval.EnsembleRetrieverFactory;
 import wres.io.retrieval.RetrieverFactory;
@@ -55,8 +55,7 @@ public class PoolsGeneratorTest
     private static final String STREAMFLOW = "STREAMFLOW";
 
     private @Mock Database wresDatabase;
-    private @Mock Features featuresCache;
-    private @Mock Ensembles ensemblesCache;
+    private @Mock Caches caches;
     private @Mock UnitMapper unitMapper;
 
     @Before
@@ -141,13 +140,11 @@ public class PoolsGeneratorTest
         Project project = Mockito.mock( Project.class );
         Mockito.when( project.getProjectConfig() ).thenReturn( projectConfig );
         Mockito.when( project.getId() ).thenReturn( 12345L );
-        Mockito.when( project.getLeftVariableName() ).thenReturn( "DISCHARGE" );
-        Mockito.when( project.getRightVariableName() ).thenReturn( STREAMFLOW );
-        Mockito.when( project.getBaselineVariableName() ).thenReturn( null );
+        Mockito.when( project.getVariableName( LeftOrRightOrBaseline.LEFT ) ).thenReturn( "DISCHARGE" );
+        Mockito.when( project.getVariableName( LeftOrRightOrBaseline.RIGHT ) ).thenReturn( STREAMFLOW );
+        Mockito.when( project.getVariableName( LeftOrRightOrBaseline.BASELINE ) ).thenReturn( null );
         Mockito.when( project.hasBaseline() ).thenReturn( false );
         Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
-        Mockito.when( project.getDatabase() ).thenReturn( this.wresDatabase );
-        Mockito.when( project.getFeaturesCache() ).thenReturn( this.featuresCache );
         Mockito.when( project.getFeatureGroups() ).thenReturn( Set.of( featureGroup ) );
 
         ProjectConfigPlus projectConfigPlus = Mockito.mock( ProjectConfigPlus.class );
@@ -256,14 +253,11 @@ public class PoolsGeneratorTest
         Project project = Mockito.mock( Project.class );
         Mockito.when( project.getProjectConfig() ).thenReturn( projectConfig );
         Mockito.when( project.getId() ).thenReturn( 12345L );
-        Mockito.when( project.getLeftVariableName() ).thenReturn( "DISCHARGE" );
-        Mockito.when( project.getRightVariableName() ).thenReturn( STREAMFLOW );
-        Mockito.when( project.getBaselineVariableName() ).thenReturn( null );
+        Mockito.when( project.getVariableName( LeftOrRightOrBaseline.LEFT ) ).thenReturn( "DISCHARGE" );
+        Mockito.when( project.getVariableName( LeftOrRightOrBaseline.RIGHT ) ).thenReturn( STREAMFLOW );
+        Mockito.when( project.getVariableName( LeftOrRightOrBaseline.BASELINE ) ).thenReturn( null );
         Mockito.when( project.hasBaseline() ).thenReturn( false );
         Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
-        Mockito.when( project.getDatabase() ).thenReturn( this.wresDatabase );
-        Mockito.when( project.getFeaturesCache() ).thenReturn( this.featuresCache );
-        Mockito.when( project.getEnsemblesCache() ).thenReturn( this.ensemblesCache );
         Mockito.when( project.getFeatureGroups() ).thenReturn( Set.of( featureGroup ) );
 
         ProjectConfigPlus projectConfigPlus = Mockito.mock( ProjectConfigPlus.class );

@@ -25,18 +25,17 @@ class IngestResultCompact implements IngestResult
     private final short baselineCount;
     private final boolean foundAlready;
 
-    IngestResultCompact( LeftOrRightOrBaseline leftOrRightOrBaseline,
-                         DataSource dataSource,
+    IngestResultCompact( DataSource dataSource,
                          long surrogateKey,
                          boolean foundAlready )
     {
-        Objects.requireNonNull( leftOrRightOrBaseline, "Ingester must include left/right/baseline" );
         Objects.requireNonNull( dataSource, "Ingester must include datasource information." );
 
         if ( surrogateKey == 0 )
         {
-            LOGGER.warn( "Suspicious surrogate key id=0 given for dataSource={} with l/r/b={} foundAlready={}",
-                         dataSource, leftOrRightOrBaseline, foundAlready );
+            LOGGER.warn( "Suspicious surrogate key id=0 given for dataSource={} foundAlready={}",
+                         dataSource,
+                         foundAlready );
         }
 
         if ( surrogateKey < 0 )
@@ -46,27 +45,28 @@ class IngestResultCompact implements IngestResult
         }
 
         this.surrogateKey = surrogateKey;
+        LeftOrRightOrBaseline lrb = dataSource.getLeftOrRightOrBaseline();
 
         short leftCount = 0;
         short rightCount = 0;
         short baselineCount = 0;
 
-        if ( leftOrRightOrBaseline.equals( LeftOrRightOrBaseline.LEFT ) )
+        if ( lrb == LeftOrRightOrBaseline.LEFT )
         {
             leftCount++;
         }
-        else if ( leftOrRightOrBaseline.equals( LeftOrRightOrBaseline.RIGHT ) )
+        else if ( lrb == LeftOrRightOrBaseline.RIGHT )
         {
             rightCount++;
         }
-        else if ( leftOrRightOrBaseline.equals( LeftOrRightOrBaseline.BASELINE ) )
+        else if ( lrb == LeftOrRightOrBaseline.BASELINE )
         {
             baselineCount++;
         }
 
-        for ( LeftOrRightOrBaseline lrb : dataSource.getLinks() )
+        for ( LeftOrRightOrBaseline lrbn : dataSource.getLinks() )
         {
-            if ( lrb.equals( LeftOrRightOrBaseline.LEFT ) )
+            if ( lrbn.equals( LeftOrRightOrBaseline.LEFT ) )
             {
                 if ( leftCount == MAX_VALUE )
                 {
@@ -78,7 +78,7 @@ class IngestResultCompact implements IngestResult
 
                 leftCount++;
             }
-            else if ( lrb.equals( LeftOrRightOrBaseline.RIGHT ) )
+            else if ( lrbn.equals( LeftOrRightOrBaseline.RIGHT ) )
             {
                 if ( rightCount == MAX_VALUE )
                 {
@@ -90,7 +90,7 @@ class IngestResultCompact implements IngestResult
 
                 rightCount++;
             }
-            else if ( lrb.equals( LeftOrRightOrBaseline.BASELINE ) )
+            else if ( lrbn.equals( LeftOrRightOrBaseline.BASELINE ) )
             {
                 if ( baselineCount == MAX_VALUE )
                 {

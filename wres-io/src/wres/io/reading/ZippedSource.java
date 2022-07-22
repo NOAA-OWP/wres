@@ -221,7 +221,8 @@ public class ZippedSource extends BasicSource {
                                                                dataSource.getSource(),
                                                                dataSource.getContext(),
                                                                dataSource.getLinks(),
-                                                               tempFileLocation );
+                                                               tempFileLocation,
+                                                               dataSource.getLeftOrRightOrBaseline() );
                 IngestSaver ingestSaver =
                         new IngestSaver.Builder().withSystemSettings( this.getSystemSettings() )
                                                  .withDatabase( this.getDatabase() )
@@ -408,13 +409,15 @@ public class ZippedSource extends BasicSource {
                                                             .getContext(),
                                                         this.getDataSource()
                                                             .getLinks(),
-                                                        archivedFileName );
+                                                        archivedFileName,
+                                                        this.getDataSource()
+                                                            .getLeftOrRightOrBaseline() );
             ingest = new ZippedPIXMLIngest( this.getTimeSeriesIngester(),
                                             innerDataSource,
                                             content );
-            ingest.setOnComplete( ProgressMonitor.onThreadCompleteHandler());
+            ingest.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
             ProgressMonitor.increment();
-            this.addIngestTask(ingest);
+            this.addIngestTask( ingest );
         }
         else
         {
@@ -428,7 +431,9 @@ public class ZippedSource extends BasicSource {
                                                             .getContext(),
                                                         this.getDataSource()
                                                             .getLinks(),
-                                                        tempFileLocation );
+                                                        tempFileLocation,
+                                                        this.getDataSource()
+                                                            .getLeftOrRightOrBaseline() );
             ProgressMonitor.increment();
             Callable<List<IngestResult>> task =
                     new IngestSaver.Builder().withSystemSettings( this.getSystemSettings() )

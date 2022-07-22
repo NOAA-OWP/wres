@@ -37,9 +37,11 @@ import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.io.data.caching.Caches;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.details.SourceDetails;
+import wres.io.project.DatabaseProject;
 import wres.io.project.Project;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.TestDatabase;
@@ -54,14 +56,12 @@ import wres.system.SystemSettings;
 
 public class SingleValuedGriddedRetrieverTest
 {
-    @Mock
-    private SystemSettings mockSystemSettings;
+    @Mock private SystemSettings mockSystemSettings;
     private wres.io.utilities.Database wresDatabase;
-    @Mock
-    private Executor mockExecutor;
+    @Mock private Executor mockExecutor;
     private TestDatabase testDatabase;
     private MeasurementUnits measurementUnitsCache;
-    private Features featuresCache;
+    @Mock private Caches mockCaches;
     private HikariDataSource dataSource;
     private Connection rawConnection;
 
@@ -124,7 +124,10 @@ public class SingleValuedGriddedRetrieverTest
 
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
         this.measurementUnitsCache = new MeasurementUnits( this.wresDatabase );
-        this.featuresCache = new Features( this.wresDatabase );
+        Features featuresCache = new Features( this.wresDatabase );
+
+        Mockito.when( this.mockCaches.getFeaturesCache() )
+               .thenReturn( featuresCache );
 
         // Create the tables
         this.addTheDatabaseAndTables();
@@ -236,18 +239,17 @@ public class SingleValuedGriddedRetrieverTest
     private void addFiveGriddedSourcesToTheDatabase() throws SQLException
     {
         long measurementUnitId = this.measurementUnitsCache.getOrCreateMeasurementUnitId( UNITS );
-        long featureId = this.featuresCache.getOrCreateFeatureId( FEATURE );
+        long featureId = this.mockCaches.getFeaturesCache()
+                                        .getOrCreateFeatureId( FEATURE );
         // Add a project 
         Project project =
-                new Project( this.mockSystemSettings,
-                             this.wresDatabase,
-                             new Features( this.wresDatabase ),
-                             this.mockExecutor,
+                new DatabaseProject( this.wresDatabase,
+                             this.mockCaches,
                              new ProjectConfig( null, null, null, null, null, "test_gridded_project" ),
                              PROJECT_HASH );
-        project.save();
+        boolean saved = project.save();
 
-        assertTrue( project.performedInsert() );
+        assertTrue( saved );
 
         assertEquals( PROJECT_HASH, project.getHash() );
 

@@ -1,6 +1,5 @@
 package wres.io.retrieval;
 
-import java.sql.SQLException;
 import java.time.Duration;
 import java.time.MonthDay;
 import java.util.Objects;
@@ -23,6 +22,7 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.Caches;
 import wres.io.data.caching.Features;
 import wres.io.project.Project;
 import wres.io.retrieval.AnalysisRetriever.DuplicatePolicy;
@@ -35,90 +35,69 @@ import wres.io.utilities.Database;
  * evaluation. This factory takes a "per-feature-view" of retrieval whereby a feature is supplied on construction. In 
  * future, other implementations may not take a per-feature view (e.g., a multiple-feature-view or a grid-view).
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Double>
 {
-
-    /**
-     * Logger.
-     */
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( SingleValuedRetrieverFactory.class );
 
-    /**
-     * Message about features, re-used several times.
-     */
+    /** Message about features, re-used several times. */
     private static final String FEATURE_MESSAGE = ", features ";
 
-    /**
-     * Message about time windows, re-used several times.
-     */
-
+    /** Message about time windows, re-used several times. */
     private static final String AND_TIME_WINDOW_MESSAGE = " and time window ";
 
-    /**
-     * The project.
-     */
-
+    /** The project. */
     private final Project project;
 
-    /**
-     * Left data declaration.
-     */
+    /** The database. */
+    private final Database database;
 
+    /** The caches/ORMs. */
+    private final Caches caches;
+
+    /** Left data declaration. */
     private final DataSourceConfig leftConfig;
 
-    /**
-     * Right data declaration.
-     */
-
+    /** Right data declaration. */
     private final DataSourceConfig rightConfig;
 
-    /**
-     * Baseline data declaration.
-     */
-
+    /** Baseline data declaration. */
     private final DataSourceConfig baselineConfig;
 
-    /**
-     * Start of a seasonal constraint, if any.
-     */
-
+    /** Start of a seasonal constraint, if any. */
     private final MonthDay seasonStart;
 
-    /**
-     * End of a seasonal constraint, if any.
-     */
-
+    /** End of a seasonal constraint, if any. */
     private final MonthDay seasonEnd;
 
-    /**
-     * Declared <code>desiredTimeScale</code>, if any.
-     */
-
+    /** Declared <code>desiredTimeScale</code>, if any. */
     private final TimeScaleOuter desiredTimeScale;
 
-    /**
-     * A mapper to convert measurement units.
-     */
-
+    /** A mapper to convert measurement units. */
     private final UnitMapper unitMapper;
 
     /**
      * Returns an instance.
      *
      * @param project the project
+     * @param database the database
+     * @param caches the caches
      * @param unitMapper the unit mapper
      * @return a factory instance
      * @throws NullPointerException if any input is null
      */
 
     public static SingleValuedRetrieverFactory of( Project project,
+                                                   Database database,
+                                                   Caches caches,
                                                    UnitMapper unitMapper )
     {
         return new SingleValuedRetrieverFactory( project,
+                                                 database,
+                                                 caches,
                                                  unitMapper );
     }
 
@@ -128,7 +107,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
         // No distinction between climatology and left for now
         return this.getLeftRetriever( features );
     }
-    
+
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<FeatureKey> features )
     {
@@ -222,7 +201,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
                               .setFeatures( features );
             }
         }
-        catch ( SQLException e )
+        catch ( DataAccessException e )
         {
             throw new DataAccessException( "While creating a retriever of "
                                            + leftOrRightOrBaseline
@@ -259,7 +238,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
             builder.setSeasonStart( this.seasonStart )
                    .setSeasonEnd( this.seasonEnd );
         }
-        
+
         return builder.build();
     }
 
@@ -269,7 +248,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
 
     private Database getDatabase()
     {
-        return this.project.getDatabase();
+        return this.database;
     }
 
     /**
@@ -278,7 +257,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
 
     private Features getFeaturesCache()
     {
-        return this.project.getFeaturesCache();
+        return this.caches.getFeaturesCache();
     }
 
     /**
@@ -293,9 +272,9 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     {
 
         Duration earliestAnalysisDuration = this.getProject()
-                                                .getEarliestAnalysisDurationOrNull();
+                                                .getEarliestAnalysisDuration();
         Duration latestAnalysisDuration = this.getProject()
-                                              .getLatestAnalysisDurationOrNull();
+                                              .getLatestAnalysisDuration();
 
         switch ( dataType )
         {
@@ -380,18 +359,26 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
      * Hidden constructor.
      * 
      * @param project the project
+     * @param database the database,
+     * @param caches the caches
      * @param unitMapper the unit mapper
      * @throws NullPointerException if any input is null
      */
 
     private SingleValuedRetrieverFactory( Project project,
+                                          Database database,
+                                          Caches caches,
                                           UnitMapper unitMapper )
     {
         Objects.requireNonNull( project );
         Objects.requireNonNull( unitMapper );
+        Objects.requireNonNull( database );
+        Objects.requireNonNull( caches );
 
         this.project = project;
         this.unitMapper = unitMapper;
+        this.database = database;
+        this.caches = caches;
 
         ProjectConfig projectConfig = project.getProjectConfig();
         PairConfig pairConfig = projectConfig.getPair();

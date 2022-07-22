@@ -32,15 +32,13 @@ import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
+import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Caches;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.DataSource;
-import wres.io.utilities.Database;
-import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 
 
@@ -99,11 +97,8 @@ public class NWMReader implements Callable<List<IngestResult>>
                                                       + "those valid datetimes.";
 
     private final SystemSettings systemSettings;
-    private final Database database;
-    private final Caches caches;
     private final ProjectConfig projectConfig;
     private final DataSource dataSource;
-    private final DatabaseLockManager lockManager;
     private final NWMProfile nwmProfile;
     private final Instant earliest;
     private final Instant latest;
@@ -112,25 +107,24 @@ public class NWMReader implements Callable<List<IngestResult>>
     private final CountDownLatch startGettingResults;
     private final URI baseUri;
     private final TimeSeriesIngester timeSeriesIngester;
+    private final ReferenceTimeType referenceTimeType;
     
-    public NWMReader( SystemSettings systemSettings,
-                      Database database,
-                      Caches caches,
+    public NWMReader( TimeSeriesIngester timeSeriesIngester,
+                      SystemSettings systemSettings,
                       ProjectConfig projectConfig,
-                      DataSource dataSource,
-                      DatabaseLockManager lockManager )
+                      DataSource dataSource)
     {
         Objects.requireNonNull( systemSettings );
-        Objects.requireNonNull( database );
-        Objects.requireNonNull( caches );
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( dataSource );
-        Objects.requireNonNull( lockManager );
         Objects.requireNonNull( dataSource.getSource() );
         Objects.requireNonNull( dataSource.getSource().getInterface() );
         Objects.requireNonNull( dataSource.getSource().getValue() );
         Objects.requireNonNull( dataSource.getContext() );
 
+        this.referenceTimeType = ConfigHelper.getReferenceTimeType( dataSource.getContext()
+                                                                              .getType() );
+        
         // Could be an NPE, but the data source is not null and the nullity of the variable is an effect, not a cause
         if ( Objects.isNull( dataSource.getVariable() ) )
         {
@@ -148,8 +142,6 @@ public class NWMReader implements Callable<List<IngestResult>>
         }
 
         this.systemSettings = systemSettings;
-        this.database = database;
-        this.caches = caches;
 
         URI literalUri = dataSource.getSource()
                                    .getValue();
@@ -255,7 +247,6 @@ public class NWMReader implements Callable<List<IngestResult>>
 
         this.projectConfig = projectConfig;
         this.dataSource = dataSource;
-        this.lockManager = lockManager;
 
         ThreadFactory nwmReaderThreadFactory = new BasicThreadFactory.Builder()
                                                                                .namingPattern( "NWMReader Ingest %d" )
@@ -274,12 +265,7 @@ public class NWMReader implements Callable<List<IngestResult>>
         this.executor.setRejectedExecutionHandler( new ThreadPoolExecutor.AbortPolicy() );
         this.ingests = new ArrayBlockingQueue<>( systemSettings.getMaxiumNwmIngestThreads() );
         this.startGettingResults = new CountDownLatch( systemSettings.getMaxiumNwmIngestThreads() );
-        this.timeSeriesIngester = new TimeSeriesIngester.Builder().setSystemSettings( this.getSystemSettings() )
-                                                                  .setDatabase( this.getDatabase() )
-                                                                  .setCaches( this.getCaches() )
-                                                                  .setProjectConfig( this.getProjectConfig() )
-                                                                  .setLockManager( this.getLockManager() )
-                                                                  .build();
+        this.timeSeriesIngester = timeSeriesIngester;
     }
 
     private SystemSettings getSystemSettings()
@@ -287,24 +273,9 @@ public class NWMReader implements Callable<List<IngestResult>>
         return this.systemSettings;
     }
 
-    private Database getDatabase()
-    {
-        return this.database;
-    }
-
-    private Caches getCaches()
-    {
-        return this.caches;
-    }
-
     private ProjectConfig getProjectConfig()
     {
         return this.projectConfig;
-    }
-
-    private DatabaseLockManager getLockManager()
-    {
-        return this.lockManager;
     }
 
     private DataSource getDataSource()
@@ -330,6 +301,11 @@ public class NWMReader implements Callable<List<IngestResult>>
     private TimeSeriesIngester getTimeSeriesIngester()
     {
         return this.timeSeriesIngester;
+    }
+    
+    private ReferenceTimeType getReferenceTimeType()
+    {
+        return this.referenceTimeType;
     }
     
     @Override
@@ -374,31 +350,31 @@ public class NWMReader implements Callable<List<IngestResult>>
         featureNwmIds.sort( null );
         LOGGER.debug( "Sorted featureNwmIds: {}", featureNwmIds );
 
-        // Chunk reads by FEATURE_READ_COUNT
-        final int FEATURE_READ_COUNT = 100;
+        // Chunk reads
+        final int featureReadCount = 100;
         int maxCountOfBlocks = ( featureNwmIds.size()
-                                 / FEATURE_READ_COUNT )
+                                 / featureReadCount )
                                + 1;
         List<int[]> featureBlocks = new ArrayList<>( maxCountOfBlocks );
 
         int j = 0;
         int[] block;
 
-        // The last block is unlikely to be exactly FEATURE_READ_COUNT
+        // The last block is unlikely to be exactly featureReadCount
         int remaining = featureNwmIds.size();
 
-        if ( remaining < FEATURE_READ_COUNT )
+        if ( remaining < featureReadCount )
         {
             block = new int[remaining];
         }
         else
         {
-            block = new int[FEATURE_READ_COUNT];
+            block = new int[featureReadCount];
         }
 
         for ( int i = 0; i < featureNwmIds.size(); i++ )
         {
-            if ( i % FEATURE_READ_COUNT == 0 )
+            if ( i % featureReadCount == 0 )
             {
                 LOGGER.debug( "Found we are at a boundary. i={}, j={}", i, j );
                 // After the first block is written, add to list.
@@ -407,10 +383,10 @@ public class NWMReader implements Callable<List<IngestResult>>
                     featureBlocks.add( block );
                 }
 
-                // The last block is unlikely to be exactly FEATURE_READ_COUNT
+                // The last block is unlikely to be exactly featureReadCount
                 remaining = featureNwmIds.size() - i;
 
-                if ( remaining < FEATURE_READ_COUNT )
+                if ( remaining < featureReadCount )
                 {
                     LOGGER.debug( "Creating last int[] of size {}", remaining );
                     block = new int[remaining];
@@ -418,8 +394,8 @@ public class NWMReader implements Callable<List<IngestResult>>
                 else
                 {
                     LOGGER.debug( "Creating full sized int[] of size {}",
-                                  FEATURE_READ_COUNT );
-                    block = new int[FEATURE_READ_COUNT];
+                                  featureReadCount );
+                    block = new int[featureReadCount];
                 }
 
                 j = 0;
@@ -457,6 +433,7 @@ public class NWMReader implements Callable<List<IngestResult>>
                         new NWMTimeSeries( this.getSystemSettings(),
                                            this.getNwmProfile(),
                                            referenceDatetime,
+                                           this.getReferenceTimeType(),
                                            this.getUri() ) )
                 {
                     if ( nwmTimeSeries.countOfNetcdfFiles() <= 0 )
@@ -584,7 +561,9 @@ public class NWMReader implements Callable<List<IngestResult>>
                                        .getContext(),
                                    this.getDataSource()
                                        .getLinks(),
-                                   uri );
+                                   uri,
+                                   this.getDataSource()
+                                       .getLeftOrRightOrBaseline() );
 
             // While wres.source table is used, it is the reader level code
             // that must deal with the wres.source table. Use the identifier
@@ -660,7 +639,9 @@ public class NWMReader implements Callable<List<IngestResult>>
                                        .getContext(),
                                    this.getDataSource()
                                        .getLinks(),
-                                   uri );
+                                   uri,
+                                   this.getDataSource()
+                                       .getLeftOrRightOrBaseline() );
 
             // While wres.source table is used, it is the reader level code
             // that must deal with the wres.source table. Use the identifier

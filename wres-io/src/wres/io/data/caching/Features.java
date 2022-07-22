@@ -16,7 +16,6 @@ import ucar.nc2.NetcdfFile;
 import wres.config.generated.UnnamedFeature;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.FeatureKey;
-import wres.datamodel.space.FeatureTuple;
 import wres.io.data.details.FeatureDetails;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
@@ -63,7 +62,7 @@ public class Features
         this.database = database;
         if ( !gridFilters.isEmpty() )
         {
-            LOGGER.debug( "Instantiating features for non-gridded features." );
+            LOGGER.debug( "Instantiating features for non-gridded data." );
             this.griddedFeatures = new GriddedFeatures.Builder( gridFilters );
         }
         else

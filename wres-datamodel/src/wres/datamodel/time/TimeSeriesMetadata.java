@@ -107,6 +107,19 @@ public class TimeSeriesMetadata
                             .build();
     }
 
+    /**
+     * @return this instance as a builder.
+     */
+    
+    public Builder toBuilder()
+    {
+        return new Builder().setReferenceTimes( this.referenceTimes )
+                            .setTimeScale( this.timeScale )
+                            .setVariableName( this.variableName )
+                            .setFeature( this.feature )
+                            .setUnit( this.unit );
+    }
+    
     public TimeScaleOuter getTimeScale()
     {
         return this.timeScale;

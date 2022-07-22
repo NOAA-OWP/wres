@@ -12,16 +12,7 @@ import java.util.function.Supplier;
  */
 
 public interface DatabaseLockManager
-{
-
-    /**
-     * Liquibase changes or "clean" or "remove orphans" should use
-     * exclusive lock on this. Any and every ingest/evaluation should first get
-     * a shared lock on this, except those mentioned above, which should get it
-     * exclusively.
-     */
-    Long SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME = 1L;
-
+{  
     /**
      * Shutdown the lock manager.
      *
@@ -123,7 +114,11 @@ public interface DatabaseLockManager
 
     static DatabaseLockManager from( SystemSettings settings )
     {
-        if ( settings.getDatabaseType() == DatabaseType.POSTGRESQL )
+        if( settings.isInMemory() )
+        {
+            return new DatabaseLockManagerNoop();
+        }
+        else if ( settings.getDatabaseType() == DatabaseType.POSTGRESQL )
         {
             Supplier<Connection> connectionSupplier = new DatabaseConnectionSupplier( settings );
             return new DatabaseLockManagerPostgres( connectionSupplier );

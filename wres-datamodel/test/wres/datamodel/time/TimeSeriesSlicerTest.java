@@ -2,9 +2,12 @@ package wres.datamodel.time;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -13,10 +16,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.Slicer;
@@ -934,12 +940,51 @@ public final class TimeSeriesSlicerTest
                                                                          fooSeries );
 
         SortedSet<Pair<Instant, Instant>> expected = new TreeSet<>();
-        expected.add( Pair.of( Instant.parse( "1987-12-30T23:59:59.999999999Z" ),
-                               Instant.parse( "1988-01-01T23:59:59.999999999Z" ) ) );
         expected.add( Pair.of( Instant.parse( "1988-12-30T23:59:59.999999999Z" ),
                                Instant.parse( "1989-01-01T23:59:59.999999999Z" ) ) );
 
         assertEquals( expected, actual );
+    }
+
+    @Test
+    public void testGetIntervalFromMonthDays()
+    {
+        Function<Instant, Pair<Instant, Instant>> calculator =
+                TimeSeriesSlicer.getIntervalFromMonthDays( MonthDay.of( 10, 1 ),
+                                                           MonthDay.of( 3, 31 ) );
+
+
+        Pair<Instant, Instant> one = calculator.apply( Instant.parse( "1985-12-05T12:00:00Z" ) ); // Inside before YE
+        Pair<Instant, Instant> two = calculator.apply( Instant.parse( "1985-01-21T12:00:00Z" ) ); // Inside after YE
+        Pair<Instant, Instant> three = calculator.apply( Instant.parse( "1985-09-05T12:00:00Z" ) ); // Outside
+
+        Pair<Instant, Instant> expectedOne = Pair.of( Instant.parse( "1985-09-30T23:59:59.999999999Z" ),
+                                                      Instant.parse( "1986-03-31T23:59:59.999999999Z" ) );
+        Pair<Instant, Instant> expectedTwo = Pair.of( Instant.parse( "1984-09-30T23:59:59.999999999Z" ),
+                                                      Instant.parse( "1985-03-31T23:59:59.999999999Z" ) );
+        Pair<Instant, Instant> expectedThree = Pair.of( Instant.parse( "1984-09-30T23:59:59.999999999Z" ),
+                                                        Instant.parse( "1985-03-31T23:59:59.999999999Z" ) );
+
+
+        assertEquals( expectedOne, one );
+        assertEquals( expectedTwo, two );
+        assertEquals( expectedThree, three );
+    }
+    
+    @Test
+    public void testGetIntervalFromMonthDaysStartsOnEndMonthDay()
+    {
+        Function<Instant, Pair<Instant, Instant>> calculator =
+                TimeSeriesSlicer.getIntervalFromMonthDays( MonthDay.of( 10, 1 ),
+                                                           MonthDay.of( 3, 31 ) );
+
+
+        Pair<Instant, Instant> one = calculator.apply( Instant.parse( "1985-10-01T12:00:00Z" ) );
+
+        Pair<Instant, Instant> expectedOne = Pair.of( Instant.parse( "1985-09-30T23:59:59.999999999Z" ),
+                                                      Instant.parse( "1986-03-31T23:59:59.999999999Z" ) );
+
+        assertEquals( expectedOne, one );
     }
 
     @Test
@@ -1259,11 +1304,11 @@ public final class TimeSeriesSlicerTest
 
         Duration period = Duration.ofHours( 96 );
         TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( period );
-        
+
         // Time window from 144 hours to 240 hours
         Duration lowerLeadBound = Duration.ZERO;
         Duration upperLeadBound = Duration.ofHours( 240 );
-        
+
         TimeWindowOuter timeWindow = TimeWindowOuter.of( MessageFactory.getTimeWindow( lowerLeadBound,
                                                                                        upperLeadBound ) );
 
@@ -1278,6 +1323,34 @@ public final class TimeSeriesSlicerTest
         expected.add( Instant.parse( "2017-01-13T12:00:00Z" ) );
 
         assertEquals( expected, actual );
+    }
+
+    @Test
+    public void testGetReferenceTimeIsWithinSeason()
+    {
+        TimeSeriesMetadata metadataOne = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
+                                                                        T1985_01_01T00_00_00Z ),
+                                                                TimeScaleOuter
+                                                                              .of( Duration.ofHours( 1 ) ),
+                                                                STREAMFLOW,
+                                                                DRRC2,
+                                                                CFS );
+        //Add the time-series
+        TimeSeries<Pair<Double, Double>> one = TimeSeries.of( metadataOne, new TreeSet<>() );
+
+        MonthDay startFirst = MonthDay.of( 12, 30 );
+        MonthDay endFirst = MonthDay.of( 1, 3 );
+
+        Predicate<TimeSeries<Pair<Double, Double>>> filter = TimeSeriesSlicer.getSeasonFilter( startFirst, endFirst );
+
+        MonthDay startSecond = MonthDay.of( 1, 2 );
+        MonthDay endSecond = MonthDay.of( 1, 3 );
+
+        Predicate<TimeSeries<Pair<Double, Double>>> anotherFilter = TimeSeriesSlicer.getSeasonFilter( startSecond,
+                                                                                                      endSecond );
+
+        Assertions.assertAll( () -> assertTrue( filter.test( one ) ),
+                              () -> assertFalse( anotherFilter.test( one ) ) );
     }
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0 )

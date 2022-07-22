@@ -16,9 +16,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.ProjectConfig;
-import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Features;
+import wres.io.data.caching.Caches;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
@@ -26,7 +25,6 @@ import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
-import wres.system.SystemSettings;
 
 /**
  * Create or find existing wres.project rows in the database, represented by
@@ -36,20 +34,16 @@ public class Projects
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(Projects.class);
 
-    private static Pair<Project,Boolean> getProject( SystemSettings systemSettings,
-                                                     Database database,
-                                                     Features featuresCache,
-                                                     Executor executor,
+    private static Pair<Project,Boolean> getProject( Database database,
+                                                     Caches caches,
                                                      ProjectConfig projectConfig,
                                                      String[] leftHashes,
                                                      String[] rightHashes,
                                                      String[] baselineHashes )
             throws SQLException
     {
-        Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( database );
-        Objects.requireNonNull( featuresCache );
-        Objects.requireNonNull( executor );
+        Objects.requireNonNull( caches );
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( leftHashes );
         Objects.requireNonNull( rightHashes );
@@ -60,14 +54,11 @@ public class Projects
                 baselineHashes
         );
 
-        Project details = new Project( systemSettings,
-                                       database,
-                                       featuresCache,
-                                       executor,
-                                       projectConfig,
-                                       identity );
-        details.save();
-        boolean thisCallCausedInsert = details.performedInsert();
+        Project details = new DatabaseProject( database,
+                                               caches,
+                                               projectConfig,
+                                               identity );
+        boolean thisCallCausedInsert = details.save();
         LOGGER.debug( "Did the Project created by this Thread insert into the database first? {}",
                       thisCallCausedInsert );
 
@@ -76,10 +67,8 @@ public class Projects
 
     /**
      * Convert a projectConfig and a raw list of IngestResult into ProjectDetails
-     * @param systemSettings The system settings to use.
-     * @param database The database to use.
-     * @param featuresCache the feature cache
-     * @param executor The executor to use.
+     * @param database The database
+     * @param caches The caches
      * @param projectConfig the config that produced the ingest results
      * @param ingestResults the ingest results
      * @return the ProjectDetails to use
@@ -88,10 +77,8 @@ public class Projects
      * @throws PreIngestException if the hashes of the ingested sources cannot be determined
      * @throws IngestException if another wres instance failed to complete ingest on which this evaluation depends
      */
-    public static Project getProjectFromIngest( SystemSettings systemSettings,
-                                                Database database,
-                                                Features featuresCache,
-                                                Executor executor,
+    public static Project getProjectFromIngest( Database database,
+                                                Caches caches,
                                                 ProjectConfig projectConfig,
                                                 List<IngestResult> ingestResults )
             throws SQLException
@@ -123,10 +110,8 @@ public class Projects
 
         // Permit the List<IngestResult> to be garbage collected here, which
         // should leave space on heap for creating collections in the following.
-        return Projects.getProjectFromIngestStepTwo( systemSettings,
-                                                     database,
-                                                     featuresCache,
-                                                     executor,
+        return Projects.getProjectFromIngestStepTwo( database,
+                                                     caches,
                                                      projectConfig,
                                                      leftIds,
                                                      rightIds,
@@ -134,10 +119,8 @@ public class Projects
                                                      countOfIngestResults );
     }
 
-    private static Project getProjectFromIngestStepTwo( SystemSettings systemSettings,
-                                                        Database database,
-                                                        Features featuresCache,
-                                                        Executor executor,
+    private static Project getProjectFromIngestStepTwo( Database database,
+                                                        Caches caches,
                                                         ProjectConfig projectConfig,
                                                         long[] leftIds,
                                                         long[] rightIds,
@@ -243,10 +226,8 @@ public class Projects
         }
 
         Pair<Project,Boolean> detailsResult =
-                Projects.getProject( systemSettings,
-                                     database,
-                                     featuresCache,
-                                     executor,
+                Projects.getProject( database,
+                                     caches,
                                      projectConfig,
                                      leftHashes,
                                      rightHashes,

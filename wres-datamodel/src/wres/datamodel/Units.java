@@ -267,6 +267,7 @@ public class Units
      * 
      * @param unitName the unit name
      * @param overrideAliases a map of override aliases, possibly empty
+     * @return the official unit name
      */
 
     public static String getOfficialUnitName( String unitName, Map<String, String> overrideAliases )

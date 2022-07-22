@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Objects;
 
 import javax.sql.DataSource;
 import javax.xml.stream.XMLStreamConstants;
@@ -86,6 +87,22 @@ public class SystemSettings extends XMLReader
         {
             throw new IllegalStateException( "Could not read system settings from " + uri, e );
         }
+    }
+    
+    /**
+     * @return true if the evaluation is being performed in-memory, false otherwise. Expects either 
+     */
+
+    public boolean isInMemory()
+    {
+        String inMemory = System.getProperty( "wres.inMemory" );
+
+        if ( Objects.nonNull( inMemory ) )
+        {
+            return "true".equals( inMemory );
+        }
+
+        return Objects.isNull( this.databaseConfiguration );
     }
     
 	/**

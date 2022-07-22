@@ -51,6 +51,9 @@ import wres.statistics.generated.TimeScale.TimeScaleFunction;
 /**
  * Abstract base class for retrieving {@link TimeSeries} from the WRES database.
  * 
+ * TODO: remove measurement unit mapping from this retriever and place in the {@link PoolFactory}, specifically in the
+ * left and right transformers.
+ * 
  * @author James Brown
  */
 
@@ -1409,7 +1412,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     /**
      * Abstract builder.
      * 
-     * @author james.brown@hydrosolved.com
+     * @author James Brown
      * @param <S> the type of time-series to build
      */
 

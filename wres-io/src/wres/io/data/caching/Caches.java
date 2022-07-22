@@ -23,6 +23,8 @@ public class Caches
     private final Ensembles ensemblesCache;
     /** Cache of measurement units. */
     private final MeasurementUnits measurementUnitsCache;
+    /** Cache of variables. */
+    private final Variables variablesCache;
 
     /**
      * Creates an instance.
@@ -76,7 +78,24 @@ public class Caches
     {
         return this.measurementUnitsCache;
     }
+    
+    /**
+     * @return the ensembles cache
+     */
+    public Variables getVariablesCache()
+    {
+        return this.variablesCache;
+    }
 
+    /**
+     * Sets the caches to read-only. This should be performed after ingest.
+     */
+    
+    public void setReadOnly()
+    {
+        this.featuresCache.setOnlyReadFromDatabase();
+    }
+    
     /**
      * Hidden constructor.
      * @param database the database, required
@@ -95,5 +114,6 @@ public class Caches
         this.timeScalesCache = new TimeScales( database );
         this.ensemblesCache = new Ensembles( database );
         this.measurementUnitsCache = new MeasurementUnits( database );
+        this.variablesCache = new Variables( database );
     }
 }

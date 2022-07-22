@@ -1,5 +1,6 @@
 package wres.io.pooling;
 
+import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.DoubleUnaryOperator;
@@ -30,8 +32,10 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.DoubleBoundsType;
+import wres.config.generated.EnsembleCondition;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
+import wres.config.generated.PairConfig.Season;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.Ensemble;
@@ -55,6 +59,7 @@ import wres.datamodel.time.TimeSeriesOfEnsembleUpscaler;
 import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesPairer.TimePairingType;
 import wres.datamodel.time.TimeSeriesPairerByExactTime;
+import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.generators.PersistenceGenerator;
@@ -75,7 +80,6 @@ import wres.statistics.generated.GeometryGroup;
 
 public class PoolFactory
 {
-
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( PoolFactory.class );
 
@@ -372,8 +376,11 @@ public class PoolFactory
         // Left transformer is a straightforward value transformer
         DoubleUnaryOperator leftTransformer = PoolFactory.getSingleValuedTransformer( pairConfig.getValues() );
         // Right transformer may consider the encapsulating event
-        UnaryOperator<Event<Double>> rightTransformer =
+        UnaryOperator<Event<Double>> rightAndBaselineTransformer =
                 next -> Event.of( next.getTime(), leftTransformer.applyAsDouble( next.getValue() ) );
+
+        // Currently only a seasonal filter, which applies equally to all sides
+        Predicate<TimeSeries<Double>> filter = PoolFactory.getSeasonalFilter( pairConfig.getSeason() );
 
         // Build and return the pool suppliers
         List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> rawSuppliers =
@@ -382,7 +389,11 @@ public class PoolFactory
                                                             .setPoolRequests( poolRequests )
                                                             .setBaselineGenerator( baselineGenerator )
                                                             .setLeftTransformer( leftTransformer::applyAsDouble )
-                                                            .setRightTransformer( rightTransformer )
+                                                            .setRightTransformer( rightAndBaselineTransformer )
+                                                            .setBaselineTransformer( rightAndBaselineTransformer )
+                                                            .setLeftFilter( filter )
+                                                            .setRightFilter( filter )
+                                                            .setBaselineFilter( filter )
                                                             .setLeftUpscaler( upscaler )
                                                             .setRightUpscaler( upscaler )
                                                             .setPairer( pairer )
@@ -459,10 +470,16 @@ public class PoolFactory
         DoubleUnaryOperator leftTransformer = PoolFactory.getSingleValuedTransformer( pairConfig.getValues() );
 
         // Right transformer
-        UnaryOperator<Event<Ensemble>> rightTransformer = PoolFactory.getEnsembleTransformer( leftTransformer );
+        UnaryOperator<Event<Ensemble>> rightTransformer = PoolFactory.getEnsembleTransformer( leftTransformer,
+                                                                                              inputsConfig.getRight() );
 
         // Baseline transformer
-        UnaryOperator<Event<Ensemble>> baselineTransformer = PoolFactory.getEnsembleTransformer( leftTransformer );
+        UnaryOperator<Event<Ensemble>> baselineTransformer = PoolFactory.getEnsembleTransformer( leftTransformer,
+                                                                                                 inputsConfig.getBaseline() );
+
+        // Currently only a seasonal filter, which applies equally to all sides
+        Predicate<TimeSeries<Double>> singleValuedFilter = PoolFactory.getSeasonalFilter( pairConfig.getSeason() );
+        Predicate<TimeSeries<Ensemble>> ensembleFilter = PoolFactory.getSeasonalFilter( pairConfig.getSeason() );
 
         // Build and return the pool suppliers
         List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> rawSuppliers =
@@ -474,6 +491,9 @@ public class PoolFactory
                                                               .setBaselineTransformer( baselineTransformer )
                                                               .setLeftUpscaler( leftUpscaler )
                                                               .setRightUpscaler( rightUpscaler )
+                                                              .setLeftFilter( singleValuedFilter )
+                                                              .setRightFilter( ensembleFilter )
+                                                              .setBaselineFilter( ensembleFilter )
                                                               .setPairer( pairer )
                                                               .setCrossPairer( crossPairer )
                                                               .setClimateMapper( Double::doubleValue )
@@ -760,29 +780,166 @@ public class PoolFactory
      * Returns a transformer for ensemble data if required.
      * 
      * @param valueTransformer the value transformer to compose
+     * @param dataSource the data source declaration
      * @return a transformer or null
      */
 
-    private static UnaryOperator<Event<Ensemble>> getEnsembleTransformer( DoubleUnaryOperator valueTransformer )
+    private static UnaryOperator<Event<Ensemble>> getEnsembleTransformer( DoubleUnaryOperator valueTransformer,
+                                                                          DataSourceConfig dataSource )
     {
         // Return null to avoid iterating a no-op function
-        if ( Objects.isNull( valueTransformer ) )
+        if ( Objects.isNull( valueTransformer )
+             && ( Objects.isNull( dataSource ) || dataSource.getEnsemble().isEmpty() ) )
         {
             return null;
         }
 
+        List<String> inclusive = null;
+        List<String> exclusive = null;
+
+        if ( Objects.nonNull( dataSource ) && !dataSource.getEnsemble().isEmpty() )
+        {
+            exclusive = dataSource.getEnsemble()
+                                  .stream()
+                                  .filter( EnsembleCondition::isExclude )
+                                  .map( EnsembleCondition::getName )
+                                  .collect( Collectors.toList() );
+            inclusive = dataSource.getEnsemble()
+                                  .stream()
+                                  .filter( next -> !next.isExclude() )
+                                  .map( EnsembleCondition::getName )
+                                  .collect( Collectors.toList() );
+        }
+
+        List<String> finalInclusive = inclusive;
+        List<String> finalExclusive = exclusive;
+
         return toTransform -> {
 
             Ensemble ensemble = toTransform.getValue();
+            Labels ensLabels = ensemble.getLabels();
+
+            // If filters were defined, they must select something
+            if ( ( ( Objects.nonNull( finalInclusive ) && !finalInclusive.isEmpty() )
+                   || ( Objects.nonNull( finalExclusive ) && !finalExclusive.isEmpty() ) )
+                 && !ensLabels.hasLabels() )
+            {
+                throw new IllegalArgumentException( "When attempting to filter ensemble members, discovered some "
+                                                    + "filters, but the ensemble members were not labelled, "
+                                                    + "which is not allowed." );
+            }
+
             double[] members = ensemble.getMembers();
-            double[] transformed = Arrays.stream( members )
-                                         .map( valueTransformer )
-                                         .toArray();
 
-            Labels labels = ensemble.getLabels();
+            // Map the members
+            members = Arrays.stream( members )
+                            .map( valueTransformer )
+                            .toArray();
 
-            return Event.of( toTransform.getTime(), Ensemble.of( transformed, labels ) );
+            Ensemble furtherFilter = Ensemble.of( members, ensLabels );
+            furtherFilter = PoolFactory.filterEnsembleMembers( furtherFilter, finalInclusive, finalExclusive );
+
+            return Event.of( toTransform.getTime(), furtherFilter );
         };
+    }
+
+    /**
+     * @param ensemble the ensemble to filter
+     * @param finalInclusive the inclusive filters
+     * @param finalExclusive the exclusive filters
+     * @return the filtered ensemble
+     */
+
+    private static Ensemble filterEnsembleMembers( Ensemble ensemble,
+                                                   List<String> finalInclusive,
+                                                   List<String> finalExclusive )
+    {
+        double[] members = ensemble.getMembers();
+        Labels ensLabels = ensemble.getLabels();
+
+        // Filter named members?
+        if ( ensLabels.hasLabels() )
+        {
+            Map<String, Double> valuesToUse = new TreeMap<>();
+            String[] labels = ensLabels.getLabels();
+
+            // Iterate the members, map the units and discover the names and add to the map
+            for ( int i = 0; i < members.length; i++ )
+            {
+                // Use this member?
+                if ( PoolFactory.getUseThisEnsembleName( labels[i], finalInclusive, finalExclusive ) )
+                {
+                    valuesToUse.put( labels[i], members[i] );
+                }
+            }
+
+            // If inclusive filters were defined, they must select something
+            if ( Objects.nonNull( finalInclusive ) && !finalInclusive.isEmpty() && valuesToUse.isEmpty() )
+            {
+                throw new IllegalArgumentException( "When attempting to filter ensemble members, discovered some "
+                                                    + "inclusive filters, but no members matches these filters, "
+                                                    + "which is not allowed. The filters were: "
+                                                    + finalInclusive
+                                                    + "." );
+            }
+
+            // Labels are cached centrally
+            String[] names = valuesToUse.keySet()
+                                        .toArray( new String[valuesToUse.size()] );
+            ensLabels = Labels.of( names );
+            members = valuesToUse.values()
+                                 .stream()
+                                 .mapToDouble( Double::doubleValue )
+                                 .toArray();
+        }
+
+        return Ensemble.of( members, ensLabels );
+    }
+
+    /**
+     * @param ensembleName the name to test
+     * @param inclusive the inclusive names
+     * @param exclusive the exclusive names
+     * @return {@code true} if the ensemble identifier should be considered, otherwise false
+     */
+
+    private static boolean getUseThisEnsembleName( String ensembleName,
+                                                   List<String> inclusive,
+                                                   List<String> exclusive )
+    {
+        boolean include = true;
+        if ( Objects.nonNull( inclusive ) && !inclusive.isEmpty() )
+        {
+            include = inclusive.contains( ensembleName );
+        }
+
+        if ( Objects.nonNull( exclusive ) && !exclusive.isEmpty() )
+        {
+            include = include && !exclusive.contains( ensembleName );
+        }
+
+        return include;
+    }
+
+    /**
+     * @param the season
+     * @return a seasonal filter
+     */
+
+    private static <T> Predicate<TimeSeries<T>> getSeasonalFilter( Season season )
+    {
+        if ( Objects.isNull( season ) )
+        {
+            return null;
+        }
+
+        MonthDay start = MonthDay.of( season.getEarliestMonth(),
+                                      season.getEarliestDay() );
+
+        MonthDay end = MonthDay.of( season.getLatestMonth(),
+                                    season.getLatestDay() );
+
+        return TimeSeriesSlicer.getSeasonFilter( start, end );
     }
 
     /**

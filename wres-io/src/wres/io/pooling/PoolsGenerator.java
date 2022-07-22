@@ -55,96 +55,59 @@ import wres.io.retrieval.RetrieverFactory;
 
 public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSeries<Pair<L, R>>>>>>
 {
-
-    /**
-     * Logger.
-     */
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( PoolsGenerator.class );
 
-    /**
-     * The project for which pools are required.
-     */
-
+    /** The project for which pools are required. */
     private final Project project;
 
-    /**
-     * The pool requests.
-     */
-
+    /** The pool requests. */
     private final List<PoolRequest> poolRequests;
 
-    /**
-     * A factory to create project-relevant retrievers.
-     */
-
+    /** A factory to create project-relevant retrievers. */
     private final RetrieverFactory<L, R> retrieverFactory;
 
-    /**
-     * The upscaler for left-ish values.
-     */
-
+    /** The upscaler for left-ish values. */
     private final TimeSeriesUpscaler<L> leftUpscaler;
 
-    /**
-     * The upscaler for right-ish values.
-     */
-
+    /** The upscaler for right-ish values. */
     private final TimeSeriesUpscaler<R> rightUpscaler;
 
-    /**
-     * The pairer, which admits finite value pairs.
-     */
-
+    /** The pairer, which admits finite value pairs. */
     private final TimeSeriesPairer<L, R> pairer;
 
-    /**
-     * An optional cross-pairer to use common pairs (by time) for the main and baseline pairs.
-     */
-
+    /** An optional cross-pairer to use common pairs (by time) for the main and baseline pairs. */
     private final TimeSeriesCrossPairer<L, R> crossPairer;
 
-    /**
-     * A transformer that applies value constraints to left-ish values.
-     */
-
+    /** A transformer that applies value constraints to left-ish values. */
     private final UnaryOperator<L> leftTransformer;
 
-    /**
-     * A transformer of right-ish values that can take into account the event as a whole.
-     */
-
+    /** A transformer of right-ish values that can take into account the event as a whole. */
     private final UnaryOperator<Event<R>> rightTransformer;
 
-    /**
-     * A transformer of baseline-ish values that can take into account the event as a whole.
-     */
-
+    /** A transformer of baseline-ish values that can take into account the event as a whole. */
     private final UnaryOperator<Event<R>> baselineTransformer;
 
-    /**
-     * A mapper to map between left-ish climate values and double values. TODO: propagate left-ish data for 
-     * climatology, rather than transforming it upfront. 
-     */
+    /** A function that filters left-ish time-series. */
+    private final Predicate<TimeSeries<L>> leftFilter;
 
+    /** A function that filters right-ish time-series. */
+    private final Predicate<TimeSeries<R>> rightFilter;
+
+    /** A function that filters baseline-ish time-series. */
+    private final Predicate<TimeSeries<R>> baselineFilter;
+
+    /** A mapper to map between left-ish climate values and double values. TODO: propagate left-ish data for 
+     * climatology, rather than transforming it upfront. */
     private final ToDoubleFunction<L> climateMapper;
 
-    /**
-     * The admissible values for the left-ish data associated with climatology.
-     */
-
+    /** The admissible values for the left-ish data associated with climatology. */
     private final Predicate<L> climateAdmissibleValue;
 
-    /**
-     * An optional generator for baseline data (e.g., persistence or climatology)
-     */
-
+    /** An optional generator for baseline data (e.g., persistence or climatology). */
     private final Function<Set<FeatureKey>, UnaryOperator<TimeSeries<R>>> baselineGenerator;
 
-    /**
-     * The pool suppliers.
-     */
-
+    /** The pool suppliers. */
     private final List<Supplier<Pool<TimeSeries<Pair<L, R>>>>> pools;
 
     @Override
@@ -159,85 +122,52 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
 
     static class Builder<L, R>
     {
-
-        /**
-         * The project for which pools are required.
-         */
-
+        /** The project for which pools are required. */
         private Project project;
 
-        /**
-         * The pool requests.
-         */
-
+        /** The pool requests. */
         private List<PoolRequest> poolRequests = new ArrayList<>();
 
-        /**
-         * A factory to create project-relevant retrievers.
-         */
-
+        /** A factory to create project-relevant retrievers. */
         private RetrieverFactory<L, R> retrieverFactory;
 
-        /**
-         * A function to support pairing of left and right data.
-         */
-
+        /**  A function to support pairing of left and right data. */
         private TimeSeriesPairer<L, R> pairer;
 
-        /**
-         * An optional cross-pairer to use common pairs (by time) for the main and baseline pairs.
-         */
-
+        /** An optional cross-pairer to use common pairs (by time) for the main and baseline pairs. */
         private TimeSeriesCrossPairer<L, R> crossPairer;
 
-        /**
-         * A function to upscale left data.
-         */
-
+        /** A function to upscale left data. */
         private TimeSeriesUpscaler<L> leftUpscaler;
 
-        /**
-         * A function to upscale right data.
-         */
-
+        /** A function to upscale right data. */
         private TimeSeriesUpscaler<R> rightUpscaler;
 
-        /**
-         * A transformer that applies value constraints to left-ish values.
-         */
-
+        /** A transformer that applies value constraints to left-ish values. */
         private UnaryOperator<L> leftTransformer;
 
-        /**
-         * A transformer for right-ish values that can take into account the encapsulating event.
-         */
-
+        /** A transformer for right-ish values that can take into account the encapsulating event. */
         private UnaryOperator<Event<R>> rightTransformer;
 
-        /**
-         * A transformer for baseline-ish values that can take into account the encapsulating event.
-         */
-
+        /** A transformer for baseline-ish values that can take into account the encapsulating event. */
         private UnaryOperator<Event<R>> baselineTransformer;
 
-        /**
-         * A mapper to map between left-ish climate values and double values. TODO: make the climatology generic, 
-         * specifically left-ish, throughout the software, rather than double-ish, although this carries some boxing
-         * overhead for double types. See JEP 218 for a possibly better future: https://openjdk.java.net/jeps/218
-         */
+        /** A function that filters left-ish time-series. */
+        private Predicate<TimeSeries<L>> leftFilter;
 
+        /** A function that filters right-ish time-series. */
+        private Predicate<TimeSeries<R>> rightFilter;
+
+        /** A function that filters baseline-ish time-series. */
+        private Predicate<TimeSeries<R>> baselineFilter;
+
+        /** A mapper to map between left-ish climate values and double values. */
         private ToDoubleFunction<L> climateMapper;
 
-        /**
-         * The admissible values for the left-ish data associated with climatology.
-         */
-
+        /** The admissible values for the left-ish data associated with climatology. */
         private Predicate<L> climateAdmissibleValue;
 
-        /**
-         * An optional generator for baseline data (e.g., persistence or climatology)
-         */
-
+        /** An optional generator for baseline data (e.g., persistence or climatology). */
         private Function<Set<FeatureKey>, UnaryOperator<TimeSeries<R>>> baselineGenerator;
 
         /**
@@ -365,6 +295,39 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
         }
 
         /**
+         * @param leftFilter the filter for left-style data
+         * @return the builder
+         */
+        Builder<L, R> setLeftFilter( Predicate<TimeSeries<L>> leftFilter )
+        {
+            this.leftFilter = leftFilter;
+
+            return this;
+        }
+
+        /**
+         * @param rightFilter the filter for right-style data
+         * @return the builder
+         */
+        Builder<L, R> setRightFilter( Predicate<TimeSeries<R>> rightFilter )
+        {
+            this.rightFilter = rightFilter;
+
+            return this;
+        }
+
+        /**
+         * @param baselineFilter the filter for baseline-style data
+         * @return the builder
+         */
+        Builder<L, R> setBaselineFilter( Predicate<TimeSeries<R>> baselineFilter )
+        {
+            this.baselineFilter = baselineFilter;
+
+            return this;
+        }
+
+        /**
          * @param climateMapper the climateMapper to set
          * @return the builder
          */
@@ -420,6 +383,9 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
         this.leftTransformer = builder.leftTransformer;
         this.rightTransformer = builder.rightTransformer;
         this.baselineTransformer = builder.baselineTransformer;
+        this.leftFilter = builder.leftFilter;
+        this.rightFilter = builder.rightFilter;
+        this.baselineFilter = builder.baselineFilter;
         this.climateMapper = builder.climateMapper;
         this.crossPairer = builder.crossPairer;
 
@@ -479,7 +445,11 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                .setProjectDeclaration( projectConfig )
                .setLeftTransformer( this.getLeftTransformer() )
                .setRightTransformer( this.getRightTransformer() )
-               .setBaselineTransformer( this.getBaselineTransformer() );
+               .setBaselineTransformer( this.getBaselineTransformer() )
+               .setLeftFilter( this.getLeftFilter() )
+               .setRightFilter( this.getRightFilter() )
+               .setBaselineFilter( this.getBaselineFilter() );
+
 
         // Obtain the desired time scale and set it
         TimeScaleOuter desiredTimeScale = this.getProject()
@@ -721,8 +691,6 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
     }
 
     /**
-     * Returns the transformer for left values, if any.
-     * 
      * @return the transformer for left values
      */
 
@@ -732,8 +700,6 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
     }
 
     /**
-     * Returns the transformer for right values, if any.
-     * 
      * @return the transformer for right values
      */
 
@@ -743,8 +709,6 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
     }
 
     /**
-     * Returns the transformer for baseline values, if any.
-     * 
      * @return the transformer for baseline values
      */
 
@@ -753,6 +717,33 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
         return this.baselineTransformer;
     }
 
+    /**
+     * @return the filter for left-ish data
+     */
+
+    private Predicate<TimeSeries<L>> getLeftFilter()
+    {
+        return this.leftFilter;
+    }
+
+    /**
+     * @return the filter for right-ish data
+     */
+
+    private Predicate<TimeSeries<R>> getRightFilter()
+    {
+        return this.rightFilter;
+    }
+
+    /**
+     * @return the filter for baseline-ish data
+     */
+
+    private Predicate<TimeSeries<R>> getBaselineFilter()
+    {
+        return this.baselineFilter;
+    }
+    
     /**
      * Returns the retriever factory.
      * 

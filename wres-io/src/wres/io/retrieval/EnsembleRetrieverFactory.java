@@ -1,12 +1,8 @@
 package wres.io.retrieval;
 
 import java.time.MonthDay;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -15,7 +11,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
-import wres.config.generated.EnsembleCondition;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
@@ -27,6 +22,7 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.Caches;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.project.Project;
@@ -34,82 +30,63 @@ import wres.io.utilities.Database;
 
 /**
  * <p>A factory class that creates retrievers for the single-valued left and ensemble right datasets associated with one 
- * evaluation. This factory takes a "per-feature-view" of retrieval whereby a feature is supplied on construction. In 
- * future, other implementations may not take a per-feature view (e.g., a multiple-feature-view or a grid-view).
+ * evaluation.
  * 
  * @author James Brown
  */
 
 public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemble>
 {
-
-    /**
-     * Logger.
-     */
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( EnsembleRetrieverFactory.class );
 
-    /**
-     * The project.
-     */
-
+    /** The project. */
     private final Project project;
+    
+    /** The database. */
+    private final Database database;
 
-    /**
-     * Right data declaration.
-     */
-
+    /** The caches/ORMs. */
+    private final Caches caches;
+    
+    /** Right data declaration. */
     private final DataSourceConfig rightConfig;
 
-    /**
-     * Baseline data declaration.
-     */
-
+    /** Baseline data declaration. */
     private final DataSourceConfig baselineConfig;
 
-    /**
-     * Start of a seasonal constraint, if any.
-     */
-
+    /** Start of a seasonal constraint, if any. */
     private final MonthDay seasonStart;
 
-    /**
-     * End of a seasonal constraint, if any.
-     */
-
+    /** End of a seasonal constraint, if any. */
     private final MonthDay seasonEnd;
 
-    /**
-     * Declared <code>desiredTimeScale</code>, if any.
-     */
-
+    /** Declared <code>desiredTimeScale</code>, if any. */
     private final TimeScaleOuter desiredTimeScale;
 
-    /**
-     * A mapper to convert measurement units.
-     */
-
+    /** A mapper to convert measurement units. */
     private final UnitMapper unitMapper;
 
-    /**
-     * A single-valued retriever factory for the left-ish data.
-     */
-
+    /** A single-valued retriever factory for the left-ish data. */
     private final RetrieverFactory<Double, Double> leftFactory;
 
     /**
      * Returns an instance.
      *
      * @param project the project
+     * @param database the database
+     * @param caches the caches
      * @param unitMapper the unit mapper
      * @return a factory instance
      * @throws NullPointerException if any input is null
      */
 
     public static EnsembleRetrieverFactory of( Project project,
+                                               Database database,
+                                               Caches caches,
                                                UnitMapper unitMapper )
     {
-        return new EnsembleRetrieverFactory( project, unitMapper );
+        return new EnsembleRetrieverFactory( project, database, caches, unitMapper );
     }
 
     @Override
@@ -141,21 +118,13 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
                       features,
                       timeWindow );
 
-        // Obtain any ensemble member constraints
-        Set<Long> ensembleIdsToInclude =
-                this.getEnsembleMembersToFilter( LeftOrRightOrBaseline.RIGHT, true );
-        Set<Long> ensembleIdsToExclude =
-                this.getEnsembleMembersToFilter( LeftOrRightOrBaseline.RIGHT, false );
-
         return this.getRightRetrieverBuilder( this.rightConfig.getType() )
-                   .setEnsembleIdsToInclude( ensembleIdsToInclude )
-                   .setEnsembleIdsToExclude( ensembleIdsToExclude )
                    .setEnsemblesCache( this.getEnsemblesCache() )
                    .setDatabase( this.getDatabase() )
                    .setFeaturesCache( this.getFeaturesCache() )
                    .setProjectId( this.project.getId() )
                    .setFeatures( features )
-                   .setVariableName( this.project.getRightVariableName() )
+                   .setVariableName( this.project.getVariableName( LeftOrRightOrBaseline.RIGHT ) )
                    .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.RIGHT )
                    .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( rightConfig ) )
                    .setDesiredTimeScale( this.desiredTimeScale )
@@ -185,21 +154,13 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
                           features,
                           timeWindow );
 
-            // Obtain any ensemble member constraints
-            Set<Long> ensembleIdsToInclude =
-                    this.getEnsembleMembersToFilter( LeftOrRightOrBaseline.BASELINE, true );
-            Set<Long> ensembleIdsToExclude =
-                    this.getEnsembleMembersToFilter( LeftOrRightOrBaseline.BASELINE, false );
-
             baseline = this.getRightRetrieverBuilder( this.baselineConfig.getType() )
-                           .setEnsembleIdsToInclude( ensembleIdsToInclude )
-                           .setEnsembleIdsToExclude( ensembleIdsToExclude )
                            .setEnsemblesCache( this.getEnsemblesCache() )
                            .setDatabase( this.getDatabase() )
                            .setFeaturesCache( this.getFeaturesCache() )
                            .setProjectId( this.project.getId() )
                            .setFeatures( features )
-                           .setVariableName( this.project.getBaselineVariableName() )
+                           .setVariableName( this.project.getVariableName( LeftOrRightOrBaseline.BASELINE ) )
                            .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.BASELINE )
                            .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( baselineConfig ) )
                            .setDesiredTimeScale( this.desiredTimeScale )
@@ -231,7 +192,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
 
     private Database getDatabase()
     {
-        return this.project.getDatabase();
+        return this.database;
     }
 
     /**
@@ -240,7 +201,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
 
     private Features getFeaturesCache()
     {
-        return this.project.getFeaturesCache();
+        return this.caches.getFeaturesCache();
     }
 
     /**
@@ -249,18 +210,9 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
 
     private Ensembles getEnsemblesCache()
     {
-        return this.project.getEnsemblesCache();
+        return this.caches.getEnsemblesCache();
     }
 
-    /**
-     * @return the project declaration.
-     */
-
-    private ProjectConfig getProjectConfig()
-    {
-        return this.project.getProjectConfig();
-    }
-    
     /**
      * Returns a builder for a right-ish retriever.
      * 
@@ -305,95 +257,29 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     }
 
     /**
-     * Returns a set of <code>ensemble_id</code> that should be included or excluded. The empty set should be 
-     * interpreted as no constraints existing and, hence, that all possible <code>ensemble_id</code> should be included.
-     * Including nothing is exceptional. Excluding everything is not exceptional at this stage, but should be 
-     * exceptional downstream.
-     * 
-     * @param dataType the data type
-     * @param include is true to search for constraints to include, false to exclude
-     * @return the members to include or execlude
-     * @throws NullPointerException if the dataType is null
-     * @throws IllegalArgumentException if the dataType declaration is invalid or one or more constraints were present 
-     *            but not recognized
-     */
-
-    private Set<Long> getEnsembleMembersToFilter( LeftOrRightOrBaseline dataType, boolean include )
-    {
-        Objects.requireNonNull( dataType );
-
-        DataSourceConfig config = null;
-        switch ( dataType )
-        {
-            case LEFT:
-                config = this.getProjectConfig().getInputs().getLeft();
-                break;
-            case RIGHT:
-                config = this.getProjectConfig().getInputs().getRight();
-                break;
-            case BASELINE:
-                config = this.getProjectConfig().getInputs().getBaseline();
-                break;
-            default:
-                throw new IllegalArgumentException( "Unrecognized data type '" + dataType + "'." );
-
-        }
-
-        Set<Long> returnMe = new TreeSet<>();
-
-        if ( Objects.nonNull( config ) && !config.getEnsemble().isEmpty() )
-        {
-            List<EnsembleCondition> conditions = config.getEnsemble();
-            Ensembles ensemblesCache = this.getEnsemblesCache();
-            List<String> failed = new ArrayList<>();
-
-            for ( EnsembleCondition condition : conditions )
-            {
-                if ( condition.isExclude() != include )
-                {
-                    List<Long> filtered = ensemblesCache.getEnsembleIDs( condition );
-                    returnMe.addAll( filtered );
-                    if ( filtered.isEmpty() && include ) // Do not allow "include nothing"
-                    {
-                        failed.add( condition.getName() );
-                    }
-                }
-            }
-
-            if ( !failed.isEmpty() )
-            {
-                throw new IllegalArgumentException( "Of the filters that were defined for ensemble names, "
-                                                    + failed.size()
-                                                    + " of those filters contained an ensemble name that was not "
-                                                    + "present anywhere in the dataset and the filter asked for the "
-                                                    + "name to be included. Inclusive filters can only be defined "
-                                                    + "for ensemble names that exist. Fix the declared filters to "
-                                                    + "reference names that exist. The ensemble names that do not "
-                                                    + "exist are: "
-                                                    + failed
-                                                    + "." );
-            }
-        }
-
-        return Collections.unmodifiableSet( returnMe );
-    }
-
-    /**
      * Hidden constructor.
      * 
      * @param project the project
+     * @param database the database,
+     * @param caches the caches
      * @param unitMapper the unit mapper
      * @throws NullPointerException if any input is null
      */
 
     private EnsembleRetrieverFactory( Project project,
+                                      Database database,
+                                      Caches caches,
                                       UnitMapper unitMapper )
     {
         Objects.requireNonNull( project );
         Objects.requireNonNull( unitMapper );
+        Objects.requireNonNull( database );
+        Objects.requireNonNull( caches );
 
         this.project = project;
         this.unitMapper = unitMapper;
+        this.database = database;
+        this.caches = caches;
 
         ProjectConfig projectConfig = project.getProjectConfig();
         PairConfig pairConfig = projectConfig.getPair();
@@ -410,6 +296,8 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
 
         // Create a factory for the left-ish data
         this.leftFactory = SingleValuedRetrieverFactory.of( project,
+                                                            database,
+                                                            caches,
                                                             unitMapper );
     }
 

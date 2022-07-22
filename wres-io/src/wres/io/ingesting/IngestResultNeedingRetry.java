@@ -23,17 +23,15 @@ class IngestResultNeedingRetry implements IngestResult
     private final DataSource dataSource;
     private final long surrogateKey;
 
-    IngestResultNeedingRetry( LeftOrRightOrBaseline leftOrRightOrBaseline,
-                              DataSource dataSource,
+    IngestResultNeedingRetry( DataSource dataSource,
                               long surrogateKey )
     {
-        Objects.requireNonNull( leftOrRightOrBaseline, "Ingester must include left/right/baseline" );
         Objects.requireNonNull( dataSource, "Ingester must include datasource information." );
 
         if ( surrogateKey == 0 )
         {
-            LOGGER.warn( "Suspicious surrogate key id=0 given for dataSource={} with l/r/b={}",
-                         dataSource, leftOrRightOrBaseline );
+            LOGGER.warn( "Suspicious surrogate key id=0 given for dataSource={}",
+                         dataSource );
         }
 
         if ( surrogateKey < 0 )
@@ -42,7 +40,7 @@ class IngestResultNeedingRetry implements IngestResult
                                                 + surrogateKey );
         }
 
-        this.leftOrRightOrBaseline = leftOrRightOrBaseline;
+        this.leftOrRightOrBaseline = dataSource.getLeftOrRightOrBaseline();
         this.surrogateKey = surrogateKey;
         this.dataSource = dataSource;
     }

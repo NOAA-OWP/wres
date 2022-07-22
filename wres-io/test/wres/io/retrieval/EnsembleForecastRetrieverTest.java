@@ -49,6 +49,7 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.io.data.caching.Caches;
 import wres.io.ingesting.IngestResult;
+import wres.io.ingesting.DatabaseTimeSeriesIngester;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.project.Project;
 import wres.io.project.Projects;
@@ -209,68 +210,6 @@ public class EnsembleForecastRetrieverTest
     }
 
     @Test
-    public void testRetrievalOfOneTimeSeriesWithFiveEventsAndOneMemberUsingEnsembleConstraints()
-            throws SQLException
-    {
-        long include = this.caches.getEnsemblesCache().getEnsembleID( "567" );
-        long excludeOne = this.caches.getEnsemblesCache().getEnsembleID( "123" );
-        long excludeTwo = this.caches.getEnsemblesCache().getEnsembleID( "456" );
-
-        // Build the retriever with ensemble constraints
-        Retriever<TimeSeries<Ensemble>> forecastRetriever =
-                new EnsembleForecastRetriever.Builder().setEnsemblesCache( this.caches.getEnsemblesCache() )
-                                                       .setEnsembleIdsToInclude( Set.of( include ) )
-                                                       .setEnsembleIdsToExclude( Set.of( excludeOne, excludeTwo ) )
-                                                       .setDatabase( this.wresDatabase )
-                                                       .setFeaturesCache( this.caches.getFeaturesCache() )
-                                                       .setProjectId( PROJECT_ID )
-                                                       .setVariableName( VARIABLE_NAME )
-                                                       .setFeatures( Set.of( FEATURE ) )
-                                                       .setUnitMapper( this.unitMapper )
-                                                       .setLeftOrRightOrBaseline( LRB )
-                                                       .build();
-
-        // Get the time-series
-        Stream<TimeSeries<Ensemble>> forecastSeries = forecastRetriever.get();
-
-        // Stream into a collection
-        List<TimeSeries<Ensemble>> actualCollection = forecastSeries.collect( Collectors.toList() );
-
-        // There is one time-series, so assert that
-        assertEquals( 1, actualCollection.size() );
-        TimeSeries<Ensemble> actualSeries = actualCollection.get( 0 );
-
-        // Create the expected series
-        TimeSeriesMetadata expectedMetadata =
-                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
-                                               T2023_04_01T00_00_00Z ),
-                                       TimeScaleOuter.of(),
-                                       VARIABLE_NAME,
-                                       FEATURE,
-                                       this.unitMapper.getDesiredMeasurementUnitName() );
-        TimeSeries.Builder<Ensemble> builder = new TimeSeries.Builder<>();
-
-        Labels expectedLabels = Labels.of( "567" );
-
-        TimeSeries<Ensemble> expectedSeries =
-                builder.setMetadata( expectedMetadata )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ),
-                                            Ensemble.of( new double[] { 65.0 }, expectedLabels ) ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ),
-                                            Ensemble.of( new double[] { 72.0 }, expectedLabels ) ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T03:00:00Z" ),
-                                            Ensemble.of( new double[] { 79.0 }, expectedLabels ) ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ),
-                                            Ensemble.of( new double[] { 86.0 }, expectedLabels ) ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ),
-                                            Ensemble.of( new double[] { 93.0 }, expectedLabels ) ) )
-                       .build();
-
-        // Actual series equals expected series
-        assertEquals( expectedSeries, actualSeries );
-    }
-
-    @Test
     public void testGetAllIdentifiersThrowsExpectedException()
     {
         // Build the retriever
@@ -376,15 +315,17 @@ public class EnsembleForecastRetrieverTest
 
     private void addOneForecastTimeSeriesWithFiveEventsAndThreeMembersToTheDatabase() throws SQLException
     {
-        DataSource leftData = RetrieverTestData.generateDataSource( DatasourceType.OBSERVATIONS );
-        DataSource rightData = RetrieverTestData.generateDataSource( DatasourceType.ENSEMBLE_FORECASTS );
+        DataSource leftData = RetrieverTestData.generateDataSource( LeftOrRightOrBaseline.LEFT, 
+                                                                    DatasourceType.OBSERVATIONS );
+        DataSource rightData = RetrieverTestData.generateDataSource( LeftOrRightOrBaseline.RIGHT,
+                                                                     DatasourceType.ENSEMBLE_FORECASTS );
         LOGGER.info( "leftData: {}", leftData );
         LOGGER.info( "rightData: {}", rightData );
         ProjectConfig.Inputs fakeInputs =
                 new ProjectConfig.Inputs( leftData.getContext(), rightData.getContext(), null );
         ProjectConfig fakeConfig = new ProjectConfig( fakeInputs, null, null, null, null, null );
         TimeSeries<Ensemble> timeSeriesOne = RetrieverTestData.generateTimeSeriesEnsembleOne( T0 );
-        TimeSeriesIngester ingesterOne = new TimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+        TimeSeriesIngester ingesterOne = new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                                          .setDatabase( this.wresDatabase )
                                                                          .setCaches( this.caches )
                                                                          .setProjectConfig( fakeConfig )
@@ -395,7 +336,7 @@ public class EnsembleForecastRetrieverTest
 
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
 
-        TimeSeriesIngester ingesterTwo = new TimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+        TimeSeriesIngester ingesterTwo = new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                                          .setDatabase( this.wresDatabase )
                                                                          .setCaches( this.caches )
                                                                          .setProjectConfig( fakeConfig )
@@ -424,13 +365,11 @@ public class EnsembleForecastRetrieverTest
 
         LOGGER.info( "ingestResultOne: {}", ingestResultOne );
         LOGGER.info( "ingestResultTwo: {}", ingestResultTwo );
-        Project project = Projects.getProjectFromIngest( this.mockSystemSettings,
-                                                         this.wresDatabase,
-                                                         this.caches.getFeaturesCache(),
-                                                         this.mockExecutor,
+        Project project = Projects.getProjectFromIngest( this.wresDatabase,
+                                                         this.caches,
                                                          fakeConfig,
                                                          results );
-        assertTrue( project.performedInsert() );
+        assertTrue( project.save() );
     }
 
 }

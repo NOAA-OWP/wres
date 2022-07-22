@@ -38,6 +38,7 @@ import wres.io.concurrency.Executor;
 import wres.config.generated.DataSourceBaselineConfig;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.DataSourceConfig.Variable;
@@ -51,6 +52,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.data.caching.Caches;
 import wres.io.ingesting.IngestResult;
+import wres.io.ingesting.DatabaseTimeSeriesIngester;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.project.Project;
 import wres.io.project.Projects;
@@ -425,19 +427,14 @@ public class EnsembleRetrieverFactoryTest
         Mockito.when( project.getProjectConfig() ).thenReturn( projectConfig );
         Mockito.when( project.getId() ).thenReturn( PROJECT_ID );
         Mockito.when( project.getFeatures() ).thenReturn( allFeatures );
-        Mockito.when( project.getLeftVariableName() ).thenReturn( VARIABLE_NAME );
-        Mockito.when( project.getRightVariableName() ).thenReturn( VARIABLE_NAME );
-        Mockito.when( project.getBaselineVariableName() ).thenReturn( VARIABLE_NAME );
+        Mockito.when( project.getVariableName( Mockito.any() ) ).thenReturn( VARIABLE_NAME );
         Mockito.when( project.getVariableName( Mockito.any() ) ).thenReturn( VARIABLE_NAME );
         Mockito.when( project.hasBaseline() ).thenReturn( true );
         Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
-        Mockito.when( project.getDatabase() ).thenReturn( this.wresDatabase );
-        Mockito.when( project.getFeaturesCache() ).thenReturn( this.caches.getFeaturesCache() );
-        Mockito.when( project.getEnsemblesCache() ).thenReturn( this.caches.getEnsemblesCache() );
 
         // Create the factory instance
         UnitMapper unitMapper = UnitMapper.of( this.caches.getMeasurementUnitsCache(), UNIT );
-        this.factoryToTest = EnsembleRetrieverFactory.of( project, unitMapper );
+        this.factoryToTest = EnsembleRetrieverFactory.of( project, this.wresDatabase, this.caches, unitMapper );
     }
 
     /**
@@ -449,8 +446,10 @@ public class EnsembleRetrieverFactoryTest
 
     private void addTimeSeriesToDatabase() throws SQLException
     {
-        DataSource leftData = RetrieverTestData.generateDataSource( DatasourceType.OBSERVATIONS );
-        DataSource rightData = RetrieverTestData.generateDataSource( DatasourceType.ENSEMBLE_FORECASTS );
+        DataSource leftData = RetrieverTestData.generateDataSource( LeftOrRightOrBaseline.LEFT,
+                                                                    DatasourceType.OBSERVATIONS );
+        DataSource rightData = RetrieverTestData.generateDataSource( LeftOrRightOrBaseline.RIGHT,
+                                                                     DatasourceType.ENSEMBLE_FORECASTS );
         DataSource baselineData = RetrieverTestData.generateBaselineDataSource( DatasourceType.ENSEMBLE_FORECASTS );
         LOGGER.info( "leftData: {}", leftData );
         LOGGER.info( "rightData: {}", rightData );
@@ -460,7 +459,7 @@ public class EnsembleRetrieverFactoryTest
                                                                     (DataSourceBaselineConfig) baselineData.getContext() );
         ProjectConfig fakeConfig = new ProjectConfig( fakeInputs, null, null, null, null, null );
         TimeSeries<Ensemble> timeSeriesOne = RetrieverTestData.generateTimeSeriesEnsembleOne( T0 );
-        TimeSeriesIngester ingesterOne = new TimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+        TimeSeriesIngester ingesterOne = new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                                          .setDatabase( this.wresDatabase )
                                                                          .setCaches( this.caches )
                                                                          .setProjectConfig( fakeConfig )
@@ -468,7 +467,7 @@ public class EnsembleRetrieverFactoryTest
                                                                          .build();
         IngestResult ingestResultOne = ingesterOne.ingestEnsembleTimeSeries( timeSeriesOne, rightData )
                                                   .get( 0 );
-        TimeSeriesIngester ingesterTwo = new TimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+        TimeSeriesIngester ingesterTwo = new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                                          .setDatabase( this.wresDatabase )
                                                                          .setCaches( this.caches )
                                                                          .setProjectConfig( fakeConfig )
@@ -479,7 +478,7 @@ public class EnsembleRetrieverFactoryTest
                                                   .get( 0 );
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
 
-        TimeSeriesIngester ingesterThree = new TimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+        TimeSeriesIngester ingesterThree = new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                                            .setDatabase( this.wresDatabase )
                                                                            .setCaches( this.caches )
                                                                            .setProjectConfig( fakeConfig )
@@ -510,13 +509,11 @@ public class EnsembleRetrieverFactoryTest
         LOGGER.info( "ingestResultOne: {}", ingestResultOne );
         LOGGER.info( "ingestResultTwo: {}", ingestResultTwo );
         LOGGER.info( "ingestResultThree: {}", ingestResultThree );
-        Project project = Projects.getProjectFromIngest( this.mockSystemSettings,
-                                                         this.wresDatabase,
-                                                         this.caches.getFeaturesCache(),
-                                                         this.mockExecutor,
+        Project project = Projects.getProjectFromIngest( this.wresDatabase,
+                                                         this.caches,
                                                          fakeConfig,
                                                          results );
-        assertTrue( project.performedInsert() );
+        assertTrue( project.save() );
     }
 
 }

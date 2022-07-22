@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.MonthDay;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,6 +31,8 @@ import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.statistics.generated.TimeWindow;
+import wres.statistics.generated.TimeScale;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -54,6 +57,9 @@ public final class TimeSeriesSlicer
 
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesSlicer.class );
+
+    /** UTC. */
+    private static final ZoneId ZONE_ID = ZoneId.of( "UTC" );
 
     /**
      * <p>Composes the input predicate as applying to the left side of any paired value within a time-series.
@@ -192,6 +198,49 @@ public final class TimeSeriesSlicer
         }
 
         return builder.build();
+    }
+
+    /**
+     * Creates a seasonal filter from the inputs. Currently only applies to reference times.
+     * @param <T> the time-series event value type
+     * @param start the start monthday
+     * @param end the end monthday
+     * @return the filter
+     */
+
+    public static <T> Predicate<TimeSeries<T>> getSeasonFilter( MonthDay start, MonthDay end )
+    {
+        Objects.requireNonNull( start );
+        Objects.requireNonNull( end );
+
+        return timeSeries -> {
+
+            // Seasons currently only apply to reference times
+            if ( timeSeries.getReferenceTimes().isEmpty() )
+            {
+                return true;
+            }
+
+            // Get the interval to check
+            Function<Instant, Pair<Instant, Instant>> intervalCalculator =
+                    TimeSeriesSlicer.getIntervalFromMonthDays( start, end );
+
+            for ( Instant next : timeSeries.getReferenceTimes().values() )
+            {
+                Pair<Instant, Instant> nextInterval = intervalCalculator.apply( next );
+
+                Instant earliest = nextInterval.getLeft();
+                Instant latest = nextInterval.getRight();
+
+                // Is the reference time within the interval?
+                if ( next.isAfter( earliest ) && ( next.isBefore( latest ) || next.equals( latest ) ) )
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        };
     }
 
     /**
@@ -464,54 +513,19 @@ public final class TimeSeriesSlicer
         // At least one must be present. If only one is present, the period is guaranteed present
         if ( Objects.isNull( startMonthDay ) && Objects.isNull( endMonthDay ) )
         {
-            throw new IllegalArgumentException( "Cannot extract intervals from a desored time scale that has no "
+            throw new IllegalArgumentException( "Cannot extract intervals from a desired time scale that has no "
                                                 + "bookends present." );
         }
 
+        Function<Instant, Pair<Instant, Instant>> innerMapper =
+                TimeSeriesSlicer.getIntervalFromMonthDays( startMonthDay, endMonthDay );
+
         // Create a mapper function that maps from an event to an interval
-        Function<? super Event<T>, ? extends Pair<Instant, Instant>> mapper = event -> {
+        Function<Event<T>, Pair<Instant, Instant>> mapper = event -> {
 
-            ZoneId zoneId = ZoneId.of( "UTC" );
-
-            // Extract the year
-            int year = event.getTime()
-                            .atZone( zoneId )
-                            .getYear();
-
-            Instant start = null;
-            Instant end = null;
-
-            if ( Objects.nonNull( startMonthDay ) )
-            {
-                LocalDate startLocal = null;
-
-                // Interval spans a year end
-                if ( Objects.nonNull( endMonthDay ) && startMonthDay.isAfter( endMonthDay ) )
-                {
-                    startLocal = startMonthDay.atYear( year - 1 );
-                }
-                // Interval falls within a year of there is no end month-day
-                else
-                {
-                    startLocal = startMonthDay.atYear( year );
-                }
-
-                // Start of day should be inclusive, so move back one instant
-                start = startLocal.atStartOfDay( zoneId )
-                                  .minusNanos( 1 )
-                                  .toInstant();
-            }
-
-            if ( Objects.nonNull( endMonthDay ) )
-            {
-                LocalDate endLocal = endMonthDay.atYear( year );
-
-                // End of day, which occurs one instant before the start of the next day
-                end = endLocal.atStartOfDay( zoneId )
-                              .plusDays( 1 )
-                              .minusNanos( 1 )
-                              .toInstant();
-            }
+            Pair<Instant, Instant> interval = innerMapper.apply( event.getTime() );
+            Instant start = interval.getLeft();
+            Instant end = interval.getRight();
 
             // One bookend plus the period must be present, see above
             if ( Objects.isNull( start ) )
@@ -533,6 +547,77 @@ public final class TimeSeriesSlicer
                                                                 .collect( Collectors.toCollection( TreeSet::new ) );
 
         return Collections.unmodifiableSortedSet( intervals );
+    }
+
+    /**
+     * Returns a function that calculates the interval that corresponds to the pair of month-day bookends when supplied
+     * with a given datetime. This interval can be used to determine whether a given datetime is contained in the 
+     * interval.
+     * 
+     * @param startMonthDay the start month-day, possibly null
+     * @param endMonthDay the end month-day, possibly null
+     * @return the function
+     */
+
+    public static Function<Instant, Pair<Instant, Instant>> getIntervalFromMonthDays( MonthDay startMonthDay,
+                                                                                      MonthDay endMonthDay )
+    {
+        return event -> {
+
+            Objects.requireNonNull( event, "Cannot calculate an interval from a null event." );
+
+            // Extract the year from the event
+            ZonedDateTime zonedEvent = event.atZone( ZONE_ID );
+            int year = zonedEvent.getYear();
+            MonthDay eventMonthDay = MonthDay.of( zonedEvent.getMonth(), zonedEvent.getDayOfMonth() );
+
+            // Start and end year default to current year
+            int startYear = year;
+            int endYear = year;
+
+            // Does the interval span a year end?
+            if ( Objects.nonNull( startMonthDay ) && Objects.nonNull( endMonthDay )
+                 && startMonthDay.isAfter( endMonthDay ) )
+            {
+                // Is the event month-day after the lower bookend of the interval? If yes, use the current year as the
+                // lower bound
+                if ( eventMonthDay.compareTo( startMonthDay ) >= 0 )
+                {
+                    endYear = year + 1;
+                }
+                // No, then use the current year as the upper bound
+                else
+                {
+                    startYear = year - 1;
+                }
+            }
+
+            Instant start = null;
+            Instant end = null;
+
+            if ( Objects.nonNull( startMonthDay ) )
+            {
+                LocalDate startLocal = startMonthDay.atYear( startYear );
+
+                // Start of day should be inclusive, so move back one instant
+                start = startLocal.atStartOfDay( ZONE_ID )
+                                  .minusNanos( 1 )
+                                  .toInstant();
+            }
+
+            if ( Objects.nonNull( endMonthDay ) )
+            {
+                LocalDate endLocal = endMonthDay.atYear( endYear );
+
+                // End of day, which occurs one instant before the start of the next day
+                end = endLocal.atStartOfDay( ZONE_ID )
+                              .plusDays( 1 )
+                              .minusNanos( 1 )
+                              .toInstant();
+            }
+
+            return Pair.of( start, end );
+        };
     }
 
     /**
@@ -1185,6 +1270,77 @@ public final class TimeSeriesSlicer
     }
 
     /**
+     * Adds a declared existing time-scale to a time-series that has no time-scale defined or updates the function 
+     * associated with a time scale that is defined. 
+     * 
+     * @param <T> the time-series event value type
+     * @param timeSeries the time-series
+     * @param timeScale the declared existing time scale
+     * @return the augmented time-series
+     * @throws IllegalArgumentException if the declared time scale is inconsistent with the existing time-scale
+     * @throws NullPointerException if either input is null
+     */
+
+    public static <T> TimeSeries<T> augmentTimeSeriesWithTimeScale( TimeSeries<T> timeSeries, TimeScaleOuter timeScale )
+    {
+        Objects.requireNonNull( timeSeries );
+        Objects.requireNonNull( timeScale );
+
+        TimeScaleOuter existingTimeScale = timeSeries.getTimeScale();
+
+        TimeScaleOuter newTimeScale = TimeSeriesSlicer.augmentTimeScale( existingTimeScale, timeScale );
+
+        // Update
+        TimeSeriesMetadata newMetadata = timeSeries.getMetadata()
+                                                   .toBuilder()
+                                                   .setTimeScale( newTimeScale )
+                                                   .build();
+
+        return new TimeSeries.Builder<T>().setMetadata( newMetadata )
+                                          .setEvents( timeSeries.getEvents() )
+                                          .build();
+    }
+
+    /**
+     * Augments an existing time-scale with a new one, where possible.
+     * 
+     * @param existingTimeScale the existing time scale, optional
+     * @param newTimeScale, the new time scale, required
+     * @return the augmented time scale
+     * @throws IllegalArgumentException if the declared time scale is inconsistent with the existing time-scale
+     * @throws NullPointerException if the newTimeScale is null
+     */
+
+    public static TimeScaleOuter augmentTimeScale( TimeScaleOuter existingTimeScale, TimeScaleOuter newTimeScale )
+    {
+        Objects.requireNonNull( newTimeScale );
+
+        // Create a time scale that matches the existing time scale, if not null, but has the function of the new time
+        // scale. If these things are not equal or both instantaneous, the time scales are inconsistent and the declared
+        // time scale cannot be augmented
+        if ( Objects.nonNull( existingTimeScale ) )
+        {
+            TimeScale scale = existingTimeScale.getTimeScale()
+                                               .toBuilder()
+                                               .setFunction( newTimeScale.getFunction() )
+                                               .build();
+            TimeScaleOuter scaleToCheck = TimeScaleOuter.of( scale );
+            if ( !scaleToCheck.equalsOrInstantaneous( newTimeScale ) )
+            {
+                throw new IllegalArgumentException( "Cannot mutate the existing time-scale because it is not null and "
+                                                    + "it is inconsistent with the declared existing time scale. The "
+                                                    + "existing time scale was: "
+                                                    + existingTimeScale
+                                                    + ". The declared existing time scale was: "
+                                                    + newTimeScale
+                                                    + "." );
+            }
+        }
+
+        return newTimeScale;
+    }
+
+    /**
      * Inspects the sorted list of events by counting backwards from the input index. Returns the index of the earliest 
      * time that is larger than the prescribed start time. This is useful for backfilling when searching for groups of
      * events by time. See {@link #groupEventsByInterval(SortedSet, Set, Duration)}.
@@ -1326,11 +1482,17 @@ public final class TimeSeriesSlicer
 
         // Iterate the tailset of events that starts with a valid time at the lower bound
         SortedSet<Event<S>> toSnipEvents = toSnip.getEvents();
-        Event<S> lowerBound = Event.of( lower,
-                                        toSnipEvents.first()
-                                                    .getValue() );
-        
-        SortedSet<Event<S>> tailSet = toSnipEvents.tailSet( lowerBound ); // #92522-109
+        SortedSet<Event<S>> tailSet = toSnipEvents;
+
+        if ( !toSnipEvents.isEmpty() )
+        {
+            Event<S> lowerBound = Event.of( lower,
+                                            toSnipEvents.first()
+                                                        .getValue() );
+
+            tailSet = toSnipEvents.tailSet( lowerBound ); // #92522-109
+        }
+
         for ( Event<S> next : tailSet )
         {
             Instant nextTime = next.getTime();
@@ -1365,6 +1527,52 @@ public final class TimeSeriesSlicer
         }
 
         return snipped;
+    }
+
+    /**
+     * Adjusts the earliest lead duration of the time window to account for the period associated with the desired time 
+     * scale in order to capture sufficient data for rescaling.
+     * 
+     * @param timeWindow the time window to adjust, required
+     * @param desiredTimeScale the desired time scale, lenient if null (returns the input time window)
+     * @return the adjusted time window
+     */
+
+    public static TimeWindowOuter adjustByTimeScalePeriod( TimeWindowOuter timeWindow, TimeScaleOuter desiredTimeScale )
+    {
+        Objects.requireNonNull( timeWindow );
+
+        TimeWindowOuter adjustedWindow = timeWindow;
+        if ( !timeWindow.getEarliestLeadDuration().equals( TimeWindowOuter.DURATION_MIN )
+             && Objects.nonNull( desiredTimeScale ) )
+        {
+            Duration period = TimeScaleOuter.getOrInferPeriodFromTimeScale( desiredTimeScale );
+            Duration lowerD = timeWindow.getEarliestLeadDuration()
+                                        .minus( period );
+            com.google.protobuf.Duration lower =
+                    com.google.protobuf.Duration.newBuilder()
+                                                .setSeconds( lowerD.getSeconds() )
+                                                .setNanos( lowerD.getNano() )
+                                                .build();
+
+            TimeWindow inner = timeWindow.getTimeWindow()
+                                         .toBuilder()
+                                         .setEarliestLeadDuration( lower )
+                                         .build();
+
+            adjustedWindow = TimeWindowOuter.of( inner );
+
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Adjusted the earliest lead duration of {} by {} to {}, in order to select sufficient data "
+                              + "for rescaling.",
+                              timeWindow,
+                              desiredTimeScale.getPeriod(),
+                              adjustedWindow );
+            }
+        }
+
+        return adjustedWindow;
     }
 
     /**

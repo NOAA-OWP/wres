@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static wres.io.reading.DataSource.DataDisposition.JSON_WATERML;
 
 import wres.config.generated.DataSourceConfig;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.time.TimeSeries;
 import wres.io.reading.DataSource;
 
@@ -48,7 +49,8 @@ public class WaterMLSourceTest
                                                           null,
                                                           null ),
                                     Collections.emptyList(),
-                                    URI.create( "https://fake.uri/somewhere" ) );
+                                    URI.create( "https://fake.uri/somewhere" ),
+                                    LeftOrRightOrBaseline.LEFT );
         String jsonResponse =
                 "{\n"
                 + "  \"name\": \"ns1:timeSeriesResponseType\",\n"

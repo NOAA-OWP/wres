@@ -24,7 +24,7 @@ import wres.statistics.generated.TimeWindow;
 /**
  * <p>Helper class whose methods generate collections of {@link TimeWindowOuter} from project declaration.
  *
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public final class TimeWindowGenerator
@@ -120,6 +120,89 @@ public final class TimeWindowGenerator
             return Collections.singleton( TimeWindowGenerator.getOneBigTimeWindow( pairConfig ) );
         }
     }
+    
+    /**
+     * <p>Builds a {@link TimeWindowOuter} whose {@link TimeWindowOuter#getEarliestReferenceTime()}
+     * and {@link TimeWindowOuter#getLatestReferenceTime()} return the {@code earliest} 
+     * and {@code latest} bookends of the {@link PairConfig#getIssuedDates()}, 
+     * respectively, whose {@link TimeWindowOuter#getEarliestValidTime()}
+     * and {@link TimeWindowOuter#getLatestValidTime()} return the {@code earliest} 
+     * and {@code latest} bookends of the {@link PairConfig#getDates()}, 
+     * respectively, and whose {@link TimeWindowOuter#getEarliestLeadDuration()}
+     * and {@link TimeWindowOuter#getLatestLeadDuration()} return the {@code minimum} 
+     * and {@code maximum} bookends of the {@link PairConfig#getLeadHours()}, 
+     * respectively. 
+     * 
+     * <p>If any of these variables are missing from the input, defaults 
+     * are used, which represent the computationally-feasible limiting values. For example, 
+     * the smallest and largest possible instant is {@link Instant#MIN} and {@link Instant#MAX}, 
+     * respectively. The smallest and largest possible {@link Duration} is 
+     * {@link TimeWindowOuter#DURATION_MIN} and {@link TimeWindowOuter#DURATION_MAX}, respectively.
+     * 
+     * @param pairConfig the pair configuration
+     * @return a time window
+     * @throws NullPointerException if the pairConfig is null
+     */
+
+    public static TimeWindowOuter getOneBigTimeWindow( PairConfig pairConfig )
+    {
+        Objects.requireNonNull( pairConfig, "Cannot determine the time window from null pair configuration." );
+
+        Instant earliestReferenceTime = Instant.MIN;
+        Instant latestReferenceTime = Instant.MAX;
+        Instant earliestValidTime = Instant.MIN;
+        Instant latestValidTime = Instant.MAX;
+        Duration smallestLeadDuration = TimeWindowOuter.DURATION_MIN;
+        Duration largestLeadDuration = TimeWindowOuter.DURATION_MAX;
+
+        // Issued datetimes
+        if ( Objects.nonNull( pairConfig.getIssuedDates() ) )
+        {
+            if ( Objects.nonNull( pairConfig.getIssuedDates().getEarliest() ) )
+            {
+                earliestReferenceTime = Instant.parse( pairConfig.getIssuedDates().getEarliest() );
+            }
+            if ( Objects.nonNull( pairConfig.getIssuedDates().getLatest() ) )
+            {
+                latestReferenceTime = Instant.parse( pairConfig.getIssuedDates().getLatest() );
+            }
+        }
+
+        // Valid datetimes
+        if ( Objects.nonNull( pairConfig.getDates() ) )
+        {
+            if ( Objects.nonNull( pairConfig.getDates().getEarliest() ) )
+            {
+                earliestValidTime = Instant.parse( pairConfig.getDates().getEarliest() );
+            }
+            if ( Objects.nonNull( pairConfig.getDates().getLatest() ) )
+            {
+                latestValidTime = Instant.parse( pairConfig.getDates().getLatest() );
+            }
+        }
+
+        // Lead durations
+        if ( Objects.nonNull( pairConfig.getLeadHours() ) )
+        {
+            if ( Objects.nonNull( pairConfig.getLeadHours().getMinimum() ) )
+            {
+                smallestLeadDuration = Duration.ofHours( pairConfig.getLeadHours().getMinimum() );
+            }
+            if ( Objects.nonNull( pairConfig.getLeadHours().getMaximum() ) )
+            {
+                largestLeadDuration = Duration.ofHours( pairConfig.getLeadHours().getMaximum() );
+            }
+        }
+
+        TimeWindow inner = MessageFactory.getTimeWindow( earliestReferenceTime,
+                                                         latestReferenceTime,
+                                                         earliestValidTime,
+                                                         latestValidTime,
+                                                         smallestLeadDuration,
+                                                         largestLeadDuration );
+
+        return TimeWindowOuter.of( inner );
+    }    
 
     /**
      * <p>Consumes a {@link PairConfig} and returns a {@link Set} of {@link TimeWindowOuter}
@@ -558,89 +641,6 @@ public final class TimeWindowGenerator
         }
 
         return Collections.unmodifiableSet( timeWindows );
-    }
-
-    /**
-     * <p>Builds a {@link TimeWindowOuter} whose {@link TimeWindowOuter#getEarliestReferenceTime()}
-     * and {@link TimeWindowOuter#getLatestReferenceTime()} return the <code>earliest</earliest> 
-     * and <code>latest</earliest> bookends of the {@link PairConfig#getIssuedDates()}, 
-     * respectively, whose {@link TimeWindowOuter#getEarliestValidTime()}
-     * and {@link TimeWindowOuter#getLatestValidTime()} return the <code>earliest</earliest> 
-     * and <code>latest</earliest> bookends of the {@link PairConfig#getDates()}, 
-     * respectively, and whose {@link TimeWindowOuter#getEarliestLeadDuration()}
-     * and {@link TimeWindowOuter#getLatestLeadDuration()} return the <code>minimum</earliest> 
-     * and <code>maximum</earliest> bookends of the {@link PairConfig#getLeadHours()}, 
-     * respectively. 
-     * 
-     * <p>If any of these variables are missing from the input, defaults 
-     * are used, which represent the computationally-feasible limiting values. For example, 
-     * the smallest and largest possible instant is {@link Instant#MIN} and {@link Instant#MAX}, 
-     * respectively. The smallest and largest possible {@link Duration} is 
-     * {@link TimeWindowOuter#DURATION_MIN} and {@link TimeWindowOuter#DURATION_MAX}, respectively.
-     * 
-     * @param pairConfig the pair configuration
-     * @return a time window
-     * @throws NullPointerException if the input is null
-     */
-
-    private static TimeWindowOuter getOneBigTimeWindow( PairConfig pairConfig )
-    {
-        Objects.requireNonNull( pairConfig, "Cannot determine the time window from null pair configuration." );
-
-        Instant earliestReferenceTime = Instant.MIN;
-        Instant latestReferenceTime = Instant.MAX;
-        Instant earliestValidTime = Instant.MIN;
-        Instant latestValidTime = Instant.MAX;
-        Duration smallestLeadDuration = TimeWindowOuter.DURATION_MIN;
-        Duration largestLeadDuration = TimeWindowOuter.DURATION_MAX;
-
-        // Issued datetimes
-        if ( Objects.nonNull( pairConfig.getIssuedDates() ) )
-        {
-            if ( Objects.nonNull( pairConfig.getIssuedDates().getEarliest() ) )
-            {
-                earliestReferenceTime = Instant.parse( pairConfig.getIssuedDates().getEarliest() );
-            }
-            if ( Objects.nonNull( pairConfig.getIssuedDates().getLatest() ) )
-            {
-                latestReferenceTime = Instant.parse( pairConfig.getIssuedDates().getLatest() );
-            }
-        }
-
-        // Valid datetimes
-        if ( Objects.nonNull( pairConfig.getDates() ) )
-        {
-            if ( Objects.nonNull( pairConfig.getDates().getEarliest() ) )
-            {
-                earliestValidTime = Instant.parse( pairConfig.getDates().getEarliest() );
-            }
-            if ( Objects.nonNull( pairConfig.getDates().getLatest() ) )
-            {
-                latestValidTime = Instant.parse( pairConfig.getDates().getLatest() );
-            }
-        }
-
-        // Lead durations
-        if ( Objects.nonNull( pairConfig.getLeadHours() ) )
-        {
-            if ( Objects.nonNull( pairConfig.getLeadHours().getMinimum() ) )
-            {
-                smallestLeadDuration = Duration.ofHours( pairConfig.getLeadHours().getMinimum() );
-            }
-            if ( Objects.nonNull( pairConfig.getLeadHours().getMaximum() ) )
-            {
-                largestLeadDuration = Duration.ofHours( pairConfig.getLeadHours().getMaximum() );
-            }
-        }
-
-        TimeWindow inner = MessageFactory.getTimeWindow( earliestReferenceTime,
-                                                         latestReferenceTime,
-                                                         earliestValidTime,
-                                                         latestValidTime,
-                                                         smallestLeadDuration,
-                                                         largestLeadDuration );
-
-        return TimeWindowOuter.of( inner );
     }
 
     /**

@@ -269,6 +269,8 @@ class WebSource implements Callable<List<IngestResult>>
         Set<URI> alreadySubmittedUris = new HashSet<>();
         DataSource source = this.getDataSource();
         DataSource.DataDisposition disposition;
+        LeftOrRightOrBaseline lrb = ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(), 
+                                                                           source.getContext() );
 
         if ( this.isUsgsSource( this.getDataSource() ) )
         {
@@ -315,7 +317,8 @@ class WebSource implements Callable<List<IngestResult>>
                                                // repeated in other contexts.
                                                this.getDataSource()
                                                    .getLinks(),
-                                               uri );
+                                               uri,
+                                               lrb );
                         LOGGER.debug( "Created datasource {}", dSource );
 
                         IngestSaver ingestSaver =
@@ -406,7 +409,8 @@ class WebSource implements Callable<List<IngestResult>>
                                            // repeated in other contexts.
                                            this.getDataSource()
                                                .getLinks(),
-                                           uri );
+                                           uri,
+                                           lrb );
                     LOGGER.debug( "Created datasource {}", dSource);
 
                     IngestSaver ingestSaver =

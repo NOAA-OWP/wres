@@ -41,7 +41,7 @@ import wres.util.NetCDF;
  * @author James Brown
  */
 @Immutable
-class GriddedFeatures implements Supplier<Set<FeatureKey>>
+public class GriddedFeatures implements Supplier<Set<FeatureKey>>
 {
     /** The features.*/
     private final Set<FeatureKey> features;
@@ -79,7 +79,7 @@ class GriddedFeatures implements Supplier<Set<FeatureKey>>
      * Builder.
      */
 
-    static class Builder
+    public static class Builder
     {
 
         /**
@@ -109,7 +109,7 @@ class GriddedFeatures implements Supplier<Set<FeatureKey>>
         /**
          * @return an instance of {@link GriddedFeatures}
          */
-        GriddedFeatures build()
+        public GriddedFeatures build()
         {
             return new GriddedFeatures( this );
         }
@@ -117,9 +117,10 @@ class GriddedFeatures implements Supplier<Set<FeatureKey>>
         /**
          * @param source the file containing a grid
          * @throws IOException if the source could not be read for any reason
+         * @return the builder
          */
 
-        Builder addFeatures( NetcdfFile source ) throws IOException
+        public Builder addFeatures( NetcdfFile source ) throws IOException
         {
             GridMetadata test = new GridMetadata( source );
 
@@ -155,7 +156,7 @@ class GriddedFeatures implements Supplier<Set<FeatureKey>>
          * @throws IllegalArgumentException if there are no filters
          */
 
-        Builder( List<UnnamedFeature> filters )
+        public Builder( List<UnnamedFeature> filters )
         {
             Objects.requireNonNull( filters );
 

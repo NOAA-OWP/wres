@@ -8,7 +8,7 @@ import java.sql.Driver;
  * https://github.com/brettwooldridge/HikariCP#popular-datasource-class-names.
  */
 public enum DatabaseType
-{
+{   
     /** Postgres is supported and recommended. */
     POSTGRESQL( "org.postgresql.ds.PGSimpleDataSource", "org.postgresql.Driver", true, false, true ),
 
@@ -24,6 +24,14 @@ public enum DatabaseType
     /** Code changes and testing are needed to support SQLite. */
     SQLITE( "org.sqlite.SQLiteDataSource", "org.sqlite.JDBC", true, false, false );
 
+    /**
+     * Liquibase changes or "clean" or "remove orphans" should use
+     * exclusive lock on this. Any and every ingest/evaluation should first get
+     * a shared lock on this, except those mentioned above, which should get it
+     * exclusively.
+     */
+    public static final Long SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME = 1L;
+    
     /** The fully qualified data source class name, to be discovered on the class path. **/
     private final String dataSourceClassName;
 

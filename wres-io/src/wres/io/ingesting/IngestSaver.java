@@ -141,10 +141,14 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
 
         // Validate
         Objects.requireNonNull( this.systemSettings );
-        Objects.requireNonNull( this.database );
-        Objects.requireNonNull( this.caches );
         Objects.requireNonNull( this.timeSeriesIngester );
 
+        if( ! this.systemSettings.isInMemory() )
+        {
+            Objects.requireNonNull( this.database );
+            Objects.requireNonNull( this.caches );
+        }
+        
         if ( this.projectConfig == null )
         {
             throw new IllegalArgumentException( "Data cannot be ingested from a nonexistent project." );

@@ -28,7 +28,7 @@ import wres.io.utilities.ScriptBuilder;
 /**
  * Retrieves {@link TimeSeries} of single-valued observations or forecasts from gridded sources.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>

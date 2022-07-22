@@ -1,32 +1,18 @@
 package wres.io.retrieval;
 
 import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.time.Event;
+import wres.config.generated.DatasourceType;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.statistics.generated.TimeWindow;
 
 /**
  * Retrieves data from the wres.TimeSeries and wres.TimeSeriesValue tables but
@@ -83,56 +69,14 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
         this.latestAnalysisDuration = builder.latestAnalysisDuration;
         this.duplicatePolicy = builder.duplicatePolicy;
 
-        // Change the lead duration to the analysis step set by the user,
-        // also set the reference datetime to an infinitely wide range so
-        // that we do not restrict the analyses incorrectly.
-        TimeWindowOuter originalRanges = super.getTimeWindow();
-        TimeWindowOuter analysisRanges = originalRanges;
+        TimeWindowOuter analysisRanges = null;
 
-        if ( Objects.nonNull( this.getEarliestAnalysisDuration() )
-             || Objects.nonNull( this.getLatestAnalysisDuration() ) )
+        if ( Objects.nonNull( super.getTimeWindow() ) )
         {
-            LOGGER.debug( "Building a single-event analysis retriever for each analysis duration between {} and {}.",
-                          this.getEarliestAnalysisDuration(),
-                          this.getLatestAnalysisDuration() );
-
-            // See discussion around #74987-174. Ignoring reference times when forming this selection is arbitrary. At 
-            // the same time, the declaration does not provide a mechanism to clarify how specific types of reference 
-            // time should be treated when that declaration is concerned with filtering or pooling by reference time.
-            // TODO: be explicit about the connection between reference times/types and declaration options. 
-            // For now, reference times are not used to filter here
-            Instant earliestValidTime = Instant.MIN;
-            Instant latestValidTime = Instant.MAX;
-
-            if ( Objects.nonNull( originalRanges ) )
-            {
-                earliestValidTime = originalRanges.getEarliestValidTime();
-                latestValidTime = originalRanges.getLatestValidTime();
-            }
-
-            TimeWindow inner = MessageFactory.getTimeWindow( Instant.MIN,
-                                                             Instant.MAX,
-                                                             earliestValidTime,
-                                                             latestValidTime,
-                                                             this.getEarliestAnalysisDuration(),
-                                                             this.getLatestAnalysisDuration() );
-            
-            analysisRanges = TimeWindowOuter.of( inner );
-        }
-        else
-        {
-            LOGGER.debug( "Building a multi-event analysis retriever." );
-
-            // See discussion around #74987-174. Ignoring reference times when forming this selection is arbitrary. At 
-            // the same time, the declaration does not provide a mechanism to clarify how specific types of reference 
-            // time should be treated when that declaration is concerned with filtering or pooling by reference time.
-            // TODO: be explicit about the connection between reference times/types and declaration options.
-            // For now, reference times are not used to filter here
-            TimeWindow inner = MessageFactory.getTimeWindow( Instant.MIN,
-                                                             Instant.MAX,
-                                                             originalRanges.getEarliestValidTime(),
-                                                             originalRanges.getLatestValidTime() );
-            analysisRanges = TimeWindowOuter.of( inner );
+            analysisRanges = RetrieverUtilities.adjustForAnalysisTypeIfRequired( super.getTimeWindow(),
+                                                                                 DatasourceType.ANALYSES,
+                                                                                 this.getEarliestAnalysisDuration(),
+                                                                                 this.getLatestAnalysisDuration() );
         }
 
         LOGGER.debug( "Using a duplicate handling policy of {} for the retrieval of analysis time-series.",
@@ -243,82 +187,13 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
     @Override
     public Stream<TimeSeries<Double>> get()
     {
-
         Stream<TimeSeries<Double>> timeSeries = this.individualAnalysisRetriever.get();
 
-        // All events required?
-        if ( !this.addOneTimeSeriesForEachAnalysisDuration() )
-        {
-            LOGGER.debug( "No discrete analysis times defined. Built a multi-event timeseries from the analysis." );
-
-            // Apply a duplicate policy and return
-            return this.applyDuplicatePolicy( timeSeries );
-        }
-        else
-        {
-            LOGGER.debug( "Building a single-event timeseries for each analysis duration between {} and {}.",
-                          this.getEarliestAnalysisDuration(),
-                          this.getLatestAnalysisDuration() );
-
-            // No duplicate policy here, because we composed each time-series from common durations
-            return this.createOneTimeSeriesForEachAnalysisDuration( timeSeries );
-        }
-    }
-
-    /**
-     * Transforms the input series to create one series for each required analysis duration.
-     * 
-     * @param timeSeries the input series to transform
-     * @return one series for each analysis duration
-     */
-
-    private Stream<TimeSeries<Double>>
-            createOneTimeSeriesForEachAnalysisDuration( Stream<TimeSeries<Double>> timeSeries )
-    {
-
-        // Filter the time-series. Create one new time-series for each event-by-duration within an existing 
-        // time-series whose duration falls within the constraints
-        List<TimeSeries<Double>> toStream = new ArrayList<>();
-
-        List<TimeSeries<Double>> collection = timeSeries.collect( Collectors.toList() );
-        for ( TimeSeries<Double> next : collection )
-        {
-            Map<Duration, Event<Double>> eventsByDuration =
-                    TimeSeriesSlicer.mapEventsByDuration( next, ReferenceTimeType.ANALYSIS_START_TIME );
-
-            for ( Entry<Duration, Event<Double>> nextSeries : eventsByDuration.entrySet() )
-            {
-                Duration duration = nextSeries.getKey();
-                Event<Double> event = nextSeries.getValue();
-
-                if ( duration.compareTo( this.getEarliestAnalysisDuration() ) >= 0
-                     && duration.compareTo( this.getLatestAnalysisDuration() ) <= 0 )
-                {
-                    toStream.add( TimeSeries.of( next.getMetadata(),
-                                                 new TreeSet<>( Collections.singleton( event ) ) ) );
-                }
-            }
-        }
-
-        // Warn if no events
-        if ( toStream.isEmpty() )
-        {
-            LOGGER.warn( "While attempting to build a single-event timeseries for each analysis duration between {} "
-                         + "and {}, failed to discover any events between those analysis durations.",
-                         this.getEarliestAnalysisDuration(),
-                         this.getLatestAnalysisDuration() );
-
-        }
-        else
-        {
-            LOGGER.debug( "Built {} single-event timeseries for each analysis duration between {} and {}: {}",
-                          toStream.size(),
-                          this.getEarliestAnalysisDuration(),
-                          this.getLatestAnalysisDuration(),
-                          toStream );
-        }
-
-        return toStream.stream();
+        return RetrieverUtilities.createAnalysisTimeSeries( timeSeries,
+                                                            this.getEarliestAnalysisDuration(),
+                                                            this.getLatestAnalysisDuration(),
+                                                            this.duplicatePolicy,
+                                                            super.getTimeWindow() );
     }
 
     /**
@@ -342,134 +217,4 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
     {
         return this.latestAnalysisDuration;
     }
-
-    /**
-     * Returns <code>true</code> if the retriever should return one time-series for each of the common analysis 
-     * durations across several reference times of the type {@link ReferenceTimeType.ANALYSIS_START_TIME}, <code>false</code> if it
-     * should return a single time-series per {@link ReferenceTimeType.ANALYSIS_START_TIME}.
-     * 
-     * @return true if the retriever should return a separate time-series for each analysis duration, otherwise false
-     */
-
-    private boolean addOneTimeSeriesForEachAnalysisDuration()
-    {
-        return !this.getEarliestAnalysisDuration().equals( TimeWindowOuter.DURATION_MIN )
-               || !this.getLatestAnalysisDuration().equals( TimeWindowOuter.DURATION_MAX );
-    }
-
-    /**
-     * Applies a duplicate policy to analysis time-series. One of {@link DuplicatePolicy@}.
-     * 
-     * @param timeSeries the input series whose duplicates, if any, should be treated
-     * @return the time-series with duplicates treated
-     */
-
-    private Stream<TimeSeries<Double>> applyDuplicatePolicy( Stream<TimeSeries<Double>> timeSeries )
-    {
-        // Retain all
-        if ( this.duplicatePolicy == DuplicatePolicy.KEEP_ALL )
-        {
-            return timeSeries;
-        }
-
-        // Filter, handling absence of reference times
-        Comparator<Instant> nullsFriendly = Comparator.nullsFirst( Instant::compareTo );
-        Comparator<TimeSeries<Double>> comparator =
-                ( a, b ) -> nullsFriendly.compare( a.getReferenceTimes()
-                                                    .get( ReferenceTimeType.ANALYSIS_START_TIME ),
-                                                   b.getReferenceTimes()
-                                                    .get( ReferenceTimeType.ANALYSIS_START_TIME ) );
-
-        // Keep the duplicate with the earliest reference time
-        if ( this.duplicatePolicy == DuplicatePolicy.KEEP_EARLIEST_REFERENCE_TIME )
-        {
-            return this.filterDuplicatesByValidTime( timeSeries, comparator );
-        }
-        // Keep the duplicate with the latest reference time
-        else if ( this.duplicatePolicy == DuplicatePolicy.KEEP_LATEST_REFERENCE_TIME )
-        {
-            // Reversed: latest to earliest by ReferenceTimeType.ANALYSIS_START_TIME
-            Comparator<TimeSeries<Double>> reversed = comparator.reversed();
-            return this.filterDuplicatesByValidTime( timeSeries, reversed );
-        }
-        else
-        {
-            throw new IllegalStateException( "Encountered unexpected duplicate policy when filtering analysis "
-                                             + "time-series for duiplicates: "
-                                             + this.duplicatePolicy );
-        }
-    }
-
-    /**
-     * Filters the input time-series for duplicates using a prescribed comparator to order the time-series prior to
-     * filtering. The first encountered duplicate, after ordering, will be retained. 
-     * 
-     * @param filterMe the time-series to filter
-     * @param comparator the comparator for ordering the time-series
-     * @return the filtered time-series with duplicates removed
-     */
-
-    private Stream<TimeSeries<Double>> filterDuplicatesByValidTime( Stream<TimeSeries<Double>> filterMe,
-                                                                    Comparator<TimeSeries<Double>> comparator )
-    {
-        List<TimeSeries<Double>> collection = filterMe.collect( Collectors.toList() );
-
-        // Sort the collection
-        collection.sort( comparator );
-
-        // Record the valid times consumed so far
-        Set<Instant> validTimesConsumed = new HashSet<>();
-
-        List<TimeSeries<Double>> toStream = new ArrayList<>();
-        Comparator<Instant> nullsFriendly = Comparator.nullsFirst( Instant::compareTo );
-
-        for ( TimeSeries<Double> next : collection )
-        {
-            TimeSeries<Double> filtered =
-                    TimeSeriesSlicer.filterByEvent( next,
-                                                    event -> !validTimesConsumed.contains( event.getTime() ) );
-
-            // Add series with some events left and whose reference times fall within the reference time bounds
-            // See: #74987-174. TODO: be explicit about the connection between reference times/types and declaration 
-            // options. For now, reference times are not used to filter here
-            Instant isGreaterThan = null;
-            Instant isLessThanOrEqualTo = null;
-            if ( Objects.nonNull( this.getTimeWindow() ) )
-            {
-                isGreaterThan = this.getTimeWindow().getEarliestReferenceTime();
-                isLessThanOrEqualTo = this.getTimeWindow().getLatestReferenceTime();
-            }
-
-            Instant referenceTime = filtered.getReferenceTimes().get( ReferenceTimeType.ANALYSIS_START_TIME );
-
-            // Some events left after filter and either no reference time bounds or reference times are within 
-            // bounds
-            if ( !filtered.getEvents().isEmpty() && Objects.isNull( this.getTimeWindow() )
-                 || ( nullsFriendly.compare( referenceTime, isGreaterThan ) > 0
-                      && nullsFriendly.compare( referenceTime, isLessThanOrEqualTo ) <= 0 ) )
-            {
-                toStream.add( filtered );
-
-                // Get the valid times to ignore in subsequent series
-                Set<Instant> nextValidTimes = next.getEvents()
-                                                  .stream()
-                                                  .map( Event::getTime )
-                                                  .collect( Collectors.toSet() );
-
-                validTimesConsumed.addAll( nextValidTimes );
-            }
-
-            if ( LOGGER.isTraceEnabled() && filtered.getEvents().size() != next.getEvents().size() )
-            {
-                LOGGER.trace( "While filtering analysis time-series {} according to the duplicate policy of {}, "
-                              + "removed {} events that were duplicates by valid time across time-series.",
-                              next.hashCode(),
-                              this.duplicatePolicy,
-                              next.getEvents().size() - filtered.getEvents().size() );
-            }
-        }
-
-        return toStream.stream();
-    }
-
 }
