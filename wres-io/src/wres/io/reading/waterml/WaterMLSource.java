@@ -2,6 +2,7 @@ package wres.io.reading.waterml;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -181,7 +182,8 @@ class WaterMLSource implements Callable<List<TimeSeries<Double>>>
             period = TimeScaleOuter.of();
         }
 
-        int countOfTracesFound = series.getValues().length;
+        // #104572
+        int countOfTracesFound = this.getCountOfTracesWithData( series.getValues() );
 
         if ( countOfTracesFound > 1 )
         {
@@ -272,7 +274,25 @@ class WaterMLSource implements Callable<List<TimeSeries<Double>>>
         return Collections.unmodifiableList( timeSerieses );
     }
 
+    /**
+     * @param traces the traces
+     * @return the count of traces that contain one or more valid times and values.
+     */
 
+    private int getCountOfTracesWithData( TimeSeriesValues[] timeSeriesValues )
+    {
+        int count = 0;
+        for ( TimeSeriesValues nextValues : timeSeriesValues )
+        {
+            if ( nextValues.getValue().length > 0 )
+            {
+                count++;
+            }
+
+        }
+        return count;
+    }
+    
     /**
      * Translate the USGS format of geographic feature into WRES format.
      * @param usgsSiteCode The site code already found and validated.
