@@ -59,6 +59,9 @@ import wres.system.SSLStuffThatTrustsOneCertificate;
 
 public class ReadValueManager
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( ReadValueManager.class );
+    private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT;
+    
     static
     {
         try
@@ -72,8 +75,6 @@ public class ReadValueManager
         }
     }
     
-    private static final Logger LOGGER = LoggerFactory.getLogger( ReadValueManager.class );
-    private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT;
     private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT );
     private final TimeSeriesIngester timeSeriesIngester;
     private final DataSource dataSource;
