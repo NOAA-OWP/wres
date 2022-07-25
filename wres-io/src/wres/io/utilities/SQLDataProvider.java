@@ -27,7 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.MissingValues;
-import wres.util.TimeHelper;
+import wres.datamodel.time.TimeSeriesSlicer;
 
 /**
  * A {@link DataProvider} that provides buffered access to the results of a database call
@@ -811,7 +811,7 @@ public class SQLDataProvider implements DataProvider
             // If the returned number was somewhat numerical, we're going to treat it as the number of
             // units in our resolution. Since there's no other information to go by, we just need to
             // assume the lead resolution of the application
-            result = Duration.of( this.getLong( columnName ), TimeHelper.LEAD_RESOLUTION );
+            result = Duration.of( this.getLong( columnName ), TimeSeriesSlicer.LEAD_RESOLUTION );
         }
         else if (value instanceof String)
         {

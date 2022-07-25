@@ -1,7 +1,6 @@
 package wres.io.config;
 
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
@@ -9,7 +8,6 @@ import java.security.NoSuchAlgorithmException;
 import java.text.DecimalFormat;
 import java.time.DateTimeException;
 import java.time.Duration;
-import java.time.Instant;
 import java.time.MonthDay;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
@@ -20,7 +18,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
@@ -37,8 +34,6 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.ingesting.PreIngestException;
-import wres.io.utilities.NoDataException;
-import wres.util.TimeHelper;
 
 /**
  * The purpose of io's ConfigHelper is to help the io module translate raw

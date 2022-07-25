@@ -12,12 +12,10 @@ import org.slf4j.LoggerFactory;
 import wres.io.data.caching.DataSources;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
-import wres.io.data.details.TimeSeries;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
-import wres.util.FutureQueue;
 
 /**
  * Deals with partial/orphaned/incomplete ingested data, both detection and

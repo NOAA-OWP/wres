@@ -886,8 +886,7 @@ public class DatabaseProject implements Project
     {
         try
         {
-            List<String> availableVariables = variables.getAvailableVariables(
-                                                                               this.getId(),
+            List<String> availableVariables = variables.getAvailableVariables( this.getId(),
                                                                                lrb.value() );
             StringBuilder message = new StringBuilder();
             message.append( "There is no '"

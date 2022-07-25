@@ -33,6 +33,7 @@ public class UnitMapper
     private final MeasurementUnits measurementUnitsCache;
     private final String desiredMeasurementUnitName;
     private final ConcurrentMap<String, Unit<?>> indriyaUnits;
+    private final Object lock = new Object(); // To avoid calculating the indriya unit N times across N threads
     private final Map<String, String> aliases;
     private final Map<Pair<String, String>, DoubleUnaryOperator> internalMappers;
 
@@ -187,7 +188,7 @@ public class UnitMapper
 
         Pair<String, String> key = Pair.of( currentUnits, desiredUnits );
 
-        if ( LOGGER.isTraceEnabled() )
+        if ( LOGGER.isTraceEnabled() && this.internalMappers.containsKey( key ) )
         {
             LOGGER.trace( "Discovered an internal unit mapper to convert between {} and {}. Using this preferentially.",
                           currentUnits,
@@ -215,16 +216,36 @@ public class UnitMapper
 
         if ( desiredUnit == null )
         {
-            desiredUnit = Units.getUnit( this.getDesiredMeasurementUnitName() );
-            this.indriyaUnits.put( this.getDesiredMeasurementUnitName(), desiredUnit );
+            synchronized ( this.lock )
+            {
+                if ( !this.indriyaUnits.containsKey( this.getDesiredMeasurementUnitName() ) )
+                {
+                    desiredUnit = Units.getUnit( this.getDesiredMeasurementUnitName() );
+                    this.indriyaUnits.put( this.getDesiredMeasurementUnitName(), desiredUnit );
+                }
+                else
+                {
+                    desiredUnit = this.indriyaUnits.get( this.getDesiredMeasurementUnitName() );
+                }
+            }
         }
 
         Unit<?> existingUnit = this.indriyaUnits.get( unitName );
 
         if ( existingUnit == null )
         {
-            existingUnit = Units.getUnit( unitName );
-            this.indriyaUnits.put( unitName, existingUnit );
+            synchronized ( this.lock )
+            {
+                if ( !this.indriyaUnits.containsKey( unitName ) )
+                {
+                    existingUnit = Units.getUnit( unitName );
+                    this.indriyaUnits.put( unitName, existingUnit );
+                }
+                else
+                {
+                    existingUnit = this.indriyaUnits.get( unitName );
+                }
+            }
         }
 
         UnitConverter converter;

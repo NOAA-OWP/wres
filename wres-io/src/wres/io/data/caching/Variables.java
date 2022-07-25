@@ -1,6 +1,9 @@
 package wres.io.data.caching;
 
+import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -27,7 +30,7 @@ public class Variables
     }
 
     /**
-     * Retrieves the names of all variables that may be addressed as forecasts for the project
+     * Retrieves the names of all variables associated with a given side of data.
      * @param projectID The id of the project we're interested in
      * @param projectMember The data source member for the data (generally 'right')
      * @return A list of all of the names of variables in forecasts that may be evaluated for the project
@@ -49,7 +52,20 @@ public class Variables
         script.addTab().addLine( "AND PS.member = ?" );
         script.addArgument( projectMember );
 
-        return script.interpret( resultSet -> resultSet.getString( "variable_name" ) );
+        // To remain open until all series have been read
+        List<String> variables = new ArrayList<>();
+        try ( Connection connection = this.getDatabase()
+                                          .getConnection();
+              DataProvider provider = script.buffer( connection ) )
+        {
+            while ( provider.next() )
+            {
+                String nextVariable = provider.getString( "variable_name" );
+                variables.add( nextVariable );
+            }
+        }
+
+        return Collections.unmodifiableList( variables );
     }
 
     /**

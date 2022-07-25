@@ -121,7 +121,7 @@ public class TimeSeriesStore
         Objects.requireNonNull( timeWindow );
         Objects.requireNonNull( orientation );
         Objects.requireNonNull( features );
-        
+
         return TimeSeriesStore.getSingleValuedStore( this.leftSingleValuedSeries,
                                                      this.rightSingleValuedSeries,
                                                      this.baselineSingleValuedSeries,

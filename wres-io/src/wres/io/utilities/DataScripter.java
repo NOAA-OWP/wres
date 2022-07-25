@@ -11,9 +11,6 @@ import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.IllegalFormatException;
 
-import wres.util.functional.ExceptionalConsumer;
-import wres.util.functional.ExceptionalFunction;
-
 public class DataScripter extends ScriptBuilder
 {
     private final Database database;
@@ -241,39 +238,6 @@ public class DataScripter extends ScriptBuilder
                           .useCursor( true );
         return database.buffer( connection, query );
     }
-
-    /**
-     * Runs a consumer function on each row of the result returned from the script
-     * <p>
-     *     <b>Arguments are not used.</b>
-     * </p>
-     *
-     * @param consumer A function that will use each row of the result set
-     * @throws SQLException Thrown if the consumer threw an error
-     * @throws SQLException Thrown if the script failed to run properly
-     */
-    public void consume(ExceptionalConsumer<DataProvider, SQLException> consumer) throws SQLException
-    {
-        database.consume( this.formQuery( ), consumer, this.isHighPriority );
-    }
-
-    /**
-     * Transforms each row of the result of a script into an object
-     * <p>
-     *     <b>Arguments are not used</b>
-     * </p>
-     *
-     * @param interpretor The function that will convert a row into an object
-     * @param <U> The type of object that will be returned
-     * @return A list of transformed objects
-     * @throws SQLException Thrown if the script is not correctly formed
-     * @throws SQLException Thrown if the results cannot be correctly interpretted
-     */
-    public <U> List<U> interpret( ExceptionalFunction<DataProvider, U, SQLException> interpretor) throws SQLException
-    {
-        return database.interpret( this.formQuery(), interpretor, this.isHighPriority );
-    }
-
 
     /**
      * Get the first available id of the each inserted row from a previous

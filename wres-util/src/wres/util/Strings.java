@@ -26,7 +26,6 @@ public final class Strings
 	private static final Pattern RTRIM = Pattern.compile("\\s+$");
 
 	private static final int LINE_LENGTH = 120;
-	private static final int TRUNCATE_SIZE = 2000;
 
     private Strings(){}
 	
@@ -72,25 +71,6 @@ public final class Strings
 		return "\r" + formattedLine;
 	}
 
-	/**
-	 * Extracts the first grouping of characters in the source string that matches the pattern
-	 * @param source The string to extract the word from
-	 * @param pattern The pattern to match
-	 * @return The first substring to match the pattern
-	 */
-	public static String extractWord(final String source, final String pattern)
-    {
-		return Strings.extractWord( source, pattern, null );
-	}
-
-	public static String extractWord(final String source,
-                                     final String pattern,
-                                     final String defaultString)
-	{
-		Pattern regex = Pattern.compile(pattern);
-		return Strings.extractWord( source, regex, defaultString );
-	}
-
 	public static String extractWord(final String source,
                                      final Pattern pattern,
                                      final String defaultString)
@@ -105,21 +85,6 @@ public final class Strings
 		return matchedString;
 	}
 
-	public static String truncate(String message)
-	{
-		return truncate(message, TRUNCATE_SIZE);
-	}
-
-	public static String truncate(String message, int length)
-	{
-		String truncatedMessage = message;
-		if (message.length() > length - 3 && length > 3)
-		{
-			truncatedMessage = message.substring(0, length - 3) + "...";
-		}
-		return truncatedMessage;
-	}
-
 	public static boolean contains(String full, String pattern)
 	{
 		Pattern regex = Pattern.compile(pattern);
@@ -130,23 +95,6 @@ public final class Strings
     {
         return string.replaceAll(pattern, "");
     }
-
-    /**
-     * Generates a stack trace from the current thread
-     * <br><br>
-     * <p>
-     *     Getting the stack trace from the current thread can be a pain because it
-     *     a) returns an array instead of a string and b) includes unhelpful elements. This
-     *     makes the process easier for cases where the trace needs to be logged without an exception to draw from.
-     * </p>
-     * @return A multiline string representation of the stack trace
-     */
-	public static String getStackTrace()
-	{
-        StackTraceElement[] traceElements = Thread.currentThread().getStackTrace();
-        traceElements = Arrays.copyOfRange( traceElements, 2, traceElements.length);
-        return Collections.toString( traceElements, StackTraceElement::toString, "    " + System.lineSeparator());
-	}
 
     public static String getStackTrace(Exception error)
     {
@@ -257,9 +205,7 @@ public final class Strings
         }
         catch ( NoSuchAlgorithmException e )
         {
-            throw new RuntimeException(
-                    "Something went wrong when trying to generate the MD5 algorithm",
-                    e );
+            throw new IllegalStateException( "Something went wrong when trying to generate the MD5 algorithm", e );
         }
 
         return algorithm;

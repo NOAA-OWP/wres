@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.MonthDay;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,6 +49,9 @@ import org.slf4j.LoggerFactory;
 
 public final class TimeSeriesSlicer
 {
+    /** The default unit for lead durations. */
+    public static final ChronoUnit LEAD_RESOLUTION = ChronoUnit.MINUTES;
+    
     /** Re-used log message string. */
     private static final String WHILE_ATTEMPTING_TO_FIND_THE_INTERSECTING_TIMES_BETWEEN_THE_LEFT_SERIES_AND_THE_RIGHT =
             "While attempting to find the intersecting times between the left series {} and the right ";

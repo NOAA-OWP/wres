@@ -1,11 +1,9 @@
-package wres.util;
+package wres.io.removal;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -19,7 +17,7 @@ import org.slf4j.LoggerFactory;
 /**
 * Collection object used to loop through and complete a collection of future tasks
 **/
-public class FutureQueue<V>
+class FutureQueue<V>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( FutureQueue.class );
 
@@ -36,7 +34,7 @@ public class FutureQueue<V>
     /**
      * Contains the results of each task that had to be processed early
      */
-    private final List<V> earlyResults = new ArrayList<>(  );
+    private final List<V> earlyResults = new ArrayList<>();
 
     /**
      * The number of TimeUnits to wait before moving onto another
@@ -61,16 +59,16 @@ public class FutureQueue<V>
      */
     public FutureQueue()
     {
-        this.queue = new LinkedList<>(  );
-        this.queueLock = new ReentrantLock(  );
+        this.queue = new LinkedList<>();
+        this.queueLock = new ReentrantLock();
         this.timeout = 500;
         this.timeoutUnit = TimeUnit.MILLISECONDS;
     }
 
-    public FutureQueue(final int size)
+    public FutureQueue( final int size )
     {
-        this.queue = new LinkedList<>(  );
-        this.queueLock = new ReentrantLock(  );
+        this.queue = new LinkedList<>();
+        this.queueLock = new ReentrantLock();
         this.timeout = 500;
         this.timeoutUnit = TimeUnit.MILLISECONDS;
         this.maximumTasks = size;
@@ -81,10 +79,10 @@ public class FutureQueue<V>
      * @param timeout The number of timeout units to wait before moving on to another future
      * @param timeoutUnit The unit of time to wait before moving on to another future
      */
-    public FutureQueue(final int timeout, final TimeUnit timeoutUnit)
+    public FutureQueue( final int timeout, final TimeUnit timeoutUnit )
     {
-        this.queue = new LinkedList<>(  );
-        this.queueLock = new ReentrantLock(  );
+        this.queue = new LinkedList<>();
+        this.queueLock = new ReentrantLock();
         this.timeout = timeout;
         this.timeoutUnit = timeoutUnit;
     }
@@ -102,7 +100,7 @@ public class FutureQueue<V>
      * @throws ExecutionException Thrown if an asynchronous task had to be complete prior to
      * adding a new task threw an exception
      */
-    public V add(final Future<V> future) throws ExecutionException
+    public V add( final Future<V> future ) throws ExecutionException
     {
         V earlyResult = null;
 
@@ -110,13 +108,13 @@ public class FutureQueue<V>
         {
             this.queueLock.lock();
 
-            if (this.queue.size() > this.maximumTasks)
+            if ( this.queue.size() > this.maximumTasks )
             {
                 try
                 {
                     earlyResult = this.processTask();
 
-                    if (earlyResult != null)
+                    if ( earlyResult != null )
                     {
                         this.earlyResults.add( earlyResult );
                     }
@@ -124,15 +122,16 @@ public class FutureQueue<V>
                 catch ( ExecutionException e )
                 {
                     throw new ExecutionException( "An asynchronous task needed to be completed prior "
-                                                  + "to adding a new one, but failed during execution.", e );
+                                                  + "to adding a new one, but failed during execution.",
+                                                  e );
                 }
             }
 
-            this.queue.add(future );
+            this.queue.add( future );
         }
         finally
         {
-            if (this.queueLock.isHeldByCurrentThread())
+            if ( this.queueLock.isHeldByCurrentThread() )
             {
                 this.queueLock.unlock();
             }
@@ -150,7 +149,7 @@ public class FutureQueue<V>
         }
         finally
         {
-            if (this.queueLock.isHeldByCurrentThread())
+            if ( this.queueLock.isHeldByCurrentThread() )
             {
                 this.queueLock.unlock();
             }
@@ -167,7 +166,7 @@ public class FutureQueue<V>
      * @throws ExecutionException Thrown if tasks had to be completed to force the queue
      * to be the correct size but one threw an exception.
      */
-    public void setMaximumTasks(final int maximumTasks) throws ExecutionException
+    public void setMaximumTasks( final int maximumTasks ) throws ExecutionException
     {
         try
         {
@@ -175,13 +174,13 @@ public class FutureQueue<V>
 
             this.maximumTasks = maximumTasks;
 
-            while (this.size() > this.maximumTasks)
+            while ( this.size() > this.maximumTasks )
             {
                 V earlyResult = processTask();
 
-                if (earlyResult != null)
+                if ( earlyResult != null )
                 {
-                    this.earlyResults.add(earlyResult);
+                    this.earlyResults.add( earlyResult );
                 }
             }
         }
@@ -189,11 +188,12 @@ public class FutureQueue<V>
         {
             throw new ExecutionException( "Tasks had to be completed to comply with the new "
                                           + "limit for the maximum number of tasks, but a "
-                                          + "task encountered an exception.", e );
+                                          + "task encountered an exception.",
+                                          e );
         }
         finally
         {
-            if (this.queueLock.isHeldByCurrentThread())
+            if ( this.queueLock.isHeldByCurrentThread() )
             {
                 this.queueLock.unlock();
             }
@@ -211,14 +211,14 @@ public class FutureQueue<V>
      */
     public Collection<V> loop() throws ExecutionException
     {
-        List<V> results = new ArrayList<>(  );
+        List<V> results = new ArrayList<>();
         try
         {
             this.queueLock.lock();
             while ( !this.queue.isEmpty() )
             {
                 V result = this.processTask();
-                results.add(result);
+                results.add( result );
             }
 
             results.addAll( this.earlyResults );
@@ -226,7 +226,7 @@ public class FutureQueue<V>
         }
         finally
         {
-            if (this.queueLock.isHeldByCurrentThread())
+            if ( this.queueLock.isHeldByCurrentThread() )
             {
                 this.queueLock.unlock();
             }
@@ -271,7 +271,7 @@ public class FutureQueue<V>
                 LOGGER.warn( "Future processing has been interrupted.", e );
 
                 int cancelCount = 0;
-                for (Future futureTask : this.queue)
+                for ( Future<V> futureTask : this.queue )
                 {
                     try
                     {
@@ -284,7 +284,7 @@ public class FutureQueue<V>
                     }
                 }
 
-                if (cancelCount > 0)
+                if ( cancelCount > 0 )
                 {
                     LOGGER.debug( "Canceled {} tasks.", cancelCount );
                 }
