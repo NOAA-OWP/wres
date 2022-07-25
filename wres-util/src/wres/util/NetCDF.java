@@ -7,6 +7,7 @@ import ucar.ma2.InvalidRangeException;
 import ucar.nc2.Attribute;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
+import wres.datamodel.DataException;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -38,9 +39,7 @@ public final class NetCDF {
             Pattern.compile( "(?<=(assim|range)\\.)[a-zA-Z_\\d]+(?=\\.(tm\\d\\d|f\\d\\d\\d))" );
 
     private static final Pattern NETCDF_FILENAME_PATTERN = Pattern.compile( ".+\\.nc(\\.gz)?$" );
-
-    private static final Pattern SHORT_DATE_PATTERN = Pattern.compile(".*\\d{8}");
-
+    
     private static final DateTimeFormatter STANDARD_DATE_FORMAT = DateTimeFormatter.ofPattern( "yyyy-MM-dd HH:mm:ss z" );
 
 
@@ -200,7 +199,7 @@ public final class NetCDF {
             {
                 String message = "The Netcdf variable %s at %s could not be read.";
                 message = String.format( message, this.variableName, this.location );
-                throw new IterationFailedException( message );
+                throw new DataException( message );
             }
             catch ( InvalidRangeException e )
             {
@@ -209,7 +208,7 @@ public final class NetCDF {
                 message += "but there were only %d elements available to read.";
 
                 message = String.format(message, shape[0], origin[0], this.length);
-                throw new IterationFailedException( message );
+                throw new NoSuchElementException( message );
             }
         }
 

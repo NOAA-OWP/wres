@@ -1,4 +1,4 @@
-package wres.util;
+package wres.io.data.caching;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -11,8 +11,13 @@ import java.util.function.Consumer;
  * @param <K> The type of the key
  * @param <U> The type of the value
  */
-public class LRUMap<K, U> extends LinkedHashMap<K, U>
+class LRUMap<K, U> extends LinkedHashMap<K, U>
 {
+    /**
+     * Serial version identifier.
+     */
+    private static final long serialVersionUID = 8230935044655248464L;
+
     /**
      * The total number of entries allowable before entries are removed
      */

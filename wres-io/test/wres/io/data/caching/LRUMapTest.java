@@ -1,4 +1,4 @@
-package wres.util;
+package wres.io.data.caching;
 
 import java.util.Map;
 import java.util.TreeMap;

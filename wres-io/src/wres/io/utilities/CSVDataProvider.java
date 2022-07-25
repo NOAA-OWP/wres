@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.MissingValues;
-import wres.util.TimeHelper;
+import wres.datamodel.time.TimeSeriesSlicer;
 
 /**
  * A streaming tabular dataset that doesn't require an
@@ -749,7 +749,7 @@ class CSVDataProvider implements DataProvider
         }
         else if (value instanceof Number)
         {
-            result = Duration.of( this.getLong( columnName ), TimeHelper.LEAD_RESOLUTION );
+            result = Duration.of( this.getLong( columnName ), TimeSeriesSlicer.LEAD_RESOLUTION );
         }
         else if (value instanceof String)
         {

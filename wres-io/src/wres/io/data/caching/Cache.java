@@ -7,7 +7,6 @@ import java.util.concurrent.ConcurrentMap;
 
 import wres.io.data.details.CachedDetail;
 import wres.io.utilities.Database;
-import wres.util.LRUMap;
 
 /**
  * An collection of details about concepts stored within the database

@@ -803,10 +803,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
         LOGGER.debug( "NetcdfOutputWriter {} accepted output {}.", this, output );
 
-        Map<TimeWindowOuter, List<DoubleScoreStatisticOuter>> outputByTimeWindow = wres.util.Collections.group(
-                                                                                                                output,
-                                                                                                                score -> score.getMetadata()
-                                                                                                                              .getTimeWindow() );
+        Map<TimeWindowOuter, List<DoubleScoreStatisticOuter>> outputByTimeWindow =
+                output.stream()
+                      .collect( Collectors.groupingBy( next -> next.getMetadata().getTimeWindow() ) );
 
         Set<Path> pathsWritten = new HashSet<>();
 

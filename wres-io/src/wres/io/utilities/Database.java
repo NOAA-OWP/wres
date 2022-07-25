@@ -47,8 +47,6 @@ import wres.io.ingesting.IngestResult;
 import wres.system.DatabaseType;
 import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
-import wres.util.functional.ExceptionalConsumer;
-import wres.util.functional.ExceptionalFunction;
 
 /**
  * An Interface structure used for organizing database operations and providing
@@ -855,48 +853,6 @@ public class Database {
             }
             return data.getValue( label );
         }
-    }
-
-    /**
-     * Runs the passed in method on every entry within a generated {@link DataProvider}
-     * @param query The query that will collect data to feed into the passed method
-     * @param consumer The method that will consume the query results
-     * @param isHighPriority Whether or not to run the query on a high priority connection
-     * @throws SQLException Thrown if an error was encountered while communicating with the database
-     */
-    void consume(
-            final Query query,
-            ExceptionalConsumer<DataProvider, SQLException> consumer,
-            final boolean isHighPriority)
-            throws SQLException
-    {
-        try ( Connection connection = this.getConnection( isHighPriority );
-              DataProvider data = this.buffer( connection, query ) )
-        {
-            data.consume( consumer );
-        }
-    }
-
-    /**
-     * Transforms the results of a query into a list of objects
-     * @param query The query to will return data
-     * @param interpretor A function that will transform values from a {@link DataProvider} into the desired object
-     * @param isHighPriority Whether or not to run the query on a high priority connection
-     * @param <U> The type of object that the {@link DataProvider} entry will be transformed into
-     * @return A list of the transformed items
-     * @throws SQLException Thrown if the query encounters an error while communicating with the database
-     */
-    <U> List<U> interpret( final Query query, ExceptionalFunction<DataProvider, U, SQLException> interpretor, final boolean isHighPriority) throws SQLException
-    {
-        List<U> result;
-
-        try ( Connection connection = this.getConnection( isHighPriority );
-              DataProvider data = this.buffer( connection, query ) )
-        {
-            result = new ArrayList<>( data.interpret( interpretor ) );
-        }
-
-        return result;
     }
 
     /**

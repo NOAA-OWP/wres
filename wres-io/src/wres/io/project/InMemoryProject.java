@@ -45,7 +45,6 @@ import wres.io.retrieval.DataAccessException;
 import wres.io.utilities.NoDataException;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
-import wres.util.CalculationException;
 
 /**
  * Provides helpers related to the project declaration in combination with the ingested time-series data.
@@ -295,8 +294,6 @@ public class InMemoryProject implements Project
     /**
      * Performs operations that are needed for the project to run between ingest and evaluation.
      * 
-     * @throws DataAccessException if retrieval of data fails
-     * @throws CalculationException if required calculations could not be completed
      * @throws NoDataException if zero features have intersecting data
      */
     @Override

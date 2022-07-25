@@ -24,6 +24,7 @@ import ucar.nc2.Variable;
 import wres.datamodel.DataFactory;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.ReferenceTimeType;
+import wres.datamodel.time.TimeSeriesSlicer;
 import wres.io.concurrency.Downloader;
 import wres.io.concurrency.WRESCallable;
 import wres.io.data.caching.Features;
@@ -37,7 +38,6 @@ import wres.io.utilities.Database;
 import wres.statistics.generated.Geometry;
 import wres.system.SystemSettings;
 import wres.util.NetCDF;
-import wres.util.TimeHelper;
 
 /**
  * Executes the database copy operation for every value in the passed in string. TODO: remove this class when we have a
@@ -146,7 +146,7 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
             SourceDetails griddedSource = new SourceDetails();
             griddedSource.setSourcePath( this.fileName );
 
-            Number leadNumeric = DataFactory.durationToNumericUnits( lead, TimeHelper.LEAD_RESOLUTION );
+            Number leadNumeric = DataFactory.durationToNumericUnits( lead, TimeSeriesSlicer.LEAD_RESOLUTION );
             griddedSource.setLead( leadNumeric.intValue() );
             griddedSource.setHash( this.hash );
             griddedSource.setIsPointData( false );

@@ -3,7 +3,7 @@ package wres.io.retrieval;
 /**
  * Runtime exception associated with data access.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class DataAccessException extends RuntimeException
