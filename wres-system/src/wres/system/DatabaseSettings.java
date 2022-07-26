@@ -22,6 +22,7 @@ import javax.xml.stream.XMLStreamReader;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wres.util.Strings;
@@ -916,25 +917,28 @@ final class DatabaseSettings
     @Override
     public String toString()
     {
-        return new ToStringBuilder( this )
-                .append( "jdbcUrl", jdbcUrl )
-                .append( "host", host )
-                .append( "username", username )
-                // Purposely do not print the password.
-                .append( "port", port )
-                .append( "databaseName", databaseName )
-                .append( "databaseType", databaseType )
-                .append( "certificateFileToTrust", certificateFileToTrust )
-                .append( "maxPoolSize", maxPoolSize )
-                .append( "maxHighPriorityPoolSize", maxHighPriorityPoolSize )
-                .append( "maxIdleTime", maxIdleTime )
-                // Purposely do not print passphrases.
-                //.append( "dataSourceProperties", this.dataSourceProperties )
-                .append( USE_SSL, useSSL )
-                .append( "validateSSL", validateSSL )
-                .append( "queryTimeout", queryTimeout )
-                .append( "connectionTimeoutMs", connectionTimeoutMs )
-                .toString();
+        return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
+                                                                            .append( "jdbcUrl", jdbcUrl )
+                                                                            .append( "host", host )
+                                                                            .append( "username", username )
+                                                                            // Purposely do not print the password.
+                                                                            .append( "port", port )
+                                                                            .append( "databaseName", databaseName )
+                                                                            .append( "databaseType", databaseType )
+                                                                            .append( "certificateFileToTrust",
+                                                                                     certificateFileToTrust )
+                                                                            .append( "maxPoolSize", maxPoolSize )
+                                                                            .append( "maxHighPriorityPoolSize",
+                                                                                     maxHighPriorityPoolSize )
+                                                                            .append( "maxIdleTime", maxIdleTime )
+                                                                            // Purposely do not print passphrases.
+                                                                            //.append( "dataSourceProperties", this.dataSourceProperties )
+                                                                            .append( USE_SSL, useSSL )
+                                                                            .append( "validateSSL", validateSSL )
+                                                                            .append( "queryTimeout", queryTimeout )
+                                                                            .append( "connectionTimeoutMs",
+                                                                                     connectionTimeoutMs )
+                                                                            .toString();
     }
 
     private void applySystemPropertyOverrides()
@@ -1009,6 +1013,11 @@ final class DatabaseSettings
         if ( connectionTimeoutMsOverride != null )
         {
             this.connectionTimeoutMs = Integer.parseInt( connectionTimeoutMsOverride );
+        }
+        String maxPoolSizeOverride = System.getProperty( "wres.maxPoolSize" );
+        if ( maxPoolSizeOverride != null )
+        {
+            this.maxPoolSize = Integer.parseInt( maxPoolSizeOverride );
         }
 	}
 

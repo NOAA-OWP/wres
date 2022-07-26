@@ -15,6 +15,7 @@ import javax.xml.stream.XMLStreamReader;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -961,29 +962,49 @@ public class SystemSettings extends XMLReader
     @Override
     public String toString()
     {
-        return new ToStringBuilder( this )
-                                          .append( "databaseConfiguration", this.databaseConfiguration )
-                                          .append( "maximumThreadCount", this.maximumThreadCount )
-                                          .append( "poolObjectLifespan", this.poolObjectLifespan )
-                                          .append( "fetchSize", this.fetchSize )
-                                          .append( "maximumCopies", this.maximumCopies )
-                                          .append( "netcdfCachePeriod", this.netcdfCachePeriod )
-                                          .append( "minimumCachedNetcdf", this.minimumCachedNetcdf )
-                                          .append( "maximumCachedNetcdf", this.maximumCachedNetcdf )
-                                          .append( "hardNetcdfCacheLimit", this.hardNetcdfCacheLimit )
-                                          .append( "netcdfStorePath", this.netcdfStorePath )
-                                          .append( "maximumArchiveThreads", this.maximumArchiveThreads )
-                                          .append( "maximumWebClientThreads", this.maximumWebClientThreads )
-                                          .append( "maximumNwmIngestThreads", this.maximumNwmIngestThreads )
-                                          .append( "dataDirectory", this.dataDirectory )
-                                          .append( "updateProgressMonitor", this.updateProgressMonitor )
-                                          .append( "maximumPoolThreads", this.maximumPoolThreads )
-                                          .append( "maximumThresholdThreads", this.maximumThresholdThreads )
-                                          .append( "maximumMetricThreads", this.maximumMetricThreads )
-                                          .append( "maximumProductThreads", this.maximumProductThreads )
-                                          .append( "featureBatchThreshold", this.featureBatchThreshold )
-                                          .append( "featureBatchSize", this.featureBatchSize )
-                                          .toString();
+        return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
+                                                                            .append( "databaseConfiguration",
+                                                                                     this.databaseConfiguration )
+                                                                            .append( "maximumThreadCount",
+                                                                                     this.maximumThreadCount )
+                                                                            .append( "poolObjectLifespan",
+                                                                                     this.poolObjectLifespan )
+                                                                            .append( "fetchSize", this.fetchSize )
+                                                                            .append( "maximumCopies",
+                                                                                     this.maximumCopies )
+                                                                            .append( "netcdfCachePeriod",
+                                                                                     this.netcdfCachePeriod )
+                                                                            .append( "minimumCachedNetcdf",
+                                                                                     this.minimumCachedNetcdf )
+                                                                            .append( "maximumCachedNetcdf",
+                                                                                     this.maximumCachedNetcdf )
+                                                                            .append( "hardNetcdfCacheLimit",
+                                                                                     this.hardNetcdfCacheLimit )
+                                                                            .append( "netcdfStorePath",
+                                                                                     this.netcdfStorePath )
+                                                                            .append( "maximumArchiveThreads",
+                                                                                     this.maximumArchiveThreads )
+                                                                            .append( "maximumWebClientThreads",
+                                                                                     this.maximumWebClientThreads )
+                                                                            .append( "maximumNwmIngestThreads",
+                                                                                     this.maximumNwmIngestThreads )
+                                                                            .append( "dataDirectory",
+                                                                                     this.dataDirectory )
+                                                                            .append( "updateProgressMonitor",
+                                                                                     this.updateProgressMonitor )
+                                                                            .append( "maximumPoolThreads",
+                                                                                     this.maximumPoolThreads )
+                                                                            .append( "maximumThresholdThreads",
+                                                                                     this.maximumThresholdThreads )
+                                                                            .append( "maximumMetricThreads",
+                                                                                     this.maximumMetricThreads )
+                                                                            .append( "maximumProductThreads",
+                                                                                     this.maximumProductThreads )
+                                                                            .append( "featureBatchThreshold",
+                                                                                     this.featureBatchThreshold )
+                                                                            .append( "featureBatchSize",
+                                                                                     this.featureBatchSize )
+                                                                            .toString();
     }
 
     @Override
