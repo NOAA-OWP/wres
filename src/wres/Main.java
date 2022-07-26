@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -41,8 +40,8 @@ public class Main {
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
-
-    private static final Version version = new Version();
+    private static final SystemSettings SYSTEM_SETTINGS = SystemSettings.fromDefaultClasspathXmlFile();
+    private static final Version version = new Version( SYSTEM_SETTINGS );
 
 	/**
 	 * Executes and times the requested operation with the given parameters
@@ -81,14 +80,13 @@ public class Main {
 
         Thread.setDefaultUncaughtExceptionHandler( handler );
         
-        SystemSettings systemSettings = SystemSettings.fromDefaultClasspathXmlFile();
         Database database = null;
-        if ( !systemSettings.isInMemory() )
+        if ( !SYSTEM_SETTINGS.isInMemory() )
         {
-            database = new Database( systemSettings );
+            database = new Database( SYSTEM_SETTINGS );
         }
         
-        Executor executor = new Executor( systemSettings );
+        Executor executor = new Executor( SYSTEM_SETTINGS );
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             Instant endedExecution = Instant.now();
@@ -126,7 +124,7 @@ public class Main {
         try( BrokerConnectionFactory brokerConnectionFactory = BrokerConnectionFactory.of( brokerConnectionProperties ) )
         {
             MainFunctions.SharedResources sharedResources =
-                    new MainFunctions.SharedResources( systemSettings,
+                    new MainFunctions.SharedResources( SYSTEM_SETTINGS,
                                                        database,
                                                        executor,
                                                        brokerConnectionFactory,
@@ -142,7 +140,7 @@ public class Main {
             }
 
             // Log the execution to the database if a database is used
-            if( ! systemSettings.isInMemory() )
+            if( ! SYSTEM_SETTINGS.isInMemory() )
             {
                 sharedResources.getDatabase()
                 .logExecution(
@@ -172,7 +170,7 @@ public class Main {
         }
         finally
         {
-            if ( !systemSettings.isInMemory() )
+            if ( !SYSTEM_SETTINGS.isInMemory() )
             {
                 // #81660
                 if ( Objects.nonNull( result ) && result.succeeded() )

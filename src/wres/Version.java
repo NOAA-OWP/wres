@@ -1,8 +1,12 @@
 package wres;
 
+import java.util.Iterator;
+import java.util.Objects;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TreeSet;
+
+import wres.system.SystemSettings;
 
 /**
  * Used to retrieve the version of the WRES software (top-level, wres jar)
@@ -11,10 +15,13 @@ public class Version
 {
     private static final String UNKNOWN_VERSION = "unknown";
     private final Package rawPackage;
+    private final SystemSettings systemSettings;
 
-    Version()
+    Version( SystemSettings systemSettings )
     {
+        Objects.requireNonNull( systemSettings );
         this.rawPackage = this.getClass().getPackage();
+        this.systemSettings = systemSettings;
     }
 
     /**
@@ -26,7 +33,7 @@ public class Version
     {
         Package toGetVersion = this.getRawPackage();
 
-        if (toGetVersion != null && toGetVersion.getImplementationVersion() != null)
+        if ( toGetVersion != null && toGetVersion.getImplementationVersion() != null )
         {
             // When running from a released zip, the version should show up.
             return toGetVersion.getImplementationVersion();
@@ -75,17 +82,24 @@ public class Version
 
         Runtime runtime = Runtime.getRuntime();
 
+        // Order the property names for consistency.
+        SortedSet<String> sortedPropertyNames =
+                new TreeSet<>( System.getProperties().stringPropertyNames() );
+
+        // Append the first system property without a separator char
+        Iterator<String> iterator = sortedPropertyNames.iterator();
+        String firstProperty = iterator.next();
+        iterator.remove();
+
         final String MIB = "MiB";
         final long MEGABYTE = 1024 * 1024;
         s.add( "Processors: " + runtime.availableProcessors() );
         s.add( "Max Memory: " + ( runtime.maxMemory() / MEGABYTE ) + MIB );
         s.add( "Free Memory: " + ( runtime.freeMemory() / MEGABYTE ) + MIB );
-        s.add( "Total Memory: " +  ( runtime.totalMemory() / MEGABYTE ) + MIB );
-
-        // Order the property names for consistency.
-        SortedSet<String> sortedPropertyNames =
-                new TreeSet<>( System.getProperties().stringPropertyNames() );
-
+        s.add( "Total Memory: " + ( runtime.totalMemory() / MEGABYTE ) + MIB );
+        s.add( "WRES System Settings: " + this.systemSettings.toString() );
+        s.add( "Java System Properties: " + firstProperty );
+        
         for ( String propertyName : sortedPropertyNames )
         {
             String lowerCaseName = propertyName.toLowerCase();
