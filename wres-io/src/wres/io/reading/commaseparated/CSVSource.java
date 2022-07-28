@@ -1,6 +1,7 @@
 package wres.io.reading.commaseparated;
 
 import java.io.IOException;
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
@@ -45,16 +46,17 @@ import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
 import wres.io.ingesting.TimeSeriesIngester;
-import wres.io.reading.BasicSource;
 import wres.io.reading.DataSource;
+import wres.io.reading.ReadException;
 import wres.io.reading.ReaderUtilities;
+import wres.io.reading.Source;
 import wres.io.utilities.DataProvider;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.system.SystemSettings;
 import wres.util.Strings;
 
-public class CSVSource extends BasicSource
+public class CSVSource implements Source
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( CSVSource.class );
 
@@ -79,23 +81,21 @@ public class CSVSource extends BasicSource
     private final CountDownLatch startGettingIngestResults;
     private final List<IngestResult> ingested;
     private final TimeSeriesIngester timeSeriesIngester;
+    private final DataSource dataSource;
 
     /**
      * Constructor.
      * @param timeSeriesIngester The time-series ingester
-     * @param projectConfig the ProjectConfig causing ingest
      * @param dataSource the data source information
      * @param systemSettings The system settings
      */
     public CSVSource( TimeSeriesIngester timeSeriesIngester,
-                      ProjectConfig projectConfig,
                       DataSource dataSource,
                       SystemSettings systemSettings )
     {
-        super( projectConfig, dataSource );
-
         Objects.requireNonNull( timeSeriesIngester );
         Objects.requireNonNull( systemSettings );
+        Objects.requireNonNull( dataSource );
 
         // See comments in wres.io.reading.WebSource for info on below approach.
         ThreadFactory csvIngest = new BasicThreadFactory.Builder()
@@ -115,15 +115,11 @@ public class CSVSource extends BasicSource
         this.startGettingIngestResults = new CountDownLatch( concurrentCount );
         this.ingested = new ArrayList<>();
         this.timeSeriesIngester = timeSeriesIngester;
+        this.dataSource = dataSource;
     }
-
-    private TimeSeriesIngester getTimeSeriesIngester()
-    {
-        return this.timeSeriesIngester;
-    }
-
+    
     @Override
-    public List<IngestResult> save() throws IOException
+    public List<IngestResult> save()
     {
         try
         {
@@ -135,24 +131,41 @@ public class CSVSource extends BasicSource
         }
     }
 
-    List<IngestResult> saveTimeSeries() throws IOException
+    List<IngestResult> saveTimeSeries()
     {
-        DataProvider data = DataProvider.fromCSV( this.getFilename(), DELIMITER );
-        parseTimeSeries( data );
+        try
+        {
+            DataProvider data = DataProvider.fromCSV( this.getFileName(), DELIMITER );
+            parseTimeSeries( data );
+        }
+        catch ( IOException e )
+        {
+            throw new ReadException( "Failed to read a CSV source.", e );
+        }      
 
         if ( !this.unconfiguredVariableNames.isEmpty() && LOGGER.isWarnEnabled() )
         {
-            LeftOrRightOrBaseline lrb = ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(),
-                                                                               this.getDataSourceConfig() );
+            LeftOrRightOrBaseline lrb = this.getDataSource()
+                                            .getLeftOrRightOrBaseline();
 
             LOGGER.warn( "The following variable names were encountered in a {} forecast csv data source with URI {} "
                          + "that were not declared in the project: {}",
                          lrb,
-                         this.getFilename(),
+                         this.getFileName(),
                          this.unconfiguredVariableNames );
         }
 
         return Collections.unmodifiableList( this.ingested );
+    }
+    
+    /**
+     * @return the file name
+     */
+    
+    private URI getFileName()
+    {
+        return this.getDataSource()
+                   .getUri();
     }
 
     private void parseTimeSeries( final DataProvider data ) throws IOException
@@ -343,6 +356,22 @@ public class CSVSource extends BasicSource
 
         this.completeIngest();
     }
+    
+    /**
+     * @return the time-series ingester
+     */
+    private TimeSeriesIngester getTimeSeriesIngester()
+    {
+        return this.timeSeriesIngester;
+    }
+
+    /**
+     * @return the data source
+     */
+    private DataSource getDataSource()
+    {
+        return this.dataSource;
+    }
 
     /**
      * Creates the time-series metadata from the inputs.
@@ -468,12 +497,12 @@ public class CSVSource extends BasicSource
                         +
                         " in '"
                         +
-                        this.getFilename()
+                        this.getFileName()
                         +
                         "'"
                         +
                         System.lineSeparator();
-        String suffix = System.lineSeparator() + "'" + this.getFilename() + "' cannot be ingested.";
+        String suffix = System.lineSeparator() + "'" + this.getFileName() + "' cannot be ingested.";
         StringJoiner errorJoiner = new StringJoiner(
                                                      System.lineSeparator(),
                                                      prefix,
@@ -547,9 +576,12 @@ public class CSVSource extends BasicSource
             valid = false;
         }
         // Only validate if the variable name is declared: #95012
-        else if ( Objects.isNull( this.getDataSourceConfig().getVariable() )
+        else if ( Objects.isNull( this.getDataSource()
+                                      .getContext()
+                                      .getVariable() )
                   || !dataProvider.getString( "variable_name" )
-                                  .equalsIgnoreCase( this.getDataSourceConfig().getVariable().getValue() ) )
+                                  .equalsIgnoreCase( ConfigHelper.getVariableName( this.getDataSource()
+                                                                                       .getContext() ) ) )
         {
             String foundVariable = dataProvider.getString( "variable_name" );
             this.unconfiguredVariableNames.add( foundVariable );

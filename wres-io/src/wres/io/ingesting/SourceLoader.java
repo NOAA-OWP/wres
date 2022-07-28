@@ -47,6 +47,8 @@ import wres.io.data.caching.DataSources;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.reading.DataSource;
+import wres.io.reading.ReaderFactory;
+import wres.io.reading.Source;
 import wres.io.reading.DataSource.DataDisposition;
 import wres.io.reading.nwm.NWMReader;
 import wres.io.removal.IncompleteIngest;
@@ -423,19 +425,15 @@ public class SourceLoader
         List<CompletableFuture<List<IngestResult>>> tasks = new ArrayList<>();
         CompletableFuture<List<IngestResult>> task;
 
-        IngestSaver ingestSaver =
-                new IngestSaver.Builder().withSystemSettings( this.getSystemSettings() )
-                                         .withDatabase( this.getDatabase() )
-                                         .withCaches( this.getCaches() )
-                                         .withProject( projectConfig )
-                                         .withDataSource( source )
-                                         .withoutHash()
-                                         .withProgressMonitoring()
-                                         .withLockManager( lockManager )
-                                         .withTimeSeriesIngester( this.getTimeSeriesIngester() )
-                                         .build();
-        task = CompletableFuture.supplyAsync( ingestSaver::call,
-                                              this.getExecutor() );
+        Source reader = ReaderFactory.getReader( this.getTimeSeriesIngester(),
+                                                 this.getSystemSettings(),
+                                                 this.getDatabase(),
+                                                 this.getCaches(),
+                                                 projectConfig,
+                                                 source,
+                                                 lockManager );
+
+        task = CompletableFuture.supplyAsync( reader::save, this.getExecutor() );
 
         tasks.add( task );
         return Collections.unmodifiableList( tasks );
@@ -470,23 +468,16 @@ public class SourceLoader
 
         if ( sourceStatus.equals( SourceStatus.REQUIRES_DECOMPOSITION ) )
         {
-            // When there is an archive, shouldIngest() will be true however
-            // the hash will not yet have been computed, because the inner
-            // source identities are what is important, and those inner sources
-            // will be hashed later in the process.
-            IngestSaver ingestSaver = new IngestSaver.Builder().withSystemSettings( this.getSystemSettings() )
-                                                               .withDatabase( this.getDatabase() )
-                                                               .withCaches( this.getCaches() )
-                                                               .withProject( projectConfig )
-                                                               .withDataSource( source )
-                                                               .withoutHash()
-                                                               .withProgressMonitoring()
-                                                               .withLockManager( lockManager )
-                                                               .withTimeSeriesIngester( this.getTimeSeriesIngester() )
-                                                               .build();
+            Source reader = ReaderFactory.getReader( this.getTimeSeriesIngester(),
+                                                     this.getSystemSettings(),
+                                                     this.getDatabase(),
+                                                     this.getCaches(),
+                                                     projectConfig,
+                                                     source,
+                                                     lockManager );
+
             CompletableFuture<List<IngestResult>> future =
-                    CompletableFuture.supplyAsync( ingestSaver::call,
-                                                   this.getExecutor() );
+                    CompletableFuture.supplyAsync( reader::save, this.getExecutor() );
             tasks.add( future );
         }
         else if ( sourceStatus.equals( SourceStatus.INCOMPLETE_WITH_NO_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING )

@@ -1,7 +1,5 @@
 package wres.io.reading;
 
-import java.io.IOException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,30 +24,27 @@ public class ReaderFactory
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ReaderFactory.class );
 
-    public static BasicSource getReader( TimeSeriesIngester timeSeriesIngester,
-                                         SystemSettings systemSettings,
-                                         Database database,
-                                         Caches caches,
-                                         ProjectConfig projectConfig,
-                                         DataSource dataSource,
-                                         DatabaseLockManager lockManager )
-            throws IOException
+    public static Source getReader( TimeSeriesIngester timeSeriesIngester,
+                                    SystemSettings systemSettings,
+                                    Database database,
+                                    Caches caches,
+                                    ProjectConfig projectConfig,
+                                    DataSource dataSource,
+                                    DatabaseLockManager lockManager )
     {
         LOGGER.debug( "getReader called on dataSource {}", dataSource );
         DataSource.DataDisposition disposition = dataSource.getDisposition();
-        BasicSource source;
+        Source source;
 
         switch ( disposition )
         {
             case DATACARD:
                 source = new DatacardSource( timeSeriesIngester,
-                                             projectConfig,
                                              dataSource );
                 break;
             case XML_FI_TIMESERIES:
             case XML_PI_TIMESERIES:
                 source = new FEWSSource( timeSeriesIngester,
-                                         projectConfig,
                                          dataSource );
                 break;
             case JSON_WRDS_AHPS:
@@ -61,13 +56,11 @@ public class ReaderFactory
                 break;
             case CSV_WRES:
                 source = new CSVSource( timeSeriesIngester,
-                                        projectConfig,
                                         dataSource,
                                         systemSettings );
                 break;
             case JSON_WATERML:
                 source = new WaterMLBasicSource( timeSeriesIngester,
-                                                 projectConfig,
                                                  dataSource );
                 break;
             case GZIP:
@@ -81,15 +74,15 @@ public class ReaderFactory
                 break;
             case NETCDF_GRIDDED:
                 source = new GriddedNWMSource( timeSeriesIngester,
-                                        systemSettings,
-                                        database,
-                                        caches,
-                                        projectConfig,
-                                        dataSource );
+                                               systemSettings,
+                                               database,
+                                               caches,
+                                               projectConfig,
+                                               dataSource );
                 break;
             default:
                 String message = "The uri '%s' is not a valid source of data.";
-                throw new IOException( String.format( message, dataSource.getUri() ) );
+                throw new IllegalArgumentException( String.format( message, dataSource.getUri() ) );
         }
 
         return source;

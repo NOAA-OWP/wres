@@ -2,6 +2,7 @@ package wres.io.reading.datacard;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -24,7 +25,6 @@ import static wres.datamodel.time.ReferenceTimeType.LATEST_OBSERVATION;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.ProjectConfig;
 import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.FeatureKey;
@@ -34,43 +34,57 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.config.ConfigHelper;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.TimeSeriesIngester;
-import wres.io.reading.BasicSource;
 import wres.io.reading.DataSource;
 import wres.io.reading.InvalidInputDataException;
+import wres.io.reading.ReadException;
+import wres.io.reading.Source;
 import wres.statistics.generated.Geometry;
 import wres.util.Strings;
 
-public class DatacardSource extends BasicSource
+public class DatacardSource implements Source
 {
     private static final Set<Double> IGNORABLE_VALUES = Set.of( -998.0, -999.0, -9999.0 );
 
     private final TimeSeriesIngester timeSeriesIngester;
+    private final DataSource dataSource;
 
     /**
      * @param timeSeriesIngester the time-series ingester
-     * @param projectConfig the ProjectConfig causing ingest
      * @param dataSource the data source information
      * @throws NullPointerException if any input is null
      */
     public DatacardSource( TimeSeriesIngester timeSeriesIngester,
-                           ProjectConfig projectConfig,
                            DataSource dataSource )
     {
-        super( projectConfig, dataSource );
-        
         Objects.requireNonNull( timeSeriesIngester );
+        Objects.requireNonNull( dataSource );
         
         this.timeSeriesIngester = timeSeriesIngester;
+        this.dataSource = dataSource;
     }
 
+    /**
+     * @return the time-step
+     */
     private Duration getTimeStep()
     {
         return this.timeStep;
     }
 
+    /**
+     * @return the time-series ingester
+     */
     private TimeSeriesIngester getTimeSeriesIngester()
     {
         return this.timeSeriesIngester;
+    }
+
+    /**
+     * @return the data source
+     */
+    private DataSource getDataSource()
+    {
+        return this.dataSource;
     }
 
     /**
@@ -120,9 +134,9 @@ public class DatacardSource extends BasicSource
     }
 
     @Override
-    public List<IngestResult> save() throws IOException
+    public List<IngestResult> save()
     {
-        Path path = Paths.get( getFilename() );
+        Path path = Paths.get( this.getFileName() );
         String variableName = null;
         String unit = null;
         String featureName = null;
@@ -195,7 +209,7 @@ public class DatacardSource extends BasicSource
             }
             else
             {
-                String message = "The NWS Datacard file ('" + this.getFilename()
+                String message = "The NWS Datacard file ('" + this.getFileName()
                                  + "') had unexpected syntax therefore it "
                                  + "could not be successfully read by WRES.";
                 throw new InvalidInputDataException( message );
@@ -217,7 +231,7 @@ public class DatacardSource extends BasicSource
             }
             else
             {
-                String message = "The NWS Datacard file '" + this.getFilename()
+                String message = "The NWS Datacard file '" + this.getFileName()
                                  + "' had unexpected syntax on line "
                                  + lineNumber
                                  + 1
@@ -237,7 +251,8 @@ public class DatacardSource extends BasicSource
             int startIdx;
             int endIdx;
 
-            DataSourceConfig.Source source = this.getSourceConfig();
+            DataSourceConfig.Source source = this.getDataSource()
+                                                 .getSource();
 
             //Zone offset is required configuration since datacard does not specify
             //its time zone.  Process it.
@@ -247,7 +262,7 @@ public class DatacardSource extends BasicSource
             if ( offset == null )
             {
                 String message = "While reading datacard source "
-                                 + this.getFilename()
+                                 + this.getFileName()
                                  + " WRES could not find a zoneOffset specified"
                                  + ". Datacard unfortunately requires that the "
                                  + "project configuration set a zoneOffset such"
@@ -302,7 +317,7 @@ public class DatacardSource extends BasicSource
                         catch ( NumberFormatException nfe )
                         {
                             String message = "While reading datacard file "
-                                             + this.getFilename()
+                                             + this.getFileName()
                                              + ", could not parse the value at "
                                              + "position "
                                              + valIdxInRecord
@@ -325,10 +340,14 @@ public class DatacardSource extends BasicSource
                 } //end of loop for one value line 
             } //end of loop for all value lines
         }
+        catch( IOException e )
+        {
+            throw new ReadException( "Failed to read a Datacard source.", e );
+        }
 
         if ( LOGGER.isDebugEnabled() )
         {
-            LOGGER.debug( "Parsed timeseries from '{}'", this.getFilename() );
+            LOGGER.debug( "Parsed timeseries from '{}'", this.getFileName() );
         }
 
         Geometry geometry = MessageFactory.getGeometry( featureName, featureDescription, null, null );
@@ -350,12 +369,22 @@ public class DatacardSource extends BasicSource
         {
             LOGGER.debug( "Ingested {} timeseries from '{}'",
                           results.size(),
-                          this.getFilename() );
+                          this.getFileName() );
         }
 
         return results;
     }
 
+    /**
+     * @return the file name
+     */
+    
+    private URI getFileName()
+    {
+        return this.getDataSource()
+                   .getUri();
+    }
+    
     /**
      * Return the number of columns of allocated for an observation value. In general, it is smaller than 
      * the number of columns actually used by an observation value
@@ -389,10 +418,40 @@ public class DatacardSource extends BasicSource
 
     private boolean valueIsMissing( final double value )
     {
-        return this.getSpecifiedMissingValue() != null &&
-               Precision.equals( Double.parseDouble( this.getSpecifiedMissingValue() ), value );
+        DataSourceConfig.Source source = this.getDataSource()
+                                             .getSource();
+
+        String missingValue = this.getMissingValue( source );
+
+        return missingValue != null && Precision.equals( Double.parseDouble( missingValue ), value );
     }
 
+
+    /**
+     * @return The value specifying a value that is missing from the data set
+     * originating from the data source configuration. While parsing the data,
+     * if this value is encountered, it indicates that the value should be
+     * ignored as it represents invalid data. This should be ignored in data
+     * sources that define their own missing value.
+     */
+    private String getMissingValue( DataSourceConfig.Source source )
+    {
+        Objects.requireNonNull( source );
+
+        String missingValue = null;
+
+        if ( source.getMissingValue() != null && !source.getMissingValue().isEmpty() )
+        {
+            missingValue = source.getMissingValue();
+
+            if ( missingValue.lastIndexOf( '.' ) + 6 < missingValue.length() )
+            {
+                missingValue = missingValue.substring( 0, missingValue.lastIndexOf( '.' ) + 6 );
+            }
+        }
+
+        return missingValue;
+    }
 
     private int firstMonth = 0;
     private int firstYear = 0;

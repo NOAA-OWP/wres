@@ -52,6 +52,8 @@ import wres.config.generated.UrlParameter;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Caches;
 import wres.io.reading.DataSource;
+import wres.io.reading.ReaderFactory;
+import wres.io.reading.Source;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
@@ -321,20 +323,17 @@ class WebSource implements Callable<List<IngestResult>>
                                                lrb );
                         LOGGER.debug( "Created datasource {}", dSource );
 
-                        IngestSaver ingestSaver =
-                                new IngestSaver.Builder().withSystemSettings( this.getSystemSettings() )
-                                                         .withDatabase( this.getDatabase() )
-                                                         .withCaches( this.getCaches() )
-                                                         .withDataSource( dSource )
-                                                         .withProject( this.getProjectConfig() )
-                                                         .withoutHash()
-                                                         .withLockManager( this.getLockManager() )
-                                                         .withTimeSeriesIngester( this.getTimeSeriesIngester() )
-                                                         .build();
-
+                        Source reader = ReaderFactory.getReader( this.getTimeSeriesIngester(),
+                                                                 this.getSystemSettings(),
+                                                                 this.getDatabase(),
+                                                                 this.getCaches(),
+                                                                 this.getProjectConfig(),
+                                                                 dSource,
+                                                                 this.getLockManager() );
+                        
                         Future<List<IngestResult>> future =
                                 this.getIngestSaverExecutor()
-                                    .submit( ingestSaver );
+                                    .submit( reader::save );
                         this.ingests.add( future );
 
                         alreadySubmittedUris.add( uri );
@@ -413,20 +412,17 @@ class WebSource implements Callable<List<IngestResult>>
                                            lrb );
                     LOGGER.debug( "Created datasource {}", dSource);
 
-                    IngestSaver ingestSaver =
-                            new IngestSaver.Builder().withSystemSettings( this.getSystemSettings() )
-                                                     .withDatabase( this.getDatabase() )
-                                                     .withCaches( this.getCaches() )
-                                                     .withDataSource( dSource )
-                                                     .withProject( this.getProjectConfig() )
-                                                     .withoutHash()
-                                                     .withLockManager( this.getLockManager() )
-                                                     .withTimeSeriesIngester( this.getTimeSeriesIngester() )
-                                                     .build();
+                    Source reader = ReaderFactory.getReader( this.getTimeSeriesIngester(),
+                                                             this.getSystemSettings(),
+                                                             this.getDatabase(),
+                                                             this.getCaches(),
+                                                             this.getProjectConfig(),
+                                                             dSource,
+                                                             this.getLockManager() );
 
                     Future<List<IngestResult>> future =
                             this.getIngestSaverExecutor()
-                                .submit( ingestSaver );
+                                .submit( reader::save );
                     this.ingests.add( future );
 
                     alreadySubmittedUris.add( uri );

@@ -7,9 +7,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.DataSource;
@@ -20,8 +17,6 @@ import wres.io.reading.fews.PIXMLReader;
  */
 public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ZippedPIXMLIngest.class);
-
     private final DataSource dataSource;
     private final byte[] content;
     private final TimeSeriesIngester timeSeriesIngester;
@@ -61,11 +56,4 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
             return reader.getIngestResults();
         }
     }
-
-    @Override
-    protected Logger getLogger()
-    {
-        return ZippedPIXMLIngest.LOGGER;
-    }
-
 }

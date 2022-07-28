@@ -178,8 +178,7 @@ class DatabaseProjectTest
         Set<FeatureGroup> expected = Set.of( firstGroup, secondGroup, overallGroup );
 
         // Add some assertions to help diagnose #103804
-        Assertions.assertAll(
-                              () -> assertEquals( 3, actual.size() ),
+        Assertions.assertAll( () -> assertEquals( 3, actual.size() ),
                               () -> assertTrue( actual.contains( firstGroup ) ),
                               () -> assertTrue( actual.contains( secondGroup ) ),
                               () -> assertTrue( actual.contains( overallGroup ) ) );

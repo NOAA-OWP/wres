@@ -209,6 +209,27 @@ public class ConfigHelper
         return result;
     }
 
+    /**
+     * @param dataSourceConfig the data source declaration
+     * @return the declared variable name or null if no variable was declared
+     * @throws NullPointerException if the dataSourceConfig is null
+     */
+
+    public static String getVariableName( DataSourceConfig dataSourceConfig )
+    {
+        Objects.requireNonNull( dataSourceConfig );
+
+        DataSourceConfig.Variable variable = dataSourceConfig.getVariable();
+
+        String variableName = null;
+
+        if ( Objects.nonNull( variable ) )
+        {
+            variableName = variable.getValue();
+        }
+
+        return variableName;
+    }
 
     /**
      * Return <code>true</code> if the project uses probability thresholds, otherwise <code>false</code>.

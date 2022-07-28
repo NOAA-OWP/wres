@@ -7,6 +7,8 @@ package wres.io.concurrency;
  */
 public class WRESRunnableException extends RuntimeException
 {
+    private static final long serialVersionUID = -4574691714181607176L;
+
     public WRESRunnableException( String message, Throwable cause )
     {
         super( message, cause );

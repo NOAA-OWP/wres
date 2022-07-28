@@ -1014,6 +1014,7 @@ final class DatabaseSettings
         {
             this.connectionTimeoutMs = Integer.parseInt( connectionTimeoutMsOverride );
         }
+        
         String maxPoolSizeOverride = System.getProperty( "wres.maxPoolSize" );
         if ( maxPoolSizeOverride != null )
         {

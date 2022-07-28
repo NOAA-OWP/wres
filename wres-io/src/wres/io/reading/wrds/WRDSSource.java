@@ -8,10 +8,11 @@ import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.ProjectConfig;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.TimeSeriesIngester;
-import wres.io.reading.BasicSource;
 import wres.io.reading.DataSource;
 import wres.io.reading.DataSource.DataDisposition;
-import wres.io.reading.WrdsNwmReader;
+import wres.io.reading.ReadException;
+import wres.io.reading.Source;
+import wres.io.reading.wrds.nwm.WrdsNwmReader;
 import wres.system.SystemSettings;
 
 /**
@@ -26,23 +27,28 @@ import wres.system.SystemSettings;
  *     valid time ranges, and location IDs.
  * </p>
  */
-public class WRDSSource extends BasicSource
+public class WRDSSource implements Source
 {
     private final TimeSeriesIngester timeSeriesIngester;
     private final SystemSettings systemSettings;
+    private final DataSource dataSource;
 
     public WRDSSource( TimeSeriesIngester timeSeriesIngester,
                        ProjectConfig projectConfig,
                        DataSource dataSource,
                        SystemSettings systemSettings )
     {
-        super( projectConfig, dataSource );
+        Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( timeSeriesIngester );
+        Objects.requireNonNull( systemSettings );
+        
         this.timeSeriesIngester = timeSeriesIngester;
         this.systemSettings = systemSettings;
+        this.dataSource = dataSource;
     }
 
     @Override
-    public List<IngestResult> save() throws IOException
+    public List<IngestResult> save()
     {
         InterfaceShortHand interfaceShortHand = this.getDataSource()
                                                     .getSource()
@@ -54,7 +60,6 @@ public class WRDSSource extends BasicSource
                   && interfaceShortHand.equals( InterfaceShortHand.WRDS_NWM ) ) )
         {
             WrdsNwmReader reader = new WrdsNwmReader( this.getTimeSeriesIngester(),
-                                                      this.getProjectConfig(),
                                                       this.getDataSource(),
                                                       this.getSystemSettings() );
             return reader.call();
@@ -64,7 +69,14 @@ public class WRDSSource extends BasicSource
             ReadValueManager reader =
                     this.createReadValueManager( this.getTimeSeriesIngester(),
                                                  this.getDataSource() );
-            return reader.save();
+            try
+            {
+                return reader.save();
+            }
+            catch ( IOException e )
+            {
+                throw new ReadException( "Failed to read a WRDS source.", e );
+            }
         }
     }
 
@@ -75,11 +87,25 @@ public class WRDSSource extends BasicSource
                                      dataSource );
     }
     
+    /**
+     * @return the time-series ingester
+     */
     private TimeSeriesIngester getTimeSeriesIngester()
     {
         return this.timeSeriesIngester;
     }
+
+    /**
+     * @return the data source
+     */
+    private DataSource getDataSource()
+    {
+        return this.dataSource;
+    }
     
+    /**
+     * @return the system settings
+     */
     private SystemSettings getSystemSettings()
     {
         return this.systemSettings;

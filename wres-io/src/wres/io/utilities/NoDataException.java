@@ -7,6 +7,8 @@ package wres.io.utilities;
  */
 public class NoDataException extends RuntimeException
 {
+    private static final long serialVersionUID = -458279831785789017L;
+
     public NoDataException( String message )
     {
         super(message);

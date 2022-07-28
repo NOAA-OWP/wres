@@ -14,6 +14,8 @@ import wres.io.ingesting.IngestException;
  */
 public class InvalidInputDataException extends IngestException
 {
+    private static final long serialVersionUID = -2539358043781861403L;
+
     public InvalidInputDataException( String message, Throwable cause )
     {
         super( message, cause );
