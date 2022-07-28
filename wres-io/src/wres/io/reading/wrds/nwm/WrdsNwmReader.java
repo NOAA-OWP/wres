@@ -25,6 +25,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.X509TrustManager;
@@ -377,7 +378,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
             if ( !timeSeries.getEvents().isEmpty() )
             {
                 futureIngestResult =
-                        this.ingestSaverExecutor.submit( () -> ingester.ingestSingleValuedTimeSeries( timeSeries,
+                        this.ingestSaverExecutor.submit( () -> ingester.ingestSingleValuedTimeSeries( Stream.of( timeSeries ),
                                                                                                       this.dataSource ) );
             }
         }
@@ -396,7 +397,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
             if ( !timeSeries.getEvents().isEmpty() )
             {
                 futureIngestResult =
-                        this.ingestSaverExecutor.submit( () -> ingester.ingestEnsembleTimeSeries( timeSeries,
+                        this.ingestSaverExecutor.submit( () -> ingester.ingestEnsembleTimeSeries( Stream.of( timeSeries ),
                                                                                                   this.dataSource ) );
             }
         }

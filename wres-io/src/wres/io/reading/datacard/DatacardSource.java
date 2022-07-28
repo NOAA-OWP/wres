@@ -16,6 +16,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.stream.Stream;
 
 import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
@@ -363,7 +364,8 @@ public class DatacardSource implements Source
                                                         values,
                                                         lineNumber );
         TimeSeriesIngester ingester = this.getTimeSeriesIngester();
-        List<IngestResult> results = ingester.ingestSingleValuedTimeSeries( timeSeries, this.getDataSource() );
+        List<IngestResult> results = ingester.ingestSingleValuedTimeSeries( Stream.of( timeSeries ), 
+                                                                            this.getDataSource() );
 
         if ( LOGGER.isDebugEnabled() )
         {

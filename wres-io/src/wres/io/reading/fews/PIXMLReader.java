@@ -22,6 +22,7 @@ import java.util.Objects;
 import java.util.SortedMap;
 import java.util.StringJoiner;
 import java.util.TreeMap;
+import java.util.stream.Stream;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -915,7 +916,7 @@ public final class PIXMLReader extends XMLReader
 
         try
         {
-            List<IngestResult> ingestResults = timeSeriesIngester.ingestEnsembleTimeSeries( timeSeries,
+            List<IngestResult> ingestResults = timeSeriesIngester.ingestEnsembleTimeSeries( Stream.of( timeSeries ),
                                                                                             this.getDataSource() );
             this.ingested.addAll( ingestResults );
         }
@@ -940,7 +941,7 @@ public final class PIXMLReader extends XMLReader
         TimeSeriesIngester timeSeriesIngester = this.getTimeSeriesIngester();
         try
         {
-            List<IngestResult> ingestResults = timeSeriesIngester.ingestSingleValuedTimeSeries( timeSeries,
+            List<IngestResult> ingestResults = timeSeriesIngester.ingestSingleValuedTimeSeries( Stream.of( timeSeries ),
                                                                                                 this.getDataSource() );
             this.ingested.addAll( ingestResults );
         }

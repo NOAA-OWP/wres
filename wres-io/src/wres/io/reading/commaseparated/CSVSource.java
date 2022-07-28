@@ -25,6 +25,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
@@ -34,7 +35,6 @@ import static wres.datamodel.time.ReferenceTimeType.LATEST_OBSERVATION;
 import static wres.datamodel.time.ReferenceTimeType.UNKNOWN;
 
 import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -639,7 +639,6 @@ public class CSVSource implements Source
         }
     }
 
-
     /**
      * Create an ingester for the given timeseries and begin ingest, add the
      * future to this.ingests as a side-effect.
@@ -653,7 +652,7 @@ public class CSVSource implements Source
         TimeSeriesIngester timeSeriesIngester = this.getTimeSeriesIngester();
 
         Future<List<IngestResult>> futureIngestResult =
-                this.ingestSaverExecutor.submit( () -> timeSeriesIngester.ingestEnsembleTimeSeries( timeSeries,
+                this.ingestSaverExecutor.submit( () -> timeSeriesIngester.ingestEnsembleTimeSeries( Stream.of( timeSeries ),
                                                                                                     this.getDataSource() ) );
         this.addIngestResults( futureIngestResult );
     }
@@ -671,7 +670,7 @@ public class CSVSource implements Source
         TimeSeriesIngester timeSeriesIngester = this.getTimeSeriesIngester();
 
         Future<List<IngestResult>> futureIngestResult =
-                this.ingestSaverExecutor.submit( () -> timeSeriesIngester.ingestSingleValuedTimeSeries( timeSeries,
+                this.ingestSaverExecutor.submit( () -> timeSeriesIngester.ingestSingleValuedTimeSeries( Stream.of( timeSeries ),
                                                                                                         this.getDataSource() ) );
         this.addIngestResults( futureIngestResult );
     }

@@ -71,10 +71,13 @@ public class ObservationRetrieverTest
     private static final String SECOND_TIME = "2023-04-01T09:00:00Z";
     private static final String FIRST_TIME = "2023-04-01T03:00:00Z";
 
-    @Mock private SystemSettings mockSystemSettings;
+    @Mock
+    private SystemSettings mockSystemSettings;
     private wres.io.utilities.Database wresDatabase;
-    @Mock  private Executor mockExecutor;
-    @Mock private ProjectConfig mockProjectConfig;
+    @Mock
+    private Executor mockExecutor;
+    @Mock
+    private ProjectConfig mockProjectConfig;
     private Caches caches;
     private DatabaseLockManager lockManager;
     private TestDatabase testDatabase;
@@ -132,7 +135,7 @@ public class ObservationRetrieverTest
                .thenReturn( List.of() );
         Mockito.when( this.mockProjectConfig.getPair() )
                .thenReturn( pairConfig );
-        
+
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
         this.caches = Caches.of( this.wresDatabase, this.mockProjectConfig );
         this.lockManager = new DatabaseLockManagerNoop();
@@ -383,23 +386,27 @@ public class ObservationRetrieverTest
                 new ProjectConfig.Inputs( leftData.getContext(), rightData.getContext(), null );
         ProjectConfig fakeConfig = new ProjectConfig( fakeInputs, null, null, null, null, null );
         TimeSeries<Double> timeSeriesOne = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
-        TimeSeriesIngester ingesterOne = new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
-                                                                         .setDatabase( this.wresDatabase )
-                                                                         .setCaches( this.caches )
-                                                                         .setProjectConfig( fakeConfig )
-                                                                         .setLockManager( this.lockManager )
-                                                                         .build();
-        IngestResult ingestResultOne = ingesterOne.ingestSingleValuedTimeSeries( timeSeriesOne, leftData )
+        TimeSeriesIngester ingesterOne =
+                new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+                                                        .setDatabase( this.wresDatabase )
+                                                        .setCaches( this.caches )
+                                                        .setProjectConfig( fakeConfig )
+                                                        .setLockManager( this.lockManager )
+                                                        .build();
+        IngestResult ingestResultOne = ingesterOne.ingestSingleValuedTimeSeries( Stream.of( timeSeriesOne ),
+                                                                                 leftData )
                                                   .get( 0 );
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleOne( T0 );
 
-        TimeSeriesIngester ingesterTwo = new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
-                                                                         .setDatabase( this.wresDatabase )
-                                                                         .setCaches( this.caches )
-                                                                         .setProjectConfig( fakeConfig )
-                                                                         .setLockManager( this.lockManager )
-                                                                         .build();
-        IngestResult ingestResultTwo = ingesterTwo.ingestSingleValuedTimeSeries( timeSeriesTwo, rightData )
+        TimeSeriesIngester ingesterTwo =
+                new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+                                                        .setDatabase( this.wresDatabase )
+                                                        .setCaches( this.caches )
+                                                        .setProjectConfig( fakeConfig )
+                                                        .setLockManager( this.lockManager )
+                                                        .build();
+        IngestResult ingestResultTwo = ingesterTwo.ingestSingleValuedTimeSeries( Stream.of( timeSeriesTwo ),
+                                                                                 rightData )
                                                   .get( 0 );
 
         List<IngestResult> results = List.of( ingestResultOne,

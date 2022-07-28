@@ -1,6 +1,7 @@
 package wres.io.ingesting;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.time.TimeSeries;
@@ -22,7 +23,7 @@ public interface TimeSeriesIngester
      * @throws NullPointerException if any input is null
      */
 
-    List<IngestResult> ingestSingleValuedTimeSeries( TimeSeries<Double> timeSeries, DataSource dataSource );
+    List<IngestResult> ingestSingleValuedTimeSeries( Stream<TimeSeries<Double>> timeSeries, DataSource dataSource );
 
     /**
      * Ingests a time-series whose event values are {@link Ensemble}.
@@ -33,5 +34,5 @@ public interface TimeSeriesIngester
      * @throws NullPointerException if any input is null
      */
 
-    List<IngestResult> ingestEnsembleTimeSeries( TimeSeries<Ensemble> timeSeries, DataSource dataSource );
+    List<IngestResult> ingestEnsembleTimeSeries( Stream<TimeSeries<Ensemble>> timeSeries, DataSource dataSource );
 }

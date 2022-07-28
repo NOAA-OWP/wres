@@ -387,7 +387,8 @@ public class GriddedNWMSource implements Source
         for ( Stream<TimeSeries<Double>> nextStream : response.getTimeSeries().values() )
         {
             nextStream.forEach( timeSeries -> this.getTimeSeriesIngester()
-                                                  .ingestSingleValuedTimeSeries( timeSeries, this.getDataSource() ) );
+                                                  .ingestSingleValuedTimeSeries( Stream.of( timeSeries ), 
+                                                                                 this.getDataSource() ) );
         }
     }
 }

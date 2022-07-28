@@ -331,7 +331,7 @@ public class EnsembleForecastRetrieverTest
                                                                          .setProjectConfig( fakeConfig )
                                                                          .setLockManager( this.lockManager )
                                                                          .build();
-        IngestResult ingestResultOne = ingesterOne.ingestEnsembleTimeSeries( timeSeriesOne, rightData )
+        IngestResult ingestResultOne = ingesterOne.ingestEnsembleTimeSeries( Stream.of( timeSeriesOne ), rightData )
                                                   .get( 0 );
 
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
@@ -342,7 +342,7 @@ public class EnsembleForecastRetrieverTest
                                                                          .setProjectConfig( fakeConfig )
                                                                          .setLockManager( this.lockManager )
                                                                          .build();
-        IngestResult ingestResultTwo = ingesterTwo.ingestSingleValuedTimeSeries( timeSeriesTwo, leftData )
+        IngestResult ingestResultTwo = ingesterTwo.ingestSingleValuedTimeSeries( Stream.of( timeSeriesTwo ), leftData )
                                                   .get( 0 );
 
         List<IngestResult> results = List.of( ingestResultOne,

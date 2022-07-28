@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Stream;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -524,7 +525,8 @@ public class ReadValueManager
         TimeSeriesIngester ingester = this.getTimeSeriesIngester();
         try
         {
-            return ingester.ingestSingleValuedTimeSeries( timeSeries, this.dataSource );
+            return ingester.ingestSingleValuedTimeSeries( Stream.of( timeSeries ), 
+                                                          this.dataSource );
         }
         catch ( IngestException ie )
         {
