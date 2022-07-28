@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -153,7 +154,8 @@ public class WaterMLBasicSource implements Source
 
             for ( TimeSeries<Double> timeSeries : transformed )
             {
-                List<IngestResult> result = ingester.ingestSingleValuedTimeSeries( timeSeries, this.getDataSource() );
+                List<IngestResult> result = ingester.ingestSingleValuedTimeSeries( Stream.of( timeSeries ), 
+                                                                                   this.getDataSource() );
                 ingestResults.addAll( result );
             }
 

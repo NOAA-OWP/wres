@@ -20,6 +20,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.tuple.Pair;
@@ -570,8 +571,9 @@ public class NWMReader implements Callable<List<IngestResult>>
             // of the timeseries data as if it were a wres.source.
             TimeSeriesIngester ingester = this.getTimeSeriesIngester();
             Future<List<IngestResult>> future =
-                    this.getExecutor().submit( () -> ingester.ingestSingleValuedTimeSeries( entry.getValue(),
-                                                                                            innerDataSource ) );
+                    this.getExecutor()
+                        .submit( () -> ingester.ingestSingleValuedTimeSeries( Stream.of( entry.getValue() ),
+                                                                              innerDataSource ) );
             this.ingests.add( future );
             this.startGettingResults.countDown();
 
@@ -648,7 +650,7 @@ public class NWMReader implements Callable<List<IngestResult>>
             // of the timeseries data as if it were a wres.source.
             TimeSeriesIngester ingester = this.getTimeSeriesIngester();
             Future<List<IngestResult>> future =
-                    this.getExecutor().submit( () -> ingester.ingestEnsembleTimeSeries( entry.getValue(), 
+                    this.getExecutor().submit( () -> ingester.ingestEnsembleTimeSeries( Stream.of( entry.getValue() ), 
                                                                                         innerDataSource ) );
             this.ingests.add( future );
             this.startGettingResults.countDown();

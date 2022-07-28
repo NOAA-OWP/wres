@@ -18,6 +18,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.CountDownLatch;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -179,7 +181,42 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         Objects.requireNonNull( this.lockManager );
     }
 
+    @Override
+    public List<IngestResult> ingestSingleValuedTimeSeries( Stream<TimeSeries<Double>> timeSeries,
+                                                            DataSource dataSource )
+    {
+        Objects.requireNonNull( timeSeries );
+        Objects.requireNonNull( dataSource );
 
+        List<IngestResult> results = new ArrayList<>();
+        List<TimeSeries<Double>> listedSeries = timeSeries.collect( Collectors.toList() );
+        for ( TimeSeries<Double> nextSeries : listedSeries )
+        {
+            List<IngestResult> innerResults = this.ingestSingleValuedTimeSeries( nextSeries, dataSource );
+            results.addAll( innerResults );
+        }
+
+        return Collections.unmodifiableList( results );
+    }
+
+    @Override
+    public List<IngestResult> ingestEnsembleTimeSeries( Stream<TimeSeries<Ensemble>> timeSeries,
+                                                        DataSource dataSource )
+    {
+        Objects.requireNonNull( timeSeries );
+        Objects.requireNonNull( dataSource );
+
+        List<IngestResult> results = new ArrayList<>();
+        List<TimeSeries<Ensemble>> listedSeries = timeSeries.collect( Collectors.toList() );
+        for ( TimeSeries<Ensemble> nextSeries : listedSeries )
+        {
+            List<IngestResult> innerResults = this.ingestEnsembleTimeSeries( nextSeries, dataSource );
+            results.addAll( innerResults );
+        }
+
+        return Collections.unmodifiableList( results );
+    }
+    
     /**
      * Ingests a time-series whose events are {@link Double}.
      * @param timeSeries the time-series to ingest, not null
@@ -187,10 +224,10 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
      * @return the ingest results
      */
 
-    @Override
-    public List<IngestResult> ingestSingleValuedTimeSeries( TimeSeries<Double> timeSeries, DataSource dataSource )
+    private List<IngestResult> ingestSingleValuedTimeSeries( TimeSeries<Double> timeSeries, DataSource dataSource )
     {
         Objects.requireNonNull( timeSeries );
+        Objects.requireNonNull( dataSource );
         Objects.requireNonNull( timeSeries.getMetadata() );
         Objects.requireNonNull( timeSeries.getMetadata()
                                           .getFeature() );
@@ -236,10 +273,10 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
      * @return the ingest results
      */
 
-    @Override
-    public List<IngestResult> ingestEnsembleTimeSeries( TimeSeries<Ensemble> timeSeries, DataSource dataSource )
+    private List<IngestResult> ingestEnsembleTimeSeries( TimeSeries<Ensemble> timeSeries, DataSource dataSource )
     {
         Objects.requireNonNull( timeSeries );
+        Objects.requireNonNull( dataSource );
         Objects.requireNonNull( timeSeries.getMetadata() );
         Objects.requireNonNull( timeSeries.getMetadata()
                                           .getFeature() );

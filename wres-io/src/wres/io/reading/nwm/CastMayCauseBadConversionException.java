@@ -14,6 +14,8 @@ package wres.io.reading.nwm;
  */
 class CastMayCauseBadConversionException extends RuntimeException
 {
+    private static final long serialVersionUID = -8462859019280720864L;
+
     CastMayCauseBadConversionException( String message )
     {
         super( message );

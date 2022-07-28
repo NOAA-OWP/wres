@@ -515,38 +515,45 @@ public class AnalysisRetrieverTest
                                                                          .setLockManager( this.lockManager )
                                                                          .build();
 
-        IngestResult ingestResultOne = ingesterOne.ingestSingleValuedTimeSeries( timeSeriesOne, rightData )
+        IngestResult ingestResultOne = ingesterOne.ingestSingleValuedTimeSeries( Stream.of( timeSeriesOne ),
+                                                                                 rightData )
                                                   .get( 0 );
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleTwo( ANALYSIS_START_TIME );
 
-        TimeSeriesIngester ingesterTwo = new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
-                                                                         .setDatabase( this.wresDatabase )
-                                                                         .setCaches( this.caches )
-                                                                         .setProjectConfig( fakeConfig )
-                                                                         .setLockManager( this.lockManager )
-                                                                         .build();
-        IngestResult ingestResultTwo = ingesterTwo.ingestSingleValuedTimeSeries( timeSeriesTwo, rightData )
+        TimeSeriesIngester ingesterTwo =
+                new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+                                                        .setDatabase( this.wresDatabase )
+                                                        .setCaches( this.caches )
+                                                        .setProjectConfig( fakeConfig )
+                                                        .setLockManager( this.lockManager )
+                                                        .build();
+        IngestResult ingestResultTwo = ingesterTwo.ingestSingleValuedTimeSeries( Stream.of( timeSeriesTwo ),
+                                                                                 rightData )
                                                   .get( 0 );
         TimeSeries<Double> timeSeriesThree = RetrieverTestData.generateTimeSeriesDoubleThree( ANALYSIS_START_TIME );
 
-        TimeSeriesIngester ingesterThree = new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
-                                                                           .setDatabase( this.wresDatabase )
-                                                                           .setCaches( this.caches )
-                                                                           .setProjectConfig( fakeConfig )
-                                                                           .setLockManager( this.lockManager )
-                                                                           .build();
-        IngestResult ingestResultThree = ingesterThree.ingestSingleValuedTimeSeries( timeSeriesThree, rightData )
+        TimeSeriesIngester ingesterThree =
+                new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+                                                        .setDatabase( this.wresDatabase )
+                                                        .setCaches( this.caches )
+                                                        .setProjectConfig( fakeConfig )
+                                                        .setLockManager( this.lockManager )
+                                                        .build();
+        IngestResult ingestResultThree = ingesterThree.ingestSingleValuedTimeSeries( Stream.of( timeSeriesThree ),
+                                                                                     rightData )
                                                       .get( 0 );
 
         TimeSeries<Double> timeSeriesFour = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
 
-        TimeSeriesIngester ingesterFour = new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
-                                                                          .setDatabase( this.wresDatabase )
-                                                                          .setCaches( this.caches )
-                                                                          .setProjectConfig( fakeConfig )
-                                                                          .setLockManager( this.lockManager )
-                                                                          .build();
-        IngestResult ingestResultFour = ingesterFour.ingestSingleValuedTimeSeries( timeSeriesFour, leftData )
+        TimeSeriesIngester ingesterFour =
+                new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+                                                        .setDatabase( this.wresDatabase )
+                                                        .setCaches( this.caches )
+                                                        .setProjectConfig( fakeConfig )
+                                                        .setLockManager( this.lockManager )
+                                                        .build();
+        IngestResult ingestResultFour = ingesterFour.ingestSingleValuedTimeSeries( Stream.of( timeSeriesFour ),
+                                                                                   leftData )
                                                     .get( 0 );
 
         List<IngestResult> results = List.of( ingestResultOne,
