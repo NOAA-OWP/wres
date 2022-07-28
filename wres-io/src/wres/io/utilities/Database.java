@@ -41,7 +41,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import static java.time.ZoneOffset.UTC;
 
 import wres.io.concurrency.WRESCallable;
-import wres.io.concurrency.WRESRunnable;
+import wres.io.concurrency.WRESRunnableException;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.system.DatabaseType;
@@ -113,34 +113,6 @@ public class Database {
 	{
         this.storedIngestTasks.add(task);
 	}
-
-    /**
-     * Stores a simple task that will ingest data. The stored task will later be
-     * evaluated for completion.
-     * @param ingestTask A task that will ingest source data into the database
-     * @return The future result of the task
-     */
-    public Future<?> ingest(WRESRunnable ingestTask)
-	{
-        Future<?> result = this.execute( ingestTask );
-        this.storeIngestTask( result );
-		return result;
-	}
-
-    /**
-     * Stores a simple task that will ingest data. The stored task will later be
-     * evaluated for completion.
-     * @param <U> The type of value that the ingestTask should return
-     * @param ingestTask A task that will ingest source data into the database
-     * @return The future result of the task
-     */
-    public <U> Future<U> ingest(WRESCallable<U> ingestTask)
-	{
-        Future<U> result = this.submit( ingestTask );
-        this.storeIngestTask( result );
-		return result;
-	}
-
 
 	/**
 	 * Creates a new thread executor
@@ -863,24 +835,21 @@ public class Database {
      * @param <V> The type of value to return
      * @return A scheduled task that will return the value from the named field
      */
-    <V> Future<V> submit( final Query query, final String label, final boolean isHighPriority)
+    <V> Future<V> submit( final Query query, final String label, final boolean isHighPriority )
     {
         Database database = this;
-        WRESCallable<V> queryToSubmit = new WRESCallable<V>() {
+        WRESCallable<V> queryToSubmit = new WRESCallable<V>()
+        {
             @Override
             protected V execute() throws SQLException
             {
                 return database.retrieve( this.query, this.label, this.isHighPriority );
             }
 
-            @Override
-            protected Logger getLogger()
-            {
-                return LOGGER;
-            }
-
             private WRESCallable<V> init( Database database,
-                                          final Query query, final boolean isHighPriority, final String label)
+                                          final Query query,
+                                          final boolean isHighPriority,
+                                          final String label )
             {
                 this.database = database;
                 this.query = query;
@@ -904,37 +873,18 @@ public class Database {
      * @param isHighPriority Whether or not the query should be run on a high priority connection
      * @return The record for the scheduled task
      */
-    Future<?> issue(final Query query, final boolean isHighPriority)
+    Future<?> issue( final Query query, final boolean isHighPriority )
     {
-        Database database = this;
-        WRESRunnable queryToIssue = new WRESRunnable() {
-            @Override
-            protected void execute() throws SQLException
+        return this.execute( () -> {
+            try
             {
-                database.execute( this.query, this.isHighPriority );
+                this.execute( query, isHighPriority );
             }
-
-            @Override
-            protected Logger getLogger()
+            catch ( SQLException e )
             {
-                return LOGGER;
+                throw new WRESRunnableException( "Encountered an error while executing a database query.", e );
             }
-
-            WRESRunnable init( Database database,
-                               final Query query, final boolean isHighPriority)
-            {
-                this.database = database;
-                this.query = query;
-                this.isHighPriority = isHighPriority;
-                return this;
-            }
-
-            private Database database;
-            private Query query;
-            private boolean isHighPriority;
-        }.init( database, query, isHighPriority);
-
-        return this.execute( queryToIssue );
+        } );
     }
 
     /**

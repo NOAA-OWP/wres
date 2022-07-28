@@ -2,6 +2,7 @@ package wres.io.reading.nwm;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -19,7 +20,7 @@ import org.slf4j.LoggerFactory;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.NetcdfFiles;
 import ucar.nc2.Variable;
-
+import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.UnnamedFeature;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -41,8 +42,9 @@ import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.IngestResultInMemory;
 import wres.io.ingesting.PreIngestException;
 import wres.io.ingesting.TimeSeriesIngester;
-import wres.io.reading.BasicSource;
 import wres.io.reading.DataSource;
+import wres.io.reading.ReadException;
+import wres.io.reading.Source;
 import wres.io.retrieval.DataAccessException;
 import wres.io.utilities.Database;
 import wres.system.ProgressMonitor;
@@ -57,20 +59,23 @@ import wres.util.NetCDF;
  * @author ctubbs
  * @author James Brown
  */
-public class GriddedNWMSource extends BasicSource
+public class GriddedNWMSource implements Source
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( GriddedNWMSource.class );
     private static final int MAXIMUM_OPEN_ATTEMPTS = 5;
-
+    private static final Object FEATURE_GUARD = new Object();
+    private static final Set<FeatureKey> GRIDDED_FEATURES = new HashSet<>();
+    private static final AtomicReference<ProjectConfig> FEATURE_REFERENCE = new AtomicReference<>();
+    
     private final SystemSettings systemSettings;
     private final Database database;
 
     private final Caches caches;
-    private boolean alreadyFound;
     private final TimeSeriesIngester timeSeriesIngester;
-    private static final Object FEATURE_GUARD = new Object();
-    private static final Set<FeatureKey> GRIDDED_FEATURES = new HashSet<>();
-    private static final AtomicReference<ProjectConfig> FEATURE_REFERENCE = new AtomicReference<>();
+    private final DataSource dataSource;
+    private final ProjectConfig projectConfig;
+
+    private boolean alreadyFound;
 
     /**
      * @param timeSeriesIngester the time-series ingester
@@ -87,10 +92,10 @@ public class GriddedNWMSource extends BasicSource
                              ProjectConfig projectConfig,
                              DataSource dataSource )
     {
-        super( projectConfig, dataSource );
-
         Objects.requireNonNull( timeSeriesIngester );
         Objects.requireNonNull( systemSettings );
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( dataSource );
 
         if ( !systemSettings.isInMemory() )
         {
@@ -107,25 +112,52 @@ public class GriddedNWMSource extends BasicSource
         this.database = database;
         this.caches = caches;
         this.timeSeriesIngester = timeSeriesIngester;
+        this.dataSource = dataSource;
+        this.projectConfig = projectConfig;
     }
 
+    /**
+     * @return the system settings
+     */
     private SystemSettings getSystemSettings()
     {
         return this.systemSettings;
     }
 
+    /**
+     * @return the database
+     */
     private Database getDatabase()
     {
         return this.database;
     }
 
+    /**
+     * @return the caches
+     */
     private Caches getCaches()
     {
         return this.caches;
     }
 
+    /**
+     * @return the data source
+     */
+    private DataSource getDataSource()
+    {
+        return this.dataSource;
+    }
+    
+    /**
+     * @return the project declaration
+     */
+    private ProjectConfig getProjectConfig()
+    {
+        return this.projectConfig;
+    }
+    
     @Override
-    public List<IngestResult> save() throws IOException
+    public List<IngestResult> save()
     {
         int tryCount = 0;
 
@@ -133,7 +165,7 @@ public class GriddedNWMSource extends BasicSource
 
         while ( true )
         {
-            try ( NetcdfFile source = NetcdfFiles.open( this.getFilename().toString() ) )
+            try ( NetcdfFile source = NetcdfFiles.open( this.getFileName().toString() ) )
             {
                 saved = saveNetCDF( source );
                 break;
@@ -143,18 +175,29 @@ public class GriddedNWMSource extends BasicSource
                 if ( exception.getCause() instanceof SocketTimeoutException &&
                      tryCount < MAXIMUM_OPEN_ATTEMPTS )
                 {
-                    LOGGER.error( "Connection to the NWM file at '{}' failed.", this.getFilename() );
+                    LOGGER.error( "Connection to the NWM file at '{}' failed.", this.getFileName() );
                     tryCount++;
-                    continue;
                 }
-
-                throw exception;
+                else
+                {
+                    throw new ReadException( "Failed to read a gridded NWM source.", exception );
+                }
             }
         }
 
         return saved;
     }
 
+    /**
+     * @return the file name
+     */
+    
+    private URI getFileName()
+    {
+        return this.getDataSource()
+                   .getUri();
+    }
+    
     /**
      * @return the time-series ingester
      */
@@ -175,11 +218,13 @@ public class GriddedNWMSource extends BasicSource
     {
         Objects.requireNonNull( source );
 
-        Variable var = NetCDF.getVariable( source, this.getSpecifiedVariableName() );
-        String hash = this.getHash();
-
-        if ( var != null )
+        String variableName = ConfigHelper.getVariableName( this.getDataSource()
+                                                                .getContext() );
+        
+        if ( Objects.nonNull( variableName ) )
         {
+            Variable var = NetCDF.getVariable( source, variableName );
+
             if ( !NetCDF.isGridded( var ) )
             {
                 throw new UnsupportedOperationException( "Vector netCDF ingest now uses a different declaration. "
@@ -190,9 +235,9 @@ public class GriddedNWMSource extends BasicSource
 
             WRESCallable<List<IngestResult>> saver;
 
-            hash = NetCDF.getGriddedUniqueIdentifier( source,
-                                                      this.getFilename(),
-                                                      var.getShortName() );
+            String hash = NetCDF.getGriddedUniqueIdentifier( source,
+                                                             this.getFileName(),
+                                                             var.getShortName() );
 
             // In memory evaluation?
             // TODO: if/when gridded time-series are treated like any other time-series, this special handling of
@@ -251,16 +296,17 @@ public class GriddedNWMSource extends BasicSource
                                                .stream()
                                                .map( Variable::getShortName )
                                                .collect( Collectors.toList() );
+            
             throw new PreIngestException( "The NetCDF file at '" +
-                                          this.getFilename()
+                                          this.getFileName()
                                           + "' did not contain the "
                                           + "requested variable, "
-                                          + this.getSpecifiedVariableName()
+                                          + variableName
                                           + ". Available variables: "
                                           + variableNames );
         }
     }
-
+    
     /**
      * Ingest the gridded data.
      * @param file the file source
@@ -315,9 +361,12 @@ public class GriddedNWMSource extends BasicSource
         String pathString = path.toString();
         TimeScaleOuter timeScale = null;
 
-        if ( Objects.nonNull( this.getDataSourceConfig().getExistingTimeScale() ) )
+        DataSourceConfig dataSourceConfig = this.getDataSource()
+                                                .getContext();
+        
+        if ( Objects.nonNull( dataSourceConfig.getExistingTimeScale() ) )
         {
-            timeScale = TimeScaleOuter.of( this.getDataSourceConfig().getExistingTimeScale() );
+            timeScale = TimeScaleOuter.of( dataSourceConfig.getExistingTimeScale() );
         }
 
         // Time window constrained only by the pair declaration
@@ -330,7 +379,7 @@ public class GriddedNWMSource extends BasicSource
                                                       .getVariable()
                                                       .getValue(),
                                                   timeWindow,
-                                                  ConfigHelper.isForecast( this.getDataSourceConfig() ),
+                                                  ConfigHelper.isForecast( dataSourceConfig ),
                                                   timeScale );
 
         // Acquire the response and ingest the time-series

@@ -23,7 +23,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.TimeSeries;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
@@ -31,8 +30,9 @@ import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
 import wres.io.ingesting.TimeSeriesIngester;
-import wres.io.reading.BasicSource;
 import wres.io.reading.DataSource;
+import wres.io.reading.ReadException;
+import wres.io.reading.Source;
 import wres.io.utilities.WebClient;
 import wres.io.utilities.Database;
 
@@ -40,7 +40,7 @@ import wres.io.utilities.Database;
  * Adapter from BasicSource to WaterMLSource (to fit pattern in ReaderFactory).
  */
 
-public class WaterMLBasicSource extends BasicSource
+public class WaterMLBasicSource implements Source
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WaterMLBasicSource.class );
     private static final WebClient WEB_CLIENT = new WebClient();
@@ -49,16 +49,16 @@ public class WaterMLBasicSource extends BasicSource
                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
 
     private final TimeSeriesIngester timeSeriesIngester;
+    private final DataSource dataSource;
 
     public WaterMLBasicSource( TimeSeriesIngester timeSeriesIngester,
-                               ProjectConfig projectConfig,
                                DataSource dataSource )
     {
-        super( projectConfig, dataSource );
-        
         Objects.requireNonNull( timeSeriesIngester );
-
+        Objects.requireNonNull( dataSource );
+        
         this.timeSeriesIngester = timeSeriesIngester;
+        this.dataSource = dataSource;
     }
 
     private TimeSeriesIngester getTimeSeriesIngester()
@@ -67,9 +67,16 @@ public class WaterMLBasicSource extends BasicSource
     }
     
     @Override
-    public List<IngestResult> save() throws IOException
+    public List<IngestResult> save()
     {
-        return this.ingest();
+        try
+        {
+            return this.ingest();
+        }
+        catch ( IOException e )
+        {
+            throw new ReadException( "Failed to read a Water ML source.", e );
+        }
     }
 
     private Pair<Response, SourceDetails> deserializeInput(URI location) throws IOException {
@@ -184,6 +191,13 @@ public class WaterMLBasicSource extends BasicSource
         return new FileInputStream( forecastFile );
     }
 
+    /**
+     * @return the data source
+     */
+    private DataSource getDataSource()
+    {
+        return this.dataSource;
+    }
 
     /**
      * This method facilitates testing, Pattern 1 at

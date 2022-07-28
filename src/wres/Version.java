@@ -118,7 +118,7 @@ public class Version
                  && !lowerCaseName.startsWith( "java.specification" )
                  && !lowerCaseName.contains( "printer" ) )
             {
-                s.add( propertyName + ": " + System.getProperty( propertyName ) );
+                s.add( propertyName + "=" + System.getProperty( propertyName ) );
             }
         }
 

@@ -1,4 +1,4 @@
-package wres.io.reading;
+package wres.io.reading.wrds.nwm;
 
 import java.io.IOException;
 import java.net.URI;
@@ -36,13 +36,11 @@ import wres.config.generated.DatasourceType;
 import wres.config.generated.Feature;
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.PairConfig;
-import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
-import wres.io.ingesting.DatabaseTimeSeriesIngester;
 import wres.io.ingesting.TimeSeriesIngester;
+import wres.io.reading.DataSource;
 import wres.system.SystemSettings;
 
 public class WrdsNwmReaderTest
@@ -170,41 +168,12 @@ public class WrdsNwmReaderTest
                                                         null,
                                                         null );
 
-        ProjectConfig.Inputs inputs = new ProjectConfig.Inputs( null,
-                                                                config,
-                                                                null );
-
         Feature featureConfig = new Feature( Integer.toString( NWM_FEATURE_ID ),
                                              Integer.toString( NWM_FEATURE_ID ),
                                              null );
 
         List<Feature> features = new ArrayList<>( 1 );
         features.add( featureConfig );
-        PairConfig pairConfig = new PairConfig( "CMS",
-                                                null,
-                                                null,
-                                                features,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null );
-
-        ProjectConfig projectConfig = new ProjectConfig( inputs,
-                                                         pairConfig,
-                                                         null,
-                                                         null,
-                                                         null,
-                                                         null );
 
         DataSource dataSource = DataSource.of( COMPLEX,
                                                confSource,
@@ -215,7 +184,6 @@ public class WrdsNwmReaderTest
                                                LeftOrRightOrBaseline.RIGHT );
 
         WrdsNwmReader reader = Mockito.spy( new WrdsNwmReader( this.mockTimeSeriesIngester,
-                                                               projectConfig,
                                                                dataSource,
                                                                this.systemSettings ) );
 
@@ -328,41 +296,12 @@ public class WrdsNwmReaderTest
                                                         null,
                                                         null );
 
-        ProjectConfig.Inputs inputs = new ProjectConfig.Inputs( null,
-                                                                config,
-                                                                null );
-
         Feature featureConfig = new Feature( Integer.toString( NWM_FEATURE_ID ),
                                              Integer.toString( NWM_FEATURE_ID ),
                                              null );
 
         List<Feature> features = new ArrayList<>( 1 );
         features.add( featureConfig );
-        PairConfig pairConfig = new PairConfig( "CMS",
-                                                null,
-                                                null,
-                                                features,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null );
-
-        ProjectConfig projectConfig = new ProjectConfig( inputs,
-                                                         pairConfig,
-                                                         null,
-                                                         null,
-                                                         null,
-                                                         null );
 
         DataSource dataSource = DataSource.of( COMPLEX,
                                                confSource,
@@ -373,7 +312,6 @@ public class WrdsNwmReaderTest
                                                LeftOrRightOrBaseline.RIGHT );
 
         WrdsNwmReader reader = Mockito.spy( new WrdsNwmReader( this.mockTimeSeriesIngester,
-                                                               projectConfig,
                                                                dataSource,
                                                                this.systemSettings ) );
 

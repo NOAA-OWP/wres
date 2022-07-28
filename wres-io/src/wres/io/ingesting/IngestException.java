@@ -20,6 +20,8 @@ package wres.io.ingesting;
 
 public class IngestException extends RuntimeException
 {
+    private static final long serialVersionUID = -5909142292756194892L;
+
     public IngestException( String message, Throwable cause )
     {
         super( message, cause );

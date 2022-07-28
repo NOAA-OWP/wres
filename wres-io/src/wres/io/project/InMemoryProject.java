@@ -1074,12 +1074,7 @@ public class InMemoryProject implements Project
      */
     private String getDeclaredLeftVariableName()
     {
-        if ( Objects.nonNull( this.getLeft().getVariable() ) )
-        {
-            return this.getLeft().getVariable().getValue();
-        }
-
-        return null;
+        return ConfigHelper.getVariableName( this.getLeft() );
     }
 
     /**
@@ -1088,12 +1083,7 @@ public class InMemoryProject implements Project
      */
     private String getDeclaredRightVariableName()
     {
-        if ( Objects.nonNull( this.getRight().getVariable() ) )
-        {
-            return this.getRight().getVariable().getValue();
-        }
-
-        return null;
+        return ConfigHelper.getVariableName( this.getRight() );
     }
 
     /**
@@ -1102,12 +1092,14 @@ public class InMemoryProject implements Project
      */
     private String getDeclaredBaselineVariableName()
     {
-        if ( this.hasBaseline() && Objects.nonNull( this.getBaseline().getVariable() ) )
+        String variableName = null;
+        
+        if ( this.hasBaseline() )
         {
-            return this.getBaseline().getVariable().getValue();
+            variableName = ConfigHelper.getVariableName( this.getBaseline() );
         }
 
-        return null;
+        return variableName;
     }
 
     /**

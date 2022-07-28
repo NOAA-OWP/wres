@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -42,7 +43,6 @@ import wres.io.concurrency.WRESCallable;
 import wres.io.concurrency.ZippedPIXMLIngest;
 import wres.io.data.caching.Caches;
 import wres.io.ingesting.IngestResult;
-import wres.io.ingesting.IngestSaver;
 import wres.io.ingesting.PreIngestException;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.DataSource.DataDisposition;
@@ -57,7 +57,8 @@ import wres.system.SystemSettings;
  *
  * One-shot save. Closes internal executors at the end of first save() call.
  */
-public class ZippedSource extends BasicSource {
+public class ZippedSource implements Source 
+{
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ZippedSource.class);
 
@@ -74,6 +75,9 @@ public class ZippedSource extends BasicSource {
     private final Queue<URI> savedFiles = new LinkedList<>();
     private final DatabaseLockManager lockManager;
     private final TimeSeriesIngester timeSeriesIngester;
+    private final String absoluteFileName;
+    private final DataSource dataSource;
+    private final ProjectConfig projectConfig;
 
     private ThreadPoolExecutor createReaderService( SystemSettings systemSettings )
     {
@@ -124,41 +128,6 @@ public class ZippedSource extends BasicSource {
         }
     }
 
-    private Future<List<IngestResult>> getIngestTask()
-    {
-        return tasks.poll();
-    }
-
-	/**
-	 * Constructor.
-	 * @param timeSeriesIngester the time-series ingester
-	 * @param systemSettings the system settings
-	 * @param database the database
-	 * @param caches the caches/ORMs
-	 * @param projectConfig the project declaration
-	 * @param dataSource the data source
-	 * @param lockManager the lock manager
-	 */
-
-    ZippedSource( TimeSeriesIngester timeSeriesIngester,
-                  SystemSettings systemSettings,
-                  Database database,
-                  Caches caches,
-                  ProjectConfig projectConfig,
-                  DataSource dataSource,
-                  DatabaseLockManager lockManager )
-    {
-        super( projectConfig,
-               dataSource );
-        this.systemSettings = systemSettings;
-        this.database = database;
-        this.caches = caches;
-        this.lockManager = lockManager;
-        this.readerService = createReaderService( systemSettings );
-        this.startGettingOnTasks = new CountDownLatch( systemSettings.maximumArchiveThreads() );
-        this.timeSeriesIngester = timeSeriesIngester;
-    }
-
     private TimeSeriesIngester getTimeSeriesIngester()
     {
         return this.timeSeriesIngester;
@@ -184,6 +153,45 @@ public class ZippedSource extends BasicSource {
         return this.lockManager;
     }
     
+    private Future<List<IngestResult>> getIngestTask()
+    {
+        return tasks.poll();
+    }
+
+    /**
+     * @return the file name
+     */
+    
+    private URI getFileName()
+    {
+        return this.getDataSource()
+                   .getUri();
+    }
+    
+    /**
+     * @return the data source
+     */
+    private DataSource getDataSource()
+    {
+        return this.dataSource;
+    }
+    
+    /**
+     * @return the project declaration
+     */
+    private ProjectConfig getProjectConfig()
+    {
+        return this.projectConfig;
+    }
+    
+    /**
+     * @return The absolute path of the file to read
+     */
+    private String getAbsoluteFilename()
+    {
+        return this.absoluteFileName;
+    }
+    
     private List<IngestResult> issue( DataSource dataSource )
     {
         List<IngestResult> result;
@@ -195,7 +203,7 @@ public class ZippedSource extends BasicSource {
         {
             nameInside = decompressedFileStream.getMetaData()
                                                .getFilename();
-            URI mashupUri = URI.create( this.getFilename() + "/" + nameInside );
+            URI mashupUri = URI.create( this.getFileName() + "/" + nameInside );
             DataSource.DataDisposition disposition = DataSource.detectFormat( bufferedStream,
                                                                               mashupUri );
             // TODO: Split tar code out of this class for plain tar processing
@@ -223,18 +231,16 @@ public class ZippedSource extends BasicSource {
                                                                dataSource.getLinks(),
                                                                tempFileLocation,
                                                                dataSource.getLeftOrRightOrBaseline() );
-                IngestSaver ingestSaver =
-                        new IngestSaver.Builder().withSystemSettings( this.getSystemSettings() )
-                                                 .withDatabase( this.getDatabase() )
-                                                 .withCaches( this.getCaches() )
-                                                 .withProject( this.getProjectConfig() )
-                                                 .withDataSource( decompressedSource )
-                                                 .withoutHash()
-                                                 .withProgressMonitoring()
-                                                 .withLockManager( this.getLockManager() )
-                                                 .withTimeSeriesIngester( this.getTimeSeriesIngester() )
-                                                 .build();
-                result = ingestSaver.call();
+
+                Source reader = ReaderFactory.getReader( this.getTimeSeriesIngester(),
+                                                         this.getSystemSettings(),
+                                                         this.getDatabase(),
+                                                         this.getCaches(),
+                                                         this.getProjectConfig(),
+                                                         decompressedSource,
+                                                         this.getLockManager() );
+
+                result = reader.save();
             }
         }
         catch ( IOException | RuntimeException e )
@@ -249,7 +255,7 @@ public class ZippedSource extends BasicSource {
                                           + nameInside, e );
         }
 
-        LOGGER.debug("Finished parsing '{}'", this.getFilename());
+        LOGGER.debug("Finished parsing '{}'", this.getFileName());
         return result;
     }
 
@@ -435,18 +441,16 @@ public class ZippedSource extends BasicSource {
                                                         this.getDataSource()
                                                             .getLeftOrRightOrBaseline() );
             ProgressMonitor.increment();
-            Callable<List<IngestResult>> task =
-                    new IngestSaver.Builder().withSystemSettings( this.getSystemSettings() )
-                                             .withDatabase( this.getDatabase() )
-                                             .withCaches( this.getCaches() )
-                                             .withProject( this.getProjectConfig() )
-                                             .withDataSource( innerDataSource )
-                                             .withoutHash()
-                                             .withProgressMonitoring()
-                                             .withLockManager( this.getLockManager() )
-                                             .withTimeSeriesIngester( this.getTimeSeriesIngester() )
-                                             .build();
-            this.addIngestTask(task);
+
+            Source reader = ReaderFactory.getReader( this.getTimeSeriesIngester(),
+                                                     this.getSystemSettings(),
+                                                     this.getDatabase(),
+                                                     this.getCaches(),
+                                                     this.getProjectConfig(),
+                                                     innerDataSource,
+                                                     this.getLockManager() );
+            
+            this.addIngestTask( () -> reader.save() );
         }
 
         return bytesRead;
@@ -503,5 +507,50 @@ public class ZippedSource extends BasicSource {
                          incompleteTasks.size(),
                          this.getDataSource().getUri() );
         }
+    }
+    
+    /**
+     * Constructor.
+     * @param timeSeriesIngester the time-series ingester
+     * @param systemSettings the system settings
+     * @param database the database
+     * @param caches the caches/ORMs
+     * @param projectConfig the project declaration
+     * @param dataSource the data source
+     * @param lockManager the lock manager
+     */
+
+    ZippedSource( TimeSeriesIngester timeSeriesIngester,
+                  SystemSettings systemSettings,
+                  Database database,
+                  Caches caches,
+                  ProjectConfig projectConfig,
+                  DataSource dataSource,
+                  DatabaseLockManager lockManager )
+    {
+        Objects.requireNonNull( timeSeriesIngester );
+        Objects.requireNonNull( systemSettings );
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( dataSource );
+        
+        if( !systemSettings.isInMemory() )
+        {
+            Objects.requireNonNull( database );
+            Objects.requireNonNull( caches );
+            Objects.requireNonNull( lockManager );
+        }
+        
+        this.systemSettings = systemSettings;
+        this.database = database;
+        this.caches = caches;
+        this.lockManager = lockManager;
+        this.readerService = createReaderService( systemSettings );
+        this.startGettingOnTasks = new CountDownLatch( systemSettings.maximumArchiveThreads() );
+        this.timeSeriesIngester = timeSeriesIngester;
+        this.dataSource = dataSource;
+        this.projectConfig = projectConfig;
+        this.absoluteFileName = Paths.get( this.getFileName() )
+                                               .toAbsolutePath()
+                                               .toString();
     }
 }

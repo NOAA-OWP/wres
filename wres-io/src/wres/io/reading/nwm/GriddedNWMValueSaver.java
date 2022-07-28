@@ -265,7 +265,7 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
         {
             Downloader downloader = new Downloader( Paths.get( this.fileName ), originalPath );
             downloader.setDisplayOutput( false );
-            downloader.execute();
+            downloader.run();
 
             if ( !downloader.fileHasBeenDownloaded() )
             {
@@ -278,9 +278,9 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
     {
         if ( this.source == null )
         {
-            this.getLogger().trace( "Now opening '{}'...", this.fileName );
+            LOGGER.trace( "Now opening '{}'...", this.fileName );
             this.source = NetcdfFiles.open( this.fileName.toString() );
-            this.getLogger().trace( "'{}' has been opened for parsing.", this.fileName );
+            LOGGER.trace( "'{}' has been opened for parsing.", this.fileName );
         }
         return this.source;
     }
@@ -292,11 +292,5 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
             this.source.close();
             this.source = null;
         }
-    }
-
-    @Override
-    protected Logger getLogger()
-    {
-        return GriddedNWMValueSaver.LOGGER;
     }
 }

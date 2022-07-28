@@ -1,4 +1,4 @@
-package wres.io.reading;
+package wres.io.reading.wrds.nwm;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DatasourceType;
 import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -49,19 +48,13 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.Builder;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.io.config.ConfigHelper;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
 import wres.io.ingesting.TimeSeriesIngester;
+import wres.io.reading.DataSource;
 import wres.io.reading.wrds.ReadValueManager;
 import wres.io.reading.wrds.TimeScaleFromParameterCodes;
-import wres.io.reading.wrds.nwm.NwmDataPoint;
-import wres.io.reading.wrds.nwm.NwmFeature;
-import wres.io.reading.wrds.nwm.NwmForecast;
-import wres.io.reading.wrds.nwm.NwmMember;
-import wres.io.reading.wrds.nwm.NwmRootDocument;
-import wres.io.reading.wrds.nwm.NwmRootDocumentWithError;
 import wres.io.utilities.WebClient;
 import wres.statistics.generated.Geometry;
 import wres.system.SystemSettings;
@@ -79,6 +72,7 @@ import wres.system.SystemSettings;
 
 public class WrdsNwmReader implements Callable<List<IngestResult>>
 {
+    private static final String NO_MEMBERS_FOUND_IN_WRDS_NWM_DATA = "No members found in WRDS NWM data";
     private static final Logger LOGGER = LoggerFactory.getLogger( WrdsNwmReader.class );
     private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT;
     
@@ -101,7 +95,6 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
             new ObjectMapper().registerModule( new JavaTimeModule() )
                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
 
-    private final ProjectConfig projectConfig;
     private final DataSource dataSource;
     private final URI uri;
 
@@ -111,23 +104,22 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
     private final TimeSeriesIngester timeSeriesIngester;
 
     public WrdsNwmReader( TimeSeriesIngester timeSeriesIngester,
-                          ProjectConfig projectConfig,
                           DataSource dataSource,
                           SystemSettings systemSettings )
     {
         Objects.requireNonNull( timeSeriesIngester );
         Objects.requireNonNull( dataSource );
-        Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( systemSettings );
 
         this.dataSource = dataSource;
         this.uri = dataSource.getUri();
         this.timeSeriesIngester = timeSeriesIngester;
-        this.projectConfig = projectConfig;
 
         DatasourceType type = dataSource.getContext()
                                         .getType();
 
+        LeftOrRightOrBaseline lrb = dataSource.getLeftOrRightOrBaseline();
+        
         // Yucky brittle check, remove when the type declaration is removed.
         if ( this.getUri()
                  .getPath()
@@ -139,9 +131,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                  && !type.equals( DatasourceType.SIMULATIONS )
                  && !type.equals( DatasourceType.OBSERVATIONS ) )
             {
-                throw new UnsupportedOperationException(
-                                                         ConfigHelper.getLeftOrRightOrBaseline( this.projectConfig,
-                                                                                                this.dataSource.getContext() )
+                throw new UnsupportedOperationException( lrb
                                                          + " source specified type '"
                                                          + type.value()
                                                          + "' but the word 'short_range' appeared in the URI. "
@@ -156,9 +146,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                   && !type.equals( DatasourceType.ENSEMBLE_FORECASTS )
                   && !type.equals( DatasourceType.SINGLE_VALUED_FORECASTS ) )
         {
-            throw new UnsupportedOperationException(
-                                                     ConfigHelper.getLeftOrRightOrBaseline( this.projectConfig,
-                                                                                            this.dataSource.getContext() )
+            throw new UnsupportedOperationException( lrb
                                                      + " source specified type '"
                                                      + type.value()
                                                      + "' but the word 'medium_range' appeared in the URI. "
@@ -169,9 +157,6 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         // Could be an NPE, but the data source is not null and the nullity of the variable is an effect, not a cause
         if ( Objects.isNull( this.dataSource.getVariable() ) )
         {
-            LeftOrRightOrBaseline lrb = ConfigHelper.getLeftOrRightOrBaseline( this.projectConfig,
-                                                                               this.dataSource.getContext() );
-
             throw new IllegalArgumentException( "A variable must be declared for a WRDS NWM source but no "
                                                 + "variable was found for the "
                                                 + lrb
@@ -183,8 +168,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         }
 
         // See comments in wres.io.reading.WebSource for info on below approach.
-        ThreadFactory wrdsNwmReaderIngest = new BasicThreadFactory.Builder()
-                                                                            .namingPattern( "WrdsNwmReader Ingest %d" )
+        ThreadFactory wrdsNwmReaderIngest = new BasicThreadFactory.Builder().namingPattern( "WrdsNwmReader Ingest %d" )
                                                                             .build();
 
         // As of 2.1, the SystemSetting is used in two different NWM readers:
@@ -216,38 +200,44 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
     {
         return this.timeSeriesIngester;
     }
+    
+    private static boolean getTrackTimings()
+    {
+        return TRACK_TIMINGS;
+    }
 
     @Override
     public List<IngestResult> call()
     {
         List<IngestResult> ingested = new ArrayList<>();
         NwmRootDocument document;
-        URI uri = this.getUri();
-        
-        if ( uri.getScheme().startsWith( "file" ) )
+        URI innerUri = this.getUri();
+
+        if ( innerUri.getScheme().startsWith( "file" ) )
         {
-            document = this.readNwmRootDocumentFromFile( uri );
+            document = this.readNwmRootDocumentFromFile( innerUri );
         }
         else
         {
-            document = this.readNwmRootDocumentFromWebSource( uri );
+            document = this.readNwmRootDocumentFromWebSource( innerUri );
         }
-        
+
         if ( Objects.isNull( document ) )
         {
-            LOGGER.debug( "Failed to read a root document from {}.", uri );
+            LOGGER.debug( "Failed to read a root document from {}.", innerUri );
             return Collections.emptyList();
         }
-        
+
         List<String> wrdsWarnings = document.getWarnings();
 
         if ( wrdsWarnings != null && !wrdsWarnings.isEmpty() )
         {
             LOGGER.warn( "These warnings were in the document from {}: {}",
-                         uri, wrdsWarnings );
+                         innerUri,
+                         wrdsWarnings );
         }
 
-        Map<String,String> variable = document.getVariable();
+        Map<String, String> variable = document.getVariable();
 
         if ( variable == null
              || variable.isEmpty()
@@ -260,7 +250,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                           + "ensure the most up-to-date base "
                                           + "URL is declared in the source tag."
                                           + " The invalid document was from "
-                                          + uri );
+                                          + innerUri );
         }
 
         String variableName = variable.get( "name" );
@@ -277,20 +267,21 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                           + "documentation to ensure the most "
                                           + "up-to-date base URL is declared in"
                                           + " the source tag. The invalid "
-                                          + "document was from " + uri );
+                                          + "document was from "
+                                          + innerUri );
         }
 
         // Time scale if available
         TimeScaleOuter timeScale = null;
- 
-        if( Objects.nonNull( document.getParameterCodes() ) )
+
+        if ( Objects.nonNull( document.getParameterCodes() ) )
         {
-            timeScale = TimeScaleFromParameterCodes.getTimeScale( document.getParameterCodes(), uri );
+            timeScale = TimeScaleFromParameterCodes.getTimeScale( document.getParameterCodes(), innerUri );
             LOGGER.debug( "{}{}{}{}",
-                         "While processing source ",
-                         uri,
-                         " discovered a time scale of ",
-                         timeScale );
+                          "While processing source ",
+                          innerUri,
+                          " discovered a time scale of ",
+                          timeScale );
         }
 
         try
@@ -318,7 +309,8 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
             if ( emptyTimeseriesCount > 0 )
             {
                 LOGGER.warn( "Skipped {} empty timeseries from {}",
-                             emptyTimeseriesCount, uri );
+                             emptyTimeseriesCount,
+                             innerUri );
             }
 
             // Finish getting the remainder of ingest results.
@@ -330,14 +322,15 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         }
         catch ( InterruptedException ie )
         {
-            String message = "Interrupted while ingesting NWM data from " + uri;
+            String message = "Interrupted while ingesting NWM data from " + innerUri;
             LOGGER.warn( message, ie );
             Thread.currentThread().interrupt();
         }
         catch ( ExecutionException ee )
         {
             throw new IngestException( "Failed to ingest NWM data from "
-                                       + uri, ee );
+                                       + innerUri,
+                                       ee );
         }
         finally
         {
@@ -379,13 +372,13 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                                        variableName,
                                                        measurementUnit );
 
-            TimeSeriesIngester timeSeriesIngester = this.createTimeSeriesIngester( timeSeries );
+            TimeSeriesIngester ingester = this.createTimeSeriesIngester( timeSeries );
 
             if ( !timeSeries.getEvents().isEmpty() )
             {
                 futureIngestResult =
-                        this.ingestSaverExecutor.submit( () -> timeSeriesIngester.ingestSingleValuedTimeSeries( timeSeries,
-                                                                                                                this.dataSource ) );
+                        this.ingestSaverExecutor.submit( () -> ingester.ingestSingleValuedTimeSeries( timeSeries,
+                                                                                                      this.dataSource ) );
             }
         }
         // Ensemble
@@ -398,19 +391,19 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                                    variableName,
                                                    measurementUnit );
 
-            TimeSeriesIngester timeSeriesIngester = this.createTimeSeriesIngester( timeSeries );
+            TimeSeriesIngester ingester = this.createTimeSeriesIngester( timeSeries );
 
             if ( !timeSeries.getEvents().isEmpty() )
             {
                 futureIngestResult =
-                        this.ingestSaverExecutor.submit( () -> timeSeriesIngester.ingestEnsembleTimeSeries( timeSeries,
-                                                                                                            this.dataSource ) );
+                        this.ingestSaverExecutor.submit( () -> ingester.ingestEnsembleTimeSeries( timeSeries,
+                                                                                                  this.dataSource ) );
             }
         }
         // No members
         else
         {
-            throw new PreIngestException( "No members found in WRDS NWM data" );
+            throw new PreIngestException( NO_MEMBERS_FOUND_IN_WRDS_NWM_DATA );
         }
 
         List<IngestResult> ingested = new ArrayList<>();
@@ -531,7 +524,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
 
         if ( members.length == 0 )
         {
-            throw new PreIngestException( "No members found in WRDS NWM data" );
+            throw new PreIngestException( NO_MEMBERS_FOUND_IN_WRDS_NWM_DATA );
         }
         // Infer that these are single-valued data.
         SortedSet<Event<Double>> events = new TreeSet<>();
@@ -611,7 +604,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
 
         if ( members.length == 0 )
         {
-            throw new PreIngestException( "No members found in WRDS NWM data" );
+            throw new PreIngestException( NO_MEMBERS_FOUND_IN_WRDS_NWM_DATA );
         }
 
         // Infer that this is ensemble data.
@@ -708,9 +701,13 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
 
     TimeSeriesIngester createTimeSeriesIngester( TimeSeries<?> timeSeries )
     {
+        if( LOGGER.isTraceEnabled() )
+        {
+            LOGGER.trace( "Captured time-series {}.", timeSeries );
+        }
+        
         return this.getTimeSeriesIngester();
     }
-
 
     /**
      * Attempt to read an error message from a document like this:
@@ -760,7 +757,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                          abandoned.size(), this.getUri() );
         }
 
-        if ( TRACK_TIMINGS && LOGGER.isInfoEnabled() )
+        if ( WrdsNwmReader.getTrackTimings() && LOGGER.isInfoEnabled() )
         {
             LOGGER.info( "{}", WEB_CLIENT.getTimingInformation() );
         }

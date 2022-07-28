@@ -7,6 +7,8 @@ package wres.io.ingesting;
  */
 public class PreIngestException extends RuntimeException
 {
+    private static final long serialVersionUID = -5752710252185368485L;
+
     public PreIngestException( String message, Exception cause )
     {
         super( message, cause );
