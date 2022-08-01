@@ -40,6 +40,7 @@ import wres.config.generated.DatasourceType;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.datamodel.time.TimeSeriesMetadata;
+import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.concurrency.Executor;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.messages.MessageFactory;
@@ -389,8 +390,8 @@ public class SingleValuedForecastRetrieverTest
                                                         .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
-        IngestResult ingestResultOne = ingesterOne.ingestSingleValuedTimeSeries( Stream.of( timeSeriesOne ),
-                                                                                 rightData )
+        Stream<TimeSeriesTuple> tupleStreamOne = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesOne ) );
+        IngestResult ingestResultOne = ingesterOne.ingest( tupleStreamOne, rightData )
                                                   .get( 0 );
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleFour( T0 );
 
@@ -401,8 +402,8 @@ public class SingleValuedForecastRetrieverTest
                                                         .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
-        IngestResult ingestResultTwo = ingesterTwo.ingestSingleValuedTimeSeries( Stream.of( timeSeriesTwo ),
-                                                                                 rightData )
+        Stream<TimeSeriesTuple> tupleStreamTwo = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesTwo ) );
+        IngestResult ingestResultTwo = ingesterTwo.ingest( tupleStreamTwo, rightData )
                                                   .get( 0 );
 
         TimeSeries<Double> timeSeriesThree = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
@@ -414,8 +415,8 @@ public class SingleValuedForecastRetrieverTest
                                                         .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
-        IngestResult ingestResultThree = ingesterThree.ingestSingleValuedTimeSeries( Stream.of( timeSeriesThree ),
-                                                                                     leftData )
+        Stream<TimeSeriesTuple> tupleStreamThree = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesThree ) );
+        IngestResult ingestResultThree = ingesterThree.ingest( tupleStreamThree, leftData )
                                                       .get( 0 );
 
         List<IngestResult> results = List.of( ingestResultOne,

@@ -94,7 +94,7 @@ public class ReaderUtilities
                           traces );
         }
 
-        Map<Instant, double[]> reshapedValues = null;
+        Map<Instant, double[]> reshapedValues = new HashMap<>();
         Map.Entry<String, SortedMap<Instant, Double>> previousTrace = null;
         int i = 0;
 
@@ -127,11 +127,6 @@ public class ReaderUtilities
                                                   + " traces must be dense and "
                                                   + "match valid datetimes." );
                 }
-            }
-
-            if ( Objects.isNull( reshapedValues ) )
-            {
-                reshapedValues = new HashMap<>( theseInstants.size() );
             }
 
             for ( Map.Entry<Instant, Double> event : trace.getValue()

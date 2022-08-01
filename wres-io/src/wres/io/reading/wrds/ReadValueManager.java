@@ -49,6 +49,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
+import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
@@ -525,13 +526,14 @@ public class ReadValueManager
         TimeSeriesIngester ingester = this.getTimeSeriesIngester();
         try
         {
-            return ingester.ingestSingleValuedTimeSeries( Stream.of( timeSeries ), 
-                                                          this.dataSource );
+            Stream<TimeSeriesTuple> tupleStream = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeries ) );
+            return ingester.ingest( tupleStream, this.dataSource );
         }
         catch ( IngestException ie )
         {
             throw new IngestException( "Failed to ingest data from "
-                                       + this.getLocation(), ie );
+                                       + this.getLocation(),
+                                       ie );
         }
     }
 }

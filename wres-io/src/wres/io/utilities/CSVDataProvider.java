@@ -1,12 +1,11 @@
 package wres.io.utilities;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -41,12 +40,12 @@ class CSVDataProvider implements DataProvider
     private Map<String, Integer> columnNames;
     private int currentRow = -1;
     private boolean closed;
-    private final File filePath;
+    private final Path filePath;
     private BufferedReader reader;
     private String[] line = null;
     private final String delimiter;
 
-    private CSVDataProvider( final File filePath, final String delimiter, final Map<String, Integer> columns) throws IOException
+    private CSVDataProvider( final Path filePath, final String delimiter, final Map<String, Integer> columns) throws IOException
     {
         this.columnNames = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
         this.delimiter = delimiter;
@@ -63,44 +62,42 @@ class CSVDataProvider implements DataProvider
     static CSVDataProvider from( final String filePath, final String delimiter)
             throws IOException
     {
-        return new CSVDataProvider( Paths.get( filePath).toFile(), delimiter, null);
+        return new CSVDataProvider( Paths.get( filePath), delimiter, null);
     }
 
     static CSVDataProvider from( final URI filePath, final String delimiter)
             throws IOException
     {
-        return new CSVDataProvider( Paths.get( filePath).toFile(), delimiter, null);
+        return new CSVDataProvider( Paths.get( filePath ), delimiter, null);
     }
 
     static CSVDataProvider from( final Path filePath, final String delimiter)
             throws IOException
     {
-        return new CSVDataProvider( filePath.toFile(), delimiter, null);
+        return new CSVDataProvider( filePath, delimiter, null);
     }
 
     static CSVDataProvider from( final String filePath, final String delimiter, final Map<String, Integer> columns)
             throws IOException
     {
-        return new CSVDataProvider( Paths.get( filePath).toFile(), delimiter, columns);
+        return new CSVDataProvider( Paths.get( filePath), delimiter, columns);
     }
 
     static CSVDataProvider from( final URI filePath, final String delimiter, final Map<String, Integer> columns)
             throws IOException
     {
-        return new CSVDataProvider( Paths.get( filePath).toFile(), delimiter, columns);
+        return new CSVDataProvider( Paths.get( filePath), delimiter, columns);
     }
 
     static CSVDataProvider from( final Path filePath, final String delimiter, final Map<String, Integer> columns)
             throws IOException
     {
-        return new CSVDataProvider( filePath.toFile(), delimiter, columns);
+        return new CSVDataProvider( filePath, delimiter, columns);
     }
 
     private void openFile() throws IOException
     {
-        FileReader fileReader = new FileReader( this.filePath,
-                                                StandardCharsets.UTF_8 );
-        this.reader = new BufferedReader( fileReader );
+        this.reader = Files.newBufferedReader( this.filePath, StandardCharsets.UTF_8 );
 
         // If there aren't any columns defined, try to determine them from a possible header
         if (this.columnNames.isEmpty())
@@ -109,7 +106,7 @@ class CSVDataProvider implements DataProvider
 
             if (!dataExists)
             {
-                throw new IOException( "There isn't any data to read in " + this.filePath.toPath() );
+                throw new IOException( "There isn't any data to read in " + this.filePath );
             }
 
             for (int i = 0; i < this.line.length; ++i)

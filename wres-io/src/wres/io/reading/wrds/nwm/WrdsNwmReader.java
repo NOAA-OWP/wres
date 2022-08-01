@@ -49,6 +49,7 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.Builder;
 import wres.datamodel.time.TimeSeriesMetadata;
+import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
@@ -377,9 +378,9 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
 
             if ( !timeSeries.getEvents().isEmpty() )
             {
+                Stream<TimeSeriesTuple> tupleStream = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeries ) );
                 futureIngestResult =
-                        this.ingestSaverExecutor.submit( () -> ingester.ingestSingleValuedTimeSeries( Stream.of( timeSeries ),
-                                                                                                      this.dataSource ) );
+                        this.ingestSaverExecutor.submit( () -> ingester.ingest( tupleStream, this.dataSource ) );
             }
         }
         // Ensemble
@@ -396,9 +397,9 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
 
             if ( !timeSeries.getEvents().isEmpty() )
             {
+                Stream<TimeSeriesTuple> tupleStream = Stream.of( TimeSeriesTuple.ofEnsemble( timeSeries ) );
                 futureIngestResult =
-                        this.ingestSaverExecutor.submit( () -> ingester.ingestEnsembleTimeSeries( Stream.of( timeSeries ),
-                                                                                                  this.dataSource ) );
+                        this.ingestSaverExecutor.submit( () -> ingester.ingest( tupleStream, this.dataSource ) );
             }
         }
         // No members

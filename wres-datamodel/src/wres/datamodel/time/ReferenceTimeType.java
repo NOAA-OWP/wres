@@ -3,7 +3,7 @@ package wres.datamodel.time;
 /**
  * Represents a type of reference time.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public enum ReferenceTimeType

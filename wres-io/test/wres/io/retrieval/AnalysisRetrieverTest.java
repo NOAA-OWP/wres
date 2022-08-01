@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DatasourceType;
 import wres.datamodel.time.TimeSeriesMetadata;
+import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
@@ -498,7 +499,7 @@ public class AnalysisRetrieverTest
 
     private void addThreeAnalysisTimeSeriesToTheDatabase() throws SQLException
     {
-        DataSource leftData = RetrieverTestData.generateDataSource( LeftOrRightOrBaseline.LEFT, 
+        DataSource leftData = RetrieverTestData.generateDataSource( LeftOrRightOrBaseline.LEFT,
                                                                     DatasourceType.OBSERVATIONS );
         DataSource rightData = RetrieverTestData.generateDataSource( LeftOrRightOrBaseline.RIGHT,
                                                                      DatasourceType.ANALYSES );
@@ -508,15 +509,16 @@ public class AnalysisRetrieverTest
                 new ProjectConfig.Inputs( leftData.getContext(), rightData.getContext(), null );
         ProjectConfig fakeConfig = new ProjectConfig( fakeInputs, null, null, null, null, null );
         TimeSeries<Double> timeSeriesOne = RetrieverTestData.generateTimeSeriesDoubleOne( ANALYSIS_START_TIME );
-        TimeSeriesIngester ingesterOne = new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
-                                                                         .setDatabase( this.wresDatabase )
-                                                                         .setCaches( this.caches )
-                                                                         .setProjectConfig( fakeConfig )
-                                                                         .setLockManager( this.lockManager )
-                                                                         .build();
+        TimeSeriesIngester ingesterOne =
+                new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+                                                        .setDatabase( this.wresDatabase )
+                                                        .setCaches( this.caches )
+                                                        .setProjectConfig( fakeConfig )
+                                                        .setLockManager( this.lockManager )
+                                                        .build();
 
-        IngestResult ingestResultOne = ingesterOne.ingestSingleValuedTimeSeries( Stream.of( timeSeriesOne ),
-                                                                                 rightData )
+        Stream<TimeSeriesTuple> tupleStreamOne = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesOne ) );
+        IngestResult ingestResultOne = ingesterOne.ingest( tupleStreamOne, rightData )
                                                   .get( 0 );
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleTwo( ANALYSIS_START_TIME );
 
@@ -527,8 +529,8 @@ public class AnalysisRetrieverTest
                                                         .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
-        IngestResult ingestResultTwo = ingesterTwo.ingestSingleValuedTimeSeries( Stream.of( timeSeriesTwo ),
-                                                                                 rightData )
+        Stream<TimeSeriesTuple> tupleStreamTwo = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesTwo ) );
+        IngestResult ingestResultTwo = ingesterTwo.ingest( tupleStreamTwo, rightData )
                                                   .get( 0 );
         TimeSeries<Double> timeSeriesThree = RetrieverTestData.generateTimeSeriesDoubleThree( ANALYSIS_START_TIME );
 
@@ -539,12 +541,12 @@ public class AnalysisRetrieverTest
                                                         .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
-        IngestResult ingestResultThree = ingesterThree.ingestSingleValuedTimeSeries( Stream.of( timeSeriesThree ),
-                                                                                     rightData )
+        Stream<TimeSeriesTuple> tupleStreamThree = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesThree ) );
+        IngestResult ingestResultThree = ingesterThree.ingest( tupleStreamThree, rightData )
                                                       .get( 0 );
 
         TimeSeries<Double> timeSeriesFour = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
-
+        Stream<TimeSeriesTuple> tupleStreamFour = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesFour ) );
         TimeSeriesIngester ingesterFour =
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
@@ -552,8 +554,8 @@ public class AnalysisRetrieverTest
                                                         .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
-        IngestResult ingestResultFour = ingesterFour.ingestSingleValuedTimeSeries( Stream.of( timeSeriesFour ),
-                                                                                   leftData )
+
+        IngestResult ingestResultFour = ingesterFour.ingest( tupleStreamFour, leftData )
                                                     .get( 0 );
 
         List<IngestResult> results = List.of( ingestResultOne,
