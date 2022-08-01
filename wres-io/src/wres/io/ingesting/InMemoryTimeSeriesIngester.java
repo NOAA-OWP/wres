@@ -6,9 +6,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import wres.config.generated.LeftOrRightOrBaseline;
-import wres.datamodel.Ensemble;
-import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesStore;
+import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.reading.DataSource;
 
 /**
@@ -34,48 +33,48 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
     }
 
     @Override
-    public List<IngestResult> ingestSingleValuedTimeSeries( Stream<TimeSeries<Double>> timeSeries,
-                                                            DataSource dataSource )
+    public List<IngestResult> ingest( Stream<TimeSeriesTuple> timeSeriesTuple,
+                                      DataSource dataSource )
     {
-        Objects.requireNonNull( timeSeries );
+        Objects.requireNonNull( timeSeriesTuple );
         Objects.requireNonNull( dataSource );
 
-        List<TimeSeries<Double>> listedSeries = timeSeries.collect( Collectors.toList() );
-        for ( TimeSeries<Double> nextSeries : listedSeries )
+        // Close the stream on completion
+        try ( timeSeriesTuple )
         {
-            this.timeSeriesStoreBuilder.addSingleValuedSeries( nextSeries, dataSource.getLeftOrRightOrBaseline() );
-
-            // Add in all other contexts too
-            for ( LeftOrRightOrBaseline lrb : dataSource.getLinks() )
+            List<TimeSeriesTuple> listedTuples = timeSeriesTuple.collect( Collectors.toList() );
+            for ( TimeSeriesTuple nextTuple : listedTuples )
             {
-                this.timeSeriesStoreBuilder.addSingleValuedSeries( nextSeries, lrb );
+                // Single-valued time-series?
+                if ( nextTuple.hasSingleValuedTimeSeries() )
+                {
+                    this.timeSeriesStoreBuilder.addSingleValuedSeries( nextTuple.getSingleValuedTimeSeries(),
+                                                                       dataSource.getLeftOrRightOrBaseline() );
+
+                    // Add in all other contexts too
+                    for ( LeftOrRightOrBaseline lrb : dataSource.getLinks() )
+                    {
+                        this.timeSeriesStoreBuilder.addSingleValuedSeries( nextTuple.getSingleValuedTimeSeries(), lrb );
+                    }
+                }
+
+                // Ensemble time-series?
+                if ( nextTuple.hasEnsembleTimeSeries() )
+                {
+                    this.timeSeriesStoreBuilder.addEnsembleSeries( nextTuple.getEnsembleTimeSeries(),
+                                                                   dataSource.getLeftOrRightOrBaseline() );
+
+                    // Add in all other contexts too
+                    for ( LeftOrRightOrBaseline lrb : dataSource.getLinks() )
+                    {
+                        this.timeSeriesStoreBuilder.addEnsembleSeries( nextTuple.getEnsembleTimeSeries(), lrb );
+                    }
+                }
             }
+
+            // Arbitrary surrogate key, since this is an in-memory ingest
+            return List.of( new IngestResultInMemory( dataSource ) );
         }
-
-        // Arbitrary surrogate key, since this is an in-memory ingest
-        return List.of( new IngestResultInMemory( dataSource ) );
-    }
-
-    @Override
-    public List<IngestResult> ingestEnsembleTimeSeries( Stream<TimeSeries<Ensemble>> timeSeries,
-                                                        DataSource dataSource )
-    {
-        Objects.requireNonNull( timeSeries );
-        Objects.requireNonNull( dataSource );
-
-        List<TimeSeries<Ensemble>> listedSeries = timeSeries.collect( Collectors.toList() );
-        for ( TimeSeries<Ensemble> nextSeries : listedSeries )
-        {
-            this.timeSeriesStoreBuilder.addEnsembleSeries( nextSeries, dataSource.getLeftOrRightOrBaseline() );
-
-            // Add in all other contexts too
-            for ( LeftOrRightOrBaseline lrb : dataSource.getLinks() )
-            {
-                this.timeSeriesStoreBuilder.addEnsembleSeries( nextSeries, lrb );
-            }
-        }
-        // Arbitrary surrogate key, since this is an in-memory ingest
-        return List.of( new IngestResultInMemory( dataSource ) );
     }
 
     /**

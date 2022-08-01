@@ -32,6 +32,7 @@ import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
+import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.config.ConfigHelper;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.TimeSeriesIngester;
@@ -364,8 +365,8 @@ public class DatacardSource implements Source
                                                         values,
                                                         lineNumber );
         TimeSeriesIngester ingester = this.getTimeSeriesIngester();
-        List<IngestResult> results = ingester.ingestSingleValuedTimeSeries( Stream.of( timeSeries ), 
-                                                                            this.getDataSource() );
+        Stream<TimeSeriesTuple> tupleStream = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeries ) );
+        List<IngestResult> results = ingester.ingest( tupleStream, this.getDataSource() );
 
         if ( LOGGER.isDebugEnabled() )
         {

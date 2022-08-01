@@ -35,6 +35,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.config.ConfigHelper;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
@@ -570,10 +571,10 @@ public class NWMReader implements Callable<List<IngestResult>>
             // that must deal with the wres.source table. Use the identifier
             // of the timeseries data as if it were a wres.source.
             TimeSeriesIngester ingester = this.getTimeSeriesIngester();
+            Stream<TimeSeriesTuple> tupleStream = Stream.of( TimeSeriesTuple.ofSingleValued( entry.getValue() ) );
             Future<List<IngestResult>> future =
                     this.getExecutor()
-                        .submit( () -> ingester.ingestSingleValuedTimeSeries( Stream.of( entry.getValue() ),
-                                                                              innerDataSource ) );
+                        .submit( () -> ingester.ingest( tupleStream, innerDataSource ) );
             this.ingests.add( future );
             this.startGettingResults.countDown();
 
@@ -649,9 +650,10 @@ public class NWMReader implements Callable<List<IngestResult>>
             // that must deal with the wres.source table. Use the identifier
             // of the timeseries data as if it were a wres.source.
             TimeSeriesIngester ingester = this.getTimeSeriesIngester();
+            Stream<TimeSeriesTuple> tupleStream = Stream.of( TimeSeriesTuple.ofEnsemble( entry.getValue() ) );
             Future<List<IngestResult>> future =
-                    this.getExecutor().submit( () -> ingester.ingestEnsembleTimeSeries( Stream.of( entry.getValue() ), 
-                                                                                        innerDataSource ) );
+                    this.getExecutor()
+                        .submit( () -> ingester.ingest( tupleStream, innerDataSource ) );
             this.ingests.add( future );
             this.startGettingResults.countDown();
 

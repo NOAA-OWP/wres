@@ -12,13 +12,13 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.CountDownLatch;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.codec.binary.Hex;
@@ -37,6 +37,7 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesSlicer;
+import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.data.caching.Caches;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
@@ -80,7 +81,7 @@ import wres.system.SystemSettings;
  */
 
 public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
-{  
+{
     private static final Logger LOGGER =
             LoggerFactory.getLogger( DatabaseTimeSeriesIngester.class );
 
@@ -89,11 +90,11 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
     private final Caches caches;
     private final ProjectConfig projectConfig;
     private final DatabaseLockManager lockManager;
-    
+
     /**
      * Creates an instance.
      */
-    
+
     public static class Builder
     {
         private SystemSettings systemSettings;
@@ -101,7 +102,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         private Caches caches;
         private ProjectConfig projectConfig;
         private DatabaseLockManager lockManager;
-        
+
         /**
          * @param systemSettings the system settings to set
          * @return the builder
@@ -151,7 +152,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
             this.lockManager = lockManager;
             return this;
         }
-        
+
         /**
          * @return a time-series ingester instance
          */
@@ -160,12 +161,12 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
             return new DatabaseTimeSeriesIngester( this );
         }
     }
-    
+
     /**
      * Creates an instance.
      * @param builder the builder
      */
-    
+
     private DatabaseTimeSeriesIngester( Builder builder )
     {
         this.systemSettings = builder.systemSettings;
@@ -173,7 +174,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         this.caches = builder.caches;
         this.projectConfig = builder.projectConfig;
         this.lockManager = builder.lockManager;
-        
+
         Objects.requireNonNull( this.systemSettings );
         Objects.requireNonNull( this.database );
         Objects.requireNonNull( this.caches );
@@ -182,41 +183,88 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
     }
 
     @Override
-    public List<IngestResult> ingestSingleValuedTimeSeries( Stream<TimeSeries<Double>> timeSeries,
-                                                            DataSource dataSource )
+    public List<IngestResult> ingest( Stream<TimeSeriesTuple> timeSeriesTuple,
+                                      DataSource dataSource )
     {
-        Objects.requireNonNull( timeSeries );
+        Objects.requireNonNull( timeSeriesTuple );
         Objects.requireNonNull( dataSource );
 
-        List<IngestResult> results = new ArrayList<>();
-        List<TimeSeries<Double>> listedSeries = timeSeries.collect( Collectors.toList() );
-        for ( TimeSeries<Double> nextSeries : listedSeries )
+        // Read one time-series into memory at a time, closing the stream on completion
+        try ( timeSeriesTuple )
         {
-            List<IngestResult> innerResults = this.ingestSingleValuedTimeSeries( nextSeries, dataSource );
-            results.addAll( innerResults );
-        }
+            List<IngestResult> results = new ArrayList<>();
+            Iterator<TimeSeriesTuple> tupleIterator = timeSeriesTuple.iterator();
+            while ( tupleIterator.hasNext() )
+            {
+                TimeSeriesTuple nextTuple = tupleIterator.next();
 
-        return Collections.unmodifiableList( results );
+                // Single-valued time-series?
+                if ( nextTuple.hasSingleValuedTimeSeries() )
+                {
+                    TimeSeries<Double> nextSeries =
+                            this.addReferenceTimeIfRequired( nextTuple.getSingleValuedTimeSeries() );
+                    List<IngestResult> innerResults =
+                            this.ingestSingleValuedTimeSeries( nextSeries,
+                                                               dataSource );
+                    results.addAll( innerResults );
+                }
+
+                // Ensemble time-series?
+                if ( nextTuple.hasEnsembleTimeSeries() )
+                {
+                    TimeSeries<Ensemble> nextSeries =
+                            this.addReferenceTimeIfRequired( nextTuple.getEnsembleTimeSeries() );
+                    List<IngestResult> innerResults =
+                            this.ingestEnsembleTimeSeries( nextSeries,
+                                                           dataSource );
+                    results.addAll( innerResults );
+                }
+            }
+
+            // Arbitrary surrogate key, since this is an in-memory ingest
+            return Collections.unmodifiableList( results );
+        }
     }
 
-    @Override
-    public List<IngestResult> ingestEnsembleTimeSeries( Stream<TimeSeries<Ensemble>> timeSeries,
-                                                        DataSource dataSource )
+    /**
+     * Database ingest currently requires at least one reference time. If none exists, add a default one.
+     * @param timeSeries the time-series to check
+     * @return a time-series with at least one reference time
+     */
+
+    private <T> TimeSeries<T> addReferenceTimeIfRequired( TimeSeries<T> timeSeries )
     {
-        Objects.requireNonNull( timeSeries );
-        Objects.requireNonNull( dataSource );
-
-        List<IngestResult> results = new ArrayList<>();
-        List<TimeSeries<Ensemble>> listedSeries = timeSeries.collect( Collectors.toList() );
-        for ( TimeSeries<Ensemble> nextSeries : listedSeries )
+        if ( !timeSeries.getReferenceTimes().isEmpty() )
         {
-            List<IngestResult> innerResults = this.ingestEnsembleTimeSeries( nextSeries, dataSource );
-            results.addAll( innerResults );
+            return timeSeries;
         }
 
-        return Collections.unmodifiableList( results );
+        if ( timeSeries.getEvents().isEmpty() )
+        {
+            throw new PreIngestException( "Cannot ingest an empty time-series." );
+        }
+
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Discovered a time-series with zero reference times. Adding a default reference time for "
+                          + "database ingest. The time-series metadata was: {}.",
+                          timeSeries.getMetadata() );
+        }
+
+        // Default reference time is the latest valid time in the series
+        Map<ReferenceTimeType, Instant> defaultReferenceTime = Map.of( ReferenceTimeType.UNKNOWN,
+                                                                       timeSeries.getEvents()
+                                                                                 .last()
+                                                                                 .getTime() );
+
+        TimeSeriesMetadata adjusted = timeSeries.getMetadata()
+                                                .toBuilder()
+                                                .setReferenceTimes( defaultReferenceTime )
+                                                .build();
+
+        return TimeSeries.of( adjusted, timeSeries.getEvents() );
     }
-    
+
     /**
      * Ingests a time-series whose events are {@link Double}.
      * @param timeSeries the time-series to ingest, not null
@@ -265,7 +313,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
 
         return results;
     }
-    
+
     /**
      * Ingests a time-series whose events are {@link Ensemble}.
      * @param timeSeries the time-series to ingest, not null

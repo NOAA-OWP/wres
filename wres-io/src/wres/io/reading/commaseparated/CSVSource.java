@@ -7,8 +7,8 @@ import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -31,16 +31,15 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static wres.datamodel.time.ReferenceTimeType.LATEST_OBSERVATION;
-import static wres.datamodel.time.ReferenceTimeType.UNKNOWN;
-
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
+import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
+import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.config.ConfigHelper;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
@@ -72,7 +71,7 @@ public class CSVSource implements Source
     private static final String DEFAULT_ENSEMBLE_NAME = "default";
 
     /** A placeholder reference datetime for timeseries without one. */
-    private static final Instant PLACEHOLDER_REFERENCE_DATETIME = Instant.MIN;
+    //private static final Instant PLACEHOLDER_REFERENCE_DATETIME = Instant.MIN;
 
     private final Set<String> unconfiguredVariableNames = new HashSet<>( 1 );
 
@@ -180,19 +179,11 @@ public class CSVSource implements Source
             this.validateDataProvider( data );
 
             // Reference datetime is optional, many sources do not have any.
-            Instant referenceDatetime = null;
+            Map<ReferenceTimeType,Instant> referenceTimes = new HashMap<>();
 
             if ( data.hasColumn( REFERENCE_DATETIME_COLUMN ) )
             {
-                referenceDatetime = data.getInstant( REFERENCE_DATETIME_COLUMN );
-            }
-            else
-            {
-                // TimeSeriesMetadata (currently) requires a reference datetime,
-                // so mark it with a placeholder. Later after getting all the
-                // observations or simulation values, replace it with the latest
-                // datetime on the valid-datetime-line.
-                referenceDatetime = PLACEHOLDER_REFERENCE_DATETIME;
+                referenceTimes.put( ReferenceTimeType.UNKNOWN, data.getInstant( REFERENCE_DATETIME_COLUMN ) );
             }
 
             String variableName = data.getString( "variable_name" );
@@ -258,7 +249,7 @@ public class CSVSource implements Source
                                                             locationWkt );
             FeatureKey location = FeatureKey.of( geometry );
             currentTimeSeriesMetadata =
-                    TimeSeriesMetadata.of( Map.of( UNKNOWN, referenceDatetime ),
+                    TimeSeriesMetadata.of( referenceTimes,
                                            timeScale,
                                            variableName,
                                            location,
@@ -272,10 +263,7 @@ public class CSVSource implements Source
                 // New timeseries needed, but first initiate ingest of previous.
                 if ( Objects.nonNull( lastTimeSeriesMetadata ) )
                 {
-                    TimeSeriesMetadata metadata = this.getTimeSeriesMetadata( lastTimeSeriesMetadata,
-                                                                              ensembleValues,
-                                                                              lastEnsembleName );
-                    this.createAndIngestTimeSeries( metadata,
+                    this.createAndIngestTimeSeries( lastTimeSeriesMetadata,
                                                     ensembleValues,
                                                     lastEnsembleName,
                                                     data.getRowIndex() + 1 );
@@ -337,11 +325,7 @@ public class CSVSource implements Source
 
         if ( Objects.nonNull( lastTimeSeriesMetadata ) )
         {
-            // After reading all data, save the last timeseries.
-            TimeSeriesMetadata metadata = this.getTimeSeriesMetadata( lastTimeSeriesMetadata,
-                                                                      ensembleValues,
-                                                                      lastEnsembleName );
-            this.createAndIngestTimeSeries( metadata,
+            this.createAndIngestTimeSeries( lastTimeSeriesMetadata,
                                             ensembleValues,
                                             lastEnsembleName,
                                             data.getRowIndex() + 1 );
@@ -371,50 +355,6 @@ public class CSVSource implements Source
     private DataSource getDataSource()
     {
         return this.dataSource;
-    }
-
-    /**
-     * Creates the time-series metadata from the inputs.
-     * @param lastTimeSeriesMetadata the last metadata
-     * @param ensembleValues the ensemble values
-     * @param lastEnsembleName the last ensemble name
-     * @return the metadata
-     */
-
-    private TimeSeriesMetadata getTimeSeriesMetadata( TimeSeriesMetadata lastTimeSeriesMetadata,
-                                                      SortedMap<String, SortedMap<Instant, Double>> ensembleValues,
-                                                      String lastEnsembleName )
-    {
-        TimeSeriesMetadata metadata;
-        Collection<Instant> referenceDatetimes =
-                lastTimeSeriesMetadata.getReferenceTimes()
-                                      .values();
-
-        // When there are no reference datetimes, use latest value
-        // by valid datetime. (Eventually we should remove the
-        // restriction of requiring a reference datetime when db is
-        // ready for it to be relaxed)
-        if ( referenceDatetimes.size() == 1
-             && referenceDatetimes.contains( PLACEHOLDER_REFERENCE_DATETIME ) )
-        {
-            LOGGER.debug( "Found placeholder reference datetime in {}",
-                          lastTimeSeriesMetadata );
-            Instant latestDatetime = ensembleValues.get( lastEnsembleName )
-                                                   .lastKey();
-            metadata = TimeSeriesMetadata.of( Map.of( LATEST_OBSERVATION, latestDatetime ),
-                                              lastTimeSeriesMetadata.getTimeScale(),
-                                              lastTimeSeriesMetadata.getVariableName(),
-                                              lastTimeSeriesMetadata.getFeature(),
-                                              lastTimeSeriesMetadata.getUnit() );
-        }
-        else
-        {
-            LOGGER.debug( "Found NO placeholder reference datetime in {}",
-                          lastTimeSeriesMetadata );
-            metadata = lastTimeSeriesMetadata;
-        }
-
-        return metadata;
     }
 
     /**
@@ -651,9 +591,10 @@ public class CSVSource implements Source
     {
         TimeSeriesIngester timeSeriesIngester = this.getTimeSeriesIngester();
 
+        Stream<TimeSeriesTuple> tupleStream = Stream.of( TimeSeriesTuple.ofEnsemble( timeSeries ) );
         Future<List<IngestResult>> futureIngestResult =
-                this.ingestSaverExecutor.submit( () -> timeSeriesIngester.ingestEnsembleTimeSeries( Stream.of( timeSeries ),
-                                                                                                    this.getDataSource() ) );
+                this.ingestSaverExecutor.submit( () -> timeSeriesIngester.ingest( tupleStream,
+                                                                                  this.getDataSource() ) );
         this.addIngestResults( futureIngestResult );
     }
 
@@ -669,9 +610,10 @@ public class CSVSource implements Source
     {
         TimeSeriesIngester timeSeriesIngester = this.getTimeSeriesIngester();
 
+        Stream<TimeSeriesTuple> tupleStream = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeries ) );
         Future<List<IngestResult>> futureIngestResult =
-                this.ingestSaverExecutor.submit( () -> timeSeriesIngester.ingestSingleValuedTimeSeries( Stream.of( timeSeries ),
-                                                                                                        this.getDataSource() ) );
+                this.ingestSaverExecutor.submit( () -> timeSeriesIngester.ingest( tupleStream,
+                                                                                  this.getDataSource() ) );
         this.addIngestResults( futureIngestResult );
     }
 
