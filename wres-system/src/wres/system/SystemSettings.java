@@ -1007,13 +1007,6 @@ public class SystemSettings extends XMLReader
                                                                             .toString();
     }
 
-    @Override
-    protected Logger getLogger()
-    {
-        return LOGGER;
-    }
-
-
     /**
      * @return The database type.
      */

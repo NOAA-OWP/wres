@@ -2,6 +2,9 @@ package wres.io.reading.datacard;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -76,34 +79,57 @@ public class DatacardReader implements TimeSeriesReader
         try
         {
             Path path = Paths.get( dataSource.getUri() );
-            BufferedReader reader = Files.newBufferedReader( path );
-
-            // Get the lazy supplier of time-series data
-            Supplier<TimeSeriesTuple> supplier = this.getTimeSeriesSupplier( dataSource, reader );
-
-            // Generate a stream of time-series. Nothing is read here. Rather, as part of a terminal operation on this 
-            // stream, each pull will read through to the supplier, then in turn to the data provider, and finally to 
-            // the data source.
-            return Stream.generate( supplier )
-                         // Finite stream, proceeds while a time-series is returned
-                         .takeWhile( Objects::nonNull )
-                         // Close the data provider when the stream is closed
-                         .onClose( () -> {
-                             LOGGER.debug( "Detected a stream close event, closing an underlying stream reader." );
-                             try
-                             {
-                                 reader.close();
-                             }
-                             catch ( IOException e )
-                             {
-                                 LOGGER.warn( "Failed to close a Datacard stream reader.", e );
-                             }
-                         } );
+            BufferedReader reader = Files.newBufferedReader( path, StandardCharsets.UTF_8 );
+            return this.read( dataSource, reader );
         }
         catch ( IOException e )
         {
             throw new ReadException( "Failed to read a CSV source.", e );
         }
+    }
+
+    @Override
+    public Stream<TimeSeriesTuple> read( DataSource dataSource, InputStream inputStream )
+    {
+        Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( inputStream );
+
+        BufferedReader reader = new BufferedReader( new InputStreamReader( inputStream, StandardCharsets.UTF_8 ) );
+        return this.read( dataSource, reader );
+    }
+
+    /**
+     * Reads from a reader.
+     * @param dataSource the data source
+     * @param reader the reader
+     * @return the stream of time-series
+     */
+    private Stream<TimeSeriesTuple> read( DataSource dataSource, BufferedReader reader )
+    {
+        Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( reader );
+
+        // Get the lazy supplier of time-series data
+        Supplier<TimeSeriesTuple> supplier = this.getTimeSeriesSupplier( dataSource, reader );
+
+        // Generate a stream of time-series. Nothing is read here. Rather, as part of a terminal operation on this 
+        // stream, each pull will read through to the supplier, then in turn to the data provider, and finally to 
+        // the data source.
+        return Stream.generate( supplier )
+                     // Finite stream, proceeds while a time-series is returned
+                     .takeWhile( Objects::nonNull )
+                     // Close the data provider when the stream is closed
+                     .onClose( () -> {
+                         LOGGER.debug( "Detected a stream close event, closing an underlying stream reader." );
+                         try
+                         {
+                             reader.close();
+                         }
+                         catch ( IOException e )
+                         {
+                             LOGGER.warn( "Failed to close a Datacard stream reader.", e );
+                         }
+                     } );
     }
 
     /**

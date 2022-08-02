@@ -1,5 +1,6 @@
 package wres.io.reading;
 
+import java.io.InputStream;
 import java.util.stream.Stream;
 
 import wres.datamodel.time.TimeSeriesTuple;
@@ -42,4 +43,15 @@ public interface TimeSeriesReader
      */
 
     Stream<TimeSeriesTuple> read( DataSource dataSource );
+    
+    /**
+     * Reads and returns all time-series from the prescribed stream, if any.
+     * @param dataSource the data source, required
+     * @param stream the input stream, required
+     * @return the stream of time-series
+     * @throws NullPointerException if the dataSource is null
+     * @throws ReadException if the reading fails for any other reason
+     */
+
+    Stream<TimeSeriesTuple> read( DataSource dataSource, InputStream stream ); 
 }

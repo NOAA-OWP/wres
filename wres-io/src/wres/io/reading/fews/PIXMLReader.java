@@ -209,12 +209,6 @@ public final class PIXMLReader extends XMLReader
                                        .getLineNumber();
     }
 
-    @Override
-    protected Logger getLogger()
-    {
-        return LOGGER;
-    }
-
     /**
      * Parses offset hours from a reader that is positioned on "timeZone" tag.
      * <br />
