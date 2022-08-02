@@ -1,6 +1,7 @@
 package wres.io.reading.commaseparated;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
@@ -80,25 +81,56 @@ public class CsvReader implements TimeSeriesReader
         {
             DataProvider provider = DataProvider.fromCSV( dataSource.getUri(), DELIMITER );
 
-            // Get the lazy supplier of time-series data
-            Supplier<TimeSeriesTuple> supplier = this.getTimeSeriesSupplier( dataSource, provider );
-
-            // Generate a stream of time-series. Nothing is read here. Rather, as part of a terminal operation on this 
-            // stream, each pull will read through to the supplier, then in turn to the data provider, and finally to 
-            // the data source.
-            return Stream.generate( supplier )
-                         // Finite stream, proceeds while a time-series is returned
-                         .takeWhile( Objects::nonNull )
-                         // Close the data provider when the stream is closed
-                         .onClose( () -> {
-                             LOGGER.debug( "Detected a stream close event, closing an underlying data provider." );
-                             provider.close();
-                         } );
+            return this.read( dataSource, provider );
         }
         catch ( IOException e )
         {
             throw new ReadException( "Failed to read a CSV source.", e );
         }
+    }
+
+    @Override
+    public Stream<TimeSeriesTuple> read( DataSource dataSource, InputStream inputStream )
+    {
+        Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( inputStream );
+
+        try
+        {
+            DataProvider provider = DataProvider.fromCSV( inputStream, DELIMITER );
+
+            return this.read( dataSource, provider );
+        }
+        catch ( IOException e )
+        {
+            throw new ReadException( "Failed to read a CSV source.", e );
+        }
+    }
+
+    /**
+     * @param dataSource the data source
+     * @param provider the data provider
+     * @return the time-series streams
+     */
+
+    private Stream<TimeSeriesTuple> read( DataSource dataSource, DataProvider provider )
+    {
+        Objects.requireNonNull( dataSource );
+
+        // Get the lazy supplier of time-series data
+        Supplier<TimeSeriesTuple> supplier = this.getTimeSeriesSupplier( dataSource, provider );
+
+        // Generate a stream of time-series. Nothing is read here. Rather, as part of a terminal operation on this 
+        // stream, each pull will read through to the supplier, then in turn to the data provider, and finally to 
+        // the data source.
+        return Stream.generate( supplier )
+                     // Finite stream, proceeds while a time-series is returned
+                     .takeWhile( Objects::nonNull )
+                     // Close the data provider when the stream is closed
+                     .onClose( () -> {
+                         LOGGER.debug( "Detected a stream close event, closing an underlying data provider." );
+                         provider.close();
+                     } );
     }
 
     /**

@@ -1,6 +1,7 @@
 package wres.io.utilities;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Duration;
@@ -418,6 +419,18 @@ public interface DataProvider extends AutoCloseable
         return CSVDataProvider.from(fileName, delimiter);
     }
 
+    /**
+     * Converts a CSV stream to a DataProvider with the top line being the header
+     * @param inputStream The CSV stream
+     * @param delimiter The delimiter separating values
+     * @return A DataProvider containing the provided CSV data
+     * @throws IOException Thrown if the file could not be read
+     */
+    static DataProvider fromCSV( final InputStream inputStream, final String delimiter) throws IOException
+    {
+        return CSVDataProvider.from( inputStream, delimiter );
+    }
+    
     /**
      * Converts a CSV file to a DataProvider with the provided column names
      * @param fileName The path to the csv file

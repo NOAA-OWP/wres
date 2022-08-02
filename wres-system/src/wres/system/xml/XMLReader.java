@@ -18,7 +18,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stax.StAXSource;
 import javax.xml.transform.stream.StreamResult;
 
-import com.sun.xml.fastinfoset.stax.StAXDocumentParser;  //NOSONAR
+import com.sun.xml.fastinfoset.stax.StAXDocumentParser; //NOSONAR
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +49,7 @@ public abstract class XMLReader
     {
         this( filename, null );
     }
-    
+
     /**
      * Convenience constructor - finds in either the classpath or filesystem
      * @param filename the file name to look for on the classpath or filesystem
@@ -61,7 +61,7 @@ public abstract class XMLReader
     {
         this( filename, null, fastInfoset );
     }
-    
+
     /**
      * Create an XMLReader.
      * <br>
@@ -155,7 +155,7 @@ public abstract class XMLReader
         return XMLReader.class.getClassLoader()
                               .getResourceAsStream( resourceName.getPath() );
     }
-    
+
     /**
      * @return true if the file is fast-infoset encoded, false otherwise
      */
@@ -206,9 +206,9 @@ public abstract class XMLReader
                 catch ( XMLStreamException xse )
                 {
                     // not much we can do at this point
-                    this.getLogger().warn( "Exception while closing file {}.",
-                                           this.filename,
-                                           xse );
+                    LOGGER.warn( "Exception while closing file {}.",
+                                 this.filename,
+                                 xse );
                 }
             }
         }
@@ -222,11 +222,11 @@ public abstract class XMLReader
 
     private XMLStreamReader createReader() throws XMLStreamException
     {
-        if( this.isFastInfoset() )
+        if ( this.isFastInfoset() )
         {
             return new StAXDocumentParser( this.inputStream );
         }
-        else 
+        else
         {
             return this.factory.createXMLStreamReader( this.inputStream );
         }
@@ -235,11 +235,11 @@ public abstract class XMLReader
     public String getRawXML() throws XMLStreamException, TransformerException
     {
         XMLStreamReader reader = createReader();
-        
+
         TransformerFactory transformerFactory = TransformerFactory.newInstance();
         // Prohibit the use of all protocols by external entities:
-        transformerFactory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-        transformerFactory.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
+        transformerFactory.setAttribute( XMLConstants.ACCESS_EXTERNAL_DTD, "" );
+        transformerFactory.setAttribute( XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "" );
         Transformer transformer = transformerFactory.newTransformer();
         StringWriter stringWriter = new StringWriter();
         transformer.transform( new StAXSource( reader ), new StreamResult( stringWriter ) );
@@ -251,10 +251,10 @@ public abstract class XMLReader
         switch ( reader.getEventType() )
         {
             case XMLStreamConstants.START_DOCUMENT:
-                this.getLogger().trace( "Start of the document" );
+                LOGGER.trace( "Start of the document" );
                 break;
             case XMLStreamConstants.START_ELEMENT:
-                this.getLogger().trace( "Start element = '{}'", reader.getLocalName() );
+                LOGGER.trace( "Start element = '{}'", reader.getLocalName() );
                 break;
             case XMLStreamConstants.CHARACTERS:
                 int beginIndex = reader.getTextStart();
@@ -263,17 +263,17 @@ public abstract class XMLReader
 
                 if ( Strings.hasValue( value ) )
                 {
-                    this.getLogger().trace( "Value = '{}'", value );
+                    LOGGER.trace( "Value = '{}'", value );
                 }
 
                 break;
             case XMLStreamConstants.END_ELEMENT:
-                this.getLogger().trace( "End element = '{}'", reader.getLocalName() );
+                LOGGER.trace( "End element = '{}'", reader.getLocalName() );
                 break;
             case XMLStreamConstants.COMMENT:
                 if ( reader.hasText() )
                 {
-                    this.getLogger().trace( reader.getText() );
+                    LOGGER.trace( reader.getText() );
                 }
                 break;
             default:
@@ -283,6 +283,4 @@ public abstract class XMLReader
                                        "' is not parsed by default." );
         }
     }
-
-    protected abstract Logger getLogger();
 }

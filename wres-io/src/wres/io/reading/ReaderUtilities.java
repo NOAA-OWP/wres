@@ -109,7 +109,7 @@ public class ReaderUtilities
                                                                                   .keySet() );
                 if ( !theseInstants.equals( previousInstants ) )
                 {
-                    throw new PreIngestException( "Cannot build ensemble from "
+                    throw new ReadException( "Cannot build ensemble from "
                                                   + uri
                                                   + " with data at or before "
                                                   + "line number "
