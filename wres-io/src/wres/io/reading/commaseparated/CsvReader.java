@@ -41,7 +41,7 @@ import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.util.Strings;
 
 /**
- * A reader of comma separated values.
+ * A reader of time-series from a source of comma separated values.
  * @author James Brown
  */
 
