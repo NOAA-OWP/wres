@@ -53,7 +53,7 @@ import wres.system.SystemSettings;
 
 /**
  * @author Christopher Tubbs
- * Reads source files from an archived and saves their data to the database
+ * Reads source files from an archive and saves their data to the database
  *
  * One-shot save. Closes internal executors at the end of first save() call.
  */

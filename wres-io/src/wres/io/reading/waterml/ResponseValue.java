@@ -9,6 +9,8 @@ import wres.io.reading.waterml.timeseries.TimeSeries;
 
 public class ResponseValue implements Serializable
 {
+    private static final long serialVersionUID = -136902551774808505L;
+    
     public QueryInfo getQueryInfo()
     {
         return queryInfo;

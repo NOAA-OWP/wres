@@ -6,6 +6,8 @@ import wres.io.reading.waterml.variable.Variable;
 
 public class TimeSeries implements Serializable
 {
+    private static final long serialVersionUID = -5581319084334610655L;
+    
     SourceInfo sourceInfo;
     Variable variable;
 

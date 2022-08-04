@@ -6,6 +6,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement
 public class Response implements Serializable
 {
+
+    private static final long serialVersionUID = 5433948668020324606L;
+
     String name;
 
     String declaredType;

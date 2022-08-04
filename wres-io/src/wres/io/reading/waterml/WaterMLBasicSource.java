@@ -20,7 +20,6 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.commons.compress.utils.IOUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,54 +80,65 @@ public class WaterMLBasicSource implements Source
         }
     }
 
-    private Pair<Response, SourceDetails> deserializeInput(URI location) throws IOException {
-        try {
-            if (location.getScheme().equals("file")) {
-                try (InputStream data = this.getFromFile(location)) {
-                    byte[] rawForecast = IOUtils.toByteArray(data);
-                    return Pair.of(OBJECT_MAPPER.readValue(rawForecast, Response.class), null);
+    private Response deserializeInput( URI location ) throws IOException
+    {
+        try
+        {
+            if ( location.getScheme().equals( "file" ) )
+            {
+                try ( InputStream data = this.getFromFile( location ) )
+                {
+                    byte[] rawForecast = IOUtils.toByteArray( data );
+                    return OBJECT_MAPPER.readValue( rawForecast, Response.class );
                 }
-            } else if (location.getScheme().toLowerCase().startsWith("http")) {
-                try (WebClient.ClientResponse response = WEB_CLIENT.getFromWeb(location)) {
+            }
+            else if ( location.getScheme().toLowerCase().startsWith( "http" ) )
+            {
+                try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( location ) )
+                {
                     int httpStatus = response.getStatusCode();
 
-                    if (httpStatus == 404) {
+                    if ( httpStatus == 404 )
+                    {
                         LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}",
                                      httpStatus,
                                      location );
-                        return Pair.of(null, null );
-                    } else if (!(httpStatus >= 200 && httpStatus < 300)) {
-                        throw new PreIngestException("Failed to get data from '"
-                                + location +
-                                "' due to HTTP status code "
-                                + httpStatus);
+                        return null;
+                    }
+                    else if ( ! ( httpStatus >= 200 && httpStatus < 300 ) )
+                    {
+                        throw new PreIngestException( "Failed to get data from '"
+                                                      + location
+                                                      +
+                                                      "' due to HTTP status code "
+                                                      + httpStatus );
                     }
 
-                    byte[] rawForecast = IOUtils.toByteArray(response.getResponse());
+                    byte[] rawForecast = IOUtils.toByteArray( response.getResponse() );
 
                     if ( LOGGER.isTraceEnabled() )
                     {
                         LOGGER.trace( "Response body for {}: {}",
-                                location,
-                                new String( rawForecast,
-                                        StandardCharsets.UTF_8 ) );
+                                      location,
+                                      new String( rawForecast,
+                                                  StandardCharsets.UTF_8 ) );
                     }
 
-                    return Pair.of(OBJECT_MAPPER.readValue(rawForecast, Response.class), null);
+                    return OBJECT_MAPPER.readValue( rawForecast, Response.class );
                 }
             }
         }
         catch ( JsonMappingException jme )
         {
             throw new PreIngestException( "Failed to parse the response body"
-                    + " from USGS url "
-                    + location,
-                    jme );
+                                          + " from USGS url "
+                                          + location,
+                                          jme );
         }
 
-        throw new UnsupportedOperationException("Only file and http(s) "
-                + "are supported. Got: "
-                + location);
+        throw new UnsupportedOperationException( "Only file and http(s) "
+                                                 + "are supported. Got: "
+                                                 + location );
     }
 
     private List<IngestResult> ingest() throws IOException
@@ -136,16 +146,15 @@ public class WaterMLBasicSource implements Source
         URI location = this.getDataSource()
                            .getUri();
 
-        Pair<Response, SourceDetails> responsePair = this.deserializeInput(location);
+        Response response = this.deserializeInput( location );
 
-        if (responsePair.getLeft() == null) {
+        if ( response == null )
+        {
             return Collections.emptyList();
         }
 
-        Response response = responsePair.getLeft();
-
         TimeSeriesIngester ingester = this.getTimeSeriesIngester();
-        
+
         try
         {
             WaterMLSource waterMLSource = new WaterMLSource( this.getDataSource(), response );
@@ -166,8 +175,9 @@ public class WaterMLBasicSource implements Source
                                                   .filter( f -> !f.requiresRetry() )
                                                   .count();
                 LOGGER.debug( "{} USGS time series ingested from URL {}",
-                              countIngested, this.getDataSource()
-                                                 .getUri() );
+                              countIngested,
+                              this.getDataSource()
+                                  .getUri() );
             }
 
             return Collections.unmodifiableList( ingestResults );

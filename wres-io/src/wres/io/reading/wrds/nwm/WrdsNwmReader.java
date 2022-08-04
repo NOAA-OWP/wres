@@ -64,8 +64,7 @@ import wres.system.SystemSettings;
 /**
  * Reads and ingests NWM data from WRDS NWM API.
  *
- * One per NWM URI to ingest. Creates and submits multiple TimeSeriesIngester
- * instances.
+ * One per NWM URI to ingest.
  *
  * One-time use:
  * On construction, creates internal executors.
