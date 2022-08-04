@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.io.reading.waterml.Response;
-import wres.io.utilities.WebClient;
+import wres.io.reading.web.WebClient;
 
 public class NwisTest
 {
