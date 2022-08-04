@@ -927,6 +927,10 @@ project(':wres-config')
     // Wiring the generation of jaxb classes into standard compilation task:
     compileJava.dependsOn copyGenerated
 
+    tasks.named("xsd-dependency-tree").configure {
+        outputs.upToDateWhen { false }
+    }
+
     javadoc
     {
         // XJC generates Java8-unfriendly javadoc. Do not bother generating.
