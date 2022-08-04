@@ -1,9 +1,11 @@
-package wres.io.utilities;
+package wres.io.reading.web;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
+
+import wres.io.reading.web.WebClient;
 
 /**
  * Tests the {@link WebClient}.

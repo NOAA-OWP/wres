@@ -1,4 +1,4 @@
-package wres.io.utilities;
+package wres.io.reading.web;
 
 import java.net.URI;
 import java.util.Objects;
@@ -13,7 +13,7 @@ import jdk.jfr.Threshold;
 /**
  * A custom event for monitoring the reading of time-series data from web services, exposed to the Java Flight Recorder.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 @Name( "wres.io.utilities.WebClientEvent" )

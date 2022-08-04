@@ -4,6 +4,9 @@ import static org.apache.commons.math3.util.Precision.EPSILON;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -89,19 +92,27 @@ public class WatermlReader implements TimeSeriesReader
     /**
      * @return an instance
      */
-    
+
     public static WatermlReader of()
     {
         return new WatermlReader();
     }
-    
+
     @Override
     public Stream<TimeSeriesTuple> read( DataSource dataSource )
     {
         Objects.requireNonNull( dataSource );
-        // Get a byte stream from the source
-        InputStream inputStream = ReaderUtilities.getByteStreamFromUri( dataSource.getUri() );
-        return this.readFromStream( dataSource, inputStream );
+
+        try
+        {
+            Path path = Paths.get( dataSource.getUri() );
+            InputStream stream = Files.newInputStream( path );
+            return this.readFromStream( dataSource, stream );
+        }
+        catch ( IOException e )
+        {
+            throw new ReadException( "Failed to read a WaterML source.", e );
+        }
     }
 
     @Override
@@ -519,7 +530,7 @@ public class WatermlReader implements TimeSeriesReader
         Geometry geometry = MessageFactory.getGeometry( featureName, siteDescription, siteSrid, siteWkt );
         return FeatureKey.of( geometry );
     }
-    
+
     /**
      * Hidden constructor.
      */
@@ -527,5 +538,5 @@ public class WatermlReader implements TimeSeriesReader
     private WatermlReader()
     {
     }
-    
+
 }

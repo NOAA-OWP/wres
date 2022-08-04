@@ -1,4 +1,4 @@
-package wres.io.utilities;
+package wres.io.reading.web;
 
 import java.io.EOFException;
 import java.io.IOException;

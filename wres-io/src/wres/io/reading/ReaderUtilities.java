@@ -1,13 +1,6 @@
 package wres.io.reading;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,7 +9,6 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import org.apache.commons.compress.utils.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +19,6 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.ingesting.PreIngestException;
-import wres.io.utilities.WebClient;
 
 /**
  * Utilities for file reading.
@@ -39,9 +30,6 @@ public class ReaderUtilities
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( ReaderUtilities.class );
-
-    /** A web client to help with reading data from the web. */
-    private static final WebClient WEB_CLIENT = new WebClient();
 
     /**
      * Transform a single trace into a {@link TimeSeries} of {@link Double} values.
@@ -205,76 +193,7 @@ public class ReaderUtilities
 
         return returnMe;
     }
-
-    /**
-     * Returns a byte stream from a file or web source.
-     * 
-     * @param uri the uri
-     * @return the byte stream
-     * @throws UnsupportedOperationException if the uri scheme is not one of http(s) or file
-     * @throws ReadException if the stream could not be created for any other reason
-     */
-
-    public static InputStream getByteStreamFromUri( URI uri )
-    {
-        Objects.requireNonNull( uri );
-        try
-        {
-            if ( uri.getScheme().equals( "file" ) )
-            {
-                LOGGER.debug( "Discovered a file URI scheme from which to return a stream: {}.", uri );
-                Path path = Paths.get( uri );
-                return new BufferedInputStream( Files.newInputStream( path ) );
-            }
-            else if ( uri.getScheme().toLowerCase().startsWith( "http" ) )
-            {
-                try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( uri ) )
-                {
-                    int httpStatus = response.getStatusCode();
-
-                    if ( httpStatus == 404 )
-                    {
-                        LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}",
-                                     httpStatus,
-                                     uri );
-                        
-                        return null;
-                    }
-                    else if ( ! ( httpStatus >= 200 && httpStatus < 300 ) )
-                    {
-                        throw new ReadException( "Failed to read data from '"
-                                                 + uri
-                                                 +
-                                                 "' due to HTTP status code "
-                                                 + httpStatus );
-                    }
-
-                    if ( LOGGER.isTraceEnabled() )
-                    {
-                        byte[] rawData = IOUtils.toByteArray( response.getResponse() );
-
-                        LOGGER.trace( "Response body for {}: {}",
-                                      uri,
-                                      new String( rawData,
-                                                  StandardCharsets.UTF_8 ) );
-                    }
-
-                    return response.getResponse();
-                }
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new ReadException( "Failed to acquire a byte stream from "
-                                     + uri
-                                     + ".",
-                                     e );
-        }
-
-        throw new UnsupportedOperationException( "Only file and http(s) are supported. Got: "
-                                                 + uri );
-    }
-
+    
     /**
      * Do not construct.
      */

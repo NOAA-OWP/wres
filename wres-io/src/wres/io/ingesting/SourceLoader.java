@@ -51,6 +51,7 @@ import wres.io.reading.ReaderFactory;
 import wres.io.reading.Source;
 import wres.io.reading.DataSource.DataDisposition;
 import wres.io.reading.nwm.NWMReader;
+import wres.io.reading.web.WebSource;
 import wres.io.removal.IncompleteIngest;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;

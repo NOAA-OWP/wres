@@ -34,7 +34,7 @@ import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReadException;
 import wres.io.reading.Source;
-import wres.io.utilities.WebClient;
+import wres.io.reading.web.WebClient;
 import wres.io.utilities.Database;
 
 /**
