@@ -1,4 +1,4 @@
-package wres.io.ingesting;
+package wres.io.reading.web;
 
 import java.net.URI;
 import java.time.Instant;
@@ -24,6 +24,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.UrlParameter;
 import wres.io.data.caching.Caches;
+import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.DataSource;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;

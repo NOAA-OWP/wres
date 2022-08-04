@@ -55,9 +55,9 @@ import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.DataSource;
+import wres.io.reading.web.WebClient;
 import wres.io.reading.wrds.ReadValueManager;
 import wres.io.reading.wrds.TimeScaleFromParameterCodes;
-import wres.io.utilities.WebClient;
 import wres.statistics.generated.Geometry;
 import wres.system.SystemSettings;
 

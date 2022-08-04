@@ -55,7 +55,7 @@ import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.DataSource;
-import wres.io.utilities.WebClient;
+import wres.io.reading.web.WebClient;
 import wres.statistics.generated.Geometry;
 import wres.system.SSLStuffThatTrustsOneCertificate;
 

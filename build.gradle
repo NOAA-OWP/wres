@@ -927,6 +927,7 @@ project(':wres-config')
     // Wiring the generation of jaxb classes into standard compilation task:
     compileJava.dependsOn copyGenerated
 
+    // Incremental builds disabled for the XJC task as of 20220804. See #107133. 
     tasks.named("xsd-dependency-tree").configure {
         outputs.upToDateWhen { false }
     }

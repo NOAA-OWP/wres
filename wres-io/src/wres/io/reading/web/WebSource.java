@@ -1,4 +1,4 @@
- package wres.io.ingesting;
+ package wres.io.reading.web;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -51,6 +51,9 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.UrlParameter;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Caches;
+import wres.io.ingesting.IngestException;
+import wres.io.ingesting.IngestResult;
+import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReaderFactory;
 import wres.io.reading.Source;
@@ -66,8 +69,10 @@ import wres.system.SystemSettings;
  * One-time use:
  * On construction, creates internal executors.
  * On first call, shuts down its internal executor.
+ * 
+ * TODO: migrate this class into the service-specific adapter classes for reading time-series data.
  */
-class WebSource implements Callable<List<IngestResult>>
+public class WebSource implements Callable<List<IngestResult>>
 {
     private static final String COULD_NOT_CREATE_URI_FROM = "Could not create URI from ";
 
@@ -107,7 +112,7 @@ class WebSource implements Callable<List<IngestResult>>
     private final CountDownLatch startGettingResults;
     private final TimeSeriesIngester timeSeriesIngester;
 
-    static WebSource of( TimeSeriesIngester timeSeriesIngester,
+    public static WebSource of( TimeSeriesIngester timeSeriesIngester,
                          SystemSettings systemSettings,
                          Database database,
                          Caches caches,
