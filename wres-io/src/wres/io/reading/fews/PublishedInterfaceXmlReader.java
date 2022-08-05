@@ -1090,7 +1090,8 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
 
             singleValuedSeries = ReaderUtilities.transform( timeSeriesMetadata,
                                                             ensembleValues.get( name ),
-                                                            lineNumber );
+                                                            lineNumber,
+                                                            dataSource.getUri() );
         }
         else
         {

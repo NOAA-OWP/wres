@@ -12,6 +12,7 @@ import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.InterfaceShortHand;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -24,6 +25,8 @@ import wres.io.ingesting.PreIngestException;
  * Utilities for file reading.
  * 
  * @author James Brown
+ * @author Christopher Tubbs
+ * @author Jesse Bickel
  */
 
 public class ReaderUtilities
@@ -32,28 +35,37 @@ public class ReaderUtilities
     private static final Logger LOGGER = LoggerFactory.getLogger( ReaderUtilities.class );
 
     /**
-     * Transform a single trace into a {@link TimeSeries} of {@link Double} values.
-     * @param metadata The metadata of the timeseries.
-     * @param trace The raw data to build a TimeSeries.
-     * @param lineNumber The approximate location in the source.
+     * Transform a single trace into a {@link TimeSeries} of {@link Double} values
+     * @param metadata the metadata of the timeseries
+     * @param trace the raw data to build a TimeSeries
+     * @param lineNumber the approximate location in the source to help with messaging
+     * @param uri a uri to help with messaging
      * @return The complete TimeSeries
      */
 
     public static TimeSeries<Double> transform( TimeSeriesMetadata metadata,
                                                 SortedMap<Instant, Double> trace,
-                                                int lineNumber )
+                                                int lineNumber,
+                                                URI uri )
     {
         Objects.requireNonNull( metadata );
         Objects.requireNonNull( trace );
 
         if ( trace.isEmpty() )
         {
-            throw new IllegalArgumentException( "Cannot transform fewer than "
-                                                + "one values into timeseries "
-                                                + "with metadata "
+            String append = "";
+            if ( lineNumber > -1 )
+            {
+                append = " from line number "
+                         + lineNumber
+                         + ".";
+            }
+
+            throw new IllegalArgumentException( "Cannot build a single-valued time-series from "
+                                                + uri
+                                                + " because there are no values in the trace with metadata "
                                                 + metadata
-                                                + " from line number "
-                                                + lineNumber );
+                                                + append );
         }
 
         TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
@@ -98,6 +110,14 @@ public class ReaderUtilities
         Map.Entry<String, SortedMap<Instant, Double>> previousTrace = null;
         int i = 0;
 
+        String append = "";
+        if ( lineNumber > -1 )
+        {
+            append = " with data at or before "
+                     + "line number "
+                     + lineNumber;
+        }
+
         for ( Map.Entry<String, SortedMap<Instant, Double>> trace : traces.entrySet() )
         {
             SortedSet<Instant> theseInstants = new TreeSet<>( trace.getValue()
@@ -111,15 +131,13 @@ public class ReaderUtilities
                 {
                     throw new ReadException( "Cannot build ensemble from "
                                              + uri
-                                             + " with data at or before "
-                                             + "line number "
-                                             + lineNumber
+                                             + append
                                              + " because the trace named "
                                              + trace.getKey()
                                              + " had these valid datetimes"
                                              + ": "
                                              + theseInstants
-                                             + " but previous trace named "
+                                             + " but a previous trace named "
                                              + previousTrace.getKey()
                                              + " had different ones: "
                                              + previousInstants
@@ -193,7 +211,49 @@ public class ReaderUtilities
 
         return returnMe;
     }
-    
+
+    /**
+     * @param source the data source
+     * @return whether the source points to the USGS NWIS
+     * @throws NullPointerException if the source is null
+     */
+
+    public static boolean isUsgsSource( DataSource source )
+    {
+        Objects.requireNonNull( source );
+
+        URI uri = source.getUri();
+        InterfaceShortHand interfaceShortHand = source.getSource()
+                                                      .getInterface();
+        if ( Objects.nonNull( interfaceShortHand ) )
+        {
+            return interfaceShortHand.equals( InterfaceShortHand.USGS_NWIS );
+        }
+
+        // Fallback for unspecified interface.
+        return uri.getHost()
+                  .toLowerCase()
+                  .contains( "usgs.gov" )
+               || uri.getPath()
+                     .toLowerCase()
+                     .contains( "nwis" );
+    }
+
+    /**
+     * @param source the data source
+     * @return whether the source is a web source, specifically whether it has an http(s) scheme
+     * @throws NullPointerException if the source is null
+     */
+
+    public static boolean isWebSource( DataSource source )
+    {
+        Objects.requireNonNull( source );
+
+        return source.getUri()
+                     .getScheme()
+                     .startsWith( "http" );
+    }
+
     /**
      * Do not construct.
      */

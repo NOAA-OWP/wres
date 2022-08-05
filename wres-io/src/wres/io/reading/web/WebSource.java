@@ -56,6 +56,7 @@ import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReaderFactory;
+import wres.io.reading.ReaderUtilities;
 import wres.io.reading.Source;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
@@ -548,21 +549,7 @@ public class WebSource implements Callable<List<IngestResult>>
 
     private boolean isUsgsSource( DataSource source )
     {
-        URI uri = source.getUri();
-        InterfaceShortHand interfaceShortHand = source.getSource()
-                                                      .getInterface();
-        if ( Objects.nonNull( interfaceShortHand ) )
-        {
-            return interfaceShortHand.equals( InterfaceShortHand.USGS_NWIS );
-        }
-
-        // Fallback for unspecified interface.
-        return uri.getHost()
-                  .toLowerCase()
-                  .contains( "usgs.gov" )
-               || uri.getPath()
-                     .toLowerCase()
-                     .contains( "nwis" );
+        return ReaderUtilities.isUsgsSource( source );
     }
 
     /**

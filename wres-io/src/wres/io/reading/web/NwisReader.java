@@ -41,13 +41,22 @@ public class NwisReader implements TimeSeriesReader
 {
     /** The underlying format reader. */
     private static final WatermlReader WATERML_READER = WatermlReader.of();
-    
+
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( NwisReader.class );
 
     /** A web client to help with reading data from the web. */
     private static final WebClient WEB_CLIENT = new WebClient();
-    
+
+    /**
+     * @return an instance
+     */
+
+    public static NwisReader of()
+    {
+        return new NwisReader();
+    }
+
     @Override
     public Stream<TimeSeriesTuple> read( DataSource dataSource )
     {
@@ -56,9 +65,21 @@ public class NwisReader implements TimeSeriesReader
         return this.read( dataSource, stream );
     }
 
+    /**
+     * This implementation is equivalent to calling {@link WatermlReader#read(DataSource, InputStream)}.
+     * @param dataSource the data source, required
+     * @param stream the input stream, required
+     * @return the stream of time-series
+     * @throws NullPointerException if the dataSource is null
+     * @throws ReadException if the reading fails for any other reason
+     */
+
     @Override
     public Stream<TimeSeriesTuple> read( DataSource dataSource, InputStream stream )
     {
+        LOGGER.debug( "Discovered an existing stream, assumed to be from a USGS NWIS IV service instance. Passing "
+                      + "through to an underlying WaterML reader." );
+
         return WATERML_READER.read( dataSource, stream );
     }
 
@@ -74,14 +95,10 @@ public class NwisReader implements TimeSeriesReader
     private static InputStream getByteStreamFromUri( URI uri )
     {
         Objects.requireNonNull( uri );
+
         try
         {
-            if ( uri.getScheme().equals( "file" ) )
-            {
-                throw new IllegalArgumentException( "Cannot read USGS NWIS time-series data from a file source. Did "
-                                                    + "you intend to use a WaterML reader?" );
-            }
-            else if ( uri.getScheme().toLowerCase().startsWith( "http" ) )
+            if ( uri.getScheme().toLowerCase().startsWith( "http" ) )
             {
                 try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( uri ) )
                 {
@@ -117,6 +134,12 @@ public class NwisReader implements TimeSeriesReader
                     return response.getResponse();
                 }
             }
+            else
+            {
+                throw new ReadException( "Cannot read USGS NWIS time-series data from "
+                                         + uri
+                                         + ". Did you intend to use a WaterML reader?" );
+            }
         }
         catch ( IOException e )
         {
@@ -125,9 +148,14 @@ public class NwisReader implements TimeSeriesReader
                                      + ".",
                                      e );
         }
+    }
 
-        throw new UnsupportedOperationException( "Only file and http(s) are supported. Got: "
-                                                 + uri );
+    /**
+     * Hidden constructor.
+     */
+
+    private NwisReader()
+    {
     }
 
 }

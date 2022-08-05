@@ -226,7 +226,7 @@ class PublishedInterfaceXmlReaderTest
     {
         try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
         {
-            // Write a new csv file to an in-memory file system
+            // Write a new pi-xml file to an in-memory file system
             Path directory = fileSystem.getPath( TEST );
             Files.createDirectory( directory );
             Path pathToStore = fileSystem.getPath( TEST, TEST_CSV );
@@ -292,7 +292,7 @@ class PublishedInterfaceXmlReaderTest
     {
         try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
         {
-            // Write a new csv file to an in-memory file system
+            // Write a new pi-xml file to an in-memory file system
             Path directory = fileSystem.getPath( TEST );
             Files.createDirectory( directory );
             Path pathToStore = fileSystem.getPath( TEST, TEST_CSV );
@@ -359,7 +359,7 @@ class PublishedInterfaceXmlReaderTest
     {
         try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
         {
-            // Write a new csv file to an in-memory file system
+            // Write a new pi-xml file to an in-memory file system
             Path directory = fileSystem.getPath( TEST );
             Files.createDirectory( directory );
             Path pathToStore = fileSystem.getPath( TEST, TEST_CSV );
