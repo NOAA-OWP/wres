@@ -957,7 +957,7 @@ class WatermlReaderTest
     {
         try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
         {
-            // Write a new csv file to an in-memory file system
+            // Write a new WaterML file to an in-memory file system
             Path directory = fileSystem.getPath( "test" );
             Files.createDirectory( directory );
             Path pathToStore = fileSystem.getPath( "test", "test.json" );

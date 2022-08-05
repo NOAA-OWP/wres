@@ -61,7 +61,7 @@ import wres.statistics.generated.Geometry;
  * <p>Implementation notes:
  * 
  * <p>This reader currently performs eager reading of time-series data. It relies on the Jackson framework, 
- * specifically an {@link ObjectMapper}, which maps a JSON byte array into time-series objects. An improved 
+ * specifically an {@link ObjectMapper}, which maps a WaterML byte array into time-series objects. An improved 
  * implementation would stream the underlying bytes into {@link TimeSeries} on demand. Thus, particularly when the 
  * underlying data source is a large file or a large stream that is not chunked at a higher level, this implementation
  * is not very memory efficient, contrary to the recommended implementation in {@link TimeSeriesReader}.
@@ -84,7 +84,7 @@ public class WatermlReader implements TimeSeriesReader
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( WatermlReader.class );
 
-    /** Maps JSON bytes to POJOs. */
+    /** Maps WaterML bytes to POJOs. */
     private static final ObjectMapper OBJECT_MAPPER =
             new ObjectMapper().registerModule( new JavaTimeModule() )
                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
@@ -209,6 +209,7 @@ public class WatermlReader implements TimeSeriesReader
 
             List<TimeSeriesTuple> allTimeSeries = new ArrayList<>();
 
+            // Some time-series with data
             if ( response.getValue()
                          .getNumberOfPopulatedTimeSeries() > 0 )
             {
@@ -230,7 +231,7 @@ public class WatermlReader implements TimeSeriesReader
         }
         catch ( IOException e )
         {
-            throw new ReadException( "Failed to read the JSON data stream.", e );
+            throw new ReadException( "Failed to read the WaterML data stream.", e );
         }
     }
 

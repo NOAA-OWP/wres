@@ -116,7 +116,7 @@ public class CSVSource implements Source
         this.timeSeriesIngester = timeSeriesIngester;
         this.dataSource = dataSource;
     }
-    
+
     @Override
     public List<IngestResult> save()
     {
@@ -140,7 +140,7 @@ public class CSVSource implements Source
         catch ( IOException e )
         {
             throw new ReadException( "Failed to read a CSV source.", e );
-        }      
+        }
 
         if ( !this.unconfiguredVariableNames.isEmpty() && LOGGER.isWarnEnabled() )
         {
@@ -156,11 +156,11 @@ public class CSVSource implements Source
 
         return Collections.unmodifiableList( this.ingested );
     }
-    
+
     /**
      * @return the file name
      */
-    
+
     private URI getFileName()
     {
         return this.getDataSource()
@@ -179,7 +179,7 @@ public class CSVSource implements Source
             this.validateDataProvider( data );
 
             // Reference datetime is optional, many sources do not have any.
-            Map<ReferenceTimeType,Instant> referenceTimes = new HashMap<>();
+            Map<ReferenceTimeType, Instant> referenceTimes = new HashMap<>();
 
             if ( data.hasColumn( REFERENCE_DATETIME_COLUMN ) )
             {
@@ -340,7 +340,7 @@ public class CSVSource implements Source
 
         this.completeIngest();
     }
-    
+
     /**
      * @return the time-series ingester
      */
@@ -391,7 +391,9 @@ public class CSVSource implements Source
         {
             TimeSeries<Double> timeSeries = ReaderUtilities.transform( timeSeriesMetadata,
                                                                        ensembleValues.get( DEFAULT_ENSEMBLE_NAME ),
-                                                                       lineNumber );
+                                                                       lineNumber,
+                                                                       this.getDataSource()
+                                                                           .getUri() );
 
             this.ingestSingleValuedTimeSeries( timeSeries );
         }

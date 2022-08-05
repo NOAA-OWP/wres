@@ -882,7 +882,9 @@ public final class PIXMLReader extends XMLReader
 
             TimeSeries<Double> timeSeries = ReaderUtilities.transform( metadata,
                                                                        ensembleValues.get( name ),
-                                                                       lineNumber );
+                                                                       lineNumber,
+                                                                       this.getDataSource()
+                                                                           .getUri() );
 
             this.ingestSingleValuedTimeSeries( timeSeries );
         }

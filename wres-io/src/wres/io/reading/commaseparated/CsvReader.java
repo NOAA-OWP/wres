@@ -312,7 +312,8 @@ public class CsvReader implements TimeSeriesReader
         {
             TimeSeries<Double> timeSeries = ReaderUtilities.transform( timeSeriesMetadata,
                                                                        traceValues.get( DEFAULT_ENSEMBLE_NAME ),
-                                                                       lineNumber );
+                                                                       lineNumber,
+                                                                       dataSource.getUri() );
 
             return TimeSeriesTuple.ofSingleValued( timeSeries );
         }

@@ -35,7 +35,10 @@ import wres.datamodel.time.TimeSeriesTuple;
 public interface TimeSeriesReader
 {
     /**
-     * Reads and returns all time-series from the underlying source, if any.
+     * Reads and returns all time-series from the underlying source, creating a stream to read from the source. To read 
+     * from an existing stream, use {@link #read(DataSource, InputStream)}.
+     *  
+     * @see #read(DataSource, InputStream)
      * @param dataSource the data source, required
      * @return the stream of time-series
      * @throws NullPointerException if the dataSource is null
@@ -45,7 +48,9 @@ public interface TimeSeriesReader
     Stream<TimeSeriesTuple> read( DataSource dataSource );
     
     /**
-     * Reads and returns all time-series from the prescribed stream, if any.
+     * Reads and returns all time-series from the prescribed stream using the data source only for a description of the 
+     * source. To read from a source without an existing stream, use {@link #read(DataSource, InputStream)}.
+     * @see #read(DataSource)
      * @param dataSource the data source, required
      * @param stream the input stream, required
      * @return the stream of time-series
@@ -53,5 +58,5 @@ public interface TimeSeriesReader
      * @throws ReadException if the reading fails for any other reason
      */
 
-    Stream<TimeSeriesTuple> read( DataSource dataSource, InputStream stream ); 
+    Stream<TimeSeriesTuple> read( DataSource dataSource, InputStream stream );
 }
