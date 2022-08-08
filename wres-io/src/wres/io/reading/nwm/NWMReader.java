@@ -326,9 +326,12 @@ public class NWMReader implements Callable<List<IngestResult>>
     private List<IngestResult> ingest()
     {
         List<IngestResult> ingestResults = new ArrayList<>();
-        Set<String> features = ConfigHelper.getFeatureNamesForSource( this.getProjectConfig(),
+        Set<String> features = ConfigHelper.getFeatureNamesForSource( this.getProjectConfig()
+                                                                          .getPair(),
                                                                       this.getDataSource()
-                                                                          .getContext() );
+                                                                          .getContext(),
+                                                                      this.getDataSource()
+                                                                          .getLeftOrRightOrBaseline() );
 
         // A list of featureIds that will be sorted in NWM id order to be used
         // to create blocks of sequential NWM ids.

@@ -1,14 +1,29 @@
 package wres.io.reading;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
+
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,6 +35,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.ingesting.PreIngestException;
+import wres.system.SSLStuffThatTrustsOneCertificate;
 
 /**
  * Utilities for file reading.
@@ -254,6 +270,133 @@ public class ReaderUtilities
                      .startsWith( "http" );
     }
 
+    /**
+     * Get an SSLContext that has a dod intermediate certificate trusted for use with Water Resources Data Service 
+     * (WRDS) services.
+     * Looks for a system property first, then a pem on the classpath, then a default trust manager.
+     * @return the resulting SSLContext or the default SSLContext if not found.
+     * @throws PreIngestException if the context and trust manager cannot be built for any reason
+     */
+    public static Pair<SSLContext, X509TrustManager> getSslContextTrustingDodSignerForWrds()
+    {
+        // Look for a system property first: #106160
+        String pathToTrustFile = System.getProperty( "wres.wrdsCertificateFileToTrust" );
+        if ( Objects.nonNull( pathToTrustFile ) )
+        {
+            LOGGER.debug( "Discovered the system property wres.wrdsCertificateFileToTrust with value {}.",
+                          pathToTrustFile );
+
+            Path path = Paths.get( pathToTrustFile );
+            try ( InputStream trustStream = Files.newInputStream( path ) )
+            {
+                SSLStuffThatTrustsOneCertificate sslGoo =
+                        new SSLStuffThatTrustsOneCertificate( trustStream );
+                return Pair.of( sslGoo.getSSLContext(), sslGoo.getTrustManager() );
+            }
+            catch ( IOException e )
+            {
+                throw new PreIngestException( "Unable to read "
+                                              + pathToTrustFile
+                                              + " from the supplied system property, wres.wrdsCertificateFileToTrust, "
+                                              + "in order to add it to trusted certificate list for requests made to "
+                                              + "WRDS services.",
+                                              e );
+            }
+        }
+
+        // Try classpath
+        String trustFileOnClassPath = "DODSWCA_60.pem";
+        try ( InputStream inputStream = ReaderUtilities.class.getClassLoader()
+                                                             .getResourceAsStream( trustFileOnClassPath ) )
+        {
+            // Avoid sending null, log a warning instead, use default.
+            if ( inputStream == null )
+            {
+                LOGGER.warn( "Failed to load {} from classpath. Using default SSLContext.",
+                             trustFileOnClassPath );
+
+                X509TrustManager theTrustManager = null;
+                for ( TrustManager manager : TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() )
+                                                                .getTrustManagers() )
+                {
+                    if ( manager instanceof X509TrustManager )
+                    {
+                        LOGGER.warn( "Failed to load {} from classpath. Using this X509TrustManager: {}",
+                                     trustFileOnClassPath,
+                                     manager );
+                        theTrustManager = (X509TrustManager) manager;
+                    }
+                }
+                if ( Objects.isNull( theTrustManager ) )
+                {
+                    throw new UnsupportedOperationException( "Could not find a default X509TrustManager" );
+                }
+                return Pair.of( SSLContext.getDefault(), theTrustManager );
+            }
+            SSLStuffThatTrustsOneCertificate sslGoo =
+                    new SSLStuffThatTrustsOneCertificate( inputStream );
+            return Pair.of( sslGoo.getSSLContext(), sslGoo.getTrustManager() );
+        }
+        catch ( IOException ioe )
+        {
+            throw new PreIngestException( "Unable to read "
+                                          + trustFileOnClassPath
+                                          + " from classpath in order to add it"
+                                          + " to trusted certificate list for "
+                                          + "requests made to WRDS services.",
+                                          ioe );
+        }
+        catch ( NoSuchAlgorithmException nsae )
+        {
+            throw new PreIngestException( "Unable to find "
+                                          + trustFileOnClassPath
+                                          + " on classpath in order to add it"
+                                          + " to trusted certificate list for "
+                                          + "requests made to WRDS services "
+                                          + "and furthermore could not get the "
+                                          + "default SSLContext.",
+                                          nsae );
+        }
+    }
+
+    /**
+     * Get a URI based on prescribed URI and a parameter set.
+     * 
+     * @param uri the uri to build upon
+     * @param urlParameters the parameters to add to the uri
+     * @return the uri with the urlParameters added, in repeatable/sorted order.
+     * @throws NullPointerException when any argument is null.
+     */
+
+    public static URI getUriWithParameters( URI uri, Map<String, String> urlParameters )
+    {
+        Objects.requireNonNull( uri );
+        Objects.requireNonNull( urlParameters );
+
+        URIBuilder uriBuilder = new URIBuilder( uri );
+        SortedMap<String, String> sortedUrlParameters = new TreeMap<>( urlParameters );
+
+        for ( Map.Entry<String, String> parameter : sortedUrlParameters.entrySet() )
+        {
+            uriBuilder.setParameter( parameter.getKey(), parameter.getValue() );
+        }
+
+        try
+        {
+            URI finalUri = uriBuilder.build();
+            LOGGER.debug( "Created URL {}", finalUri );
+            return finalUri;
+        }
+        catch ( URISyntaxException e )
+        {
+            throw new IllegalArgumentException( "Could not create URI from "
+                                                + uri.toString()
+                                                + " and "
+                                                + urlParameters.toString(),
+                                                e );
+        }
+    }
+    
     /**
      * Do not construct.
      */

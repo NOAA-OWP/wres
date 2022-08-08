@@ -504,19 +504,22 @@ public class ConfigHelper
      * a sparse declaration. It will give a dense declaration to the rest of the
      * evaluation pipeline so that reader will have a dense declaration.
      *
-     * @param projectDeclaration The project declaration.
+     * @param pairDeclaration The pair declaration.
      * @param sourceDeclaration The source declared within the declaration.
      * @return A Set of String from the given declaration or empty when none.
      * @throws UnsupportedOperationException When called with no features.
      */
 
-    public static Set<String> getFeatureNamesForSource( ProjectConfig projectDeclaration,
-                                                        DataSourceConfig sourceDeclaration )
+    public static Set<String> getFeatureNamesForSource( PairConfig pairConfig,
+                                                        DataSourceConfig sourceDeclaration,
+                                                        LeftOrRightOrBaseline sourceOrientation )
     {
+        Objects.requireNonNull( pairConfig );
+        Objects.requireNonNull( sourceDeclaration );
+        
         SortedSet<String> featureNames = new TreeSet<>();
 
         // Collect the features from the singleton groups and multi-feature groups
-        PairConfig pairConfig = projectDeclaration.getPair();
         List<Feature> featuresConfigured = new ArrayList<>( pairConfig.getFeature() );
         List<Feature> groupedFeatures = pairConfig.getFeatureGroup()
                                                   .stream()
@@ -530,10 +533,8 @@ public class ConfigHelper
             return Collections.emptySet();
         }
 
-        LeftOrRightOrBaseline lrb = ConfigHelper.getLeftOrRightOrBaseline( projectDeclaration,
-                                                                           sourceDeclaration );
-        // Reference equality on purpose here.
-        if ( lrb.equals( LeftOrRightOrBaseline.LEFT ) )
+        // Iterate the sides
+        if ( sourceOrientation == LeftOrRightOrBaseline.LEFT )
         {
             for ( Feature featureConfigured : featuresConfigured )
             {
@@ -553,7 +554,7 @@ public class ConfigHelper
                 }
             }
         }
-        else if ( lrb.equals( LeftOrRightOrBaseline.RIGHT ) )
+        else if ( sourceOrientation == LeftOrRightOrBaseline.RIGHT )
         {
             for ( Feature featureConfigured : featuresConfigured )
             {
@@ -573,9 +574,7 @@ public class ConfigHelper
                 }
             }
         }
-        else if ( lrb.equals( LeftOrRightOrBaseline.BASELINE )
-                  && Objects.nonNull( projectDeclaration.getInputs()
-                                                        .getBaseline() ) )
+        else if ( sourceOrientation == LeftOrRightOrBaseline.BASELINE )
         {
             for ( Feature featureConfigured : featuresConfigured )
             {
