@@ -4,6 +4,7 @@ import static org.apache.commons.math3.util.Precision.EPSILON;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -71,8 +72,8 @@ import wres.statistics.generated.Geometry;
  * 
  * TODO: consider a more memory efficient implementation by using the Jackson streaming API. For example: 
  * https://www.baeldung.com/jackson-streaming-api. As of v6.7, this is not a tremendous problem because the main
- * application of this class is reading from USGS NWIS whereby the responses are chunked at a higher level. However, 
- * this limitation would become more acute were there a need to read a large waterml file from a local disk.
+ * application of this class is reading from USGS NWIS whereby the responses are chunked. However, this limitation 
+ * would become more acute were there a need to read a large waterml file from a local disk.
  * 
  * @author James Brown
  * @author Christopher Tubbs
@@ -143,7 +144,7 @@ public class WatermlReader implements TimeSeriesReader
                      .takeWhile( Objects::nonNull )
                      // Close the data provider when the stream is closed
                      .onClose( () -> {
-                         LOGGER.debug( "Detected a stream close event, closing an underlying data provider." );
+                         LOGGER.debug( "Detected a stream close event, closing the underlying input stream." );
 
                          try
                          {
@@ -205,6 +206,15 @@ public class WatermlReader implements TimeSeriesReader
         {
             // Get the bytes using a buffer
             byte[] rawForecast = IOUtils.toByteArray( inputStream );
+
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "WaterML bytes parsed from for {}: {}",
+                              dataSource.getUri(),
+                              new String( rawForecast,
+                                          StandardCharsets.UTF_8 ) );
+            }
+
             Response response = OBJECT_MAPPER.readValue( rawForecast, Response.class );
 
             List<TimeSeriesTuple> allTimeSeries = new ArrayList<>();

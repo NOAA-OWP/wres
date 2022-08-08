@@ -268,8 +268,10 @@ public class WebSource implements Callable<List<IngestResult>>
     {
         List<IngestResult> ingestResults = new ArrayList<>();
         Set<String> features =
-                ConfigHelper.getFeatureNamesForSource( this.getProjectConfig(),
-                                                       this.getDataSourceConfig() );
+                ConfigHelper.getFeatureNamesForSource( this.getProjectConfig()
+                                                           .getPair(),
+                                                       this.getDataSourceConfig(),
+                                                       this.getDataSource().getLeftOrRightOrBaseline() );
 
         Set<Pair<Instant, Instant>> dateRanges = createRanges( this.getProjectConfig(),
                                                                this.getDataSource(),
