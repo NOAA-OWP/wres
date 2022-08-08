@@ -504,8 +504,9 @@ public class ConfigHelper
      * a sparse declaration. It will give a dense declaration to the rest of the
      * evaluation pipeline so that reader will have a dense declaration.
      *
-     * @param pairDeclaration The pair declaration.
+     * @param pairConfig The pair declaration.
      * @param sourceDeclaration The source declared within the declaration.
+     * @param sourceOrientation The orientation of the source.
      * @return A Set of String from the given declaration or empty when none.
      * @throws UnsupportedOperationException When called with no features.
      */
