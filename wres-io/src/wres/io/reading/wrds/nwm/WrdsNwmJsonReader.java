@@ -15,6 +15,7 @@ import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -154,17 +155,27 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
     private Supplier<TimeSeriesTuple> getTimeSeriesSupplier( DataSource dataSource,
                                                              InputStream inputStream )
     {
-        // Read the time-series eagerly
-        List<TimeSeriesTuple> timeSeriesTuples = this.getTimeSeries( dataSource, inputStream );
         AtomicInteger iterator = new AtomicInteger();
+        AtomicReference<List<TimeSeriesTuple>> timeSeriesTuples = new AtomicReference<>();
 
         // Create a supplier that returns a time-series once complete
         return () -> {
 
-            // More time-series to return?
-            if ( iterator.get() < timeSeriesTuples.size() )
+            // Read all of the time-series eagerly on first use: this will still delay any read until a terminal stream
+            // operation pulls from the supplier (which is why we use a reference holder and do not request the 
+            // time-series outside of this lambda), but it will then acquire all the time-series eagerly, i.e., now
+            if ( Objects.isNull( timeSeriesTuples.get() ) )
             {
-                return timeSeriesTuples.get( iterator.getAndIncrement() );
+                List<TimeSeriesTuple> eagerSeries = this.getTimeSeries( dataSource, inputStream );
+                timeSeriesTuples.set( eagerSeries );
+            }
+
+            List<TimeSeriesTuple> tuples = timeSeriesTuples.get();
+
+            // More time-series to return?
+            if ( iterator.get() < tuples.size() )
+            {
+                return tuples.get( iterator.getAndIncrement() );
             }
 
             // Null sentinel to close stream
