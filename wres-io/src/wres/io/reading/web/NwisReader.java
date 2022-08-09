@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.temporal.TemporalAdjusters;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,7 +22,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigException;
-import wres.config.generated.DateCondition;
 import wres.config.generated.PairConfig;
 import wres.config.generated.UrlParameter;
 import wres.datamodel.time.TimeSeriesTuple;
@@ -69,7 +66,8 @@ public class NwisReader implements TimeSeriesReader
     private final PairConfig pairConfig;
 
     /**
-     * @return an instance
+     * @see #of(PairConfig)
+     * @return an instance that does not performing any chunking of the time-series data
      */
 
     public static NwisReader of()
@@ -103,7 +101,7 @@ public class NwisReader implements TimeSeriesReader
             return this.read( dataSource, this.getPairConfig() );
         }
 
-        LOGGER.debug( "Preparing a request to the USGS NWIS that does not implement any chunking." );
+        LOGGER.debug( "Preparing a request to NWIS for USGS time-series without any chunking of the data." );
         InputStream stream = NwisReader.getByteStreamFromUri( dataSource.getUri() );
 
         return this.read( dataSource, stream );
@@ -155,8 +153,7 @@ public class NwisReader implements TimeSeriesReader
                                                                       dataSource.getLeftOrRightOrBaseline() );
 
         // Date ranges
-        Set<Pair<Instant, Instant>> dateRanges = NwisReader.getYearRanges( pairConfig,
-                                                                           dataSource );
+        Set<Pair<Instant, Instant>> dateRanges = ReaderUtilities.getYearRanges( pairConfig, dataSource );
 
         // Combine the features and date ranges to form the chunk boundaries
         Set<Pair<String, Pair<Instant, Instant>>> chunks = new HashSet<>();
@@ -179,8 +176,8 @@ public class NwisReader implements TimeSeriesReader
         return Stream.generate( supplier )
                      // Finite stream, proceeds while a time-series is returned
                      .takeWhile( Objects::nonNull )
-                     .onClose( () -> LOGGER.debug( "Detected a stream close event. Situation nominal; there are no "
-                                                   + "resources to close." ) );
+                     .onClose( () -> LOGGER.debug( "Detected a stream close event. Proceeding nominally as there are "
+                                                   + "no resources to close." ) );
     }
 
     /**
@@ -194,6 +191,10 @@ public class NwisReader implements TimeSeriesReader
     private Supplier<TimeSeriesTuple> getTimeSeriesSupplier( DataSource dataSource,
                                                              Set<Pair<String, Pair<Instant, Instant>>> chunks )
     {
+        LOGGER.debug( "Creating a time-series supplier to supply one time-series for each of these {} chunks: {}.",
+                      chunks.size(),
+                      chunks );
+
         SortedSet<Pair<String, Pair<Instant, Instant>>> mutableChunks = new TreeSet<>( chunks );
 
         // Create a supplier that returns a time-series once complete
@@ -228,7 +229,7 @@ public class NwisReader implements TimeSeriesReader
 
                 // Get the stream, which is closed on the terminal operation below
                 InputStream inputStream = NwisReader.getByteStreamFromUri( nextUri );
-                
+
                 // At most, one series, by definition
                 Optional<TimeSeriesTuple> timeSeries = WATERML_READER.read( dataSource, inputStream )
                                                                      .findFirst(); // Terminal
@@ -271,16 +272,13 @@ public class NwisReader implements TimeSeriesReader
         Objects.requireNonNull( range.getLeft() );
         Objects.requireNonNull( range.getRight() );
 
-        // example "?format=json&sites=09165000&parameterCd=00060&startDT=2018-10-01T00:00:0
         if ( !baseUri.getHost()
                      .toLowerCase()
                      .contains( "usgs.gov" )
              && LOGGER.isWarnEnabled() )
         {
-            LOGGER.warn( "Expected URI like '"
-                         + "https://nwis.waterservices.usgs.gov/nwis/iv'"
-                         + " but instead got {}.",
-                         baseUri.toString() );
+            LOGGER.warn( "Expected a URI like 'https://nwis.waterservices.usgs.gov/nwis/iv' but got {}.",
+                         baseUri );
         }
 
         Map<String, String> urlParameters = this.getUrlParameters( range,
@@ -347,80 +345,6 @@ public class NwisReader implements TimeSeriesReader
         urlParameters.put( "sites", siteJoiner.toString() );
 
         return Collections.unmodifiableMap( urlParameters );
-    }
-
-    /**
-     * Creates year ranges for requests.
-     * @param pairConfig the pair declaration
-     * @param dataSource the data source
-     * @return year ranges
-     */
-    private static Set<Pair<Instant, Instant>> getYearRanges( PairConfig pairConfig,
-                                                              DataSource dataSource )
-    {
-        Objects.requireNonNull( dataSource );
-        Objects.requireNonNull( dataSource.getContext() );
-
-        DateCondition dates = pairConfig.getDates();
-
-        SortedSet<Pair<Instant, Instant>> yearRanges = new TreeSet<>();
-
-        OffsetDateTime earliest;
-        String specifiedEarliest = dates.getEarliest();
-
-        OffsetDateTime latest;
-        String specifiedLatest = dates.getLatest();
-
-        OffsetDateTime nowDate = OffsetDateTime.now();
-
-        earliest = OffsetDateTime.parse( specifiedEarliest )
-                                 .with( TemporalAdjusters.firstDayOfYear() )
-                                 .withHour( 0 )
-                                 .withMinute( 0 )
-                                 .withSecond( 0 )
-                                 .withNano( 0 );
-
-        LOGGER.debug( "createYearRanges(): given {} calculated {} for earliest.",
-                      specifiedEarliest,
-                      earliest );
-
-        // Intentionally keep this raw, un-next-year-ified.
-        latest = OffsetDateTime.parse( specifiedLatest );
-
-        LOGGER.debug( "createYearRanges(): given {} parsed {} for latest.",
-                      specifiedLatest,
-                      latest );
-
-        OffsetDateTime left = earliest;
-        OffsetDateTime right = left.with( TemporalAdjusters.firstDayOfNextYear() );
-
-        while ( left.isBefore( latest ) )
-        {
-            // Because we chunk a year at a time, and because these will not
-            // be retrieved again if already present, we need to ensure the
-            // right hand date does not exceed "now".
-            if ( right.isAfter( nowDate ) )
-            {
-                if ( latest.isAfter( nowDate ) )
-                {
-                    right = nowDate;
-                }
-                else
-                {
-                    right = latest;
-                }
-            }
-
-            Pair<Instant, Instant> range = Pair.of( left.toInstant(), right.toInstant() );
-            LOGGER.debug( "Created year range {}", range );
-            yearRanges.add( range );
-            left = left.with( TemporalAdjusters.firstDayOfNextYear() );
-            right = right.with( TemporalAdjusters.firstDayOfNextYear() );
-        }
-
-        LOGGER.debug( "Created year ranges: {}.", yearRanges );
-
-        return Collections.unmodifiableSet( yearRanges );
     }
 
     /**
@@ -501,9 +425,8 @@ public class NwisReader implements TimeSeriesReader
                                                               + "when using a web API as a source for observations." );
             }
 
-            LOGGER.debug( "When building a reader for time-series data from the USGS NWIS service, received a "
-                          + "complete pairs declaration, which will be used to chunk requests by feature and "
-                          + "time range." );
+            LOGGER.debug( "When building a reader for time-series data from the USGS NWIS service, received a complete "
+                          + "pair declaration, which will be used to chunk requests by feature and time range." );
         }
     }
 

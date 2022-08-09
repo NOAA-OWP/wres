@@ -9,9 +9,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.temporal.TemporalAdjusters;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
@@ -27,7 +31,9 @@ import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.DateCondition;
 import wres.config.generated.InterfaceShortHand;
+import wres.config.generated.PairConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -216,9 +222,9 @@ public class ReaderUtilities
 
         TimeScaleOuter returnMe = null;
 
-        // Assume that USGS "IV" service implies "instantaneous" values
+        // Assume that the NWIS "IV" service implies "instantaneous" values
         if ( Objects.nonNull( uri ) && uri.toString()
-                                          .contains( "usgs.gov/nwis/iv" ) )
+                                          .contains( "/nwis/iv" ) )
         {
             returnMe = TimeScaleOuter.of();
         }
@@ -257,6 +263,54 @@ public class ReaderUtilities
 
     /**
      * @param source the data source
+     * @return whether the source is a WRDS AHPS observed source
+     * @throws NullPointerException if the source is null
+     */
+
+    public static boolean isWrdsObservedSource( DataSource source )
+    {
+        Objects.requireNonNull( source );
+
+        InterfaceShortHand interfaceShortHand = source.getSource()
+                                                      .getInterface();
+        if ( Objects.nonNull( interfaceShortHand ) )
+        {
+            return interfaceShortHand.equals( InterfaceShortHand.WRDS_OBS );
+        }
+
+        return false;
+    }
+
+    /**
+     * @param source the data source
+     * @return whether the source is a WRDS AHPS source
+     * @throws NullPointerException if the source is null
+     */
+
+    public static boolean isWrdsAhpsSource( DataSource source )
+    {
+        Objects.requireNonNull( source );
+
+        URI uri = source.getUri();
+        InterfaceShortHand interfaceShortHand = source.getSource()
+                                                      .getInterface();
+        if ( Objects.nonNull( interfaceShortHand ) )
+        {
+            return interfaceShortHand.equals( InterfaceShortHand.WRDS_AHPS );
+        }
+
+        // Fallback for unspecified interface.
+        return uri.getPath()
+                  .toLowerCase()
+                  .endsWith( "ahps" )
+               ||
+               uri.getPath()
+                  .toLowerCase()
+                  .endsWith( "ahps/" );
+    }
+
+    /**
+     * @param source the data source
      * @return whether the source is a web source, specifically whether it has an http(s) scheme
      * @throws NullPointerException if the source is null
      */
@@ -268,6 +322,81 @@ public class ReaderUtilities
         return source.getUri()
                      .getScheme()
                      .startsWith( "http" );
+    }
+
+
+    /**
+     * Creates year ranges for requests.
+     * @param pairConfig the pair declaration
+     * @param dataSource the data source
+     * @return year ranges
+     */
+    public static Set<Pair<Instant, Instant>> getYearRanges( PairConfig pairConfig,
+                                                             DataSource dataSource )
+    {
+        Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( dataSource.getContext() );
+
+        DateCondition dates = pairConfig.getDates();
+
+        SortedSet<Pair<Instant, Instant>> yearRanges = new TreeSet<>();
+
+        OffsetDateTime earliest;
+        String specifiedEarliest = dates.getEarliest();
+
+        OffsetDateTime latest;
+        String specifiedLatest = dates.getLatest();
+
+        OffsetDateTime nowDate = OffsetDateTime.now();
+
+        earliest = OffsetDateTime.parse( specifiedEarliest )
+                                 .with( TemporalAdjusters.firstDayOfYear() )
+                                 .withHour( 0 )
+                                 .withMinute( 0 )
+                                 .withSecond( 0 )
+                                 .withNano( 0 );
+
+        LOGGER.debug( "Given {}, calculated {} for earliest.",
+                      specifiedEarliest,
+                      earliest );
+
+        // Intentionally keep this raw, un-next-year-ified.
+        latest = OffsetDateTime.parse( specifiedLatest );
+
+        LOGGER.debug( "Given {}, parsed {} for latest.",
+                      specifiedLatest,
+                      latest );
+
+        OffsetDateTime left = earliest;
+        OffsetDateTime right = left.with( TemporalAdjusters.firstDayOfNextYear() );
+
+        while ( left.isBefore( latest ) )
+        {
+            // Because we chunk a year at a time, and because these will not
+            // be retrieved again if already present, we need to ensure the
+            // right hand date does not exceed "now".
+            if ( right.isAfter( nowDate ) )
+            {
+                if ( latest.isAfter( nowDate ) )
+                {
+                    right = nowDate;
+                }
+                else
+                {
+                    right = latest;
+                }
+            }
+
+            Pair<Instant, Instant> range = Pair.of( left.toInstant(), right.toInstant() );
+            LOGGER.debug( "Created year range {}", range );
+            yearRanges.add( range );
+            left = left.with( TemporalAdjusters.firstDayOfNextYear() );
+            right = right.with( TemporalAdjusters.firstDayOfNextYear() );
+        }
+
+        LOGGER.debug( "Created year ranges: {}.", yearRanges );
+
+        return Collections.unmodifiableSet( yearRanges );
     }
 
     /**
@@ -396,7 +525,7 @@ public class ReaderUtilities
                                                 e );
         }
     }
-    
+
     /**
      * Do not construct.
      */
