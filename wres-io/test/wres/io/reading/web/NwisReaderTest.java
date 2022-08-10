@@ -55,159 +55,161 @@ class NwisReaderTest
             "?format=json&indent=on&sites=09165000&parameterCd=00060&startDT=2018-10-01T00:00:00Z&endDT=2018-10-01T01:00:00Z";
 
     /** Response from GET. */
-    private String response = "{\"name\" : \"ns1:timeSeriesResponseType\",\r\n"
-                              + "\"declaredType\" : \"org.cuahsi.waterml.TimeSeriesResponseType\",\r\n"
-                              + "\"scope\" : \"javax.xml.bind.JAXBElement$GlobalScope\",\r\n"
-                              + "\"value\" : {\r\n"
-                              + "  \"queryInfo\" : {\r\n"
-                              + "    \"queryURL\" : \"http://nwis.waterservices.usgs.gov/nwis/iv/format=json&indent=on&sites=09165000&parameterCd=00060&startDT=2018-10-01T00:00:00Z&endDT=2018-10-01T01:00:00Z\",\r\n"
-                              + "    \"criteria\" : {\r\n"
-                              + "      \"locationParam\" : \"[ALL:09165000]\",\r\n"
-                              + "      \"variableParam\" : \"[00060]\",\r\n"
-                              + "      \"timeParam\" : {\r\n"
-                              + "        \"beginDateTime\" : \"2018-10-01T00:00:00.000\",\r\n"
-                              + "        \"endDateTime\" : \"2018-10-01T01:00:00.000\"\r\n"
-                              + "      },\r\n"
-                              + "      \"parameter\" : [ ]\r\n"
-                              + "    },\r\n"
-                              + "    \"note\" : [ {\r\n"
-                              + "      \"value\" : \"[ALL:09165000]\",\r\n"
-                              + "      \"title\" : \"filter:sites\"\r\n"
-                              + "    }, {\r\n"
-                              + "      \"value\" : \"[mode=RANGE, modifiedSince=null] interval={INTERVAL[2018-10-01T00:00:00.000Z/2018-10-01T01:00:00.000Z]}\",\r\n"
-                              + "      \"title\" : \"filter:timeRange\"\r\n"
-                              + "    }, {\r\n"
-                              + "      \"value\" : \"methodIds=[ALL]\",\r\n"
-                              + "      \"title\" : \"filter:methodId\"\r\n"
-                              + "    }, {\r\n"
-                              + "      \"value\" : \"2022-08-08T21:34:38.616Z\",\r\n"
-                              + "      \"title\" : \"requestDT\"\r\n"
-                              + "    }, {\r\n"
-                              + "      \"value\" : \"e7c64270-1761-11ed-911a-4cd98f86fad9\",\r\n"
-                              + "      \"title\" : \"requestId\"\r\n"
-                              + "    }, {\r\n"
-                              + "      \"value\" : \"Provisional data are subject to revision. Go to http://waterdata.usgs.gov/nwis/help/?provisional for more information.\",\r\n"
-                              + "      \"title\" : \"disclaimer\"\r\n"
-                              + "    }, {\r\n"
-                              + "      \"value\" : \"nadww02\",\r\n"
-                              + "      \"title\" : \"server\"\r\n"
-                              + "    } ]\r\n"
-                              + "  },\r\n"
-                              + "  \"timeSeries\" : [ {\r\n"
-                              + "    \"sourceInfo\" : {\r\n"
-                              + "      \"siteName\" : \"DOLORES RIVER BELOW RICO, CO.\",\r\n"
-                              + "      \"siteCode\" : [ {\r\n"
-                              + "        \"value\" : \"09165000\",\r\n"
-                              + "        \"network\" : \"NWIS\",\r\n"
-                              + "        \"agencyCode\" : \"USGS\"\r\n"
-                              + "      } ],\r\n"
-                              + "      \"timeZoneInfo\" : {\r\n"
-                              + "        \"defaultTimeZone\" : {\r\n"
-                              + "          \"zoneOffset\" : \"-07:00\",\r\n"
-                              + "          \"zoneAbbreviation\" : \"MST\"\r\n"
-                              + "        },\r\n"
-                              + "        \"daylightSavingsTimeZone\" : {\r\n"
-                              + "          \"zoneOffset\" : \"-06:00\",\r\n"
-                              + "          \"zoneAbbreviation\" : \"MDT\"\r\n"
-                              + "        },\r\n"
-                              + "        \"siteUsesDaylightSavingsTime\" : true\r\n"
-                              + "      },\r\n"
-                              + "      \"geoLocation\" : {\r\n"
-                              + "        \"geogLocation\" : {\r\n"
-                              + "          \"srs\" : \"EPSG:4326\",\r\n"
-                              + "          \"latitude\" : 37.63888428,\r\n"
-                              + "          \"longitude\" : -108.0603517\r\n"
-                              + "        },\r\n"
-                              + "        \"localSiteXY\" : [ ]\r\n"
-                              + "      },\r\n"
-                              + "      \"note\" : [ ],\r\n"
-                              + "      \"siteType\" : [ ],\r\n"
-                              + "      \"siteProperty\" : [ {\r\n"
-                              + "        \"value\" : \"ST\",\r\n"
-                              + "        \"name\" : \"siteTypeCd\"\r\n"
-                              + "      }, {\r\n"
-                              + "        \"value\" : \"14030002\",\r\n"
-                              + "        \"name\" : \"hucCd\"\r\n"
-                              + "      }, {\r\n"
-                              + "        \"value\" : \"08\",\r\n"
-                              + "        \"name\" : \"stateCd\"\r\n"
-                              + "      }, {\r\n"
-                              + "        \"value\" : \"08033\",\r\n"
-                              + "        \"name\" : \"countyCd\"\r\n"
-                              + "      } ]\r\n"
-                              + "    },\r\n"
-                              + "    \"variable\" : {\r\n"
-                              + "      \"variableCode\" : [ {\r\n"
-                              + "        \"value\" : \"00060\",\r\n"
-                              + "        \"network\" : \"NWIS\",\r\n"
-                              + "        \"vocabulary\" : \"NWIS:UnitValues\",\r\n"
-                              + "        \"variableID\" : 45807197,\r\n"
-                              + "        \"default\" : true\r\n"
-                              + "      } ],\r\n"
-                              + "      \"variableName\" : \"Streamflow, ft&#179;/s\",\r\n"
-                              + "      \"variableDescription\" : \"Discharge, cubic feet per second\",\r\n"
-                              + "      \"valueType\" : \"Derived Value\",\r\n"
-                              + "      \"unit\" : {\r\n"
-                              + "        \"unitCode\" : \"ft3/s\"\r\n"
-                              + "      },\r\n"
-                              + "      \"options\" : {\r\n"
-                              + "        \"option\" : [ {\r\n"
-                              + "          \"name\" : \"Statistic\",\r\n"
-                              + "          \"optionCode\" : \"00000\"\r\n"
-                              + "        } ]\r\n"
-                              + "      },\r\n"
-                              + "      \"note\" : [ ],\r\n"
-                              + "      \"noDataValue\" : -999999.0,\r\n"
-                              + "      \"variableProperty\" : [ ],\r\n"
-                              + "      \"oid\" : \"45807197\"\r\n"
-                              + "    },\r\n"
-                              + "    \"values\" : [ {\r\n"
-                              + "      \"value\" : [ {\r\n"
-                              + "        \"value\" : \"11.0\",\r\n"
-                              + "        \"qualifiers\" : [ \"A\" ],\r\n"
-                              + "        \"dateTime\" : \"2018-09-30T18:00:00.000-06:00\"\r\n"
-                              + "      }, {\r\n"
-                              + "        \"value\" : \"11.0\",\r\n"
-                              + "        \"qualifiers\" : [ \"A\" ],\r\n"
-                              + "        \"dateTime\" : \"2018-09-30T18:15:00.000-06:00\"\r\n"
-                              + "      }, {\r\n"
-                              + "        \"value\" : \"11.0\",\r\n"
-                              + "        \"qualifiers\" : [ \"A\" ],\r\n"
-                              + "        \"dateTime\" : \"2018-09-30T18:30:00.000-06:00\"\r\n"
-                              + "      }, {\r\n"
-                              + "        \"value\" : \"11.0\",\r\n"
-                              + "        \"qualifiers\" : [ \"A\" ],\r\n"
-                              + "        \"dateTime\" : \"2018-09-30T18:45:00.000-06:00\"\r\n"
-                              + "      }, {\r\n"
-                              + "        \"value\" : \"11.5\",\r\n"
-                              + "        \"qualifiers\" : [ \"A\" ],\r\n"
-                              + "        \"dateTime\" : \"2018-09-30T19:00:00.000-06:00\"\r\n"
-                              + "      } ],\r\n"
-                              + "      \"qualifier\" : [ {\r\n"
-                              + "        \"qualifierCode\" : \"A\",\r\n"
-                              + "        \"qualifierDescription\" : \"Approved for publication -- Processing and review completed.\",\r\n"
-                              + "        \"qualifierID\" : 0,\r\n"
-                              + "        \"network\" : \"NWIS\",\r\n"
-                              + "        \"vocabulary\" : \"uv_rmk_cd\"\r\n"
-                              + "      } ],\r\n"
-                              + "      \"qualityControlLevel\" : [ ],\r\n"
-                              + "      \"method\" : [ {\r\n"
-                              + "        \"methodDescription\" : \"\",\r\n"
-                              + "        \"methodID\" : 211948\r\n"
-                              + "      } ],\r\n"
-                              + "      \"source\" : [ ],\r\n"
-                              + "      \"offset\" : [ ],\r\n"
-                              + "      \"sample\" : [ ],\r\n"
-                              + "      \"censorCode\" : [ ]\r\n"
-                              + "    } ],\r\n"
-                              + "    \"name\" : \"USGS:09165000:00060:00000\"\r\n"
-                              + "  } ]\r\n"
-                              + "},\r\n"
-                              + "\"nil\" : false,\r\n"
-                              + "\"globalScope\" : true,\r\n"
-                              + "\"typeSubstituted\" : false\r\n"
-                              + "}";
+    private static final String RESPONSE = "{\"name\" : \"ns1:timeSeriesResponseType\",\r\n"
+                                           + "\"declaredType\" : \"org.cuahsi.waterml.TimeSeriesResponseType\",\r\n"
+                                           + "\"scope\" : \"javax.xml.bind.JAXBElement$GlobalScope\",\r\n"
+                                           + "\"value\" : {\r\n"
+                                           + "  \"queryInfo\" : {\r\n"
+                                           + "    \"queryURL\" : \"http://nwis.waterservices.usgs.gov/nwis/iv/format=json&indent=on&sites=09165000&parameterCd=00060&startDT=2018-10-01T00:00:00Z&endDT=2018-10-01T01:00:00Z\",\r\n"
+                                           + "    \"criteria\" : {\r\n"
+                                           + "      \"locationParam\" : \"[ALL:09165000]\",\r\n"
+                                           + "      \"variableParam\" : \"[00060]\",\r\n"
+                                           + "      \"timeParam\" : {\r\n"
+                                           + "        \"beginDateTime\" : \"2018-10-01T00:00:00.000\",\r\n"
+                                           + "        \"endDateTime\" : \"2018-10-01T01:00:00.000\"\r\n"
+                                           + "      },\r\n"
+                                           + "      \"parameter\" : [ ]\r\n"
+                                           + "    },\r\n"
+                                           + "    \"note\" : [ {\r\n"
+                                           + "      \"value\" : \"[ALL:09165000]\",\r\n"
+                                           + "      \"title\" : \"filter:sites\"\r\n"
+                                           + "    }, {\r\n"
+                                           + "      \"value\" : \"[mode=RANGE, modifiedSince=null] interval={INTERVAL[2018-10-01T00:00:00.000Z/2018-10-01T01:00:00.000Z]}\",\r\n"
+                                           + "      \"title\" : \"filter:timeRange\"\r\n"
+                                           + "    }, {\r\n"
+                                           + "      \"value\" : \"methodIds=[ALL]\",\r\n"
+                                           + "      \"title\" : \"filter:methodId\"\r\n"
+                                           + "    }, {\r\n"
+                                           + "      \"value\" : \"2022-08-08T21:34:38.616Z\",\r\n"
+                                           + "      \"title\" : \"requestDT\"\r\n"
+                                           + "    }, {\r\n"
+                                           + "      \"value\" : \"e7c64270-1761-11ed-911a-4cd98f86fad9\",\r\n"
+                                           + "      \"title\" : \"requestId\"\r\n"
+                                           + "    }, {\r\n"
+                                           + "      \"value\" : \"Provisional data are subject to revision. Go to http://waterdata.usgs.gov/nwis/help/?provisional for more information.\",\r\n"
+                                           + "      \"title\" : \"disclaimer\"\r\n"
+                                           + "    }, {\r\n"
+                                           + "      \"value\" : \"nadww02\",\r\n"
+                                           + "      \"title\" : \"server\"\r\n"
+                                           + "    } ]\r\n"
+                                           + "  },\r\n"
+                                           + "  \"timeSeries\" : [ {\r\n"
+                                           + "    \"sourceInfo\" : {\r\n"
+                                           + "      \"siteName\" : \"DOLORES RIVER BELOW RICO, CO.\",\r\n"
+                                           + "      \"siteCode\" : [ {\r\n"
+                                           + "        \"value\" : \"09165000\",\r\n"
+                                           + "        \"network\" : \"NWIS\",\r\n"
+                                           + "        \"agencyCode\" : \"USGS\"\r\n"
+                                           + "      } ],\r\n"
+                                           + "      \"timeZoneInfo\" : {\r\n"
+                                           + "        \"defaultTimeZone\" : {\r\n"
+                                           + "          \"zoneOffset\" : \"-07:00\",\r\n"
+                                           + "          \"zoneAbbreviation\" : \"MST\"\r\n"
+                                           + "        },\r\n"
+                                           + "        \"daylightSavingsTimeZone\" : {\r\n"
+                                           + "          \"zoneOffset\" : \"-06:00\",\r\n"
+                                           + "          \"zoneAbbreviation\" : \"MDT\"\r\n"
+                                           + "        },\r\n"
+                                           + "        \"siteUsesDaylightSavingsTime\" : true\r\n"
+                                           + "      },\r\n"
+                                           + "      \"geoLocation\" : {\r\n"
+                                           + "        \"geogLocation\" : {\r\n"
+                                           + "          \"srs\" : \"EPSG:4326\",\r\n"
+                                           + "          \"latitude\" : 37.63888428,\r\n"
+                                           + "          \"longitude\" : -108.0603517\r\n"
+                                           + "        },\r\n"
+                                           + "        \"localSiteXY\" : [ ]\r\n"
+                                           + "      },\r\n"
+                                           + "      \"note\" : [ ],\r\n"
+                                           + "      \"siteType\" : [ ],\r\n"
+                                           + "      \"siteProperty\" : [ {\r\n"
+                                           + "        \"value\" : \"ST\",\r\n"
+                                           + "        \"name\" : \"siteTypeCd\"\r\n"
+                                           + "      }, {\r\n"
+                                           + "        \"value\" : \"14030002\",\r\n"
+                                           + "        \"name\" : \"hucCd\"\r\n"
+                                           + "      }, {\r\n"
+                                           + "        \"value\" : \"08\",\r\n"
+                                           + "        \"name\" : \"stateCd\"\r\n"
+                                           + "      }, {\r\n"
+                                           + "        \"value\" : \"08033\",\r\n"
+                                           + "        \"name\" : \"countyCd\"\r\n"
+                                           + "      } ]\r\n"
+                                           + "    },\r\n"
+                                           + "    \"variable\" : {\r\n"
+                                           + "      \"variableCode\" : [ {\r\n"
+                                           + "        \"value\" : \"00060\",\r\n"
+                                           + "        \"network\" : \"NWIS\",\r\n"
+                                           + "        \"vocabulary\" : \"NWIS:UnitValues\",\r\n"
+                                           + "        \"variableID\" : 45807197,\r\n"
+                                           + "        \"default\" : true\r\n"
+                                           + "      } ],\r\n"
+                                           + "      \"variableName\" : \"Streamflow, ft&#179;/s\",\r\n"
+                                           + "      \"variableDescription\" : \"Discharge, cubic feet per second\",\r\n"
+                                           + "      \"valueType\" : \"Derived Value\",\r\n"
+                                           + "      \"unit\" : {\r\n"
+                                           + "        \"unitCode\" : \"ft3/s\"\r\n"
+                                           + "      },\r\n"
+                                           + "      \"options\" : {\r\n"
+                                           + "        \"option\" : [ {\r\n"
+                                           + "          \"name\" : \"Statistic\",\r\n"
+                                           + "          \"optionCode\" : \"00000\"\r\n"
+                                           + "        } ]\r\n"
+                                           + "      },\r\n"
+                                           + "      \"note\" : [ ],\r\n"
+                                           + "      \"noDataValue\" : -999999.0,\r\n"
+                                           + "      \"variableProperty\" : [ ],\r\n"
+                                           + "      \"oid\" : \"45807197\"\r\n"
+                                           + "    },\r\n"
+                                           + "    \"values\" : [ {\r\n"
+                                           + "      \"value\" : [ {\r\n"
+                                           + "        \"value\" : \"11.0\",\r\n"
+                                           + "        \"qualifiers\" : [ \"A\" ],\r\n"
+                                           + "        \"dateTime\" : \"2018-09-30T18:00:00.000-06:00\"\r\n"
+                                           + "      }, {\r\n"
+                                           + "        \"value\" : \"11.0\",\r\n"
+                                           + "        \"qualifiers\" : [ \"A\" ],\r\n"
+                                           + "        \"dateTime\" : \"2018-09-30T18:15:00.000-06:00\"\r\n"
+                                           + "      }, {\r\n"
+                                           + "        \"value\" : \"11.0\",\r\n"
+                                           + "        \"qualifiers\" : [ \"A\" ],\r\n"
+                                           + "        \"dateTime\" : \"2018-09-30T18:30:00.000-06:00\"\r\n"
+                                           + "      }, {\r\n"
+                                           + "        \"value\" : \"11.0\",\r\n"
+                                           + "        \"qualifiers\" : [ \"A\" ],\r\n"
+                                           + "        \"dateTime\" : \"2018-09-30T18:45:00.000-06:00\"\r\n"
+                                           + "      }, {\r\n"
+                                           + "        \"value\" : \"11.5\",\r\n"
+                                           + "        \"qualifiers\" : [ \"A\" ],\r\n"
+                                           + "        \"dateTime\" : \"2018-09-30T19:00:00.000-06:00\"\r\n"
+                                           + "      } ],\r\n"
+                                           + "      \"qualifier\" : [ {\r\n"
+                                           + "        \"qualifierCode\" : \"A\",\r\n"
+                                           + "        \"qualifierDescription\" : \"Approved for publication -- Processing and review completed.\",\r\n"
+                                           + "        \"qualifierID\" : 0,\r\n"
+                                           + "        \"network\" : \"NWIS\",\r\n"
+                                           + "        \"vocabulary\" : \"uv_rmk_cd\"\r\n"
+                                           + "      } ],\r\n"
+                                           + "      \"qualityControlLevel\" : [ ],\r\n"
+                                           + "      \"method\" : [ {\r\n"
+                                           + "        \"methodDescription\" : \"\",\r\n"
+                                           + "        \"methodID\" : 211948\r\n"
+                                           + "      } ],\r\n"
+                                           + "      \"source\" : [ ],\r\n"
+                                           + "      \"offset\" : [ ],\r\n"
+                                           + "      \"sample\" : [ ],\r\n"
+                                           + "      \"censorCode\" : [ ]\r\n"
+                                           + "    } ],\r\n"
+                                           + "    \"name\" : \"USGS:09165000:00060:00000\"\r\n"
+                                           + "  } ]\r\n"
+                                           + "},\r\n"
+                                           + "\"nil\" : false,\r\n"
+                                           + "\"globalScope\" : true,\r\n"
+                                           + "\"typeSubstituted\" : false\r\n"
+                                           + "}";
 
+    private static final String GET = "GET";
+    
     @BeforeAll
     static void startServer()
     {
@@ -225,8 +227,8 @@ class NwisReaderTest
     {
         NwisReaderTest.mockServer.when( HttpRequest.request()
                                                    .withPath( PATH )
-                                                   .withMethod( "GET" ) )
-                                 .respond( HttpResponse.response( this.response ) );
+                                                   .withMethod( GET ) )
+                                 .respond( HttpResponse.response( RESPONSE ) );
 
         URI fakeUri = URI.create( "http://localhost:"
                                   + NwisReaderTest.mockServer.getLocalPort()
@@ -234,7 +236,7 @@ class NwisReaderTest
                                   + PARAMS );
 
         DataSourceConfig.Source fakeDeclarationSource =
-                new DataSourceConfig.Source( null,
+                new DataSourceConfig.Source( fakeUri,
                                              null,
                                              null,
                                              null,
@@ -321,20 +323,20 @@ class NwisReaderTest
         NwisReaderTest.mockServer.when( HttpRequest.request()
                                                    .withPath( PATH )
                                                    .withQueryStringParameters( parametersOne )
-                                                   .withMethod( "GET" ) )
-                                 .respond( HttpResponse.response( this.response ) );
+                                                   .withMethod( GET ) )
+                                 .respond( HttpResponse.response( RESPONSE ) );
 
         NwisReaderTest.mockServer.when( HttpRequest.request()
                                                    .withPath( PATH )
                                                    .withQueryStringParameters( parametersTwo )
-                                                   .withMethod( "GET" ) )
-                                 .respond( HttpResponse.response( this.response ) );
+                                                   .withMethod( GET ) )
+                                 .respond( HttpResponse.response( RESPONSE ) );
 
         NwisReaderTest.mockServer.when( HttpRequest.request()
                                                    .withPath( PATH )
                                                    .withQueryStringParameters( parametersThree )
-                                                   .withMethod( "GET" ) )
-                                 .respond( HttpResponse.response( this.response ) );
+                                                   .withMethod( GET ) )
+                                 .respond( HttpResponse.response( RESPONSE ) );
 
         URI fakeUri = URI.create( "http://localhost:"
                                   + NwisReaderTest.mockServer.getLocalPort()
@@ -342,7 +344,7 @@ class NwisReaderTest
                                   + PARAMS );
 
         DataSourceConfig.Source fakeDeclarationSource =
-                new DataSourceConfig.Source( null,
+                new DataSourceConfig.Source( fakeUri,
                                              null,
                                              null,
                                              null,
@@ -396,24 +398,24 @@ class NwisReaderTest
         }
 
         // Three requests made
-        NwisReaderTest.mockServer.verify( request().withMethod( "GET" )
+        NwisReaderTest.mockServer.verify( request().withMethod( GET )
                                                    .withPath( PATH ),
                                           VerificationTimes.exactly( 3 ) );
 
         // One request made with parameters one
-        NwisReaderTest.mockServer.verify( request().withMethod( "GET" )
+        NwisReaderTest.mockServer.verify( request().withMethod( GET )
                                                    .withPath( PATH )
                                                    .withQueryStringParameters( parametersOne ),
                                           VerificationTimes.exactly( 1 ) );
 
         // One request made with parameters two
-        NwisReaderTest.mockServer.verify( request().withMethod( "GET" )
+        NwisReaderTest.mockServer.verify( request().withMethod( GET )
                                                    .withPath( PATH )
                                                    .withQueryStringParameters( parametersTwo ),
                                           VerificationTimes.exactly( 1 ) );
 
         // One request made with parameters three
-        NwisReaderTest.mockServer.verify( request().withMethod( "GET" )
+        NwisReaderTest.mockServer.verify( request().withMethod( GET )
                                                    .withPath( PATH )
                                                    .withQueryStringParameters( parametersThree ),
                                           VerificationTimes.exactly( 1 ) );

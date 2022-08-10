@@ -208,7 +208,8 @@ public class NwisReader implements TimeSeriesReader
                 mutableChunks.remove( nextChunk );
 
                 // Create the inner data source for the chunk 
-                URI nextUri = this.getUriForChunk( dataSource.getUri(),
+                URI nextUri = this.getUriForChunk( dataSource.getSource()
+                                                             .getValue(),
                                                    dataSource,
                                                    nextChunk.getRight(),
                                                    nextChunk.getLeft() );
@@ -217,10 +218,6 @@ public class NwisReader implements TimeSeriesReader
                         DataSource.of( dataSource.getDisposition(),
                                        dataSource.getSource(),
                                        dataSource.getContext(),
-                                       // Pass through the links because we
-                                       // trust the SourceLoader to have
-                                       // deduplicated this source if it was
-                                       // repeated in other contexts.
                                        dataSource.getLinks(),
                                        nextUri,
                                        dataSource.getLeftOrRightOrBaseline() );
