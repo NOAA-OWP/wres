@@ -460,6 +460,8 @@ project(':wres-io')
         // Fast-Infoset encoded XML
         implementation group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '2.1.0'
 
+        implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.4'
+
         compileOnly 'net.jcip:jcip-annotations:1.0'
 
         // Because org.postgresql:postgresql uses JUL logging, bridge at runtime

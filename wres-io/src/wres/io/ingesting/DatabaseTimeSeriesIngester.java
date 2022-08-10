@@ -52,11 +52,10 @@ import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 
 /**
- * Ingests given TimeSeries data if not already ingested.
+ * Ingests given {@link TimeSeries} data if not already ingested.
  *
  * As of 2019-10-29, only supports data with one or more reference datetime.
  * As of 2019-10-29, uses toString() representation to identify data.
- * As of 2020-02-18, used by (raw) NWM reader, WRDS NWM reader, NWIS reader.
  *
  * Identifies data for convenience (and parallelism).
  *
@@ -66,10 +65,11 @@ import wres.system.SystemSettings;
  * individual timeseries has been ingested prior to ingesting it, regardless of
  * higher level checks.
  *
- * Does not link data, leaves that to higher level code to do later.
- *
- * Separates the tasks of reading from ingesting. Assumes that reading has
- * already taken place and the result of the reading is a TimeSeries.
+ * Does not link data, leaves that to higher level code to do later. In this
+ * context, link means to associate a dataset with all of the sides/orientations
+ * in which it appears. For example, a left-ish dataset may be used to generate
+ * a baseline time-series and, therefore, appear in two contexts, left and 
+ * baseline.
  *
  * Does not preclude the skipping of ingest at a higher level, e.g. when a full
  * PI-XML stream is identified and marked as ingested in wres.source. This class

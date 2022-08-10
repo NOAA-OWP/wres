@@ -393,12 +393,22 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
                                                                          .next(),
                                                                    -1,
                                                                    uri );
+
+            LOGGER.debug( "Read a single-valued NWM time-series from the root document, which contained {} events.",
+                          series.getEvents()
+                                .size() );
+
             return TimeSeriesTuple.ofSingleValued( series );
         }
         // Ensemble
         else if ( members.length > 1 )
         {
             TimeSeries<Ensemble> series = ReaderUtilities.transformEnsemble( metadata, traces, -1, uri );
+
+            LOGGER.debug( "Read an ensemble NWM time-series from the root document, which contained {} events.",
+                          series.getEvents()
+                                .size() );
+
             return TimeSeriesTuple.ofEnsemble( series );
         }
         // No members

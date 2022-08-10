@@ -56,6 +56,9 @@ public class ReaderUtilities
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( ReaderUtilities.class );
 
+    /** Default WRDS project name, required by the service. Yuck. */
+    public static final String DEFAULT_WRDS_PROJ = "UNKNOWN_PROJECT_USING_WRES";
+    
     /**
      * Transform a single trace into a {@link TimeSeries} of {@link Double} values
      * @param metadata the metadata of the timeseries
@@ -309,6 +312,30 @@ public class ReaderUtilities
                   .endsWith( "ahps/" );
     }
 
+    /**
+     * @param source the data source
+     * @return whether the source is a WRDS NWM source
+     * @throws NullPointerException if the source is null
+     */
+    
+    public static boolean isWrdsNwmSource( DataSource source )
+    {
+        Objects.requireNonNull( source );
+        
+        URI uri = source.getUri();
+        InterfaceShortHand interfaceShortHand = source.getSource()
+                                                      .getInterface();
+        if ( Objects.nonNull( interfaceShortHand ) )
+        {
+            return interfaceShortHand.equals( InterfaceShortHand.WRDS_NWM );
+        }
+
+        // Fallback for unspecified interface.
+        return  uri.getPath()
+                   .toLowerCase()
+                   .contains( "nwm" );
+    }
+    
     /**
      * @param source the data source
      * @return whether the source is a web source, specifically whether it has an http(s) scheme

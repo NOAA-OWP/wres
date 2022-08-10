@@ -220,7 +220,7 @@ public class WatermlReader implements TimeSeriesReader
 
             if ( LOGGER.isTraceEnabled() )
             {
-                LOGGER.trace( "WaterML bytes parsed from for {}: {}",
+                LOGGER.trace( "Time-series from {} as UTF-8: {}",
                               dataSource.getUri(),
                               new String( rawForecast,
                                           StandardCharsets.UTF_8 ) );

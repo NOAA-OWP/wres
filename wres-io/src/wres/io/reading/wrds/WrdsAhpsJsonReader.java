@@ -220,12 +220,13 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
 
             if ( LOGGER.isTraceEnabled() )
             {
-                LOGGER.trace( "Time series as bytes: {} and as UTF-8: {}",
-                              rawForecast,
+                LOGGER.trace( "Time series from {} as UTF-8: {}",
+                              uri,
                               new String( rawForecast,
                                           StandardCharsets.UTF_8 ) );
             }
 
+            // Notwithstanding the naming of these POJOs, they actually admit both forecasts and observations
             ForecastResponse response = OBJECT_MAPPER.readValue( rawForecast,
                                                                  ForecastResponse.class );
 
@@ -328,14 +329,11 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
             datetimes.put( ReferenceTimeType.ISSUED_TIME, issuedDateTime );
         }
 
-        // If datetimes is empty, then, if the data are observations, use the latest time
-        // associated with an observation as a "dummy" reference time.  Otherwise, the 
-        // the data is either a forecast or simulation, and a reference this is required.
-        // Since its not found, skip the time series with an appropriate message.
+        // Check for a reference time when expected. Should this be an exception?
         if ( datetimes.isEmpty() && dataSource.getContext()
                                               .getType() != DatasourceType.OBSERVATIONS )
         {
-            LOGGER.warn( "Forecast at {} did not have a reference datetime. Skipping it.",
+            LOGGER.warn( "Time-series at {} did not have a reference datetime. Skipping it.",
                          uri );
             return null;
 
@@ -399,6 +397,10 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
         }
 
         TimeSeries<Double> timeSeries = timeSeriesBuilder.build();
+
+        LOGGER.debug( "Created a time-series with {} event values and metadata: {}.",
+                      timeSeries.getEvents().size(),
+                      metadata );
 
         return TimeSeriesTuple.ofSingleValued( timeSeries );
     }
