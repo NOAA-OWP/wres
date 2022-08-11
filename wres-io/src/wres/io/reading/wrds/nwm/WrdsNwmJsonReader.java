@@ -1,5 +1,6 @@
 package wres.io.reading.wrds.nwm;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -90,8 +91,8 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
         try
         {
             Path path = Paths.get( dataSource.getUri() );
-            InputStream stream = Files.newInputStream( path );
-            return this.readFromStream( dataSource, stream );
+            InputStream stream = new BufferedInputStream( Files.newInputStream( path ) );
+            return this.read( dataSource, stream );
         }
         catch ( IOException e )
         {
@@ -101,18 +102,6 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
 
     @Override
     public Stream<TimeSeriesTuple> read( DataSource dataSource, InputStream inputStream )
-    {
-        return this.readFromStream( dataSource, inputStream );
-    }
-
-    /**
-     * Reads WaterML data from a stream.
-     * @param dataSource the data source
-     * @param inputStream the data stream
-     * @return the time-series streams
-     * @throws NullPointerException if either input is null
-     */
-    private Stream<TimeSeriesTuple> readFromStream( DataSource dataSource, InputStream inputStream )
     {
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( inputStream );

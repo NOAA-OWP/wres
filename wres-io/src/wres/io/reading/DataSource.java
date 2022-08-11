@@ -386,7 +386,7 @@ public class DataSource
                       uri.toString() );
         byte[] firstBytes;
         DataDisposition disposition = DataDisposition.UNKNOWN;
-
+        
         try
         {
             // Do content type detection with tika and get the first 1024 bytes.
@@ -408,6 +408,14 @@ public class DataSource
             }
 
             firstBytes = inputStream.readNBytes( DETECTION_BYTES );
+            
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "Bytes used for content type detection: {} and as UTF-8: {}",
+                              firstBytes,
+                              new String( firstBytes,
+                                          StandardCharsets.UTF_8 ) );
+            }
 
             inputStream.reset();
         }
@@ -553,6 +561,11 @@ public class DataSource
             {
                 LOGGER.warn( "Using a potentially corrupt tarball: '{}'", uri );
                 disposition = DataDisposition.TARBALL;
+            }
+            // Sometimes a CSV file is returned as text/plain from tika
+            else if ( DataSource.detectCsvFromTextPlain( firstBytes, uri ) )
+            {
+                disposition = DataDisposition.CSV_WRES;
             }
             else
             {
@@ -854,4 +867,33 @@ public class DataSource
 
         return countAgainst == 0 && countFor > 0;
     }
+    
+    /**
+     * Attempts to identify a plain text byte array as {@link DataDisposition#CSV_WRES}.
+     * @param firstBytes the bytes to detect
+     * @param uri the uri
+     * @return whether the format is {@link DataDisposition#CSV_WRES}
+     */
+    
+    private static boolean detectCsvFromTextPlain( byte[] firstBytes, URI uri )
+    {
+        String start = new String( firstBytes, StandardCharsets.UTF_8 );
+        String[] wresCsvRequiredHeaders = { "value_date", "variable_name",
+                                            "location", "measurement_unit",
+                                            "value" };
+        
+        for ( String requiredHeader : wresCsvRequiredHeaders )
+        {
+            if ( !start.contains( requiredHeader ) )
+            {
+                LOGGER.debug( "Found a plain text file {} without an expected WRES CSV header field {}, so assuming "
+                        + "this is not WRES CSV or is malformed.", uri, requiredHeader );
+                
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
 }
