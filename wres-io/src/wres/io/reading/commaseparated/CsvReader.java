@@ -186,8 +186,8 @@ public class CsvReader implements TimeSeriesReader
                 {
                     LeftOrRightOrBaseline lrb = dataSource.getLeftOrRightOrBaseline();
 
-                    LOGGER.warn( "The following variable names were encountered in a {} forecast csv data source with URI "
-                                 + "{} that were not declared in the project: {}",
+                    LOGGER.warn( "The following variable names were encountered in a {} forecast csv data source with "
+                                 + "URI {} that were not declared in the project: {}",
                                  lrb,
                                  dataSource.getUri(),
                                  unconfiguredVariableNames );

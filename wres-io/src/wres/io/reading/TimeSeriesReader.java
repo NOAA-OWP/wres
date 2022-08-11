@@ -6,7 +6,9 @@ import java.util.stream.Stream;
 import wres.datamodel.time.TimeSeriesTuple;
 
 /**
- * <p>An API for reading different types of time-series data from a {@link DataSource}.
+ * <p>An API for reading different types of time-series data from a {@link DataSource}. <p>When reading from a stream 
+ * supplied by a {@link TimeSeriesReader}, use a try-with-resources block to ensure that the underlying resources are 
+ * closed. 
  * 
  * <p>Implementation notes:
  * 
@@ -26,8 +28,8 @@ import wres.datamodel.time.TimeSeriesTuple;
  * through to an in-memory collection (where all time-series have been read into memory upfront) will consume more 
  * memory than strictly required when the consumer writes to a persistent store of time-series, such as a database. 
  * 
- * It is essential that the {@link Stream#close()} is called on completion and implementations should close resources 
- * by registering a callback via {@link Stream#onClose(Runnable)}.
+ * <p>Implementations that rely on closable resources should close resources by registering a callback via 
+ * {@link Stream#onClose(Runnable)}.
  * 
  * @author James Brown
  */
@@ -46,7 +48,7 @@ public interface TimeSeriesReader
      */
 
     Stream<TimeSeriesTuple> read( DataSource dataSource );
-    
+
     /**
      * Reads and returns all time-series from the prescribed stream using the data source only for a description of the 
      * source. To read from a source without an existing stream, use {@link #read(DataSource, InputStream)}.

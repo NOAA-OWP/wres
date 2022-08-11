@@ -1,5 +1,6 @@
 package wres.io.reading.wrds;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -96,7 +97,7 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
         try
         {
             Path path = Paths.get( dataSource.getUri() );
-            InputStream stream = Files.newInputStream( path );
+            InputStream stream = new BufferedInputStream( Files.newInputStream( path ) );
             return this.readFromStream( dataSource, stream );
         }
         catch ( IOException e )
