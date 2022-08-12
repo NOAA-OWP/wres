@@ -62,7 +62,7 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
     private NetcdfFile source;
     private final String hash;
 
-    GriddedNWMValueSaver( SystemSettings systemSettings,
+    public GriddedNWMValueSaver( SystemSettings systemSettings,
                           Database database,
                           Features featuresCache,
                           MeasurementUnits measurementUnitsCache,

@@ -3,10 +3,8 @@ package wres.io.reading.nwm;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -32,13 +30,8 @@ import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.grid.client.Fetcher;
 import wres.grid.client.Request;
 import wres.grid.client.SingleValuedTimeSeriesResponse;
-import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Caches;
-import wres.io.data.caching.DataSources;
 import wres.io.data.caching.GriddedFeatures;
-import wres.io.data.details.SourceCompletedDetails;
-import wres.io.data.details.SourceDetails;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.IngestResultInMemory;
 import wres.io.ingesting.PreIngestException;
@@ -47,8 +40,6 @@ import wres.io.reading.DataSource;
 import wres.io.reading.ReadException;
 import wres.io.reading.Source;
 import wres.io.retrieval.DataAccessException;
-import wres.io.utilities.Database;
-import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 import wres.util.NetCDF;
 
@@ -69,27 +60,18 @@ public class GriddedNWMSource implements Source
     private static final AtomicReference<ProjectConfig> FEATURE_REFERENCE = new AtomicReference<>();
     
     private final SystemSettings systemSettings;
-    private final Database database;
-
-    private final Caches caches;
     private final TimeSeriesIngester timeSeriesIngester;
     private final DataSource dataSource;
     private final ProjectConfig projectConfig;
 
-    private boolean alreadyFound;
-
     /**
      * @param timeSeriesIngester the time-series ingester
      * @param systemSettings The system settings
-     * @param database The database
-     * @param caches The database caches/ORMs
      * @param projectConfig The ProjectConfig causing ingest
      * @param dataSource The data source information
      */
     public GriddedNWMSource( TimeSeriesIngester timeSeriesIngester,
                              SystemSettings systemSettings,
-                             Database database,
-                             Caches caches,
                              ProjectConfig projectConfig,
                              DataSource dataSource )
     {
@@ -98,47 +80,15 @@ public class GriddedNWMSource implements Source
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( dataSource );
 
-        if ( !systemSettings.isInMemory() )
-        {
-            Objects.requireNonNull( database );
-            Objects.requireNonNull( caches );
-        }
-
         if ( Objects.isNull( projectConfig.getPair().getGridSelection() ) )
         {
             throw new IllegalArgumentException( "Cannot create an instance without a grid data selection." );
         }
 
         this.systemSettings = systemSettings;
-        this.database = database;
-        this.caches = caches;
         this.timeSeriesIngester = timeSeriesIngester;
         this.dataSource = dataSource;
         this.projectConfig = projectConfig;
-    }
-
-    /**
-     * @return the system settings
-     */
-    private SystemSettings getSystemSettings()
-    {
-        return this.systemSettings;
-    }
-
-    /**
-     * @return the database
-     */
-    private Database getDatabase()
-    {
-        return this.database;
-    }
-
-    /**
-     * @return the caches
-     */
-    private Caches getCaches()
-    {
-        return this.caches;
     }
 
     /**
@@ -234,12 +184,6 @@ public class GriddedNWMSource implements Source
                                                          + "</source>' instead" );
             }
 
-            WRESCallable<List<IngestResult>> saver;
-
-            String hash = NetCDF.getGriddedUniqueIdentifier( source,
-                                                             this.getFileName(),
-                                                             var.getShortName() );
-
             // In memory evaluation?
             // TODO: if/when gridded time-series are treated like any other time-series, this special handling of
             // gridded ingest can be removed along with the GriddedNWMValueSaver below. See #51232.
@@ -247,49 +191,13 @@ public class GriddedNWMSource implements Source
             {
                 this.ingestTimeSeries( source, this.getTimeSeriesIngester(), this.getProjectConfig() );
 
-                LOGGER.debug( "Return an in-memory ingest result, no gridded metadata ingest required." );
+                LOGGER.debug( "Returning an in-memory ingest result, no gridded metadata ingest required." );
                 return List.of( new IngestResultInMemory( this.getDataSource() ) );
             }
 
-            try
-            {
-                DataSources dataSources = this.getCaches()
-                                              .getDataSourcesCache();
-                SourceDetails sourceDetails = dataSources.getExistingSource( hash );
-
-                if ( sourceDetails != null && Files.exists( Paths.get( sourceDetails.getSourcePath() ) ) )
-                {
-                    // Was setting the file name important? Seems as though
-                    // the filename should be immutable.
-                    //this.setFilename( sourceDetails.getSourcePath() );
-                    this.alreadyFound = true;
-                    SourceCompletedDetails completedDetails =
-                            new SourceCompletedDetails( this.getDatabase(), sourceDetails );
-                    boolean completed = completedDetails.wasCompleted();
-                    return IngestResult.singleItemListFrom( this.getDataSource(),
-                                                            sourceDetails.getId(),
-                                                            !this.alreadyFound,
-                                                            !completed );
-                }
-            }
-            catch ( SQLException e )
-            {
-                throw new IOException( "Could not check to see if gridded data is already present.", e );
-            }
-
-            saver = new GriddedNWMValueSaver( this.getSystemSettings(),
-                                              this.getDatabase(),
-                                              this.getCaches()
-                                                  .getFeaturesCache(),
-                                              this.getCaches()
-                                                  .getMeasurementUnitsCache(),
-                                              this.getDataSource(),
-                                              hash );
-
-            saver.setOnRun( ProgressMonitor.onThreadStartHandler() );
-            saver.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
-
-            return saver.call();
+            // Gridded ingest involves ingesting the source only
+            return this.getTimeSeriesIngester()
+                       .ingest( Stream.of(), this.getDataSource() );
         }
         else
         {
