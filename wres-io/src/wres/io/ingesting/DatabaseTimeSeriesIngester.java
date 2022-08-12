@@ -39,6 +39,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.data.caching.Caches;
+import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
@@ -46,10 +47,13 @@ import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.caching.TimeScales;
 import wres.io.reading.DataSource;
+import wres.io.reading.nwm.GriddedNWMValueSaver;
 import wres.io.reading.ZippedSource;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
+import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
+import wres.util.NetCDF;
 
 /**
  * Ingests given {@link TimeSeries} data if not already ingested.
@@ -188,6 +192,13 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
     {
         Objects.requireNonNull( timeSeriesTuple );
         Objects.requireNonNull( dataSource );
+
+        // If this is a gridded dataset, it has special treatment, inserting the sources only. This will disappear
+        // if/when gridded ingest is normalized with other ingest: see #51232
+        if ( dataSource.isGridded() )
+        {
+            return this.ingestGriddedData( dataSource );
+        }
 
         // Read one time-series into memory at a time, closing the stream on completion
         try ( timeSeriesTuple )
@@ -361,6 +372,61 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         }
 
         return results;
+    }
+
+    /**
+     * Ingests a gridded data source, which involves inserting the source reference only, not the time-series data. See
+     * ticket #51232.
+     * 
+     * @param dataSource
+     * @return
+     */
+
+    private List<IngestResult> ingestGriddedData( DataSource dataSource )
+    {
+        try
+        {
+            String hash = NetCDF.getGriddedUniqueIdentifier( dataSource.getUri(),
+                                                             dataSource.getVariable()
+                                                                       .getValue() );
+            DataSources dataSources = this.getCaches()
+                                          .getDataSourcesCache();
+            SourceDetails sourceDetails = dataSources.getExistingSource( hash );
+
+            if ( Objects.nonNull( sourceDetails ) && Files.exists( Paths.get( sourceDetails.getSourcePath() ) ) )
+            {
+                // Was setting the file name important? Seems as though
+                // the filename should be immutable.
+                //this.setFilename( sourceDetails.getSourcePath() );
+                SourceCompletedDetails completedDetails =
+                        new SourceCompletedDetails( this.getDatabase(), sourceDetails );
+                boolean completed = completedDetails.wasCompleted();
+                return IngestResult.singleItemListFrom( dataSource,
+                                                        sourceDetails.getId(),
+                                                        false,
+                                                        !completed );
+            }
+
+            // Not present, so save it
+            GriddedNWMValueSaver saver = new GriddedNWMValueSaver( this.getSystemSettings(),
+                                                                   this.getDatabase(),
+                                                                   this.getCaches()
+                                                                       .getFeaturesCache(),
+                                                                   this.getCaches()
+                                                                       .getMeasurementUnitsCache(),
+                                                                   dataSource,
+                                                                   hash );
+
+            saver.setOnRun( ProgressMonitor.onThreadStartHandler() );
+            saver.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
+
+            return saver.call();
+        }
+        catch ( IOException | SQLException e )
+        {
+            throw new PreIngestException( "Could not check to see if gridded data is already present in the database.",
+                                          e );
+        }
     }
 
     /**

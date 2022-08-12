@@ -288,6 +288,15 @@ public class DataSource
         return this.getContext()
                    .getVariable();
     }
+    
+    /**
+     * @return whether this data source contains a gridded dataset, which requires special treatment in some contexts
+     */
+    
+    public boolean isGridded()
+    {
+        return this.getDisposition() == DataDisposition.NETCDF_GRIDDED;
+    }
 
     @Override
     public boolean equals( Object o )

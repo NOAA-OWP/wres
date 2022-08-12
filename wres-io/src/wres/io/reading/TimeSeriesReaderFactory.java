@@ -5,10 +5,12 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.PairConfig;
 import wres.io.reading.commaseparated.CsvReader;
 import wres.io.reading.datacard.DatacardReader;
 import wres.io.reading.fews.PublishedInterfaceXmlReader;
+import wres.io.reading.nwm.NwmGriddedReader;
 import wres.io.reading.waterml.WatermlReader;
 import wres.io.reading.web.NwisReader;
 import wres.io.reading.web.WrdsAhpsReader;
@@ -28,7 +30,31 @@ public class TimeSeriesReaderFactory
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesReaderFactory.class );
 
     /** CSV reader. */
-    private final CsvReader csvReader;
+    private static final CsvReader CSV_READER = CsvReader.of();
+
+    /** Datacard reader. */
+    private static final DatacardReader DATACARD_READER = DatacardReader.of();
+
+    /** PI-XML and FastInfoset PI-XML reader. */
+    private static final PublishedInterfaceXmlReader PIXML_READER = PublishedInterfaceXmlReader.of();
+
+    /** WaterML reader. */
+    private static final WatermlReader WATERML_READER = WatermlReader.of();
+
+    /** WRDS AHPS JSON reader. */
+    private static final WrdsAhpsJsonReader WRDS_AHPS_JSON_READER = WrdsAhpsJsonReader.of();
+
+    /** WRDS NWM JSON reader. */
+    private static final WrdsNwmJsonReader WRDS_NWM_JSON_READER = WrdsNwmJsonReader.of();
+
+    /** Zipped reader. Requires an instance of this class for initialization, since it contains formatted data. */
+    private final ZippedReader zippedReader;
+
+    /** Tarred reader. Requires an instance of this class for initialization, since it contains formatted data. */
+    private final TarredReader tarredReader;
+
+    /** Pair declaration, which is used to build some readers. */
+    private final PairConfig pairConfig;
 
     /**
      * @param pairConfig the pair declaration, which is used to assist in chunking requests from web services, optional
@@ -56,53 +82,65 @@ public class TimeSeriesReaderFactory
         switch ( dataSource.getDisposition() )
         {
             case CSV_WRES:
-                return this.csvReader;
+                return CSV_READER;
             case DATACARD:
-                return DatacardReader.of();
+                return DATACARD_READER;
             case XML_FI_TIMESERIES:
             case XML_PI_TIMESERIES:
-                return PublishedInterfaceXmlReader.of();
+                return PIXML_READER;
             case JSON_WATERML:
                 // A WaterML source from USGS NWIS?
                 if ( ReaderUtilities.isUsgsSource( dataSource ) )
                 {
                     LOGGER.debug( "Discovered a data source {}, which was identified as originating from USGS NWIS.",
                                   dataSource );
-                    return NwisReader.of();
+                    return NwisReader.of( this.pairConfig );
                 }
                 // A reader for USGS-formatted WaterML, but not from a NWIS instance
                 LOGGER.debug( "Discovered a data source {}, which was identified as USGS-formatted WaterML from a "
                               + "source other than NWIS.",
                               dataSource );
-                return WatermlReader.of();
+                return WATERML_READER;
             case JSON_WRDS_AHPS:
                 // A web source? If so, assume a WRDS instance.
                 if ( ReaderUtilities.isWebSource( dataSource ) )
                 {
                     LOGGER.debug( "Discovered a data source {}, which was identified as originating from WRDS.",
                                   dataSource );
-                    return WrdsAhpsReader.of();
+                    return WrdsAhpsReader.of( this.pairConfig );
                 }
                 // A reader for WRDS-formatted JSON from AHPS, but not from a WRDS instance
                 LOGGER.debug( "Discovered a data source {}, which was identified as WRDS-formatted JSON containing "
                               + "AHPS time-series from a source other than WRDS.",
                               dataSource );
-                return WrdsAhpsJsonReader.of();
+                return WRDS_AHPS_JSON_READER;
             case JSON_WRDS_NWM:
                 // A web source? If so, assume a WRDS instance.
                 if ( ReaderUtilities.isWebSource( dataSource ) )
                 {
-                    return WrdsNwmReader.of();
+                    return WrdsNwmReader.of( this.pairConfig );
                 }
                 // A reader for WRDS-formatted JSON from the NWM, but not from a WRDS instance
                 LOGGER.debug( "Discovered a data source {}, which was identified as WRDS-formatted JSON containing "
                               + "NWM time-series from a source other than WRDS.",
                               dataSource );
-                return WrdsNwmJsonReader.of();
+                return WRDS_NWM_JSON_READER;
             case TARBALL:
-                return TarredReader.of( this );
+                return this.tarredReader;
             case GZIP:
-                return ZippedReader.of( this );
+                return this.zippedReader;
+            case NETCDF_GRIDDED:
+                return NwmGriddedReader.of( this.pairConfig );
+            case COMPLEX:
+                if ( this.isNwmSource( dataSource ) )
+                {
+                    // TODO: Return the reader once implemented
+                    return null;
+                }
+
+                throw new IllegalArgumentException( "Discovered a data source with a COMPLEX data disposition, but "
+                                                    + "could not identify the data source as a NWM vector source. No "
+                                                    + "other reader is currently implemented for a COMPLEX source." );
             default:
                 throw new IllegalArgumentException( "There is no reader implementation available for the prescribed "
                                                     + "data source disposition: "
@@ -136,6 +174,7 @@ public class TimeSeriesReaderFactory
             case JSON_WRDS_NWM:
             case TARBALL:
             case GZIP:
+            case NETCDF_GRIDDED:
                 return true;
             default:
                 return false;
@@ -143,13 +182,44 @@ public class TimeSeriesReaderFactory
     }
 
     /**
+     * @param dataSource the data source
+     * @return whether the data source is a NWM source
+     */
+
+    private boolean isNwmSource( DataSource dataSource )
+    {
+        InterfaceShortHand interfaceType = dataSource.getSource()
+                                                     .getInterface();
+
+        if ( Objects.nonNull( interfaceType ) && interfaceType.name().toLowerCase().startsWith( "nwm" ) )
+        {
+            LOGGER.debug( "Identified data source {} as a NWM vector source.", dataSource );
+            return true;
+        }
+
+        LOGGER.warn( "Failed to identify data source {} as a NWM vector source because the interface shorthand did not "
+                     + "begin with a NWM designation.",
+                     dataSource );
+
+        return false;
+    }
+
+    /**
      * Create an instance.
-     * @param pairConfig the pair declaration, which is used to assist in chunking requests from web services
+     * @param pairConfig the pair declaration, which is used to assist in reading some sources
      */
 
     private TimeSeriesReaderFactory( PairConfig pairConfig )
     {
-        this.csvReader = CsvReader.of();
+        this.zippedReader = ZippedReader.of( this );
+        this.tarredReader = TarredReader.of( this );
+        this.pairConfig = pairConfig;
+
+        if ( LOGGER.isWarnEnabled() && Objects.isNull( pairConfig ) )
+        {
+            LOGGER.warn( "Creating a reader factory with missing pair declaration. If a reader is subsequently "
+                         + "requested that depends on pair declaration, you can expect an error at that time." );
+        }
     }
 
 }

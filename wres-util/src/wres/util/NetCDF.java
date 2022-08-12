@@ -6,6 +6,7 @@ import ucar.ma2.Array;
 import ucar.ma2.InvalidRangeException;
 import ucar.nc2.Attribute;
 import ucar.nc2.NetcdfFile;
+import ucar.nc2.NetcdfFiles;
 import ucar.nc2.Variable;
 import wres.datamodel.DataException;
 
@@ -424,7 +425,7 @@ public final class NetCDF {
 
     public static String getGriddedUniqueIdentifier( final URI filepath, String variableName ) throws IOException
     {
-        try (NetcdfFile file = NetcdfFile.open( filepath.toURL().getFile() ))
+        try (NetcdfFile file = NetcdfFiles.open( filepath.toURL().getFile() ))
         {
             return NetCDF.getGriddedUniqueIdentifier( file, filepath, variableName );
         }

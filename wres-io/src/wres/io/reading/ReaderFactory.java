@@ -75,8 +75,6 @@ public class ReaderFactory
             case NETCDF_GRIDDED:
                 source = new GriddedNWMSource( timeSeriesIngester,
                                                systemSettings,
-                                               database,
-                                               caches,
                                                projectConfig,
                                                dataSource );
                 break;
