@@ -2,7 +2,6 @@ package wres.io.reading.nwm;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.math.BigInteger;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -12,50 +11,51 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import wres.config.generated.Circle;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DateCondition;
+import wres.config.generated.Feature;
 import wres.config.generated.IntBoundsType;
+import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
-import wres.config.generated.UnnamedFeature;
 import wres.datamodel.time.TimeSeries;
 import wres.config.generated.DataSourceConfig.Variable;
+import wres.config.generated.DatasourceType;
 import wres.io.reading.DataSource;
 import wres.io.reading.DataSource.DataDisposition;
 
 /**
- * Tests the {@link NwmGriddedReader}.
+ * Tests the {@link NwmVectorReader}.
  * @author James Brown
  */
 
-class NwmGriddedReaderTest
+class NwmVectorReaderTest
 {
     /**
-     * TODO: implement this test fully, writing a small gridded source to an in-memory file system and then reading it.
+     * TODO: implement this test fully, writing a small vector source to an in-memory file system and then reading it.
      * This test will pass currently if using the correct path to the source identified below, which originates from 
-     * system test scenario650. For now, this test is ignored.
+     * system test scenario600. For now, this test is ignored.
      */
 
     @Disabled( "Until we can write a small grid to an in-memory file system, probably using the UCAR NetCDF API." )
     @Test
-    void readOneNwmGridProducesEighteenTimeSeries()
+    void readTwentyFourShortRangeNwmForecastsForOneFeatureProducesTwentyFourTimeSeries()
     {
-        // Read a gridded source
-        Path path = Paths.get( "nwm.20180526", "nwm.t2018052600z.short_range.forcing.f005.wres.nc" );
+        // Read a vector source
+        Path path = Paths.get( "data/nwmVector/" );
 
         DataSourceConfig.Source fakeDeclarationSource =
                 new DataSourceConfig.Source( path.toUri(),
-                                             null,
+                                             InterfaceShortHand.NWM_SHORT_RANGE_CHANNEL_RT_CONUS,
                                              null,
                                              null,
                                              null );
 
-        DataSource fakeSource = DataSource.of( DataDisposition.NETCDF_GRIDDED,
+        DataSource fakeSource = DataSource.of( DataDisposition.COMPLEX,  // The designation we use for NWM vectors
                                                fakeDeclarationSource,
-                                               new DataSourceConfig( null,
+                                               new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
                                                                      List.of( fakeDeclarationSource ),
-                                                                     new Variable( "RAINRATE", null ),
+                                                                     new Variable( "streamflow", null ),
                                                                      null,
                                                                      null,
                                                                      null,
@@ -73,18 +73,13 @@ class NwmGriddedReaderTest
         PairConfig pairConfig = new PairConfig( null,
                                                 null,
                                                 null,
+                                                List.of( new Feature( "18384141", "18384141", null ) ),
                                                 null,
                                                 null,
-                                                List.of( new UnnamedFeature( null,
-                                                                             null,
-                                                                             new Circle( 39.225F,
-                                                                                         -76.825F,
-                                                                                         0.05F,
-                                                                                         BigInteger.valueOf( 2346 ) ) ) ),
-                                                new IntBoundsType( 1, 18 ),
+                                                new IntBoundsType( 0, 18 ),
                                                 null,
-                                                new DateCondition( "2018-01-01T00:00:00Z", "2021-01-01T00:00:00Z" ),
-                                                null,
+                                                new DateCondition( "2017-08-07T23:59:59Z", "2017-08-09T17:00:00Z" ),
+                                                new DateCondition( "2017-08-07T23:59:59Z", "2017-08-08T23:00:00Z" ),
                                                 null,
                                                 null,
                                                 null,
@@ -94,13 +89,13 @@ class NwmGriddedReaderTest
                                                 null,
                                                 null );
 
-        NwmGriddedReader reader = NwmGriddedReader.of( pairConfig );
+        NwmVectorReader reader = NwmVectorReader.of( pairConfig );
 
         List<TimeSeries<Double>> actual = reader.read( fakeSource )
                                                 .map( next -> next.getSingleValuedTimeSeries() )
                                                 .collect( Collectors.toList() );
 
-        assertEquals( 18, actual.size() );
+        assertEquals( 24, actual.size() );
     }
 
 }

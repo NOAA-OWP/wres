@@ -98,7 +98,6 @@ public class NWMReader implements Callable<List<IngestResult>>
                                                       + " as a source, which will be used to find data falling within "
                                                       + "those valid datetimes.";
 
-    private final SystemSettings systemSettings;
     private final ProjectConfig projectConfig;
     private final DataSource dataSource;
     private final NWMProfile nwmProfile;
@@ -142,8 +141,6 @@ public class NWMReader implements Callable<List<IngestResult>>
                                                 + lrb
                                                 + " NWM sources." );
         }
-
-        this.systemSettings = systemSettings;
 
         URI literalUri = dataSource.getSource()
                                    .getValue();
@@ -268,11 +265,6 @@ public class NWMReader implements Callable<List<IngestResult>>
         this.ingests = new ArrayBlockingQueue<>( systemSettings.getMaxiumNwmIngestThreads() );
         this.startGettingResults = new CountDownLatch( systemSettings.getMaxiumNwmIngestThreads() );
         this.timeSeriesIngester = timeSeriesIngester;
-    }
-
-    private SystemSettings getSystemSettings()
-    {
-        return this.systemSettings;
     }
 
     private ProjectConfig getProjectConfig()
@@ -435,8 +427,7 @@ public class NWMReader implements Callable<List<IngestResult>>
             for ( Instant referenceDatetime : referenceDatetimes )
             {
                 try ( NWMTimeSeries nwmTimeSeries =
-                        new NWMTimeSeries( this.getSystemSettings(),
-                                           this.getNwmProfile(),
+                        new NWMTimeSeries( this.getNwmProfile(),
                                            referenceDatetime,
                                            this.getReferenceTimeType(),
                                            this.getUri() ) )

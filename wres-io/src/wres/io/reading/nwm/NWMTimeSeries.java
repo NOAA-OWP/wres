@@ -54,7 +54,6 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.ingesting.PreIngestException;
 import wres.statistics.generated.Geometry;
-import wres.system.SystemSettings;
 
 /**
  * Goal: a variable/feature/timeseries combination in a Vector NWM dataset is
@@ -79,6 +78,8 @@ class NWMTimeSeries implements Closeable
     private static final DateTimeFormatter NWM_HOUR_FORMATTER = DateTimeFormatter.ofPattern( "HH" );
 
     private static final int CONCURRENT_READS = 6;
+    
+    private static final int POOL_OBJECT_LIFESPAN = 30000;
 
     private final NWMProfile profile;
 
@@ -113,7 +114,6 @@ class NWMTimeSeries implements Closeable
     private final Set<Integer> featuresNotFound;
 
     /**
-     * @param systemSettings the system settings
      * @param profile the profile
      * @param referenceDatetime the reference time
      * @param baseUri the base uri
@@ -122,13 +122,11 @@ class NWMTimeSeries implements Closeable
      * @throws IllegalArgumentException When baseUri is not absolute.
      */
 
-    NWMTimeSeries( SystemSettings systemSettings,
-                   NWMProfile profile,
+    NWMTimeSeries( NWMProfile profile,
                    Instant referenceDatetime,
                    ReferenceTimeType referenceTimeType,
                    URI baseUri )
     {
-        Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( profile );
         Objects.requireNonNull( referenceDatetime );
         Objects.requireNonNull( baseUri );
@@ -169,7 +167,7 @@ class NWMTimeSeries implements Closeable
                 new ArrayBlockingQueue<>( CONCURRENT_READS );
         this.readExecutor = new ThreadPoolExecutor( CONCURRENT_READS,
                                                     CONCURRENT_READS,
-                                                    systemSettings.poolObjectLifespan(),
+                                                    POOL_OBJECT_LIFESPAN,
                                                     TimeUnit.MILLISECONDS,
                                                     nwmReaderQueue,
                                                     nwmReaderThreadFactory );

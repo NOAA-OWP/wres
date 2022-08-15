@@ -58,6 +58,8 @@ import wres.grid.client.SingleValuedTimeSeriesResponse;
  * streamed input. Thus, {@link #read(DataSource, InputStream)} is a facade on {@link #read(DataSource)}. 
  * 
  * @author James Brown
+ * @author Christopher Tubbs
+ * @author Jesse Bickel
  */
 
 public class NwmGriddedReader implements TimeSeriesReader
@@ -134,6 +136,19 @@ public class NwmGriddedReader implements TimeSeriesReader
         return seriesStream;
     }
 
+    @Override
+    public Stream<TimeSeriesTuple> read( DataSource dataSource, InputStream stream )
+    {
+        Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( stream );
+
+        LOGGER.warn( "Streaming of NetCDF gridded time-series data is not currently supported. Attempting to read "
+                     + "directly from the data source supplied, {}.",
+                     dataSource );
+
+        return this.read( dataSource );
+    }
+
     /**
      * @return the pair declaration
      */
@@ -188,19 +203,6 @@ public class NwmGriddedReader implements TimeSeriesReader
                          .stream()
                          .flatMap( s -> s )
                          .map( TimeSeriesTuple::ofSingleValued );
-    }
-
-    @Override
-    public Stream<TimeSeriesTuple> read( DataSource dataSource, InputStream stream )
-    {
-        Objects.requireNonNull( dataSource );
-        Objects.requireNonNull( stream );
-
-        LOGGER.warn( "Streaming of gridded time-series data is not currently supported. Attempting to read directly "
-                     + "from the data source supplied, {}.",
-                     dataSource );
-
-        return this.read( dataSource );
     }
 
     /**
@@ -262,12 +264,14 @@ public class NwmGriddedReader implements TimeSeriesReader
 
         this.pairConfig = pairConfig;
     }
-    
-    
+
+
     public static void main( String[] args )
     {
-        Path path = Paths.get( "D:\\Applications\\WRES\\Code\\wres\\systests\\dist\\data\\griddedExamples\\precip_ellicott_city\\short_range\\nwm.20180526", "nwm.t2018052600z.short_range.forcing.f005.wres.nc" );
-        
+        Path path =
+                Paths.get( "D:\\Applications\\WRES\\Code\\wres\\systests\\dist\\data\\griddedExamples\\precip_ellicott_city\\short_range\\nwm.20180526",
+                           "nwm.t2018052600z.short_range.forcing.f005.wres.nc" );
+
         DataSourceConfig.Source fakeDeclarationSource =
                 new DataSourceConfig.Source( path.toUri(),
                                              InterfaceShortHand.NWM_SHORT_RANGE_CHANNEL_RT_CONUS,
@@ -279,7 +283,7 @@ public class NwmGriddedReader implements TimeSeriesReader
                                                fakeDeclarationSource,
                                                new DataSourceConfig( null,
                                                                      List.of( fakeDeclarationSource ),
-                                                                     new Variable("RAINRATE", null),
+                                                                     new Variable( "RAINRATE", null ),
                                                                      null,
                                                                      null,
                                                                      null,
@@ -305,7 +309,7 @@ public class NwmGriddedReader implements TimeSeriesReader
                                                                                          -76.825F,
                                                                                          0.05F,
                                                                                          BigInteger.valueOf( 2346 ) ) ) ),
-                                                new IntBoundsType(1,18),
+                                                new IntBoundsType( 1, 18 ),
                                                 null,
                                                 new DateCondition( "2018-01-01T00:00:00Z", "2021-01-01T00:00:00Z" ),
                                                 null,
@@ -319,10 +323,12 @@ public class NwmGriddedReader implements TimeSeriesReader
                                                 null );
 
         NwmGriddedReader reader = NwmGriddedReader.of( pairConfig );
-        
-        System.out.println(reader.read( fakeSource ).map( next -> next.getSingleValuedTimeSeries() ).collect( Collectors.toList() ));
-    
+
+        System.out.println( reader.read( fakeSource )
+                                  .map( next -> next.getSingleValuedTimeSeries() )
+                                  .collect( Collectors.toList() ) );
+
     }
-    
-    
+
+
 }

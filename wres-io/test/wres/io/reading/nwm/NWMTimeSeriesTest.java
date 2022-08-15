@@ -297,8 +297,7 @@ public class NWMTimeSeriesTest
                                                 false,
                                                 Duration.ZERO );
 
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
-                                                               nwmProfile,
+        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
                                                                Instant.parse( "2019-10-23T02:00:00Z" ),
                                                                ReferenceTimeType.ANALYSIS_START_TIME,
                                                                URI.create( "https://nomads.ncep.***REMOVED***/pub/data/nccf/com/nwm/prod/" ) ) )
@@ -331,8 +330,7 @@ public class NWMTimeSeriesTest
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
-                                                               nwmProfile,
+        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
                                                                Instant.parse( "2019-10-22T02:00:00Z" ),
                                                                ReferenceTimeType.T0,
                                                                URI.create( "https://nomads.ncep.***REMOVED***/pub/data/nccf/com/nwm/prod/" ) ) )
@@ -370,8 +368,7 @@ public class NWMTimeSeriesTest
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
-                                                               nwmProfile,
+        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
                                                                Instant.parse( T2019_10_06T02_00_00Z ),
                                                                ReferenceTimeType.T0,
                                                                URI.create( "https://dstore-fqdn/nwm/2.0/" ) ) )
@@ -408,8 +405,7 @@ public class NWMTimeSeriesTest
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
-                                                               nwmProfile,
+        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
                                                                Instant.parse( "2018-05-06T04:00:00Z" ),
                                                                ReferenceTimeType.T0,
                                                                URI.create( "https://dstore-fqdn/nwm/1.2/" ) ) )
@@ -446,8 +442,7 @@ public class NWMTimeSeriesTest
                                                 Duration.ZERO );
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
-                                                               nwmProfile,
+        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
                                                                Instant.parse( "2017-10-06T17:00:00Z" ),
                                                                ReferenceTimeType.T0,
                                                                URI.create( "https://dstore-fqdn/nwm/1.1/" ) ) )
@@ -483,8 +478,7 @@ public class NWMTimeSeriesTest
                                                 Duration.ZERO );
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
-                                                               nwmProfile,
+        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
                                                                Instant.parse( "2016-10-18T17:00:00Z" ),
                                                                ReferenceTimeType.T0,
                                                                URI.create( "https://dstore-fqdn/nwm/1.0/" ) ) )
@@ -519,8 +513,7 @@ public class NWMTimeSeriesTest
                                                 Duration.ZERO );
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
-                                                               nwmProfile,
+        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
                                                                Instant.parse( T2019_10_06T02_00_00Z ),
                                                                ReferenceTimeType.T0,
                                                                URI.create( "H:/netcdf_data/" ) ) )
@@ -559,8 +552,7 @@ public class NWMTimeSeriesTest
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
-                                                               nwmProfile,
+        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
                                                                Instant.parse( "2019-10-21T06:00:00Z" ),
                                                                ReferenceTimeType.T0,
                                                                URI.create( "https://dstore-fqdn/nwm/2.0/" ) ) )
@@ -609,8 +601,7 @@ public class NWMTimeSeriesTest
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
-                                                               nwmProfile,
+        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
                                                                Instant.parse( "2019-10-21T06:00:00Z" ),
                                                                ReferenceTimeType.T0,
                                                                URI.create( "C:/nwm_data/" ) ) )
