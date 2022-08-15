@@ -63,6 +63,8 @@ import wres.util.NetCDF;
  * what data should be ingested. Asynchronous tasks for each file needed for
  * ingest are created and sent to the Exector for ingestion.
  * @author Christopher Tubbs
+ * @author James Brown
+ * @author Jesse Bickel
  */
 public class SourceLoader
 {
@@ -598,21 +600,18 @@ public class SourceLoader
         // Archives perform their own ingest verification
         if ( disposition == GZIP )
         {
-            LOGGER.debug(
-                          "The data at '{}' will be ingested because it has been "
-                          +
-                          "determined that it is an archive that will need to "
-                          +
-                          "be further evaluated.",
+            LOGGER.debug( "The data at '{}' will be ingested because it has been determined that it is an archive that "
+                          + "will need to be further evaluated.",
                           dataSource.getUri() );
             return new FileEvaluation( SourceStatus.REQUIRES_DECOMPOSITION,
                                        KEY_NOT_FOUND );
         }
         
         // Is this in-memory, i.e., no ingest required?
-        if( this.systemSettings.isInMemory() )
+        if ( this.systemSettings.isInMemory() )
         {
-            return new FileEvaluation( SourceStatus.INCOMPLETE_WITH_NO_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING, KEY_NOT_FOUND );
+            return new FileEvaluation( SourceStatus.INCOMPLETE_WITH_NO_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING,
+                                       KEY_NOT_FOUND );
         }
 
         boolean ingest = ( disposition != UNKNOWN );

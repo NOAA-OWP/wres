@@ -11,6 +11,7 @@ import wres.io.reading.commaseparated.CsvReader;
 import wres.io.reading.datacard.DatacardReader;
 import wres.io.reading.fews.PublishedInterfaceXmlReader;
 import wres.io.reading.nwm.NwmGriddedReader;
+import wres.io.reading.nwm.NwmVectorReader;
 import wres.io.reading.waterml.WatermlReader;
 import wres.io.reading.web.NwisReader;
 import wres.io.reading.web.WrdsAhpsReader;
@@ -69,7 +70,6 @@ public class TimeSeriesReaderFactory
     /**
      * Returns a concrete reader for the prescribed data source.
      * 
-     * @see #hasTimeSeriesReader(DataSource)
      * @param dataSource the data source, required
      * @return a reader
      * @throws NullPointerException if the data source is null
@@ -79,6 +79,7 @@ public class TimeSeriesReaderFactory
     public TimeSeriesReader getReader( DataSource dataSource )
     {
         Objects.requireNonNull( dataSource );
+
         switch ( dataSource.getDisposition() )
         {
             case CSV_WRES:
@@ -134,50 +135,22 @@ public class TimeSeriesReaderFactory
             case COMPLEX:
                 if ( this.isNwmSource( dataSource ) )
                 {
-                    // TODO: Return the reader once implemented
-                    return null;
+                    return NwmVectorReader.of( this.pairConfig );
                 }
 
                 throw new IllegalArgumentException( "Discovered a data source with a COMPLEX data disposition, but "
                                                     + "could not identify the data source as a NWM vector source. No "
                                                     + "other reader is currently implemented for a COMPLEX source." );
+            case FILE_OR_DIRECTORY:
+                throw new IllegalArgumentException( "Received an unexpected data disposition, FILE_OR_DIRECTORY. "
+                                                    + "Sources with this disposition should be decomposed (if a "
+                                                    + "directory of sources) and further identified before attempting "
+                                                    + "to read them." );
             default:
                 throw new IllegalArgumentException( "There is no reader implementation available for the prescribed "
                                                     + "data source disposition: "
                                                     + dataSource
                                                     + "." );
-        }
-    }
-
-    /**
-     * Helper that identifies whether the reader associated with the data source implements the 
-     * {@link TimeSeriesReader}.
-     * 
-     * TODO: remove this helper when all readers implement {@link TimeSeriesReader}.
-     * 
-     * @param dataSource the data source to test
-     * @return true if the reader implements {@link TimeSeriesReader}, false for a legacy {@link Source}.
-     * @throws NullPointerException if the data source is null
-     */
-
-    public static boolean hasTimeSeriesReader( DataSource dataSource )
-    {
-        Objects.requireNonNull( dataSource );
-        switch ( dataSource.getDisposition() )
-        {
-            case CSV_WRES:
-            case DATACARD:
-            case XML_FI_TIMESERIES:
-            case XML_PI_TIMESERIES:
-            case JSON_WATERML:
-            case JSON_WRDS_AHPS:
-            case JSON_WRDS_NWM:
-            case TARBALL:
-            case GZIP:
-            case NETCDF_GRIDDED:
-                return true;
-            default:
-                return false;
         }
     }
 
@@ -191,7 +164,9 @@ public class TimeSeriesReaderFactory
         InterfaceShortHand interfaceType = dataSource.getSource()
                                                      .getInterface();
 
-        if ( Objects.nonNull( interfaceType ) && interfaceType.name().toLowerCase().startsWith( "nwm" ) )
+        if ( Objects.nonNull( interfaceType ) && interfaceType.name()
+                                                              .toLowerCase()
+                                                              .startsWith( "nwm_" ) )
         {
             LOGGER.debug( "Identified data source {} as a NWM vector source.", dataSource );
             return true;
@@ -213,6 +188,8 @@ public class TimeSeriesReaderFactory
     {
         this.zippedReader = ZippedReader.of( this );
         this.tarredReader = TarredReader.of( this );
+
+        // Defer validation that this exists until it is required
         this.pairConfig = pairConfig;
 
         if ( LOGGER.isWarnEnabled() && Objects.isNull( pairConfig ) )
