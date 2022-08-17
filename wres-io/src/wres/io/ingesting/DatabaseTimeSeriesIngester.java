@@ -89,6 +89,9 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
     private static final Logger LOGGER =
             LoggerFactory.getLogger( DatabaseTimeSeriesIngester.class );
 
+    /** The maximum number of ingest retries. */
+    private static final int MAXIMUM_RETRIES = 10;
+
     private final SystemSettings systemSettings;
     private final Database database;
     private final Caches caches;
@@ -215,8 +218,9 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                     TimeSeries<Double> nextSeries =
                             this.addReferenceTimeIfRequired( nextTuple.getSingleValuedTimeSeries() );
                     List<IngestResult> innerResults =
-                            this.ingestSingleValuedTimeSeries( nextSeries,
-                                                               dataSource );
+                            this.ingestSingleValuedTimeSeriesWithRetries( nextSeries,
+                                                                          dataSource );
+
                     results.addAll( innerResults );
                 }
 
@@ -226,8 +230,9 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                     TimeSeries<Ensemble> nextSeries =
                             this.addReferenceTimeIfRequired( nextTuple.getEnsembleTimeSeries() );
                     List<IngestResult> innerResults =
-                            this.ingestEnsembleTimeSeries( nextSeries,
-                                                           dataSource );
+                            this.ingestEnsembleTimeSeriesWithRetries( nextSeries,
+                                                                      dataSource );
+
                     results.addAll( innerResults );
                 }
             }
@@ -274,6 +279,65 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                                                 .build();
 
         return TimeSeries.of( adjusted, timeSeries.getEvents() );
+    }
+
+    /**
+     * Ingests a time-series whose events are {@link Double}. Retries, as necessary, using exponential back-off, up to
+     * the {@link MAXIMUM_RETRIES}.
+     *  
+     * @param timeSeries the time-series to ingest, not null
+     * @param dataSource the data source
+     * @return the ingest results
+     */
+
+    private List<IngestResult> ingestSingleValuedTimeSeriesWithRetries( TimeSeries<Double> timeSeries,
+                                                                        DataSource dataSource )
+    {
+        long sleepMillis = 1000;
+        for ( int i = 0; i <= DatabaseTimeSeriesIngester.MAXIMUM_RETRIES; i++ )
+        {
+            if ( i > 0 )
+            {
+                try
+                {
+                    Thread.sleep( sleepMillis );
+                }
+                catch ( InterruptedException e )
+                {
+                    Thread.currentThread()
+                          .interrupt();
+
+                    throw new IngestException( "Interrupted while attempting to ingest a time-series with metadata: "
+                                               + timeSeries.getMetadata()
+                                               + "." );
+                }
+
+                // Exponential back-off
+                sleepMillis *= 2;
+
+                LOGGER.warn( "Failed to ingest a time-series on attempt {} of {}. Continuing to retry until the "
+                             + "maximum retry count of {} is reached. There are {} attempts remaining.",
+                             i,
+                             DatabaseTimeSeriesIngester.MAXIMUM_RETRIES,
+                             DatabaseTimeSeriesIngester.MAXIMUM_RETRIES,
+                             DatabaseTimeSeriesIngester.MAXIMUM_RETRIES - i );
+            }
+
+            List<IngestResult> results = this.ingestSingleValuedTimeSeries( timeSeries, dataSource );
+
+            // Success
+            if ( this.isIngestComplete( results ) )
+            {
+                LOGGER.trace( "Successfully ingested a time-series with metadata: " + timeSeries.getMetadata() + "." );
+
+                return results;
+            }
+        }
+
+        throw new IngestException( "Failed to ingest a time-series after " + DatabaseTimeSeriesIngester.MAXIMUM_RETRIES
+                                   + " attempts. The time-series metadata was: "
+                                   + timeSeries.getMetadata()
+                                   + "." );
     }
 
     /**
@@ -326,6 +390,66 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
     }
 
     /**
+     * Ingests a time-series whose events are {@link Ensemble}. Retries, as necessary, using exponential back-off, up to
+     * the {@link MAXIMUM_RETRIES}.
+     *  
+     * @param timeSeries the time-series to ingest, not null
+     * @param dataSource the data source
+     * @return the ingest results
+     */
+
+    private List<IngestResult> ingestEnsembleTimeSeriesWithRetries( TimeSeries<Ensemble> timeSeries,
+                                                                    DataSource dataSource )
+    {
+        long sleepMillis = 1000;
+        for ( int i = 0; i <= DatabaseTimeSeriesIngester.MAXIMUM_RETRIES; i++ )
+        {
+            if ( i > 0 )
+            {
+                try
+                {
+                    Thread.sleep( sleepMillis );
+                }
+                catch ( InterruptedException e )
+                {
+                    Thread.currentThread()
+                          .interrupt();
+
+                    throw new IngestException( "Interrupted while attempting to ingest a time-series with metadata: "
+                                               + timeSeries.getMetadata()
+                                               + "." );
+                }
+
+                // Exponential back-off
+                sleepMillis *= 2;
+
+                LOGGER.warn( "Failed to ingest a time-series from {} on attempt {} of {}. Continuing to retry until "
+                             + "the maximum retry count of {} is reached. There are {} attempts remaining.",
+                             dataSource,
+                             i,
+                             DatabaseTimeSeriesIngester.MAXIMUM_RETRIES,
+                             DatabaseTimeSeriesIngester.MAXIMUM_RETRIES,
+                             DatabaseTimeSeriesIngester.MAXIMUM_RETRIES - i );
+            }
+
+            List<IngestResult> results = this.ingestEnsembleTimeSeries( timeSeries, dataSource );
+
+            // Success
+            if ( this.isIngestComplete( results ) )
+            {
+                LOGGER.trace( "Successfully ingested a time-series with metadata: " + timeSeries.getMetadata() + "." );
+
+                return results;
+            }
+        }
+
+        throw new IngestException( "Failed to ingest a time-series after " + DatabaseTimeSeriesIngester.MAXIMUM_RETRIES
+                                   + " attempts. The time-series metadata was: "
+                                   + timeSeries.getMetadata()
+                                   + "." );
+    }
+
+    /**
      * Ingests a time-series whose events are {@link Ensemble}.
      * @param timeSeries the time-series to ingest, not null
      * @param dataSource the data source
@@ -372,6 +496,16 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         }
 
         return results;
+    }
+
+    /**
+     * @return whether {@link IngestResult#requiresRetry()} returns {@code false} for all ingest results.
+     */
+
+    private boolean isIngestComplete( List<IngestResult> results )
+    {
+        return results.stream()
+                      .noneMatch( IngestResult::requiresRetry );
     }
 
     /**
@@ -589,8 +723,8 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         List<IngestResult> results;
 
         // Mark complete
-        SourceCompleter completer = createSourceCompleter( source.getId(),
-                                                           this.lockManager );
+        SourceCompleter completer = this.createSourceCompleter( source.getId(),
+                                                                this.lockManager );
         completer.complete( latches );
         results = IngestResult.singleItemListFrom( dataSource,
                                                    source.getId(),

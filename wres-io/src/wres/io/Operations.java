@@ -2,7 +2,6 @@ package wres.io;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -47,10 +46,11 @@ import wres.system.SystemSettings;
  * Helpers to conduct ingest and prepare for operations on time-series data.
  */
 
-public final class Operations {
-    
-    private static final Logger LOGGER = LoggerFactory.getLogger(Operations.class);
-    
+public final class Operations
+{
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( Operations.class );
+
     /**
      * Prepares IO operations for evaluation execution checks if evaluations
      * are valid/possible
@@ -166,7 +166,7 @@ public final class Operations {
 
         return new InMemoryProject( projectConfig, timeSeriesStore, ingestResults );
     }
-    
+
     /**
      * Ingests and returns the hashes of source files involved in this project.
      * TODO: Find a more appropriate location; this should call the ingest logic, not implement it
@@ -201,7 +201,7 @@ public final class Operations {
             Objects.requireNonNull( database );
             Objects.requireNonNull( caches );
         }
-        
+
         ThreadFactory threadFactoryWithNaming = new BasicThreadFactory.Builder()
                                                                                 .namingPattern( "Outer Reading/Ingest Thread %d" )
                                                                                 .build();
@@ -274,110 +274,26 @@ public final class Operations {
                 }
                 projectSources.addAll( leftovers );
             }
+
+            // Close the ingest executor
+            ingestExecutor.shutdownNow();
         }
 
         LOGGER.debug( "Here are the files ingested: {}", projectSources );
 
-        // Are there any sources that need to be retried?
-        List<IngestResult> retriesNeeded = projectSources.stream()
-                                                         .filter( IngestResult::requiresRetry )
-                                                         .collect( Collectors.toUnmodifiableList() );
-
-        LOGGER.debug( "Here are retries needed: {}", retriesNeeded );
-
-        // With 9 retries and an additional 2 seconds per retry, max sleep will
-        // be 90 seconds.
-        final int RETRY_LIMIT = 10;
-        final Duration RETRY_WAIT_PER_ATTEMPT = Duration.ofSeconds( 2 );
-
-        List<IngestResult> retriesFinished =
-                new ArrayList<>( retriesNeeded.size() );
-
-        try
+        // Are there any sources that need to be retried? If so, that is exceptional, because retries happen in-band to
+        // ingest. In practice, this scenario is unlikely because ingest should throw an exception once all retries are
+        // exhausted: #89229
+        if ( projectSources.stream().anyMatch( IngestResult::requiresRetry ) )
         {
-            int retriesAttempted = 0;
-
-            while ( retriesNeeded.size() > 0 && retriesAttempted < RETRY_LIMIT )
-            {
-                List<IngestResult> doRetryOnThese =
-                        new ArrayList<>( retriesNeeded.size() );
-                doRetryOnThese.addAll( retriesNeeded );
-
-                LOGGER.debug( "Iteration {}, retries needed: {}",
-                              retriesAttempted,
-                              retriesNeeded );
-
-                List<CompletableFuture<List<IngestResult>>> retriedIngests =
-                        new ArrayList<>( retriesNeeded.size() );
-                List<IngestResult> retriesFinishedThisIteration =
-                        new ArrayList<>( retriesNeeded.size() );
-
-                // On second and following retries, back off a bit.
-                // On the first (0th) attempt, no waiting. After that, a little
-                // more time with each iteration.
-                Thread.sleep( RETRY_WAIT_PER_ATTEMPT.toMillis() * retriesAttempted );
-
-                for ( IngestResult ingestResult : doRetryOnThese )
-                {
-                    List<CompletableFuture<List<IngestResult>>> retriedIngest = loader.retry( ingestResult );
-                    retriedIngests.addAll( retriedIngest );
-                }
-
-                for ( CompletableFuture<List<IngestResult>> futureRetriedIngest : retriedIngests )
-                {
-                    List<IngestResult> retried = futureRetriedIngest.get();
-                    retriesFinishedThisIteration.addAll( retried );
-                }
-
-                LOGGER.debug( "Iteration {}, retries finished this iteration: {}",
-                              retriesAttempted,
-                              retriesFinishedThisIteration );
-
-                retriesAttempted++;
-                retriesNeeded = retriesFinishedThisIteration.stream()
-                                                            .filter( IngestResult::requiresRetry )
-                                                            .collect( Collectors.toUnmodifiableList() );
-                retriesFinished.addAll( retriesFinishedThisIteration.stream()
-                                                                    .filter( r -> !r.requiresRetry() )
-                                                                    .collect( Collectors.toUnmodifiableList() ) );
-            }
-
-            LOGGER.debug( "After iterations, all retries finished: {}",
-                          retriesFinished );
-        }
-        catch ( InterruptedException ie )
-        {
-            LOGGER.warn( "Interrupted during ingest.", ie );
-            Thread.currentThread().interrupt();
-        }
-        catch ( ExecutionException ee )
-        {
-            String message = "An ingest task could not be completed.";
-            throw new IngestException( message, ee );
-        }
-        finally
-        {
-            ingestExecutor.shutdownNow();
-        }
-
-        if ( !retriesNeeded.isEmpty() )
-        {
-            throw new IngestException( "Could not finish ingest because the "
-                                       + "following sources required retries "
-                                       + "but the retry limit of "
-                                       + RETRY_LIMIT
-                                       + " attempts was reached: "
-                                       + retriesNeeded
-                                       + ". Another WRES "
-                                       + "instance may still be ingesting this "
-                                       + "data. Please contact the WRES team." );
+            throw new IngestException( "Discovered one or more time-series that had not been ingested after all "
+                                       + "retries were exhausted." );
         }
 
         // Subtract the yet-to-retry sources, add the completed retried sources.
         List<IngestResult> composedResults = projectSources.stream()
-                                                           .filter( r -> !r.requiresRetry() )
                                                            .collect( Collectors.toList() );
-        composedResults.addAll( retriesFinished );
+
         List<IngestResult> safeToShareResults =
                 Collections.unmodifiableList( composedResults );
 
@@ -397,7 +313,7 @@ public final class Operations {
     public static void shutdown( Database database,
                                  Executor executor )
     {
-        LOGGER.info("Shutting down the IO layer...");
+        LOGGER.info( "Shutting down the IO layer..." );
         executor.complete();
         database.shutdown();
     }
@@ -445,9 +361,9 @@ public final class Operations {
                                                           "SELECT 1 as test" );
             final Object result = script.retrieve( "test" );
             LOGGER.info( "Result={}", result );
-            LOGGER.info("Successfully connected to the database");
+            LOGGER.info( "Successfully connected to the database" );
         }
-        catch (final SQLException e)
+        catch ( final SQLException e )
         {
             throw new SQLException( "Could not connect to the database.", e );
         }
@@ -476,7 +392,7 @@ public final class Operations {
     public static void refreshDatabase( Database database ) throws SQLException
     {
         IncompleteIngest.removeOrphanedData( database );
-        database.refreshStatistics(true);
+        database.refreshStatistics( true );
     }
 
     /**
@@ -490,23 +406,22 @@ public final class Operations {
         // The schema and process for ingest is quite different now. See #76787.
         return false;
 
-       /* 
+        /* 
         return wres.util.Collections.exists( ingestResults,
                                              ingestResult -> !ingestResult.wasFoundAlready() );
         */
     }
 
-    public static void createNetCDFOutputTemplate(final String sourceName, final String templateName)
+    public static void createNetCDFOutputTemplate( final String sourceName, final String templateName )
             throws IOException
     {
-        try (NetCDFCopier
-                writer = new NetCDFCopier( sourceName, templateName, ZonedDateTime.now(  ) ))
+        try ( NetCDFCopier writer = new NetCDFCopier( sourceName, templateName, ZonedDateTime.now() ) )
         {
             writer.write();
         }
     }
-    
-    private Operations ()
+
+    private Operations()
     {
     }
 }
