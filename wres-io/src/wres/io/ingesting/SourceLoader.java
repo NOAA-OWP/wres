@@ -174,83 +174,6 @@ public class SourceLoader
     }
 
     /**
-     * Attempt to retry a source that either failed or another task was doing.
-     *
-     * If the source has fully completed, return with "no retry needed, done."
-     * If the source was abandoned, delete the old data, return the result of
-     * a new attempt to ingest.
-     * If the source was neither complete nor abandoned, return that another
-     * retry is required.
-     * @param ingestResult the old result
-     * @return a new list of future results of the retried source
-     */
-
-    public List<CompletableFuture<List<IngestResult>>> retry( IngestResult ingestResult )
-    {
-        if ( !ingestResult.requiresRetry() )
-        {
-            throw new IllegalArgumentException( "Only IngestResult instances claiming to need retry should be passed." );
-        }
-
-        LOGGER.info( "Attempting retry of {}.", ingestResult );
-        // Admittedly not optimal to alternate between hash and key, but other
-        // places are using querySourceStatus with the hash.
-        long surrogateKey = ingestResult.getSurrogateKey();
-        DataSources dataSources = this.getCaches()
-                                      .getDataSourcesCache();
-        String hash = SourceLoader.getHashFromSurrogateKey( dataSources, surrogateKey );
-        SourceStatus sourceStatus = querySourceStatus( hash,
-                                                       this.lockManager );
-
-        if ( sourceStatus.equals( SourceStatus.COMPLETED ) )
-        {
-            LOGGER.debug( "Already finished source {}, changing to say requiresRetry=false",
-                          ingestResult );
-            CompletableFuture<List<IngestResult>> futureResult =
-                    IngestResult.fakeFutureSingleItemListFrom( ingestResult.getDataSource(),
-                                                               ingestResult.getSurrogateKey(),
-                                                               false );
-            return List.of( futureResult );
-        }
-        else if ( sourceStatus.equals( SourceStatus.INCOMPLETE_WITH_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING ) )
-        {
-            LOGGER.debug(
-                          "Source {} with status {} not fully ingested, attempting to remove data.",
-                          ingestResult,
-                          sourceStatus );
-
-            // Need the hash but we only have a surrogate key. Get the hash.
-
-            // First, try to safely remove it:
-            boolean removed = IncompleteIngest.removeSourceDataSafely( this.getDatabase(),
-                                                                       this.getCaches()
-                                                                           .getDataSourcesCache(),
-                                                                       ingestResult.getSurrogateKey(),
-                                                                       this.lockManager );
-            if ( removed )
-            {
-                LOGGER.debug( "Successfully removed abandoned data source {}, creating new ingest task.",
-                              ingestResult );
-                return this.ingestData( ingestResult.getDataSource(),
-                                        this.projectConfig,
-                                        this.lockManager );
-            }
-            else
-            {
-                LOGGER.debug( "Failed to remove source {}, will examine again next retry.",
-                              ingestResult );
-            }
-        }
-
-        // For whatever reason, retry is required.
-        CompletableFuture<List<IngestResult>> futureResult =
-                IngestResult.fakeFutureSingleItemListFrom( ingestResult.getDataSource(),
-                                                           ingestResult.getSurrogateKey(),
-                                                           true );
-        return List.of( futureResult );
-    }
-
-    /**
      * Attempts to load the input source.
      * 
      * @param source The data source
@@ -1170,52 +1093,6 @@ public class SourceLoader
             throw new PreIngestException( "Unable to query status of the source identified by "
                                           + hash,
                                           se );
-        }
-    }
-
-
-    /**
-     * Return the natural id from a given database-specific source row id.
-     * @param surrogateKey The surrogate key id.
-     * @return The hash.
-     * @throws PreIngestException When database calls fail or cache fails.
-     */
-
-    private static String getHashFromSurrogateKey( DataSources dataSourcesCache,
-                                                   long surrogateKey )
-    {
-        SourceDetails details;
-
-        try
-        {
-            details = dataSourcesCache.getFromCacheOrDatabaseByIdThenCache( surrogateKey );
-        }
-        catch ( SQLException se )
-        {
-            throw new PreIngestException( "While looking for natural id of source_id '"
-                                          + surrogateKey,
-                                          se );
-        }
-
-        if ( Objects.nonNull( details ) )
-        {
-            String hash = details.getHash();
-
-            if ( Objects.nonNull( hash )
-                 && !hash.isBlank() )
-            {
-                return hash;
-            }
-            else
-            {
-                throw new PreIngestException( "DataSources cache returned a null hash for data identified by surrogate key "
-                                              + surrogateKey );
-            }
-        }
-        else
-        {
-            throw new PreIngestException( "Unable to find natural id for data identified by surrogate key "
-                                          + surrogateKey );
         }
     }
 
