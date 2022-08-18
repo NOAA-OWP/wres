@@ -30,12 +30,6 @@ import org.slf4j.LoggerFactory;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.NetcdfFiles;
 
-import static wres.io.reading.DataSource.DataDisposition.COMPLEX;
-import static wres.io.reading.DataSource.DataDisposition.FILE_OR_DIRECTORY;
-import static wres.io.reading.DataSource.DataDisposition.GZIP;
-import static wres.io.reading.DataSource.DataDisposition.NETCDF_GRIDDED;
-import static wres.io.reading.DataSource.DataDisposition.UNKNOWN;
-
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.InterfaceShortHand;
@@ -48,6 +42,7 @@ import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReaderFactory;
+import wres.io.reading.ReaderUtilities;
 import wres.io.reading.Source;
 import wres.io.reading.DataSource.DataDisposition;
 import wres.io.reading.nwm.NWMReader;
@@ -83,6 +78,7 @@ public class SourceLoader
     private final ProjectConfig projectConfig;
     private final DatabaseLockManager lockManager;
 
+    /** An enumeration of the ingest status of a source. */
     private enum SourceStatus
     {
         /** The status of a source not present in the database at all. */
@@ -518,10 +514,10 @@ public class SourceLoader
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( lockManager );        
 
-        DataSource.DataDisposition disposition = dataSource.getDisposition();
+        DataDisposition disposition = dataSource.getDisposition();
 
         // Archives perform their own ingest verification
-        if ( disposition == GZIP )
+        if ( disposition == DataDisposition.GZIP )
         {
             LOGGER.debug( "The data at '{}' will be ingested because it has been determined that it is an archive that "
                           + "will need to be further evaluated.",
@@ -537,7 +533,7 @@ public class SourceLoader
                                        KEY_NOT_FOUND );
         }
 
-        boolean ingest = ( disposition != UNKNOWN );
+        boolean ingest = ( disposition != DataDisposition.UNKNOWN );
         SourceStatus sourceStatus = null;
 
         String hash;
@@ -547,7 +543,7 @@ public class SourceLoader
             try
             {
                 // If the format is Netcdf, we want to possibly bypass traditional hashing
-                if ( disposition == NETCDF_GRIDDED )
+                if ( disposition == DataDisposition.NETCDF_GRIDDED )
                 {
                     hash = NetCDF.getUniqueIdentifier( dataSource.getUri(),
                                                        dataSource.getVariable()
@@ -790,25 +786,38 @@ public class SourceLoader
             // If there is a file-like source, test for a directory and decompose it as required
             if ( Objects.nonNull( path ) )
             {
-                DataSource source = DataSource.of( FILE_OR_DIRECTORY,
+                // Currently unknown disposition, to be unpacked/determined
+                DataSource source = DataSource.of( DataDisposition.UNKNOWN,
                                                    nextSource.getKey(),
                                                    dataSourceConfig,
                                                    links,
                                                    path.toUri(),
                                                    lrb );
 
-                returnMe.addAll( SourceLoader.decomposeFileSource( source ) );
+                Set<DataSource> filesources = SourceLoader.decomposeFileSource( source );
+                returnMe.addAll( filesources );
             }
             // Not a file-like source
             else
             {
-                DataSource source = DataSource.of( COMPLEX,
+                // Create a source with unknown disposition as the basis for detection
+                DataSource source = DataSource.of( DataDisposition.UNKNOWN,
                                                    nextSource.getKey(),
                                                    dataSourceConfig,
                                                    links,
                                                    nextSource.getKey()
                                                              .getValue(),
                                                    lrb );
+
+                DataDisposition disposition = SourceLoader.getDispositionOfNonFileSource( source );
+                DataSource.of( disposition,
+                               nextSource.getKey(),
+                               dataSourceConfig,
+                               links,
+                               nextSource.getKey()
+                                         .getValue(),
+                               lrb );
+                
                 returnMe.add( source );
             }
         }
@@ -816,6 +825,41 @@ public class SourceLoader
         return Collections.unmodifiableSet( returnMe );
     }
 
+    /**
+     * Returns the disposition of a non-file like source, which includes all web sources and NWM vector sources, which 
+     * are a special case.
+     * 
+     * @param dataSource the existing data source whose disposition is unknown
+     */
+
+    private static DataDisposition getDispositionOfNonFileSource( DataSource dataSource )
+    {
+        if ( ReaderUtilities.isWebSource( dataSource ) )
+        {
+            if ( ReaderUtilities.isUsgsSource( dataSource ) )
+            {
+                return DataDisposition.JSON_WATERML;
+            }
+            else if ( ReaderUtilities.isWrdsAhpsSource( dataSource )
+                      || ReaderUtilities.isWrdsObservedSource( dataSource ) )
+            {
+                return DataDisposition.JSON_WRDS_AHPS;
+            }
+            else if ( ReaderUtilities.isWrdsNwmSource( dataSource ) )
+            {
+                return DataDisposition.JSON_WRDS_NWM;
+            }
+        }
+        else if ( ReaderUtilities.isNwmVectorSource( dataSource ) )
+        {
+            return DataDisposition.NETCDF_VECTOR;
+        }
+
+        throw new UnsupportedOperationException( "Discovered an unsupported data source: "
+                                                 + dataSource
+                                                 + "." );
+    }
+    
     /**
      * Helper that decomposes a file-like source into other sources. In particular, 
      * if the declared source represents a directory, walk the tree and find sources 
@@ -866,9 +910,9 @@ public class SourceLoader
                     //File must be a file and match the pattern, if the pattern is defined.
                     if ( testFile.isFile() && ( ( matcher == null ) || matcher.matches( path ) ) )
                     {
-                        DataSource.DataDisposition disposition = DataSource.detectFormat( path.toUri() );
+                        DataDisposition disposition = DataSource.detectFormat( path.toUri() );
 
-                        if ( disposition != UNKNOWN )
+                        if ( disposition != DataDisposition.UNKNOWN )
                         {
                             returnMe.add( DataSource.of( disposition,
                                                          dataSource.getSource(),
@@ -912,7 +956,7 @@ public class SourceLoader
         }
         else
         {
-            DataSource.DataDisposition disposition = DataSource.detectFormat( dataSource.getUri() );
+            DataDisposition disposition = DataSource.detectFormat( dataSource.getUri() );
             DataSource withDisposition = DataSource.of( disposition,
                                                         dataSource.getSource(),
                                                         dataSource.getContext(),

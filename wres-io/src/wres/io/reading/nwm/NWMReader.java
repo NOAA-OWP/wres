@@ -27,8 +27,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static wres.io.reading.DataSource.DataDisposition.COMPLEX;
-
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
@@ -41,6 +39,7 @@ import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.DataSource;
+import wres.io.reading.DataSource.DataDisposition;
 import wres.system.SystemSettings;
 
 
@@ -550,7 +549,7 @@ public class NWMReader implements Callable<List<IngestResult>>
                                     + "/"
                                     + referenceDateTime.toString() );
             DataSource innerDataSource =
-                    DataSource.of( COMPLEX,
+                    DataSource.of( DataDisposition.NETCDF_VECTOR,
                                    this.getDataSource()
                                        .getSource(),
                                    this.getDataSource()
@@ -629,7 +628,7 @@ public class NWMReader implements Callable<List<IngestResult>>
                                     + "/"
                                     + referenceDateTime.toString() );
             DataSource innerDataSource =
-                    DataSource.of( COMPLEX,
+                    DataSource.of( DataDisposition.NETCDF_VECTOR,
                                    this.getDataSource()
                                        .getSource(),
                                    this.getDataSource()

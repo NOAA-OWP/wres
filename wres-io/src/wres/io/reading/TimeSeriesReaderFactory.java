@@ -5,7 +5,6 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.PairConfig;
 import wres.io.reading.commaseparated.CsvReader;
 import wres.io.reading.datacard.DatacardReader;
@@ -132,51 +131,14 @@ public class TimeSeriesReaderFactory
                 return this.zippedReader;
             case NETCDF_GRIDDED:
                 return NwmGriddedReader.of( this.pairConfig );
-            case COMPLEX:
-                if ( this.isNwmSource( dataSource ) )
-                {
-                    return NwmVectorReader.of( this.pairConfig );
-                }
-
-                throw new IllegalArgumentException( "Discovered a data source with a COMPLEX data disposition, but "
-                                                    + "could not identify the data source as a NWM vector source. No "
-                                                    + "other reader is currently implemented for a COMPLEX source." );
-            case FILE_OR_DIRECTORY:
-                throw new IllegalArgumentException( "Received an unexpected data disposition, FILE_OR_DIRECTORY. "
-                                                    + "Sources with this disposition should be decomposed (if a "
-                                                    + "directory of sources) and further identified before attempting "
-                                                    + "to read them." );
+            case NETCDF_VECTOR:
+                return NwmVectorReader.of( this.pairConfig );
             default:
                 throw new IllegalArgumentException( "There is no reader implementation available for the prescribed "
                                                     + "data source disposition: "
                                                     + dataSource
                                                     + "." );
         }
-    }
-
-    /**
-     * @param dataSource the data source
-     * @return whether the data source is a NWM source
-     */
-
-    private boolean isNwmSource( DataSource dataSource )
-    {
-        InterfaceShortHand interfaceType = dataSource.getSource()
-                                                     .getInterface();
-
-        if ( Objects.nonNull( interfaceType ) && interfaceType.name()
-                                                              .toLowerCase()
-                                                              .startsWith( "nwm_" ) )
-        {
-            LOGGER.debug( "Identified data source {} as a NWM vector source.", dataSource );
-            return true;
-        }
-
-        LOGGER.warn( "Failed to identify data source {} as a NWM vector source because the interface shorthand did not "
-                     + "begin with a NWM designation.",
-                     dataSource );
-
-        return false;
     }
 
     /**

@@ -29,7 +29,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
-import static wres.io.reading.DataSource.DataDisposition.COMPLEX;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
@@ -41,6 +40,7 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.DataSource;
+import wres.io.reading.DataSource.DataDisposition;
 import wres.system.SystemSettings;
 
 public class WrdsNwmReaderTest
@@ -175,7 +175,7 @@ public class WrdsNwmReaderTest
         List<Feature> features = new ArrayList<>( 1 );
         features.add( featureConfig );
 
-        DataSource dataSource = DataSource.of( COMPLEX,
+        DataSource dataSource = DataSource.of( DataDisposition.JSON_WRDS_NWM,
                                                confSource,
                                                config,
                                                List.of( LeftOrRightOrBaseline.LEFT,
@@ -303,7 +303,7 @@ public class WrdsNwmReaderTest
         List<Feature> features = new ArrayList<>( 1 );
         features.add( featureConfig );
 
-        DataSource dataSource = DataSource.of( COMPLEX,
+        DataSource dataSource = DataSource.of( DataDisposition.JSON_WRDS_NWM,
                                                confSource,
                                                config,
                                                List.of( LeftOrRightOrBaseline.LEFT,

@@ -337,6 +337,31 @@ public class ReaderUtilities
     }
     
     /**
+     * @param dataSource the data source
+     * @return whether the data source is a NWM source
+     */
+
+    public static boolean isNwmVectorSource( DataSource dataSource )
+    {
+        InterfaceShortHand interfaceType = dataSource.getSource()
+                                                     .getInterface();
+
+        if ( Objects.nonNull( interfaceType ) && interfaceType.name()
+                                                              .toLowerCase()
+                                                              .startsWith( "nwm_" ) )
+        {
+            LOGGER.debug( "Identified data source {} as a NWM vector source.", dataSource );
+            return true;
+        }
+
+        LOGGER.warn( "Failed to identify data source {} as a NWM vector source because the interface shorthand did not "
+                     + "begin with a case-insensitive \"NWM_\" designation.",
+                     dataSource );
+
+        return false;
+    }
+
+    /**
      * @param source the data source
      * @return whether the source is a web source, specifically whether it has an http(s) scheme
      * @throws NullPointerException if the source is null
@@ -346,11 +371,12 @@ public class ReaderUtilities
     {
         Objects.requireNonNull( source );
 
-        return source.getUri()
-                     .getScheme()
-                     .startsWith( "http" );
-    }
+        URI uri = source.getUri();
 
+        return Objects.nonNull( uri )
+               && Objects.nonNull( uri.getScheme() )
+               && uri.getScheme().startsWith( "http" );
+    }
 
     /**
      * Creates year ranges for requests.

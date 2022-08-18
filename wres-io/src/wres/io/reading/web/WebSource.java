@@ -292,7 +292,7 @@ public class WebSource implements Callable<List<IngestResult>>
         }
         else if ( this.isWrdsNwmSource( this.getDataSource() ) )
         {
-            disposition = DataSource.DataDisposition.JSON_WRDS_AHPS;
+            disposition = DataSource.DataDisposition.JSON_WRDS_NWM;
         }
         else
         {
