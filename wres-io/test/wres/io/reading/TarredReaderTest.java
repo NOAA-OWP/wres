@@ -119,7 +119,7 @@ class TarredReaderTest
             }
 
             DataSourceConfig.Source fakeDeclarationSource =
-                    new DataSourceConfig.Source( null,
+                    new DataSourceConfig.Source( tarPath.toUri(),
                                                  null,
                                                  null,
                                                  null,

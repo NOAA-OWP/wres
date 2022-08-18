@@ -48,6 +48,9 @@ public class ZippedReader implements TimeSeriesReader
     public Stream<TimeSeriesTuple> read( DataSource dataSource )
     {
         Objects.requireNonNull( dataSource );
+        
+        // Validate that the source contains a readable file
+        ReaderUtilities.validateFileSource( dataSource );
 
         Path path = Paths.get( dataSource.getUri() );
 
@@ -68,14 +71,9 @@ public class ZippedReader implements TimeSeriesReader
     {
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( inputStream );
-
-        if ( dataSource.getDisposition() != DataDisposition.GZIP )
-        {
-            throw new ReadException( "Expected a gzipped source when reading " + dataSource.getUri()
-                                     + ", but the disposition was "
-                                     + dataSource.getDisposition()
-                                     + "." );
-        }
+        
+        // Validate the disposition of the data source
+        ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.GZIP );
 
         try
         {

@@ -55,7 +55,10 @@ public class TarredReader implements TimeSeriesReader
     public Stream<TimeSeriesTuple> read( DataSource dataSource )
     {
         Objects.requireNonNull( dataSource );
-
+        
+        // Validate that the source contains a readable file
+        ReaderUtilities.validateFileSource( dataSource );
+        
         try
         {
             Path path = Paths.get( dataSource.getUri() );
@@ -74,13 +77,8 @@ public class TarredReader implements TimeSeriesReader
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( inputStream );
 
-        if ( dataSource.getDisposition() != DataDisposition.TARBALL )
-        {
-            throw new ReadException( "Expected a tarball when reading " + dataSource.getUri()
-                                     + ", but the disposition was "
-                                     + dataSource.getDisposition()
-                                     + "." );
-        }
+        // Validate the disposition of the data source
+        ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.TARBALL );
 
         // Get the lazy supplier of time-series data
         Supplier<TimeSeriesTuple> supplier = this.getTimeSeriesSupplier( dataSource, inputStream );

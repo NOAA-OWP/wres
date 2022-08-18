@@ -35,6 +35,7 @@ import wres.io.reading.DataSource;
 import wres.io.reading.ReadException;
 import wres.io.reading.ReaderUtilities;
 import wres.io.reading.TimeSeriesReader;
+import wres.io.reading.DataSource.DataDisposition;
 import wres.io.retrieval.DataAccessException;
 import wres.io.utilities.DataProvider;
 import wres.statistics.generated.Geometry;
@@ -76,6 +77,9 @@ public class CsvReader implements TimeSeriesReader
     public Stream<TimeSeriesTuple> read( DataSource dataSource )
     {
         Objects.requireNonNull( dataSource );
+        
+        // Validate the disposition of the data source
+        ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.CSV_WRES );
 
         try
         {
@@ -95,6 +99,9 @@ public class CsvReader implements TimeSeriesReader
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( inputStream );
 
+        // Validate the disposition of the data source
+        ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.CSV_WRES );
+        
         try
         {
             DataProvider provider = DataProvider.fromCSV( inputStream, DELIMITER );

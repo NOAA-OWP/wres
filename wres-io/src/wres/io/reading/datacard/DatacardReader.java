@@ -38,7 +38,9 @@ import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.config.ConfigHelper;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReadException;
+import wres.io.reading.ReaderUtilities;
 import wres.io.reading.TimeSeriesReader;
+import wres.io.reading.DataSource.DataDisposition;
 import wres.statistics.generated.Geometry;
 import wres.util.Strings;
 
@@ -76,6 +78,9 @@ public class DatacardReader implements TimeSeriesReader
     {
         Objects.requireNonNull( dataSource );
 
+        // Validate that the source contains a readable file
+        ReaderUtilities.validateFileSource( dataSource );
+        
         try
         {
             Path path = Paths.get( dataSource.getUri() );
@@ -109,6 +114,9 @@ public class DatacardReader implements TimeSeriesReader
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( reader );
 
+        // Validate the disposition of the data source
+        ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.DATACARD );
+        
         // Get the lazy supplier of time-series data
         Supplier<TimeSeriesTuple> supplier = this.getTimeSeriesSupplier( dataSource, reader );
 

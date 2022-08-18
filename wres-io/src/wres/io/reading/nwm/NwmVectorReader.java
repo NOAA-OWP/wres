@@ -35,7 +35,9 @@ import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.config.ConfigHelper;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReadException;
+import wres.io.reading.ReaderUtilities;
 import wres.io.reading.TimeSeriesReader;
+import wres.io.reading.DataSource.DataDisposition;
 
 /**
  * Reads forecasts and simulations/analyses from the National Water Model (NWM) in a NetCDF vector format.
@@ -145,6 +147,12 @@ public class NwmVectorReader implements TimeSeriesReader
         Objects.requireNonNull( dataSource.getSource().getValue() );
         Objects.requireNonNull( dataSource.getContext() );
 
+        // Validate the disposition of the data source
+        ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.NETCDF_VECTOR );
+        
+        // Validate that the source contains a readable file
+        ReaderUtilities.validateFileSource( dataSource );
+        
         // Could be an NPE, but the data source is not null and the nullity of the variable is an effect, not a cause
         if ( Objects.isNull( dataSource.getVariable() ) )
         {

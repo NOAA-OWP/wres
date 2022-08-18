@@ -181,7 +181,7 @@ public class SourceLoader
             throws IOException
     {
         // Try to load non-file source
-        CompletableFuture<List<IngestResult>> nonFileIngest = loadNonFileSource( source );
+        CompletableFuture<List<IngestResult>> nonFileIngest = this.loadNonFileSource( source );
 
         // When the non-file source is detected, short-circuit the file way.
         if ( nonFileIngest != null )
@@ -369,12 +369,10 @@ public class SourceLoader
      * @param projectConfig the project configuration causing the ingest
      * @param lockManager the lock manager to use
      * @return a list of future lists of ingest results, possibly empty
-     * @throws IOException if the file could not be read
      */
     private List<CompletableFuture<List<IngestResult>>> ingestFile( DataSource source,
                                                                     ProjectConfig projectConfig,
                                                                     DatabaseLockManager lockManager )
-            throws IOException
     {
         Objects.requireNonNull( source );
         Objects.requireNonNull( projectConfig );
@@ -461,7 +459,7 @@ public class SourceLoader
                       sourceUri );
 
         // Ingest gridded metadata when required
-        if ( source.getDisposition() == DataDisposition.NETCDF_GRIDDED && ! this.systemSettings.isInMemory() )
+        if ( source.getDisposition() == DataDisposition.NETCDF_GRIDDED && !this.systemSettings.isInMemory() )
         {
             Supplier<List<IngestResult>> fakeResult = this.ingestGriddedFeatures( source );
             CompletableFuture<List<IngestResult>> future =
@@ -512,7 +510,7 @@ public class SourceLoader
                                          DatabaseLockManager lockManager )
     {
         Objects.requireNonNull( dataSource );
-        Objects.requireNonNull( lockManager );        
+        Objects.requireNonNull( lockManager );
 
         DataDisposition disposition = dataSource.getDisposition();
 
@@ -525,7 +523,7 @@ public class SourceLoader
             return new FileEvaluation( SourceStatus.REQUIRES_DECOMPOSITION,
                                        KEY_NOT_FOUND );
         }
-        
+
         // Is this in-memory, i.e., no ingest required?
         if ( this.systemSettings.isInMemory() )
         {
@@ -591,26 +589,36 @@ public class SourceLoader
 
         if ( sourceStatus == null )
         {
-            throw new IllegalStateException(
-                                             "Expected sourceStatus to always be set by now." );
+            throw new IllegalStateException( "Expected sourceStatus to always be set by now." );
         }
 
         // Get the surrogate key if it exists
-        final long surrogateKey;
-        Long dataSourceKey = null;
-        DataSources dataSources = this.getCaches()
-                                      .getDataSourcesCache();
+        long surrogateKey = this.getSurrogateKey( hash, dataSource.getUri() );
 
+        return new FileEvaluation( sourceStatus, surrogateKey );
+    }
+
+    /**
+     * @param hash the hash
+     * @param uri the uri
+     * @return the surrogate key or {@link #KEY_NOT_FOUND}
+     */
+    private long getSurrogateKey( String hash, URI uri )
+    {
+        // Get the surrogate key if it exists
+        Long dataSourceKey = null;
         if ( Objects.nonNull( hash ) )
         {
             try
             {
+                DataSources dataSources = this.getCaches()
+                                              .getDataSourcesCache();
                 dataSourceKey = dataSources.getActiveSourceID( hash );
             }
             catch ( SQLException se )
             {
                 throw new PreIngestException( "While determining if source '"
-                                              + dataSource.getUri()
+                                              + uri
                                               + "' should be ingested, "
                                               + "failed to translate natural key '"
                                               + hash
@@ -619,18 +627,14 @@ public class SourceLoader
             }
         }
 
-        if ( Objects.isNull( dataSourceKey ) )
+        if ( Objects.nonNull( dataSourceKey ) )
         {
-            surrogateKey = KEY_NOT_FOUND;
+            return dataSourceKey;
         }
-        else
-        {
-            surrogateKey = dataSourceKey;
-        }
-
-        return new FileEvaluation( sourceStatus, surrogateKey );
+        
+        return KEY_NOT_FOUND;
     }
-
+    
     /**
      * Determines if the indicated data is currently being ingested by a task
      * in another process.
@@ -817,7 +821,7 @@ public class SourceLoader
                                nextSource.getKey()
                                          .getValue(),
                                lrb );
-                
+
                 returnMe.add( source );
             }
         }
@@ -826,8 +830,7 @@ public class SourceLoader
     }
 
     /**
-     * Returns the disposition of a non-file like source, which includes all web sources and NWM vector sources, which 
-     * are a special case.
+     * Returns the disposition of a non-file like source, which includes all web sources.
      * 
      * @param dataSource the existing data source whose disposition is unknown
      */
@@ -850,16 +853,12 @@ public class SourceLoader
                 return DataDisposition.JSON_WRDS_NWM;
             }
         }
-        else if ( ReaderUtilities.isNwmVectorSource( dataSource ) )
-        {
-            return DataDisposition.NETCDF_VECTOR;
-        }
 
         throw new UnsupportedOperationException( "Discovered an unsupported data source: "
                                                  + dataSource
                                                  + "." );
     }
-    
+
     /**
      * Helper that decomposes a file-like source into other sources. In particular, 
      * if the declared source represents a directory, walk the tree and find sources 
@@ -878,81 +877,23 @@ public class SourceLoader
 
         File file = sourcePath.toFile();
 
-        Set<DataSource> returnMe = new HashSet<>();
+        // Special case: NWM vector sources do not require further decomposition, merely the correct disposition
+        if ( ReaderUtilities.isNwmVectorSource( dataSource ) )
+        {
+            LOGGER.debug( "Discovered a source with disposition {}.", DataDisposition.NETCDF_VECTOR );
+            DataSource innerSource = DataSource.of( DataDisposition.NETCDF_VECTOR,
+                                                    dataSource.getSource(),
+                                                    dataSource.getContext(),
+                                                    dataSource.getLinks(),
+                                                    dataSource.getUri(),
+                                                    dataSource.getLeftOrRightOrBaseline() );
+            return Set.of( innerSource );
+        }
 
         // Directory: must decompose into sources
         if ( file.isDirectory() )
         {
-
-            DataSourceConfig.Source source = dataSource.getSource();
-
-            //Define path matcher based on the source's pattern, if provided.
-            final PathMatcher matcher;
-
-            String pattern = source.getPattern();
-
-            if ( ! ( pattern == null || pattern.isEmpty() ) )
-            {
-                matcher = FileSystems.getDefault().getPathMatcher( "glob:" + pattern );
-            }
-            else
-            {
-                matcher = null;
-            }
-
-            // Walk the tree and find sources that match a pattern or none
-            try ( Stream<Path> files = Files.walk( sourcePath ) )
-            {
-                files.forEach( path -> {
-
-                    File testFile = path.toFile();
-
-                    //File must be a file and match the pattern, if the pattern is defined.
-                    if ( testFile.isFile() && ( ( matcher == null ) || matcher.matches( path ) ) )
-                    {
-                        DataDisposition disposition = DataSource.detectFormat( path.toUri() );
-
-                        if ( disposition != DataDisposition.UNKNOWN )
-                        {
-                            returnMe.add( DataSource.of( disposition,
-                                                         dataSource.getSource(),
-                                                         dataSource.getContext(),
-                                                         dataSource.getLinks(),
-                                                         path.toUri(),
-                                                         dataSource.getLeftOrRightOrBaseline() ) );
-                        }
-                        else
-                        {
-                            LOGGER.warn( "Skipping '{}' because WRES will not be able to parse it.",
-                                         path );
-                        }
-                    }
-                    // Skip and log a warning if this is a normal file (e.g. not a directory) 
-                    else if ( testFile.isFile() )
-                    {
-                        LOGGER.warn( "Skipping {} because it does not match pattern \"{}\".",
-                                     path,
-                                     pattern );
-                    }
-                } );
-            }
-            catch ( IOException e )
-            {
-                throw new PreIngestException( "Failed to walk the directory tree '"
-                                              + sourcePath
-                                              + "':",
-                                              e );
-            }
-
-            //If the results are empty, then there were either no files in the specified source or pattern matched 
-            //none of the files.  
-            if ( returnMe.isEmpty() )
-            {
-                throw new PreIngestException( "The pattern of \"" + pattern
-                                              + "\" does not yield any files within the provided "
-                                              + "source path and is therefore not a valid source." );
-            }
-
+            return SourceLoader.decomposeDirectorySource( dataSource );
         }
         else
         {
@@ -963,11 +904,97 @@ public class SourceLoader
                                                         dataSource.getLinks(),
                                                         dataSource.getUri(),
                                                         dataSource.getLeftOrRightOrBaseline() );
-            returnMe.add( withDisposition );
+            return Set.of( withDisposition );
+        }
+    }
+
+    /**
+     * Helper that decomposes a file-like source into other sources. In particular, 
+     * if the declared source represents a directory, walk the tree and find sources 
+     * that match any prescribed pattern. Return a {@link DataSource}
+     * 
+     * @param dataSource the source to decompose
+     * @return the set of decomposed sources
+     */
+
+    private static Set<DataSource> decomposeDirectorySource( DataSource dataSource )
+    {
+        Objects.requireNonNull( dataSource );
+
+        Path sourcePath = Paths.get( dataSource.getUri() );
+
+        Set<DataSource> returnMe = new HashSet<>();
+
+        DataSourceConfig.Source source = dataSource.getSource();
+
+        //Define path matcher based on the source's pattern, if provided.
+        final PathMatcher matcher;
+
+        String pattern = source.getPattern();
+
+        if ( ! ( pattern == null || pattern.isEmpty() ) )
+        {
+            matcher = FileSystems.getDefault().getPathMatcher( "glob:" + pattern );
+        }
+        else
+        {
+            matcher = null;
+        }
+
+        // Walk the tree and find sources that match a pattern or none
+        try ( Stream<Path> files = Files.walk( sourcePath ) )
+        {
+            files.forEach( path -> {
+
+                File testFile = path.toFile();
+
+                //File must be a file and match the pattern, if the pattern is defined.
+                if ( testFile.isFile() && ( ( matcher == null ) || matcher.matches( path ) ) )
+                {
+                    DataDisposition disposition = DataSource.detectFormat( path.toUri() );
+
+                    if ( disposition != DataDisposition.UNKNOWN )
+                    {
+                        returnMe.add( DataSource.of( disposition,
+                                                     dataSource.getSource(),
+                                                     dataSource.getContext(),
+                                                     dataSource.getLinks(),
+                                                     path.toUri(),
+                                                     dataSource.getLeftOrRightOrBaseline() ) );
+                    }
+                    else
+                    {
+                        LOGGER.warn( "Skipping '{}' because WRES will not be able to parse it.",
+                                     path );
+                    }
+                }
+                // Skip and log a warning if this is a normal file (e.g. not a directory) 
+                else if ( testFile.isFile() )
+                {
+                    LOGGER.warn( "Skipping {} because it does not match pattern \"{}\".",
+                                 path,
+                                 pattern );
+                }
+            } );
+        }
+        catch ( IOException e )
+        {
+            throw new PreIngestException( "Failed to walk the directory tree '"
+                                          + sourcePath
+                                          + "':",
+                                          e );
+        }
+
+        //If the results are empty, then there were either no files in the specified source or pattern matched 
+        //none of the files.  
+        if ( returnMe.isEmpty() )
+        {
+            throw new PreIngestException( "The pattern of \"" + pattern
+                                          + "\" does not yield any files within the provided "
+                                          + "source path and is therefore not a valid source." );
         }
 
         return Collections.unmodifiableSet( returnMe );
-
     }
 
     /**
@@ -982,7 +1009,11 @@ public class SourceLoader
         LOGGER.trace( "Called evaluatePath with source {}", source );
         URI uri = source.getValue();
 
-        if ( source.getInterface() != null )
+        // Interface defined and not a source of NWM vectors, so no path to return
+        if ( source.getInterface() != null && !source.getInterface()
+                                                     .name()
+                                                     .toLowerCase()
+                                                     .startsWith( "nwm_" ) )
         {
             LOGGER.debug( "There is an interface specified: {}, therefore not going to walk a directory tree.",
                           source.getInterface() );

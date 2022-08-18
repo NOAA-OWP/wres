@@ -69,7 +69,13 @@ public class DataSource
         /** The data has been detected as a csv, wres stream. */
         CSV_WRES,
         /** The data type is unknown or to be determined. */
-        UNKNOWN
+        UNKNOWN;
+        
+        @Override
+        public String toString()
+        {
+            return this.name();
+        }
     }
 
     /**
